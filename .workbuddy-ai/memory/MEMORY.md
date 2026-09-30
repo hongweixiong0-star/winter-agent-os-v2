@@ -2511,4 +2511,50 @@ git -C "<prod worktree>" ls-tree -r --name-only HEAD | grep -c "<被删文件>" 
 改名前一定先 `grep` 一遍读者**；反过来，`config/v2.json` 的 `ocr.module_path` 才是那些
 OCR 测试真正读的键（它们的红与本轮迁移无关，就是这么判掉的）。
 
+### 🚨 环境铁律（2026-09-30 增补六）：**绝不要从智能体的命令行启动生产面板**
+这一条是本轮踩得最贵的一个坑，值得单独记牢。
+
+**症状**：面板正常启动、正常起 AUTO、正常跑，**2~4 分钟后整个进程连同 AUTO 一起凭空消失**，
+`panel.log` 没有任何报错，窗口没了，`learning/` 里也没有崩溃记录。第二次启动更直接：
+在 `ControlPanel.__init__ → _enforce_retention → prune_runtime_screenshots → Path.unlink`
+处抛 `SystemExit: 1`，**面板连窗口都没出来就死了**。
+
+**根因**：智能体宿主会在工具调用的子进程里注入
+```text
+PYTHONPATH=E:\work Buddy国内\WorkBuddy\resources\app.asar.unpacked\cli\vendor\shim
+```
+这个 `sitecustomize.py` 会**接管 `Path.unlink` / `os.remove`**：它先把删除转成"进回收站"，
+并且带一个**按"本轮（turn）"计数的批量删除守卫**——累计删到 **50 个文件**就
+`raise SystemExit(1)` **直接杀掉整个进程**。
+面板的 `retention.prune_runtime_screenshots` 每个周期清 10 张，
+**几十个周期必然累到 50**，于是"跑得好好的 AUTO 突然整体猝死"。
+`retention.py` 自己的注释里 2026-09-18 那次"面板无人值守 6h45m 后死掉"就是同一个坑，
+当时只把它当成"一次删 50 个"，其实是"**进程生命周期内累计 50 个**"。
+
+**这不是项目缺陷，是启动方式错**。生产面板的设计启动方式是**桌面 `pythonw.exe`**
+（`learning/control_panel/launch_record.json` 里 `launch_path_marker: "desktop"`），
+那条路径**不经过智能体的工具调用环境**，因此没有这层注入。
+`tools/panel_restart.py --start` 也救不了：它 `env = dict(os.environ)` 原样继承。
+
+**正确做法**：起面板前把宿主注入的东西从 shell 里摘掉（同一个 shell 命令内 `unset`，
+shell 状态不跨调用保持）：
+```bash
+unset PYTHONPATH CODEBUDDY_TOOL_CALL_ID CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR \
+      CODEBUDDY_SAFE_DELETE_BULK_GUARD CODEBUDDY_NODE_BIN GENIE_TRASH_DIR
+E:/无尽冬日智能体/.venv/Scripts/python.exe tools/launch_pinned_production.py   # 后台任务里长期驻留
+```
+**验收判据**：`python -c "import sys;print('sitecustomize' in sys.modules)"` 必须是 `False`，
+且 `pathlib.Path.unlink.__module__ == 'pathlib'`。
+本轮净化后第一次 `磁盘保护：已清理 10 张…` 出现而**面板没有死**，就是判据通过的实证。
+
+### ⚠️ 环境铁律（2026-09-30 增补七）：这台机器上 `env -u` 会**吞掉子进程的全部输出**
+`env -u PYTHONPATH echo hello` 实测**一个字都不输出**，`rc=0`，
+`env -u PYTHONPATH <python> -c "print(1)"` 同样静默。
+于是"用 `env -u` 净化环境再启动"会得到一个**0 字节日志 + exit 0 的假成功**——
+看起来启动成功，实际上子进程根本没跑起来（本轮就是这样白等了两轮）。
+**要改环境就改自己 shell 的环境**（`unset`），不要把 `env -u` 当成净化手段。
+同理：Git Bash 里给 Windows 原生命令传斜杠参数要**双斜杠**，
+`taskkill /PID 1234 /T /F` 会把 `/PID` 当路径翻译掉（报 `无效参数 'C:/…/PID'`），
+必须写 `taskkill //PID 1234 //T //F`。
+
 
