@@ -682,6 +682,7 @@ class LiveRuntime:
         # production reuse: the distinction has to survive on the row, not in the caller's
         # intentions.  ``PRODUCTION`` is the default, which is what an AUTO cycle is.
         self.execution_mode = str(execution_mode or "PRODUCTION")
+        self.validation_focus_route = str(getattr(self.brain, 'current_goal', '') or '')
         self.trace_id = str(trace_id or "")
         self.job_id = str(job_id or "")
         self.capability = str(capability or "")
@@ -847,6 +848,21 @@ class LiveRuntime:
             else:
                 self.capability_gate = CapabilityGate.load(Path(self.episode_store.path).resolve().parents[1])
         return self.capability_gate
+
+    def _validation_route_scope_active(self) -> bool:
+        return self.execution_mode == 'DEVELOPMENT_VALIDATION' and bool(self.validation_focus_route)
+
+    def _focus_validation_goals(self, goals):
+        """Bound a leased development probe; production keeps its full global board."""
+        if not self._validation_route_scope_active():
+            return goals
+        from .goal_library import route_for
+        if self.validation_focus_route == 'DAILY':
+            return [goal for goal in goals if goal.goal_id == 'DAILY_ACTIVITY_TARGET'
+                    or getattr(goal, 'evidence', {}).get('source') == 'LIVE_DAILY_TASK_ROW']
+        return [goal for goal in goals if route_for(goal.goal_id) == self.validation_focus_route
+                or (self.validation_focus_route == 'DAILY'
+                    and getattr(goal, 'evidence', {}).get('source') == 'LIVE_DAILY_TASK_ROW')]
 
     def _selectable(self, goals, deferrals: list[Deferral]):
         """The operator's policy and the deferral gate, applied to discovered goals.
@@ -6719,7 +6735,7 @@ class LiveRuntime:
             # frame we are standing on -- not once per run.  ``rank`` returns the whole
             # board with each term, and ``best`` is the same ordering, so the choice and
             # the explanation can never disagree.
-            selectable_goals = self._selectable(goals, deferrals)
+            selectable_goals = self._selectable(self._focus_validation_goals(goals), deferrals)
             board = self.goal_library.rank(
                 selectable_goals,
                 before,
