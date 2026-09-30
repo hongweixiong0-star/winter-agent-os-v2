@@ -264,6 +264,7 @@ class LiveRuntimeSessionHost:
         if kind == STEP_OBSERVE_ONLY:
             # There is nothing to drive.  The adapter's own verifier is what reads the screen
             # for this kind, which is why the engine does not require an execution here.
+            self.sleep(min(0.5, self.binding.settle_seconds))
             return StepExecution(executed=False, reason="OBSERVE_ONLY", latency_ms=0.0)
         if kind == STEP_REALTIME:
             return self._run_realtime(step, started)

@@ -461,6 +461,9 @@ class FishingSessionAdapter(SessionAdapter):
             if domain.on_home:
                 return SessionStep(0, STEP_OBSERVE_ONLY, tags={"verify_cast": True},
                                    reason="verify bait and points after the cast")
+            if not domain.result_page:
+                return SessionStep(0, STEP_OBSERVE_ONLY, tags={"wait_result": True},
+                                   reason="wait for the actual result page")
             return SessionStep(0, STEP_PRINTED_TAP, target=FISHING_EXIT_WORD,
                                reason="leave the result page")
         if self.stage is STAGE_CONTROLLING:
@@ -488,7 +491,8 @@ class FishingSessionAdapter(SessionAdapter):
             config = ServoConfig(max_session_duration_s=90.0, **dict(self.SERVO_DEFAULTS))
 
         def detector(frame: Any) -> Any:
-            state = detect_fishing(frame)
+            height, width = frame.shape[:2]
+            state = detect_fishing(frame, roi=(round(width / 6), 0, round(width * .86), height))
             controller.set_frame(frame)
             return state
 
@@ -529,6 +533,10 @@ class FishingSessionAdapter(SessionAdapter):
             self.stage = STAGE_LEAVING
             return StepVerdict(StepOutcome.PROGRESS, "FISHING_RESULT_LEFT")
         if step.kind is STEP_OBSERVE_ONLY:
+            if (step.tags or {}).get("wait_result"):
+                domain = self.observe(context, host)
+                return StepVerdict(StepOutcome.PROGRESS if domain and (domain.result_page or domain.on_home)
+                                   else StepOutcome.STILL_PENDING, "FISHING_RESULT_PENDING")
             if (step.tags or {}).get("verify_cast"):
                 from .fishing_state import verify_run
                 verdict = verify_run(bait_before=self.bait_before, bait_after=self.bait_after,

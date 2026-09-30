@@ -164,6 +164,18 @@ def detect_fishing(frame: np.ndarray, *, roi: tuple[int, int, int, int] = WATER_
             best_blob = (area, x + w // 2 + off_x, y + h // 2 + off_y)
     if best_blob:
         out.hook_area, out.hook_x, out.hook_y = best_blob
+        # Deep levels scroll the camera: the hook can be above the original water ROI.
+        # When the hook is visible, anchor the line to its own nearby dark column rather
+        # than allowing a background pole to win a whole-image column contest.
+        if out.line_x is None:
+            local_hook = int(out.hook_x - off_x)
+            lo, hi = max(0, local_hook - 10), min(gray.shape[1], local_hook + 11)
+            counts = (gray[:, lo:hi] < 60).sum(axis=0)
+            if counts.size and int(counts.max()) >= LINE_MIN_DARK:
+                col = lo + int(np.argmax(counts))
+                dark_count = int(counts.max())
+                out.line_x = col + off_x
+                out.line_strength = dark_count
 
     # fallback: bottom of the dark line == where the hook hangs
     if out.hook_x is None and out.line_x is not None and dark_count:
