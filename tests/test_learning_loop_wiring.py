@@ -232,6 +232,35 @@ class SecondEncounterTests(unittest.TestCase):
         self.assertEqual(advisor.asked, 1)
 
 
+class FailureIsolationTests(unittest.TestCase):
+    def test_a_broken_learning_lookup_still_lets_the_ordinary_path_run(self):
+        """§28: the learning layer must not be able to take a live step down with it.
+
+        The guard is worth testing rather than trusting because the failure mode it prevents is
+        silent: an exception here would land on every unnamed screen, and the screen that used to
+        work through the ordinary path would stop working because of a layer that was only supposed
+        to make things cheaper.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = _runtime(
+                ocr=_StubOCR(("领取", 0.99, BOX)),
+                learned=_learned_ledger(Path(tmp)),
+            )
+            advisor = _CountingAdvisor()
+            runtime._advisor = advisor
+
+            def _explode(*args, **kwargs):
+                raise RuntimeError("learning layer is broken")
+
+            runtime._learned_reuse_point = _explode
+            point = runtime._advised_control(
+                "UNKNOWN", "", _frame(Path(tmp)), WorldState(page=Page.UNKNOWN),
+                unnamed=True, confidence=0.4,
+            )
+        self.assertIsNone(point, "a counting advisor answers nothing")
+        self.assertEqual(advisor.asked, 1, "the model must still be consulted when learning breaks")
+
+
 class FilingTests(unittest.TestCase):
     def _context(self, frame: Path) -> dict:
         return {

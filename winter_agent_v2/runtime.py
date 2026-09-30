@@ -5344,7 +5344,18 @@ class LiveRuntime:
         # knowledge about another.  And it is placed **before** the ``advisor is None`` return
         # below, because it is a deterministic re-location and not a model path: a deployment with
         # no planner at all should still get cheaper on a screen it has already solved.
-        learned = self._learned_reuse_point(page, title, goal, frame_path, frame)
+        #
+        # Guarded, and printed rather than swallowed: this runs on every unnamed screen, so an
+        # unexpected failure here would take the whole ordinary path down with it -- but a silent
+        # ``except`` would hide the learning layer being broken, which is the failure this project
+        # keeps measuring as worse than a crash.  The expected negatives (nothing learned, the
+        # control not drawn) are ordinary returns from ``_learned_reuse_point``, not exceptions.
+        try:
+            learned = self._learned_reuse_point(page, title, goal, frame_path, frame)
+        except Exception as exc:  # noqa: BLE001 - learning must never fail a live step
+            learned = None
+            print(f"[learned] reuse lookup deferred ({type(exc).__name__}: {exc}); "
+                  "falling through to the ordinary path", flush=True)
         if learned is not None:
             return learned
         if advisor is None:
