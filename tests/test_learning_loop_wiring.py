@@ -392,6 +392,51 @@ class RepairChannelTests(unittest.TestCase):
 
 
 class CompilationEndToEndTests(unittest.TestCase):
+    def test_filing_verified_steps_compiles_a_candidate_without_a_cli(self):
+        """§11/§13: UNKNOWN 成功后必须进入学习闭环, and the closing step is automatic.
+
+        The defect this pins is small and easy to reintroduce: the compiler existed, the ledger
+        existed, and nothing joined them except a tool a human had to remember to run -- which
+        makes "UNKNOWN -> CandidateSkill" a documented intention rather than a property of the
+        running system.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            candidates = root / "candidates"
+            runtime = _runtime(ocr=_StubOCR(),
+                               learned=unknown_learning.VerifiedStepLedger(root / "steps.jsonl"))
+            runtime.learned_ledger = unknown_learning.VerifiedStepLedger(root / "steps.jsonl")
+            runtime._candidate_skill_dir = candidates
+            runtime.capture_dir = root / "run1"
+            runtime.role_id = "ROLE_A"
+            runtime._last_advice = {"request_id": "req-1"}
+            for step_id in (1, 2):
+                runtime._advised_learn_context = {
+                    "page_key": "UNKNOWN",
+                    "goal": "CLAIM_EXPLORATION_IDLE",
+                    "semantic": f"ORDINARY_CONTROL[控件{step_id}]",
+                    "basis": "ORDINARY_CONTROL",
+                    "grounding_basis": "PRINTED_WORD",
+                    "expected_result": "奖励已领取",
+                    "frame": str(_frame(root)),
+                    "attempts": 1,
+                    "visual_evidence": {
+                        "reader": "AI_ADVICE/PRINTED_WORD", "ocr_anchor": f"控件{step_id}",
+                    },
+                }
+                runtime._note_learned_step(
+                    decision=SimpleNamespace(skill="TRY_ORDINARY_CONTROL"),
+                    verification=SimpleNamespace(ok=True, reason="", evidence={}),
+                    result="SUCCESS", observed_change="PAGE_CHANGED",
+                    after=WorldState(page=Page.UNKNOWN), step_id=step_id,
+                )
+            files = sorted(p.name for p in candidates.glob("*.json")) if candidates.exists() else []
+            payload = json.loads((candidates / files[0]).read_text(encoding="utf-8")) if files else {}
+        self.assertEqual(len(files), 1, "the two chained steps must have compiled into one candidate")
+        self.assertEqual(payload["lifecycle"], unknown_learning.STATUS_CANDIDATE)
+        self.assertIn("not registered", payload["not_yet"])
+        self.assertEqual(len(payload["steps"]), 2)
+
     def test_two_verified_steps_in_one_session_compile_into_a_candidate_skill(self):
         """§13: the chain the directive describes, produced from filed steps rather than fixtures."""
         with tempfile.TemporaryDirectory() as tmp:

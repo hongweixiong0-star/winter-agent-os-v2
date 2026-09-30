@@ -2529,6 +2529,34 @@ class LiveRuntime:
                 f"[{step.risk_route}]",
                 flush=True,
             )
+            # §11/§13: the bridge is closed *here*, not left to someone remembering to run a CLI.
+            # A verified step that is filed but never compiled is a step the project cannot reuse,
+            # and the whole point of the ledger is that the same screen gets cheaper next time --
+            # so the candidate skills are recompiled the moment the evidence changes.
+            #
+            # Compiling is cheap (the ledger is small; it writes one JSON per candidate) and it is
+            # explicitly *not* a promotion: what lands in ``knowledge/skills/candidates/`` is a
+            # CANDIDATE with ``not_yet`` saying it is neither registered nor runnable (§39), so the
+            # only thing automatic here is the bookkeeping the directive already called for.
+            try:
+                compiled = unknown_learning.compile_candidate_skills(
+                    self._learned_ledger_rows(),
+                    # ``getattr`` for the same reason as everywhere else in this file: the suites
+                    # build the runtime without ``__init__``, and a test must be able to point the
+                    # compile at its own sandbox rather than writing candidates into the repo.
+                    out_dir=Path(getattr(self, "_candidate_skill_dir", None)
+                                 or (Path(__file__).resolve().parents[1]
+                                     / unknown_learning.CANDIDATE_SKILL_DIR)),
+                )
+                if compiled:
+                    print(
+                        f"[learned] candidate skills recompiled ({len(compiled)} in the pool; "
+                        "CANDIDATE only, nothing is registered)",
+                        flush=True,
+                    )
+            except Exception as exc:  # noqa: BLE001 - a compile must never fail a finished step
+                print(f"[learned] candidate compile skipped ({type(exc).__name__}: {exc})",
+                      flush=True)
         except Exception:  # noqa: BLE001 - a learning write must never fail a finished step
             pass
 

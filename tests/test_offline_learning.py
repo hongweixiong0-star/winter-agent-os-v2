@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 from winter_agent_v2 import offline_learning as ol
@@ -160,6 +161,47 @@ class WriteTests(unittest.TestCase):
         self.assertEqual(summary["clusters"], 1)
         self.assertEqual(written["frames_in_clusters"], 2)
         self.assertEqual(len(per_cluster), 1)
+
+
+class NightlyScheduleTests(unittest.TestCase):
+    """§21's "once a night", which is a timing rule and therefore a pure function."""
+
+    def _at(self, hour: int, *, day: int = 1) -> datetime:
+        return datetime(2026, 10, day, hour, 30, tzinfo=timezone.utc)
+
+    def test_it_is_not_due_outside_the_window(self):
+        for hour in (0, 1, 2, 6, 12, 23):
+            self.assertFalse(
+                ol.is_nightly_run_due(self._at(hour), ""),
+                f"hour {hour} must stay out of the {ol.NIGHT_WINDOW} window",
+            )
+
+    def test_it_is_due_inside_the_window_when_it_has_not_run(self):
+        self.assertTrue(ol.is_nightly_run_due(self._at(3), ""))
+        self.assertTrue(ol.is_nightly_run_due(self._at(5), "2026-09-30"))
+
+    def test_it_is_not_due_twice_on_the_same_local_date(self):
+        self.assertFalse(ol.is_nightly_run_due(self._at(4), "2026-10-01"))
+
+    def test_yesterday_does_not_hold_today_back(self):
+        self.assertTrue(ol.is_nightly_run_due(self._at(4, day=2), "2026-10-01"))
+
+    def test_a_window_that_crosses_midnight_is_honoured(self):
+        window = (23, 6)
+        self.assertTrue(ol.is_nightly_run_due(self._at(23), "", window=window))
+        self.assertTrue(ol.is_nightly_run_due(self._at(2), "", window=window))
+        self.assertFalse(ol.is_nightly_run_due(self._at(7), "", window=window))
+
+    def test_the_marker_round_trips_and_is_written_before_the_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(ol.last_run_date(tmp), "")
+            ol.mark_nightly_run(self._at(4), tmp)
+            self.assertEqual(ol.last_run_date(tmp), "2026-10-01")
+            # The marker is what makes the rule survive a panel restart, so it has to be on disk
+            # rather than in memory -- read it back through a fresh path, not through the writer.
+            payload = json.loads(
+                (Path(tmp) / ol.LAST_RUN_MARKER).read_text(encoding="utf-8"))
+        self.assertEqual(payload["local_date"], "2026-10-01")
 
 
 if __name__ == "__main__":

@@ -501,3 +501,64 @@ def run_offline_pass(
         written = write_clusters(clusters, out_dir=base / OFFLINE_DIR)
         summary["written"] = written
     return summary
+
+
+# --------------------------------------------------------------- the nightly schedule
+#: The local hours the pass may start in, as ``[start, end)``.  §21 asks for 夜间学习 -- the window
+#: exists so the pass runs on the day's *whole* frame corpus rather than on the few frames a round
+#: has produced so far, and so a restarting panel cannot make it run every few minutes.
+NIGHT_WINDOW: tuple[int, int] = (3, 6)
+#: Records the local date the pass last ran.  A marker file rather than in-process memory, because
+#: the panel is restarted often (every repin does it) and an in-memory "ran today" would mean
+#: "ran since the last restart", which is not once a night.
+LAST_RUN_MARKER = OFFLINE_DIR / "last_run.json"
+#: Where the detached pass writes what it did.  The panel reads nothing from it; it is the record a
+#: later session reads when asking "did the nightly run, and how many frames did it see?".
+NIGHTLY_LOG = OFFLINE_DIR / "nightly.log"
+
+
+def last_run_date(root: Path | str = ".") -> str:
+    """The local date (``YYYY-MM-DD``) the nightly pass last ran on, or ``""``."""
+    payload = _read_json(Path(root) / LAST_RUN_MARKER) or {}
+    return str(payload.get("local_date") or "")
+
+
+def is_nightly_run_due(
+    now: datetime,
+    last_date: str,
+    *,
+    window: tuple[int, int] = NIGHT_WINDOW,
+) -> bool:
+    """Whether the pass should start now: inside the window, and not already run today.
+
+    A pure function on purpose -- the panel's own cycle logic was moved into ``next_cycle_delay``
+    for exactly this reason, so the timing rule can be tested without a Tk root or a clock.
+    """
+    start, end = int(window[0]), int(window[1])
+    if start <= end:
+        inside = start <= int(now.hour) < end
+    else:  # a window that crosses midnight; kept because a caller may widen it to 23..6
+        inside = int(now.hour) >= start or int(now.hour) < end
+    if not inside:
+        return False
+    return str(last_date or "") != now.date().isoformat()
+
+
+def mark_nightly_run(now: datetime, root: Path | str = ".") -> None:
+    """Record that the pass started on ``now``'s local date.  Written *before* the spawn.
+
+    Before, not after: the pass is a separate process, and if it dies at startup the panel would
+    otherwise relaunch it at every round boundary for the rest of the night.  Skipping one night
+    after a failed launch is the cheaper failure, and the nightly log says which happened.
+    """
+    path = Path(root) / LAST_RUN_MARKER
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps({"local_date": now.date().isoformat(),
+                        "started_at": now.isoformat(timespec="seconds")},
+                       ensure_ascii=False, indent=1),
+            encoding="utf-8",
+        )
+    except (OSError, TypeError, ValueError):
+        pass

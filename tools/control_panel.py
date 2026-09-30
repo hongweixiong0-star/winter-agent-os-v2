@@ -35,6 +35,8 @@ if str(ROOT) not in sys.path:
 from winter_agent_v2 import runtime_env
 from winter_agent_v2 import winproc
 from winter_agent_v2 import event_schedule
+from winter_agent_v2 import learning_funnel
+from winter_agent_v2 import offline_learning
 from winter_agent_v2.device import ADBDevice
 from winter_agent_v2.escalation_queue import (
     AUTO_ESCALATION_CONDITIONS,
@@ -6938,6 +6940,12 @@ class ControlPanel:
         # Full structured output belongs only in latest.log. Rendering large
         # JSON blobs in Tk made the UI appear flooded and could stall it.
         self._idle_buttons(); self._enforce_retention(); self.refresh()
+        # After the refresh, not before: the two console lines above read the file this writes, so
+        # the round that just ended is the first one whose numbers are folded in, and the operator
+        # sees them one round later rather than never (which is what happened while nothing wrote
+        # the file at all).
+        self._refresh_learning_funnel()
+        self._maybe_run_nightly_learning()
         fatal = is_fatal_stop(str(summary["reason"]))
         self.runtime_store.update(agent_state=summary["agent_state"], stop_category=category,
                                   runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=summary["reason"],
@@ -7043,6 +7051,63 @@ class ControlPanel:
         )
         if removed:
             self._append(f"磁盘保护：已清理 {len(removed)} 张过期或超额运行截图。")
+
+    def _refresh_learning_funnel(self) -> None:
+        """Re-fold the §38 funnel once per round, so §36's console lines are current.
+
+        The panel *reads* ``learning/learning_funnel.json`` on every UI tick (see the
+        ``values["learning"]`` lines in ``refresh``), and until this method existed nothing in the
+        panel ever wrote it -- the numbers were whatever the last manual
+        ``tools/learning_report.py --funnel`` had left behind, which is a console that looks live
+        and is not.  That is the specific failure the directive's §36 is trying to avoid.
+
+        Called at the round boundary rather than on the tick, for the reason the comment at the
+        read site gives: the fold walks the episode stream (measured 2026-10-01: 123.7 MB /
+        ~1.7 s), so on a one-second tick it would make the console the slowest thing in the
+        process.  At the round boundary there is nothing else to do -- the panel is already
+        waiting out ``next_cycle_delay`` -- and it sits beside ``_enforce_retention``, which is
+        the same class of once-per-round housekeeping.
+
+        A failure here must not take a round down: the funnel is a *reading*, and a reading that
+        cannot be taken is a stale line, not a stopped AUTO.
+        """
+        try:
+            learning_funnel.refresh(root=ROOT)
+        except Exception as exc:  # noqa: BLE001 - a readout must never stop the loop
+            self._append(f"学习效果刷新失败（读数保持上一次的值）：{type(exc).__name__}: {exc}")
+
+    def _maybe_run_nightly_learning(self) -> None:
+        """Start §21's offline pass once a night, in its own process.
+
+        Two decisions, both deliberate:
+
+        * **its own process.**  The pass hashes frames, and the count is whatever the stores have
+          accumulated -- so running it on the Tk thread would freeze the console for however long
+          that takes.  It is launched detached through ``winproc``, the same way this panel already
+          launches the live loop, and it is *read-only with respect to the device*: §21 says the
+          offline pass must not operate the game, and it can't -- it only reads screenshots and
+          writes ``knowledge/offline/``.
+        * **the marker is written before the launch.**  See ``offline_learning.mark_nightly_run``:
+          a pass that dies at startup must not be relaunched at every round boundary all night.
+
+        The timing rule itself is not here; it is ``offline_learning.is_nightly_run_due``, so it can
+        be tested without a clock or a Tk root -- the same split ``next_cycle_delay`` already uses.
+        """
+        now = datetime.now().astimezone()
+        if not offline_learning.is_nightly_run_due(now, offline_learning.last_run_date(ROOT)):
+            return
+        offline_learning.mark_nightly_run(now, ROOT)
+        try:
+            winproc.spawn_detached(
+                [sys.executable, str(ROOT / "tools" / "learning_report.py"),
+                 "--offline", "--root", str(ROOT)],
+                log_path=ROOT / offline_learning.NIGHTLY_LOG,
+                cwd=str(ROOT),
+            )
+            self._append("离线夜间学习已启动（只读截图建索引，不操作设备）。")
+        except Exception as exc:  # noqa: BLE001 - a nightly job that cannot start is not fatal
+            self._append(f"离线夜间学习未能启动：{type(exc).__name__}: {exc}")
+
 
     def _render_preview(self) -> None:
         if self.preview_source is None or not hasattr(self, "preview"): return
