@@ -37,11 +37,12 @@ point (宪法 A §24.2).
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Callable, Iterable, Mapping
 
 from .fishing_session import FishingSessionController
 from .fishing_vision import detect_fishing, FishingVision
+from .models import Page
 from .rally import (
     RallyTarget,
     live_rally_join_point,
@@ -110,6 +111,8 @@ TRAINING_SKILLS = frozenset({"TRAIN_TROOPS", "SELECT_TRAINING_CAMP",
 STAMINA_FLOOR = 30.0
 
 SESSION_ROUTES: tuple[SessionRoute, ...] = (
+    SessionRoute(goal_id='AVOID_STAMINA_WASTE',adapter='bear',skills=frozenset({'START_RALLY'}),
+                 step_budget=14,time_budget_s=120.,extras={'target':'POLAR_TERROR','max_joins':1,'stamina_sink':True}),
     SessionRoute(goal_id="OBSERVE_FISHING_STATE", adapter="fishing",
                  skills=frozenset({"READ_FISHING_STATE"}), step_budget=5, time_budget_s=60.0,
                  extras={"observe_only": True}),
@@ -669,12 +672,17 @@ class BearSessionAdapter(SessionAdapter):
         self.refreshes = 0
         self.full_races = 0
         self.started = False
+        self._stamina_polar = False
+        self._polar_search_sent = self._polar_target_confirmed = self._polar_dispatched = False
+        self._polar_words = []
+        self._polar_before = None
 
     def configure(self, extras: Mapping[str, Any],
                   resource_budget: Mapping[str, float] | None = None) -> None:
         data = extras or {}
         if data.get("target"):
             self.target = str(data["target"])
+        self._stamina_polar = bool(data.get('stamina_sink'))
         joins = _as_int(data.get("max_joins"))
         if joins and joins > 0:
             self.max_joins = joins
@@ -685,6 +693,26 @@ class BearSessionAdapter(SessionAdapter):
         world = host.observe("session_bear")
         if world is None:
             return None
+        if self._stamina_polar:
+            self._polar_words = [str(t.get('text','')) for t in host.ocr() if isinstance(t,Mapping)]
+            self._polar_before = self._polar_before or world
+            if self._polar_dispatched and any(w in self._polar_words for w in ('取消集结','解散集结')):
+                text = ' '.join(self._polar_words)
+                countdown = re.search(r'(?<!\d)(\d{1,2}):(\d{2})(?!\d)',text)
+                if countdown and ('集结中' in text or '集结倒计时' in text):
+                    rally=dict(world.alliance.get('rally') or {})
+                    rally.update(ownership='SELF',target_type='POLAR_TERROR',
+                        remaining_seconds=int(countdown[1])*60+int(countdown[2]),
+                        source='CURRENT_FRAME_OWN_RALLY_CONTROL_AND_COUNTDOWN')
+                    world=replace(world,alliance={**world.alliance,'rally':rally})
+            from .verifier import verify_rally_created
+            proof = verify_rally_created(self._polar_before,world,'POLAR_TERROR')
+            if self._polar_dispatched and proof.ok:
+                self.started = True
+                self.starts = 1
+                host.note('GIANT_BEAST_RALLY_STARTED',target='POLAR_TERROR',
+                          stamina_before=_stamina_of(self._polar_before),stamina_after=_stamina_of(world),
+                          verifier=dict(proof.evidence or {}))
         rows = _rally_rows(world)
         # The target comes from the Goal when the Goal named one, and from the route
         # otherwise -- never from a row, because a row's target is what we are matching
@@ -720,6 +748,8 @@ class BearSessionAdapter(SessionAdapter):
     # --------------------------------------------------------------- complete
 
     def is_complete(self, context: SessionContext, host: SessionHost, domain: Any) -> tuple[bool, str]:
+        if self._stamina_polar:
+            return (self.started,'GIANT_BEAST_RALLY_STARTED' if self.started else '')
         if self.joins >= self.max_joins:
             return True, "BEAR_JOIN_BUDGET_REACHED"
         if self.refreshes >= 3 and not domain.rows:
@@ -737,6 +767,8 @@ class BearSessionAdapter(SessionAdapter):
     # --------------------------------------------------------------- choose
 
     def choose_step(self, context: SessionContext, host: SessionHost, domain: Any) -> SessionStep | None:
+        if self._stamina_polar:
+            return self._polar_step(domain)
         if self.start_once and not self.started and self.starts == 0 and self.joins == 0:
             # One START per session, and it goes first: the bear special slot is what makes
             # the role a leader, and every later join benefits from the rally existing.
@@ -759,6 +791,11 @@ class BearSessionAdapter(SessionAdapter):
 
     def verify_step(self, context: SessionContext, host: SessionHost, step: SessionStep,
                     execution: StepExecution) -> StepVerdict:
+        if self._stamina_polar and step.kind == STEP_PRINTED_TAP:
+            if step.target == '出征' and execution.executed:
+                self._polar_dispatched = True
+            return StepVerdict(StepOutcome.PROGRESS if execution.executed else StepOutcome.FAILED,
+                               execution.reason,dict(execution.evidence or {}))
         # The registered verifier is the domain verifier here: START_RALLY / JOIN_RALLY have
         # their own target-scoped checks in the runtime, and duplicating them would be the
         # second implementation the directive forbids.
@@ -774,6 +811,47 @@ class BearSessionAdapter(SessionAdapter):
             self.joins += 1
         return StepVerdict(StepOutcome.SUCCESS, verdict.reason or "BEAR_STEP_VERIFIED",
                            dict(verdict.evidence or {}))
+
+    def _polar_step(self, domain):
+        world = domain.world
+        words = self._polar_words
+        if self._polar_target_confirmed:
+            if self._polar_dispatched:
+                if '集结中' in words:
+                    return SessionStep(0,STEP_PRINTED_TAP,target='集结中',reason='inspect own newly dispatched rally')
+                return SessionStep(0,STEP_OBSERVE_ONLY,reason='do not duplicate pending rally dispatch')
+            if '出征' in words:
+                if domain.idle_marches is None or domain.idle_marches <= 0:
+                    return None
+                if not any('胜券在握' in word for word in words):
+                    return None  # unknown/losing troop assessment never authorizes dispatch
+                return SessionStep(0,STEP_PRINTED_TAP,target='出征',reason='authorized polar rally dispatch')
+            for word in ('发起集结','集结'):
+                if word in words:
+                    return SessionStep(0,STEP_PRINTED_TAP,target=word,reason='START_RALLY POLAR_TERROR')
+            return SessionStep(0,STEP_OBSERVE_ONLY,reason='fresh rally-created observation')
+        if world.resource_selected_tab == 'GIANT_BEAST':
+            if not self._polar_search_sent:
+                self._polar_search_sent = True
+                return SessionStep(0,STEP_SKILL,skill_id='SUBMIT_GIANT_BEAST_SEARCH',reason='client locates polar target')
+            card = world.beast_search_result or {}
+            if card.get('has_rally'):
+                self._polar_target_confirmed = True
+                return SessionStep(0,STEP_PRINTED_TAP,target='集结',reason='giant tab search returned rally target')
+            if card.get('title_text') and card.get('title_level') is not None:
+                label = next((w for w in words if card['title_text'] in w and '等级' in w),None)
+                if label:
+                    return SessionStep(0,STEP_PRINTED_TAP,target=label,reason='open current polar target card')
+            return SessionStep(0,STEP_OBSERVE_ONLY,reason='await current polar search result')
+        if world.page is Page.MAP and world.resource_search_open:
+            return SessionStep(0,STEP_SKILL,skill_id='SELECT_GIANT_BEAST_TAB',reason='select live giant search label')
+        if self._polar_search_sent:
+            card = world.beast_search_result or {}
+            if card.get('has_rally'):
+                self._polar_target_confirmed = True
+                return SessionStep(0,STEP_PRINTED_TAP,target='集结',reason='current searched polar target')
+            return SessionStep(0,STEP_OBSERVE_ONLY,reason='do not duplicate submitted search')
+        return SessionStep(0,STEP_SKILL,skill_id='SEARCH_RESOURCE',reason='open shared client search')
 
     # --------------------------------------------------------------- recover
 

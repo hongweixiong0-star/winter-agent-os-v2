@@ -1111,6 +1111,14 @@ class RuleBrain:
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_intel_route")
             if world.page is Page.MAP and world.resource_search_open:
                 return Decision("BACK", "close_resource_search_for_intel_goal", world.confidence, "resource_search_closed")
+        if self.current_goal == 'STAMINA_WAIT':
+            return Decision('SAFE_STOP','stamina_sink_wait_or_blocked',1.0,'switch_task')
+        if self.current_goal == 'GIANT_BEAST':
+            if world.page is Page.HOME:
+                return Decision('OPEN_MAP','giant_stamina_requires_map',world.confidence,'map_opened')
+            if world.page is not Page.MAP:
+                return Decision('BACK','return_to_giant_search_context',world.confidence,'map_opened')
+            return Decision('START_RALLY','giant_stamina_shared_rally_session',world.confidence,'polar_terror_rally_created')
         if self.current_goal == "BEAST_HUNT":
             if world.page is Page.HOME:
                 return Decision("OPEN_MAP", "beast_goal_requires_map", world.confidence, "map_opened")
@@ -2667,15 +2675,6 @@ class RuleBrain:
                         # Hand the stamina goal to its already measured Intel route after
                         # closing the panel.  A future AUTO cycle gets a fresh frame and may
                         # retry the beast tab if the UI becomes readable.
-                        if self.goal_id == "AVOID_STAMINA_WASTE" and not self.spend_route_switched:
-                            self.spend_route_switched = True
-                            self.current_goal = "SPEND_STAMINA"
-                            return Decision(
-                                "BACK",
-                                "unreadable_beast_tabs_close_panel_and_switch_to_intel",
-                                world.confidence,
-                                "resource_search_closed",
-                            )
                         return Decision(
                             "SAFE_STOP",
                             "beast_search_tabs_unreadable_without_stamina_handoff",
@@ -2689,18 +2688,6 @@ class RuleBrain:
                 if self.beast_scans_used < self.max_beast_scans:
                     self.beast_scans_used += 1
                     return Decision("SCAN_MAP_FOR_BEAST", "verified_beast_target_not_visible_scanning_map", world.confidence, "beast_target_resent")
-                if self.goal_id == "AVOID_STAMINA_WASTE" and not self.spend_route_switched:
-                    # The scan budget is spent and no dispatchable target appeared, so this route
-                    # cannot spend on this map at all -- measured: five runs, 0 stamina, and the
-                    # templates match nothing on 23 frames because they search bare snow.  The
-                    # operator's rule for exactly this case is to use another verified task that
-                    # costs stamina, and intel is the one this goal already knows how to ride
-                    # (SPEND_STAMINA shares the intel flow; the beast way is the only one that was
-                    # ever going to be scanned for).  Bounded: once per run, and only after the
-                    # beast route has had its whole budget.
-                    self.spend_route_switched = True
-                    self.current_goal = "SPEND_STAMINA"
-                    return Decision("OPEN_INTEL", "spend_goal_switches_to_intel_no_beast_in_view", world.confidence, "intel_page_open")
                 return Decision("SAFE_STOP", "verified_beast_target_not_visible", 1.0, "refresh_or_switch_task")
             if self.current_goal == "HOME":
                 # This branch sits inside ``world.page is Page.MAP`` (line's enclosing block), so the

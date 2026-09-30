@@ -62,6 +62,7 @@ def rally_target_for_goal(goal_id: str, evidence: Mapping[str, Any] | None = Non
             "PARTICIPATE_POLAR_TERROR": RallyTarget.POLAR_TERROR,
             "JOIN_POLAR_TERROR_RALLY": RallyTarget.POLAR_TERROR,
             "START_POLAR_TERROR_RALLY": RallyTarget.POLAR_TERROR,
+            "SPEND_STAMINA_ON_GIANT_BEAST": RallyTarget.POLAR_TERROR,
         }.get(str(goal_id or "").strip().upper())
     target = _as_rally_target(raw) if raw else RallyTarget.UNKNOWN
     return None if target is RallyTarget.UNKNOWN else target

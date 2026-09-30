@@ -921,6 +921,10 @@ def v2_registry() -> SkillRegistry:
             risk="LOW",
             state=SkillState.CANDIDATE,
         ),
+        Skill('SELECT_GIANT_BEAST_TAB','Select the live 冰原巨兽 search tab',Page.MAP,
+              Action('TAP_SEMANTIC','GIANT_BEAST_SEARCH_TAB'),risk='LOW',state=SkillState.CANDIDATE),
+        Skill('SUBMIT_GIANT_BEAST_SEARCH','Locate a polar terror using the client search',Page.MAP,
+              Action('TAP_SEMANTIC','BTN_RESOURCE_SEARCH_SUBMIT'),risk='LOW',state=SkillState.CANDIDATE),
         # Tapping 搜索 spends nothing and starts no march: it asks the client to
         # find and centre a beast, which is what puts a target in the viewport
         # for the SELECT_BEAST_TARGET_* hop that follows.  The stamina is spent,

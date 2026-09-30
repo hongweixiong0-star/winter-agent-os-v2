@@ -369,6 +369,12 @@ class LiveRuntime:
         # dispatched, so leaving these two out would make the whole search route
         # dead code while every test still passed (the failure mode #45 records).
         "OPEN_BEAST_SEARCH_TAB": verify_beast_search_tab_selected,
+        "SELECT_GIANT_BEAST_TAB": lambda before,after: VerificationResult(
+            before.resource_search_open and after.resource_selected_tab == 'GIANT_BEAST',
+            'GIANT_BEAST_TAB_SELECTED' if after.resource_selected_tab == 'GIANT_BEAST' else 'GIANT_BEAST_TAB_NOT_PROVEN'),
+        "SUBMIT_GIANT_BEAST_SEARCH": lambda before,after: VerificationResult(
+            before.resource_selected_tab == 'GIANT_BEAST' and bool(after.beast_search_result.get('title_text') or after.beast_search_result.get('has_rally')),
+            'GIANT_BEAST_SEARCH_RESULT' if after.beast_search_result else 'GIANT_BEAST_SEARCH_NOT_PROVEN'),
         "SUBMIT_BEAST_SEARCH": verify_beast_search_submitted,
         "ATTACK_BEAST_CARD": verify_beast_card_march_open,
         "BEAST_HUNT": verify_beast_march_open,
@@ -891,9 +897,13 @@ class LiveRuntime:
         """
         out = []
         for goal in goals:
+            if goal.goal_id == 'AVOID_STAMINA_WASTE':
+                self._stamina_route(goal,self._gate())
             if not self._policy_allows(goal.goal_id):
                 continue
             blocked = self._gate().blocks(goal)
+            if blocked is not None and goal.goal_id == 'AVOID_STAMINA_WASTE' and blocked.capability == 'SPEND_STAMINA_ON_BEAST' and (goal.evidence or {}).get('stamina_sink') in {'INTEL','GIANT_BEAST'}:
+                blocked = None  # a failed solo-beast path cannot veto another stamina sink
             if blocked is not None:
                 if all(item.goal_id != blocked.goal_id for item in deferrals):
                     deferrals.append(blocked)
@@ -1126,6 +1136,28 @@ class LiveRuntime:
                 out[str(goal.goal_id)] = bonus
         return out
 
+    def _stamina_route(self, best_goal, gate):
+        from .operations_policy import choose_stamina_goal
+        data = best_goal.evidence or {}
+        intel = data.get('intel_state') or {}
+        blocked_states = {'BLOCKED','COOLDOWN','DEFERRED','DEVELOPMENT_PENDING'}
+        intel_blocked = (gate.capabilities.get('READ_INTEL_LIST') or (None,))[0] in blocked_states
+        beast_blocked = (gate.capabilities.get('SPEND_STAMINA_ON_BEAST') or (None,))[0] in blocked_states
+        runnable_intel = (not intel_blocked and intel.get('status') == 'AVAILABLE'
+                          and intel.get('untried_pins', intel.get('pins', 1)) != 0)
+        own = data.get('own_rally') or {}
+        sink = choose_stamina_goal(data.get('current'), 'AVAILABLE' if runnable_intel else 'NOT_AVAILABLE',
+            not getattr(self,'_giant_stamina_failed',False), not beast_blocked,
+            idle_slots=data.get('idle_marches'), own_rally=own.get('ownership') == 'SELF'
+                and isinstance(own.get('remaining_seconds'),int) and own['remaining_seconds'] > 0)
+        route = {'INTEL':'SPEND_STAMINA','GIANT_BEAST':'GIANT_BEAST','BEAST_HUNT':'BEAST_HUNT'}.get(sink.goal,'STAMINA_WAIT')
+        data.update(stamina_sink=sink.goal, stamina_sink_reason=sink.reason)
+        if sink.goal == 'GIANT_BEAST':
+            data['rally_target'] = 'POLAR_TERROR'
+        else:
+            data.pop('rally_target',None)
+        return route
+
     def _sync_brain_goal(self, best_goal, gate) -> None:
         """Keep the brain's route and task identity aligned with this scheduler tick.
 
@@ -1145,10 +1177,7 @@ class LiveRuntime:
 
         route = route_for(best_goal.goal_id)
         if best_goal.goal_id == "AVOID_STAMINA_WASTE":
-            # This Goal can use the Intel route only while the beast capability is blocked.
-            beast = (gate.capabilities.get("SPEND_STAMINA_ON_BEAST") or (None,))[0]
-            if beast in {"BLOCKED", "COOLDOWN", "DEFERRED", "DEVELOPMENT_PENDING"}:
-                route = "SPEND_STAMINA"
+            route = self._stamina_route(best_goal, gate)
 
         changed = (
             self.brain.current_goal != route
@@ -1610,6 +1639,9 @@ class LiveRuntime:
         except (TypeError, ValueError):
             pass
         goals = discover(world, **discover_kwargs)
+        for goal in goals:
+            if goal.goal_id == 'AVOID_STAMINA_WASTE':
+                self._stamina_route(goal, self._gate())
         if self.goal_store is not None:
             try:
                 self.goal_store.write(world, goals, role_id=role_id)
@@ -3831,6 +3863,8 @@ class LiveRuntime:
             if not located.get("recognized") or not point:
                 return None
             return point
+        if semantic == 'GIANT_BEAST_SEARCH_TAB':
+            return frame.resource_giant_beast_tab_norm if frame.page is Page.MAP and frame.resource_search_open else None
         if semantic == "BEAST_SEARCH_TAB":
             # The 野兽 tab, tapped where this frame's own OCR read its printed label
             # (see ``ocr.read_resource_tab_labels``).
@@ -6325,6 +6359,7 @@ class LiveRuntime:
         # recomputed per step, and a twelve-step run printed the identical line twelve
         # times (measured 2026-09-18).
         self._printed_deferrals: set[str] = set()
+        self._giant_stamina_failed = False
         # The meters this run has read so far; see _remember_goal_meters.
         self._goal_meters: dict[str, float] = {}
         self._committed_goal = ""
@@ -7286,6 +7321,8 @@ class LiveRuntime:
                 session_ms = (time.monotonic() - session_started) * 1000.0
                 latency["session_ms"] = session_ms
                 if session_result is not None:
+                    if selected_id == 'AVOID_STAMINA_WASTE' and (best_goal.evidence or {}).get('stamina_sink') == 'GIANT_BEAST' and not session_result.completed:
+                        self._giant_stamina_failed = True
                     metrics = dict(getattr(session_result, "metrics", {}) or {})
                     self._record_session_timeline("SESSION_ENDED",
                         session_id=session_result.session_id, goal_id=selected_id,
@@ -7340,7 +7377,7 @@ class LiveRuntime:
                         f"verified={metrics.get('SESSION_VERIFIED_STEPS')} "
                         f"{session_ms:.0f}ms -- returning to the scheduler"
                     )
-                    if not session_result.completed:
+                    if not session_result.completed and not (selected_id == 'AVOID_STAMINA_WASTE' and getattr(self,'_giant_stamina_failed',False)):
                         self._yield_to_next_goal(best_goal, deferrals, decision, session_result.reason)
                     if str(session_result.reason).startswith("SESSION_DOMAIN_STUCK"):
                         loop_return_pending = {"session_id": session_result.session_id,

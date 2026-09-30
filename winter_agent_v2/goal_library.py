@@ -1129,9 +1129,14 @@ class GoalLibrary:
                 # refuses to schedule a skill the brain has decided on.
                 available_skills=(
                     "INTEL_CLAIM_REWARDS", "BEAST_HUNT",
-                    "SEARCH_RESOURCE", "OPEN_BEAST_SEARCH_TAB", "SUBMIT_BEAST_SEARCH",
+                      "SEARCH_RESOURCE", "OPEN_BEAST_SEARCH_TAB", "SUBMIT_BEAST_SEARCH",
+                      "SELECT_GIANT_BEAST_TAB", "SUBMIT_GIANT_BEAST_SEARCH", "START_RALLY",
                 ),
-                evidence={"current": stamina, "threshold": STAMINA_FLOOR, "reused": stamina_from_store},
+                evidence={"current": stamina, "threshold": STAMINA_FLOOR, "reused": stamina_from_store,
+                          "intel_state": dict(world.intel or ((observations or {}).get('intel', {}).get('reading')
+                              if not (observations or {}).get('intel', {}).get('overdue', True) else {}) or {}),
+                          "idle_marches":world.idle_marches,
+                          "own_rally":dict((world.alliance or {}).get('rally') or {})},
                 # Stamina still at or above the floor is exactly the work left to do, and
                 # it is what makes a beast kill progress while a map pan does not.  At the
                 # floor itself this is 1 rather than 0, which is the boundary above stated

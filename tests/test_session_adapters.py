@@ -149,7 +149,7 @@ class RoutingIsByGoalNotBySkillTests(unittest.TestCase):
     """
 
     def test_every_route_names_a_registered_adapter(self):
-        self.assertEqual(len(SESSION_ROUTES), 12)
+        self.assertEqual(len({route.goal_id for route in SESSION_ROUTES}), len(SESSION_ROUTES))
         for route in SESSION_ROUTES:
             with self.subTest(goal=route.goal_id):
                 self.assertIn(route.adapter, SESSION_ADAPTERS)

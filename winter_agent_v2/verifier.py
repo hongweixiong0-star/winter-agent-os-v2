@@ -2841,7 +2841,7 @@ def verify_rally_created(before: WorldState, after: WorldState, target: str) -> 
     own = rally.get("ownership") == "SELF"
     countdown = rally.get("remaining_seconds")
     countdown_started = isinstance(countdown, int) and countdown > 0
-    identity_ok = str(rally.get("target_type", target)).upper() == target.upper()
+    identity_ok = str(rally.get("target_type", target if target.upper() == 'BEAR' else '')).upper() == target.upper()
     special_transition = target.upper() == "BEAR" and before.bear_rally_special_available is True and after.bear_rally_special_available is False
     ok = identity_ok and ((own and countdown_started) or special_transition)
     return VerificationResult(ok, "OK" if ok else "RALLY_CREATE_NOT_PROVEN",

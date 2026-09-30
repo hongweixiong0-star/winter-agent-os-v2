@@ -55,7 +55,8 @@ def choose_troop_rotation(queue_busy: Mapping[str, bool], trained: Mapping[str, 
     return PolicyDecision("TRAIN", "least_trained_available_troop", {"troop_type": target})
 
 
-def choose_stamina_goal(current: int | None, intel_status: str, giant_beast_ready: bool, beast_ready: bool) -> PolicyDecision:
+def choose_stamina_goal(current: int | None, intel_status: str, giant_beast_ready: bool, beast_ready: bool,
+                        *, idle_slots: int | None = None, own_rally: bool = False) -> PolicyDecision:
     if current is None:
         return PolicyDecision("OBSERVE_STAMINA", "stamina_unknown_no_spend", {}, True)
     # ``<`` rather than ``<=``: the operator's requirement is stamina UNDER 30, and 30
@@ -64,8 +65,11 @@ def choose_stamina_goal(current: int | None, intel_status: str, giant_beast_read
     # there and once here, which is the drift this comment exists to catch.
     if current < 30:
         return PolicyDecision("NONE", "stamina_reserve_not_exceeded", {"stamina": current})
-    if intel_status in {"AVAILABLE", "CLAIMABLE", "IN_PROGRESS"}:
+    if intel_status == "AVAILABLE":
         return PolicyDecision("INTEL", "stamina_at_or_above_floor_intel_first", {"stamina": current})
+    if idle_slots == 0 or own_rally:
+        return PolicyDecision("WAIT", "own_rally_pending" if own_rally else "no_physical_idle_march",
+                              {"stamina":current}, True)
     if giant_beast_ready:
         return PolicyDecision("GIANT_BEAST", "intel_unavailable_use_verified_giant_beast", {"stamina": current})
     if beast_ready:
