@@ -50,6 +50,20 @@ class EventGoalTests(unittest.TestCase):
         self.assertEqual(selection.index, 1)
         self.assertEqual(selection.decision.skill, "TRAIN_TROOPS")
 
+    def test_unknown_live_event_counters_do_not_crash_global_selection(self):
+        from winter_agent_v2.event_goal import event_priority_modifier
+        for remaining, missing in [(None, 0), (1000, None), ("UNKNOWN", 10), (1000, "")]:
+            with self.subTest(remaining=remaining, missing=missing):
+                raw = {"remaining_seconds": remaining, "points_missing": missing,
+                       "scoring_actions": [{"skill_id": "TRAIN_TROOPS", "event_value": 100}]}
+                self.assertEqual(event_priority_modifier({"minimum_guarantee": raw}, "TRAIN_TROOPS"), 0)
+                self.assertEqual(raw["remaining_seconds"], remaining)
+                build = WorldState(page=Page.BUILDING, building={"upgradeable": True},
+                                   events={"minimum_guarantee": raw}, confidence=1)
+                train = WorldState(page=Page.TRAINING, training={"trainable": True},
+                                   events={"minimum_guarantee": raw}, confidence=1)
+                self.assertIsNotNone(Scheduler(RuleBrain(), v2_registry(), Executor()).select_next((build, train)))
+
 
 if __name__ == "__main__":
     unittest.main()

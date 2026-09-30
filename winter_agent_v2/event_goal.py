@@ -152,9 +152,16 @@ def event_priority_modifier(events: dict[str, Any], skill_id: str) -> float:
     raw = events.get("minimum_guarantee") if isinstance(events, dict) else None
     if not isinstance(raw, dict) or raw.get("minimum_guarantee_complete") is True:
         return 0.0
-    if int(raw.get("remaining_seconds", 0)) <= 0 or int(raw.get("points_missing", 0)) <= 0:
+    try:
+        remaining = int(raw.get("remaining_seconds"))
+        missing = int(raw.get("points_missing"))
+    except (TypeError, ValueError, OverflowError):
+        # Unknown live counters confer no deadline bonus. They do not expire
+        # the event or stop the scheduler's other role/task candidates.
         return 0.0
-    level = deadline_level(int(raw["remaining_seconds"]))
+    if remaining <= 0 or missing <= 0:
+        return 0.0
+    level = deadline_level(remaining)
     deadline_weight = {DeadlineLevel.NORMAL: 1.0, DeadlineLevel.ELEVATED: 2.0,
                        DeadlineLevel.HIGH: 4.0, DeadlineLevel.P0: 10.0}[level]
     best = 0.0
