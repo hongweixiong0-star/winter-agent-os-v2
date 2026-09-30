@@ -48,6 +48,7 @@ from __future__ import annotations
 
 import json
 import statistics
+import subprocess
 import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
@@ -97,22 +98,58 @@ def load_rows(path: Path) -> tuple[list[tuple[int, dict[str, Any]]], int]:
     return rows, skipped
 
 
-def episode_fields(row: Mapping[str, Any]) -> dict[str, Any]:
-    """The episode's own vocabulary, normalised once so both readings share it."""
+def code_revision() -> str:
+    """The revision this replay actually executed.
+
+    Not decoration: ``LOOP_DETECTOR_V1``'s counting rules changed twice on 2026-09-30 after the
+    first replay was written (``772c0f9`` wired production widening and added the timeline
+    fields, ``014a4df`` made ``LOOP_RECOVERED`` require verified progress on the new action).
+    A count without the revision it came from is not evidence, so the revision travels with it.
+    """
+    try:
+        result = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True,
+                                text=True, encoding="utf-8", errors="replace", timeout=20,
+                                check=False)
+    except OSError:
+        return "(unknown)"
+    return result.stdout.strip() or "(unknown)"
+
+
+def episode_fields(row: Mapping[str, Any], *, state_source: str = "recorded") -> dict[str, Any]:
+    """The episode's own vocabulary, normalised once so both readings share it.
+
+    ``state_source`` decides what "the state" means, and it is a parameter because the two
+    options are the *same run* measured twice:
+
+    * ``recorded`` -- a non-empty ``state_after`` wins, else ``state_before``.  The context the
+      action was taken in, which is what the signature is supposed to carry.
+    * ``after_only`` -- ``state_after`` whenever it is a ``Mapping``.  This is what this script
+      did before 2026-09-30, and it is kept so the change is a measurement rather than an
+      assertion.
+
+    A session step (``decision_reason`` starts with ``session:``) records ``state_before`` and
+    an **empty** ``state_after`` -- the engine's own step does not take a post-read.  An empty
+    mapping is still a ``Mapping``, so ``after_only`` hashed the context over an all-``None``
+    projection for 562 of the stream's rows.  ``empty != none``: an unread state is not a
+    read-empty one.
+    """
     after = row.get("state_after")
-    if not isinstance(after, Mapping):
-        after = row.get("state_before")
-    if not isinstance(after, Mapping):
-        after = {}
+    before = row.get("state_before")
+    if state_source == "after_only":
+        state = after if isinstance(after, Mapping) else before
+    else:
+        state = after if (isinstance(after, Mapping) and after) else before
+    if not isinstance(state, Mapping):
+        state = {}
     action = row.get("action")
     action = action if isinstance(action, Mapping) else {}
     return {
         "role_id": str(row.get("role_id") or ""),
-        "page": str(after.get("page") or ""),
+        "page": str(state.get("page") or ""),
         "goal_id": str(row.get("goal_id") or ""),
         "skill_id": str(row.get("skill") or action.get("kind") or ""),
         "semantic_target": str(row.get("control") or action.get("target") or ""),
-        "state_hash": relevant_state_hash(after),
+        "state_hash": relevant_state_hash(state),
         "outcome": _RESULT_TO_OUTCOME.get(str(row.get("result") or "").upper(), ""),
         "declared_progress": row.get("goal_progress"),
     }
@@ -170,11 +207,12 @@ class _PageOnlyNavigation(LoopDetector):
 
 def replay(rows: Iterable[tuple[int, dict[str, Any]]], *, reading: str, per_run: bool,
            detector_factory: type[LoopDetector] = LoopDetector,
-           keep_detections: bool = True) -> dict:
+           keep_detections: bool = True,
+           state_source: str = "recorded") -> dict:
     """One fresh detector per group, fed every row of that group in stream order."""
     flows: dict[tuple[str, ...], list[tuple[int, dict[str, Any]]]] = defaultdict(list)
     for line_no, row in rows:
-        fields = episode_fields(row)
+        fields = episode_fields(row, state_source=state_source)
         fields["trace_id"] = str(row.get("trace_id") or "")
         flows[group_key(fields, per_run=per_run)].append((line_no, fields))
 
@@ -253,6 +291,7 @@ def replay(rows: Iterable[tuple[int, dict[str, Any]]], *, reading: str, per_run:
 
     return {
         "reading": reading,
+        "state_source": state_source,
         "grouping": "trace_id" if per_run else "(trace_id, goal_id)",
         "groups": len(flows),
         "steps": steps,
@@ -299,9 +338,11 @@ def worked_examples(result: dict) -> dict[str, Any]:
 def main() -> int:
     rows, skipped = load_rows(EPISODES)
     print(f"loaded {len(rows)} rows from {EPISODES} (skipped {skipped} unparseable)")
+    print(f"code_revision {code_revision()}")
 
     report: dict[str, Any] = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        "code_revision": code_revision(),
         "source": {"path": str(EPISODES.relative_to(ROOT)), "rows": len(rows),
                    "unparseable": skipped},
         "mapping": {
@@ -310,7 +351,9 @@ def main() -> int:
             "goal_id": "goal_id",
             "skill_id": "skill (falls back to action.kind)",
             "semantic_target": "control (falls back to action.target)",
-            "state_hash": "relevant_state_hash(state_after) -- the same five fields as live",
+            "state_hash": "relevant_state_hash(state_after) -- the same five fields as live; "
+                          "state_after when it is a non-empty mapping, else state_before "
+                          "(a session step records no post-state)",
             "verifier_outcome": "result, FAILURE normalised to the engine's FAILED",
             "progress[declared]": "goal_progress; None when the row does not carry it",
             "progress[outcome]": "goal_progress, else progress_from_outcome(result) "
@@ -327,6 +370,8 @@ def main() -> int:
             "page_only_navigation": replay(rows, reading="outcome", per_run=False,
                                            detector_factory=_PageOnlyNavigation,
                                            keep_detections=False),
+            "after_only_state": replay(rows, reading="outcome", per_run=False,
+                                       state_source="after_only", keep_detections=False),
         },
         "limitations": [
             "Rows were produced by the runtime's own step loop, not by the Session Engine; "
@@ -339,9 +384,11 @@ def main() -> int:
             "A flow here spans a whole (trace_id, goal_id), which is longer than a production "
             "session (budget 5-12 steps), so a deferral the replay reaches may never be "
             "reached in production -- see steps_until_first_deferral.",
-            "The secondary readings (outcome_per_run, page_only_navigation) record their "
-            "counters only: their per-detection rows are not retained, and a re-run is the "
-            "way to inspect them.",
+            "The secondary readings (outcome_per_run, page_only_navigation, after_only_state) "
+            "record their counters only: their per-detection rows are not retained, and a "
+            "re-run is the way to inspect them. after_only_state is the controlled A/B for the "
+            "state-source fix -- it reproduces the pre-2026-09-30 extraction on the same rows, "
+            "so the difference between it and 'outcome' is the fix and nothing else.",
         ],
     }
     report["worked_examples"] = worked_examples(report["readings"]["outcome"])
@@ -349,9 +396,11 @@ def main() -> int:
     (OUT_DIR / "replay_report.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    for name in ("declared", "outcome", "outcome_per_run", "page_only_navigation"):
+    for name in ("declared", "outcome", "outcome_per_run", "page_only_navigation",
+                 "after_only_state"):
         block = report["readings"][name]
-        print(f"---- {name}: groups={block['groups']} steps={block['steps']}")
+        print(f"---- {name}: state_source={block['state_source']} "
+              f"groups={block['groups']} steps={block['steps']}")
         print(json.dumps({"counters": block["counters"], "patterns": block["patterns"],
                           "flows_that_reached_defer": block["flows_that_reached_defer"],
                           "steps_until_first_deferral": block["steps_until_first_deferral"]},
