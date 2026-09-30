@@ -2611,3 +2611,42 @@ WDDM 把溢出换页到系统内存，GPU 干等。拐点**只有一层宽**（3
 **验收口径**：`MODEL_CONTEXT_MAX=32768` / `MAX_INPUT_BUDGET=28672`（=32768−4096 输出预留）/
 `OUTPUT_RESERVE=4096`，`winter_agent_v2/context_budget.py` 是这三个数唯一的算术恒等式来源，
 `launch_gui_model_server.CONTEXT` 从它导入而不是再写一遍。
+
+## 自学习闭环的契约（2026-10-01）
+
+**八、学习闭环的形状与它唯一合法的写出点。**
+`UNKNOWN → UI-Venus → SemanticAction → MAA → Verifier → 学习 → Candidate Skill → 晋升 → KNOWN`，
+越跑模型调用越少。落地在三个新模块：`unknown_learning.py`（已验证步台账 + Candidate 编译器）、
+`skill_repair.py`（自修复分析，只产 CANDIDATE_PATCH）、`offline_learning.py`（夜间帧聚类）。
+事实源：
+- 已验证步台账 `learning/unknown_verified_steps.jsonl`（append-only，`learning/**/*.jsonl` 已 gitignore）；
+- Candidate Skill `knowledge/skills/candidates/`（**每次归档即自动重编译**，见下）；
+- 漏斗/读数 `learning/learning_funnel.json`，`tools/learning_report.py` 是 CLI 入口。
+
+**九、三条结构性保证（不靠自觉，靠类型与路径）。**
+1. `LearnedStepCandidate` 数据类**没有 x/y/bbox 任何字段** ⇒ §10「模型 bbox 生命周期仅当前帧」
+   无法被违反；复用时改走 `find_printed_words` 在**当前帧**重新定位，于是
+   「陈旧记录 = 重新问模型」而不是死胡同。
+2. Candidate 文件自带 `not_yet` 字段，声明 "not registered, not runnable, not STABLE" ⇒
+   UI-Venus 无晋升权，§39 在文件层面成立。
+3. `tools/check_coordinate_hardcoding.py` 对学习路径报 0 violation ⇒ 学习层没有第二条点击链。
+
+**十、「谁调用它」审计——比「它测试过了吗」值钱得多（本轮方法论最大收获）。**
+2026-10-01 一次审计抓出三处**实现正确、测试全绿、但运行系统永远到不了**的模块：
+`compile_candidate_skills` 只有 CLI 调用者（§11 的桥根本没闭）；控制台每 tick 读
+`learning/learning_funnel.json` 而**没有任何地方写它**（数字冻结在最后一次手工运行 —— 一个
+「看起来活着」的假读数，比坏读数更贵）；`run_offline_pass` 同样只有 CLI（§21 从未运行）。
+**判据**：每写完一个模块，问「谁在真实运行路径上调用它」，答不出就是没做完。
+
+**十一、控制台读数的刷新点必须在轮次边界，不在 UI tick。**
+漏斗 fold 要走 episode 流（实测 2026-10-01：123.7 MB / ~1.7 s）。放在 1 秒 tick 上会让控制台
+成为进程里最慢的东西；放在轮次结束处（与 `_enforce_retention` 同处）则无事可做。已被生产验证：
+重启后 `learning_funnel.json` 的 mtime 随轮次结束推进（02:43:59 冻结 → 02:54:51 轮末 → 02:55:10 刷新）。
+
+**十二、§21 离线夜间学习：窗口 03:00–06:00 本地时间，每晚一次，独立进程，只读截图。**
+`offline_learning.is_nightly_run_due(now, last_date, window=(3,6))` 是**纯函数**（可脱离 Tk 测），
+`mark_nightly_run` 在 spawn **之前**落盘 —— 崩在启动的 pass 不得在整夜的每个轮末被反复重启，
+漏掉一晚是更便宜的失败。
+
+**验收边界（必须随结论一起说）**：以上全部是**代码路径层**证据。设备行为未取证 ——
+`SECOND_ENCOUNTER_VERIFIER_PASS` 需要真实 AUTO 走到 UNKNOWN 屏才能取得，不是靠测试断言。
