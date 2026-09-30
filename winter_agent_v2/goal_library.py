@@ -1386,6 +1386,7 @@ class GoalLibrary:
                 },
                 distance=1.0,
             ))
+        self._append_alliance_timed_provider(goals, world, role_id=role_id)
         self._append_prepared_workflows(goals)
         for page in world.rewards.get("verified_claimable", ()):
             goals.append(GoalState(
@@ -1656,6 +1657,35 @@ class GoalLibrary:
             ))
 
     @staticmethod
+    def _append_alliance_timed_provider(goals: list[GoalState], world: WorldState, *, role_id: str) -> None:
+        """Project current alliance event observations onto their existing executable goals.
+
+        This aggregate is a provider record, never a second execution instance. Bear and
+        calendar goals retain ownership of their skills, device lease and completion.
+        """
+        bear = world.events.get("bear") if isinstance(world.events, Mapping) else None
+        linked = [goal for goal in goals if goal.goal_id in {
+            "PARTICIPATE_BEAR", "DISCOVER_BEAR_RALLY_LIST"}]
+        state = "REGISTERED"
+        status = GoalStatus.UNKNOWN
+        if isinstance(bear, Mapping):
+            active = bear.get("status") == "ACTIVE" or (_optional_int(bear.get("remaining_seconds")) or 0) > 0
+            if active:
+                state = "OPEN"
+                if bear.get("auto_join_enabled") is True or bear.get("joinable_rally_count", 0):
+                    state = "READY"
+            elif any(goal.status is GoalStatus.SCHEDULED_NOT_OPEN for goal in linked):
+                state, status = "WAITING_WINDOW", GoalStatus.SCHEDULED_NOT_OPEN
+        goals.append(GoalState("ALLIANCE_TIMED_EVENTS", status, available_skills=(),
+            evidence={"provider_state": state, "registration_state": "REGISTERED",
+                      "role_id": role_id, "source": "CURRENT_WORLDSTATE_ALLIANCE_EVENTS",
+                      "linked_goal_ids": [goal.goal_id for goal in linked],
+                      "execution_owner": "EXISTING_EVENT_GOALS",
+                      "required_observation": None if bear else "current alliance event identity and window",
+                      "condition": "waiting_window" if state == "WAITING_WINDOW" else "provider_projection"},
+            distance=0.0 if linked else 1.0))
+
+    @staticmethod
     def _append_prepared_workflows(goals: list[GoalState]) -> None:
         """Keep mapped workflows visible until a live observation can make them actionable.
 
@@ -1666,8 +1696,9 @@ class GoalLibrary:
         prepared = (
             ("USE_FREE_ARENA_ATTEMPTS", "world.attempts", "free arena attempts counter"),
             ("LABYRINTH_DAILY", "world.attempts", "Labyrinth attempts counter"),
-            ("ALLIANCE_TIMED_EVENTS", "alliance/event producer", "event identity and live timer"),
         )
+        from .skills import v2_registry
+        registry = v2_registry()
         existing = {goal.goal_id for goal in goals}
         for goal_id, missing_source, required_observation in prepared:
             if goal_id in existing:
@@ -1680,6 +1711,12 @@ class GoalLibrary:
                     "blocker": f"missing production observation: {missing_source}",
                     "required_observation": required_observation,
                     "live_verified": False,
+                    **({"missing_registry_skills": [name for name in (
+                        "OPEN_ARENA", "READ_FREE_ATTEMPTS", "SELECT_ARENA_OPPONENT",
+                        "START_ARENA", "VERIFY_ARENA_RESULT")
+                        if registry.get(name) is None],
+                        "missing_page_identity": "ARENA" not in Page.__members__}
+                       if goal_id == "USE_FREE_ARENA_ATTEMPTS" else {}),
                 },
                 distance=1.0,
             ))
