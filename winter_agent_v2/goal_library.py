@@ -81,6 +81,9 @@ BUILDING_PRODUCTIVE_VALUE = 1050.0
 #: added, which is precisely what happened to the camp goals, so the translation lives here
 #: and both callers read it.
 GOAL_ROUTES: dict[str, str] = {
+    "USE_NORMAL_FISHING_BAIT": "FISHING",
+    "USE_FISHING_BAIT": "FISHING",
+    "OBSERVE_FISHING_STATE": "FISHING",
     "CLEAR_INTEL": "INTEL",
     "AVOID_STAMINA_WASTE": "BEAST_HUNT",
     "KEEP_TRAINING_PRODUCTIVE": "TRAIN",
@@ -138,7 +141,7 @@ GOAL_ROUTES: dict[str, str] = {
 #: is one of these -- a route ``run_live`` cannot accept is the EXIT_2 bug above.
 ROUTE_DOMAINS: tuple[str, ...] = (
     "HOME", "GATHER_RESOURCE", "BEAST_HUNT", "INTEL", "MAIL",
-    "EXPLORATION", "DAILY", "ALLIANCE", "RESEARCH", "TRAIN", "BUILDING", "EVENT",
+    "EXPLORATION", "DAILY", "ALLIANCE", "RESEARCH", "TRAIN", "BUILDING", "EVENT", "FISHING",
 )
 
 
@@ -1431,6 +1434,22 @@ class GoalLibrary:
         verdict = fp.signal_for_role(fishing_pressures, role_id)
         if verdict is None:
             return
+        from datetime import timedelta
+        observed = _as_iso((verdict or {}).get("observed_at"))
+        try:
+            observed_at = datetime.fromisoformat(observed) if observed else None
+            fresh = bool(observed_at and observed_at.tzinfo
+                         and timedelta(0) <= datetime.now(timezone.utc) - observed_at < timedelta(minutes=10))
+        except (ValueError, TypeError):
+            fresh = False
+        if not fresh or verdict.get("event_live_open") is not True or verdict.get("bait_current") is None:
+            goals.append(GoalState(
+                "OBSERVE_FISHING_STATE", GoalStatus.READY,
+                available_skills=("READ_FISHING_STATE",), distance=1.0,
+                evidence={"required_observation": "current role, event open, normal bait, points",
+                          "only_allowed_spend": "NONE", "condition": "fresh_fishing_read"},
+            ))
+            return
 
         bait = verdict.get("bait_current")
         cap = verdict.get("bait_cap")
@@ -1477,10 +1496,8 @@ class GoalLibrary:
             overflow_bonus = float(terms.get("synergy_bonus") or 0.0)
             goals.append(GoalState(
                 "USE_NORMAL_FISHING_BAIT", GoalStatus.READY,
-                # No Skill yet: this is the P3 provider, not P3's Skill.  Deliberately a record
-                # rather than selectable work, so it cannot be scheduled and then do nothing --
-                # the exact failure ``tests/test_every_goal_has_a_route.py`` exists to prevent.
-                available_skills=(),
+                # The registered entry hands control to the existing bounded session.
+                available_skills=(FISHING_LANE_SKILL,),
                 remaining_seconds=terms.get("remaining_seconds"),
                 event_synergy=overflow_bonus,
                 evidence={
@@ -1491,7 +1508,6 @@ class GoalLibrary:
                     "terms_reason": terms.get("reason") if terms.get("applies") else None,
                     "overflow_pressure": overflow_bonus,
                     "endgame": endgame or None,
-                    "capability_gap": FISHING_LANE_SKILL,
                     "required_skills": [FISHING_LANE_SKILL],
                     "note": "normal bait available; batches inside the current Role Session "
                             "(§P6), it does not preempt one",

@@ -94,6 +94,9 @@ class AdapterHost:
         self.executed: list[SessionStep] = []
         self.clock = 0.0
 
+    def note(self, event, **fields):
+        pass
+
     def now(self):
         return self.clock
 
@@ -146,7 +149,7 @@ class RoutingIsByGoalNotBySkillTests(unittest.TestCase):
     """
 
     def test_every_route_names_a_registered_adapter(self):
-        self.assertEqual(len(SESSION_ROUTES), 11)
+        self.assertEqual(len(SESSION_ROUTES), 12)
         for route in SESSION_ROUTES:
             with self.subTest(goal=route.goal_id):
                 self.assertIn(route.adapter, SESSION_ADAPTERS)
@@ -265,7 +268,8 @@ class EveryAdapterIsBuiltFreshTests(unittest.TestCase):
 
 HOME_WORDS = ["普通关卡", "冰钓积分:120", "5/10"]
 RESULT_WORDS = ["本次收获", "下潜深度:42"]
-SERVO_OK = {"frames": 120, "moves_sent": 88, "outcome": "COMPLETED", "control_hz": 20.0}
+SERVO_OK = {"frames": 120, "moves_sent": 88, "outcome": "COMPLETED", "control_hz": 20.0,
+            "start_confirmed": True}
 
 
 class FishingSessionAdapterTests(unittest.TestCase):
@@ -304,9 +308,9 @@ class FishingSessionAdapterTests(unittest.TestCase):
 
         cast_verdict = adapter.verify_step(context, host, control_step,
                                            self._execution(evidence=SERVO_OK))
-        self.assertEqual(cast_verdict.outcome, StepOutcome.SUCCESS)
-        self.assertTrue(adapter.cast_verified)
-        self.assertEqual(adapter.casts, 1)
+        self.assertEqual(cast_verdict.outcome, StepOutcome.PROGRESS)
+        self.assertFalse(adapter.cast_verified)
+        self.assertEqual(adapter.casts, 0)
         self.assertIs(adapter.stage, STAGE_LEAVING)
 
         host.words = RESULT_WORDS
@@ -319,10 +323,14 @@ class FishingSessionAdapterTests(unittest.TestCase):
         self.assertEqual(leave.target, FISHING_EXIT_WORD)
         leave_verdict = adapter.verify_step(context, host, leave, self._execution(evidence={}))
         self.assertEqual(leave_verdict.outcome, StepOutcome.PROGRESS)
-        self.assertIs(adapter.stage, STAGE_DONE)
+        self.assertIs(adapter.stage, STAGE_LEAVING)
 
-        host.words = ["普通关卡", "冰钓积分:120", "4/10"]
+        host.words = ["普通关卡", "冰钓积分:270", "4/10"]
         home_again = adapter.observe(context, host)
+        verification = adapter.choose_step(context, host, home_again)
+        checked = adapter.verify_step(context, host, verification, self._execution(executed=False))
+        self.assertEqual(checked.outcome, StepOutcome.SUCCESS)
+        self.assertEqual(checked.evidence["points_per_bait"], 150)
         done, reason = adapter.is_complete(context, host, home_again)
         self.assertTrue(done, "the cast is only complete once the client is back on the entry page")
         self.assertEqual(reason, "FISHING_CASTS_DONE")

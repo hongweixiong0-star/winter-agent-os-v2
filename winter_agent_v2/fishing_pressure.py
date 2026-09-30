@@ -114,6 +114,8 @@ def role_bait_verdict(role_state: Any, now: datetime, *,
         }
     return {
         "pressure": getattr(pressure, "value", str(pressure)),
+        "observed_at": getattr(role_state, "observed_at", None),
+        "event_live_open": (getattr(role_state, "extra", {}) or {}).get("event_live_open"),
         "bait_current": getattr(role_state, "normal_bait_current", None),
         "bait_cap": getattr(role_state, "bait_cap", None),
         "is_full": bool(getattr(role_state, "is_full", False)),

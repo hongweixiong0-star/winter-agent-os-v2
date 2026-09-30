@@ -29,6 +29,8 @@ def verdict(pressure, *, remaining=None, bait=5, cap=10, next_bait_at=None,
     """The shape ``fishing_pressure`` produces for one role."""
     return {
         "pressure": pressure,
+        "observed_at": datetime.now(timezone.utc),
+        "event_live_open": True,
         "bait_current": bait,
         "bait_cap": cap,
         "is_full": bool(bait is not None and cap is not None and bait >= cap),
@@ -354,9 +356,10 @@ class TestTheFourRulesOfP3(unittest.TestCase):
 
     def test_an_unread_counter_is_unknown_not_empty(self):
         goals, _order = fishing_goals({"1063040265": verdict(fp.UNKNOWN, bait=None, cap=None)})
-        goal = goals["USE_NORMAL_FISHING_BAIT"]
-        self.assertEqual(goal.status, GoalStatus.UNKNOWN)
-        self.assertIn("normal_bait_current", goal.evidence["required_observation"])
+        goal = goals["OBSERVE_FISHING_STATE"]
+        self.assertEqual(goal.status, GoalStatus.READY)
+        self.assertIn("normal bait", goal.evidence["required_observation"])
+        self.assertNotIn("USE_NORMAL_FISHING_BAIT", goals)
 
     def test_a_full_counter_raises_the_bonus_but_is_not_a_deadline(self):
         goals, _order = fishing_goals({"1063040265": verdict(fp.CAP_FULL, bait=10, cap=10)})
@@ -407,17 +410,13 @@ class TestRolesNeverShareABaitCounter(unittest.TestCase):
 
 
 class TestTheGoalsAreRecordsUntilASkillExists(unittest.TestCase):
-    """P3 is the *provider*; the production fishing Skill is a separate, named gap.
+    """The normal lane is wired; unobserved reward actions remain explicit gaps."""
 
-    Handing these goals a skill name would make them selectable, and a selectable goal with no
-    route is scheduled and then does nothing -- the failure
-    ``tests/test_every_goal_has_a_route.py`` exists to prevent.  So they are emitted with no
-    skills, and the gap is named on the record instead of being hidden.
-    """
-
-    def test_no_fishing_goal_is_selectable(self):
+    def test_normal_lane_is_selectable_but_unobserved_rewards_are_not(self):
         goals, _order = fishing_goals({"1063040265": verdict(fp.NORMAL)})
-        for goal_id in ("USE_NORMAL_FISHING_BAIT", "CLAIM_FISHING_FREE_REWARD",
+        self.assertEqual(goals["USE_NORMAL_FISHING_BAIT"].available_skills,
+                         ("PLAY_NORMAL_FISHING_LEVEL",))
+        for goal_id in ("CLAIM_FISHING_FREE_REWARD",
                         "UPGRADE_FISHING_KIT", "CLAIM_FISHING_DAILY_REWARD",
                         "CLAIM_FISHING_COLLECTION_REWARD"):
             self.assertEqual(goals[goal_id].available_skills, (), goal_id)
@@ -426,8 +425,8 @@ class TestTheGoalsAreRecordsUntilASkillExists(unittest.TestCase):
         from winter_agent_v2.goal_library import FISHING_LANE_SKILL
 
         goals, _order = fishing_goals({"1063040265": verdict(fp.NORMAL)})
-        self.assertEqual(goals["USE_NORMAL_FISHING_BAIT"].evidence["capability_gap"],
-                         FISHING_LANE_SKILL)
+        self.assertIn(FISHING_LANE_SKILL,
+                      goals["USE_NORMAL_FISHING_BAIT"].evidence["required_skills"])
 
     def test_the_upgrade_goal_states_the_only_currency_it_may_spend(self):
         goals, _order = fishing_goals({"1063040265": verdict(fp.NORMAL)})

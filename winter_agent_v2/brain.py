@@ -831,6 +831,10 @@ class RuleBrain:
             return Decision("DISMISS_BATTLE_VICTORY", "battle_result_blocks_underlying_page", world.confidence, "underlying_page_restored")
         if world.page is Page.POPUP and world.popup == "REAL_MONEY_OFFER":
             return Decision("DISMISS_REAL_MONEY_OFFER", "real_money_action_permanently_blocked", world.confidence, "offer_closed_without_purchase")
+        if self._goal_route() == "FISHING":
+            skill = ("READ_FISHING_STATE" if getattr(self, "goal_id", "") == "OBSERVE_FISHING_STATE"
+                     else "PLAY_NORMAL_FISHING_LEVEL")
+            return Decision(skill, "role_scoped_normal_fishing_session", 1.0, "fishing_state_verified")
         if world.page is Page.POPUP and world.popup == "NEW_TROOP_UNLOCK":
             # The barracks' first-open reveal.  Measured live 2026-09-22T04:39:04Z: it is what
             # the client answered the 射手营 tab tap with, the run could not name the screen, and

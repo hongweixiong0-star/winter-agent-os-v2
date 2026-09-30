@@ -110,6 +110,9 @@ TRAINING_SKILLS = frozenset({"TRAIN_TROOPS", "SELECT_TRAINING_CAMP",
 STAMINA_FLOOR = 30.0
 
 SESSION_ROUTES: tuple[SessionRoute, ...] = (
+    SessionRoute(goal_id="OBSERVE_FISHING_STATE", adapter="fishing",
+                 skills=frozenset({"READ_FISHING_STATE"}), step_budget=5, time_budget_s=60.0,
+                 extras={"observe_only": True}),
     SessionRoute(
         goal_id="USE_NORMAL_FISHING_BAIT", adapter="fishing",
         skills=frozenset({"USE_NORMAL_FISHING_BAIT", "PLAY_NORMAL_FISHING_LEVEL"}),
@@ -250,7 +253,7 @@ def _int_match(pattern: str, text: str) -> int | None:
     if not match:
         return None
     try:
-        return int(match.group(1))
+        return int(match.group(1).replace(",", "").replace("，", ""))
     except (TypeError, ValueError):
         return None
 
@@ -305,7 +308,7 @@ FISHING_RESULT_WORDS = ("本次收获", "下潜深度")
 #: Only the *dismiss* prompts.  A reward popup is closed by tapping where it says to tap,
 #: which is why the word itself is the target and no coordinate is stored anywhere.
 FISHING_POPUP_WORDS = ("点击任意位置继续", "恭喜您获得新图鉴", "恭喜获得")
-FISHING_POINTS_PATTERN = r"冰钓积分[:：]\s*(\d+)"
+FISHING_POINTS_PATTERN = r"(?:冰钓|比赛)积分\s*[:：]?\s*([\d,，]+)"
 FISHING_BAIT_PATTERN = r"(\d+)\s*/\s*(\d+)"
 FISHING_DEPTH_PATTERN = r"下潜深度[:：]\s*(\d+)"
 
@@ -353,7 +356,7 @@ class FishingSessionAdapter(SessionAdapter):
     }
     #: Calibration legs before the real policy takes the line.  Measured on the live level:
     #: the actionable window is only a few seconds, so this must stay short.
-    CALIBRATE_TICKS = 26
+    CALIBRATE_TICKS = 0
 
     def __init__(self, *, controller: Any = None, servo_config: Any = None) -> None:
         # Injected for tests; the defaults are the real measured objects.
@@ -370,11 +373,16 @@ class FishingSessionAdapter(SessionAdapter):
         self.cast_verified = False
         self.servo_report: Mapping[str, Any] = {}
         self.phase_trace: list[str] = []
+        self.observe_only = False
+        self.result_seen = False
+        self.started = False
+        self._run_recorded = False
 
     # --------------------------------------------------------------- budget
 
     def configure(self, extras: Mapping[str, Any],
                   resource_budget: Mapping[str, float] | None = None) -> None:
+        self.observe_only = bool((extras or {}).get("observe_only"))
         casts = _as_int((extras or {}).get("casts"))
         if casts and casts > 0:
             self.casts_target = casts
@@ -404,14 +412,27 @@ class FishingSessionAdapter(SessionAdapter):
                 self.points_after = domain.points
         if domain.depth_m is not None:
             self.depth_m = domain.depth_m
+        self.result_seen = self.result_seen or domain.result_page
+        if domain.on_home and domain.bait is not None:
+            timer = re.search(r"(?:(\d+)\s*天\s*)?(\d{1,2}):(\d{2}):(\d{2})", text)
+            remaining = (int(timer[1] or 0) * 86400 + int(timer[2]) * 3600
+                         + int(timer[3]) * 60 + int(timer[4])) if timer else None
+            host.note("fishing_observation", bait_current=domain.bait, bait_cap=domain.bait_cap,
+                      points_total=domain.points, event_live_open=True,
+                      remaining_seconds=remaining,
+                      line_level=_int_match(r"鱼线等级\s*[:：]?\s*(\d+)", text),
+                      hook_level=_int_match(r"鱼钩等级\s*[:：]?\s*(\d+)", text),
+                      sinker_level=_int_match(r"鱼坠等级\s*[:：]?\s*(\d+)", text))
         return domain
 
     # --------------------------------------------------------------- complete
 
     def is_complete(self, context: SessionContext, host: SessionHost, domain: Any) -> tuple[bool, str]:
+        if self.observe_only and domain.on_home and domain.bait is not None:
+            return True, "FISHING_STATE_READ"
         if self.casts >= self.casts_target and self.cast_verified and domain.on_home:
             return True, "FISHING_CASTS_DONE"
-        if domain.bait is not None and domain.bait <= 0 and domain.on_home:
+        if self.stage is STAGE_HOME and domain.bait is not None and domain.bait <= 0 and domain.on_home:
             # No bait left is a legitimate end of this Goal's work, not a failure: the
             # Goal is "use normal bait", and there is none.  Reported as ITS OWN reason so
             # it is not confused with having cast successfully.
@@ -421,6 +442,8 @@ class FishingSessionAdapter(SessionAdapter):
     # --------------------------------------------------------------- choose
 
     def choose_step(self, context: SessionContext, host: SessionHost, domain: Any) -> SessionStep | None:
+        if self.observe_only and domain.on_home:
+            return SessionStep(0, STEP_OBSERVE_ONLY, reason="read fishing counter")
         if self.casts >= self.casts_target and self.cast_verified:
             if self.stage is STAGE_LEAVING and not domain.on_home:
                 return SessionStep(0, STEP_PRINTED_TAP, target=FISHING_EXIT_WORD,
@@ -430,6 +453,9 @@ class FishingSessionAdapter(SessionAdapter):
             return SessionStep(0, STEP_PRINTED_TAP, target=domain.popup_word,
                                reason="dismiss the modal the client printed")
         if self.stage is STAGE_LEAVING:
+            if domain.on_home:
+                return SessionStep(0, STEP_OBSERVE_ONLY, tags={"verify_cast": True},
+                                   reason="verify bait and points after the cast")
             return SessionStep(0, STEP_PRINTED_TAP, target=FISHING_EXIT_WORD,
                                reason="leave the result page")
         if self.stage is STAGE_CONTROLLING:
@@ -439,7 +465,7 @@ class FishingSessionAdapter(SessionAdapter):
             # look again rather than re-tapping 普通关卡, which would restart the cutscene.
             return SessionStep(0, STEP_OBSERVE_ONLY, reason="waiting for the level to draw")
         if domain.on_home:
-            if domain.bait is not None and domain.bait <= 0:
+            if domain.bait is None or domain.bait <= 0 or domain.points is None:
                 return None
             return SessionStep(0, STEP_PRINTED_TAP, target=FISHING_HOME_WORD,
                                reason="enter one normal fishing level",
@@ -454,7 +480,7 @@ class FishingSessionAdapter(SessionAdapter):
         if config is None:
             from .visual_servo import ServoConfig  # local: keeps import cost off the hot path
 
-            config = ServoConfig(max_session_duration_s=30.0, **dict(self.SERVO_DEFAULTS))
+            config = ServoConfig(max_session_duration_s=90.0, **dict(self.SERVO_DEFAULTS))
 
         def detector(frame: Any) -> Any:
             state = detect_fishing(frame)
@@ -463,7 +489,7 @@ class FishingSessionAdapter(SessionAdapter):
 
         control = RealtimeControl(
             detector=detector, controller=controller, config=config,
-            max_seconds=30.0, wait_for_line_s=45.0,
+            max_seconds=90.0, wait_for_line_s=15.0,
             start_words=FISHING_POPUP_WORDS + ("点击开始", "点击屏幕", "开始钓鱼"),
             start_signal=lambda state: bool(getattr(state, "found", False)),
             lost_ticks_to_end=16,
@@ -482,10 +508,9 @@ class FishingSessionAdapter(SessionAdapter):
             frames = _as_int(report.get("frames")) or 0
             moves = _as_int(report.get("moves_sent")) or 0
             if frames > 0 and moves > 0:
-                self.cast_verified = True
-                self.casts += 1
+                self.started = bool(report.get("start_confirmed"))
                 self.stage = STAGE_LEAVING
-                return StepVerdict(StepOutcome.SUCCESS, "FISHING_CONTROL_SESSION_RAN",
+                return StepVerdict(StepOutcome.PROGRESS, "FISHING_CONTROL_SESSION_RAN",
                                    {"frames": frames, "moves_sent": moves,
                                     "control_hz": report.get("control_hz")})
             self.stage = STAGE_LEAVING
@@ -496,9 +521,25 @@ class FishingSessionAdapter(SessionAdapter):
             self.stage = STAGE_CONTROLLING
             return StepVerdict(StepOutcome.PROGRESS, "FISHING_LEVEL_ENTRY_TAPPED")
         if step.target == FISHING_EXIT_WORD:
-            self.stage = STAGE_DONE
+            self.stage = STAGE_LEAVING
             return StepVerdict(StepOutcome.PROGRESS, "FISHING_RESULT_LEFT")
         if step.kind is STEP_OBSERVE_ONLY:
+            if (step.tags or {}).get("verify_cast"):
+                from .fishing_state import verify_run
+                verdict = verify_run(bait_before=self.bait_before, bait_after=self.bait_after,
+                                     points_before=self.points_before, points_after=self.points_after,
+                                     started=self.started, control_ran=bool(self.servo_report.get("moves_sent")),
+                                     result_page=self.result_seen)
+                if not self._run_recorded:
+                    host.note("fishing_run", bait_before=self.bait_before, bait_after=self.bait_after,
+                              points_before=self.points_before, points_after=self.points_after,
+                              depth_m=self.depth_m, servo=dict(self.servo_report), verifier=verdict)
+                    self._run_recorded = True
+                self.cast_verified = verdict["status"] == "COMPLETE"
+                self.casts += int(self.cast_verified)
+                self.stage = STAGE_DONE
+                return StepVerdict(StepOutcome.SUCCESS if self.cast_verified else StepOutcome.FAILED,
+                                   "FISHING_CAST_VERIFIED" if self.cast_verified else verdict["status"], verdict)
             # Looking again is the adapter's own cheap read: one capture through the same
             # detector the servo uses, and the answer is whether the line is drawn yet.
             frame = host.capture()

@@ -51,6 +51,7 @@ from PIL import Image
 from . import vision_policy as vp
 from .device_lease import OWNER_GAMEPLAY
 from .models import WorldState
+from .models import Action, ExecutionResult, VerificationResult
 from .ocr import read_frame_size
 from .session_adapters import _stamina_of
 from .session_engine import (
@@ -165,7 +166,8 @@ class LiveRuntimeSessionHost:
         what keeps this correct when MAA observation is off (ADB executor) or on (MAA).
         """
         needed = ("capture", "touch_down", "touch_move", "touch_up")
-        for holder in (self.runtime.device, getattr(self.runtime, "adb_device", None)):
+        for holder in (self.runtime.device, getattr(self.runtime, "maa_adapter", None),
+                       getattr(self.runtime, "adb_device", None)):
             if holder is not None and all(hasattr(holder, name) for name in needed):
                 return holder
         return self.runtime.device
@@ -305,6 +307,15 @@ class LiveRuntimeSessionHost:
             self.step_reports.append({"skill_id": getattr(report, "skill_id", ""),
                                       "outcome": getattr(report, "outcome", "")})
         execution = self._execution
+        if execution is None and getattr(report, "executed", False):
+            execution = ExecutionResult(True, False,
+                Action(str(getattr(report, "kind", "")), str(getattr(report, "target", ""))),
+                backend=str(getattr(report, "backend", "")), detail=dict(getattr(report, "evidence", {}) or {}))
+        verification = self._verification
+        if verification is None:
+            verification = VerificationResult(str(getattr(report, "outcome", "")) == "SUCCESS",
+                                             str(getattr(report, "reason", "")),
+                                             dict(getattr(report, "evidence", {}) or {}))
         before = self._before if self._before is not None else getattr(report, "before", None)
         after = self._after if self._after is not None else getattr(report, "after", None)
         try:
@@ -317,9 +328,9 @@ class LiveRuntimeSessionHost:
                 before=before if isinstance(before, WorldState) else self.binding.before,
                 execution=execution,
                 after=after if isinstance(after, WorldState) else None,
-                verification=self._verification,
+                verification=verification,
                 started_at=time.monotonic() - (float(getattr(report, "latency_ms", 0.0) or 0.0) / 1000.0),
-                step_id=self.binding.index,
+                step_id=self.binding.index * 100 + int(getattr(report, "index", 0)) + 1,
                 goal_id=self.binding.goal_id,
                 attached_goal_ids=self.binding.attached_goal_ids,
                 # The session's own verdict is the progress statement for this step; a step
@@ -393,14 +404,20 @@ class LiveRuntimeSessionHost:
         if held is None:
             return True
         if str(getattr(held, "owner", "") or "") == OWNER_GAMEPLAY:
-            return True
+            import os
+            return getattr(held, "process", None) == os.getpid()
         try:
             return bool(self.runtime._owns_the_lease(held))
         except Exception:  # noqa: BLE001
             return True
 
     def note(self, event: str, **fields: Any) -> None:
-        """One narration line.  Diagnostics only; never alters the outcome."""
+        """Record diagnostics without stranding a device session on a write failure."""
+        if event in {"fishing_observation", "fishing_run"}:
+            try:
+                self._persist_fishing(event, fields)
+            except Exception as exc:
+                self.notes.append(f"fishing_persistence_failed {type(exc).__name__}:{exc}")
         parts = " ".join(f"{key}={value}" for key, value in sorted(fields.items())
                          if value not in (None, ""))
         line = f"{event} {parts}".strip()
@@ -412,6 +429,43 @@ class LiveRuntimeSessionHost:
             pass
 
     # ---------------------------------------------------------------------- internals
+
+    def _persist_fishing(self, event: str, fields: Mapping[str, Any]) -> None:
+        """Use the existing role-scoped fishing store and append-only run ledger."""
+        from datetime import datetime, timezone, timedelta
+        from .fishing_state import FishingState, FishingRun
+        base = Path(self.runtime.episode_store.path).parent
+        store = FishingState.load(base / "fishing_state.json", base / "fishing_runs.jsonl")
+        role_id = str(self.binding.role_id)
+        role_key = next((k for k, role in store.roles.items() if role.role_id == role_id), role_id)
+        now = datetime.now(timezone.utc)
+        if event == "fishing_run":
+            before, after = fields.get("bait_before"), fields.get("bait_after")
+            cost = max(0, before - after) if isinstance(before, int) and isinstance(after, int) else 0
+            servo = fields.get("servo") or {}
+            run = FishingRun(run_id=f"{self.runtime.capture_dir.name}_{self.binding.index}",
+                role_key=role_key, at=now, bait_cost=cost,
+                points_before=fields.get("points_before"), points_after=fields.get("points_after"),
+                depth_m=fields.get("depth_m"), duration_s=servo.get("duration_s"),
+                control_hz=servo.get("control_hz"), verifier=fields.get("verifier") or {},
+                evidence=str(self.runtime.capture_dir))
+            store.record_run(run)
+            store.observe(role_key, role_id=role_id, bait_current=after,
+                          points_total=fields.get("points_after"), now=now)
+        else:
+            remaining = fields.get("remaining_seconds")
+            store.observe(role_key, role_id=role_id, bait_current=fields.get("bait_current"),
+                          bait_cap=fields.get("bait_cap"), points_total=fields.get("points_total"),
+                          event_end_at=now + timedelta(seconds=remaining) if remaining is not None else None,
+                          now=now, extra={"event_live_open": fields.get("event_live_open"),
+                                         **{key: fields[key] for key in ("line_level", "hook_level", "sinker_level")
+                                            if fields.get(key) is not None},
+                                         "source": "AUTO_FISHING_CURRENT_FRAME"})
+            role = store.role(role_key)
+            for key in ("line_level", "hook_level", "sinker_level"):
+                if fields.get(key) is not None:
+                    setattr(role, key, fields[key])
+        store.save()
 
     def _reset_stash(self) -> None:
         self._execution = None
@@ -516,6 +570,24 @@ class LiveRuntimeSessionHost:
     # ---- STEP_REALTIME -------------------------------------------------------
 
     def _run_realtime(self, step: SessionStep, started: float) -> StepExecution:
+        lease = getattr(self.runtime, "device_lease", None)
+        owned = False
+        if lease is not None:
+            if not self.lease_ok():
+                return StepExecution(False, "DEVICE_LEASE_HELD_BY_OTHER_OWNER")
+            if lease.holder() is None:
+                record, why = lease.acquire(owner=OWNER_GAMEPLAY,
+                    capability_id="FISHING_REALTIME", job_id=self.binding.goal_id)
+                if record is None:
+                    return StepExecution(False, why)
+                owned = True
+        try:
+            return self._run_realtime_owned(step, started)
+        finally:
+            if owned:
+                lease.release(result="FISHING_CONTROL_ENDED")
+
+    def _run_realtime_owned(self, step: SessionStep, started: float) -> StepExecution:
         control = (step.params or {}).get("control")
         if not isinstance(control, RealtimeControl):
             return StepExecution(executed=False, reason="SESSION_REALTIME_WITHOUT_CONTROL",
@@ -528,10 +600,15 @@ class LiveRuntimeSessionHost:
         # Wait for the domain BEFORE opening the realtime gate.  The signal is the adapter's
         # own detector -- never a printed word -- because text recognition is forbidden inside
         # the loop, so reading "点击开始" here would be the violation the gate exists to catch.
-        if control.start_signal is not None:
-            self._wait_for_start(control)
+        # Tutorial acknowledgements are read before the realtime gate, on a fresh frame.
+        # No historical tap point survives into the controller.
+        self._acknowledge_start_prompts(control)
+        start_confirmed = self._wait_for_start(control) if control.start_signal is not None else True
+        if not start_confirmed:
+            return StepExecution(False, "FISHING_START_NOT_CONFIRMED")
         report = self._drive(control, device)
         payload = self._servo_payload(report)
+        payload["start_confirmed"] = start_confirmed
         frames = int(payload.get("frames") or 0)
         moves = int(payload.get("moves_sent") or 0)
         # ``executed`` means "the device was driven", and the adapter judges whether what it
@@ -545,6 +622,21 @@ class LiveRuntimeSessionHost:
             backend="REALTIME",
             evidence=payload,
         )
+
+    def _acknowledge_start_prompts(self, control: RealtimeControl) -> None:
+        seen: set[str] = set()
+        for _ in range(2):
+            frame = self.capture()
+            hits = [token for token in self.ocr(frame)
+                    if token.get("text") in control.start_words and token.get("text") not in seen]
+            if len(hits) != 1 or not self.lease_ok():
+                return
+            word = str(hits[0]["text"])
+            seen.add(word)
+            result = self._tap_printed(SessionStep(0, STEP_PRINTED_TAP, target=word), time.monotonic())
+            if not result.executed:
+                return
+            self.sleep(self.binding.settle_seconds)
 
     def _wait_for_start(self, control: RealtimeControl) -> bool:
         """Poll the adapter's detector until it says the level is on screen.  OCR-free."""
@@ -659,7 +751,11 @@ class LiveRuntimeSessionHost:
         x = int(round(point[0] / frame_w * device_w))
         y = int(round(point[1] / frame_h * device_h))
         try:
-            self.device().tap(x, y)
+            target_device = self.device()
+            if hasattr(target_device, "click"):
+                target_device.click(x, y)
+            else:
+                target_device.tap(x, y)
         except Exception as exc:  # noqa: BLE001
             return StepExecution(executed=False,
                                  reason=f"SESSION_TAP_FAILED:{type(exc).__name__}",
@@ -667,7 +763,7 @@ class LiveRuntimeSessionHost:
         self.note("session_printed_tap", word=word, x=x, y=y, frame=str(path))
         return StepExecution(
             executed=True, reason=f"PRINTED_TAP:{word}", latency_ms=latency_ms(),
-            tap_point=(x, y), backend="ADB",
+            tap_point=(x, y), backend="MAA" if hasattr(self.device(), "click") else "ADB",
             evidence={"word": word, "frame": str(path),
                       "center_norm": (point[0] / frame_w, point[1] / frame_h)},
         )

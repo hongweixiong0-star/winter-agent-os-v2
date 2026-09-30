@@ -561,16 +561,11 @@ class ASessionInsideTheRunLoopTests(unittest.TestCase):
         self.assertIn("session_ms", bindings[0].latency,
                       "the session's cost is accounted for where every other step's is")
 
-    def test_a_session_runs_for_every_iteration_but_the_last(self):
-        """``index < max_actions`` keeps one iteration for the return trip.
-
-        A session must never be the last thing a run does: the cycle has to be handed back to
-        the Scheduler with a budget left to use, or the session would be an ending rather than a
-        step inside the loop.
-        """
+    def test_a_failed_session_is_deferred_instead_of_repeated_each_iteration(self):
+        """An unreadable domain yields this goal, leaving budget for other work."""
         _device, _run_, results, _audits, _bindings = self._run(
             routes=[_route("boom")], adapters={"boom": _FailingAdapter}, max_actions=5)
-        self.assertEqual(len(results), 5 - 1)
+        self.assertEqual(len(results), 1)
 
     def test_a_completed_session_returns_to_the_scheduler_rather_than_ending_the_run(self):
         """必须证明: Session 完成/Yield/失败后必须返回 Global Scheduler.

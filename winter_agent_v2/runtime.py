@@ -288,6 +288,8 @@ class LiveRuntime:
     LEAVING_SKILLS = frozenset({"BACK", "LEAVE_FOREIGN_LAYER"})
 
     VERIFIED_ATOMIC: dict[str, Verifier] = {
+        "PLAY_NORMAL_FISHING_LEVEL": lambda before, after: VerificationResult(False, "FISHING_SESSION_REQUIRED"),
+        "READ_FISHING_STATE": lambda before, after: VerificationResult(False, "FISHING_SESSION_REQUIRED"),
         "WAIT": verify_environmental_wait,
         "CLOSE_POPUP": verify_popup_closed,
         "LEAVE_FOREIGN_LAYER": verify_left_foreign_layer,
@@ -1219,16 +1221,16 @@ class LiveRuntime:
             self._fishing_pressure_cache = (None, {})
             return {}
         cached = getattr(self, "_fishing_pressure_cache", None)
-        if cached is not None and cached[0] == stamp:
-            return cached[1]
+        state = None
         try:
-            state = fishing_state.FishingState.load(path)
+            state = cached[1] if cached is not None and cached[0] == stamp else fishing_state.FishingState.load(path)
             pressures = fishing_pressure.pressures_by_role_id(
                 state, datetime.now(timezone.utc),
             )
         except Exception:  # noqa: BLE001 - an unreadable store is "no reading", never a crash
             pressures = {}
-        self._fishing_pressure_cache = (stamp, pressures)
+        if state is not None:
+            self._fishing_pressure_cache = (stamp, state)
         return pressures
 
     def _reject_a_dropped_digit(self, world: WorldState) -> WorldState:
@@ -7237,6 +7239,8 @@ class LiveRuntime:
                         f"verified={metrics.get('SESSION_VERIFIED_STEPS')} "
                         f"{session_ms:.0f}ms -- returning to the scheduler"
                     )
+                    if not session_result.completed:
+                        self._yield_to_next_goal(best_goal, deferrals, decision, session_result.reason)
                     continue
                 # No result at all: the session could not be built.  Fall through to the
                 # ordinary atomic path rather than ending the run on a routing problem.

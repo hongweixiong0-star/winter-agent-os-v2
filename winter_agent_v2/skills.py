@@ -85,6 +85,8 @@ class Skill:
     #: condition was ``world.known`` -- so the unnamed screen could not be acted on however the
     #: brain decided.  Same class of gate as the ``frame.known`` check the resolver used to carry.
     page_agnostic: bool = False
+    # Session entrypoints require an explicitly selected goal; they are not generic UI fallbacks.
+    session_only: bool = False
 
     def ready(self, world: WorldState) -> bool:
         if not world.known:
@@ -105,7 +107,8 @@ class SkillRegistry:
         return self._skills.get(skill_id)
 
     def ready(self, world: WorldState) -> list[Skill]:
-        return [skill for skill in self._skills.values() if skill.state is not SkillState.BLOCKED and skill.ready(world)]
+        return [skill for skill in self._skills.values()
+                if not skill.session_only and skill.state is not SkillState.BLOCKED and skill.ready(world)]
 
     def all(self) -> list[Skill]:
         return list(self._skills.values())
@@ -113,6 +116,10 @@ class SkillRegistry:
 
 def p0_registry() -> SkillRegistry:
     return SkillRegistry([
+        Skill("PLAY_NORMAL_FISHING_LEVEL", "Play normal bait through the existing fishing session", None,
+              Action("OBSERVE", "FISHING_SESSION"), timeout=150.0, page_agnostic=True, session_only=True),
+        Skill("READ_FISHING_STATE", "Read current role's fishing page without spending bait", None,
+              Action("OBSERVE", "FISHING_STATE"), timeout=60.0, page_agnostic=True, session_only=True),
         Skill("CLOSE_POPUP", "Close a blocking popup without accepting it", Page.POPUP, Action("TAP_SEMANTIC", "BTN_CLOSE"), state=SkillState.VERIFIED),
         # The second exit for a layer another goal owned: Back first, and when the layer
         # ignores it, the close the client draws in its own corner.  Measured 2026-09-21 on
