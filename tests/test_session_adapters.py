@@ -202,7 +202,7 @@ class RoutingIsByGoalNotBySkillTests(unittest.TestCase):
                            ("LANCER_CAMP_TRAINING", "LANCER_CAMP"),
                            ("MARKSMAN_CAMP_TRAINING", "MARKSMAN_CAMP")):
             with self.subTest(goal=goal):
-                route = route_for(goal, "TRAIN_TROOPS")
+                route = route_for(goal, "SELECT_TRAINING_CAMP")
                 self.assertEqual(tuple(route.extras.get("camps") or ()), (camp,))
 
     def test_gather_routes_never_require_stamina_or_intercept_navigation(self):
