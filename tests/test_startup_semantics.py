@@ -73,13 +73,15 @@ class OperatorIntentStateTest(unittest.TestCase):
         self.assertFalse(panel.load_task_selection(self.path, ("采集", "邮件"))["邮件"])
 
 
-def fake_sections(*, interpreter: bool = True, device: bool = True, gateway: bool = True) -> dict:
+def fake_sections(*, interpreter: bool = True, device: bool = True, gateway: bool = True,
+                  device_detail: dict | None = None) -> dict:
     return {
         "interpreter": {"ok": interpreter, "exe": r"E:\x\python.exe", "reason": "OK",
                         "present": [], "missing": [] if interpreter else ["maa"],
                         "errors": {}, "fell_back_from": None},
         "device": {"ok": device, "serial": "127.0.0.1:7555", "resolution": [720, 1280],
-                   "foreground": "com.gof.china", "error": None if device else "DEVICE_NOT_CONNECTED"},
+                   "foreground": "com.gof.china", "error": None if device else "DEVICE_NOT_CONNECTED",
+                   **(device_detail or {})},
         "gateway": {"ok": gateway, "reason": "OK" if gateway else "AUTH_REJECTED",
                     "base_url": "http://127.0.0.1:8080", "detail": {}},
     }
@@ -426,6 +428,47 @@ class AutostartGateTest(unittest.TestCase):
         self.assertEqual(self.started, [])
         self.assertIsNotNone(self.panel_obj.repeat_after_id)
         self.assertTrue(any("预检未通过" in str(u.get("reason", "")) for u in self.store.updates))
+
+    def test_a_repairable_device_reaches_auto_instead_of_the_retry_loop(self):
+        """The deadlock this rule exists to prevent, measured 2026-10-01 07:26.
+
+        The emulator answered, sat on the Android launcher, and ``com.gof.china``
+        was not running.  ``_ensure_device`` is what launches the game, and it runs
+        *inside* the worker -- so an auto-start gate that refuses on the device
+        refuses the only path that would have made the device ready.  Preflight kept
+        returning the same answer, the retry kept re-running it, and the system
+        could not converge by construction.
+
+        A device the runtime can repair is therefore not a blocker; it is reported
+        as recovering, and AUTO starts so the repair gets its chance.
+        """
+        self.panel_obj.operator_intent = "RUNNING"
+        self._preflight({
+            "core_ok": True, "blockers": [], "recovering": ["device"],
+            "sections": fake_sections(
+                device=False,
+                device_detail={"not_ready_reason": "GAME_NOT_FOREGROUND", "repair": "LAUNCH_GAME"},
+            ),
+        })
+        self.panel_obj._maybe_autostart()
+        self.assertEqual(self.started, [True], "the worker is what repairs the device")
+        self.assertIsNone(self.panel_obj.repeat_after_id)
+        # The narration lands in the patched PANEL_LOG_PATH for this class, and a
+        # recovery must not read as a clean pass: the operator has to be able to tell
+        # "AUTO started because everything was fine" from "AUTO started and is about
+        # to launch the game".
+        self.assertIn("可恢复", panel.PANEL_LOG_PATH.read_text(encoding="utf-8"))
+
+    def test_an_unrepairable_device_still_schedules_a_retry(self):
+        # The other half of the same rule, so the fix cannot be read as "the device
+        # never blocks anything": a condition the runtime cannot reach is still a
+        # refusal with a bounded retry behind it.
+        self.panel_obj.operator_intent = "RUNNING"
+        self._preflight({"core_ok": False, "blockers": ["device"], "recovering": [],
+                         "sections": fake_sections(device=False)})
+        self.panel_obj._maybe_autostart()
+        self.assertEqual(self.started, [])
+        self.assertIsNotNone(self.panel_obj.repeat_after_id)
 
     def test_manual_mode_never_starts_itself(self):
         self.panel_obj.config["auto_execution"] = False

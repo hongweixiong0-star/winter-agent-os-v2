@@ -244,20 +244,27 @@ class PreflightCommandTest(unittest.TestCase):
              patch.object(preflight.runtime_env, "resolve_for_project", return_value=blocked):
             self.assertEqual(preflight.main([]), 1)
 
-    def test_the_device_is_core_but_the_gateway_is_not(self):
+    def test_an_unrepairable_device_is_core_but_the_gateway_is_not(self):
         """启动 GUI 要求核心环境正常；网关异常只标记自动开发不可用。
 
         Operator directive 2026-09-18, requirements 2 and 3: AUTO may not start
         without the game environment, and a refusing WorkBuddy gateway must never
         stop it.  Both halves are the exit code of the launcher's own command, so
         this is where they have to hold.
+
+        ``repairable: False`` is explicit since 2026-10-01: the device is core only
+        while the runtime cannot get to it by itself.  An unrepairable device --
+        no ``adb`` binary, or a configured resolution the emulator is not set to --
+        is host configuration, ``_ensure_device`` cannot change it, and AUTO must
+        refuse.  The recoverable case is beside this one in
+        ``RepairableDeviceTest``.
         """
         from tools import preflight
 
         ready = runtime_env.InterpreterReport(python_exe=Path(sys.executable), exists=True)
         up = {"ok": True, "serial": "127.0.0.1:7555", "resolution": [720, 1280],
               "foreground": "com.gof.china"}
-        down = {"ok": False, "error": "DEVICE_NOT_CONNECTED"}
+        down = {"ok": False, "error": "DEVICE_NOT_CONNECTED", "repairable": False}
         refusing = {"ok": False, "reason": "AUTH_REJECTED", "base_url": "http://127.0.0.1:8080"}
 
         with patch.object(preflight.runtime_env, "resolve_for_project", return_value=ready):
@@ -267,6 +274,151 @@ class PreflightCommandTest(unittest.TestCase):
                  patch.object(preflight, "gateway_report", return_value=refusing):
                 self.assertEqual(preflight.main([]), 0,
                                  "a refusing gateway must not stop AUTO")
+
+
+class _DeviceStatus:
+    def __init__(self, connected: bool, resolution, foreground: str) -> None:
+        self.connected = connected
+        self.resolution = resolution
+        self.foreground_package = foreground
+
+
+class _DeviceStub:
+    """Enough of ``ADBDevice`` for ``device_report``, and no adb process."""
+
+    status_value = _DeviceStatus(True, (720, 1280), "com.gof.china")
+
+    def __init__(self, *args, **kwargs) -> None:
+        pass
+
+    def resolve_connection(self, **kwargs):
+        return None
+
+    def status(self) -> _DeviceStatus:
+        return type(self).status_value
+
+
+class DeviceRepairabilityTest(unittest.TestCase):
+    """What the runtime can repair is not a blocker; what it cannot repair is.
+
+    Measured 2026-10-01 07:26, and this is the whole reason the distinction exists:
+    the emulator answered, was set to the configured resolution, and sat on the
+    Android launcher with ``com.gof.china`` not running.  ``control_panel._ensure_device``
+    launches the game and ``_run_unified_worker`` wraps that in ``retry_until_ready``
+    with ``DEVICE_NOT_CONNECTED`` / ``DEVICE_CONNECT_TIMEOUT`` / ``MUMU_LAUNCH_FAILED``
+    in ``ENVIRONMENT_FAILURES`` -- so the condition had a repair path that preflight's
+    device blocker made unreachable.  ``Start-Winter-Agent-V2.cmd`` refused to open
+    the window on it, AUTO never started, ``_ensure_device`` never ran, and the retry
+    re-ran the same check.
+    """
+
+    CONFIG = {"device": {"adb_path": str(Path(sys.executable)), "serial": "127.0.0.1:7555",
+                         "package_name": "com.gof.china", "resolution": [720, 1280]}}
+
+    def _report_with_device(self, status: _DeviceStatus) -> dict:
+        from tools import preflight
+
+        _DeviceStub.status_value = status
+        with patch.object(preflight, "config", return_value=self.CONFIG), \
+             patch.object(preflight.subprocess, "run",
+                          return_value=type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()), \
+             patch("winter_agent_v2.device.ADBDevice", _DeviceStub):
+            return preflight.device_report()
+
+    def test_a_game_that_is_not_in_the_foreground_is_repairable(self):
+        report = self._report_with_device(_DeviceStatus(True, (720, 1280), "app.lawnchair"))
+        self.assertFalse(report["ok"], "the plain reading must stay honest for the window")
+        self.assertTrue(report["repairable"])
+        self.assertEqual(report["not_ready_reason"], "GAME_NOT_FOREGROUND")
+        self.assertEqual(report["repair"], "LAUNCH_GAME")
+
+    def test_a_stopped_emulator_is_repairable(self):
+        report = self._report_with_device(_DeviceStatus(False, (720, 1280), ""))
+        self.assertTrue(report["repairable"])
+        self.assertEqual(report["not_ready_reason"], "EMULATOR_DOWN")
+        self.assertEqual(report["repair"], "LAUNCH_EMULATOR")
+
+    def test_a_wrong_resolution_is_not_repairable(self):
+        # ``_ensure_device`` launches binaries; it cannot resize a virtual display.
+        report = self._report_with_device(_DeviceStatus(True, (1080, 1920), "com.gof.china"))
+        self.assertFalse(report["ok"])
+        self.assertFalse(report["repairable"])
+        self.assertEqual(report["not_ready_reason"], "RESOLUTION_MISMATCH")
+
+    def test_a_ready_device_needs_no_repair(self):
+        report = self._report_with_device(_DeviceStatus(True, (720, 1280), "com.gof.china"))
+        self.assertTrue(report["ok"])
+        self.assertFalse(report["repairable"], "nothing to repair is not the same as repairable")
+        self.assertEqual(report["repair"], "")
+
+    def test_a_missing_adb_binary_is_not_repairable(self):
+        from tools import preflight
+
+        config = {"device": {"adb_path": "Z:/nope/adb.exe", "serial": "127.0.0.1:7555",
+                             "package_name": "com.gof.china", "resolution": [720, 1280]}}
+        with patch.object(preflight, "config", return_value=config):
+            report = preflight.device_report()
+        self.assertEqual(report["error"], "ADB_NOT_FOUND")
+        self.assertFalse(report["repairable"])
+
+
+class RepairableDeviceTest(unittest.TestCase):
+    """A repairable device lets AUTO start, and says so instead of claiming health."""
+
+    READY = runtime_env.InterpreterReport(python_exe=Path(sys.executable), exists=True)
+    UP = {"ok": True, "serial": "127.0.0.1:7555", "resolution": [720, 1280],
+          "foreground": "com.gof.china"}
+    RECOVERABLE = {"ok": False, "serial": "127.0.0.1:7555", "resolution": [720, 1280],
+                   "foreground": "app.lawnchair", "not_ready_reason": "GAME_NOT_FOREGROUND",
+                   "repair": "LAUNCH_GAME", "repairable": True}
+
+    def _main(self, device: dict, argv: list[str]) -> int:
+        from tools import preflight
+
+        with patch.object(preflight, "device_report", return_value=device), \
+             patch.object(preflight.runtime_env, "resolve_for_project", return_value=self.READY):
+            return preflight.main(argv)
+
+    def test_a_recoverable_device_does_not_block_auto(self):
+        self.assertEqual(self._main(self.RECOVERABLE, []), 0)
+
+    def test_it_is_reported_as_recovering_rather_than_as_pass(self):
+        from tools import preflight
+
+        with patch.object(preflight, "device_report", return_value=self.RECOVERABLE), \
+             patch.object(preflight.runtime_env, "resolve_for_project", return_value=self.READY):
+            data = preflight.report()
+        self.assertTrue(data["core_ok"])
+        self.assertEqual(data["blockers"], [])
+        self.assertEqual(data["recovering"], ["device"],
+                         "AUTO may start, but the reading must not claim the device is ready")
+
+    def test_the_window_opens_even_when_auto_may_not(self):
+        # The two questions again, from the launcher's side: an unrepairable device
+        # stops AUTO and must not stop the window -- the window is where the operator
+        # sees why, and where they can press 开始 once the host is fixed.
+        down = {"ok": False, "error": "DEVICE_NOT_CONNECTED", "repairable": False}
+        self.assertEqual(self._main(down, ["--launch-gate"]), 0)
+        self.assertEqual(self._main(down, []), 1)
+
+    def test_a_broken_interpreter_refuses_both(self):
+        from tools import preflight
+
+        blocked = runtime_env.InterpreterReport(
+            python_exe=Path("Z:/nope/python.exe"), exists=False, missing=("maa",)
+        )
+        for argv in ([], ["--launch-gate"]):
+            with self.subTest(argv=argv), \
+                 patch.object(preflight, "device_report", return_value=self.UP), \
+                 patch.object(preflight.runtime_env, "resolve_for_project", return_value=blocked):
+                self.assertEqual(preflight.main(argv), 1)
+
+    def test_the_launch_gate_answers_only_about_the_interpreter(self):
+        from tools import preflight
+
+        self.assertEqual(preflight.LAUNCH_GATE_SECTIONS, ("interpreter",))
+        self.assertIn("device", preflight.CORE_SECTIONS)
+        self.assertIn("device", preflight.REPAIRABLE_SECTIONS)
 
 
 if __name__ == "__main__":

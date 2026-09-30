@@ -5846,6 +5846,18 @@ class ControlPanel:
             f"({interpreter.get('exe')}) · MuMu {'OK' if device.get('ok') else 'FAIL'} "
             f"({device.get('serial')} {device.get('resolution') or device.get('want_resolution')} "
             f"前台 {device.get('foreground')})")
+        # A device that is not ready but that this window can repair is not a refusal,
+        # and it must not read as one either.  Measured 2026-10-01: the emulator sat on
+        # the Android launcher with the game not running, preflight called it a core
+        # blocker, and AUTO was never started -- so ``_ensure_device``, the only thing
+        # that launches MuMu and foregrounds the game, was never reached.  The line
+        # says which repair is about to happen so the operator can tell a recovery
+        # from a silent start on a broken device.
+        for name in report.get("recovering") or []:
+            section = sections.get(name) or {}
+            self._append(
+                f"预检·可恢复：{name} 未就绪（{section.get('not_ready_reason') or 'unknown'}），"
+                f"运行时会执行 {section.get('repair') or 'recovery'} 并退避重试；仍启动 AUTO。")
         if gateway.get("ok"):
             self._append(f"预检·辅助：WorkBuddy Gateway OK（{gateway.get('base_url')}）")
         else:

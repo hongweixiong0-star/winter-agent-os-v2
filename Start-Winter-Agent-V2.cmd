@@ -25,11 +25,28 @@ if not exist "%WINTER_PYTHONW%" (
     exit /b 1
 )
 
-"%WINTER_PYTHON%" "tools\preflight.py"
+rem --launch-gate, not the default: preflight answers two questions and one exit code
+rem cannot carry both.  This launcher is the gate for *opening the window*, so it asks
+rem the window's question -- can this interpreter run production -- and refuses on that.
+rem The device is deliberately not part of it.  A stopped emulator or a game that is not
+rem in the foreground is repaired by control_panel._ensure_device, which launches MuMu and
+rem foregrounds the client and is itself wrapped in a bounded retry loop; gating the
+rem window on it means the window cannot open in the one situation where the window is
+rem the fix.  Measured 2026-10-01 07:26: the emulator was up, on the Android launcher,
+rem with com.gof.china not running -- preflight called that a core blocker, this script
+rem refused to launch on it, and AUTO was never started, so _ensure_device was never
+rem reached.  A wrong interpreter is different in kind: the panel and the worker it
+rem spawns both inherit it, so nothing inside the process can change it, and on
+rem 2026-09-17 exactly that ran a whole session with MAA_IMPORT_FAILED and every
+rem promoted skill quietly on ADB at 324 ms against MAA's 8.92 ms.
+"%WINTER_PYTHON%" "tools\preflight.py" --launch-gate
 if errorlevel 1 (
     echo.
     echo [Winter Agent OS V2] 运行环境预检未通过，已阻止启动。
-    echo 不在缺少 MAA / OpenCV / RapidOCR 的解释器上静默降级运行。
+    echo 解释器不可用：面板与它派生的 worker 会继承同一个解释器，进程内无法自愈。
+    echo 设备类问题（模拟器未启动 / 游戏未在前台）不阻止开窗 —— 面板会启动它们。
+    echo 诊断：python tools\preflight.py
+    echo 修复：在 config\v2.json 的 runtime.python_path 指定可用解释器。
     pause
     exit /b 1
 )
