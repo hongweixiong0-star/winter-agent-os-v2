@@ -165,3 +165,17 @@ def test_cost_affordability_does_not_replace_or_refresh_stamina_gauge(tmp_path):
     runtime._multi_role_enabled=False
     runtime._calendar_role_id=lambda:'1061663148'
     assert str(LiveRuntime._role_observation_store_path(runtime)).replace('\\','/').endswith('/roles/1061663148/observation_state.json')
+
+
+def test_created_rally_hud_proof_requires_debit_new_march_and_same_row_timer():
+    before=WorldState(march_used=0,stamina={'current':284})
+    after=WorldState(march_used=1,march_max=6,stamina={'current':259})
+    tokens=[{'text':'集结中','center_norm':(.13,.223)},
+            {'text':'00:02:45','center_norm':(.18,.24)},
+            {'text':'00:00:06','center_norm':(.91,.45)}]
+    proof=BearSessionAdapter._polar_hud_proof(before,after,tokens)
+    assert proof['remaining_seconds']==165 and proof['ownership']=='SELF'
+    assert verify_rally_created(before,replace(after,alliance={'rally':proof}),'POLAR_TERROR').ok
+    assert BearSessionAdapter._polar_hud_proof(before,replace(after,stamina={'current':284}),tokens) is None
+    assert BearSessionAdapter._polar_hud_proof(before,replace(after,march_used=0),tokens) is None
+    assert BearSessionAdapter._polar_hud_proof(before,after,tokens[:1]+tokens[2:]) is None

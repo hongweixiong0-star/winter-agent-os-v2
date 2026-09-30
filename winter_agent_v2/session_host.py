@@ -253,6 +253,9 @@ class LiveRuntimeSessionHost:
             self.binding.latency["session_observes"] += 1
         self._last_world = world
         self._last_world_path = path
+        if phase == 'after':
+            self._after_world = world
+            self._after_path = path
         return world
 
     def widen(self, phase: str = "loop_widen") -> Any:
@@ -826,6 +829,9 @@ class LiveRuntimeSessionHost:
         §24 says a tap may never rest on.
         """
         word = str(step.target or "").strip()
+        self._before_world, self._before_path = self._world_for_step()
+        self._after_world = None
+        self._after_path = None
 
         def latency_ms() -> float:
             return (time.monotonic() - started) * 1000.0

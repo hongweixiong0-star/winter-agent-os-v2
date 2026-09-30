@@ -692,16 +692,21 @@ class BearSessionAdapter(SessionAdapter):
 
     # --------------------------------------------------------------- observe
 
-    def observe(self, context: SessionContext, host: SessionHost) -> Any:
-        world = host.observe("session_bear")
+    def observe(self, context: SessionContext, host: SessionHost, *, phase='session_bear') -> Any:
+        world = host.observe(phase)
         if world is None:
             return None
         if self._stamina_polar:
-            self._polar_words = [str(t.get('text','')) for t in host.ocr() if isinstance(t,Mapping)]
+            tokens = [t for t in host.ocr() if isinstance(t,Mapping)]
+            self._polar_words = [str(t.get('text','')) for t in tokens]
             self._polar_before = self._polar_before or world
             if world.page is Page.MAP and world.has_free_march_slot is not None:
                 self._polar_slot_available = world.has_free_march_slot
                 self._polar_slot_observed_at = host.now()
+            if self._polar_dispatched:
+                hud = self._polar_hud_proof(self._polar_before, world, tokens)
+                if hud:
+                    world = replace(world, alliance={**world.alliance, 'rally': hud})
             if self._polar_dispatched and any(w in self._polar_words for w in ('取消集结','解散集结')):
                 text = ' '.join(self._polar_words)
                 countdown = re.search(r'(?<!\d)(\d{1,2}):(\d{2})(?!\d)',text)
@@ -801,8 +806,16 @@ class BearSessionAdapter(SessionAdapter):
             if step.target == '出征' and execution.executed:
                 self._polar_dispatched = True
                 host.note('GIANT_BEAST_DISPATCH_PENDING', target='POLAR_TERROR')
-            return StepVerdict(StepOutcome.PROGRESS if execution.executed else StepOutcome.FAILED,
-                               execution.reason,dict(execution.evidence or {}))
+            if not execution.executed:
+                return StepVerdict(StepOutcome.FAILED, execution.reason, dict(execution.evidence or {}))
+            domain = self.observe(context, host, phase='after')
+            words = self._polar_words
+            confirmed = self.started if step.target == '出征' else (
+                any('请设定集结时间' in word for word in words) if step.target == '集结'
+                else '出征' in words and domain is not None and domain.world.page is Page.MARCH)
+            return StepVerdict(StepOutcome.SUCCESS if confirmed else StepOutcome.AMBIGUOUS,
+                               'POLAR_STEP_RESPONSE_VERIFIED' if confirmed else 'POLAR_ACTION_RESPONSE_NOT_PROVEN',
+                               {**dict(execution.evidence or {}), 'game_response_verified':confirmed})
         # The registered verifier is the domain verifier here: START_RALLY / JOIN_RALLY have
         # their own target-scoped checks in the runtime, and duplicating them would be the
         # second implementation the directive forbids.
@@ -824,8 +837,6 @@ class BearSessionAdapter(SessionAdapter):
         words = self._polar_words
         if self._polar_target_confirmed:
             if self._polar_dispatched:
-                if '集结中' in words:
-                    return SessionStep(0,STEP_PRINTED_TAP,target='集结中',reason='inspect own newly dispatched rally')
                 return SessionStep(0,STEP_OBSERVE_ONLY,reason='do not duplicate pending rally dispatch')
             if '出征' in words:
                 slot = domain.idle_marches is not None and domain.idle_marches > 0
@@ -872,6 +883,34 @@ class BearSessionAdapter(SessionAdapter):
                 return SessionStep(0,STEP_PRINTED_TAP,target='集结',reason='current searched polar target')
             return SessionStep(0,STEP_OBSERVE_ONLY,reason='do not duplicate submitted search')
         return SessionStep(0,STEP_SKILL,skill_id='SEARCH_RESOURCE',reason='open shared client search')
+
+    @staticmethod
+    def _polar_hud_proof(before, after, tokens):
+        """Own march transition plus its rally timer and real stamina debit."""
+        old, new = _stamina_of(before), _stamina_of(after)
+        if old is None or new is None or new >= old:
+            return None
+        if before.march_used is None or after.march_used is None or after.march_used <= before.march_used:
+            return None
+        labels = [t for t in tokens if t.get('text') == '集结中' and t.get('center_norm')
+                  and t['center_norm'][0] < .4]
+        if len(labels) != 1:
+            return None
+        label = labels[0]['center_norm']
+        timers = []
+        for token in tokens:
+            center = token.get('center_norm')
+            if not center or abs(center[1] - label[1]) > .04 or abs(center[0] - label[0]) > .18:
+                continue
+            match = re.fullmatch(r'(?:(\d{1,2}):)?(\d{1,2}):(\d{2})', str(token.get('text','')))
+            if match:
+                seconds = int(match[1] or 0)*3600 + int(match[2])*60 + int(match[3])
+                if seconds > 0:
+                    timers.append(seconds)
+        if len(timers) != 1:
+            return None
+        return {'ownership':'SELF', 'target_type':'POLAR_TERROR', 'remaining_seconds':timers[0],
+                'source':'OWN_MARCH_HUD_TRANSITION_RALLY_TIMER_AND_STAMINA_DEBIT'}
 
     # --------------------------------------------------------------- recover
 
