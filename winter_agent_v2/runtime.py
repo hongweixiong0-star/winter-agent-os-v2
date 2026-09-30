@@ -1148,8 +1148,9 @@ class LiveRuntime:
         own = data.get('own_rally') or {}
         sink = choose_stamina_goal(data.get('current'), 'AVAILABLE' if runnable_intel else 'NOT_AVAILABLE',
             not getattr(self,'_giant_stamina_failed',False), not beast_blocked,
-            idle_slots=data.get('idle_marches'), own_rally=own.get('ownership') == 'SELF'
-                and isinstance(own.get('remaining_seconds'),int) and own['remaining_seconds'] > 0)
+            idle_slots=data.get('idle_marches'), own_rally=bool(own.get('dispatch_pending')) or
+                (own.get('ownership') == 'SELF' and isinstance(own.get('remaining_seconds'),int)
+                 and own['remaining_seconds'] > 0))
         route = {'INTEL':'SPEND_STAMINA','GIANT_BEAST':'GIANT_BEAST','BEAST_HUNT':'BEAST_HUNT'}.get(sink.goal,'STAMINA_WAIT')
         data.update(stamina_sink=sink.goal, stamina_sink_reason=sink.reason)
         if sink.goal == 'GIANT_BEAST':
@@ -1350,9 +1351,12 @@ class LiveRuntime:
         # The HUD gauge is read on many frames but is a *domain* like the others: the stamina goal
         # exists only while it is readable, so the last reading has to outlive the frame that
         # produced it or the goal disappears from the board whenever the gauge is off screen.
-        if world.stamina:
+        stamina_reading = world.stamina
+        if not stamina_reading and isinstance(world.intel.get('stamina'), int):
+            stamina_reading = {'current': world.intel['stamina'], 'source': 'LIVE_INTEL_HUD'}
+        if stamina_reading:
             try:
-                observation_store.record("stamina", world.stamina, frame=frame, path=store_path)
+                observation_store.record("stamina", stamina_reading, frame=frame, path=store_path)
             except Exception:  # noqa: BLE001
                 pass
 

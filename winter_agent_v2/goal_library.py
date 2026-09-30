@@ -1136,7 +1136,9 @@ class GoalLibrary:
                           "intel_state": dict(world.intel or ((observations or {}).get('intel', {}).get('reading')
                               if not (observations or {}).get('intel', {}).get('overdue', True) else {}) or {}),
                           "idle_marches":world.idle_marches,
-                          "own_rally":dict((world.alliance or {}).get('rally') or {})},
+                            "own_rally":dict((world.alliance or {}).get('rally') or
+                                (((observations or {}).get('alliance', {}).get('reading') or {}).get('rally')
+                                 if not (observations or {}).get('alliance', {}).get('overdue', True) else {}) or {})},
                 # Stamina still at or above the floor is exactly the work left to do, and
                 # it is what makes a beast kill progress while a map pan does not.  At the
                 # floor itself this is 1 rather than 0, which is the boundary above stated

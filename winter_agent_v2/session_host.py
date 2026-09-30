@@ -453,6 +453,16 @@ class LiveRuntimeSessionHost:
 
     def note(self, event: str, **fields: Any) -> None:
         """Record diagnostics without stranding a device session on a write failure."""
+        if event in {'GIANT_BEAST_DISPATCH_PENDING', 'GIANT_BEAST_RALLY_STARTED'}:
+            try:
+                from . import observation_store
+                reading = fields.get('alliance') or {'rally': {
+                    'target_type': 'POLAR_TERROR', 'dispatch_pending': True,
+                    'source': 'DISPATCH_SENT_NOT_YET_VERIFIED'}}
+                observation_store.record('alliance', reading,
+                    path=self.runtime._role_observation_store_path())
+            except Exception as exc:  # A telemetry failure cannot repeat a dispatch.
+                self.notes.append(f'rally_persistence_failed {type(exc).__name__}:{exc}')
         if event in {"fishing_observation", "fishing_run"}:
             try:
                 self._persist_fishing(event, fields)

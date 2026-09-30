@@ -79,3 +79,19 @@ def test_polar_search_uses_client_tab_and_never_join_or_map_pan():
     assert adapter._polar_step(domain).target=='出征'
     adapter._polar_dispatched=True
     assert adapter._polar_step(domain).target!='出征'
+
+
+def test_intel_hud_stamina_survives_popup_without_borrowing_other_role(tmp_path):
+    from winter_agent_v2 import observation_store
+    from winter_agent_v2.goal_library import GoalLibrary
+    runtime = object.__new__(LiveRuntime)
+    role_path = tmp_path / 'role_A.json'
+    runtime._role_observation_store_path = lambda: role_path
+    runtime._record_observations(WorldState(page=Page.INTEL, intel={'stamina':284}))
+    observed = observation_store.as_observation_input(observation_store.load(role_path))
+    goals = GoalLibrary().discover(WorldState(page=Page.POPUP), observations=observed)
+    stamina = next(g for g in goals if g.goal_id == 'AVOID_STAMINA_WASTE')
+    assert stamina.evidence['current'] == 284
+    assert stamina.evidence['reused'] is True
+    assert not any(g.goal_id == 'AVOID_STAMINA_WASTE' for g in
+                   GoalLibrary().discover(WorldState(page=Page.POPUP), observations={}))

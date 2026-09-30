@@ -712,7 +712,7 @@ class BearSessionAdapter(SessionAdapter):
                 self.starts = 1
                 host.note('GIANT_BEAST_RALLY_STARTED',target='POLAR_TERROR',
                           stamina_before=_stamina_of(self._polar_before),stamina_after=_stamina_of(world),
-                          verifier=dict(proof.evidence or {}))
+                          verifier=dict(proof.evidence or {}), alliance=dict(world.alliance))
         rows = _rally_rows(world)
         # The target comes from the Goal when the Goal named one, and from the route
         # otherwise -- never from a row, because a row's target is what we are matching
@@ -794,6 +794,7 @@ class BearSessionAdapter(SessionAdapter):
         if self._stamina_polar and step.kind == STEP_PRINTED_TAP:
             if step.target == '出征' and execution.executed:
                 self._polar_dispatched = True
+                host.note('GIANT_BEAST_DISPATCH_PENDING', target='POLAR_TERROR')
             return StepVerdict(StepOutcome.PROGRESS if execution.executed else StepOutcome.FAILED,
                                execution.reason,dict(execution.evidence or {}))
         # The registered verifier is the domain verifier here: START_RALLY / JOIN_RALLY have
