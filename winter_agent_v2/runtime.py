@@ -860,7 +860,16 @@ class LiveRuntime:
         if self.validation_focus_route == 'DAILY':
             return [goal for goal in goals if goal.goal_id == 'DAILY_ACTIVITY_TARGET'
                     or getattr(goal, 'evidence', {}).get('source') == 'LIVE_DAILY_TASK_ROW']
-        return [goal for goal in goals if route_for(goal.goal_id) == self.validation_focus_route]
+        scoped = [goal for goal in goals if route_for(goal.goal_id) == self.validation_focus_route]
+        if self.validation_focus_route == 'FISHING' and not any(
+                getattr(goal.status, 'value', goal.status) == 'READY' for goal in scoped):
+            # A bait-blocked probe can still ask the existing read-only session to
+            # confirm the client counter. Never synthesize a spendable bait Goal.
+            from .goal_library import GoalState, GoalStatus
+            scoped.append(GoalState('OBSERVE_FISHING_STATE', GoalStatus.READY,
+                          available_skills=('READ_FISHING_STATE',), distance=1.0,
+                          evidence={'only_allowed_spend':'NONE','source':'DEVELOPMENT_FRESH_READ'}))
+        return scoped
 
     def _selectable(self, goals, deferrals: list[Deferral]):
         """The operator's policy and the deferral gate, applied to discovered goals.

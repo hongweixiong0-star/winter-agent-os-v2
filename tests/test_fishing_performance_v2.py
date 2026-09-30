@@ -20,6 +20,19 @@ def test_grey_fish_is_not_missed_and_round_puffer_is_never_food():
     assert not any(abs(f['x']-540)<30 for f in state.fish)
 
 
+def test_fish_occlusion_prediction_is_bounded_and_not_an_actual_detection():
+    vision=FishingVision()
+    vision(scene(),timestamp=0)
+    vision(scene(),timestamp=.05)
+    image=scene()
+    image[925:975,185:275]=(10,120,180)
+    for at in (.1,.15,.2):
+        state=vision(image,timestamp=at)
+        assert not state.fish
+        assert state.meta['predicted_fish'][0]['predicted']
+    assert not vision(image,timestamp=.25).meta['predicted_fish']
+
+
 def test_unrelated_dark_column_does_not_replace_hook_aligned_track():
     vision=FishingVision()
     assert abs(vision(scene(),timestamp=0).line_x-350)<5

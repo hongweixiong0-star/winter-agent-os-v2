@@ -46,6 +46,15 @@ def test_validation_without_requested_route_keeps_scheduler_global():
     assert selected is goals
 
 
+def test_bait_blocked_validation_only_adds_existing_read_only_goal():
+    from winter_agent_v2.goal_library import GoalState, GoalStatus
+    goal=GoalState('USE_NORMAL_FISHING_BAIT',GoalStatus.BLOCKED)
+    selected=_runtime('DEVELOPMENT_VALIDATION','FISHING')._focus_validation_goals([goal])
+    assert selected[-1].goal_id=='OBSERVE_FISHING_STATE'
+    assert selected[-1].available_skills==('READ_FISHING_STATE',)
+    assert selected[0].status is GoalStatus.BLOCKED
+
+
 def test_validation_route_scope_is_inactive_for_production():
     assert not _runtime("PRODUCTION", "TRAIN")._validation_route_scope_active()
 

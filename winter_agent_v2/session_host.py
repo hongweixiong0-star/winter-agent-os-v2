@@ -757,6 +757,9 @@ class LiveRuntimeSessionHost:
             first_valid = getattr(vision,'first_valid_at',None) or drive_started
             performance['first_effective_control_ms'] = ((moved['at']-first_valid)*1000 if moved else None)
             performance['fish_caught'] = performance['collision_count'] = performance['shield_used'] = None
+            performance['touch_stuck'] = sum(bool(row.get('stuck')) for row in report.touch_sessions)
+            performance['ocr_calls_in_control'] = report.policy.get('ocr_calls_inside_realtime')
+            performance['model_calls_in_control'] = report.policy.get('qwen_calls')
             gameplay = [r for r in trace if r.get('gameplay') is not False]
             performance['control_coverage'] = sum(not r.get('lost') for r in gameplay)/max(1,len(gameplay))
             performance['idle_frame_ratio'] = sum(not r.get('moved') for r in gameplay)/max(1,len(gameplay))

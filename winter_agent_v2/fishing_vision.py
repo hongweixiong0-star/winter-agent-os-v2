@@ -409,6 +409,7 @@ class FishingVision:
             elif 1.45 <= w/h <= 5.5 and h <= height*.075:
                 fish.append({**obj, 'confidence':.75, 'kind':'FISH_CANDIDATE'})
         used, flow = set(), []
+        predicted_fish = []
         for obj in fish:
             candidates = [(abs(t['x']+t['vx']*(at-t['last_seen'])-obj['x'])+
                            abs(t['y']+t['vy']*(at-t['last_seen'])-obj['y']), key,t)
@@ -436,8 +437,17 @@ class FishingVision:
             if self.tracks[key]['misses'] > 3:
                 self.track_lost += 1
                 del self.tracks[key]
+            else:
+                track = self.tracks[key]
+                dt = at-track['last_seen']
+                if track['age'] >= 2 and 0 <= dt <= .18:
+                    predicted_fish.append({**track, 'fish_id':key, 'predicted':True,
+                        'x':track['x']+track['vx']*dt,'y':track['y']+track['vy']*dt,
+                        'confidence':.75-.03*track['misses']})
         state.meta['scene_vy'] = float(np.median(flow)) if len(flow)>=2 else None
         state.meta['fish_detection_count'] = len(fish)
+        # Predictions are explicitly separate from this frame's actual detections.
+        state.meta['predicted_fish'] = predicted_fish
         return fish, obstacles
 
     def summary(self):

@@ -157,10 +157,11 @@ class FishingSessionController:
 
     def _fish_target(self, state: FishingFrame) -> int | None:
         """Ascent policy: the nearest reachable fish head."""
-        if not state.fish:
+        fish_candidates = state.fish + state.meta.get('predicted_fish', [])
+        if not fish_candidates:
             return None
         hook_y = state.hook_y if state.hook_y is not None else 0
-        reachable = [f for f in state.fish if (f.get("h") or 0) >= 8 and f.get('confidence',.75)>=.65]
+        reachable = [f for f in fish_candidates if (f.get("h") or 0) >= 8 and f.get('confidence',.75)>=.65]
         if not reachable:
             return None
         targets = []
