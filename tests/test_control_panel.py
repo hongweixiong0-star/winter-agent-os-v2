@@ -141,7 +141,7 @@ class ControlPanelTests(unittest.TestCase):
     def test_pump_persists_the_frozen_runtime_and_control_plane_build_identities(self):
         with TemporaryDirectory() as folder:
             path = Path(folder) / "pump.json"
-            frozen = SimpleNamespace(token="14a5644+runtime-digest")
+            frozen = SimpleNamespace(token="14a5644+test")
             with patch.object(cp, "PUMP_STATE_PATH", path), \
                  patch.object(cp, "CONTROL_PLANE_SOURCE_SHA256", "panel-source-sha256"), \
                  patch("winter_agent_v2.version_identity.process_revision", return_value=frozen):
