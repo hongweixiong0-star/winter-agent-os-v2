@@ -75,6 +75,7 @@ PII_PATTERNS: list[tuple[str, str]] = [
     ("email", r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}"),
 ]
 PII_ALLOWLIST = [
+    r"@example\.invalid$",        # deliberately non-routable test identities
     r"@winter-agent-os\.local$",   # the commit identity
     r"@example\.(com|org|net)$",
     r"@localhost$",
@@ -93,6 +94,20 @@ PII_CONTEXT_ALLOWLIST = [
 # inside a run of hex characters long enough to be a digest, and only there: a real
 # number in text is a standalone run of digits.
 HEX_RUN = re.compile(r"[0-9a-fA-F]{16,}")
+
+
+def inside_frame_timestamp(line: str, match: re.Match) -> bool:
+    """A valid capture filename's time is not a phone number elsewhere on the line."""
+    from datetime import datetime
+    for stamp in re.finditer(r"(?:^|[/_])((?:19|20)\d{6})T(\d{6})(\d{1,6})(?=[_.])", line):
+        if not (stamp.start(2) <= match.start() and match.end() <= stamp.end(3)):
+            continue
+        try:
+            datetime.strptime(stamp.group(1) + stamp.group(2), "%Y%m%d%H%M%S")
+        except ValueError:
+            continue
+        return True
+    return False
 
 SKIP_SUFFIXES = {
     ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".ico", ".pdf", ".zip", ".gz",
@@ -187,6 +202,8 @@ def main() -> int:
                             break
                         span = HEX_RUN.search(line, span.end())
                     if in_hex:
+                        continue
+                    if name == "cn_mobile" and inside_frame_timestamp(line, match):
                         continue
                     findings["pii"].append({
                         "file": rel_posix, "line": line_no, "pattern": name,
