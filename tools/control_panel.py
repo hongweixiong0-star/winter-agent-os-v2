@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import queue
+import re
 import subprocess
 import sys
 import threading
@@ -511,6 +512,31 @@ def classify_worker_failure(message: str) -> str:
 def write_worker_crash_report(
     *, where: str, exc: BaseException, snapshot: Any, context: dict[str, Any] | None = None,
 ) -> Path:
+MAX_CONSECUTIVE_WORKER_CRASH_RESTARTS = 3
+
+
+def worker_result_failure(output: str, exit_code: int) -> dict[str, Any]:
+    """A child that never returned its result failed, even if the panel stayed alive."""
+    lines = str(output or "").splitlines()
+    traceback_start = next((i for i, line in enumerate(lines)
+                            if line.startswith("Traceback (most recent call last):")), None)
+    child_traceback = ""
+    message = f"WORKER_RESULT_MISSING: exit={exit_code}"
+    if traceback_start is not None:
+        tail = lines[traceback_start:]
+        exception_line = next((i for i, line in reversed(list(enumerate(tail)))
+                               if re.match(r"^[\w.]+(?:Error|Exception|Exit|Interrupt)(?::|$)", line)), None)
+        if exception_line is not None:
+            message = tail[exception_line]
+            child_traceback = "\n".join(tail[:exception_line + 1])
+        else:
+            child_traceback = "\n".join(tail)
+    elif exit_code == WORKER_ABANDONED_CODE:
+        message = f"WORKER_TIMEOUT: exit={exit_code}"
+    return {"message": message, "classification": classify_worker_failure(message),
+            "exit_code": exit_code, "child_traceback": child_traceback}
+
+
     """Persist the evidence needed to find the real root cause of a worker exit.
 
     Previously the worker caught ``Exception`` and forwarded only ``str(exc)``,
@@ -567,6 +593,8 @@ def write_worker_crash_report(
     }
     path = CRASH_ROOT / f"{stamp}_{where}.json"
     temporary = path.with_suffix(".json.tmp")
+        "child_traceback": context.get("child_traceback", ""),
+        "child_exit_code": context.get("exit_code"),
     temporary.write_text(json.dumps(report, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
     temporary.replace(path)
     return path
@@ -5268,6 +5296,8 @@ class ControlPanel:
         """
         try:
             from winter_agent_v2.control_plane_reload import (
+        if self.paused:
+            self._consecutive_worker_crashes = 0
                 changed_paths_since, control_plane_signal, needs_reload, reload_reason,
                 safe_to_reload,
             )
@@ -6115,8 +6145,8 @@ class ControlPanel:
         self._idle_buttons(); self._clear_running_task_labels()
         if self.continuous.get() and not fatal and not self.stop_requested and not self.paused:
             self.runtime_store.update(watchdog_restart_count=previous.watchdog_restart_count + 1)
-            self.repeat_after_id = self.root.after(5000, self.start)
-            self._waiting_buttons(); self._append("Watchdog 将在 5 秒后恢复唯一 Runtime。")
+            self.repeat_after_id = self.root.after(delay_ms, self.start)
+            self._waiting_buttons(); self._append(f"Watchdog 将在 {delay_ms // 1000} 秒后重新观察并恢复唯一 Runtime。")
 
     def _apply_world(self, status: Any, world: WorldState, path: Path) -> None:
         self.latest_world, self.latest_image_path = world, path; self.preview_source = Image.open(path).convert("RGB")
@@ -6149,6 +6179,16 @@ class ControlPanel:
         summary = summarize_runtime_result(payload, code); steps = payload.get("steps", []) if isinstance(payload, dict) else []
         last = steps[-1] if steps else {}; decision = last.get("decision", {}) if isinstance(last, dict) else {}; verification = last.get("verification", {}) if isinstance(last, dict) else {}
         reason = str(summary["reason"] or "")
+            if classification == "WORKER_CRASH":
+                self._consecutive_worker_crashes = getattr(self, "_consecutive_worker_crashes", 0) + 1
+                if self._consecutive_worker_crashes > MAX_CONSECUTIVE_WORKER_CRASH_RESTARTS:
+                    self.paused = True
+                    self.operator_intent = save_operator_intent(
+                        PANEL_STATE_PATH, "PAUSED", "worker crash restart budget exhausted")
+                    self._append("连续 Worker 异常已耗尽恢复预算，AUTO 已暂停；根因和现场已保留。")
+                    return
+            delay_ms = (min(30_000, 5_000 * 2 ** (getattr(self, "_consecutive_worker_crashes", 1) - 1))
+                        if classification == "WORKER_CRASH" else 5_000)
         role_handoff = reason.startswith(("ROLE_SWITCHED_TO:", "ROLE_IDENTITY_CHANGED:"))
         skill = ("ROLE_SWITCH" if role_handoff else
                  decision.get("skill", "GATHER_RESOURCE") if isinstance(decision, dict)
@@ -6215,7 +6255,18 @@ class ControlPanel:
             self.values["mode"].set("继续" if immediate else "等待")
             self.repeat_after_id = self.root.after(delay_ms, self.start)
             self._waiting_buttons()
+        if not payload and not self.stop_requested and not self.paused:
+            failure = worker_result_failure(output, code)
+            report = write_worker_crash_report(
+                where="auto_subprocess", exc=RuntimeError(failure["message"]),
+                snapshot=self.runtime_store.read(), context=failure,
+            )
+            failure["crash_report"] = str(report)
+            self._handle_worker_failure(failure)
+            return
             self._append(f"连续运行已启用，{delay_text}后进入下一轮。"
+        if summary["healthy"] or summary["verified"]:
+            self._consecutive_worker_crashes = 0
                          + ("（角色切换已确认，本轮重启只用于刷新目标角色状态）" if role_handoff else
                             "（目标角色已有切换退避；下一轮重新读取当前角色与页面）" if retryable_role_switch else
                             "（角色仍持有设备，立即重新观察同一角色）"
