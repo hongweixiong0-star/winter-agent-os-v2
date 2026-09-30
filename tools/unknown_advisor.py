@@ -11,7 +11,7 @@ The runtime side (``winter_agent_v2/unknown_advisor.py``) writes a question to
 ``learning/unknown_requests/`` and reads an answer if one is there; it has no client and cannot
 wait, and that is deliberate -- the project's standing rule is that a model is an optional
 provider, never a runtime dependency (operator section 7, pinned by
-``tests/test_qwen_decoupling.py``).
+``tests/test_local_gui_model_decoupling.py``).
 
 This tool is the other half, and it is where a reasoner is allowed to live: a WorkBuddy session, an
 operator reading the questions, or a local model driven by a script.  Whatever answers, it answers

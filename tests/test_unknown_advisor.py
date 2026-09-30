@@ -15,7 +15,7 @@ part that could go wrong quietly:
 * an answer is never a verdict: it changes neither a page's nor an element's status, and the
   existing verifier still decides (§五);
 * the provider stays off the runtime path (operator section 7), which is what the project's own
-  ``tests/test_qwen_decoupling.py`` requires of this module too.
+  ``tests/test_local_gui_model_decoupling.py`` requires of this module too.
 
 Two of the cases run on the real captured 挂机收益 frame, so what is exercised is the wire in
 ``runtime._advised_control`` and not a helper in isolation.

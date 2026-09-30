@@ -14,6 +14,12 @@
 
 ## 1. STRUCTURED_OUTPUT_PASS — 已取得
 
+> **2026-09-30 重新基线**：本机运行时本地模型已由 Ollama 的 35.5B MoE Q3（`qwen3635bagent-q3:latest`
+> @ `:11434`）换成 **llama.cpp 常驻的 UI-Venus-2-9B Q4_K_M @ `http://127.0.0.1:18080`**。
+> 下面第一段数值是**旧模型**的实测，保留是因为它是"换掉它的理由"；新模型的数值见本段之后。
+
+**旧模型（已退役，2026-09-25 实测）**：
+
 ```
 $ .venv/Scripts/python.exe tools/probe_local_planner.py --trials 2
 model    : qwen3635bagent-q3:latest
@@ -25,13 +31,36 @@ trial 2: ok=True latency=3278ms  reply=299c
 STRUCTURED_OUTPUT_PASS: 2/2
 ```
 
-要点：
-
 - 真实模型（本机 Ollama，35.5B MoE，`num_ctx=8192`，`format=json`，`think=false` 被接受）；
 - 首次 40 s（模型装载），预热后 3.3 s；
 - goal=DAILY_ROUTINE 的屏幕上同时摆了 `领取` 与 `钻石`，模型选了 `领取` —— prompt 的
   §7 消耗禁令生效，没有去碰钻石；
 - 回复里没有任何坐标；`ui_planner.FORBIDDEN_KEYS` 会递归拒绝带几何信息的回复（有单测钉住）。
+
+**为什么换掉它（`learning/local_qwen_calls.jsonl`，79 行）**：ok 68 / failed 11，**11 次全是
+`LOCAL_QWEN_TIMEOUTERROR`（13.9%）**；ok 的延迟 **p50 17.9 s / p95 42.9 s / max 44.5 s**（45 s 预算）。
+
+**新模型（2026-09-30 实测）**：`UI-Venus-2-9B Q4_K_M`，llama-server `:18080`，ctx 8192，
+投影器在 GPU，`--image-min-tokens 1024`。
+
+```
+$ .venv/Scripts/python.exe tools/launch_gui_model_server.py --status
+{"endpoint": "http://127.0.0.1:18080", "model_path": "E:/winter_models/ui-venus-2-9b/UI-Venus-2-9B-Q4_K_M.gguf",
+ "n_ctx": 8192, "multimodal_projector_loaded": true, "resident": true}
+
+$ .venv/Scripts/python.exe tools/probe_local_planner.py --frame <real frame> --goal EXPLORATION --trials 2
+STRUCTURED_OUTPUT_PASS: 2/2        # latency 12613 ms / 7690 ms
+```
+
+- **prompt eval 521–712 tok/s、generation 15–18 tok/s** ⇒ 单次视觉调用端到端 ~4 s（短答）。
+  `--no-mmproj-offload`（投影器留在 CPU）时 prompt eval 只有 **62 tok/s**、单张截图 **20.5 s**，
+  这是本轮最大的一处性能判断。
+- `SCREENSHOT_INPUT_VERIFIED = true`：同一问题**无图**答 "largest readable text 'Play for Free'"
+  （画面里不存在），**有图**答 "largest readable text is 「搜索」on the large blue button at the bottom"
+  （真实中文）。`tools/probe_gui_model_multimodal.py` 就是这个对照实验，可复跑。
+- 模型在 0-OCR 元素的屏上选择 **OBSERVE**（诚实不点）并给出 reason。
+- 提示词长度与耗时无关：把 reason 限到 ≤20 字后 p50 11.5 s → 12.4 s（噪声）。
+  **output 长度是步数/运行预算的问题，不是提示词的问题。**
 
 ## 2. MAA_EXECUTION_PASS — 已取得（真机）
 
@@ -163,7 +192,8 @@ plan : {"decision":"DEFER","reason":"The current screen is the Intel page, which
 
 | 测试文件 | 结果 |
 | --- | --- |
-| `test_local_planner.py` / `test_qwen_decoupling.py` | 全绿 |
+| `test_local_planner.py` / `test_local_gui_model_decoupling.py` | 全绿（2026-09-30 复跑 63 passed） |
+| `test_control_panel_local_model.py` | 新增：控制台的本地模型格、最近调用行、判定归属 |
 | `test_unknown_ai_channel.py` | 42 passed |
 | `test_refusal_yields_the_cycle.py` | 2 失败，**均为既有** |
 | `test_control_panel.py` | 2 失败，**均为既有** |

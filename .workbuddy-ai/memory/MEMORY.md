@@ -2413,3 +2413,102 @@ ladder 抢不动它；一旦会话执行了任意一步（→ 建好 scheduler�
 多出的 16 项不是"新坏"，是**从没被看见**。
 **永远不要拿一次带 `-k` 的运行的失败数当基线**；要当基线就重跑一次不带筛选的。
 
+**（3）本机复核过了这个数字**：全量 `pytest tests`（排除两个既有坏文件）实测
+`160 failed, 3730 passed, 18 skipped, 10 errors, 933 subtests passed in 1331.49s`，
+其中 `^FAILED` = **157**、`^SUBFAILED` = **3**、`^ERROR` = **10**，157+3 = 160 对得上。
+**汇总的 160 里含 3 个 `SUBFAILED`，也含 10 个 `ERROR`**——`ERROR` 已经在汇总里单独计，
+所以**只抓 `^FAILED` 会同时少 3 个、还多算不了那 10 个**。要建基线就必须三样一起抓。
+
+
+## 迁移：唯一运行时本地模型 Qwen3.6-35B-MoE Q3 → UI-Venus-2-9B Q4_K_M（2026-09-30）
+
+**结论**：`winter_agent_v2/local_qwen.py` 已删除，`local_gui_model.py` 顶替；
+`ACTIVE_RUNTIME_LOCAL_MODELS = 1`，`OLD_QWEN_RUNTIME_REFERENCES = 0`。
+端点从 Ollama `:11434` 换成本机 **llama-server `:18080`**（`:8080` 已被别的进程占、`:11434` 是
+Ollama 自己的，所以两个都不能用——**先 netstat 再定端口**）。
+运行时首轮实测打印：`[planner] UI-Venus-2-9B at http://127.0.0.1:18080 -> reachable`。
+
+### 实测参数（RTX 4060 Laptop 8188 MiB / 31.2 GB RAM / MuMu 同机）
+| 项 | 值 | 依据（不是照抄） |
+|---|---|---|
+| `-ngl` | **24** | 28 只剩 453 MiB 余量；24 → **1082 MiB**，且延迟未变差 |
+| 投影器 | **留在 GPU**（不加 `--no-mmproj-offload`） | 这是唯一的大头：prompt eval **62 → 521–712 tok/s**，单图 **20.5s → ~4s** |
+| KV cache | `-ctk q8_0 -ctv q8_0` | 每 token = 2×32×4×256×2B ⇒ 8192 ctx f16 ≈ 1.07 GB，q8_0 ≈ 0.57 GB |
+| `--image-min-tokens/max-tokens` | **1024** | llama.cpp 自己 warn："Qwen-VL models require at minimum 1024 image tokens to function correctly on grounding tasks" |
+| `-c` / `-np` / `-b` / `-ub` | 8192 / 1 / 512 / 512 | 8192 与 `context` 一致；`-np 1` 单槽 |
+| 常驻 | 是 | **禁止每个 AUTO round 重载 9B** |
+
+**generation 只有 ~15–18 tok/s ⇒ 端到端 8–15s 里"生成"占 ~7–9s。**
+这条**与提示词无关**：把 reason 限到 ≤20 字后 p50 反而 11.5s → 12.4s（噪声）。
+output 长度是**步数/运行预算**的问题，不是提示词的问题——**别再改提示词去省时间**。
+
+### UI-Venus-2 是 reasoning 模型，两个必踩的坑
+1. **`content` 会是空的、`finish_reason: "length"`**：thinking 写进 `message.reasoning_content`
+   并吃光全部 token。llama.cpp 的 `chat_template_kwargs.enable_thinking=false` 可关；
+   读回复要 **content → reasoning_content 兜底**，否则会误判成"模型没回答"。
+2. **图像嵌入有缓存**：重复同一张图 prompt eval 从 1133 tokens 掉到 **4 tokens**。
+   **用"同一张图重跑"来测延迟会得到一个假的好数字。**
+
+### `SCREENSHOT_INPUT_VERIFIED` 怎么证（不是"传了图就算"）
+用**同一问题问两遍**（纯文本 vs 带图）：无图那次答 "about 10 distinct buttons/icons, largest
+readable text 'Play for Free'"——**画面里根本不存在这句话**（纯幻觉）；有图那次答
+"largest readable text is 「搜索」on the large blue button at the bottom"——**读到了真实中文**。
+凡是能靠"只传路径文本 / 只传 OCR / 只传 element table"通过的检查，都**证明不了**模型看见了截图。
+
+### 协议不必重造
+用**真实系统提示词 + 真实帧**验收：模型原样返回
+`{"goal":"EXPLORATION","decision":"EXECUTE","action":{"type":"CLICK_ELEMENT","target_element_id":"E4"},...}`
+**现有 `parse_plan` 原样接受**（`PARSE ok: True`）⇒ 不需要新协议、不需要第二 Executor。
+
+### 视觉通道与"坐标不得成为知识"
+`elements == []` 时仍允许模型给 `semantic_target` + `candidate_bbox_norm`，但该 bbox 只是
+`UNTRUSTED_CURRENT_FRAME_PROPOSAL`：它**复用现成的** `unknown_advisor.grounded_region`，
+即"这一帧没画到它 ⇒ 拒绝"。**已用测试证明**：同一提案，帧画在别处 → `justified_point` 返回 None；
+帧真的画了那块 → 才接地。**模型 bbox → 直接点击这条路不存在，不是靠约定，是靠代码。**
+
+### ⚠ 归因/台账类的四个坑（本轮各踩一次）
+1. **token 扫描器分不清"散文"与"代码"，会惩罚文档。** 我在 `unknown_advisor.py` 的 docstring 里
+   写上"由 `tests/test_local_gui_model_decoupling.py` 钉住"，就触发了自己那条
+   "只有 planner 能读 client"的子串扫描 → 假阳性。**扫描器必须要求 `import` 语句形态**
+   （正则匹配 `from … import local_gui_model` / `import local_gui_model`），并**留一个反例测试**
+   钉住"散文里的文件名不算引用"。
+2. **归属要按"来源"，不能按"有没有那个键"。** 控制台第一版接受任何带 `decision` 键的行，
+   而当时账本最新一行是**已退役 provider 的超时记录**，于是窗口声称模型被问过
+   `BEAST_HUNT / UNKNOWN::发起集结`——**它从没被问过**。改成要求 `source == LOCAL_GUI_SOURCE`，
+   并把"面板常量 == planner 常量"写成测试（静默分叉会让窗口永远显示"无最近决策"）。
+3. **模型不能自证**：plan 账本只记**提案**、`episodes.jsonl` 只记**判定**，两边没有 join，
+   于是"模型动作了且验证通过"**不可证**，模型的自信和"已验证"长得一样。
+   现补 `note_outcome()` 结算行 + runtime 侧按**步**归属（`_advised_request_id` 每步开头清、
+   写 episode 时消费），**没被消费的 id 不会挂到下一步**。
+4. **`snapshot.qwen = "ON_DEMAND"` 是个没有写者、也没有渲染者的死字段**（状态栏 2026-09-17 就
+   删了那列）。**别把它复活成"事实源"**——要显示就新加一条从 `config/v2.json` + `/health` +
+   两个账本派生的行。
+
+### ⚠ 环境铁律（2026-09-30 增补五）：repin 会在被挂载的工作树里**留下已删除模块的游离副本**
+`tools/repin_production.py` 用 `reset --mixed` + `checkout <sha> -- .`（排除四个挂载目录），
+**它不删文件**。于是 pin 到"删除了 `local_qwen.py` 的 commit"之后，生产树里那份
+`winter_agent_v2/local_qwen.py` **变成了未跟踪文件、仍然躺在磁盘上**，
+`import winter_agent_v2.local_qwen` **仍然成功**——"旧模块不可能被误导入"这条保证当场归零。
+**repin 之后必须查两类东西**：
+```bash
+git -C "<prod worktree>" status --porcelain --untracked-files=normal | grep '^??'   # 游离副本
+git -C "<prod worktree>" ls-tree -r --name-only HEAD | grep -c "<被删文件>"        # 应为 0
+```
+再确认 `import <被删模块>` 真的报 ImportError。文件在 git 历史里，删掉不会丢。
+
+### ⚠ 新增生产/工具文件会自动进 `check_wiring`，两个新文件各吃一条
+`tools/check_wiring.py` **会扫未跟踪文件**。本轮新增的
+`tools/launch_gui_model_server.py`（`taskkill`）与 `tools/benchmark_gui_unknown.py`（`nvidia-smi`）
+各被判一条 `unhidden-process`，因为项目铁律是"所有子进程走**唯一**的隐藏窗口运行器"。
+**新写任何起子进程的工具，直接用 `winter_agent_v2.winproc.run(...)`**（它自带
+`CREATE_NO_WINDOW` + `STARTUPINFO` 隐藏），需要新进程组时把
+`CREATE_NEW_PROCESS_GROUP` 按位或上去。**"八格状态栏"那条检查只断言结构、不断言个数**，
+所以加第 9 格（本地模型）**不会**触发它——但 `tests/test_state_truth.py` 断言了 8，必须同步改。
+
+### 配置改键名之前先 grep 读者
+`local_planner.num_ctx` → `context` 这个改名**安全**，因为全仓**没有任何代码读 `num_ctx`**
+（只有 client 自己的 `num_ctx` property 和它的测试）。**配置里"看着像事实源"的键，
+改名前一定先 `grep` 一遍读者**；反过来，`config/v2.json` 的 `ocr.module_path` 才是那些
+OCR 测试真正读的键（它们的红与本轮迁移无关，就是这么判掉的）。
+
+

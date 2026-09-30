@@ -11,11 +11,11 @@
     ".workbuddy-ai"
   ],
   "summary": {
-    "tracked_total": 1655,
+    "tracked_total": 1667,
     "RUNTIME_MUTABLE": 0,
     "VERSIONED_KNOWLEDGE": 219,
-    "VERSIONED_EVIDENCE": 1371,
-    "GENERATED_ARTIFACT": 65,
+    "VERSIONED_EVIDENCE": 1381,
+    "GENERATED_ARTIFACT": 67,
     "UNCLASSIFIED": 0
   },
   "rules": {
@@ -78,6 +78,7 @@
     "learning/DEVICE_LEASE.json",
     "learning/_tmp_planner_call_test.jsonl",
     "learning/action_latency.jsonl",
+    "learning/auto_uptime.jsonl",
     "learning/autogen_repair_events.jsonl",
     "learning/bear_role.json",
     "learning/candidate_attempt_pool.json",
@@ -85,6 +86,7 @@
     "learning/capability_bootstrap/CANDIDATES.md",
     "learning/capability_bootstrap/briefs/ECONOMY_RESEARCH.json",
     "learning/capability_bootstrap/briefs/TROOP_SELECT.json",
+    "learning/control_panel/autotest_isolation_sentinel.json",
     "learning/control_panel/crashes/20260921_071708_578653_unified_worker.json",
     "learning/control_panel/crashes/20260921_074802_431364_unified_worker.json",
     "learning/control_panel/crashes/20260921_080707_811562_unified_worker.json",
@@ -93,6 +95,8 @@
     "learning/control_panel/crashes/20260921_090424_676980_unified_worker.json",
     "learning/control_panel/crashes/20260921_092331_166289_unified_worker.json",
     "learning/control_panel/crashes/20260921_094236_608796_unified_worker.json",
+    "learning/control_panel/crashes/20260930_144623_899653_auto_subprocess.json",
+    "learning/control_panel/crashes/20260930_144831_908327_auto_subprocess.json",
     "learning/control_panel/desktop_startup.log",
     "learning/control_panel/gateway.json",
     "learning/control_panel/gateway.log",
@@ -106,6 +110,7 @@
     "learning/control_panel/panel_launch.log.prev",
     "learning/control_panel/panel_reload.log",
     "learning/control_panel/panel_stdout.log",
+    "learning/control_panel/panel_watch.jsonl",
     "learning/control_panel/pump.json",
     "learning/control_panel/startup_trace.log",
     "learning/control_panel/validation.log",
@@ -123,6 +128,7 @@
     "learning/knowledge_bootstrap/STATE.json",
     "learning/knowledge_bootstrap/acceptance_seed_chain.json",
     "learning/l1_experiences.jsonl",
+    "learning/local_gui_model_calls.jsonl",
     "learning/local_planner_steps.jsonl",
     "learning/local_qwen_calls.jsonl",
     "learning/phase_e_episodes.jsonl",
@@ -141,6 +147,7 @@
     "learning/roles/1063040265/stamina_supply.json",
     "learning/runtime_snapshot.json",
     "learning/semantic_click_metrics.jsonl",
+    "learning/semantic_click_retry.jsonl",
     "learning/stamina_priority_state.json",
     "learning/stamina_supply.json",
     "learning/timed_event_schedule.json",
@@ -149,6 +156,10 @@
     "learning/workbuddy_model_stats.jsonl"
   ],
   "classifications": [
+    {
+      "path": ".workbuddy-ai/RUNTIME_MUTABLE_STATE_MANIFEST.json",
+      "category": "GENERATED_ARTIFACT"
+    },
     {
       "path": ".workbuddy-ai/artifacts/overview.md",
       "category": "GENERATED_ARTIFACT"
@@ -351,6 +362,10 @@
     },
     {
       "path": ".workbuddy-ai/memory/2026-09-25.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/memory/2026-09-30.md",
       "category": "GENERATED_ARTIFACT"
     },
     {
@@ -3955,6 +3970,46 @@
     },
     {
       "path": "dataset/truth_audit/login_gift_entry_20260924/key/quit_game_CONFIRM_DIALOG_20260924T040947.png",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/REPORT.md",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/STILL_PENDING_AUDIT.md",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/audit_outcome_persistence.py",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/measure_still_pending_runs.py",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/outcome_persistence_audit.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/replay_episodes.py",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/replay_report.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/replay_sessions.py",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/replay_sessions_report.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/still_pending_runs.json",
       "category": "VERSIONED_EVIDENCE"
     },
     {

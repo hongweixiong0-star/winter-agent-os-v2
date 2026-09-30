@@ -261,7 +261,7 @@ WorkBuddy 内部模型 = 可替换的开发算力（不属于四层中的任何�
   记录 `model / task_type / duration / cost / success / live_improvement / retry_count /
   escalation_count`。**cost 目前取不到**（jobs API 无用量字段，实测），记 `null`+原因，**不许估算**。
 - **Qwen 是可选离线提供者**，不是核心组件。`llm.enabled=false` 时所有规则化/已有 Skill/
-  已 LIVE_VERIFIED 的能力必须照常运行（`tests/test_qwen_decoupling.py` 钉住：
+  已 LIVE_VERIFIED 的能力必须照常运行（`tests/test_local_gui_model_decoupling.py` 钉住：
   运行时路径上不得出现任何模型客户端）。
 - 新增只允许**最薄的连接层**：Escalation Queue Adapter / AUTO Trigger Hook /
   Job Result Reconciliation / Safe Reload Signal。禁止第二 Scheduler / Planner /
