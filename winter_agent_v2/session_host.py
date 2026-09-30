@@ -254,7 +254,7 @@ class LiveRuntimeSessionHost:
         self._last_world = world
         self._last_world_path = path
         if phase == 'after':
-            self._after_world = world
+            self._after = world
             self._after_path = path
         return world
 
@@ -829,8 +829,8 @@ class LiveRuntimeSessionHost:
         §24 says a tap may never rest on.
         """
         word = str(step.target or "").strip()
-        self._before_world, self._before_path = self._world_for_step()
-        self._after_world = None
+        self._before, self._before_path = self._world_for_step()
+        self._after = None
         self._after_path = None
 
         def latency_ms() -> float:
