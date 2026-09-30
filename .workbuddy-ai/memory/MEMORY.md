@@ -2650,3 +2650,79 @@ WDDM 把溢出换页到系统内存，GPU 干等。拐点**只有一层宽**（3
 
 **验收边界（必须随结论一起说）**：以上全部是**代码路径层**证据。设备行为未取证 ——
 `SECOND_ENCOUNTER_VERIFIER_PASS` 需要真实 AUTO 走到 UNKNOWN 屏才能取得，不是靠测试断言。
+
+**十三、UI-Venus 输入/输出契约 V1：三个模式、六个类型、三条独立账本（2026-10-01 晚）。**
+定性是**模型接口契约**，不是新架构。共享层 `ui_venus_contract.py`（预算/优先级/置信度/风险/
+拒绝码族/帧一致性/几何/漏斗层），三个模式各自 `ui_venus_{online,repair,offline}.py`，
+各带独立 schema / serializer / validator / **独立账本文件**
+（`learning/ui_venus_online.jsonl` / `ui_venus_repair.jsonl` / `ui_venus_offline.jsonl`）。
+六个正式类型与 §32 的指令名逐字相同（有测试守）。拒绝码族：`PARSE/SCOPE/AUTHORITY/TARGET/
+FRAME/GROUNDING/GEOMETRY/OTHER` + `REPAIR_*`/`OFFLINE_*`。ONLINE 闸门只对
+`decision == EXECUTE` 生效 —— `OBSERVE/DEFER` 在闸门之前就返回，所以
+`CONTRACT_ONLINE_ROWS` 计的是 EXECUTE 型计划，不是所有模型调用。
+
+**十四、几何通道是**按模式**设计的，不是全局一条（2026-10-01，本轮最细的一处）。**
+`find_forbidden_geometry` 故意**跳过** `candidate_bbox_norm` —— 那是在线的
+`UNTRUSTED_CURRENT_FRAME_PROPOSAL` 通道，合法。但离线**没有**这条通道，于是同一个键在离线
+是违规。若复用在线扫描器，模型可以把坐标框塞进离线开放的 `payload` 块而被当作候选知识存下。
+故离线另立 `GEOMETRY_KEYS_FORBIDDEN_OFFLINE` + `find_any_geometry`（parse 与 validate 两处都扫，
+后者还扫手搓的 `payload`）。**教训**：一个"豁免清单"属于**通道**，不属于**键**；跨模式复用
+扫描器会把豁免一起带过去。
+
+**十五、"必须重启才能生效"要先查证据（2026-10-01，省掉一次无谓 AUTO 中断）。**
+计划里写的是「重启面板让生产切到新 pin」。查证后不需要：面板只是**监督者**，每轮 AUTO 都是新的
+`tools/run_live.py` **子进程**，新进程启动时从 pin 树加载代码。判据是
+`learning/auto_uptime.jsonl` —— repin 时刻之后仍有完整的运行段结束，说明新代码已在跑。
+另一条独立证据：本轮三个 commit 都没碰 `tools/control_panel.py` / `device_lease.py`，
+所以面板的「控制面已变更」重载检查正确保持沉默。**不要为了"让改动生效"去动生产。**
+
+**十六、"0" 与 "没人看" 必须能区分——仪器自身也要被测（2026-10-01）。**
+`tools/ui_venus_contract_acceptance.py` 里五个 §33 判据，四个是**代码**属性（调函数、`ast`
+解析 import 图、进程内驱动三条链路），第五个 `KNOWN_MODEL_CALLS` 是**运行**属性。三条纪律：
+① 从 `row["metrics"]` 读，不读顶层 —— `learning_funnel.to_row()` 把数字嵌在
+`metrics`/`console` 下，顶层读对每个键都返回 `None`，打印出来像个"合理的空白"而不是错误；
+② 窗口内没有 planner 调用时读 `unmeasured` 而**不是** `0`（判据是
+`UNKNOWN_MODEL_CALLS_TODAY`），"没人在看"与"零次错误调用"同一个数字、相反事实；
+③ 用 `build_funnel` 而非 `refresh` —— 后者会**写盘**（持久化漏斗给面板读），而一个声明
+"只读"、又可以被 `--root` 指向生产树的工具，绝不能写进去。
+`tests/test_ui_venus_contract_acceptance.py`（23 项）就是这③条的守门测试，包括
+monkeypatch `refresh` 确认读路径到不了它。
+
+**十七、测试抓出的三个"静默失效"缺陷（2026-10-01，都只在真实生产者上才显形）。**
+① 适配器读错字段名：`RepairRequest` 用 `old_semantic`/`verifier_expectation`，适配器读
+`semantic_target`/`expected_result` ⇒ **每个包都被自己的 `validate()` 拒**，且不抛异常；
+② 路由误诊：`ENTRY_MOVED`（属 `ROUTE_DIAGNOSES`）带 `new_semantic_target` 时产出
+`SEMANTIC_TARGET`，被 `REPAIR_CHANGE_TYPE_UNKNOWN` 拒 ⇒ 路径类诊断必须优先折叠成 `ROUTE`；
+③ 读错真实数据类：`offline_learning.UnknownCluster` 用 `members`，其 `representative` 是
+**对象**不是路径，`Path(obj)` 会抛 ⇒ 适配器要读四种拼法并统一命名。
+**共同点**：全是"函数签名对、断言样例对、真实对象进不来"。夹具必须用**真实生产者**造。
+
+**十八、一个退出码不能承载两个问题——"桌面GUI启动失败"的真根因是接线漂移（2026-10-01）。**
+`Start-Winter-Agent-V2.cmd` 读 `tools/preflight.py` 的**一个退出码**当开窗闸门。09-17 引入时
+preflight 只有解释器一项（防"解释器不能 import MAA"，当日 `MAA_IMPORT_FAILED` 让每个 MAA
+skill 静默降到 ADB、324ms vs 8.92ms）；09-18 给 preflight 加了设备段并让退出码 = `core_ok`
+（含设备），**没同步改 `.cmd`**。该 commit 自己的信息写的是「Core failing **refuses AUTO**」。
+后果：设备未就绪 → 拒绝开窗 → `_ensure_device()`（唯一会启动 MuMu/游戏、且已被
+`retry_until_ready(5s..60s)` 包住、`ENVIRONMENT_FAILURES` 里设备类标记齐全的那段）
+永远不运行 → 每次重试跑同一条检查，**收敛所需的那条路径恰好被闸门挡住**。
+**取证顺序**（值得复用）：preflight 实测 FAIL 的**是哪一段** → adb 直读设备真实状态
+（`app.lawnchair` + 无 `com.gof.china`）→ 确认自愈代码存在且被退避重试包住 →
+`panel.log` 里同一行 60 秒重复三次 ⇒ 判定为死锁而非严格。
+**修复**：两个问题两个裁决 —— `may AUTO run?`（默认：解释器 AND 可用或可修复的设备）；
+`may the window open?`（`--launch-gate`：只问解释器）。`REPAIRABLE_SECTIONS=("device",)`、
+`LAUNCH_GATE_SECTIONS=("interpreter",)`、`report()` 把核心失败拆成 `blockers`/`recovering`。
+**两条必须一起守的边界**：探测设备时抛出的 `ImportError`/`ModuleNotFoundError` **不**算可修复
+（那属解释器，是唯一真正不可修复的核心失败）；adb 缺失与分辨率不匹配**仍**是 blocker。
+**为什么全绿**：`.cmd` 不被任何模块 import —— 纯函数测试看得见 preflight 有哪些闸门，
+**看不见操作员入口问的是哪一个**。故新增 `LaunchGateWiringTest` 直接读启动脚本本体
+（逐字断言整行调用、排除 `rem`/`echo` 干扰行、用 `build_parser()` 证解析器认识那个开关），
+并**做过变异验证**：改回裸调用 → 4 项中 3 项变红。
+`Start-Winter-Agent-V2.ps1` 是无面板的兄弟入口，**同一形状**（先闸门、后启动模拟器），
+默认闸门改动顺带修好它。
+**验证链（不需要重启面板，因为面板把 preflight 当子进程跑、读 JSON 的 `core_ok`）**：
+repin 后下一轮预检自然通过（`panel.log` 07:41:34「运行环境预检通过 … 自动运行已启动」）→
+adb 前台变成 `com.gof.china/DDUnityLaunchActivity`（自愈执行了 `LAUNCH_GAME`）→
+`auto_uptime.jsonl` 出现健康的完整轮次（`executed=15/verified=13`，随后
+**`executed=24/verified=24/failures=0`**），而修复前最后一行是 `executed=0/healthy=false`。
+**推论**：当某个检查被加进一个已有闸门时，必须同时问「**还有谁在只读它的退出码**」；
+而"不被 import 的文件"是测试的盲区。
