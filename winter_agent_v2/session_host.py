@@ -606,6 +606,16 @@ class LiveRuntimeSessionHost:
         # on would make every session step compare a state with itself.
         self.sleep(self.binding.settle_seconds)
         after = self.observe("after")
+        if skill_id in {'SELECT_GIANT_BEAST_TAB', 'SUBMIT_GIANT_BEAST_SEARCH'} and after is not None:
+            after, path, execution, verdict, _ = self.runtime._retry_semantic_click(
+                decision=Decision(skill_id, f'session_step:{skill_id}', 1.0, ''),
+                before=before, before_path=before_path, after=after,
+                after_path=self._last_world_path, execution=execution,
+                verify=lambda old, new: self.runtime._session_verify(skill_id, old, new, self.binding.rally_target),
+                resource=self.binding.planned_resource, rally_target=self.binding.rally_target,
+                index=self.binding.index, settle=self.binding.settle_seconds, latency=self.binding.latency)
+            self._last_world, self._last_world_path = after, path
+            self._verification = verdict
         self._execution = execution
         self._after = after
         self._after_path = self._last_world_path
