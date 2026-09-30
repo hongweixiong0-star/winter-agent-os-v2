@@ -481,9 +481,9 @@ class LoopDetector:
             return None
         same_action = signature.action_key == pending.action_key
         if not same_action:
-            # Stale, but earned: a rung had been spent on that action and the flow is now
-            # somewhere else, so the ladder did its job.
-            if self._rung_index.get(pending.action_key, 0) >= 1:
+            # Changing the action drops a stale detection; it proves recovery only when
+            # the new action also has verified progress. Another failed move is not success.
+            if signature.progress is True and self._rung_index.get(pending.action_key, 0) >= 1:
                 self.counts[LOOP_RECOVERED] += 1
             self._rung_index.pop(pending.action_key, None)
             self._pending = None

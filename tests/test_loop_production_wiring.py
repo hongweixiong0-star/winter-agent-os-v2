@@ -7,6 +7,7 @@ import json
 from winter_agent_v2.ocr import HybridVision
 from winter_agent_v2.runtime import LiveRuntime
 from winter_agent_v2.session_engine import SessionEngine
+from winter_agent_v2.loop_detector import LoopDetector, LoopSignature
 
 
 def test_hybrid_forwards_loop_widen_to_actual_template_reader():
@@ -36,3 +37,15 @@ def test_timeline_retains_revision_role_and_metrics_next_to_run_frames():
         assert row["role_id"] == "B"
         assert row["repo_revision"] == "test"
         assert row["metrics"]["LOOP_DETECTED"] == 1
+
+
+def test_changing_to_another_failed_action_does_not_claim_recovery():
+    detector = LoopDetector()
+    for _ in range(4):
+        detector.observe(LoopSignature(role_id="A", page="HOME", goal_id="TRAIN",
+                                      skill_id="OPEN", semantic_target="CAMP", state_hash="same",
+                                      verifier_outcome="FAILED", progress=False))
+    detector.observe(LoopSignature(role_id="A", page="HOME", goal_id="TRAIN",
+                                  skill_id="BACK", semantic_target="HOME", state_hash="same",
+                                  verifier_outcome="FAILED", progress=False))
+    assert detector.summary()["LOOP_RECOVERED"] == 0
