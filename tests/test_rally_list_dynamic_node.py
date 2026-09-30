@@ -206,6 +206,23 @@ def test_the_resolver_taps_the_chosen_row_not_a_fixed_point():
     assert router.last_recognition_error is None
 
 
+def test_retry_reads_supplied_fresh_frame_without_another_capture():
+    router = _resolver_for(_frame_of("joined_with_jesse.png"))
+    def forbidden_capture():
+        raise AssertionError("retry must use the frame that was authorized")
+    router.maa_adapter.frame = forbidden_capture
+    point = router.maa_resolver("RALLY_ROW_JOIN_BUTTON", "JOIN_RALLY",
+                                frame=_frame_of("join_list_now.png"))
+    assert point == pytest.approx((0.8889, 0.3051), abs=0.01)
+
+
+def test_retry_never_changes_to_another_joinable_rally():
+    router = _resolver_for(_frame_of("join_list_now.png"))
+    router.retry_rally_row_id = "a rally which disappeared"
+    assert router.maa_resolver("RALLY_ROW_JOIN_BUTTON", "JOIN_RALLY") is None
+    assert router.last_recognition_error == "LIST_DYNAMIC:RETRY_ROW_NOT_JOINABLE"
+
+
 def test_a_frame_that_is_not_a_rally_list_falls_back_to_the_template():
     """No 集结中 header -> the reader says nothing, so the old node still answers."""
     router = _resolver_for(_frame_of("special_buildings.png"))

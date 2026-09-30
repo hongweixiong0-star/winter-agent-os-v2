@@ -364,7 +364,7 @@ class ExecutorRouter:
         """
         return self._declared_recognition(skill_id) in ("", MAA)
 
-    def maa_resolver(self, semantic: str, skill_id: str | None) -> tuple[float, float] | None:
+    def maa_resolver(self, semantic: str, skill_id: str | None, *, frame=None) -> tuple[float, float] | None:
         """Resolver handed to the MAA ``Executor``.
 
         Two tiers, because the two migration axes have different evidence:
@@ -420,7 +420,7 @@ class ExecutorRouter:
                     else f"RECOGNITION_BACKEND:{self._declared_recognition(skill_id)}:NODE_NOT_ENTITLED"
                 )
             return point
-        frame = adapter.frame()
+        frame = adapter.frame() if frame is None else frame
         if frame is None:
             return None
 
@@ -452,7 +452,7 @@ class ExecutorRouter:
                 self.last_recognition_error = "MAA_OCR:BAD_BOX"
                 return None
             x, y, w, h = (int(v) for v in box)
-            size = adapter.last_frame
+            size = frame
             if size is None or getattr(size, "shape", None) is None:
                 self.last_outcome = None
                 self.last_recognition_error = "MAA_OCR:NO_SIZE"
@@ -493,7 +493,7 @@ class ExecutorRouter:
                 self.last_recognition_error = "STRUCTURE:BAD_BOX"
                 return None
             x, y, w, h = (int(v) for v in box)
-            size = adapter.last_frame
+            size = frame
             if size is None or getattr(size, "shape", None) is None:
                 self.last_recognition_error = "STRUCTURE:NO_SIZE"
                 return None
@@ -540,9 +540,18 @@ class ExecutorRouter:
                     getattr(self, "rally_target", None)
                     or str(node.get("target") or "BEAR").strip().upper()
                 )
-                best = reading.best_joinable_for(rally_target)
+                row_id = getattr(self, "retry_rally_row_id", None)
+                if row_id:
+                    matches = [row for row in reading.rows
+                               if row.row_id == row_id and row.joinable_for(rally_target)]
+                    best = matches[0] if len(matches) == 1 else None
+                else:
+                    best = reading.best_joinable_for(rally_target)
                 if best is None or best.join_norm is None:
                     self.last_outcome = None
+                    if row_id:
+                        self.last_recognition_error = "LIST_DYNAMIC:RETRY_ROW_NOT_JOINABLE"
+                        return None
                     if not reading.has_rows:
                         # No 集结中 header: this frame is not a rally list at all, so the
                         # reader has nothing to say about it and the previously working
@@ -556,7 +565,7 @@ class ExecutorRouter:
                             return None
                         fallback = node.get("fallback_semantic")
                         if fallback and str(fallback) != semantic:
-                            return self.maa_resolver(str(fallback), skill_id)
+                            return self.maa_resolver(str(fallback), skill_id, frame=frame)
                         return None
                     # Rows were read and none is joinable (every one is full, expired, or
                     # this role is already in one).  That is an answer, not a miss: falling

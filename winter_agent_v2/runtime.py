@@ -22,6 +22,8 @@ from . import page_knowledge
 from . import event_schedule
 from . import unknown_advisor
 from .executor import Executor
+from .policy import SafetyPolicy
+from . import semantic_executor as click_retry
 from .executor_router import DEFAULT_ROUTING_PATH, BackendLedger, RoutingTable, build_router
 from .learning import ActionOutcome, Episode, EpisodeStore
 from .models import Decision, ExecutionResult, Page, VerificationResult, WorldState
@@ -488,6 +490,7 @@ class LiveRuntime:
         stamina_supply: StaminaSupplyStore | None = None,
         maa_adapter=None,
         adb_device=None,
+        max_semantic_click_retry: int = click_retry.MAX_SEMANTIC_CLICK_RETRY,
         routing=None,
         backend_ledger: BackendLedger | None = None,
         capability_gate: CapabilityGate | None = None,
@@ -621,6 +624,7 @@ class LiveRuntime:
         # loop would tap the same pin forever.  Session-scoped on purpose: the
         # board changes between runs, and a pin that produced nothing may be
         # workable later (the hourly harness re-runs from a cold start).
+        self.max_semantic_click_retry = min(2, max(0, int(max_semantic_click_retry)))
         self._tapped_intel_pins: list[tuple[int, int]] = []
         # Which goal paths must step aside, projected from the escalation ledger and
         # the episode stream.  Built once per run (see ``_gate``) and injectable, so a
@@ -1585,6 +1589,212 @@ class LiveRuntime:
         if self._multi_role_enabled and self._role_identity_confirmed:
             verifier_result = (
                 "NOT_RUN" if verification is None else "PASS" if verification.ok else "FAIL"
+    def _retry_semantic_click(self, *, decision, before, before_path, after, after_path,
+                              execution, verify, resource, rally_target, index, settle, latency=None):
+        """Delivery retries stay inside one selected Skill and the existing executor."""
+        skill = self.registry.get(decision.skill)
+        if skill is None or skill.action.kind != "TAP_SEMANTIC":
+            return after, after_path, execution, verify(before, after), None
+        action = skill.action
+        role_id = self._calendar_role_id()
+
+        def authorized(world):
+            held = self.device_lease.holder() if self.device_lease else None
+            if held is not None and not self._owns_the_lease(held):
+                return False
+            if self.execution_mode == OWNER_DEVELOPMENT_VALIDATION and not self._owns_the_lease(held):
+                return False
+            if self._calendar_role_id() != role_id:
+                return False
+            goal_id = str(getattr(self, "_committed_goal", "") or "")
+            if goal_id and not self._policy_allows(goal_id):
+                return False
+            if self._multi_role_enabled:
+                state = self.global_scheduler_state_store.load()
+                if state.role_switch_pending or state.active_role_id != role_id:
+                    return False
+            return skill.ready(world) and SafetyPolicy().evaluate(action).allowed
+
+        rally_row_id = None
+        if action.target == "RALLY_ROW_JOIN_BUTTON" and execution.tap_point:
+            size = self.device.status().resolution
+            if size:
+                x, y = execution.tap_point[0] / size[0], execution.tap_point[1] / size[1]
+                rows = before.rally.get("rows") or ()
+                selected = [r for r in rows if isinstance(r, dict)
+                            and isinstance(r.get("join_button_bbox"), (list, tuple))
+                            and len(r.get("join_button_bbox")) == 4
+                            and r["join_button_bbox"][0] <= x <= r["join_button_bbox"][2]
+                            and r["join_button_bbox"][1] <= y <= r["join_button_bbox"][3]]
+                if len(selected) == 1:
+                    rally_row_id = selected[0].get("row_id")
+
+        def resolve_current(world, path, semantic):
+            if semantic == "RALLY_ROW_JOIN_BUTTON":
+                rows = world.rally.get("rows") or ()
+                selected = [r for r in rows if rally_row_id and r.get("row_id") == rally_row_id
+                            and r.get("state") == "JOINABLE" and r.get("full") is not True]
+                return selected[0].get("join_norm") if len(selected) == 1 else None
+            if semantic == "ORDINARY_CONTROL":
+                # This resolver marks exploration attempts; do not mutate that budget
+                # by probing an already executed action for retry evidence.
+                return None
+            return self._resolve_semantic_target(
+                semantic, world, frame_path=path, resource=resource, rally_target=rally_target)
+
+        def target(world, path):
+            point = resolve_current(world, path, action.target)
+            if point is None:
+                return None
+            context = {"role_id": role_id, "page": world.page.value,
+                       "popup": world.popup, "semantic": action.target}
+            for field in ("training", "research", "building", "beast_search_result",
+                          "resource_target", "hero_troop", "inventory"):
+                context[field] = click_retry.stable_context(getattr(world, field))
+            label = f"{decision.skill} {action.target}".upper()
+            pending = not any(word in label for word in ("CONFIRM", "RECALL", "USE_ITEM", "PURCHASE"))
+            if "TRAIN_TROOPS" in label or "PROMOTE" in label:
+                pending = world.training.get("queue_available") is True
+            elif decision.skill == "RESEARCH":
+                pending = world.research.get("queue_available") is True
+            elif decision.skill == "BUILDING_UPGRADE":
+                pending = world.building.get("queue_available") is True
+            elif "DISPATCH" in label or "ATTACK" in label or "START_RALLY" in label:
+                pending = world.has_free_march_slot is True and bool(
+                    world.beast_search_result or world.hero_troop or world.rally)
+            elif action.target == "RALLY_ROW_JOIN_BUTTON":
+                rows = world.rally.get("rows") or world.alliance.get("rally", {}).get("rows") or ()
+                selected = []
+                for row in rows:
+                    box = row.get("join_button_bbox")
+                    if (isinstance(box, (list, tuple)) and len(box) == 4
+                            and box[0] <= point[0] <= box[2]
+                            and box[1] <= point[1] <= box[3]):
+                        selected.append(row)
+                if len(selected) != 1:
+                    return None
+                row = selected[0]
+                context["rally_target"] = {
+                    key: row.get(key) for key in ("row_id", "target_type", "target", "leader")}
+                pending = bool(row.get("leader") and row.get("state") == "JOINABLE"
+                               and world.has_free_march_slot is True)
+            elif "CLAIM" in label or "COLLECT" in label:
+                # A claimable badge on an unrelated page is not this claim's state.
+                domain = next((name.lower() for name in (
+                    "TRAINING", "DAILY", "MAIL", "ALLIANCE", "STAMINA", "EXPLORATION", "INTEL")
+                    if name in label), None)
+                if "ALLY_GIFT" in label:
+                    domain = "alliance"
+                domain = domain or {Page.EVENT: "events", Page.POPUP: "rewards"}.get(world.page)
+                readings = [getattr(world, domain)] if domain else []
+                pending = any(r.get("claimable") is True
+                              or r.get("free_claim_available") is True
+                              or r.get("status") in {"CLAIMABLE", "COMPLETED"} for r in readings)
+            elif "USE_ITEM" in label or "PURCHASE" in label:
+                pending = any(key in world.inventory for key in ("item_id", "selected_item")) and any(
+                    isinstance(world.inventory.get(key), int)
+                    for key in ("quantity", "item_count", "count"))
+            return click_retry.TargetEvidence(str(action.target), True, context, pending)
+
+        def observation(world, path, verdict):
+            return click_retry.ClickObservation(
+                world, str(path), None if verdict.ok else target(world, path),
+                verdict, authorized(world))
+
+        verdict = verify(before, after)
+        initial = (click_retry.ClickObservation(before, str(before_path), None,
+                   VerificationResult(False, "BEFORE_CLICK")) if verdict.ok
+                   else observation(before, before_path, VerificationResult(False, "BEFORE_CLICK")))
+        current = observation(after, after_path, verdict)
+        captures = 0
+
+        def observe():
+            nonlocal captures
+            captures += 1
+            self.sleeper(settle)
+            path = self._capture_path(index, "after", suffix=f"semantic_retry_observe_{captures}")
+            if self._device_lost(self.device.screenshot, path):
+                return click_retry.ClickObservation(
+                    WorldState(), str(path), None,
+                    VerificationResult(False, self._device_stop_reason), False)
+            world = self._reject_a_dropped_digit(self._observe(path, latency=latency, phase="semantic_retry"))
+            if self._multi_role_enabled:
+                identified = self.role_switch_controller.identify_current_role(path)
+                if identified is not None and identified[0] != role_id:
+                    return click_retry.ClickObservation(world, str(path), None,
+                        VerificationResult(False, "ROLE_IDENTITY_CHANGED_DURING_RETRY"), False)
+            if world.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
+                world = replace(world, resource_target=resource)
+            return observation(world, path, verify(before, world))
+
+        def execute(fresh):
+            world, path = fresh.world, Path(fresh.frame)
+            if not authorized(world):
+                return None
+            # Rebind every lookup to this observation; never reuse the first tap's closure.
+            def resolve(semantic):
+                return resolve_current(world, path, semantic) if authorized(world) else None
+            adb = Executor(production=True, dry_run=False, device=self.adb_device,
+                           target_resolver=resolve, backend="ADB")
+            self._scheduler.executor = build_router(
+                adb_executor=adb, adb_resolver=resolve, maa_adapter=self.maa_adapter,
+                skill_id=skill.id, routing=self.routing, ledger=self.backend_ledger,
+                rally_target=rally_target)
+            router = self._scheduler.executor
+            if self.maa_adapter is not None and hasattr(router, "maa_resolver"):
+                router.retry_rally_row_id = rally_row_id
+                def maa_resolve(semantic):
+                    if not authorized(world):
+                        return None
+                    from PIL import Image
+                    import numpy as np
+                    with Image.open(path) as image:
+                        pixels = np.asarray(image.convert("RGB"))
+                    return router.maa_resolver(semantic, skill.id, frame=pixels)
+                router.maa_executor.target_resolver = maa_resolve
+            return self._scheduler.tick(world, decision).execution
+
+        result = click_retry.retry_authorized_semantic_click(
+            action=action, before=initial, after=current, execution=execution,
+            observe=observe, execute=execute,
+            max_retries=self.max_semantic_click_retry, max_observations=0,
+            timeout_seconds=min(12.0, max(0.0, skill.timeout)),
+        )
+        detail = {"semantic_click": {
+            "outcome": result.outcome.value, "metric": result.metric,
+            "retries": result.retries, "attempts": result.attempts,
+            "stop_reason": result.stop_reason,
+        }}
+        execution = replace(result.execution, detail={**(result.execution.detail or {}), **detail})
+        self._record_click_delivery(skill.id, role_id, before_path, result)
+        latest = result.observation
+        return latest.world, Path(latest.frame), execution, latest.verification, result
+
+
+    def _record_click_delivery(self, skill_id, role_id, before_path, result):
+        """One append per semantic action; transient attempts do not become Skill failures."""
+        base = (Path(self.episode_store.path).parent if self.episode_store is not None
+                else self.capture_dir)
+        try:
+            base.mkdir(parents=True, exist_ok=True)
+            row = {"timestamp": datetime.now(timezone.utc).isoformat(), "role_id": role_id,
+                   "skill": skill_id, "before_frame": str(before_path),
+                   "after_frame": result.observation.frame, "repo_revision": self.code_revision,
+                   "outcome": result.outcome.value, "metric": result.metric,
+                   "retries": result.retries, "attempts": result.attempts,
+                   "stop_reason": result.stop_reason}
+            with (base / "semantic_click_retry.jsonl").open("a", encoding="utf-8") as stream:
+                stream.write(json.dumps(row, ensure_ascii=False) + "\n")
+            metrics_path = base / "semantic_click_retry_metrics.json"
+            metrics = json.loads(metrics_path.read_text(encoding="utf-8")) if metrics_path.exists() else {}
+            if result.metric:
+                metrics[result.metric] = int(metrics.get(result.metric, 0)) + 1
+            metrics["updated_at"] = row["timestamp"]
+            metrics_path.write_text(json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8")
+        except (OSError, ValueError, TypeError):
+            pass
+
+
             )
             failure_reason = (
                 str(verification.reason) if verification is not None and not verification.ok
@@ -7127,6 +7337,25 @@ class LiveRuntime:
                 # The verifier passed means the action landed.  This says whether the
                 # *goal* moved, and the two are not the same statement: 58 episodes
                 # passed their verifier while stamina sat at 457 (2026-09-18).
+            phase_started = time.monotonic()
+            delivery_initial_frame = str(after_path)
+            after, after_path, delivery, verification, click_result = self._retry_semantic_click(
+                decision=decision, before=before, before_path=before_path,
+                after=after, after_path=after_path, execution=tick.execution,
+                verify=verify_current_step, resource=planned_resource,
+                rally_target=rally_target, index=index, settle=settle_retry_wait, latency=latency,
+            )
+            tick = replace(tick, execution=delivery)
+            latency["semantic_click_retry_ms"] = (time.monotonic() - phase_started) * 1000
+            latency["semantic_click_retries"] = click_result.retries if click_result else 0
+            if click_result and click_result.observation.frame != delivery_initial_frame:
+                goals_after = self._record_goals(after, frame=after_path)
+            elif click_result and click_result.retries:
+                goals_after = self._record_goals(after, frame=after_path)
+            page_audit["verifier_result"] = {
+                "status": "PASS" if verification.ok else "FAIL", "ok": bool(verification.ok),
+                "reason": verification.reason, "page_after": after.page.value,
+            }
                 goal_progress=progress,
                 before_screenshot=before_path, after_screenshot=after_path,
             )
@@ -7350,6 +7579,7 @@ class LiveRuntime:
                 # * §七.3 "避免重复点击同一错误位置" -- a control that failed its
                 #   verifier is recorded in ``_failed_controls`` and never tapped again
                 #   in this run.  Without this the handover did exactly what the rule
+                    and (click_result is None or click_result.retries == 0)
                 #   forbids: the next goal's route landed on the same control and the
                 #   same failing tap was issued three times, once per goal.
                 # * paid and irreversible outcomes (``is_fatal_stop``), a run out of

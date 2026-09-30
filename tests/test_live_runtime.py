@@ -298,6 +298,46 @@ class LiveRuntimeTests(unittest.TestCase):
         self.assertEqual(run.stop_reason, "alliance_action_not_needed")
         self.assertTrue(all(step.verification is None or step.verification.ok for step in run.steps))
 
+    def test_dropped_claim_retries_inside_same_auto_step_with_new_location(self):
+        class MovingSemantic(FakeSemantic):
+            def find(self, path, semantic):
+                if semantic != "BTN_ALLY_GIFT_CLAIM":
+                    return super().find(path, semantic)
+                point = (0.62, 0.5) if "semantic_retry" in str(path) else (0.84, 0.5)
+                return type("CurrentMatch", (), {"center_norm": point})()
+        device = FakeDevice()
+        pending = ally(100, 2, 2, 0)
+        with TemporaryDirectory() as temp:
+            store = EpisodeStore(Path(temp) / "episodes.jsonl")
+            runtime = self._runtime("ALLIANCE_ROUTINE", device=device,
+                vision=FakeVision([pending, pending, pending, ally(130, 1, 1, 1)]),
+                semantic_vision=MovingSemantic(), capture_dir=Path(temp),
+                sleeper=lambda _: None, observation_retries=0, episode_store=store)
+            run = runtime.run(max_actions=1)
+            metrics = json.loads((Path(temp) / "semantic_click_retry_metrics.json").read_text())
+            self.assertEqual(metrics["CLICK_RETRY_SUCCESS"], 1)
+            episodes = [json.loads(line) for line in store.path.read_text(encoding="utf-8").splitlines()]
+            self.assertEqual(len(episodes), 1, "a lost touch is not an extra Skill failure")
+        self.assertEqual(device.taps, [(605, 640), (446, 640)])
+        self.assertTrue(run.steps[0].verification.ok)
+        self.assertEqual(run.steps[0].execution.detail["semantic_click"]["retries"], 1)
+
+
+    def test_dropped_claim_exhausts_two_retries_then_yields(self):
+        device = FakeDevice()
+        pending = ally(100, 2, 2, 0)
+        with TemporaryDirectory() as temp:
+            runtime = self._runtime("ALLIANCE_ROUTINE", device=device,
+                vision=FakeVision([pending] * 6), semantic_vision=FakeSemantic(),
+                capture_dir=Path(temp), sleeper=lambda _: None, observation_retries=0)
+            run = runtime.run(max_actions=1)
+            metrics = json.loads((Path(temp) / "semantic_click_retry_metrics.json").read_text())
+            self.assertGreaterEqual(metrics["CLICK_RETRY_EXHAUSTED"], 1)
+        self.assertEqual(len(device.taps), 3)
+        self.assertFalse(run.steps[0].verification.ok)
+        self.assertEqual(run.steps[0].execution.detail["semantic_click"]["retries"], 2)
+
+
     def test_unknown_stops_without_click(self):
         """An unknown screen is never clicked, and still ends the run if it stays unknown.
 
