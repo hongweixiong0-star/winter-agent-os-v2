@@ -59,6 +59,12 @@
     "received": "2026-09-30",
     "only_allowed_spend": "NORMAL_BAIT",
     "forbidden": ["special_bait", "treasure_ticket", "treasure_mode", "free_special_fishing", "gem_bought_bait", "real_money"],
+    "forbidden_goal_ids": [
+      "USE_FREE_SPECIAL_FISHING", "USE_SPECIAL_FISHING", "TREASURE_FISHING",
+      "TREASURE_STAGE", "TREASURE_TICKET", "SPECIAL_BAIT"
+    ],
+    "forbidden_goal_ids_note": "Production Sprint NEXT P1 (2026-09-30) expanded §4 from four ids to these six. They are POLICY_DISABLED_BY_USER, never CAPABILITY_GAP, and no Skill may be developed for them. The runtime reads the same set from config/policy_state.json#disabled_goals; tests/test_fishing_policy_v2.py pins the two equal, and knowledge/events/event_registry.json#policy_disabled_tasks carries it to the panel.",
+    "legacy_goal_aliases": {"USE_TREASURE_TICKET": "TREASURE_TICKET"},
     "acceptance": {
       "NORMAL_BAIT_SPECIAL_USED": 0,
       "GEMS_SPENT": 0,

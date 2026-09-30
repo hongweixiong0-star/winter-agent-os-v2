@@ -217,6 +217,55 @@ NOT_ACTIONABLE: frozenset[GoalStatus] = frozenset({
     GoalStatus.SCHEDULED_NOT_OPEN, GoalStatus.EXPIRED,
 })
 
+#: The five goals the fishing provider owns (Production Sprint NEXT P3, 2026-09-30).
+#:
+#: ``USE_NORMAL_FISHING_BAIT`` is the normal lane and the *only* lane.  The special-mode ids the
+#: operator forbade are deliberately absent from this tuple: they are ``POLICY_DISABLED_BY_USER``,
+#: they have no provider, and the point of §P1 is that nothing is to be developed for them.
+#: Their exact spelling lives in ``config/policy_state.json#disabled_goals`` and in the registry's
+#: ``policy_disabled_tasks`` -- the readers that must refuse them -- and is *not* repeated here.
+#: Enumerating them in an execution module, even to skip them, would leave them one typo away from
+#: being emitted, and ``tests/test_fishing_policy_v2.py`` fails any code path that names one.
+FISHING_GOAL_IDS: tuple[str, ...] = (
+    "USE_NORMAL_FISHING_BAIT",
+    "CLAIM_FISHING_FREE_REWARD",
+    "UPGRADE_FISHING_KIT",
+    "CLAIM_FISHING_DAILY_REWARD",
+    "CLAIM_FISHING_COLLECTION_REWARD",
+)
+
+#: What each of those goals still needs read off the client before it can be carried out.  Used as
+#: ``evidence["required_observation"]`` so the board answers "blocked *by what*" instead of "blocked".
+#:
+#: ``USE_NORMAL_FISHING_BAIT`` is the exception: the provider knows the bait counter, which is the
+#: only reading that decides it.  It still owes a *Skill* -- there is no production fishing Skill
+#: yet, which is why it is emitted as a record (no ``available_skills``) rather than as selectable
+#: work.  That is a capability gap, and it is named rather than hidden.
+FISHING_REQUIRED_OBSERVATIONS: dict[str, str] = {
+    "CLAIM_FISHING_FREE_REWARD": "the fishing page's free-reward state",
+    "UPGRADE_FISHING_KIT": "gear level, upgrade cost and free event currency owned (§5/P11)",
+    "CLAIM_FISHING_DAILY_REWARD": "the fishing page's daily-reward state",
+    "CLAIM_FISHING_COLLECTION_REWARD": "the fishing collection progress and its reward state",
+}
+
+#: The Skill the normal lane needs and does not have.  Named once so the gap is greppable.
+FISHING_LANE_SKILL = "PLAY_NORMAL_FISHING_LEVEL"
+
+
+def _as_iso(value: object) -> str | None:
+    """A timestamp the client printed, as an ISO string, or ``None``.
+
+    ``None`` is the honest answer for "we do not know when", and the caller must keep it: the
+    fishing provider hands this to ``GoalState.retry_after``, where a substituted clock would read
+    as a real recovery time and let a role with no bait be scheduled.
+    """
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
 #: An activity window, in this project's goal vocabulary.  One table, so a window state that is not
 #: listed is a ``KeyError`` at the only place that maps them rather than a silently wrong status.
 _WINDOW_STATUS: dict[event_goal.WindowState, GoalStatus] = {
@@ -1307,6 +1356,9 @@ class GoalLibrary:
         )
         self._append_alliance_mobilization_goals(goals, world, role_id=role_id)
         self._append_known_activities(goals, calendar_snapshot=calendar_snapshot)
+        self._append_fishing_goals(
+            goals, role_id=role_id, fishing_pressures=fishing_pressures
+        )
         if (
             world.page is Page.ALLIANCE
             and world.alliance.get("section") == "HOME"
@@ -1341,6 +1393,141 @@ class GoalLibrary:
                 distance=1.0,
             ))
         return tuple(goals)
+
+    @staticmethod
+    def _append_fishing_goals(
+        goals: list[GoalState],
+        *,
+        role_id: str,
+        fishing_pressures: Mapping[str, Mapping[str, Any]] | None = None,
+    ) -> None:
+        """The fishing tournament's role-scoped goals (Production Sprint NEXT P3).
+
+        Not a scheduler and not a Skill: this is the *provider* half of P3, so that fishing stops
+        being invisible to the one Scheduler.  What decides whether it may act is already built --
+        ``fishing_pressure`` turns the bait budget into a verdict and ``runtime._fishing_pressures``
+        supplies it once per frame; this puts the result on the goal board.
+
+        Four rules, in the operator's words::
+
+            event active AND normal_bait > 0   -> USE_NORMAL_FISHING_BAIT READY
+            normal_bait == 0                   -> WAITING_FOR_TIMER + next_action_at
+            normal_bait == cap                 -> overflow_pressure 提高
+            活动即将结束且 bait > 0              -> deadline pressure 持续提高
+
+        The third and fourth are deliberately *different* mechanisms.  A full counter is a bonus
+        (``event_synergy``): regeneration is being thrown away, so fishing deserves a better claim
+        on the device, but the event is not closing and §3 asks that the hard-preempt be reserved
+        for a closing window.  A closing window is a real ``remaining_seconds``, which
+        ``deadline_pressure`` turns into the rising priority §15 wants.
+
+        Every role's numbers come from that role's own verdict.  A role with no reading contributes
+        nothing: emitting a goal at all would either invent a bait counter or borrow the other
+        account's, and P3 names ``bait / points / gear / timer / progress`` as things roles must
+        never share.
+        """
+        from . import fishing_pressure as fp
+
+        verdict = fp.signal_for_role(fishing_pressures, role_id)
+        if verdict is None:
+            return
+
+        bait = verdict.get("bait_current")
+        cap = verdict.get("bait_cap")
+        pressure = str(verdict.get("pressure") or fp.UNKNOWN)
+        terms = fp.event_goal_terms(fp.FISHING_EVENT_ID, verdict)
+        shared: dict[str, Any] = {
+            "event_id": fp.FISHING_EVENT_ID,
+            "lane": "NORMAL_BAIT",
+            "only_allowed_spend": "NORMAL_BAIT",
+            "bait_pressure": pressure,
+            "bait_current": bait,
+            "bait_cap": cap,
+            "role_key": verdict.get("role_key"),
+            "bait_reason": verdict.get("reason"),
+            "client_remaining_seconds": None,
+        }
+
+        # ---- 1. spend one normal bait (§1/§2/§15) -------------------------------------
+        if bait is None:
+            # §2 requires the counter to be read; an unread counter is not "no bait".
+            goals.append(GoalState(
+                "USE_NORMAL_FISHING_BAIT", GoalStatus.UNKNOWN,
+                available_skills=(),
+                evidence={**shared, "required_observation": "normal_bait_current / bait_cap",
+                          "note": "the current role's bait counter has not been read; "
+                                  "an unread counter cannot justify spending or waiting"},
+                distance=1.0,
+            ))
+        elif int(bait) <= 0:
+            next_at = _as_iso(verdict.get("next_bait_at"))
+            goals.append(GoalState(
+                "USE_NORMAL_FISHING_BAIT", GoalStatus.BLOCKED,
+                available_skills=(),
+                retry_after=next_at,
+                evidence={**shared, "condition": "timer", "next_action_at": next_at,
+                          "note": "no normal bait left; wait for the counter, do not switch "
+                                  "roles for it (§3)"},
+                distance=1.0,
+            ))
+        else:
+            endgame = verdict.get("endgame") if isinstance(verdict.get("endgame"), Mapping) else {}
+            # §15's deadline and P3's overflow pressure are two different mechanisms and stay
+            # distinguishable on the record: one is a closing window, the other a full counter.
+            overflow_bonus = float(terms.get("synergy_bonus") or 0.0)
+            goals.append(GoalState(
+                "USE_NORMAL_FISHING_BAIT", GoalStatus.READY,
+                # No Skill yet: this is the P3 provider, not P3's Skill.  Deliberately a record
+                # rather than selectable work, so it cannot be scheduled and then do nothing --
+                # the exact failure ``tests/test_every_goal_has_a_route.py`` exists to prevent.
+                available_skills=(),
+                remaining_seconds=terms.get("remaining_seconds"),
+                event_synergy=overflow_bonus,
+                evidence={
+                    **shared,
+                    # Why the goal carries what it carries.  Named ``terms_reason`` rather than
+                    # "deadline reason" because for a full counter it explains a *bonus*: the two
+                    # mechanisms share one field and must stay distinguishable on the record.
+                    "terms_reason": terms.get("reason") if terms.get("applies") else None,
+                    "overflow_pressure": overflow_bonus,
+                    "endgame": endgame or None,
+                    "capability_gap": FISHING_LANE_SKILL,
+                    "required_skills": [FISHING_LANE_SKILL],
+                    "note": "normal bait available; batches inside the current Role Session "
+                            "(§P6), it does not preempt one",
+                },
+                distance=float(int(bait)),
+            ))
+
+        # ---- 2. the three claims: free, daily, collection ------------------------------
+        for goal_id in ("CLAIM_FISHING_FREE_REWARD",
+                        "CLAIM_FISHING_DAILY_REWARD",
+                        "CLAIM_FISHING_COLLECTION_REWARD"):
+            goals.append(GoalState(
+                goal_id, GoalStatus.UNKNOWN,
+                available_skills=(),
+                evidence={**shared,
+                          "required_observation": FISHING_REQUIRED_OBSERVATIONS[goal_id],
+                          "note": "claim state is read off the fishing page; it is not inferred "
+                                  "from the bait counter"},
+                distance=1.0,
+            ))
+
+        # ---- 3. gear, free event currency only (§5/P11) --------------------------------
+        goals.append(GoalState(
+            "UPGRADE_FISHING_KIT", GoalStatus.UNKNOWN,
+            available_skills=(),
+            evidence={**shared,
+                      "levels": {"line": verdict.get("line_level"),
+                                 "hook": verdict.get("hook_level"),
+                                 "sinker": verdict.get("sinker_level")},
+                      "allowed_spend": "free event-internal currency only",
+                      "forbidden_spend": ["gems", "real_money", "treasure_tickets", "special_bait"],
+                      "required_observation": FISHING_REQUIRED_OBSERVATIONS["UPGRADE_FISHING_KIT"],
+                      "note": "§P11: read level, cost and owned currency LIVE before upgrading, "
+                              "and judge the result by points_per_normal_bait"},
+            distance=1.0,
+        ))
 
     @staticmethod
     def _append_alliance_mobilization_goals(

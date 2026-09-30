@@ -11,8 +11,10 @@ The fix is that the fishing event's deadline comes from the bait budget instead 
 countdown, and only exists when the bait says it must.
 """
 
+import json
 import unittest
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from winter_agent_v2 import fishing_pressure as fp
 from winter_agent_v2 import fishing_state as fs
@@ -22,18 +24,25 @@ from winter_agent_v2.models import Page, WorldState
 NOW = datetime(2026, 9, 30, 12, 0, tzinfo=timezone.utc)
 
 
-def verdict(pressure, *, remaining=None, bait=5, cap=10):
+def verdict(pressure, *, remaining=None, bait=5, cap=10, next_bait_at=None,
+            line_level=None, hook_level=None, sinker_level=None, role_key="ROLE_A"):
     """The shape ``fishing_pressure`` produces for one role."""
     return {
         "pressure": pressure,
         "bait_current": bait,
         "bait_cap": cap,
-        "is_full": bait >= cap,
+        "is_full": bool(bait is not None and cap is not None and bait >= cap),
+        "next_bait_at": next_bait_at,
+        "event_end_at": None,
+        "points_total": None,
+        "line_level": line_level,
+        "hook_level": hook_level,
+        "sinker_level": sinker_level,
         "endgame": ({"known": True, "active": True, "remaining_seconds": remaining}
                     if remaining is not None else
                     {"known": False, "active": False, "remaining_seconds": None}),
         "reason": pressure,
-        "role_key": "ROLE_A",
+        "role_key": role_key,
     }
 
 
@@ -273,6 +282,159 @@ class TestTheStoreSurvivesBadInput(unittest.TestCase):
                 self.assertIn(getattr(fp, name), fp.BAIT_PRESSURES)
         self.assertEqual(set(fp.ORDINARY_PRESSURES) | set(fp.URGENT_PRESSURES),
                          set(fp.BAIT_PRESSURES))
+
+
+# ---------------------------------------------------------------------------------------
+# The provider (Production Sprint NEXT P3)
+# ---------------------------------------------------------------------------------------
+def fishing_goals(pressures, *, role_id="1063040265", world=None):
+    """Everything the library emits for one role, by goal id, with the fishing readings on it."""
+    board = GoalLibrary().discover(
+        world if world is not None else fishing_world(),
+        role_id=role_id, fishing_pressures=pressures,
+    )
+    return {goal.goal_id: goal for goal in board}, [goal.goal_id for goal in board]
+
+
+class TestTheProviderEmitsTheFiveGoals(unittest.TestCase):
+    """P3's list, and only that list."""
+
+    def test_the_five_goals_are_on_the_board_when_this_role_has_a_reading(self):
+        goals, _order = fishing_goals({"1063040265": verdict(fp.NORMAL)})
+        for goal_id in ("USE_NORMAL_FISHING_BAIT", "CLAIM_FISHING_FREE_REWARD",
+                        "UPGRADE_FISHING_KIT", "CLAIM_FISHING_DAILY_REWARD",
+                        "CLAIM_FISHING_COLLECTION_REWARD"):
+            self.assertIn(goal_id, goals, f"{goal_id} was not emitted")
+
+    def test_a_role_with_no_reading_gets_no_goals_at_all(self):
+        """Emitting one would either invent a bait counter or borrow the other account's."""
+        goals, _order = fishing_goals({"999999999": verdict(fp.NORMAL)})
+        self.assertNotIn("USE_NORMAL_FISHING_BAIT", goals)
+
+    def test_no_forbidden_special_mode_goal_is_ever_emitted(self):
+        policy = json.loads(
+            (Path(__file__).resolve().parents[1] / "config/policy_state.json").read_text(
+                encoding="utf-8"))
+        forbidden = set(policy["disabled_goals"])
+        goals, _order = fishing_goals({"1063040265": verdict(fp.CAP_FULL, bait=10, cap=10)})
+        self.assertEqual(sorted(forbidden & set(goals)), [])
+
+    def test_the_normal_lane_is_named_and_the_rule_is_on_the_record(self):
+        goals, _order = fishing_goals({"1063040265": verdict(fp.NORMAL)})
+        goal = goals["USE_NORMAL_FISHING_BAIT"]
+        self.assertEqual(goal.evidence["lane"], "NORMAL_BAIT")
+        self.assertEqual(goal.evidence["only_allowed_spend"], "NORMAL_BAIT")
+
+
+class TestTheFourRulesOfP3(unittest.TestCase):
+    """The operator's four lines, each measured separately."""
+
+    def test_bait_available_makes_it_ready(self):
+        goals, _order = fishing_goals({"1063040265": verdict(fp.NORMAL, bait=5, cap=10)})
+        goal = goals["USE_NORMAL_FISHING_BAIT"]
+        self.assertEqual(goal.status, GoalStatus.READY)
+        self.assertEqual(goal.evidence["bait_current"], 5)
+
+    def test_no_bait_waits_for_the_counter_it_was_told_about(self):
+        at = (NOW + timedelta(hours=3)).isoformat()
+        goals, _order = fishing_goals(
+            {"1063040265": verdict(fp.NO_BAIT, bait=0, next_bait_at=at)})
+        goal = goals["USE_NORMAL_FISHING_BAIT"]
+        self.assertEqual(goal.status, GoalStatus.BLOCKED)
+        self.assertEqual(goal.retry_after, at)
+        self.assertEqual(goal.evidence["next_action_at"], at)
+        # A BLOCKED goal is not actionable, which is the point: no bait means no preemption.
+        self.assertEqual(goal.priority, float("-inf"))
+
+    def test_a_missing_recovery_instant_is_not_invented(self):
+        """``None`` stays ``None``: a substituted clock would read as a real recovery time."""
+        goals, _order = fishing_goals(
+            {"1063040265": verdict(fp.NO_BAIT, bait=0, next_bait_at=None)})
+        self.assertIsNone(goals["USE_NORMAL_FISHING_BAIT"].retry_after)
+
+    def test_an_unread_counter_is_unknown_not_empty(self):
+        goals, _order = fishing_goals({"1063040265": verdict(fp.UNKNOWN, bait=None, cap=None)})
+        goal = goals["USE_NORMAL_FISHING_BAIT"]
+        self.assertEqual(goal.status, GoalStatus.UNKNOWN)
+        self.assertIn("normal_bait_current", goal.evidence["required_observation"])
+
+    def test_a_full_counter_raises_the_bonus_but_is_not_a_deadline(self):
+        goals, _order = fishing_goals({"1063040265": verdict(fp.CAP_FULL, bait=10, cap=10)})
+        goal = goals["USE_NORMAL_FISHING_BAIT"]
+        self.assertEqual(goal.status, GoalStatus.READY)
+        self.assertEqual(goal.event_synergy, fp.CAP_FULL_SYNERGY_BONUS)
+        self.assertEqual(goal.evidence["overflow_pressure"], fp.CAP_FULL_SYNERGY_BONUS)
+        self.assertIsNone(goal.remaining_seconds,
+                          "a full counter is not a closing window; §3 reserves the hard-preempt")
+        self.assertEqual(goal.evidence["terms_reason"],
+                         "BAIT_AT_CAP_REGENERATION_IS_BEING_WASTED")
+
+    def test_a_closing_window_is_a_real_deadline(self):
+        goals, _order = fishing_goals(
+            {"1063040265": verdict(fp.ENDGAME, bait=4, cap=10, remaining=900)})
+        goal = goals["USE_NORMAL_FISHING_BAIT"]
+        self.assertEqual(goal.status, GoalStatus.READY)
+        self.assertEqual(goal.remaining_seconds, 900)
+        self.assertEqual(goal.evidence["overflow_pressure"], 0.0)
+        self.assertGreater(goal.priority, goal.reward_value + deadline_pressure(900) - 1)
+
+    def test_ordinary_bait_carries_neither_pressure(self):
+        goals, _order = fishing_goals({"1063040265": verdict(fp.NORMAL, bait=5, cap=10)})
+        goal = goals["USE_NORMAL_FISHING_BAIT"]
+        self.assertIsNone(goal.remaining_seconds)
+        self.assertEqual(goal.event_synergy, 0.0)
+
+
+class TestRolesNeverShareABaitCounter(unittest.TestCase):
+    def test_each_role_is_priced_from_its_own_verdict(self):
+        pressures = {
+            "1063040265": verdict(fp.CAP_FULL, bait=10, cap=10, role_key="ROLE_A"),
+            "1061663148": verdict(fp.NO_BAIT, bait=0, cap=10, role_key="ROLE_B"),
+        }
+        a, _ = fishing_goals(pressures, role_id="1063040265")
+        b, _ = fishing_goals(pressures, role_id="1061663148")
+        self.assertEqual(a["USE_NORMAL_FISHING_BAIT"].status, GoalStatus.READY)
+        self.assertEqual(a["USE_NORMAL_FISHING_BAIT"].evidence["role_key"], "ROLE_A")
+        self.assertEqual(b["USE_NORMAL_FISHING_BAIT"].status, GoalStatus.BLOCKED)
+        self.assertEqual(b["USE_NORMAL_FISHING_BAIT"].evidence["role_key"], "ROLE_B")
+        self.assertNotEqual(a["USE_NORMAL_FISHING_BAIT"].evidence["bait_current"],
+                            b["USE_NORMAL_FISHING_BAIT"].evidence["bait_current"])
+
+    def test_one_roles_full_counter_does_not_raise_the_others_bonus(self):
+        pressures = {"1063040265": verdict(fp.CAP_FULL, bait=10, cap=10, role_key="ROLE_A")}
+        b, _ = fishing_goals(pressures, role_id="1061663148")
+        self.assertNotIn("USE_NORMAL_FISHING_BAIT", b)
+
+
+class TestTheGoalsAreRecordsUntilASkillExists(unittest.TestCase):
+    """P3 is the *provider*; the production fishing Skill is a separate, named gap.
+
+    Handing these goals a skill name would make them selectable, and a selectable goal with no
+    route is scheduled and then does nothing -- the failure
+    ``tests/test_every_goal_has_a_route.py`` exists to prevent.  So they are emitted with no
+    skills, and the gap is named on the record instead of being hidden.
+    """
+
+    def test_no_fishing_goal_is_selectable(self):
+        goals, _order = fishing_goals({"1063040265": verdict(fp.NORMAL)})
+        for goal_id in ("USE_NORMAL_FISHING_BAIT", "CLAIM_FISHING_FREE_REWARD",
+                        "UPGRADE_FISHING_KIT", "CLAIM_FISHING_DAILY_REWARD",
+                        "CLAIM_FISHING_COLLECTION_REWARD"):
+            self.assertEqual(goals[goal_id].available_skills, (), goal_id)
+
+    def test_the_missing_skill_is_named_where_it_can_be_found(self):
+        from winter_agent_v2.goal_library import FISHING_LANE_SKILL
+
+        goals, _order = fishing_goals({"1063040265": verdict(fp.NORMAL)})
+        self.assertEqual(goals["USE_NORMAL_FISHING_BAIT"].evidence["capability_gap"],
+                         FISHING_LANE_SKILL)
+
+    def test_the_upgrade_goal_states_the_only_currency_it_may_spend(self):
+        goals, _order = fishing_goals({"1063040265": verdict(fp.NORMAL)})
+        evidence = goals["UPGRADE_FISHING_KIT"].evidence
+        self.assertEqual(evidence["allowed_spend"], "free event-internal currency only")
+        for forbidden in ("gems", "real_money", "treasure_tickets", "special_bait"):
+            self.assertIn(forbidden, evidence["forbidden_spend"])
 
 
 if __name__ == "__main__":

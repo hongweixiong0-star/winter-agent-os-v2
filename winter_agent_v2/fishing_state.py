@@ -618,18 +618,26 @@ class FishingState:
     and §8's scheduler locality rules stay in their own single owners.
     """
 
-    def __init__(self, path: Path | str = DEFAULT_PATH,
-                 ledger_path: Path | str = DEFAULT_LEDGER_PATH) -> None:
-        self.path = Path(path)
-        self.ledger_path = Path(ledger_path)
+    def __init__(self, path: Path | str | None = None,
+                 ledger_path: Path | str | None = None) -> None:
+        # Both defaults are resolved at *call* time rather than bound into the signature.
+        # A default argument is evaluated once, when the class body runs, so a test that
+        # reassigns ``DEFAULT_PATH`` -- which ``tests/conftest.py`` does, to keep the
+        # production bait record out of a test run -- would be silently ignored and the
+        # write would land in the live ``learning/`` tree.  Same shape as
+        # ``stamina_supply.StaminaSupply``, and for the same measured reason.
+        self.path = Path(path) if path is not None else Path(DEFAULT_PATH)
+        self.ledger_path = (
+            Path(ledger_path) if ledger_path is not None else Path(DEFAULT_LEDGER_PATH)
+        )
         self.roles: dict[str, RoleFishingState] = {}
         self.meta: dict[str, Any] = {}
         self._runs_cache: list[FishingRun] | None = None
 
     # ------------------------------------------------------------------ loading
     @classmethod
-    def load(cls, path: Path | str = DEFAULT_PATH,
-             ledger_path: Path | str = DEFAULT_LEDGER_PATH) -> "FishingState":
+    def load(cls, path: Path | str | None = None,
+             ledger_path: Path | str | None = None) -> "FishingState":
         """Never raises on a broken file: an unreadable record is "unknown", not a reason to die.
 
         Same trade ``stamina_supply.py`` makes and for the same reason -- this is an
@@ -638,7 +646,9 @@ class FishingState:
         """
         store = cls(path, ledger_path)
         try:
-            payload = json.loads(Path(path).read_text(encoding="utf-8"))
+            # Read back through the store's own resolved path so the reader and the writer
+            # cannot disagree about which file ``None`` meant.
+            payload = json.loads(store.path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             return store
         if not isinstance(payload, Mapping):

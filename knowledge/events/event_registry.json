@@ -642,9 +642,15 @@
           "USE_FREE_SPECIAL_FISHING",
           "USE_SPECIAL_FISHING",
           "TREASURE_FISHING",
+          "TREASURE_STAGE",
+          "TREASURE_TICKET",
+          "SPECIAL_BAIT",
           "USE_TREASURE_TICKET"
         ],
-        "note": "The operator forbids special bait, treasure tickets, Treasure Mode and every special-mode attempt even when the attempt is free. This is a policy verdict, not a capability gap: there is nothing here to develop, so these must never be reported as missing work. Only NORMAL_BAIT may be spent."
+        "legacy_task_aliases": {
+          "USE_TREASURE_TICKET": "TREASURE_TICKET"
+        },
+        "note": "Production Sprint NEXT P1 (2026-09-30) named six: USE_FREE_SPECIAL_FISHING / USE_SPECIAL_FISHING / TREASURE_FISHING / TREASURE_STAGE / TREASURE_TICKET / SPECIAL_BAIT. The operator forbids special bait, treasure tickets, Treasure Mode and every special-mode attempt even when the attempt is free. USE_TREASURE_TICKET is kept as the earlier spelling of TREASURE_TICKET so a run emitting either name is refused. This is a policy verdict, not a capability gap: there is nothing here to develop, so these must never be reported as missing work. Only NORMAL_BAIT may be spent."
       },
       "policy": {
         "source": "FISHING TOURNAMENT — NORMAL BAIT MAX SCORE POLICY V2 (operator directive 2026-09-30)",

@@ -41,10 +41,20 @@ REGISTRY = ROOT / "knowledge/events/event_registry.json"
 RULES = ROOT / "knowledge/events/fishing_tournament_rules.json"
 POLICY = ROOT / "config/policy_state.json"
 
+#: The operator's forbidden set, in the order it was written down.
+#:
+#: §4 (2026-09-30) named four.  Production Sprint NEXT P1 (2026-09-30) restated the policy and
+#: named six, adding ``TREASURE_STAGE`` and ``SPECIAL_BAIT``.  ``USE_TREASURE_TICKET`` is the
+#: earlier spelling of ``TREASURE_TICKET`` and is kept so a run emitting either name is refused --
+#: dropping it when the newer spelling arrived would have quietly re-opened one of the four
+#: original ids.
 SPECIAL_MODE_GOALS = (
     "USE_FREE_SPECIAL_FISHING",
     "USE_SPECIAL_FISHING",
     "TREASURE_FISHING",
+    "TREASURE_STAGE",
+    "TREASURE_TICKET",
+    "SPECIAL_BAIT",
     "USE_TREASURE_TICKET",
 )
 
@@ -105,6 +115,39 @@ def test_the_treasure_stage_control_is_marked_undrivable() -> None:
     """The measured coordinate stays as evidence, but must be flagged as not-to-tap."""
     geometry = _registry_record()["entry_geometry_720x1280"]
     assert geometry["treasure_stage_policy"] == "POLICY_DISABLED_BY_USER"
+
+
+def test_the_three_places_that_name_the_forbidden_set_agree() -> None:
+    """The registry, the rules file and the policy file must carry the same six ids.
+
+    Three copies exist for three different readers -- the panel reads the registry, an auditor
+    reads the rules file, the runtime reads ``disabled_goals`` -- and three copies of a list is
+    how a list drifts.  ``TREASURE_STAGE`` and ``SPECIAL_BAIT`` were added to all three by hand,
+    so the agreement is pinned rather than assumed.
+    """
+    registry = set(_registry_record()["policy_disabled_tasks"]["tasks"])
+    rules_block = json.loads(RULES.read_text(encoding="utf-8"))["policy_v2"]
+    rules = set(rules_block["forbidden_goal_ids"])
+    # The rules file states the six canonical ids and records the earlier spelling separately, so
+    # the alias is added back before the comparison rather than being assumed to be absent.
+    rules_with_aliases = rules | set(rules_block["legacy_goal_aliases"])
+    policy = set(json.loads(POLICY.read_text(encoding="utf-8"))["disabled_goals"])
+    canonical = set(SPECIAL_MODE_GOALS)
+
+    assert rules == canonical - {"USE_TREASURE_TICKET"}, (
+        "the rules file does not carry exactly the six ids P1 named"
+    )
+    for name, found in (("event_registry.json#policy_disabled_tasks", registry),
+                        ("fishing_tournament_rules.json#policy_v2", rules_with_aliases),
+                        ("config/policy_state.json#disabled_goals", policy)):
+        assert canonical <= found, f"{name} is missing {sorted(canonical - found)}"
+
+
+def test_the_rules_file_records_the_p1_expansion() -> None:
+    rules = json.loads(RULES.read_text(encoding="utf-8"))["policy_v2"]
+    assert len(rules["forbidden_goal_ids"]) == 6
+    # The alias is described, not silently dropped.
+    assert rules["legacy_goal_aliases"]["USE_TREASURE_TICKET"] == "TREASURE_TICKET"
 
 
 def test_rules_file_carries_the_v2_objective() -> None:

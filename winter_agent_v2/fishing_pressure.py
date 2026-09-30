@@ -103,6 +103,12 @@ def role_bait_verdict(role_state: Any, now: datetime, *,
             "bait_current": None,
             "bait_cap": None,
             "is_full": None,
+            "next_bait_at": None,
+            "event_end_at": None,
+            "points_total": None,
+            "line_level": None,
+            "hook_level": None,
+            "sinker_level": None,
             "endgame": None,
             "reason": "STATE_UNREADABLE",
         }
@@ -111,6 +117,16 @@ def role_bait_verdict(role_state: Any, now: datetime, *,
         "bait_current": getattr(role_state, "normal_bait_current", None),
         "bait_cap": getattr(role_state, "bait_cap", None),
         "is_full": bool(getattr(role_state, "is_full", False)),
+        # Carried through because the goal provider needs them: "when may this role fish again"
+        # is the counter's own printed instant, and "which gear do we have" is a live reading.
+        # Both are read off the role state, never derived -- a guessed recovery instant is what
+        # §2's "read the counter" rule exists to prevent.
+        "next_bait_at": getattr(role_state, "next_bait_at", None),
+        "event_end_at": getattr(role_state, "event_end_at", None),
+        "points_total": getattr(role_state, "points_total", None),
+        "line_level": getattr(role_state, "line_level", None),
+        "hook_level": getattr(role_state, "hook_level", None),
+        "sinker_level": getattr(role_state, "sinker_level", None),
         "endgame": endgame if isinstance(endgame, Mapping) else None,
         "reason": _pressure_reason(pressure, endgame),
     }
