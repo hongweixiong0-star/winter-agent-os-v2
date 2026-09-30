@@ -454,6 +454,15 @@ class SessionState:
     ambiguous_retries: int = 0
     observes: int = 0
     waits: int = 0
+    #: Steps whose verdict was ``STILL_PENDING``: the client was asked to finish and did not.
+    #: Counted separately from ``observes`` because they answer different questions, and
+    #: separately from ``loop_recoveries`` because a pending step is *not* a detected loop --
+    #: it is honest work in flight.  Measured 2026-09-30: the fishing wait spends one step of
+    #: the budget per look with no delay between looks, so ten looks cost 0.3 s of a 150 s
+    #: budget and the session dies at the step ceiling with every counter still reading zero.
+    #: A count is the precondition for a bound; without it "how long may this stay pending"
+    #: has no answer a run can be held to.
+    still_pending: int = 0
     #: Rungs of the recovery ladder this session has spent.  Kept here rather than inside
     #: the detector because it bounds a *session*; the detector owns which rung is next.
     loop_recoveries: int = 0
@@ -1024,6 +1033,7 @@ class SessionEngine:
                 # Accepted as honest work that is not finished: it counts as a step, not as a
                 # success, and the session continues.  This is what a "the cast is still
                 # running" answer looks like.
+                state.still_pending += 1
                 return self._terminal(context, state, StepOutcome.STILL_PENDING, last_reason,
                                       step, execution, semantic_retries, verdict.evidence)
             if verdict.outcome is StepOutcome.AMBIGUOUS:
@@ -1216,6 +1226,10 @@ class SessionEngine:
             "SESSION_RECOVERIES": state.recoveries,
             "SESSION_OBSERVES": state.observes,
             "SESSION_WAITS": state.waits,
+            # Its own line, never folded into SESSION_STEPS: a session that spent nine of its
+            # ten steps waiting is a different finding from one that took ten real actions, and
+            # the two were indistinguishable in the metrics block until this key existed.
+            "SESSION_STILL_PENDING": state.still_pending,
             "SESSION_DURATION_MS": round(duration * 1000, 1),
             "SESSION_STEP_BUDGET": context.spec.step_budget,
             "SESSION_TIME_BUDGET_S": context.spec.time_budget_s,

@@ -1,0 +1,583 @@
+{
+  "ledger_rows_at_measurement": 10316,
+  "what_this_measures": "The run-length distribution of consecutive STILL_PENDING session steps, and the false-positive cost of each candidate bound.",
+  "why_two_readings": "FISHING_RESULT_PENDING is the only STILL_PENDING-shaped reason that actually occurs, and it is emitted with PROGRESS or STILL_PENDING from the same line, so it cannot be resolved from the record. STRICT counts only reasons that name one outcome; LOOSE adds the overloaded one.",
+  "outcome_by_reason": {
+    "FISHING_CONTROL_SESSION_RAN": [
+      "PROGRESS",
+      "session_adapters.py:522"
+    ],
+    "FISHING_LEVEL_ENTRY_TAPPED": [
+      "PROGRESS",
+      "session_adapters.py:531"
+    ],
+    "FISHING_RESULT_LEFT": [
+      "PROGRESS",
+      "session_adapters.py:534"
+    ],
+    "FISHING_RESULT_PENDING": [
+      "OVERLOADED",
+      "session_adapters.py:538"
+    ],
+    "FISHING_CAST_VERIFIED": [
+      "SUCCESS",
+      "session_adapters.py:554"
+    ],
+    "FISHING_NO_FRAME": [
+      "AMBIGUOUS",
+      "session_adapters.py:560"
+    ],
+    "FISHING_LINE_VISIBLE": [
+      "PROGRESS",
+      "session_adapters.py:564"
+    ],
+    "FISHING_WAITING_FOR_LEVEL": [
+      "STILL_PENDING",
+      "session_adapters.py:565"
+    ],
+    "FISHING_FRAME_ADVANCED": [
+      "PROGRESS",
+      "session_adapters.py:566"
+    ],
+    "STAMINA_STILL_UNREADABLE": [
+      "STILL_PENDING",
+      "session_adapters.py:883"
+    ],
+    "STAMINA_NO_VERDICT": [
+      "AMBIGUOUS",
+      "session_adapters.py:886"
+    ],
+    "STAMINA_MARCH_VERIFIED": [
+      "SUCCESS",
+      "session_adapters.py:890"
+    ],
+    "BEAR_NO_VERDICT": [
+      "AMBIGUOUS",
+      "session_adapters.py:760"
+    ],
+    "BEAR_STEP_VERIFIED": [
+      "SUCCESS",
+      "session_adapters.py:768"
+    ],
+    "TRAINING_NO_VERDICT": [
+      "AMBIGUOUS",
+      "session_adapters.py:1058"
+    ],
+    "TRAINING_CAMP_TAPPED": [
+      "SUCCESS",
+      "session_adapters.py:1063"
+    ],
+    "SESSION_STEP_NOT_VERIFIED": [
+      "FAILED",
+      "session_engine.py:967"
+    ],
+    "SESSION_AMBIGUOUS": [
+      "AMBIGUOUS",
+      "session_engine.py:1037"
+    ],
+    "SESSION_NO_STEP_PRODUCED": [
+      "STILL_PENDING",
+      "session_engine.py:900 terminal"
+    ],
+    "SESSION_DOMAIN_STUCK": [
+      "FAILED",
+      "session_engine.py:1006 loop handback"
+    ]
+  },
+  "strict": {
+    "reading": "strict",
+    "sessions_with_a_run": 0,
+    "still_pending_steps": 0,
+    "runs": 0,
+    "histogram": {},
+    "longest_run": 0,
+    "mean_run_length": null,
+    "per_session": {},
+    "run_anatomy": [],
+    "runs_that_resolved": 0,
+    "runs_that_ended_at_the_session_end": 0,
+    "threshold_sweep": [
+      {
+        "threshold": 2,
+        "sessions_tripped": 0,
+        "runs_tripped": 0,
+        "runs_tripped_that_resolved": 0,
+        "false_positive_rate": null,
+        "longest_run_left_alone": 0
+      },
+      {
+        "threshold": 3,
+        "sessions_tripped": 0,
+        "runs_tripped": 0,
+        "runs_tripped_that_resolved": 0,
+        "false_positive_rate": null,
+        "longest_run_left_alone": 0
+      },
+      {
+        "threshold": 4,
+        "sessions_tripped": 0,
+        "runs_tripped": 0,
+        "runs_tripped_that_resolved": 0,
+        "false_positive_rate": null,
+        "longest_run_left_alone": 0
+      },
+      {
+        "threshold": 5,
+        "sessions_tripped": 0,
+        "runs_tripped": 0,
+        "runs_tripped_that_resolved": 0,
+        "false_positive_rate": null,
+        "longest_run_left_alone": 0
+      },
+      {
+        "threshold": 6,
+        "sessions_tripped": 0,
+        "runs_tripped": 0,
+        "runs_tripped_that_resolved": 0,
+        "false_positive_rate": null,
+        "longest_run_left_alone": 0
+      },
+      {
+        "threshold": 7,
+        "sessions_tripped": 0,
+        "runs_tripped": 0,
+        "runs_tripped_that_resolved": 0,
+        "false_positive_rate": null,
+        "longest_run_left_alone": 0
+      },
+      {
+        "threshold": 8,
+        "sessions_tripped": 0,
+        "runs_tripped": 0,
+        "runs_tripped_that_resolved": 0,
+        "false_positive_rate": null,
+        "longest_run_left_alone": 0
+      }
+    ],
+    "run_wall_time": []
+  },
+  "loose": {
+    "reading": "loose",
+    "sessions_with_a_run": 11,
+    "still_pending_steps": 44,
+    "runs": 11,
+    "histogram": {
+      "1": 1,
+      "2": 5,
+      "4": 1,
+      "5": 1,
+      "8": 3
+    },
+    "longest_run": 8,
+    "mean_run_length": 4.0,
+    "per_session": {
+      "S7D8C8BE201": {
+        "steps": 6,
+        "runs": [
+          2
+        ],
+        "outcomes": [
+          "PROGRESS",
+          "PROGRESS",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "PROGRESS",
+          "SUCCESS"
+        ]
+      },
+      "S19CAD41073": {
+        "steps": 4,
+        "runs": [
+          1
+        ],
+        "outcomes": [
+          "PROGRESS",
+          "PROGRESS",
+          "PROGRESS",
+          "STILL_PENDING"
+        ]
+      },
+      "S273A662E78": {
+        "steps": 6,
+        "runs": [
+          2
+        ],
+        "outcomes": [
+          "PROGRESS",
+          "PROGRESS",
+          "PROGRESS",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "PROGRESS"
+        ]
+      },
+      "S4D1A4E09A1": {
+        "steps": 7,
+        "runs": [
+          2
+        ],
+        "outcomes": [
+          "PROGRESS",
+          "PROGRESS",
+          "PROGRESS",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "PROGRESS",
+          "SUCCESS"
+        ]
+      },
+      "S6B565ACAD9": {
+        "steps": 7,
+        "runs": [
+          2
+        ],
+        "outcomes": [
+          "PROGRESS",
+          "PROGRESS",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "PROGRESS",
+          "PROGRESS",
+          "SUCCESS"
+        ]
+      },
+      "S950EB15BB2": {
+        "steps": 7,
+        "runs": [
+          2
+        ],
+        "outcomes": [
+          "PROGRESS",
+          "PROGRESS",
+          "PROGRESS",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "PROGRESS",
+          "SUCCESS"
+        ]
+      },
+      "S19F241EBC6": {
+        "steps": 9,
+        "runs": [
+          5
+        ],
+        "outcomes": [
+          "PROGRESS",
+          "PROGRESS",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "PROGRESS",
+          "SUCCESS"
+        ]
+      },
+      "SA5E9B37CCF": {
+        "steps": 10,
+        "runs": [
+          8
+        ],
+        "outcomes": [
+          "PROGRESS",
+          "PROGRESS",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING"
+        ]
+      },
+      "SFB942B964E": {
+        "steps": 9,
+        "runs": [
+          4
+        ],
+        "outcomes": [
+          "PROGRESS",
+          "PROGRESS",
+          "PROGRESS",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "PROGRESS",
+          "SUCCESS"
+        ]
+      },
+      "SA698744E9E": {
+        "steps": 10,
+        "runs": [
+          8
+        ],
+        "outcomes": [
+          "PROGRESS",
+          "PROGRESS",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING"
+        ]
+      },
+      "S5995DB6CE5": {
+        "steps": 10,
+        "runs": [
+          8
+        ],
+        "outcomes": [
+          "PROGRESS",
+          "PROGRESS",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING",
+          "STILL_PENDING"
+        ]
+      }
+    },
+    "run_anatomy": [
+      {
+        "session_id": "S7D8C8BE201",
+        "start": 2,
+        "length": 2,
+        "ended_by": "another_verdict",
+        "next_reason": "FISHING_RESULT_LEFT",
+        "step_count_after_the_run": 2
+      },
+      {
+        "session_id": "S19CAD41073",
+        "start": 3,
+        "length": 1,
+        "ended_by": "session_end",
+        "next_reason": "",
+        "step_count_after_the_run": 0
+      },
+      {
+        "session_id": "S273A662E78",
+        "start": 3,
+        "length": 2,
+        "ended_by": "another_verdict",
+        "next_reason": "FISHING_RESULT_LEFT",
+        "step_count_after_the_run": 1
+      },
+      {
+        "session_id": "S4D1A4E09A1",
+        "start": 3,
+        "length": 2,
+        "ended_by": "another_verdict",
+        "next_reason": "FISHING_RESULT_LEFT",
+        "step_count_after_the_run": 2
+      },
+      {
+        "session_id": "S6B565ACAD9",
+        "start": 2,
+        "length": 2,
+        "ended_by": "another_verdict",
+        "next_reason": "FISHING_FRAME_ADVANCED",
+        "step_count_after_the_run": 3
+      },
+      {
+        "session_id": "S950EB15BB2",
+        "start": 3,
+        "length": 2,
+        "ended_by": "another_verdict",
+        "next_reason": "FISHING_RESULT_LEFT",
+        "step_count_after_the_run": 2
+      },
+      {
+        "session_id": "S19F241EBC6",
+        "start": 2,
+        "length": 5,
+        "ended_by": "another_verdict",
+        "next_reason": "FISHING_RESULT_LEFT",
+        "step_count_after_the_run": 2
+      },
+      {
+        "session_id": "SA5E9B37CCF",
+        "start": 2,
+        "length": 8,
+        "ended_by": "session_end",
+        "next_reason": "",
+        "step_count_after_the_run": 0
+      },
+      {
+        "session_id": "SFB942B964E",
+        "start": 3,
+        "length": 4,
+        "ended_by": "another_verdict",
+        "next_reason": "FISHING_RESULT_LEFT",
+        "step_count_after_the_run": 2
+      },
+      {
+        "session_id": "SA698744E9E",
+        "start": 2,
+        "length": 8,
+        "ended_by": "session_end",
+        "next_reason": "",
+        "step_count_after_the_run": 0
+      },
+      {
+        "session_id": "S5995DB6CE5",
+        "start": 2,
+        "length": 8,
+        "ended_by": "session_end",
+        "next_reason": "",
+        "step_count_after_the_run": 0
+      }
+    ],
+    "runs_that_resolved": 7,
+    "runs_that_ended_at_the_session_end": 4,
+    "threshold_sweep": [
+      {
+        "threshold": 2,
+        "sessions_tripped": 10,
+        "runs_tripped": 10,
+        "runs_tripped_that_resolved": 7,
+        "false_positive_rate": 0.7,
+        "longest_run_left_alone": 1
+      },
+      {
+        "threshold": 3,
+        "sessions_tripped": 5,
+        "runs_tripped": 5,
+        "runs_tripped_that_resolved": 2,
+        "false_positive_rate": 0.4,
+        "longest_run_left_alone": 2
+      },
+      {
+        "threshold": 4,
+        "sessions_tripped": 5,
+        "runs_tripped": 5,
+        "runs_tripped_that_resolved": 2,
+        "false_positive_rate": 0.4,
+        "longest_run_left_alone": 2
+      },
+      {
+        "threshold": 5,
+        "sessions_tripped": 4,
+        "runs_tripped": 4,
+        "runs_tripped_that_resolved": 1,
+        "false_positive_rate": 0.25,
+        "longest_run_left_alone": 4
+      },
+      {
+        "threshold": 6,
+        "sessions_tripped": 3,
+        "runs_tripped": 3,
+        "runs_tripped_that_resolved": 0,
+        "false_positive_rate": 0.0,
+        "longest_run_left_alone": 5
+      },
+      {
+        "threshold": 7,
+        "sessions_tripped": 3,
+        "runs_tripped": 3,
+        "runs_tripped_that_resolved": 0,
+        "false_positive_rate": 0.0,
+        "longest_run_left_alone": 5
+      },
+      {
+        "threshold": 8,
+        "sessions_tripped": 3,
+        "runs_tripped": 3,
+        "runs_tripped_that_resolved": 0,
+        "false_positive_rate": 0.0,
+        "longest_run_left_alone": 5
+      }
+    ],
+    "run_wall_time": [
+      {
+        "session_id": "S7D8C8BE201",
+        "length": 2,
+        "seconds_in_the_run": 0.064,
+        "seconds_per_step": 0.032
+      },
+      {
+        "session_id": "S19CAD41073",
+        "length": 1,
+        "seconds_in_the_run": 0.047,
+        "seconds_per_step": 0.047
+      },
+      {
+        "session_id": "S273A662E78",
+        "length": 2,
+        "seconds_in_the_run": 0.015,
+        "seconds_per_step": 0.0075
+      },
+      {
+        "session_id": "S4D1A4E09A1",
+        "length": 2,
+        "seconds_in_the_run": 0.062,
+        "seconds_per_step": 0.031
+      },
+      {
+        "session_id": "S6B565ACAD9",
+        "length": 2,
+        "seconds_in_the_run": 0.078,
+        "seconds_per_step": 0.039
+      },
+      {
+        "session_id": "S950EB15BB2",
+        "length": 2,
+        "seconds_in_the_run": 0.079,
+        "seconds_per_step": 0.0395
+      },
+      {
+        "session_id": "S19F241EBC6",
+        "length": 5,
+        "seconds_in_the_run": 0.186,
+        "seconds_per_step": 0.0372
+      },
+      {
+        "session_id": "SA5E9B37CCF",
+        "length": 8,
+        "seconds_in_the_run": 0.345,
+        "seconds_per_step": 0.0431
+      },
+      {
+        "session_id": "SFB942B964E",
+        "length": 4,
+        "seconds_in_the_run": 0.173,
+        "seconds_per_step": 0.0433
+      },
+      {
+        "session_id": "SA698744E9E",
+        "length": 8,
+        "seconds_in_the_run": 0.265,
+        "seconds_per_step": 0.0331
+      },
+      {
+        "session_id": "S5995DB6CE5",
+        "length": 8,
+        "seconds_in_the_run": 0.266,
+        "seconds_per_step": 0.0332
+      }
+    ]
+  },
+  "finding": {
+    "strict_reading_is_empty": true,
+    "runs_are_at_most": 8,
+    "longest_run_equals_budget_minus_two": true,
+    "runs_that_resolved": 7,
+    "runs_that_died_at_the_session_end": 4,
+    "seconds_per_step_median": 0.0372,
+    "the_run_is_a_busy_spin_not_a_wait": true,
+    "clean_step_threshold": 6,
+    "threshold_that_would_kill_most_sessions": 2
+  },
+  "limitations": [
+    "The outcome is reconstructed from the reason string, never from a ledger column: see audit_outcome_persistence.py. One reason is overloaded, hence two readings.",
+    "The corpus contains no unambiguous STILL_PENDING step at all, so the strict reading is empty and every number here rests on the overloaded reason.",
+    "`step_budget` is a ceiling, and the run that reaches it is invisible in the ledger: the budget terminal is a SessionResult, and finish() writes no episode row."
+  ]
+}

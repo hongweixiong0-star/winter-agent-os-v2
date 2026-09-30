@@ -117,6 +117,23 @@ class Episode:
     # emitter had to be the runtime's own deferral hop.  That reasoning was right, and it should not
     # have been necessary -- the same lesson as ``verifier_evidence`` above and open issue #0aw.
     decision_reason: str = ""
+    # The *session engine's* verdict for this step, verbatim: one of
+    # ``StepOutcome`` (SUCCESS / PROGRESS / STILL_PENDING / AMBIGUOUS / FAILED).
+    #
+    # It was already computed and already passed to the writer, and then thrown away: the
+    # parameter was read only to choose a value for ``result`` and never stored.  Measured
+    # 2026-09-30 on 108 session steps, and the cost was that the outcome became
+    # unmeasurable.  ``STILL_PENDING`` -- "the work is in flight" -- is not in the set the
+    # fold admits, so it fell through to the default and every such step was written
+    # ``result="FAILURE"`` with ``failure_type="NO_EXECUTION"``: 44 rows telling the
+    # operator that a fishing cast had failed when the cast was still swimming.  A count
+    # of "how long may a flow stay pending" cannot be taken from a ledger that answers
+    # "failed", and an offline replay that reconstructs the outcome from ``result`` gets
+    # the engine's own ``#44`` question wrong.
+    #
+    # ``""`` means the step was not a session step, which is true for every goal-driven
+    # row and is deliberately not filled in with a guess.
+    session_outcome: str = ""
     # One of ``control_experience.CHANGE_KINDS``.  NO_OP and UNKNOWN are kept apart
     # on purpose: "the tap was issued and nothing moved" is a finding about the
     # control, "we could not tell" is a finding about the reading.

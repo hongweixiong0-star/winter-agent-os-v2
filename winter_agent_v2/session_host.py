@@ -341,9 +341,20 @@ class LiveRuntimeSessionHost:
                 backend=str(getattr(report, "backend", "")), detail=dict(getattr(report, "evidence", {}) or {}))
         verification = self._verification
         if verification is None:
-            verification = VerificationResult(str(getattr(report, "outcome", "")) == "SUCCESS",
-                                             str(getattr(report, "reason", "")),
-                                             dict(getattr(report, "evidence", {}) or {}))
+            verdict_name = str(getattr(report, "outcome", "")).upper()
+            if verdict_name in ("STILL_PENDING", "AMBIGUOUS"):
+                # No answer arrived, so nothing judged this step.  ``verify_step`` above states
+                # the rule for this file -- ``None`` rather than a fabricated ``False``, because
+                # "nobody judged this" and "the client answered no" are different facts -- and
+                # fabricating it here was the same defect one layer down: every pending step
+                # was written ``verifier_ok=False``, which reads as a verification that was
+                # made and rejected.  ``goal_progress`` below still answers ``False`` for these,
+                # and that is the honest statement: the step advanced nothing yet.
+                verification = None
+            else:
+                verification = VerificationResult(verdict_name == "SUCCESS",
+                                                 str(getattr(report, "reason", "")),
+                                                 dict(getattr(report, "evidence", {}) or {}))
         before = self._before if self._before is not None else getattr(report, "before", None)
         after = self._after if self._after is not None else getattr(report, "after", None)
         try:

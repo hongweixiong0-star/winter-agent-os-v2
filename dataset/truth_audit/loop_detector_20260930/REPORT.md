@@ -39,6 +39,30 @@ Three things move while this is read, and a count without them is not evidence:
   running the detector**. That is new since the first draft of this report, and it confines the
   offline half's claims: see *Part 4*.
 
+> ### ⚠ Correction — read with *Part 2* (`STILL_PENDING_AUDIT.md`, 2026-09-30)
+>
+> *Part 2* reconstructs each session step's outcome from the `result` column. It was written
+> before anyone had checked whether that column means the same thing at every revision, and it
+> does not. Two claims in *Part 2* are therefore wrong, and one scope limit follows:
+>
+> 1. The **"42 of the 105 steps"** figure is a property of the *recording code*, not of the runs.
+>    All 42 were written before `fa476b6` (*fix(evidence): distinguish session progress from
+>    failed clicks*), which is the commit that stopped `result` from being `FAILURE` for **every**
+>    session step. Measured: pre-`fa476b6` **60/60** session steps are `FAILURE`-only; post-fix,
+>    `goal_progress=True && result=FAILURE` is **0**. The repository's own `VERIFIER_CONFLICT`
+>    detector (`state_truth.py:1532`) was firing on the same artefact — **5 pre-fix, 0 post-fix**,
+>    all of them `FISHING_CAST_VERIFIED`.
+> 2. *Part 2*'s session-scoped counts (`LOOP_DETECTED 23 / LOOP_RECOVERED 2 / LOOP_DEFERRED 3`)
+>    are a **counterfactual**, not an observation: they answer "what would the detector have said
+>    if these steps had been fed as `FAILED`". The live engine fed **2 of the 10** steps of the
+>    session shown below and detected **nothing** (*Part 4*). So the ladder block below must not
+>    be read as "the detector ran here" — it did not.
+>
+> **Scope limit:** session-scoped replay detections may not be counted toward the four headline
+> metrics. *Part 1*, *Part 3*, `revision_audit` and `live_detector_telemetry` are unaffected —
+> they read the stream, the run's own ledger, or `session_timeline.jsonl`, never `result`.
+> Full measurement, the revision boundary and the threshold analysis: `STILL_PENDING_AUDIT.md`.
+
 ---
 
 ## Part 1 — historical episodes, over the whole stream
@@ -123,6 +147,13 @@ disagreeing* signal: **42 of the 105 steps are `result=FAILURE` while `goal_prog
 42 verified advances as "no progress". The fallback is safe here only because nothing reaches
 it — `record_step` always writes `goal_progress`, so `progress_from_outcome` is never called.
 
+> **Corrected 2026-09-30 — see the correction note in *Provenance* and `STILL_PENDING_AUDIT.md`.**
+> The "42" is not a fact about these runs. All 42 predate `fa476b6`, which is the commit that made
+> `result` mean anything at all for a session step; post-fix the count is **0**. The two
+> readings agreeing is likewise weaker than it reads: both reconstruct the outcome from the same
+> `result` column, so they agree by construction. And the counts in this Part are a
+> **counterfactual** — the live engine fed 2 of these 10 steps and detected nothing (*Part 4*).
+
 Three of the 26 sessions reached `defer_goal`. One of them is the case the rung exists for:
 
 **`SA5E9B37CCF` — the live AUTO burning 8 of its 10 steps on one stuck observe.** Revision
@@ -143,6 +174,14 @@ Three of the 26 sessions reached `defer_goal`. One of them is the case the rung 
 Six detections and a full ladder, landing on `defer_goal` at the session's **last** step. The
 ladder's cost (3 identical answers + 5 confirmed escalations = 8 consecutive repeats) and this
 session's budget (10 steps, 8 of them repeats) coincide exactly.
+
+> **This block is a counterfactual, and the `FAILURE` labels in it are a recording artefact.**
+> The 8 rows are `FISHING_RESULT_PENDING`, whose verdict is `STILL_PENDING` — "the cast is still
+> swimming" — a verdict the loop detector is (correctly) not shown, which is why the live run
+> detected nothing. They read `FAILURE` because the outcome fold's admitted set is
+> `{"PROGRESS", "AMBIGUOUS"}` and omits `STILL_PENDING`. Measured on the same revision: the run
+> was **0.345 s of wall time** across all 8 steps, against a 150 s time budget — a 30 ms busy
+> spin, not a wait. See *Part 4* and `STILL_PENDING_AUDIT.md` §1.
 
 The other two, and the two recoveries, are in `replay_sessions_report.json → detail`, with
 every step's line number, rung and signature.
@@ -246,6 +285,13 @@ Two more facts from the same session, each checkable:
    confirm it: 10 steps, 2 verified, and **`SESSION_SEMANTIC_RETRIES`, `SESSION_AMBIGUOUS_RETRIES`,
    `SESSION_RECOVERIES` and `SESSION_WAITS` all 0** — eight steps consumed the entire budget
    while no counter anywhere moved. The session's *step budget* is the only thing bounding it.
+
+   > **Partly fixed 2026-09-30.** The counter now exists: `SessionState.still_pending` and the
+   > metric `SESSION_STILL_PENDING`, kept out of both `SESSION_STEPS` and `loop_recoveries` on
+   > purpose. The *bound* is deliberately still absent — `STILL_PENDING_AUDIT.md` §4 shows the
+   > wait is a 30 ms busy spin bounded only by the step ceiling (**0.345 s** for the whole run,
+   > against a 150 s time budget), so the next change belongs in the adapter's wait semantics,
+   > and its size needs one live reading (hypothesis H1, §4 of that file).
 
 A third boundary, also live: lines 10216–10237 of the stream are eleven laps of
 `OPEN_INTEL` / `BACK` on `CLEAR_INTEL`, every one `gp=False` — a textbook `ABAB`. They are

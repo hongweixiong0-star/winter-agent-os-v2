@@ -1,0 +1,455 @@
+{
+  "what_this_audits": "Whether a session step's outcome survives to the production ledger, and whether the `result` column means the same thing across the revisions present in it.",
+  "source_contract": {
+    "runtime_admitted_set_present": false,
+    "runtime_admitted_set": "if session_outcome in {\"PROGRESS\", \"AMBIGUOUS\"}:",
+    "runtime_default_fold_present": true,
+    "runtime_default_fold": "result = \"SUCCESS\" if failure is None else \"FAILURE\"",
+    "runtime_session_outcome_is_a_parameter": true,
+    "episode_declares_an_outcome_field": true,
+    "session_host_declares_step_reports": true,
+    "session_host_reads_step_reports": false,
+    "session_host_step_report_reads": []
+  },
+  "ledger_schema": {
+    "total_episode_rows": 10316,
+    "columns": 33,
+    "has_session_outcome_column": false,
+    "has_session_id_column": false,
+    "has_repo_revision_column": true
+  },
+  "revision_boundary": {
+    "evidence_fix_commit": "fa476b6",
+    "evidence_fix_subject": "fix(evidence): distinguish session progress from failed clicks and verified observations",
+    "revisions_in_corpus": 8,
+    "per_revision": {
+      "014a4df1dd0f56bdd636d6dc6dcff813a1fb36b1": {
+        "steps": 15,
+        "recorded_after_the_evidence_fix": true,
+        "result_values": {
+          "PROGRESS": 4,
+          "FAILURE": 11
+        },
+        "failure_only": false,
+        "reason_tails": {
+          "FISHING_FRAME_ADVANCED": 2,
+          "FISHING_LEVEL_ENTRY_TAPPED": 1,
+          "FISHING_CONTROL_SESSION_RAN": 1,
+          "FISHING_RESULT_PENDING": 8,
+          "SESSION_STEP_NOT_VERIFIED": 3
+        }
+      },
+      "0d77a1d474534e57bb1e8ea9c3bc78ebf0688b51": {
+        "steps": 18,
+        "recorded_after_the_evidence_fix": false,
+        "result_values": {
+          "FAILURE": 18
+        },
+        "failure_only": true,
+        "reason_tails": {
+          "FISHING_FRAME_ADVANCED": 3,
+          "FISHING_LEVEL_ENTRY_TAPPED": 3,
+          "FISHING_CONTROL_SESSION_RAN": 3,
+          "FISHING_RESULT_PENDING": 5,
+          "FISHING_RESULT_LEFT": 2,
+          "FISHING_CAST_VERIFIED": 1,
+          "SESSION_STEP_NOT_VERIFIED": 1
+        }
+      },
+      "2b2a410ed4c08c76ba4532590cf34a7e7f83448b": {
+        "steps": 5,
+        "recorded_after_the_evidence_fix": false,
+        "result_values": {
+          "FAILURE": 5
+        },
+        "failure_only": true,
+        "reason_tails": {
+          "FISHING_FRAME_ADVANCED": 1,
+          "FISHING_LEVEL_ENTRY_TAPPED": 1,
+          "FISHING_CONTROL_SESSION_RAN": 1,
+          "SESSION_STEP_NOT_VERIFIED": 2
+        }
+      },
+      "35bb87c9a3b863d1362b1389eb46d291c64d5aee": {
+        "steps": 2,
+        "recorded_after_the_evidence_fix": false,
+        "result_values": {
+          "FAILURE": 2
+        },
+        "failure_only": true,
+        "reason_tails": {
+          "FISHING_FRAME_ADVANCED": 1,
+          "SESSION_STEP_NOT_VERIFIED": 1
+        }
+      },
+      "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8": {
+        "steps": 32,
+        "recorded_after_the_evidence_fix": true,
+        "result_values": {
+          "PROGRESS": 11,
+          "FAILURE": 20,
+          "SUCCESS": 1
+        },
+        "failure_only": false,
+        "reason_tails": {
+          "FISHING_FRAME_ADVANCED": 4,
+          "FISHING_LEVEL_ENTRY_TAPPED": 3,
+          "FISHING_CONTROL_SESSION_RAN": 3,
+          "FISHING_RESULT_PENDING": 20,
+          "FISHING_RESULT_LEFT": 1,
+          "FISHING_CAST_VERIFIED": 1
+        }
+      },
+      "772c0f9879678405b3cca9f4640295a86e44368d": {
+        "steps": 1,
+        "recorded_after_the_evidence_fix": true,
+        "result_values": {
+          "PROGRESS": 1
+        },
+        "failure_only": false,
+        "reason_tails": {
+          "FISHING_FRAME_ADVANCED": 1
+        }
+      },
+      "78b3ffda9d87109703ef4c33cc4ffc5d3a1c1c7a": {
+        "steps": 31,
+        "recorded_after_the_evidence_fix": false,
+        "result_values": {
+          "FAILURE": 31
+        },
+        "failure_only": true,
+        "reason_tails": {
+          "FISHING_FRAME_ADVANCED": 4,
+          "FISHING_LEVEL_ENTRY_TAPPED": 4,
+          "FISHING_CONTROL_SESSION_RAN": 4,
+          "FISHING_RESULT_PENDING": 11,
+          "FISHING_RESULT_LEFT": 4,
+          "FISHING_CAST_VERIFIED": 4
+        }
+      },
+      "b8b3d799510eb0e9e0e5fabf8089df218037ebdf": {
+        "steps": 4,
+        "recorded_after_the_evidence_fix": false,
+        "result_values": {
+          "FAILURE": 4
+        },
+        "failure_only": true,
+        "reason_tails": {
+          "FISHING_FRAME_ADVANCED": 2,
+          "SESSION_STEP_NOT_VERIFIED": 2
+        }
+      }
+    },
+    "pre_fix_steps": 60,
+    "pre_fix_steps_that_are_failure_only": 60,
+    "post_fix_steps": 48,
+    "pre_fix_revisions": [
+      "0d77a1d474534e57bb1e8ea9c3bc78ebf0688b51",
+      "2b2a410ed4c08c76ba4532590cf34a7e7f83448b",
+      "35bb87c9a3b863d1362b1389eb46d291c64d5aee",
+      "78b3ffda9d87109703ef4c33cc4ffc5d3a1c1c7a",
+      "b8b3d799510eb0e9e0e5fabf8089df218037ebdf"
+    ],
+    "post_fix_revisions": [
+      "014a4df1dd0f56bdd636d6dc6dcff813a1fb36b1",
+      "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8",
+      "772c0f9879678405b3cca9f4640295a86e44368d"
+    ]
+  },
+  "internal_inconsistencies": {
+    "verifier_conflict_verifier_ok_true_result_failure": {
+      "pre_fix": 5,
+      "post_fix": 0,
+      "examples": [
+        {
+          "reason": "FISHING_CAST_VERIFIED",
+          "revision": "0d77a1d47453",
+          "bucket": "pre_fix"
+        },
+        {
+          "reason": "FISHING_CAST_VERIFIED",
+          "revision": "78b3ffda9d87",
+          "bucket": "pre_fix"
+        },
+        {
+          "reason": "FISHING_CAST_VERIFIED",
+          "revision": "78b3ffda9d87",
+          "bucket": "pre_fix"
+        },
+        {
+          "reason": "FISHING_CAST_VERIFIED",
+          "revision": "78b3ffda9d87",
+          "bucket": "pre_fix"
+        }
+      ]
+    },
+    "progress_conflict_goal_progress_true_result_failure": {
+      "pre_fix": 42,
+      "post_fix": 0,
+      "examples": [
+        {
+          "reason": "FISHING_FRAME_ADVANCED",
+          "revision": "35bb87c9a3b8",
+          "bucket": "pre_fix"
+        },
+        {
+          "reason": "FISHING_FRAME_ADVANCED",
+          "revision": "b8b3d799510e",
+          "bucket": "pre_fix"
+        },
+        {
+          "reason": "FISHING_FRAME_ADVANCED",
+          "revision": "b8b3d799510e",
+          "bucket": "pre_fix"
+        },
+        {
+          "reason": "FISHING_FRAME_ADVANCED",
+          "revision": "2b2a410ed4c0",
+          "bucket": "pre_fix"
+        }
+      ]
+    },
+    "verifier_conflict_is_entirely_pre_fix": true,
+    "progress_conflict_is_entirely_pre_fix": true,
+    "raised_live_by": "winter_agent_v2/state_truth.py:1532 (VERIFIER_CONFLICT)"
+  },
+  "still_pending_shaped_rows_on_current_revisions": [
+    {
+      "session_id": "SA5E9B37CCF",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SA5E9B37CCF",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SA5E9B37CCF",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SA5E9B37CCF",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SA5E9B37CCF",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SA5E9B37CCF",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SA5E9B37CCF",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SA5E9B37CCF",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SFB942B964E",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SFB942B964E",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SFB942B964E",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SFB942B964E",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SA698744E9E",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SA698744E9E",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SA698744E9E",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SA698744E9E",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SA698744E9E",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SA698744E9E",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SA698744E9E",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "SA698744E9E",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "6ba2ab5290572b068f7d3d5db698c28cdafc1ee8"
+    },
+    {
+      "session_id": "S5995DB6CE5",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "014a4df1dd0f56bdd636d6dc6dcff813a1fb36b1"
+    },
+    {
+      "session_id": "S5995DB6CE5",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "014a4df1dd0f56bdd636d6dc6dcff813a1fb36b1"
+    },
+    {
+      "session_id": "S5995DB6CE5",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "014a4df1dd0f56bdd636d6dc6dcff813a1fb36b1"
+    },
+    {
+      "session_id": "S5995DB6CE5",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "014a4df1dd0f56bdd636d6dc6dcff813a1fb36b1"
+    },
+    {
+      "session_id": "S5995DB6CE5",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "014a4df1dd0f56bdd636d6dc6dcff813a1fb36b1"
+    },
+    {
+      "session_id": "S5995DB6CE5",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "014a4df1dd0f56bdd636d6dc6dcff813a1fb36b1"
+    },
+    {
+      "session_id": "S5995DB6CE5",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "014a4df1dd0f56bdd636d6dc6dcff813a1fb36b1"
+    },
+    {
+      "session_id": "S5995DB6CE5",
+      "reason": "FISHING_RESULT_PENDING",
+      "result": "FAILURE",
+      "failure_type": "NO_EXECUTION",
+      "goal_progress": false,
+      "revision": "014a4df1dd0f56bdd636d6dc6dcff813a1fb36b1"
+    }
+  ],
+  "still_pending_shaped_rows_on_current_revisions_count": 28,
+  "verdict": {
+    "outcome_is_recoverable_from_the_ledger": false,
+    "reason_is_a_sound_substitute": false,
+    "result_column_is_stable_across_the_corpus": false,
+    "step_reports_is_dead_accumulation": true,
+    "still_pending_folds_to_failure_on_current_revisions": true
+  },
+  "limitations": [
+    "The run-length distribution of STILL_PENDING cannot be measured from the ledger: the outcome is not a column, and the only truthful copy is appended to a list nothing reads.",
+    "`result` is not comparable across the corpus: before fa476b6 every session step was written FAILURE, so any count that mixes revisions measures the recording code as much as the run.",
+    "FISHING_RESULT_PENDING maps to two outcomes (PROGRESS or STILL_PENDING) from the same adapter line, so even the reason string cannot resolve it in general."
+  ]
+}

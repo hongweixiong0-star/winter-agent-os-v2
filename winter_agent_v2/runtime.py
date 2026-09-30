@@ -1991,9 +1991,18 @@ class LiveRuntime:
         result = "SUCCESS" if failure is None else "FAILURE"
         # Sessions also record observations and unfinished, progressing actions.
         # An observation is not a missed click; progress is not a verifier PASS.
-        if session_outcome in {"PROGRESS", "AMBIGUOUS"}:
-            result = "PROGRESS" if session_outcome == "PROGRESS" else "INCOMPLETE"
-            failure = None
+        #
+        # ``STILL_PENDING`` belongs in this chain because leaving it out was a measured
+        # defect, not an oversight in wording: it fell through to the ``"FAILURE"`` default,
+        # so 44 production rows called a fishing cast that was still swimming a failed cast,
+        # and ``failure`` was set to ``"NO_EXECUTION"`` -- true of an observe-only step and
+        # meaningless as a verdict.  ``STILL_PENDING`` and ``AMBIGUOUS`` share ``INCOMPLETE``
+        # deliberately: ``result`` answers "did this step finish", and the exact verdict now
+        # travels separately in ``session_outcome``, so one column stops carrying two facts.
+        if session_outcome == "PROGRESS":
+            result, failure = "PROGRESS", None
+        elif session_outcome in {"AMBIGUOUS", "STILL_PENDING"}:
+            result, failure = "INCOMPLETE", None
         elif session_outcome == "SUCCESS" and verification is not None and verification.ok:
             result, failure = "SUCCESS", None
         episode = Episode(
@@ -2071,6 +2080,11 @@ class LiveRuntime:
             control=(execution.action.target or "") if execution is not None else "",
             expected_result=decision.expected_result,
             observed_change=observed_change,
+            # The verdict this fold was derived from.  Kept beside the fold rather than only
+            # inside it: ``result`` is a coarse class (three values, shared with goal-driven
+            # steps), and the session engine's five-way verdict is the finer fact that a
+            # reader -- or a replay -- actually needs.
+            session_outcome=session_outcome,
         )
         try:
             self.episode_store.append(episode)
@@ -7258,6 +7272,10 @@ class LiveRuntime:
                         "reason": session_result.reason,
                         "steps": len(session_result.steps),
                         "verified": metrics.get("SESSION_VERIFIED_STEPS"),
+                        # How much of the session was spent waiting on the client rather than
+                        # acting.  Beside ``steps`` because the pair is the finding: ten steps
+                        # with nine pending is a stalled wait, ten steps with none is work.
+                        "still_pending": metrics.get("SESSION_STILL_PENDING"),
                         "episode_ids": list(session_result.episode_ids),
                         "yield_class": session_result.yield_class or None,
                         "failure": metrics.get("SESSION_FAILURE"),
