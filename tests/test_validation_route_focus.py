@@ -35,6 +35,13 @@ def test_unavailable_concrete_fishing_target_does_not_synthesize_readonly_comple
     assert runtime._focus_validation_goals([]) == []
 
 
+def test_requested_readonly_fishing_observation_needs_no_bait_goal():
+    runtime = _runtime('DEVELOPMENT_VALIDATION', 'FISHING')
+    runtime.validation_scope = {'goal_id': 'OBSERVE_FISHING_STATE', 'target_skill': 'READ_FISHING_STATE'}
+    selected = runtime._focus_validation_goals([SimpleNamespace(goal_id='DAILY_ACTIVITY_TARGET')])
+    assert [g.goal_id for g in selected] == ['OBSERVE_FISHING_STATE']
+
+
 def test_scope_role_mismatch_and_production_isolation():
     goals = [SimpleNamespace(goal_id='KEEP_RESEARCH_PRODUCTIVE')]
     runtime = _runtime('DEVELOPMENT_VALIDATION', '')

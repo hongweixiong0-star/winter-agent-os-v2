@@ -496,6 +496,17 @@
         }
       ]
     },
+    "OBSERVE_FISHING_STATE": {
+      "category": "限时活动观察",
+      "composition": "SEQUENCE",
+      "runtime_goal": true,
+      "capabilities": [
+        {
+          "capability": "READ_FISHING_STATE",
+          "alternatives": ["READ_FISHING_STATE"]
+        }
+      ]
+    },
     "USE_NORMAL_FISHING_BAIT": {
       "category": "限时活动",
       "composition": "SEQUENCE",

@@ -897,7 +897,11 @@ class LiveRuntime:
             # A bait-blocked probe can still ask the existing read-only session to
             # confirm the client counter. Never synthesize a spendable bait Goal.
             from .goal_library import GoalState, GoalStatus
-            if not any(scope.get(key) for key in ('goal_id', 'capability_id', 'target_skill')):
+            readonly_scope = all(not scope.get(key) or scope[key] == expected
+                for key, expected in (('goal_id', 'OBSERVE_FISHING_STATE'),
+                                      ('capability_id', 'READ_FISHING_STATE'),
+                                      ('target_skill', 'READ_FISHING_STATE')))
+            if readonly_scope:
                 scoped.append(GoalState('OBSERVE_FISHING_STATE', GoalStatus.READY,
                           available_skills=('READ_FISHING_STATE',), distance=1.0,
                           evidence={'only_allowed_spend':'NONE','source':'DEVELOPMENT_FRESH_READ'}))
