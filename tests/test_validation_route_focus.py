@@ -1,6 +1,9 @@
 from types import SimpleNamespace
 
 from winter_agent_v2.runtime import LiveRuntime
+from winter_agent_v2.brain import RuleBrain
+from winter_agent_v2.models import Page, WorldState
+from winter_agent_v2.skills import v2_registry
 
 
 def _runtime(mode: str, route: str) -> LiveRuntime:
@@ -40,6 +43,16 @@ def test_requested_readonly_fishing_observation_needs_no_bait_goal():
     runtime.validation_scope = {'goal_id': 'OBSERVE_FISHING_STATE', 'target_skill': 'READ_FISHING_STATE'}
     selected = runtime._focus_validation_goals([SimpleNamespace(goal_id='DAILY_ACTIVITY_TARGET')])
     assert [g.goal_id for g in selected] == ['OBSERVE_FISHING_STATE']
+
+
+def test_fishing_navigation_reaches_city_before_starting_local_session():
+    brain = RuleBrain()
+    brain.current_goal = 'FISHING'
+    brain.goal_id = 'OBSERVE_FISHING_STATE'
+    registry = v2_registry()
+    assert brain.decide(WorldState(page=Page.MAP, confidence=.99), registry).skill == 'OPEN_HOME'
+    assert brain.decide(WorldState(page=Page.INTEL, confidence=.99), registry).skill == 'BACK'
+    assert brain.decide(WorldState(page=Page.HOME, confidence=.99), registry).skill == 'READ_FISHING_STATE'
 
 
 def test_scope_role_mismatch_and_production_isolation():

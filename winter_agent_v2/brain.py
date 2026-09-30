@@ -832,6 +832,11 @@ class RuleBrain:
         if world.page is Page.POPUP and world.popup == "REAL_MONEY_OFFER":
             return Decision("DISMISS_REAL_MONEY_OFFER", "real_money_action_permanently_blocked", world.confidence, "offer_closed_without_purchase")
         if self._goal_route() == "FISHING":
+            if world.page is Page.MAP:
+                return Decision('OPEN_HOME', 'fishing_entry_requires_city_hud', world.confidence, 'home_opened')
+            if world.page in {Page.INTEL, Page.ALLIANCE, Page.RESEARCH, Page.TRAINING,
+                              Page.BUILDING, Page.MARCH, Page.MAIL, Page.DAILY, Page.HERO}:
+                return Decision('BACK', 'leave_unrelated_feature_for_fishing', world.confidence, 'fishing_entry_reachable')
             skill = ("READ_FISHING_STATE" if getattr(self, "goal_id", "") == "OBSERVE_FISHING_STATE"
                      else "PLAY_NORMAL_FISHING_LEVEL")
             return Decision(skill, "role_scoped_normal_fishing_session", 1.0, "fishing_state_verified")
