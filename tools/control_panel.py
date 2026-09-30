@@ -68,9 +68,11 @@ from winter_agent_v2.runtime_snapshot import (
     AgentState,
     RuntimeSnapshotStore,
     StopCategory,
+    append_uptime_ledger,
     counts_as_unexpected_worker_exit,
     is_fatal_stop,
     state_for_stop_reason,
+    uptime_ledger_row,
 )
 from winter_agent_v2.worker_recovery import RecoveryOutcome, retry_until_ready
 
@@ -80,6 +82,11 @@ PANEL_STATE_PATH = ROOT / "config/control_panel_state.json"
 #: ``load_policy_categories`` / ``write_policy_state`` for why both halves matter.
 POLICY_STATE_PATH = ROOT / "config/policy_state.json"
 RUNTIME_PATH = ROOT / "tools/run_live.py"
+#: The AUTO uptime ledger (ACCEPTANCE §22).  One row per finished round, written at the single
+#: point where the panel has already decided whether another round follows, so "how long has
+#: AUTO been self-continuing" is a number instead of a narrative.  Classified RUNTIME_MUTABLE by
+#: ``tools/build_runtime_state_manifest.py`` (``learning/**/*.jsonl``), so it is never tracked.
+AUTO_UPTIME_LEDGER_PATH = ROOT / "learning/auto_uptime.jsonl"
 #: The mode a calibration cycle reports, so an examination can never be mistaken for
 #: production play when its episode is read back (operator's §8 rule).  Kept next to
 #: ``RUNTIME_PATH`` because it is part of the same command-line contract.
@@ -6546,6 +6553,16 @@ class ControlPanel:
                                   runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=summary["reason"],
                                   last_fatal_error=summary["reason"] if fatal else None)
         retryable_role_switch = reason.startswith("ROLE_SWITCH_FAILED:")
+        # One decision, two readers.  ``auto_halt_reason`` is already documented as the single
+        # source for "will AUTO continue"; the uptime ledger records that same value, so the
+        # measurement can never disagree with the behaviour it measures (ACCEPTANCE §22 needs a
+        # number for ">= 72h unattended", and before this the project had only a narrative).
+        halt_reason = auto_halt_reason(
+            healthy=summary["healthy"], reason=reason,
+            continuous=self.continuous.get(), stop_requested=self.stop_requested,
+            paused=self.paused, fatal=fatal,
+        )
+        self._record_auto_round(summary, reason, halt_reason=halt_reason)
         if should_continue_auto_cycle(
             healthy=summary["healthy"], reason=reason,
             continuous=self.continuous.get(), stop_requested=self.stop_requested,
@@ -6584,13 +6601,43 @@ class ControlPanel:
             # relabelled SYSTEM_FAILURE, this gate declined, and the panel logged nothing --
             # the last line was the snapshot refresh, so AUTO looked alive while the device
             # sat idle for fifteen minutes and the operator had no reason to read.
-            halt = auto_halt_reason(
-                healthy=summary["healthy"], reason=reason,
-                continuous=self.continuous.get(), stop_requested=self.stop_requested,
-                paused=self.paused, fatal=fatal,
-            )
             self.values["mode"].set("停止")
-            self._append(f"⏹ 未进入下一轮：{halt}");
+            self._append(f"⏹ 未进入下一轮：{halt_reason}");
+
+    def _record_auto_round(self, summary: dict, reason: str, *, halt_reason: str) -> None:
+        """One ledger row per finished round: the measurement ACCEPTANCE §22 never had.
+
+        ``halt_reason`` is passed in rather than recomputed, because it is the *same* value that
+        decides whether the next round starts -- the ledger records behaviour, it does not
+        predict it.
+
+        ``continues`` is deliberately not ``healthy``: a round can be unhealthy yet still be
+        followed by another one (watchdog recovery, a role handoff), and the acceptance question
+        is "did AUTO keep going", not "was this round pretty".
+        """
+        try:
+            snapshot = self.runtime_store.read()
+            append_uptime_ledger(
+                AUTO_UPTIME_LEDGER_PATH,
+                uptime_ledger_row(
+                    recorded_at=datetime.now(timezone.utc).isoformat(),
+                    stop_reason=str(summary.get("reason") or ""),
+                    stop_category=str(summary.get("stop_category") or ""),
+                    healthy=bool(summary.get("healthy")),
+                    continues=not halt_reason,
+                    halt_reason=halt_reason,
+                    executed=int(summary.get("executed") or 0),
+                    verified=int(summary.get("verified") or 0),
+                    failures=int(summary.get("failures") or 0),
+                    # The snapshot is the panel's own read of the round that just ended; the
+                    # revision is the one this window loaded, which is what the acceptance
+                    # question ("which code produced this uptime") has to be answerable against.
+                    role_id=str(getattr(snapshot, "role_id", "") or ""),
+                    repo_revision=str(self._state.get("runtime_loaded_revision") or ""),
+                ),
+            )
+        except Exception as exc:  # noqa: BLE001 - measurement must never stop the run
+            self._append(f"运行时长台账写入失败（不影响 AUTO）：{type(exc).__name__}: {exc}")
 
     def _enforce_retention(self) -> None:
         policy = self.config.get("retention", {})

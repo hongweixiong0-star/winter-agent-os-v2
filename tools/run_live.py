@@ -108,6 +108,24 @@ def _superseded_by_head(expected: str, actual: str) -> bool:
     return result.returncode == 0
 
 
+def run_outcome_exit_code(stop_reason: str, accepted_stops: set[str]) -> int:
+    """The round's own terminal reason decides, not the count of misses inside it.
+
+    A non-zero exit exists for exactly one purpose here: the panel reads it as
+    ``healthy=False`` and declines the next round (``tools/control_panel.py``
+    ``summarize_runtime_result``).  So this code must mean "the round ended somewhere the
+    project does not accept", never "a step inside the round failed" -- a step failure is
+    already an episode, is already in the panel's run summary, and the shared classifier
+    already refuses to relabel a finished round for it.
+
+    Measured live 2026-09-30 11:53 (pin ``f04714e``): round ``20260930_115308_285819`` had
+    22 of 23 verifiers PASS and ended ``MAX_ACTIONS_REACHED``, which is in ``accepted_stops``;
+    the old ``verified and ...`` gate returned 2 anyway, the panel halted AUTO, and the device
+    sat idle while ``config/control_panel_state.json`` still said ``RUNNING``.
+    """
+    return 0 if stop_reason in accepted_stops else 2
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run the bounded, verifier-gated V2 live loop")
     parser.add_argument("--max-actions", type=int, default=10)
@@ -518,7 +536,29 @@ def main() -> int:
     # later run can work from.
     accepted_stops.add("training_page_already_read_not_actionable")
     accepted_stops.add("research_page_already_read_not_actionable")
-    return 0 if verified and result.stop_reason in accepted_stops else 2
+    # Exit code = how the ROUND ended; ``verified`` = what happened to its STEPS.  Conflating
+    # them is what stopped AUTO, twice, on 2026-09-30.
+    #
+    # Measured 11:53 local, round ``20260930_115308_285819``: 23 steps, 22 verifier PASS, one
+    # ``OPEN_BEAST_SEARCH_TAB`` miss at step 002, then it kept working and ended the budget at
+    # ``MAX_ACTIONS_REACHED``.  That stop reason IS in ``accepted_stops`` above, so the round
+    # ended exactly where the project declares a round may end -- and ``verified`` was False
+    # anyway, so this line returned 2.  The panel reads ``exit_code != 0`` as ``healthy=False``
+    # (``tools/control_panel.py`` ``summarize_runtime_result``), refused the next round, and
+    # logged ``未进入下一轮：本轮被判定为系统故障：MAX_ACTIONS_REACHED`` while the device sat
+    # idle with the operator's intent still RUNNING.  The 11:50 commit fixed the classifier and
+    # ``healthy`` for exactly this round, but this third door was left open, so the same
+    # "one miss kills the round" meaning came back through the exit code.
+    #
+    # The miss stays fully visible: it is a per-step episode, the panel's run summary still
+    # prints ``failures``, and its own classifier already refuses to relabel the round for it.
+    # What must not survive is a *non-zero exit* whose only job is to reach the operator's
+    # ``healthy`` flag.  So the round's own terminal reason decides, which is the rule this
+    # module already wrote down when it built ``accepted_stops``.
+    #
+    # ``verified`` is kept and still computed: it is reported in the run JSON and asserted by
+    # tests, it is simply no longer the exit-code gate.
+    return run_outcome_exit_code(result.stop_reason, accepted_stops)
 
 
 if __name__ == "__main__":

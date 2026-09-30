@@ -312,3 +312,126 @@ class RuntimeSnapshotStore:
         temporary.write_text(json.dumps(asdict(snapshot), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         temporary.replace(self.path)
         return snapshot
+
+
+# ---------------------------------------------------------------------------
+# AUTO uptime ledger -- the measurement the 72h acceptance criterion needs
+# ---------------------------------------------------------------------------
+#
+# ACCEPTANCE (03_MASTER_RULES §22) is "AUTO runs >= 72h unattended with
+# unexpected_worker_exits = 0".  That sentence had no ledger, so every claim about it was a
+# narrative: the snapshot only ever describes the *current* moment, and the 2026-09-30 reports
+# could say "5.9 hours with zero episodes" but not "the longest self-continuing AUTO run so far
+# is N minutes".  These helpers fold an append-only ledger into that answer, so the criterion is
+# computable instead of asserted.
+#
+# The row is written by the control plane at the one point where it already knows the answer to
+# "will there be another round": ``auto_halt_reason`` returned empty.  That is what makes
+# ``continues`` a fact about the panel rather than a prediction -- and it is deliberately the
+# same value that decides whether the next round starts, so the ledger cannot disagree with the
+# behaviour it is measuring.
+def uptime_ledger_row(
+    *, recorded_at: str, stop_reason: str, stop_category: str, healthy: bool, continues: bool,
+    halt_reason: str = "", executed: int = 0, verified: int = 0, failures: int = 0,
+    episode_id: str = "", role_id: str = "", repo_revision: str = "", round_ms: int | None = None,
+) -> dict[str, Any]:
+    """One round, as the acceptance question needs to see it."""
+    return {
+        "recorded_at": str(recorded_at or ""),
+        "stop_reason": str(stop_reason or ""),
+        "stop_category": str(stop_category or ""),
+        "healthy": bool(healthy),
+        "continues": bool(continues),
+        "halt_reason": str(halt_reason or ""),
+        "executed": int(executed or 0),
+        "verified": int(verified or 0),
+        "failures": int(failures or 0),
+        "episode_id": str(episode_id or ""),
+        "role_id": str(role_id or ""),
+        "repo_revision": str(repo_revision or ""),
+        "round_ms": None if round_ms is None else int(round_ms),
+    }
+
+
+def summarize_uptime(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Fold the ledger into the numbers an operator actually asks for.
+
+    ``longest_consecutive_continues`` is the acceptance-shaped one: ACCEPTANCE_REQUIRED is 3
+    consecutive rounds that each started the next one.  The run window is measured from the
+    first round of that streak to the last, so a three-round streak of a five-minute bounded
+    budget reads as ~15 minutes and cannot be mistaken for 72 hours.
+    """
+    wanted = 3
+    rounds = [row for row in rows if isinstance(row, dict)]
+    current = longest = 0
+    current_start: str | None = None
+    longest_window: tuple[str, str] | None = None
+    for row in rounds:
+        if bool(row.get("continues")):
+            if current == 0:
+                current_start = str(row.get("recorded_at") or "")
+            current += 1
+            if current > longest:
+                longest = current
+                longest_window = (current_start or "", str(row.get("recorded_at") or ""))
+        else:
+            current = 0
+            current_start = None
+
+    def _span(window: tuple[str, str] | None) -> float:
+        if not window:
+            return 0.0
+        try:
+            start = datetime.fromisoformat(window[0])
+            end = datetime.fromisoformat(window[1])
+        except (TypeError, ValueError):
+            return 0.0
+        return max(0.0, (end - start).total_seconds())
+
+    streaks = [row for row in rounds if bool(row.get("continues"))]
+    return {
+        "rounds": len(rounds),
+        "continuing_rounds": len(streaks),
+        "halted_rounds": len(rounds) - len(streaks),
+        "current_consecutive_continues": current,
+        "longest_consecutive_continues": longest,
+        "longest_window_seconds": _span(longest_window),
+        "last_round_at": str(rounds[-1].get("recorded_at") or "") if rounds else "",
+        "last_halt_reason": next(
+            (str(row.get("halt_reason")) for row in reversed(rounds) if not bool(row.get("continues"))),
+            "",
+        ),
+        "acceptance_required": wanted,
+        "acceptance_met": longest >= wanted,
+    }
+
+
+def read_uptime_ledger(path: str | Path) -> list[dict[str, Any]]:
+    """Every readable row, in write order.  A damaged line is skipped, never fatal."""
+    rows: list[dict[str, Any]] = []
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except OSError:
+        return rows
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(row, dict):
+            rows.append(row)
+    return rows
+
+
+def append_uptime_ledger(path: str | Path, row: dict[str, Any]) -> None:
+    """Append one round.  Measurement must never be able to stop the run it measures."""
+    target = Path(path)
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except OSError:
+        return
