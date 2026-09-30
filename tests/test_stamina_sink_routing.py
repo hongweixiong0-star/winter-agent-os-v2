@@ -151,3 +151,17 @@ def test_expired_stamina_can_only_restore_live_hud_not_dispatch():
     assert goal.evidence['current'] is None
     assert runtime.brain.current_goal=='STAMINA_OBSERVE'
     assert runtime.brain.decide(world,v2_registry()).skill=='BACK'
+
+
+def test_cost_affordability_does_not_replace_or_refresh_stamina_gauge(tmp_path):
+    from winter_agent_v2 import observation_store
+    runtime=object.__new__(LiveRuntime)
+    path=tmp_path/'role.json'
+    runtime._role_observation_store_path=lambda:path
+    runtime._record_observations(WorldState(page=Page.MAP,stamina={'current':284}))
+    before=path.read_bytes()
+    runtime._record_observations(WorldState(page=Page.MARCH,stamina={'cost_affordable':True}))
+    assert path.read_bytes()==before
+    runtime._multi_role_enabled=False
+    runtime._calendar_role_id=lambda:'1061663148'
+    assert str(LiveRuntime._role_observation_store_path(runtime)).replace('\\','/').endswith('/roles/1061663148/observation_state.json')

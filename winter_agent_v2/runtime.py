@@ -1353,9 +1353,9 @@ class LiveRuntime:
         # exists only while it is readable, so the last reading has to outlive the frame that
         # produced it or the goal disappears from the board whenever the gauge is off screen.
         stamina_reading = world.stamina
-        if not stamina_reading and isinstance(world.intel.get('stamina'), int):
+        if not isinstance(stamina_reading.get('current'), int) and isinstance(world.intel.get('stamina'), int):
             stamina_reading = {'current': world.intel['stamina'], 'source': 'LIVE_INTEL_HUD'}
-        if stamina_reading:
+        if isinstance(stamina_reading.get('current'), int):
             try:
                 observation_store.record("stamina", stamina_reading, frame=frame, path=store_path)
             except Exception:  # noqa: BLE001
@@ -1377,7 +1377,7 @@ class LiveRuntime:
     def _role_observation_store_path(self) -> Path | None:
         """Keep sticky panel readings separate by account in multi-role mode."""
         role_id = self._calendar_role_id()
-        if not role_id or not self._multi_role_enabled:
+        if not role_id:
             return None
         return Path(__file__).resolve().parents[1] / "learning" / "roles" / role_id / "observation_state.json"
 
