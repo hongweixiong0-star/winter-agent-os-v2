@@ -13,6 +13,7 @@ from .camp_training import CAMP_LABELS, CAMP_ORDER, TROOP_TO_CAMP
 from .models import Page, WorldState
 from . import entry_badges
 from . import event_goal
+from . import fishing_pressure
 from . import goal_utility
 from .rally import BearPhase, bear_phase
 
@@ -945,6 +946,7 @@ class GoalLibrary:
         alliance_continuation_goal_id: str = "",
         role_id: str = "",
         calendar_snapshot: Mapping[str, Any] | None = None,
+        fishing_pressures: Mapping[str, Mapping[str, Any]] | None = None,
     ) -> tuple[GoalState, ...]:
         """Every goal the engine can see from this world, plus what is still worth looking at.
 
@@ -952,6 +954,12 @@ class GoalLibrary:
         WorldState field they belong to.  Passing nothing means "no reading outlives this
         frame", which is the behaviour before the store existed -- so a caller that does not
         have one is not silently treated as having looked recently.
+
+        ``fishing_pressures`` is optional and carries the per-role bait verdict (keyed by
+        the role id the client printed) that FISHING POLICY V2 §3/§14/§15 derives from the
+        bait counter.  Without it the fishing event's deadline is the raw client countdown,
+        which is the behaviour that made an open event preempt the running role session on
+        nearly every frame.  See ``fishing_pressure.event_goal_terms``.
         """
         goals: list[GoalState] = []
         if world.page is Page.PET_TREASURE:
@@ -1196,6 +1204,24 @@ class GoalLibrary:
                 # infer that it is actionable from the page title or missing countdown.
                 status = GoalStatus.UNKNOWN
             event_id = str(minimum.get("event_id") or "")
+            # FISHING POLICY V2 §3/§14/§15.  The fishing event must not inherit the client's
+            # countdown as its urgency: an event open for two days would carry a rising
+            # +1000…+10000 for its whole length and take the device from the running Role
+            # Session on nearly every frame -- "go fishing now" for no reason except that the
+            # event exists.  ``fishing_pressure`` replaces that deadline with one derived from
+            # the bait budget: ordinary unless the counter is at cap (§3 A) or the window has
+            # become shorter than the bait left to spend in it (§15).  Status, window_closed
+            # and the EXPIRED/COMPLETE verdicts are untouched -- they are about the event's
+            # window, not about how badly fishing wants the device.
+            fishing_terms = fishing_pressure.event_goal_terms(
+                event_id,
+                fishing_pressure.signal_for_role(fishing_pressures, role_id),
+            )
+            goal_remaining = left
+            goal_synergy = 500.0
+            if fishing_terms["applies"] and status is GoalStatus.READY:
+                goal_remaining = fishing_terms["remaining_seconds"]
+                goal_synergy += float(fishing_terms["synergy_bonus"])
             skills = tuple(str(x) for x in minimum.get("available_skills", ()))
             if status is GoalStatus.UNKNOWN:
                 skills = ()
@@ -1213,14 +1239,18 @@ class GoalLibrary:
             goals.append(GoalState(
                 "EVENT_MINIMUM_GUARANTEE", status,
                 completion=1.0 if complete else 0.0,
-                remaining_seconds=left, reward_value=500,
-                event_synergy=500, resource_cost=float(minimum.get("estimated_cost", 0)),
+                remaining_seconds=goal_remaining, reward_value=500,
+                event_synergy=goal_synergy,
+                resource_cost=float(minimum.get("estimated_cost", 0)),
                 available_skills=skills,
                 evidence={"points_missing": missing, "claimed": claimed,
                           "window_closed": window_closed,
                           "seconds_to_start": until_start,
                           "event_id": event_id,
-                          "generic_live_fallback": generic_live_fallback},
+                          "generic_live_fallback": generic_live_fallback,
+                          "client_remaining_seconds": left,
+                          "fishing_pressure": (fishing_terms if fishing_terms["is_fishing"]
+                                               else None)},
                 distance=float(max(0, missing)),
             ))
         bear = world.events.get("bear") if isinstance(world.events, dict) else None

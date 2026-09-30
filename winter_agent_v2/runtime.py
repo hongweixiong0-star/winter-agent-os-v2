@@ -1191,6 +1191,41 @@ class LiveRuntime:
         except Exception:  # noqa: BLE001 - a broken store must not stop a run
             return None
 
+    def _fishing_pressures(self) -> dict:
+        """Per-role bait verdict for the fishing event, per FISHING POLICY V2 §3/§14/§15.
+
+        Read once per discovery (i.e. once per tick), so the store is reloaded only when its
+        mtime moves -- the answer changes when a bait reading, a finished run or a
+        regeneration is written, and at no other time.
+
+        A missing or unreadable store yields ``{}`` -- **no verdict** -- which is the point:
+        ``goal_library`` then leaves the fishing event exactly as the generic path would have
+        left it, rather than receiving an urgency nobody measured.  §3 wants a *reason* to
+        interrupt the running Role Session, and an unread file is not one.
+        """
+        from . import fishing_pressure, fishing_state
+
+        path = Path(fishing_state.DEFAULT_PATH)
+        if not path.is_absolute():
+            path = Path(__file__).resolve().parents[1] / path
+        try:
+            stamp = path.stat().st_mtime_ns
+        except OSError:
+            self._fishing_pressure_cache = (None, {})
+            return {}
+        cached = getattr(self, "_fishing_pressure_cache", None)
+        if cached is not None and cached[0] == stamp:
+            return cached[1]
+        try:
+            state = fishing_state.FishingState.load(path)
+            pressures = fishing_pressure.pressures_by_role_id(
+                state, datetime.now(timezone.utc),
+            )
+        except Exception:  # noqa: BLE001 - an unreadable store is "no reading", never a crash
+            pressures = {}
+        self._fishing_pressure_cache = (stamp, pressures)
+        return pressures
+
     def _reject_a_dropped_digit(self, world: WorldState) -> WorldState:
         """Refuse a HUD stamina reading that is the leading digits of the last one.
 
@@ -1528,6 +1563,9 @@ class LiveRuntime:
             ),
             "role_id": role_id,
             "calendar_snapshot": calendar_snapshot,
+            # FISHING POLICY V2 §3/§14/§15: the bait budget, not the event countdown,
+            # decides how urgently the fishing event may claim the device.
+            "fishing_pressures": self._fishing_pressures(),
         }
         # Preserve lightweight GoalLibrary adapters used by older integrations and
         # deterministic runtime tests. The real GoalLibrary accepts the full context;
