@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from winter_agent_v2.skills import v2_registry
+from winter_agent_v2.skill_factory import GOAL_REQUIREMENTS, SkillFactory
 
 
 def _goals():
@@ -28,3 +29,10 @@ def test_fishing_goal_only_maps_to_registered_normal_play():
     assert len(entries) == 1
     assert entries[0]["alternatives"] == ["PLAY_NORMAL_FISHING_LEVEL"]
     assert v2_registry().get("PLAY_NORMAL_FISHING_LEVEL") is not None
+
+
+def test_coverage_has_no_retired_polar_skill_and_does_not_require_both_bear_variants(tmp_path):
+    assert 'JOIN_POLAR_TERROR_RALLY' not in GOAL_REQUIREMENTS['AVOID_STAMINA_WASTE']
+    assert 'PLAY_NORMAL_FISHING_LEVEL' in GOAL_REQUIREMENTS['USE_NORMAL_FISHING_BAIT']
+    requirements = SkillFactory(v2_registry(), tmp_path).coverage_requirements()
+    assert len({'START_RALLY', 'JOIN_RALLY'}.intersection(requirements['PARTICIPATE_BEAR'])) == 1

@@ -21,26 +21,20 @@ class OperationPrior:
     risk: str = "LOW"
 
 
+def _goal_definitions() -> dict:
+    from .goal_library import GOAL_CAPABILITY_MAP
+    try:
+        return json.loads((Path(__file__).resolve().parents[1] / GOAL_CAPABILITY_MAP).read_text(encoding='utf-8')).get('goals', {})
+    except (OSError, ValueError):
+        return {}
+
+
+# Compatibility inventory only: execution and coverage both derive from the
+# canonical capability map. Alternative skills are not cumulative requirements.
 GOAL_REQUIREMENTS: dict[str, tuple[str, ...]] = {
-    "CLEAR_INTEL": ("OPEN_INTEL", "READ_INTEL_LIST", "SELECT_INTEL", "EXECUTE_INTEL", "CLAIM_INTEL"),
-    "DAILY_ACTIVITY_TARGET": ("OPEN_DAILY", "READ_DAILY_PROGRESS", "DAILY_CLAIM_REWARDS"),
-    "CLAIM_FREE_REWARDS": ("CLAIM_FREE_REWARD", "OPEN_VIP", "CLAIM_VIP_FREE"),
-    "USE_FREE_ARENA_ATTEMPTS": ("OPEN_ARENA", "READ_FREE_ATTEMPTS", "SELECT_ARENA_OPPONENT", "START_ARENA", "VERIFY_ARENA_RESULT"),
-    "EVENT_MINIMUM_GUARANTEE": ("OPEN_EVENT", "READ_EVENT_LIST", "READ_EVENT_TIMER", "READ_EVENT_PROGRESS", "READ_EVENT_RULES", "READ_EVENT_REWARD_TIERS", "CLAIM_EVENT_TIER"),
-    "PARTICIPATE_BEAR": ("CHECK_ALLIANCE_EVENT", "READ_BEAR_TIMER", "SELECT_TARGET", "SELECT_TROOP_PRESET", "START_RALLY", "JOIN_RALLY", "CONFIRM_MARCH"),
-    "KEEP_MARCHES_PRODUCTIVE": ("OPEN_MAP", "SEARCH_RESOURCE", "SELECT_RESOURCE", "CHECK_MARCH", "DISPATCH_MARCH", "VERIFY_GATHERING"),
-    "KEEP_BUILDING_PRODUCTIVE": ("OPEN_BUILDING", "BUILDING_UPGRADE"),
-    "KEEP_RESEARCH_PRODUCTIVE": ("OPEN_RESEARCH", "OPEN_TECH_TREE", "SELECT_RESEARCH_NODE", "RESEARCH"),
-    "KEEP_TRAINING_PRODUCTIVE": ("OPEN_TRAINING", "TRAIN_TROOPS", "PROMOTE_TROOPS"),
-    "ALLIANCE_ROUTINE": ("OPEN_ALLIANCE", "ALLIANCE_HELP", "ALLIANCE_TECH_CONTRIBUTE", "ALLIANCE_GIFTS"),
-    "CLAIM_EXPLORATION_IDLE": ("OPEN_EXPLORATION", "EXPLORATION_IDLE_CLAIM"),
-    "AVOID_STAMINA_WASTE": ("OPEN_INTEL", "READ_INTEL_LIST", "SEARCH_RESOURCE", "OPEN_BEAST_SEARCH_TAB", "SUBMIT_BEAST_SEARCH", "BEAST_HUNT", "JOIN_POLAR_TERROR_RALLY"),
-    "LABYRINTH_DAILY": ("OPEN_LABYRINTH", "READ_LABYRINTH_ATTEMPTS", "START_LABYRINTH", "VERIFY_LABYRINTH_RESULT"),
-    "ALLIANCE_TIMED_EVENTS": ("CHECK_ALLIANCE_EVENT", "READ_ALLIANCE_EVENT_TIMER", "CLAIM_EVENT_TIER"),
-    "DISCOVER_EVENT_CALENDAR": (
-        "OPEN_EVENT_CALENDAR_FROM_HOME", "OPEN_EVENT_CALENDAR_FROM_MAP", "OPEN_EVENT_CALENDAR_TAB",
-        "READ_EVENT_CALENDAR", "OPEN_EVENT_CALENDAR_DETAIL", "RETURN_EVENT_CALENDAR",
-    ),
+    goal: tuple(dict.fromkeys(skill for cap in entry.get('capabilities', [])
+                             for skill in cap.get('alternatives', [])))
+    for goal, entry in _goal_definitions().items()
 }
 
 
@@ -99,6 +93,21 @@ class SkillFactory:
         skill = self.registry.get(actual)
         return skill.state.value if skill else ("CANDIDATE" if skill_id in PRIORS else "MISSING")
 
+    def coverage_requirements(self) -> dict[str, tuple[str, ...]]:
+        """Choose one available alternative per required capability, never all."""
+        rank = {'MISSING': 0, 'CANDIDATE': 1, 'VERIFIED': 2, 'STABLE': 3}
+        out = {}
+        for goal, entry in _goal_definitions().items():
+            selected = []
+            for cap in entry.get('capabilities', []):
+                alternatives = cap.get('alternatives', [])
+                if alternatives:
+                    selected.append(max(alternatives, key=lambda s: rank.get(self.lifecycle(s), 0)))
+            if entry.get('composition') == 'ANY_OF' and selected:
+                selected = [max(selected, key=lambda s: rank.get(self.lifecycle(s), 0))]
+            out[goal] = tuple(dict.fromkeys(selected))
+        return out
+
     def generate_candidates(self) -> tuple[Path, ...]:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         written = []
@@ -129,7 +138,7 @@ class SkillFactory:
 
     def coverage_markdown(self) -> str:
         lines = ["# Skill Coverage", "", "Goal | Required | Existing | Candidate | Verified | Stable | Missing", "---|---:|---:|---:|---:|---:|---:"]
-        for goal, required in GOAL_REQUIREMENTS.items():
+        for goal, required in self.coverage_requirements().items():
             states = [self.lifecycle(skill) for skill in required]
             existing = sum(state != "MISSING" for state in states)
             lines.append(f"{goal} | {len(required)} | {existing} | {states.count('CANDIDATE')} | {states.count('VERIFIED')} | {states.count('STABLE')} | {states.count('MISSING')}")
@@ -144,7 +153,7 @@ class SkillFactory:
         rows = []
         weights = {"CLEAR_INTEL":10, "DAILY_ACTIVITY_TARGET":10, "CLAIM_FREE_REWARDS":10,
                    "USE_FREE_ARENA_ATTEMPTS":9, "EVENT_MINIMUM_GUARANTEE":10, "PARTICIPATE_BEAR":9}
-        for goal, required in GOAL_REQUIREMENTS.items():
+        for goal, required in self.coverage_requirements().items():
             skill_rows = []
             for skill_id in required:
                 actual = ALIASES.get(skill_id, skill_id)
