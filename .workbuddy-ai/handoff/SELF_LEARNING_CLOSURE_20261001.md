@@ -9,8 +9,8 @@
 
 | 字段 | 值 |
 |---|---|
-| `CODE_COMMIT`（生产） | `f4a7b7c`（`desktop_startup.log` 03:01 起可查；当前 `main` 已到 `4eded5a`，差一个纯文档 commit，见 D 节） |
-| `PRODUCTION_PIN.expected_commit` | `f4a7b7cad9e1808d849b0f177c488d0dbf670fcd` |
+| `CODE_COMMIT`（生产） | `a988f07`（= 当时 `main` 的 HEAD，pin 与 HEAD 已对齐；`desktop_startup.log` 可查） |
+| `PRODUCTION_PIN.expected_commit` | `a988f07f0f87ca8af1f361dd89dc346e89abe532` |
 | 生产工作树 | `C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体` |
 | `WORKTREE_CLEAN` | `true`（数据目录外 0 处改动；两次 safe repin 均为 `RESULT: CLEAN_OUTSIDE_DATA`） |
 | `DATA_ROOT` | `E:\无尽冬日智能体` |
@@ -30,8 +30,10 @@ unhealthy         0 轮
 executed=365  verified=356  failures=9   -> 验证率 97.5%
 ```
 
-期间经历 **两次 safe repin**（`de38da0 → e7e2b56 → f4a7b7c`），每次 `--stop` 都拒绝在飞 run、
-等到轮次边界才停，数据目录从未被 checkout 覆盖。
+期间经历 **三次 safe repin**（`de38da0 → e7e2b56 → f4a7b7c → a988f07`），每次 `--stop` 都拒绝在飞 run、
+等到轮次边界才停，数据目录从未被 checkout 覆盖。最后一次是为了让 pin 与 `main` 对齐 ——
+`4eded5a`/`904c152`/`a988f07` 三个 commit 不含运行时代码，本可以不对齐，但 pin 落后 `main`
+是已知会让下一个接手者误判的隐患。
 
 ## C. §4 截图真的进了模型（`SCREENSHOT_INPUT_VERIFIED`）
 
