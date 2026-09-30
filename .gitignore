@@ -471,4 +471,28 @@ learning/bear_role.json
 config/control_panel_state.json
 config/policy_state.json
 config/*.bak_*
+
+# --- the learning loop's own state (added 2026-10-01 with the self-learning directive) ---
+# Every file below is *written by the running loop*, not authored: a checkout must not carry one,
+# and tracking one would leave the tree permanently dirty because each AUTO round rewrites it.
+# They are listed by path rather than by a blanket `knowledge/**` rule on purpose -- `knowledge/`
+# is otherwise tracked (it holds the dictionaries and the promoted skills), so the carve-out is
+# named explicitly, the same way the fixtures above are re-included file by file.
+#
+#   learning/learning_funnel.json        the console's readout, rewritten on every panel refresh
+#   learning/skill_repair_requests/      one question file per failed-3-times-in-a-row skill
+#   knowledge/skills/candidates/         compiled from learning/unknown_verified_steps.jsonl, so it
+#                                        is regenerable with `tools/learning_report.py --compile`
+#   knowledge/skills/repairs/            proposed patches, CANDIDATE only, never auto-applied
+#   knowledge/offline/                   the nightly pass's clusters + candidates, derived from the
+#                                        frame corpus, which is itself untracked (see the header)
+#
+# What DOES carry the learning is `learning/unknown_verified_steps.jsonl`, already covered by the
+# `learning/**/*.jsonl` rule above: it is the append-only evidence, and rule 8 keeps it local for
+# the same reason the screenshots are.
+learning/learning_funnel.json
+learning/skill_repair_requests/
+knowledge/skills/candidates/
+knowledge/skills/repairs/
+knowledge/offline/
 # --- /runtime-mutable state ---

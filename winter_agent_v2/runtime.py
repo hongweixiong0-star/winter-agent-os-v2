@@ -5391,11 +5391,16 @@ class LiveRuntime:
         # key alone.  Detected rather than passed, so the runtime does not have to know which
         # kind of advisor it was given -- the same ``getattr`` capability check the rest of
         # this class uses for optional collaborators.
+        # ``getattr`` rather than ``self.registry`` because this method is exercised on its own by
+        # the wiring suite, which builds the runtime through ``object.__new__`` and therefore never
+        # runs ``__init__`` -- the same defensive read the learned-ledger helpers below use.  A
+        # production runtime always has the field, so this changes nothing there.
+        registry = getattr(self, "registry", None)
         take_with_request = getattr(advisor, "take_request", None)
         advice = (
-            take_with_request(request, registry=self.registry)
+            take_with_request(request, registry=registry)
             if callable(take_with_request)
-            else advisor.take(request.request_id, registry=self.registry)
+            else advisor.take(request.request_id, registry=registry)
         )
         # §15's numerator.  Reaching this line means the model *was* consulted, and since the
         # learned reuse ran first and returned if it could, this counts exactly one thing: a screen
