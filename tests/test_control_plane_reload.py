@@ -127,6 +127,26 @@ def test_the_marker_is_its_own_file_not_the_workers():
     )
 
 
+def test_the_marker_root_is_the_modules_own_attribute():
+    """Where the marker is written is decided by ``cpr``, not by the caller's argument.
+
+    ``_check_control_plane_reload`` used to pass an explicit root, which bypassed the test
+    harness's redirect.  Measured 2026-09-30 by the P0 write guard: three
+    ``write_text(learning/CONTROL_PLANE_RELOAD_REQUIRED.json)`` issued by the pytest process
+    into the *shared* data root -- and this marker is not a log line, it tells the running
+    window to replace itself.  It fired whenever the tree was dirty, which is whenever a
+    developer runs the tests.
+    """
+    source = (ROOT / "tools/control_panel.py").read_text(encoding="utf-8")
+    assert "control_plane_signal().request(" in source, (
+        "the window must let this module decide the marker's root"
+    )
+    assert "control_plane_signal(ROOT).request(" not in source
+    # The attribute is what decides it, and an explicit root still means exactly that root.
+    assert cpr.control_plane_path() == cpr.MARKER_ROOT / "learning" / cpr.MARKER_NAME
+    assert cpr.control_plane_path(ROOT) == ROOT / "learning" / cpr.MARKER_NAME
+
+
 def test_the_reason_names_both_versions_and_the_files(tmp_path):
     text = cpr.reload_reason(LOADED, DISK, ["winter_agent_v2/gateway_service.py"])
     assert cpr.CONTROL_PLANE_KIND in text

@@ -57,12 +57,25 @@ CONTROL_PLANE_PATHS: tuple[str, ...] = (
 )
 
 
-def control_plane_path(root: Path | str) -> Path:
-    """Where this window's reload marker lives."""
-    return Path(root) / "learning" / MARKER_NAME
+#: The root the marker is written under, as a module attribute rather than an inline
+#: ``Path(__file__)`` expression.  Same reason ``runtime.POLICY_STATE_PATH`` and
+#: ``device_lease.DEFAULT_ROOT`` are attributes: the test suite has to be able to point it at
+#: a scratch root, because a panel built in a test still reports *this* root and would
+#: otherwise write the live marker.  That marker is not a log line -- it tells the running
+#: window to replace itself.  Measured 2026-09-30 by the P0 write guard: three
+#: ``write_text(learning/CONTROL_PLANE_RELOAD_REQUIRED.json)`` issued by the pytest process,
+#: into the shared data root, whenever the working tree was dirty (which is whenever a
+#: developer runs the tests).
+MARKER_ROOT = Path(__file__).resolve().parents[1]
 
 
-def control_plane_signal(root: Path | str) -> ReloadSignal:
+def control_plane_path(root: Path | str | None = None) -> Path:
+    """Where this window's reload marker lives.  ``None`` means :data:`MARKER_ROOT`."""
+    base = Path(root) if root is not None else MARKER_ROOT
+    return base / "learning" / MARKER_NAME
+
+
+def control_plane_signal(root: Path | str | None = None) -> ReloadSignal:
     """The control plane's own signal -- same machinery, its own file."""
     return ReloadSignal(control_plane_path(root))
 

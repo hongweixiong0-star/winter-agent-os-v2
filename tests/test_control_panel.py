@@ -600,3 +600,66 @@ class PidLivenessInThePanelsOwnContext(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TheHaltIsNeverSilent(unittest.TestCase):
+    """A cycle that is not continued must say why.
+
+    Measured 2026-09-30 11:21 local.  A 24-action round was relabelled SYSTEM_FAILURE, the
+    continuation gate declined, and ``panel.log`` simply stopped after the snapshot refresh --
+    the gate had no ``else`` branch at all.  AUTO looked alive while the device sat idle for
+    fifteen minutes, and nothing on screen said why.
+    """
+
+    def _args(self, **over):
+        base = dict(healthy=True, reason="MAX_ACTIONS_REACHED", continuous=True,
+                    stop_requested=False, paused=False, fatal=False)
+        base.update(over)
+        return base
+
+    def test_a_round_that_continues_owes_no_explanation(self):
+        self.assertEqual(cp.auto_halt_reason(**self._args()), "")
+
+    def test_a_confirmed_role_handoff_counts_as_continuing(self):
+        self.assertEqual(
+            cp.auto_halt_reason(**self._args(healthy=False, reason="ROLE_SWITCHED_TO:ROLE_B")),
+            "",
+        )
+        self.assertEqual(
+            cp.auto_halt_reason(
+                **self._args(healthy=False, reason="ROLE_SWITCH_FAILED:ROLE_A:NO_HOME")),
+            "",
+        )
+
+    def test_each_way_of_not_continuing_names_itself(self):
+        for over, needle in (
+            ({"continuous": False}, "连续运行开关"),
+            ({"stop_requested": True}, "停止请求"),
+            ({"paused": True}, "暂停"),
+            ({"fatal": True}, "不可自动恢复"),
+        ):
+            with self.subTest(declined_by=needle):
+                reason = cp.auto_halt_reason(**self._args(healthy=False, **over))
+                self.assertTrue(reason, "a halt without a reason is the defect")
+                self.assertIn(needle, reason)
+
+    def test_an_unhealthy_round_is_reported_as_a_fault_naming_the_reason(self):
+        reason = cp.auto_halt_reason(**self._args(healthy=False, reason="DEVICE_FATAL"))
+        self.assertIn("DEVICE_FATAL", reason)
+        self.assertIn("系统故障", reason)
+
+    def test_the_note_agrees_with_the_gate_by_construction(self):
+        """One rule in one place: the boolean is derived from the reason, never re-decided."""
+        for healthy in (True, False):
+            for continuous in (True, False):
+                for paused in (True, False):
+                    for fatal in (True, False):
+                        for stop_requested in (True, False):
+                            args = self._args(healthy=healthy, continuous=continuous,
+                                              paused=paused, fatal=fatal,
+                                              stop_requested=stop_requested)
+                            self.assertEqual(
+                                cp.should_continue_auto_cycle(**args),
+                                not cp.auto_halt_reason(**args),
+                                args,
+                            )

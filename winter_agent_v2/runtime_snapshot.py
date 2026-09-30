@@ -158,7 +158,27 @@ def classify_stop_reason(
     """
     normalized = str(reason or "").strip()
     token = normalized.upper()
-    if verifier_failed or is_fatal_stop(normalized):
+    if is_fatal_stop(normalized):
+        return StopCategory.SYSTEM_FAILURE
+    # A verifier miss is evidence about a *step*; the stop reason is evidence about *why the
+    # round ended*.  When the budget ended the round, the miss did not end it -- it is already
+    # recorded per episode -- so it must not relabel the whole round.  ``MAX_ACTIONS_REACHED``
+    # is the one stop reason that structurally cannot be *caused* by a verifier miss: the
+    # runtime reaches it by exhausting its action budget, and this module already declares it
+    # in ``COMPLETED_STOPS``.  So the declared completion is tested before the blanket
+    # ``verifier_failed`` short-circuit, and ``TARGET_SKILL_VERIFIED`` deliberately is not:
+    # that one is reached by a verification *succeeding*, which is the case closest to the
+    # failure and is not what this measurement covers.
+    #
+    # Measured 2026-09-30 11:21 local (pin b2cb6f1).  Round ``20260930_111430_903715`` issued
+    # 24 actions, 23 verified, with one BEAST_SEARCH_TAB miss at step 005; it then kept working
+    # for nineteen more steps and ended MAX_ACTIONS_REACHED.  ``verifier_failed`` fired first,
+    # so the snapshot recorded ``stop_category=SYSTEM_FAILURE`` / ``agent_state=DEGRADED``; the
+    # panel's ``healthy`` went false, ``should_continue_auto_cycle`` declined, and AUTO stopped
+    # while the device sat idle -- and the panel logged no reason at all.
+    if token == "MAX_ACTIONS_REACHED":
+        return StopCategory.COMPLETED
+    if verifier_failed:
         return StopCategory.SYSTEM_FAILURE
     if token in {item.upper() for item in COMPLETED_STOPS}:
         return StopCategory.COMPLETED

@@ -1044,7 +1044,16 @@ def summarize_runtime_result(payload: dict, exit_code: int = 0) -> dict[str, Any
         StopCategory.EXPECTED_NO_ACTION,
         StopCategory.COMPLETED,
     }
-    healthy = exit_code == 0 and failures == 0 and category is not StopCategory.SYSTEM_FAILURE
+    # Health is a property of how the round *ended* -- its classification -- not a count of the
+    # events inside it.  ``failures`` stays in the summary and still drives ``verifier_failed``
+    # for the classification, so nothing is hidden; but one miss inside a round that then used
+    # its whole action budget is not a reason to stop an unattended system.
+    #
+    # Measured 2026-09-30 11:21 local: 24 actions, 23 verified, one BEAST_SEARCH_TAB miss, ended
+    # MAX_ACTIONS_REACHED.  ``failures == 0`` made ``healthy`` false, ``should_continue_auto_cycle``
+    # declined, and AUTO stopped with the device idle for fifteen minutes.  This is the companion
+    # to the classifier fix in ``runtime_snapshot``, and it is the half that survives that one.
+    healthy = exit_code == 0 and category is not StopCategory.SYSTEM_FAILURE
     return {"steps": len(steps), "executed": executed, "verified": verified, "failures": failures,
             "reason": reason, "stop_category": category.value,
             "agent_state": agent_state.value,
@@ -1053,6 +1062,38 @@ def summarize_runtime_result(payload: dict, exit_code: int = 0) -> dict[str, Any
             # completion result. A capability gap is safe to continue around, but
             # it is not a completed task and must remain visible as such.
             "ok": exit_code == 0 and failures == 0 and category in normal_ends}
+
+
+def auto_halt_reason(
+    *, healthy: bool, reason: str, continuous: bool,
+    stop_requested: bool, paused: bool, fatal: bool,
+) -> str:
+    """Why AUTO will not start another round, in the operator's language.
+
+    Returns ``""`` when the cycle does continue, so a caller can log this on every round.
+    A halt used to log *nothing*: measured 2026-09-30 11:21 local, a 24-action round was
+    relabelled ``SYSTEM_FAILURE``, the gate declined, and ``panel.log`` simply stopped after
+    the snapshot refresh -- AUTO looked alive while the device sat idle for fifteen minutes
+    and nothing on screen said why.  The operator should never have to infer a halt from
+    silence.
+
+    This is the single source for the question ``should_continue_auto_cycle`` answers; that
+    wrapper exists so the older call sites and their tests keep their boolean.
+    """
+    role_handoff = str(reason or "").startswith((
+        "ROLE_SWITCH_FAILED:", "ROLE_SWITCHED_TO:", "ROLE_IDENTITY_CHANGED:",
+    ))
+    if continuous and not stop_requested and not paused and not fatal and (healthy or role_handoff):
+        return ""
+    if not continuous:
+        return "连续运行开关已关闭，面板不会自动进入下一轮"
+    if stop_requested:
+        return "收到停止请求（操作员主动停止）"
+    if paused:
+        return "运行已暂停（PAUSED）"
+    if fatal:
+        return f"本轮停止原因不可自动恢复：{reason}"
+    return f"本轮被判定为系统故障：{reason}"
 
 
 def should_continue_auto_cycle(
@@ -1067,12 +1108,9 @@ def should_continue_auto_cycle(
     A confirmed switch and an externally changed role also require a new cycle so
     the scheduler can identify the active role and rebuild its live state.
     """
-    role_handoff = str(reason or "").startswith((
-        "ROLE_SWITCH_FAILED:", "ROLE_SWITCHED_TO:", "ROLE_IDENTITY_CHANGED:",
-    ))
-    return bool(
-        continuous and not stop_requested and not paused and not fatal
-        and (healthy or role_handoff)
+    return not auto_halt_reason(
+        healthy=healthy, reason=reason, continuous=continuous,
+        stop_requested=stop_requested, paused=paused, fatal=fatal,
     )
 
 
@@ -5582,7 +5620,11 @@ class ControlPanel:
             return
         self.values["control_plane"].set(f"待重载 -- {reason}")
         try:
-            control_plane_signal(ROOT).request(
+            # No explicit root: the marker's root is ``control_plane_reload.MARKER_ROOT``, a
+            # module attribute, so a test run can point it at a scratch root.  Passing ``ROOT``
+            # here bypassed that and wrote the *live* marker -- which asks the running window to
+            # restart itself -- every time a panel test ran against a dirty tree.
+            control_plane_signal().request(
                 job_id="", reason=reason, evidence=tuple(changed[:12]),
             )
         except Exception:  # noqa: BLE001
@@ -5607,7 +5649,9 @@ class ControlPanel:
         try:
             from winter_agent_v2.device_lease import DeviceLease
 
-            return str(DeviceLease(ROOT).holder() or "")
+            # No explicit root, so the lease root stays the redirectable ``device_lease.DEFAULT_ROOT``;
+            # passing ``ROOT`` bypassed the test harness's redirect and read the live lease.
+            return str(DeviceLease().holder() or "")
         except Exception:  # noqa: BLE001
             return ""
 
@@ -6535,6 +6579,18 @@ class ControlPanel:
                             "（角色仍持有设备，立即重新观察同一角色）"
                             if reason == ROLE_REOBSERVE_REASON else
                             "（子进程结束不等于工作周期结束，立即继续）" if immediate else ""))
+        else:
+            # A halt must never be silent.  Measured 2026-09-30 11:21: the round above was
+            # relabelled SYSTEM_FAILURE, this gate declined, and the panel logged nothing --
+            # the last line was the snapshot refresh, so AUTO looked alive while the device
+            # sat idle for fifteen minutes and the operator had no reason to read.
+            halt = auto_halt_reason(
+                healthy=summary["healthy"], reason=reason,
+                continuous=self.continuous.get(), stop_requested=self.stop_requested,
+                paused=self.paused, fatal=fatal,
+            )
+            self.values["mode"].set("停止")
+            self._append(f"⏹ 未进入下一轮：{halt}");
 
     def _enforce_retention(self) -> None:
         policy = self.config.get("retention", {})

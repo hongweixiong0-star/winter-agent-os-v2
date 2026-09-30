@@ -120,3 +120,60 @@ def test_every_keep_current_reason_survives_the_classifier() -> None:
         assert category is not StopCategory.SYSTEM_FAILURE, (
             f"{reason} classifies as {category.value}, which stops AUTO"
         )
+
+
+# ---------------------------------------------------------------------------------------------
+# The action budget ends a round; a verifier miss inside it does not.
+#
+# Measured 2026-09-30 11:21 local (pin b2cb6f1).  Round ``20260930_111430_903715`` issued 24
+# actions, 23 of them verified, with one BEAST_SEARCH_TAB miss at step 005; it then worked for
+# nineteen more steps and ended MAX_ACTIONS_REACHED.  The blanket ``verifier_failed``
+# short-circuit fired first, so the snapshot recorded ``stop_category=SYSTEM_FAILURE`` /
+# ``agent_state=DEGRADED``; the panel's ``healthy`` went false, ``should_continue_auto_cycle``
+# declined, and AUTO stopped with the device idle -- and the panel logged no reason at all.
+# ---------------------------------------------------------------------------------------------
+
+
+def test_a_budget_bounded_round_is_not_relabelled_by_one_verifier_miss() -> None:
+    category, state = state_for_stop_reason(
+        "MAX_ACTIONS_REACHED", decision_skill="OPEN_MAP",
+        action_executed=True, verifier_failed=True,
+    )
+    assert category is StopCategory.COMPLETED
+    assert state is AgentState.IDLE
+    assert is_fatal_stop("MAX_ACTIONS_REACHED") is False
+
+
+def test_the_budget_exemption_does_not_cover_every_completed_stop() -> None:
+    """``TARGET_SKILL_VERIFIED`` is deliberately not exempted.
+
+    It is reached by a verification *succeeding*, so a verifier miss in the same round is the
+    closest case to the failure and this measurement does not cover it.
+    """
+    category, _state = state_for_stop_reason(
+        "TARGET_SKILL_VERIFIED", decision_skill="CLEAR_INTEL",
+        action_executed=True, verifier_failed=True,
+    )
+    assert category is StopCategory.SYSTEM_FAILURE
+
+
+def test_a_fatal_reason_still_outranks_the_budget_exemption() -> None:
+    category, _state = state_for_stop_reason("FATAL_DEVICE_CORRUPTION", action_executed=True)
+    assert category is StopCategory.SYSTEM_FAILURE
+
+
+def test_the_measured_round_shape_now_continues_the_cycle() -> None:
+    """End to end through the panel's own summary: one miss must not idle the device."""
+    from tools.control_panel import should_continue_auto_cycle, summarize_runtime_result
+
+    ok = {"execution": {"executed": True}, "verification": {"ok": True}}
+    miss = {"execution": {"executed": True}, "verification": {"ok": False}}
+    summary = summarize_runtime_result(
+        {"steps": [ok] * 23 + [miss], "stop_reason": "MAX_ACTIONS_REACHED"}, 0
+    )
+    assert summary["failures"] == 1, "the miss must stay visible in the summary"
+    assert summary["healthy"] is True
+    assert should_continue_auto_cycle(
+        healthy=summary["healthy"], reason=summary["reason"],
+        continuous=True, stop_requested=False, paused=False, fatal=False,
+    ) is True
