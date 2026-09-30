@@ -900,7 +900,7 @@ class BearSessionAdapter(SessionAdapter):
         timers = []
         for token in tokens:
             center = token.get('center_norm')
-            if not center or abs(center[1] - label[1]) > .04 or abs(center[0] - label[0]) > .18:
+            if not center or not 0 <= center[1] - label[1] <= .04 or abs(center[0] - label[0]) > .18:
                 continue
             match = re.fullmatch(r'(?:(\d{1,2}):)?(\d{1,2}):(\d{2})', str(token.get('text','')))
             if match:
