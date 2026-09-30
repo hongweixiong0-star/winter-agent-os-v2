@@ -112,6 +112,7 @@
         {
           "capability": "SPEND_STAMINA_ON_RALLY",
           "alternatives": [
+            "START_RALLY",
             "JOIN_RALLY"
           ]
         }
@@ -480,14 +481,9 @@
           ]
         },
         {
-          "capability": "START_RALLY",
+          "capability": "PARTICIPATE_IN_BEAR_RALLY",
           "alternatives": [
-            "START_RALLY"
-          ]
-        },
-        {
-          "capability": "JOIN_RALLY",
-          "alternatives": [
+            "START_RALLY",
             "JOIN_RALLY"
           ]
         },
@@ -497,6 +493,17 @@
             "CONFIRM_MARCH",
             "DISPATCH_MARCH"
           ]
+        }
+      ]
+    },
+    "USE_NORMAL_FISHING_BAIT": {
+      "category": "限时活动",
+      "composition": "SEQUENCE",
+      "runtime_goal": true,
+      "capabilities": [
+        {
+          "capability": "PLAY_NORMAL_FISHING_LEVEL",
+          "alternatives": ["PLAY_NORMAL_FISHING_LEVEL"]
         }
       ]
     },
