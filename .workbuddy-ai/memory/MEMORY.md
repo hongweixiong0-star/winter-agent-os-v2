@@ -2558,3 +2558,56 @@ E:/无尽冬日智能体/.venv/Scripts/python.exe tools/launch_pinned_production
 必须写 `taskkill //PID 1234 //T //F`。
 
 
+
+
+### UI-Venus-2-9B 在 8GB 卡上的真实数字（2026-10-01 实测，工具已落地）
+
+**记这些是因为它们全部反直觉，且都是可复现的实测，不是推断。**
+
+**① 32K 几乎不要显存。** UI-Venus-2 是**混合线性注意力**模型。`-lv 4` 缓冲账本在
+`-ngl 16 -c 32768` 下给出：`CPU KV 272.00 MiB` / `CUDA0 KV 272.00 MiB` / `CUDA0 RS 23.03 MiB`，
+不是同尺寸均匀注意力模型该有的 1.5 GiB。**模型自身 `n_ctx_train = 262144`**，32768 离上限很远。
+所以「上下文变大所以要降 -ngl」这个推理链在本机是**错的**，-ngl 与上下文完全解耦。
+
+**② 拉满最慢，不是最快。** 真实数据包、`-c 32768`、f16 KV、n=3，延迟 p50：
+`ngl24 16878 / 26 18209 / 28 18902 / 30 17041 / 31 21011 / 32 21183 / 33 39935 / 99 59325 (ms)`。
+**10 个档位全部启动成功、全部作答、0 次 CUDA OOM。** 33 层不是失败而是变慢：只剩 70 MiB，
+WDDM 把溢出换页到系统内存，GPU 干等。拐点**只有一层宽**（32 层 21183 ms，33 层 39935 ms），
+可用下限约剩余 100–200 MiB。生产取 `-ngl 30 / f16`（17041 ms，剩余 213–265 MiB）。
+
+**③ 提示词管不住输出长度，schema 能。** 一条 plan 约 147 输出 token，解码仅 **14–16 tok/s**，
+所以生成就是延迟本体。字段称重：`reason 41 / bbox 29 / expected 22 / action 18 / semantic_target 15
+/ confidence 8 / decision 7 / goal 6`。SYSTEM_PROMPT 规则 9 已记录"把提示词写得更强硬无效"
+（p50 11.5s→12.4s）——**llama.cpp 会真的强制 `maxLength` 与 `additionalProperties`**
+（同一调用换成 `maxLength:30` 的 schema：147 token → 23 token）。契约在
+`ui_planner.response_schema()`，且 bbox **只在元素表为空时才索要**（无条件索要时，一个 REPLAN
+步白花 29 token）。
+**诚实结论：保留 `expected`/`action`（校验器和解析器要读）后，实测只有 80→73 token ≈ 6%，
+不是早期探针给出的 2–3×。** 真正的大头是 `expected`（去掉它实测 42 token / 2757 ms，生成快 38%），
+但那要动校验器。
+
+**④ 延迟要按「提示处理 vs 生成」分开看，不能只看总量。**
+`冷包 6374ms = 提示 6277ms (2091 tok @ 333 tok/s) + 生成 0`；
+`同包重发 218ms = 提示 117ms`（前缀缓存命中，`prompt_n=4`）；
+`max_tokens=400 10478ms = 提示 119ms + 生成 10269ms`。
+**图片固定占 1024 token**（带图 `prompt_n 2091` vs 不带图 `1014`，差额 1077），
+由 `--image-min/max-tokens 1024` 钉死，而 llama.cpp 警告 grounding 任务低于 1024 不可靠。
+生产每步都是新画面 ⇒ **约 6.3 s 提示处理是每步复发的**，不是一次性。
+前缀缓存对**系统提示**有效（跨不同 packet 也复用），对**新画面**无效。
+
+**⑤ `-ub` 加大反而慢 2.4 倍。** `-b 2048 -ub 2048` 实测 141 tok/s / 63 tok/s，
+而 `-b 512 -ub 512` 是 333 tok/s。大微批的计算缓冲在 ngl 30 下放不下，触发换页。
+
+**⑥ thinking 必须显式关掉。** 不带 `chat_template_kwargs={"enable_thinking": false}` 裸调时，
+模型把整个 token 预算烧在 `reasoning_content` 里、`content` 返回**空**（`finish_reason=length`），
+看起来像模型坏了。生产客户端已带此参数。
+
+**⑦ 设备影响该怎么量。** `tools/profile_device_impact.py`（新）：MAA 截图 p95 是信号，
+**ADB 往返是噪声**——它计时的是 adb.exe 进程启动，实测在无负载变化时自己从 24.5 ms 飘到 163 ms
+（3.7×）。只测 MAA 的结论：`ngl16 21.02 ms`（不挂模型基线 21.30 ms，**无统计差异**）、
+`ngl20 24.91`、`ngl18 28.73`（单次最坏 **24636 ms**）、`ngl24 29.77–31.90`。
+生产档位 30 在中间，**这是有意折中**：更多 offload 让模型更快、让截图尾巴更差，两个测量方向相反。
+
+**验收口径**：`MODEL_CONTEXT_MAX=32768` / `MAX_INPUT_BUDGET=28672`（=32768−4096 输出预留）/
+`OUTPUT_RESERVE=4096`，`winter_agent_v2/context_budget.py` 是这三个数唯一的算术恒等式来源，
+`launch_gui_model_server.CONTEXT` 从它导入而不是再写一遍。
