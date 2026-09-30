@@ -565,6 +565,11 @@ class PipelineAutoGen:
         recognition = dict(entry.get("recognition", {}) or {})
 
         existed = node.semantic in recognition
+        previous_node = recognition.get(node.semantic)
+        owned = (entry.get("evidence") or {}).get("autogen_owned_recognition") or {}
+        conflict = existed and previous_node != node.routing_node
+        protected = conflict and (entry.get("promoted") is True
+                                  or owned.get(node.semantic) != previous_node)
         recognition[node.semantic] = node.routing_node
 
         entry["recognition"] = recognition
@@ -625,8 +630,15 @@ class PipelineAutoGen:
                     return False, f"TOOL_NODE_ARTIFACT_WRITE_FAILED:{type(exc).__name__}:{exc}"
                 node.evidence["tool_candidate_path"] = _relative(tool_path, self.project_root)
                 node.evidence["tool_candidate_sha1"] = tool_digest
+        if protected:
+            # Keep the generated artifact for review, while leaving the live route
+            # byte-for-byte untouched. Priority alone cannot grant replacement rights.
+            return False, f"PROTECTED_RECOGNITION_CONFLICT:{node.evidence['pipeline_node_path']}"
+        if existed and not conflict:
+            return True, "UNCHANGED"
         evidence = dict(entry.get("evidence", {}) or {})
         evidence.update({k: v for k, v in node.evidence.items()})
+        evidence["autogen_owned_recognition"] = {**owned, node.semantic: dict(node.routing_node)}
         evidence["autogen_node_count"] = len(recognition)
         if existed:
             evidence["autogen_overwritten_at"] = node.evidence.get("generated_at", "")
