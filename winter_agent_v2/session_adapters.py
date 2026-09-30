@@ -158,18 +158,22 @@ SESSION_ROUTES: tuple[SessionRoute, ...] = (
     SessionRoute(
         goal_id="KEEP_TRAINING_PRODUCTIVE", adapter="training_batch", skills=TRAINING_SKILLS,
         step_budget=6, time_budget_s=180.0,
+        enabled=False, disabled_reason="Focus-only batch adapter cannot verify claim-and-retrain; use existing atomic training chain",
     ),
     SessionRoute(
         goal_id="SHIELD_CAMP_TRAINING", adapter="training_batch", skills=TRAINING_SKILLS,
         step_budget=3, time_budget_s=120.0, extras={"camps": ("SHIELD_CAMP",)},
+        enabled=False, disabled_reason="Use existing atomic barracks navigation and queue-started verifier",
     ),
     SessionRoute(
         goal_id="LANCER_CAMP_TRAINING", adapter="training_batch", skills=TRAINING_SKILLS,
         step_budget=3, time_budget_s=120.0, extras={"camps": ("LANCER_CAMP",)},
+        enabled=False, disabled_reason="Use existing atomic barracks navigation and queue-started verifier",
     ),
     SessionRoute(
         goal_id="MARKSMAN_CAMP_TRAINING", adapter="training_batch", skills=TRAINING_SKILLS,
         step_budget=3, time_budget_s=120.0, extras={"camps": ("MARKSMAN_CAMP",)},
+        enabled=False, disabled_reason="Use existing atomic barracks navigation and queue-started verifier",
     ),
 )
 

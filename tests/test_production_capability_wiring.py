@@ -68,3 +68,6 @@ def test_training_commit_keeps_existing_atomic_queue_started_verifier():
     for goal in ('SHIELD_CAMP_TRAINING', 'LANCER_CAMP_TRAINING',
                  'MARKSMAN_CAMP_TRAINING', 'KEEP_TRAINING_PRODUCTIVE'):
         assert session_route_for(goal, 'TRAIN_TROOPS') is None
+        assert session_route_for(goal, 'SELECT_TRAINING_CAMP') is None
+    for camp in ('SHIELD', 'LANCER', 'MARKSMAN'):
+        assert session_route_for(f'{camp}_CAMP_TRAINING', f'TAP_FOCUSED_TRAINING_CAMP_{camp}') is None
