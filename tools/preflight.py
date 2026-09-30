@@ -114,6 +114,13 @@ DEVICE_REPAIRS = {
     "GAME_NOT_FOREGROUND": "LAUNCH_GAME",
 }
 
+#: The switch that selects the window's question.  A constant because two files
+#: have to agree on it and neither imports the other: this file's parser, and
+#: ``Start-Winter-Agent-V2.cmd``.  When they disagree the launcher's
+#: ``if errorlevel 1`` cannot tell a rejected flag (argparse exits 2) from a failed
+#: preflight, so the 2026-10-01 deadlock would come back looking identical.
+LAUNCH_GATE_FLAG = "--launch-gate"
+
 
 def ledger_summary(limit: int = 200) -> dict[str, object]:
     """What the executor ledger says production has actually been using.
@@ -317,17 +324,29 @@ def report(ledger_limit: int = 200) -> dict[str, object]:
     }
 
 
-def main(argv: list[str] | None = None) -> int:
+def build_parser() -> argparse.ArgumentParser:
+    """The CLI.  Separate from ``main`` so the launcher's switch can be tested.
+
+    The launcher passes exactly one flag and reads only the exit code, so a flag
+    this parser does not recognise is not a loud failure -- argparse exits 2 and
+    the launcher reports it as a failed preflight, which is the same thing the
+    2026-10-01 deadlock looked like.  Being able to parse that flag without
+    running a single probe is what makes that checkable in a test.
+    """
     parser = argparse.ArgumentParser(description="Winter Agent OS V2 runtime preflight")
     parser.add_argument("--json", action="store_true", help="machine-readable output")
     parser.add_argument("--ledger-limit", type=int, default=200, help="ledger rows to summarise")
     parser.add_argument(
-        "--launch-gate", action="store_true",
+        LAUNCH_GATE_FLAG, action="store_true",
         help="exit on the window's question (the interpreter) instead of AUTO's "
              "(the interpreter and the device).  The desktop launcher uses this: the "
              "panel repairs the device and cannot repair the interpreter",
     )
-    args = parser.parse_args(argv)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
 
     data = report(args.ledger_limit)
     sections = data["sections"]

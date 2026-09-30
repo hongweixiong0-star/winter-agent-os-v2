@@ -483,5 +483,79 @@ class AutostartGateTest(unittest.TestCase):
         self.assertEqual(self.started, [])
 
 
+class LaunchGateWiringTest(unittest.TestCase):
+    """The file the operator double-clicks must ask the gate these tests pin.
+
+    Regression for the 2026-10-01 startup failure, and it is a *wiring* failure,
+    which is why it needs a test that reads the launcher rather than a test of
+    preflight alone.
+
+    ``Start-Winter-Agent-V2.cmd`` treats a non-zero preflight exit code as "do not
+    open the window".  Preflight's exit code became ``core_ok`` on 2026-09-18, and
+    core grew a device section in that same commit -- so from then on the launcher
+    refused to open the window on a device that only the window could repair
+    (``_ensure_device`` launches MuMu and foregrounds the client, and it runs
+    inside the AUTO worker).  Every test passed throughout: preflight's gates were
+    each correct, and the launcher is not imported by anything, so no test of a
+    pure function could see *which* gate the operator's entry point asked for.
+    The two files disagreed in silence for two weeks.
+    """
+
+    LAUNCHER = ROOT / "Start-Winter-Agent-V2.cmd"
+
+    def _preflight_invocations(self) -> list[str]:
+        """Lines that *run* preflight, as opposed to comments and diagnosis hints.
+
+        ``诊断：python tools\\preflight.py`` is part of the failure text the launcher
+        prints, and the comment block above the gate names the flag on purpose, so
+        both would answer "does this file mention --launch-gate" with a misleading
+        yes either way.
+        """
+        text = self.LAUNCHER.read_text(encoding="utf-8", errors="replace")
+        out = []
+        for line in text.splitlines():
+            stripped = line.strip()
+            if not stripped or "preflight.py" not in stripped:
+                continue
+            if stripped.lower().startswith(("rem ", "rem\t", "echo ", "@echo", "::")):
+                continue
+            out.append(stripped)
+        return out
+
+    def test_the_launcher_runs_preflight_exactly_once(self):
+        # Two invocations would mean two verdicts, and the second one is the one
+        # nobody tested.  The literal flag is asserted rather than the constant:
+        # renaming the constant without updating the launcher is exactly the drift
+        # this class exists to catch.
+        self.assertEqual(self._preflight_invocations(), [
+            '"%WINTER_PYTHON%" "tools\\preflight.py" --launch-gate',
+        ])
+
+    def test_the_launcher_asks_the_window_question(self):
+        for line in self._preflight_invocations():
+            self.assertIn(preflight.LAUNCH_GATE_FLAG, line,
+                          "the launcher gates *opening the window*; a device the "
+                          "runtime can repair is not a reason to refuse it")
+
+    def test_preflight_recognises_the_flag_the_launcher_passes(self):
+        # A flag the parser rejects exits 2, and the launcher's ``if errorlevel 1``
+        # reads that as a failed preflight -- the same visible outcome as the
+        # deadlock, with no message that distinguishes them.
+        flag = self._preflight_invocations()[0].split()[-1]
+        args = preflight.build_parser().parse_args([flag])
+        self.assertTrue(getattr(args, flag.lstrip("-").replace("-", "_")))
+        with self.assertRaises(SystemExit) as caught:
+            preflight.build_parser().parse_args(["--definitely-not-a-flag"])
+        self.assertEqual(caught.exception.code, 2)
+
+    def test_the_two_gates_are_asked_separately(self):
+        # The launcher's question and AUTO's must stay different questions: if the
+        # launch gate ever grew the device again, ``test_the_window_opens_even_when_auto_may_not``
+        # would still pass on preflight while the operator's own entry point refused.
+        self.assertEqual(preflight.LAUNCH_GATE_SECTIONS, ("interpreter",))
+        self.assertNotEqual(preflight.LAUNCH_GATE_SECTIONS, preflight.CORE_SECTIONS)
+        self.assertIn("device", preflight.CORE_SECTIONS)
+
+
 if __name__ == "__main__":
     unittest.main()

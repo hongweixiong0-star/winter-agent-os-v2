@@ -36,9 +36,18 @@ try {
     }
 
     # Prove the interpreter before trusting anything it reports afterwards.
+    #
+    # The default gate, not --launch-gate: this path gates a *run*, and it repairs
+    # the device itself a few lines below (it launches MuMu and monkey-starts the
+    # package), so it is the same shape as the panel.  A device the runtime can
+    # repair is therefore not a blocker here either -- preflight reports it as
+    # recovering.  What is left when this gate fails is the three things nothing in
+    # this file can change: an interpreter that cannot import MAA / OpenCV /
+    # RapidOCR, a missing adb binary, or a configured resolution the device does
+    # not have.
     & $PythonPath (Join-Path $ProjectRoot "tools\preflight.py")
     if ($LASTEXITCODE -ne 0) {
-        throw "运行环境预检未通过（缺少 MAA / OpenCV / RapidOCR 之一）。已阻止启动：拒绝静默降级到 ADB。"
+        throw "运行环境预检未通过：解释器无法导入 MAA / OpenCV / RapidOCR，或 adb 缺失，或分辨率不匹配。已阻止启动：拒绝静默降级到 ADB。诊断：python tools\preflight.py"
     }
 
     $Config = Get-Content -LiteralPath $ConfigPath -Raw | ConvertFrom-Json
