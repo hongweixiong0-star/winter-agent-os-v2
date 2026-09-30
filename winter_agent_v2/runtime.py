@@ -6145,7 +6145,12 @@ class LiveRuntime:
                 expected_role = str(pending.get("role_id") or "")
                 state_is_same_camp_route = (
                     expected_goal
-                    and self._training_continuation_goal == expected_goal
+                    # The camp identity this route carries is the run's committed goal.
+                    # ``_remember_training_continuation`` was folded into
+                    # ``self._committed_goal`` (assigned where the Scheduler selects the
+                    # goal, and published as ``training_continuation_goal_id``); reading
+                    # the retired name here crashed the run before this gate could say no.
+                    and self._committed_goal == expected_goal
                     and (not expected_role or self._calendar_role_id() == expected_role)
                     and before.page is Page.HOME
                     and before.popup is None
@@ -7299,7 +7304,9 @@ class LiveRuntime:
                     and index < max_actions
                     and best_goal is not None
                     and best_goal.goal_id == f"{focused_camp}_CAMP_TRAINING"
-                    and self._training_continuation_goal == best_goal.goal_id
+                    # Same retired name as above: the committed goal IS this route's
+                    # continuation identity, so ask it rather than a name nothing sets.
+                    and self._committed_goal == best_goal.goal_id
                     and verification.reason == "FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN"
                     and can_reobserve_focused_training_camp_after_nonmenu_tap(
                         before, after, camp=focused_camp
