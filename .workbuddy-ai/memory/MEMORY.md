@@ -2161,3 +2161,255 @@ AMBIGUOUS 不盲点、未授权零点击、目标缺失零点击、每次尝试�
 真机 `DISPATCH`（采集出征）——执行器 attempts=1 outcome=SUCCESS @(551,1214)，**首次即 SUCCESS**；
 本轮 `gather_slot=None` 时按规则**无英雄出征**（与采集英雄规则一致）。
 接入：`tools/gather_all.py` 的出征步骤已改走执行器。
+
+---
+
+## 环境铁律（2026-09-30 增补）：共享数据根 + 生产固定版本 + 面板保活
+
+1. **`learning/` 是跨工作树共享的数据根**（`47a2823 fix(ops): keep soak evidence in shared data root`）。
+   实测 `E:\无尽冬日智能体\learning\DEVICE_LEASE.json` 与
+   `C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\learning\DEVICE_LEASE.json`
+   **同 inode**。⇒ 任何工作树里的 `git checkout` / `rebase` 都会改写这份共享状态；
+   `learning/` 里**被跟踪**的文件会被静默回退到提交版本。2026-09-29 的 rebase 就这样把共享数据根
+   回退了 11 天（episodes 10059→2147、角色回退成已不在设备上的旧账号），真值只留在未回放的
+   `stash@{0}: wip-before-rebase-fishing`。**处理大体积/持续写入的运行时状态：`git rm --cached` + `.gitignore`，
+   文件留在磁盘**（对 `learning/episodes.jsonl` 已这样做，107 MB 超 GitHub 100 MB 硬限）。
+2. **回放 stash 前必须先量方向**：`git diff --stat HEAD stash@{0} -- winter_agent_v2 tools tests`。
+   本次结论是 HEAD 的代码严格更新（拥有 `vision_policy.py` / `task_completion.py` 等），
+   **只回放数据/状态文件，绝不回放代码**。
+3. **生产面板的官方入口是计划任务 `WinterAgentV2Panel`**（`schtasks /Run /TN "WinterAgentV2Panel"`），
+   动作 = `pythonw <venv>\pythonw.exe ...\winter-prod-pinned\tools\launch_pinned_production.py`，
+   `DATA_ROOT=E:\无尽冬日智能体`，**生产跑的是固定版本**（现为 `ef97137`，落后 main 40 个 commit，**按设计如此**，
+   soak 需要冻结版本；`--check-only` 可验证 `CODE_COMMIT/WORKTREE_CLEAN/DATA_ROOT`）。
+   **从开发工具直接 `start` 面板会被宿主回收**（实测面板 24936/25408），必须走计划任务。
+4. **AUTO「没在跑」先查 `config/control_panel_state.json` 的 `operator_intent`**
+   （取值 `RUNNING`/`PAUSED`/`STOPPED`），而不是先怀疑崩溃。2026-09-30 的停机就是操作员手动打巨熊时
+   置的 `PAUSED`；置回 `RUNNING` 后 `schtasks /Run` 即恢复。
+5. **`tools/build_capability_coverage.py` 会抹掉手写知识**：重生成 `knowledge/goals/capability_skill_map.json`
+   会丢掉手工加进 `alternatives` 的 `SELECT_BEAST_TARGET_LABELLED`（2026-09-20 注记），
+   使 `check_wiring.py` 由 OK 变 MISS，而 `escalation_queue.capability_for_skill()` 读的正是它。
+   **在生成器修好前，不要重跑该生成器覆盖该文件。**
+
+---
+
+## 环境铁律（2026-09-30 增补二）：AUTO「不出轮」的三步定位 + 悬空属性读取
+
+6. **AUTO 5 小时零产出，按固定顺序查三处，不要跳步**：
+   ① `config/control_panel_state.json` 的 `operator_intent`（`RUNNING`/`PAUSED`/`STOPPED`）——
+   操作员手动打巨熊时会置 `PAUSED`（09-30 先例）；
+   ② `learning/control_panel/latest.log` **末尾的 traceback**——那才是崩溃轮次的原话，
+   `panel.log` 只会写"⚠ 本轮结束：暂无结构化结果"，不带原因；
+   ③ `pump.json` 的 `passes`/`preload_ticks` 与 `episodes.jsonl` 的 mtime 对比——
+   **泵在转 ≠ AUTO 在跑**：`passes` 涨而 `episodes.jsonl` 不涨 = 每轮都崩，
+   此时 `preload_decision` 通常停在 `GATE_REFUSED` 陪着空转。
+   09-30 实测：`passes 9→365`、`errors=0`，但 episodes 停写 5.2 小时，真因是下面第 7 条。
+
+7. **重构漏改读取点 = 悬空属性读取，会在真机才炸**（09-30 实例）：
+   `runtime.py` 的两处 `self._training_continuation_goal` 是 `015e4f2` 从旧备份**只搬了读取点**的残留，
+   该名字后来被统一进 `_committed_goal`（见 `runtime.py:1474` 的
+   `"training_continuation_goal_id": getattr(self, "_committed_goal", "")` 与 `6236` 的赋值），
+   而 `__init__` 从未创建过它 ⇒ 训练营首次动作栏未证明就 `AttributeError`，**几乎每轮必崩**。
+   **`tools/check_wiring.py` 查不出这类问题**——它只查悬空*调用*（`self.X()`），不查悬空*读取*。
+   ⇒ 新落 `tests/test_instance_attributes_are_defined.py`：AST 审计 `self.X` 的 Load 是否可被
+   `self.X=`/类体常量/方法名/`getattr(self,"X",…)` 定义；`runtime.py` 严格 0 条，全包用"已知债台账"。
+   **改 `runtime.py` 这类巨型文件的读取点前，先跑这个审计。**
+   已知债（尚未修）：`executor_router.py:629 self._stat` —— **巨熊** `BTN_BEAR_AUTO_JOIN` 守卫路径
+   （`self._stat("bear_guard").record(ok, ms, reason)`），`def _stat` 在该文件从未存在；
+   匹配记录器是 `maa_executor._VerbStats`；只有熊开关读到 ON/UNKNOWN 时才触发。
+
+8. **`git stash pop` 会静默把陈旧 WIP 摊到 HEAD 上，且常常"看起来像自己的在飞工作"**：
+   判定来源**只看 blob sha**（`git rev-parse :<path>` vs `stash@{0}:<path>` vs `HEAD:<path>`）——
+   与 stash 相同 = stash 内容；三者互异 = 三方自动合并产物。
+   清理时**只回滚代码路径**，`knowledge/` / `.workbuddy-ai/` / `evidence/` 等运行时自写状态不要碰
+   （索引本就 = HEAD，其 worktree 差异是运行时正常写入）。
+   `stash@{0}` 有 2 个 parent 就说明它**不含未跟踪载荷**，别指望它解释磁盘上的孤儿文件。
+   `tests/` 下现有 **9 个历史遗留未跟踪测试文件**会让 `pytest tests/` 直接收集失败
+   （`test_one_shot_validation_probe.py`、`test_travel_and_underground_pages.py` 等），
+   它们早于本会话存在，**不属任何人的在飞工作，也不要 `git clean -fd`**。
+
+---
+
+## FISHING TOURNAMENT 普通饵政策 V2 落地 + 一次真实的「策略文件被擦除」事故（2026-09-30）
+
+**落地**（提交 `fd2be9b`，已在 `main` 且已到 `origin`）：政策源是操作员的
+《FISHING TOURNAMENT — NORMAL BAIT MAX SCORE POLICY V2》§1–§17。其中 §4「特殊模式四个 goal
+不得进入 READY、且不是能力缺口」需要**三个机制同时存在**，缺一个就漏：
+
+1. **registry 元数据**：`knowledge/events/event_registry.json` 把这四个 id 从 `tasks` 移除、
+   放进 `policy_disabled_tasks`（`reason=POLICY_DISABLED_BY_USER`）。
+   ⚠ 只要它们还在 `tasks` 里，`goal_library._registered_activity_flow()` 解不出映射就会落进
+   `unregistered_skill_ids`，于是**被当成「缺能力」去立项开发** —— 正是 §4 明确否定的分类。
+   `tools/register_fishing_event.py` 也同步删了该行，否则重跑注册脚本会把它写回来。
+2. **运行时拒执行**：`runtime._policy_refusal(goal_id)` 在**类别默认值提前返回之前**读
+   `config/policy_state.json` 的 `disabled_goals`，所以**即使该 goal 没有 category 也照样拒绝**，
+   返回 `POLICY_DISABLED_BY_USER`；类别开关走的是**另一个**值 `POLICY_CATEGORY_DISABLED`。
+3. **面板合并式写入**：`tools/control_panel.py:write_policy_state` 不再整份重建。
+
+§16 的计数器落在 `winter_agent_v2/fishing_state.py`（`None ≠ 0`：没量到 ≠ 量到零；角色作用域，
+A 的饵数绝不能被 B 借到）；§15 端局在无法确证结束时刻时报 `known=False`，**不猜截止日**。
+真机基线：1 个普通饵 → 190 分 / 54 m / 25.047 s / 21.28 Hz，`POINTS_PER_BAIT = 190.0`。
+
+**事故（LIVE 复现，不是静态审查发现的）**：手工把 `disabled_goals` 写进 `config/policy_state.json`
+之后约 10 分钟，新写的 10 个测试突然变红 —— 该文件在 `10:08:36` 被**当时正在运行的生产面板**
+整份重写：`goal_categories` 全 `true`、`disabled_goals` **整个消失**。因为面板当时跑在**尚未修复的
+`b4f7dd6`** 上。⇒ **可复用铁律：只要还有一个「从零重建整份文件」的写入者活着，
+你写进去的键就活不过它的下一次启动；要修的是写入者，不是补写数据。**
+（补写只作临时措施，并留下 `disabled_goals_restored_at` / `disabled_goals_restored_because`
+如实说明为什么会有这一笔。）
+
+**验证方式（关键）：这类修复必须用"真实重启"证明，不能只跑单测。**
+把生产钉到 `fd2be9b` → 停面板 → `schtasks /Run /TN "WinterAgentV2Panel"` 重启 →
+面板于 `10:14:22` 用**它自己的** `updated_at` 重写了该文件，而 `disabled_goals` 四个键与
+`disabled_goals_restored_at` **全部保留**。合并式写入成立。**后续同类修复照抄这个验收序列。**
+（`schtasks` 在 Git Bash 里会被 `/Query` 当成路径，**改用 PowerShell 调**。）
+
+**并发写入者（环境事实，必须一直假设它存在）**：本机有**另一个 agent 会话**，
+提交身份 `Winter Agent OS V2 <agent@winter-agent-os.local>`，会并发提交 `main` 并**重新钉生产**。
+`learning/control_panel/desktop_startup.log` 的钉版本序列 `29422195`(10:05:57) →
+`b4f7dd6`(10:08:32) → `fd2be9b`(10:14:16) 并不全是我做的；它和我改**同两个文件**
+（`winter_agent_v2/runtime.py`、`tools/control_panel.py`）。铁律：
+**`git add` 只用显式路径，绝不用 `-A`**；动手前先 `git fetch` 再看 `git log fd2be9b..origin/main`。
+这次是它替我把 `fd2be9b` 推上去的，并在其上加了 `6310195`（只动 3 个无关测试/工具文件）。
+另：`E:\无尽冬日智能体` 本身就是 `main` 的 worktree ⇒ `git status` 里的 `knowledge/`、
+`.workbuddy-ai/`、`learning/` 变更是**运行时自写**，不是谁的在飞工作，不要拿去提交或清理。
+
+---
+
+## 架构决定：GENERIC_SESSION_ENGINE_V1 —— 两个问题，不是一个（2026-09-30）
+
+**问题分开问，答案就不会打架**：
+- `Global Scheduler`（`scheduler.py`）= 「做**哪个** Goal / **哪个** 角色」——仍是唯一排名者与切角色者，未改。
+- `Generic Session Engine`（`session_engine.py`）= 「**已选** Goal **内部**的连续多步执行」。
+
+**八条约束（都必须是结构事实，不是注释里的承诺）**：唯一 Global Scheduler；唯一 MAA Executor；
+Session 不得自选其他 Goal；Session 只处理当前 Goal 内部步骤；每个原子动作后可检查 Yield；
+Hard Event 只能经 Global Scheduler 抢占；实时控制循环不得调用 Global Scheduler；
+Session 完成/Yield/失败后必须返回 Global Scheduler。
+
+**让约束成立的三条结构机制**（照抄，不要退化成约定）：
+1. `SessionHost`（引擎被类型化依赖的 Protocol）**根本没有** `select_goal` / `switch_role` ——
+   所以"Session 不做全局决策"是**类型事实**，adapter 连误调都做不到。
+2. `SessionSpec.goal_id` 必填、`SessionContext` frozen —— 会话中途无法重新绑定 Goal 或角色。
+3. 引擎里 `host.yield_verdict` **有且只有一处**（测试按源码文本计数断言）。实时控制循环与
+   仲裁之间隔着这一步，就是「实时循环不得调 Scheduler」的实现。
+
+**新增抽象**：`SessionSpec` / `SessionState` / `SessionContext` / `SessionStep` / `SessionResult`；
+统一生命周期 9 态（CREATED/PREPARING/RUNNING/VERIFYING/WAITING/YIELDING/RECOVERING/COMPLETE/FAILED，
+`_LEGAL_TRANSITIONS` 显式声明，非法边抛 `IllegalSessionTransition`）；
+统一步结果 5 态（SUCCESS/PROGRESS/STILL_PENDING/AMBIGUOUS/FAILED）——
+**`AMBIGUOUS` 不是 `FAILED` 的同义词**：前者"客户端没答清楚"→再看一眼，后者"客户端答了否"→交给 adapter 恢复。
+
+**引擎负责**：device lease / session timeout / step budget / resource budget / semantic retry /
+local verifier / bounded recovery / yield 安全点 / Episode 关联 / metrics / 返回 Scheduler。
+**Adapter 只负责四件事**：observe domain state / choose local next step / domain verifier / completion predicate。
+
+**四个业务 adapter**：`FishingSessionAdapter`（复用既有 `FishingSessionController`+`VisualServoSession`+
+`ContinuousTouchSession`+`fishing_vision`，**不重写**）、`BearSessionAdapter`（START_RALLY 一次 +
+反复 JOIN_RALLY + 每次重读列表）、`StaminaSpendSessionAdapter`（连续合法出征到 stamina<30 / 无空位）、
+`TrainingBatchSessionAdapter`（一次处理当前角色三个兵营）。
+
+**路由按 Goal 而非按 skill**：`JOIN_RALLY` 同时服务巨熊 / 极地恐魔 / 要塞，只有巨熊 Goal 该进巨熊会话；
+纯 skill 表会把每个集结都塞给巨熊 adapter。
+
+**验收证据已入库**：`tests/test_session_engine.py`(33) + `test_session_adapters.py`(67) +
+`test_session_engine_boundary.py`(26)。后者用真实 `LiveRuntime.run()` 证明四条：
+无第二 Scheduler（源码文本 + `session_host.WorldState IS models.WorldState` 身份）、
+无跨 Goal 决策、Hard Event 在安全点抢占（安全点1=IDLE 让它走一步，安全点2=T5 → `YIELDING/HARD_EVENT_PREEMPT`，
+`SESSION_STEPS=1`，run 继续）、Session 失败不停 AUTO（3 次会话全 `SESSION_OBSERVE_FAILED`，
+`run.steps=4`，`stop_reason=NO_EXECUTION`，与任何会话理由都不同）。
+边界：`index < max_actions` ⇒ 会话**只能出现在除最后一轮以外的每一轮**，会话永远不是 run 的最后一件事。
+
+### ⚠ 四个 SessionRoute 在拿到真机 Episode 之前**必须**留在 `lifecycle="CANDIDATE"`
+
+`SessionRoute.lifecycle` 默认 `CANDIDATE`，测试断言了这一点（11 条路由全 CANDIDATE）。
+**不许**因为"单测全绿"就写 `LIVE_VERIFIED` —— 单测证明的是路由与计数，不是那台机器上的一竿鱼。
+
+### ⚠ 能力边界（实测，不是设计意图）：run 的**第一轮**会话没有抢占预言机
+
+`LiveRuntimeSessionHost.yield_verdict` 读 `runtime._scheduler`，而 run 只在**即将派发原子步**时才建它
+（`_session_execute_atomic`，或主循环原子路径）。所以一轮 run 的**第一次**会话、且在它执行任何一步之前，
+ladder 抢不动它；一旦会话执行了任意一步（→ 建好 scheduler），**后续每个安全点都能被抢占**。
+有界（会话有步数/时间预算）且方向安全（缺预言机时默认"不放弃设备"）。
+**收紧方案被否**：让 host 直接读 `event_schedule.load()` 会成为**第二处**知道事件何时开始的地方，
+与"预言机只能有一个"冲突 —— 留给操作者裁决。测试里显式声明该前置条件。
+
+## ⚠ 环境铁律（2026-09-30 增补三）：`.gitignore` 的凭证规则会**静默吞掉生产模块**
+
+`.gitignore:347` 有一条凭证规则 `session*`（防 `session` cookie/token 泄漏）。
+它匹配 `winter_agent_v2/session_engine.py`、`session_adapters.py`、`session_host.py` ——
+**模块在磁盘上、测试全绿、CI 跑得到，但永远进不了仓库**。
+`git status` 里它们**连 `??` 都不显示**（看起来像"还没建"），只有 `git check-ignore -v <path>` 说真话。
+
+**铁律**：新建任何名字含 `session` / `token` / `secret` / `credential` / `cookie` / `key` 前缀的
+**生产**模块，第一件事就是
+`git check-ignore -v <path>` —— 命中就按 `.gitignore` 里已有的否定规则风格（`!path` + 说明）
+加否定，**不要用 `git add -f`**：那样只救这一个文件，且**后续对它的编辑继续不可见**。
+同一文件第 348–355 行早已为 `dataset/candidate/session_disconnected/` 加过否定规则并写明原因，
+本次是同一失效模式第二次发生。
+
+## ⚠ 准入门禁的清单是**手写的**：新增生产点击路径必须同步更新，否则门禁给出假结论
+
+`tools/check_coordinate_hardcoding.py`（宪法 §24.5）有两处手写清单：
+`PRODUCTION_MODULES`（17 项）决定"哪些文件会被查字面量坐标"；`check_executor_tap_sources`
+只扫 `executor.py / maa_executor.py / executor_router.py` 决定"报出几个设备点击点"。
+
+新增 session 模块时**两处都漏**：`session_host._tap_printed` 把"识别到的词的中心"变成一次设备点击，
+而门禁根本没看那个文件 —— 报告照样打印 `ADMITTED`。
+**一份漏掉最新点击路径的门禁比没有门禁更糟，因为它给出结论。**
+修后 `PRODUCTION_MODULES` 17→20、点击点扫描 +`session_host.py`，如实报出
+`2 code sites can tap a device: executor.py:91, session_host.py:662`（仍 0 violation：
+该点由当前帧解析，词缺失或**出现多次**时**拒绝**而不是猜 —— §24 表达为 refusal）。
+
+**铁律**：新增/改动任何"能把一个点送到设备上"的生产模块，必须
+① 把它加进 `PRODUCTION_MODULES`；② 若它能 tap，加进点击点扫描；③ 重跑门禁并**读** NOTE 行的数量变化。
+
+## 测试方法论（2026-09-30 增补）：两条让"绿"变假的陷阱
+
+**（1）假 host 的时钟必须真的走。** 引擎的时间预算在每步**之前**检查。若 `FakeHost.execute_step`
+不推进虚拟时钟，时钟永远停在 0、时间预算永远不到、会话改在**步数预算**上结束 ——
+那条时间预算测试会**通过但什么都没证明**。修法：`FakeHost(step_seconds=…)` 让一步消耗虚拟秒。
+**看到"预算测试通过"先问：那个 budget 真的被触到了吗？**
+
+**（2）想测 default 实现，就不要用覆盖了它的子类。** 用一个自定义 adapter 测
+`SessionAdapter.verify_step` 的默认委托行为 —— 但那个子类自己覆盖了 `verify_step`，
+于是默认实现**从未被执行**。改用 `BareAdapter`（只实现四个必需答案）。
+**同类**：`TrainingBatchSessionAdapter.skipped` 是 `_pending()` 填的，只调 `observe` 就断言 → 拿到空列表。
+**断言必须发生在触发它的那次调用之后。**
+
+## 归因既有失败：备份 → checkout → 跑 → 恢复 → md5 校验（2026-09-30）
+
+定向回归发现 `tests/test_refusal_yields_the_cycle.py` 17 项中 3 项红。**不许直接归因给自己或别人**：
+`cp` 备份 `runtime.py`/`scheduler.py` → `git checkout -- <这两个文件>` 回到**已提交版本** → 重跑 →
+**同样这 3 项红** → `cp` 恢复 → `md5sum` + `git diff --stat` 双重校验（229/95 insertions 未变）。
+结论：既有失败，与本次接线无关。**这套三步是可复用的判据，别用"我没动那个文件"当结论。**
+
+**（2026-09-30 补强版，已跑满 17 个文件）** 三个必须补上的细节，缺一个判据就是假的：
+
+1. **两臂必须用同一份选择。** 只回退源码、却换了 pytest 的筛选条件，比的是两个不同的集合。
+2. **逐符号判"回退干净了没有"，不要用词根。** 回退到 HEAD 后
+   `grep -c "session" runtime.py` 仍返回 8、`scheduler.py` 返回 49 —— `session` 是项目里既有的普通词
+   （`ContinuousTouchSession` 等）。**必须 grep 完整符号**（`_run_goal_session`、`session_preemption`）。
+   拿词根判回退，会得到一个"回退失败"的假警报；拿词根判"我碰了这个文件"，会得到一个假结论。
+3. **`diff` 两个失败集合，而不是只比汇总数字。** 数字相同但集合不同（一进一出）会互相抵消。
+   正确写法：`grep -E "^(FAILED|SUBFAILED)" out.txt | sed -E 's/^(FAILED|SUBFAILED)(\([^)]*\))? //' | sort` 再 `diff`。
+
+**同一次补强还立了一条边界**：A/B 只能证明"**与我的改动无关**"，**证明不了"是谁的账"**。
+树上若同时有别人未提交的改动，要单独再切一刀（把那个文件也回退跑一遍）才能定位责任。
+实测 `test_quick_panel_handle.py` 的未提交改动就是这种情况：回退后 `exit=2`，
+模块级 `AUTO.glob("*_step_001_before_…png")[-1]` 因证据帧已不存在而 **IndexError，收集阶段就炸**。
+**`git status` 里的 `M` 意味着"这个文件在改"，不意味着"它正在坏"——两件事要分开证。**
+
+## ⚠ 两个让"红/绿"都数错的 pytest 数字陷阱（2026-09-30）
+
+**（1）汇总的 `N failed` ≠ `grep -c '^FAILED'`。** 装了 `pytest-subtests` 后**子测试失败也计入
+`N failed`**，但它在 short summary 里的前缀是 `SUBFAILED`，`^FAILED` 抓不到。
+实测 `36 failed` 对应 **35 行 `FAILED` + 1 行 `SUBFAILED`**。
+**解析 pytest 输出时，`SUBFAILED` 必须和 `FAILED` 一起抓**，否则基线集合从起点就少一项。
+
+**（2）`-k` 是拿关键字匹配**整个 node id，包含**文件名**。** 于是
+`test_march_recall_and_stamina.py::test_recall_dialog_is_recognized_from_the_live_frame`
+（方法名里一个关键字都没有）会因为**文件名含 `stamina`** 被选中；反过来，文件名不含关键字的文件里，
+失败用例会被**静默滤掉**。实测同 17 个文件：带 `-k` 报 **36 红**，不带 `-k` 报 **52 红**——
+多出的 16 项不是"新坏"，是**从没被看见**。
+**永远不要拿一次带 `-k` 的运行的失败数当基线**；要当基线就重跑一次不带筛选的。
+
