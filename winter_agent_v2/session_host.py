@@ -459,7 +459,7 @@ class LiveRuntimeSessionHost:
                 reading = fields.get('alliance') or {'rally': {
                     'target_type': 'POLAR_TERROR', 'dispatch_pending': True,
                     'source': 'DISPATCH_SENT_NOT_YET_VERIFIED'}}
-                observation_store.record('alliance', reading,
+                observation_store.record('rally', reading['rally'],
                     path=self.runtime._role_observation_store_path())
             except Exception as exc:  # A telemetry failure cannot repeat a dispatch.
                 self.notes.append(f'rally_persistence_failed {type(exc).__name__}:{exc}')

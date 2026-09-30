@@ -138,3 +138,16 @@ def test_polar_dispatch_uses_observed_free_slot_without_inventing_capacity():
     domain.idle_marches=1
     adapter._polar_words=['目标：别的目标','118,110/118,110','出征']
     assert adapter._polar_step(domain,now=130) is None
+
+
+def test_expired_stamina_can_only_restore_live_hud_not_dispatch():
+    from winter_agent_v2.goal_library import GoalLibrary
+    from winter_agent_v2.skills import v2_registry
+    world=WorldState(page=Page.MARCH)
+    goals=GoalLibrary().discover(world,observations={'stamina':{'overdue':True,'reading':{'current':284}}})
+    goal=next(g for g in goals if g.goal_id=='AVOID_STAMINA_WASTE')
+    runtime,_=runtime_goal()
+    runtime._sync_brain_goal(goal,SimpleNamespace(capabilities={}))
+    assert goal.evidence['current'] is None
+    assert runtime.brain.current_goal=='STAMINA_OBSERVE'
+    assert runtime.brain.decide(world,v2_registry()).skill=='BACK'

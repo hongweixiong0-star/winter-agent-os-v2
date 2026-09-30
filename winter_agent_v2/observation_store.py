@@ -51,6 +51,7 @@ DEFAULT_TTL_SECONDS: dict[str, int] = {
     # used when the current frame cannot read the gauge at all, and the goal carries `reused` so
     # the difference is visible -- a stale number must never be presented as a fresh one.
     "stamina": 10 * 60,
+    "rally": 90,
 }
 FALLBACK_TTL_SECONDS = 30 * 60
 

@@ -1137,14 +1137,19 @@ class GoalLibrary:
                               if not (observations or {}).get('intel', {}).get('overdue', True) else {}) or {}),
                           "idle_marches":world.idle_marches,
                             "own_rally":dict((world.alliance or {}).get('rally') or
-                                (((observations or {}).get('alliance', {}).get('reading') or {}).get('rally')
-                                 if not (observations or {}).get('alliance', {}).get('overdue', True) else {}) or {})},
+                                ((observations or {}).get('rally', {}).get('reading')
+                                 if not (observations or {}).get('rally', {}).get('overdue', True) else {}) or {})},
                 # Stamina still at or above the floor is exactly the work left to do, and
                 # it is what makes a beast kill progress while a map pan does not.  At the
                 # floor itself this is 1 rather than 0, which is the boundary above stated
                 # as a number.
                 distance=float(max(0, stamina - STAMINA_FLOOR + 1)),
             ))
+        elif _optional_int((((observations or {}).get('stamina') or {}).get('reading') or {}).get('current')) is not None:
+            # An expired gauge permits returning to the HUD, never spending on its old value.
+            goals.append(GoalState('AVOID_STAMINA_WASTE', GoalStatus.READY,
+                reward_value=100, available_skills=('BACK', 'OPEN_MAP'), distance=1.0,
+                evidence={'current':None, 'requires_live_observation':True}))
         self._append_camp_training_goals(goals, world, observations)
         self._append_training_continuation(goals, world, training_continuation_goal_id)
         self._append_queue_goal(

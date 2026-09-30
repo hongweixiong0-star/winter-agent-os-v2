@@ -1111,6 +1111,10 @@ class RuleBrain:
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_intel_route")
             if world.page is Page.MAP and world.resource_search_open:
                 return Decision("BACK", "close_resource_search_for_intel_goal", world.confidence, "resource_search_closed")
+        if self.current_goal == 'STAMINA_OBSERVE':
+            if world.page not in {Page.MAP, Page.HOME}:
+                return Decision('BACK','stamina_reading_expired_restore_live_hud',world.confidence,'hud_visible')
+            return Decision('SAFE_STOP','stamina_hud_not_readable_on_current_frame',1.0,'switch_task')
         if self.current_goal == 'STAMINA_WAIT':
             return Decision('SAFE_STOP','stamina_sink_wait_or_blocked',1.0,'switch_task')
         if self.current_goal == 'GIANT_BEAST':

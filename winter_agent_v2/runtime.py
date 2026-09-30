@@ -1151,7 +1151,8 @@ class LiveRuntime:
             idle_slots=data.get('idle_marches'), own_rally=bool(own.get('dispatch_pending')) or
                 (own.get('ownership') == 'SELF' and isinstance(own.get('remaining_seconds'),int)
                  and own['remaining_seconds'] > 0))
-        route = {'INTEL':'SPEND_STAMINA','GIANT_BEAST':'GIANT_BEAST','BEAST_HUNT':'BEAST_HUNT'}.get(sink.goal,'STAMINA_WAIT')
+        route = {'INTEL':'SPEND_STAMINA','GIANT_BEAST':'GIANT_BEAST','BEAST_HUNT':'BEAST_HUNT',
+                 'OBSERVE_STAMINA':'STAMINA_OBSERVE'}.get(sink.goal,'STAMINA_WAIT')
         data.update(stamina_sink=sink.goal, stamina_sink_reason=sink.reason)
         if sink.goal == 'GIANT_BEAST':
             data['rally_target'] = 'POLAR_TERROR'
