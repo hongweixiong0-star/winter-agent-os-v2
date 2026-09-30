@@ -1226,11 +1226,11 @@ class GoalLibrary:
         _append_daily_task_goals(goals, world)
         minimum = world.events.get("minimum_guarantee") if isinstance(world.events, dict) else None
         if isinstance(minimum, dict):
-            missing = int(minimum.get("points_missing", 0))
+            missing = _optional_int(minimum.get("points_missing"))
             claimed = bool(minimum.get("all_target_rewards_claimed", False))
             left = _optional_int(minimum.get("remaining_seconds"))
             until_start = _optional_int(minimum.get("seconds_to_start"))
-            complete = missing <= 0 and claimed
+            complete = missing is not None and missing <= 0 and claimed
             # A window that has closed is EXPIRED, not "ready at a negative deadline".  Measured
             # 2026-09-23: ``deadline_pressure(0)`` is -100_000, which pushes such a goal down the
             # board without ever taking it off -- so a closed event stayed selectable, and could
@@ -1247,7 +1247,7 @@ class GoalLibrary:
                 status = GoalStatus.COMPLETE
             elif window_closed:
                 status = GoalStatus.EXPIRED
-            elif left is not None and left > 0:
+            elif left is not None and left > 0 and missing is not None:
                 # A positive scoring-stage timer is current client evidence that this
                 # occurrence is open. The event title or a saved appointment alone is not.
                 status = GoalStatus.READY
@@ -1303,7 +1303,7 @@ class GoalLibrary:
                           "client_remaining_seconds": left,
                           "fishing_pressure": (fishing_terms if fishing_terms["is_fishing"]
                                                else None)},
-                distance=float(max(0, missing)),
+                distance=float(max(0, missing)) if missing is not None else 1.0,
             ))
         bear = world.events.get("bear") if isinstance(world.events, dict) else None
         if isinstance(bear, dict):
