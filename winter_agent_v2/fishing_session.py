@@ -34,6 +34,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
+import numpy as np
+import cv2
 
 from .fishing_vision import FishingFrame, free_corridor
 from .visual_servo import ServoCommand
@@ -75,8 +77,10 @@ class FishingDecision:
 class FishingSessionController:
     """Turn a per-frame FishingFrame into a per-frame steering decision."""
 
-    def __init__(self, *, mode: str = "AUTO", line_gain: float = 0.85,
-                 calibrate_ticks: int = 0, max_tick_s: float | None = None) -> None:
+    def __init__(self, *, mode: str = "AUTO", line_gain: float = 0.6,
+                 calibrate_ticks: int = 0, max_tick_s: float | None = None,
+                 smoothing: float = .25, hysteresis: float = .1,
+                 prediction_horizon: float = .6, line_step_px: int = LINE_STEP_PX) -> None:
         self.mode = mode
         self.line_gain = line_gain
         #: Run the calibration legs for this many ticks before handing over to the
@@ -98,12 +102,22 @@ class FishingSessionController:
         self._lost_streak = 0
         self._max_depth = 0
         self._best_line_x: int | None = None
+        self.smoothing, self.hysteresis = smoothing, hysteresis
+        self.prediction_horizon, self.line_step_px = prediction_horizon, line_step_px
+        self.effective_gain = .5  # measured prior; updated from real actuator/line deltas
+        self._previous_pair = None
+        self._smoothed_target = None
+        self._last_delta = 0
+        self.direction_reversals = self.large_steering_changes = self.phase_switch_count = 0
+        self._ascent_votes = 0
+        self._ascent_since = None
 
     # ------------------------------------------------------------------ helpers
     def _enter(self, phase: Phase) -> None:
         if phase is not self.phase:
             self.phase = phase
             self.phase_entered_at_tick = self.tick
+            self.phase_switch_count += 1
 
     def _line_target(self, state: FishingFrame) -> int | None:
         """Descent policy: the clearest corridor below the hook."""
@@ -114,27 +128,51 @@ class FishingSessionController:
         frame = getattr(self, "_last_frame", None)
         if frame is None:
             return state.line_x
-        try:
-            corr = free_corridor(frame, state.line_x, state.hook_y)
-        except Exception:  # noqa: BLE001
-            return state.line_x
-        order = sorted(("left", "centre", "right"), key=lambda k: -corr[k])
-        best, second = order[0], order[1]
-        if corr[best] - corr[second] < CORRIDOR_MARGIN:
-            return state.line_x                    # near-tie: do not twitch
-        dx = {"left": -70, "centre": 0, "right": 70}[best]
-        return int(state.line_x + dx)
+        height,width = frame.shape[:2]
+        candidates = sorted({int(np.clip(state.line_x+d, width*.12, width*.88))
+                             for d in (-140,-100,-60,0,60,100,140)})
+        hsv = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
+        water = ((hsv[:,:,0]>=85)&(hsv[:,:,0]<=115)&(hsv[:,:,1]>=150))
+        top, bottom = min(height-1,state.hook_y+25), min(height,state.hook_y+260)
+        scores = []
+        for x in candidates:
+            stripe = water[top:bottom,max(0,x-22):min(width,x+23)]
+            free = float(np.mean(stripe)) if stripe.size else 1.0
+            risk = 1-free
+            for obstacle in state.obstacles:
+                oy = obstacle['y']-state.hook_y
+                if -20 <= oy <= 300:
+                    clearance = abs(x-obstacle['x'])-obstacle['w']/2-28
+                    risk += max(0, 1-clearance/100)*(1-oy/400)
+            cost = risk + .12*abs(x-state.line_x)/140
+            cost += .12*max(0, 70-min(x,width-x))/70
+            if self._smoothed_target is not None:
+                cost += .08*abs(x-self._smoothed_target)/140
+            scores.append((cost,x))
+        best = min(scores)
+        current = min(scores,key=lambda p:abs(p[1]-state.line_x))
+        want = best[1] if current[0]-best[0] > self.hysteresis else state.line_x
+        self._route_risk = best[0]
+        return want
 
     def _fish_target(self, state: FishingFrame) -> int | None:
         """Ascent policy: the nearest reachable fish head."""
         if not state.fish:
             return None
         hook_y = state.hook_y if state.hook_y is not None else 0
-        reachable = [f for f in state.fish if (f.get("h") or 0) >= 18]
+        reachable = [f for f in state.fish if (f.get("h") or 0) >= 8 and f.get('confidence',.75)>=.65]
         if not reachable:
             return None
-        pick = min(reachable, key=lambda f: abs(f["y"] - hook_y) + abs(f["x"] - (state.line_x or 360)) * 0.35)
-        return int(pick["x"])
+        targets = []
+        for fish in reachable:
+            horizon = min(self.prediction_horizon,abs(fish['y']-hook_y)/200)
+            x = fish['x']+fish.get('vx',0)*horizon
+            if abs(x-(state.line_x or 360)) > 180 or abs(fish.get('vx',0))>400:
+                continue
+            if any(abs(x-o['x'])<o['w']/2+25 and abs(o['y']-hook_y)<180 for o in state.obstacles):
+                continue
+            targets.append((abs(fish['y']-hook_y)+.4*abs(x-(state.line_x or 360)),x))
+        return int(min(targets)[1]) if targets else None
 
     def set_frame(self, frame) -> None:
         """The caller hands over the frame it just fed the detector.
@@ -152,6 +190,15 @@ class FishingSessionController:
         # goal into a finger delta.
         self._finger_now = state.finger_x
         self._observed_line_x = state.line_x
+        self._state = state
+        pair = (state.finger_x, state.line_x)
+        if self._previous_pair is not None and all(v is not None for v in pair):
+            pf,pl = self._previous_pair
+            df,dl = pair[0]-pf,pair[1]-pl
+            if 4 <= abs(df) <= 60 and 1 <= abs(dl) <= 70 and .1 <= dl/df <= 1.5:
+                self.effective_gain = float(np.clip(.9*self.effective_gain+.1*dl/df,.2,1.2))
+        if all(v is not None for v in pair):
+            self._previous_pair = pair
 
         # ---- lost handling (decision-level protection) ----
         if getattr(state, "lost", True) or state.line_x is None:
@@ -178,19 +225,31 @@ class FishingSessionController:
         elif self.phase in (Phase.DESCENDING, Phase.ASCENDING) and len(self._depth_hist) > PHASE_CONFIRM_TICKS:
             recent = self._depth_hist[-PHASE_CONFIRM_TICKS:]
             rising = recent[-1] - recent[0]
-            if rising > 18 and self.phase is Phase.ASCENDING:
-                self._enter(Phase.DESCENDING)
-            elif rising < -18 and self.phase is Phase.DESCENDING:
-                self._enter(Phase.ASCENDING)
+            # In the recorded client the camera pins the descending hook near the TOP;
+            # after the depth peak the hook travels DOWN the screen during retrieval.
+            # Raw hook_y was previously interpreted with the opposite sign. Do not let
+            # noisy scene correlation override this observed, sustained turnaround.
+            ascent = rising > 25 and recent[-1]-min(self._depth_hist) >= 120
+            self._ascent_votes = self._ascent_votes+1 if ascent else max(0,self._ascent_votes-1)
+            at = state.meta.get('timestamp')
+            if ascent and self._ascent_since is None:
+                self._ascent_since = at
+            if self._ascent_votes == 0:
+                self._ascent_since = None
+            confirmed = (self._ascent_votes>=PHASE_CONFIRM_TICKS or
+                         self._ascent_votes>=2 and at is not None and self._ascent_since is not None
+                         and at-self._ascent_since>=.25)
+            if confirmed and self.phase is Phase.DESCENDING:
+                self._enter(Phase.ASCENDING)  # one-way: camera scrolling cannot flip it back
 
         if self.phase is Phase.DESCENDING:
             want = self._line_target(state)
             return self._decide(want, "OBSTACLE_AVOIDANCE",
-                                {"corridor": self.last.extras.get("corridor") if self.last else None})
+                                {"descent_risk_score":getattr(self,'_route_risk',None)})
         want = self._fish_target(state)
         if want is None:
             return self._decide(state.line_x, "FISH_TRACK_NO_TARGET", {"fish_seen": len(state.fish)})
-        return self._decide(want, "FISH_HEAD_TRACKING", {"fish_seen": len(state.fish)})
+        return self._decide(want, "INTERCEPT_TARGET", {"fish_seen": len(state.fish)})
 
     def _calibrate(self, state: FishingFrame) -> ServoCommand:
         """Drive the line to two known targets and record what the pixels did.
@@ -219,6 +278,10 @@ class FishingSessionController:
                                     reason=reason, extras=extra)
         if want_line_x is None:
             return ServoCommand(desired_x=None, idle=True, note=reason)
+        if self._smoothed_target is None:
+            self._smoothed_target = float(want_line_x)
+        self._smoothed_target += self.smoothing*(want_line_x-self._smoothed_target)
+        want_line_x = round(self._smoothed_target)
         finger = getattr(self, "_finger_now", None)
         # fall back to proportional control in line space when the servo has not
         # published an actuator position yet (first tick)
@@ -226,7 +289,24 @@ class FishingSessionController:
         if finger is None or observed is None:
             return ServoCommand(desired_x=int(want_line_x), idle=False, note=reason)
         err = want_line_x - observed
-        step = max(-LINE_STEP_PX, min(LINE_STEP_PX, int(round(err * self.line_gain))))
+        step = int(np.clip(round(err*self.line_gain/self.effective_gain),-self.line_step_px,self.line_step_px))
+        step = int(np.clip(step,self._last_delta-8,self._last_delta+8))
+        # Target smoothing must not carry the hook into an already visible hazard.
+        # Compare the next observed-line displacement, never a cached touch point.
+        state = getattr(self, "_state", None)
+        if state is not None and state.hook_y is not None:
+            def risk(x):
+                return sum(max(0, 1-(abs(x-o['x'])-o['w']/2-28)/100)
+                           * max(0, 1-(o['y']-state.hook_y)/350)
+                           for o in state.obstacles if -20 <= o['y']-state.hook_y <= 280)
+            if risk(observed+step*self.effective_gain) > risk(observed):
+                step = 0
+                extra['hazard_brake'] = True
+        if self._last_delta*step < 0:
+            self.direction_reversals += 1
+        if abs(step-self._last_delta)>18:
+            self.large_steering_changes += 1
+        self._last_delta = step
         cmd = ServoCommand(desired_x=int(finger + step), idle=False, note=reason)
         extra["line_err"] = int(err)
         extra["finger_step"] = int(step)
@@ -237,5 +317,9 @@ class FishingSessionController:
             "mode": self.mode, "ticks": self.tick, "phase": self.phase.value,
             "max_depth_px": self._max_depth, "lost_at_end": self._lost_streak,
             "calibration_samples": len(self.calibration),
+            "effective_gain":self.effective_gain,
+            "direction_reversals":self.direction_reversals,
+            "large_steering_changes":self.large_steering_changes,
+            "phase_switch_count":self.phase_switch_count,
             "decision_trace": self.trace[-40:],
         }

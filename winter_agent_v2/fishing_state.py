@@ -197,6 +197,7 @@ class FishingRun:
     level_id: str | None = None
     verifier: Mapping[str, Any] = field(default_factory=dict)
     evidence: str | None = None
+    performance: Mapping[str, Any] = field(default_factory=dict)
 
     # ------------------------------------------------------------------ derived
     @property
@@ -252,6 +253,7 @@ class FishingRun:
             "zero_score_run": self.zero_score_run,
             "verifier": dict(self.verifier),
             "evidence": self.evidence,
+            "performance": dict(self.performance),
         }
 
     @classmethod
@@ -283,6 +285,7 @@ class FishingRun:
             level_id=(str(raw["level_id"]) if raw.get("level_id") else None),
             verifier=raw.get("verifier") if isinstance(raw.get("verifier"), Mapping) else {},
             evidence=(str(raw["evidence"]) if raw.get("evidence") else None),
+            performance=raw.get("performance") if isinstance(raw.get("performance"), Mapping) else {},
         )
 
 

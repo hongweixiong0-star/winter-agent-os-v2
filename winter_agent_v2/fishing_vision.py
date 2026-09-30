@@ -32,6 +32,7 @@ from typing import Any
 
 import cv2
 import numpy as np
+import time
 
 #: x0, y0, x1, y1 of the water body in the native 720x1280 frame.  Below the ice
 #: line and inside the two side rails, so the HUD and the fisherman are excluded.
@@ -252,3 +253,202 @@ def free_corridor(frame: np.ndarray, line_x: int, hook_y: int, *,
         out[name] = int(strip.sum())
     out["best"] = max(("left", "centre", "right"), key=lambda k: out[k])
     return out
+
+
+class FishingVision:
+    """Temporal OpenCV refinement of the existing detector; never predicts a detection.
+
+    Local search is merely an ordering of measured candidates. Missing pixels remain lost.
+    The blue water scene separates end transitions from gameplay lost frames.
+    """
+
+    def __init__(self) -> None:
+        self.last_x = None
+        self.last_hook = None
+        self.last_at = None
+        self.vx = 0.0
+        self.offset = 0.0
+        self.lost_since = None
+        self.lost_streak = 0
+        self.max_lost_streak = 0
+        self.frames = self.gameplay = self.valid = self.lost_frames = 0
+        self.reacquire_count = self.reacquire_success = 0
+        self.reacquire_ms = []
+        self.tracks = {}
+        self.next_id = 1
+        self.track_lost = self.track_created = 0
+        self.first_gameplay_at = self.first_valid_at = None
+        self._previous_scene = None
+        self.kernel = np.ones((5, 5), np.uint8)
+
+    def __call__(self, frame: np.ndarray, *, timestamp: float | None = None) -> FishingFrame:
+        if not isinstance(frame,np.ndarray) or frame.size == 0:
+            return FishingFrame()
+        at = time.monotonic() if timestamp is None else timestamp
+        height, width = frame.shape[:2]
+        roi = (round(width / 6), 0, round(width * .86), height)
+        state = detect_fishing(frame, roi=roi)
+        hsv = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
+        water = cv2.inRange(hsv, (85, 150, 65), (115, 255, 235))
+        interior = water[round(height*.2):round(height*.8), round(width*.3):round(width*.7)]
+        coverage = float(np.mean(interior > 0)) if interior.size else 0.0
+        gameplay = coverage >= .68
+        state.meta.update(gameplay=gameplay, water_fraction=round(coverage, 3), timestamp=at)
+        self.frames += 1
+        if not gameplay:
+            state.line_x = state.hook_x = state.hook_y = None
+            state.found, state.lost = False, True
+            state.meta['scene'] = 'TRANSITION_OR_RESULT'
+            state.fish, state.obstacles = [], []
+            return state
+        self.gameplay += 1
+        if self.first_gameplay_at is None:
+            self.first_gameplay_at = at
+        gray = cv2.cvtColor(frame[:, roi[0]:roi[2]], cv2.COLOR_RGB2GRAY)
+        dark = gray < 60
+        dark[:round(height*.18), :max(0, round(width*.24)-roi[0])] = False
+        counts = dark.sum(axis=0)
+        col, strength, separation = _line_column(np.where(dark, 0, 255).astype(np.uint8))
+        hook_x = state.hook_x if state.hook_area >= 40 else None
+        hook_y = state.hook_y if hook_x is not None else None
+        dt = max(.001, at - self.last_at) if self.last_at is not None else .05
+        predicted = self.last_x + np.clip(self.vx * dt, -80, 80) if self.last_x is not None else None
+        locations = [(col+roi[0], strength, separation, 'REACQUIRE_L2')]
+        for center, radius, rung in ((self.last_x, 24, 'REACQUIRE_L0'),
+                                     (predicted, 70, 'REACQUIRE_L1'),
+                                     (hook_x+self.offset if hook_x is not None else None, 14, 'HOOK_ALIGNMENT')):
+            if center is None:
+                continue
+            lo = max(0, round(center)-radius-roi[0])
+            hi = min(len(counts), round(center)+radius+1-roi[0])
+            if hi <= lo:
+                continue
+            k = lo + int(np.argmax(counts[lo:hi]))
+            locations.append((k+roi[0], int(counts[k]), separation, rung))
+        candidates = []
+        for x, hits, sep, rung in locations:
+            aligned = hook_x is not None and abs(hook_x-x) <= 18
+            jump = abs(x-predicted) if predicted is not None else 0
+            # Real moves can cover more pixels at a low capture rate. A single unrelated
+            # dark peak still cannot replace a stable track without its hook corroboration.
+            bound = max(45, min(140, 900*dt))
+            if hits < LINE_MIN_DARK or (sep < 2.0 and not aligned) or (jump > bound and not aligned):
+                continue
+            score = min(1.0, hits/180)*.45 + min(1.0, sep/5)*.2 + .4*aligned
+            score += .2*max(0, 1-jump/bound)
+            candidates.append((score, x, hits, sep, rung))
+        if candidates:
+            confidence, x, hits, sep, rung = max(candidates)
+            if self.lost_since is not None:
+                self.reacquire_success += 1
+                self.reacquire_ms.append((at-self.lost_since)*1000)
+            if self.last_x is not None and dt <= .25:
+                self.vx = .75*self.vx + .25*np.clip((x-self.last_x)/dt, -900, 900)
+            self.last_x, self.last_at = x, at
+            if hook_x is not None and abs(hook_x-x) <= 18:
+                self.offset = x-hook_x
+                self.last_hook = (hook_x, hook_y)
+            state.line_x, state.line_strength, state.line_separation = x, hits, sep
+            state.hook_x = hook_x if hook_x is not None and abs(hook_x-x) <= 18 else x
+            if hook_y is not None and abs(hook_x-x) <= 18:
+                state.hook_y = hook_y
+            else:
+                pixels = np.flatnonzero(dark[:, x-roi[0]])
+                state.hook_y = int(pixels[-1]) if pixels.size else None
+            state.found, state.lost = True, False
+            state.meta.update(line_confidence=round(confidence,3), reacquire_level=rung)
+            self.valid += 1
+            if self.first_valid_at is None:
+                self.first_valid_at = at
+            self.lost_streak, self.lost_since = 0, None
+        else:
+            state.line_x = state.hook_x = state.hook_y = None
+            state.found, state.lost = False, True
+            if self.lost_since is None:
+                self.lost_since = at
+                self.reacquire_count += 1
+            self.lost_streak += 1
+            self.lost_frames += 1
+            self.max_lost_streak = max(self.max_lost_streak, self.lost_streak)
+            state.meta.update(reacquire_level='REACQUIRE_L3', predicted_line_x=predicted)
+        state.fish, state.obstacles = self._objects(hsv, at, width, height, state)
+        scene = cv2.resize(cv2.cvtColor(frame[round(height*.2):round(height*.92)],cv2.COLOR_RGB2GRAY),
+                           (180,230)).astype(np.float32)
+        if self._previous_scene is not None:
+            (_,dy),response = cv2.phaseCorrelate(self._previous_scene,scene)
+            if response>.12 and abs(dy)<95:
+                state.meta['scene_vy'] = dy*(height*.72/230)/dt
+                state.meta['scene_motion_confidence'] = response
+        self._previous_scene = scene
+        return state
+
+    def _objects(self, hsv, at, width, height, state):
+        # The recorded grey/green fish fall outside the old warm-only HSV mask. Round,
+        # tall pufferfish remain hazards regardless of their position relative to the hook.
+        mask = cv2.bitwise_or(cv2.inRange(hsv, (0,70,80), (40,255,255)),
+                             cv2.inRange(hsv, (150,70,80), (180,255,255)))
+        mask |= cv2.inRange(hsv, (0,0,75), (180,130,245))
+        mask |= cv2.inRange(hsv, (40,70,65), (85,255,210))
+        mask[:round(height*.19)] = 0
+        mask[:, :round(width*.04)] = 0
+        mask[:, round(width*.94):] = 0
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, self.kernel)
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        fish, obstacles = [], []
+        for contour in contours:
+            x,y,w,h = cv2.boundingRect(contour)
+            area = cv2.contourArea(contour)
+            if area < 90 or w < 16 or h < 8 or w > width*.3 or h > height*.17:
+                continue
+            cx,cy = x+w/2,y+h/2
+            if state.hook_x is not None and abs(cx-state.hook_x) < 35 and abs(cy-(state.hook_y or 0)) < 105:
+                continue
+            obj = dict(x=round(cx),y=round(cy),w=w,h=h,area=int(area),left=x,top=y)
+            if h >= height*.045 and w/h < 1.55:
+                obstacles.append({**obj, 'confidence':.85, 'kind':'ROUND_HAZARD'})
+            elif 1.45 <= w/h <= 5.5 and h <= height*.075:
+                fish.append({**obj, 'confidence':.75, 'kind':'FISH_CANDIDATE'})
+        used, flow = set(), []
+        for obj in fish:
+            candidates = [(abs(t['x']+t['vx']*(at-t['last_seen'])-obj['x'])+
+                           abs(t['y']+t['vy']*(at-t['last_seen'])-obj['y']), key,t)
+                          for key,t in self.tracks.items() if key not in used]
+            distance,key,track = min(candidates,default=(1e9,None,None))
+            if track is None or distance > 100:
+                key = self.next_id
+                self.next_id += 1
+                self.track_created += 1
+                track = dict(vx=0.,vy=0.,age=0,last_seen=at,x=obj['x'],y=obj['y'])
+            else:
+                dt = max(.01, at-track['last_seen'])
+                vy = (obj['y']-track['y'])/dt
+                flow.append(vy)
+                track['vx'] = .65*track['vx']+.35*(obj['x']-track['x'])/dt
+                track['vy'] = .65*track['vy']+.35*vy
+            track.update(obj, age=track['age']+1, last_seen=at, misses=0)
+            self.tracks[key] = track
+            used.add(key)
+            obj.update(fish_id=key,vx=track['vx'],vy=track['vy'],age=track['age'],last_seen=at)
+        for key in list(self.tracks):
+            if key in used:
+                continue
+            self.tracks[key]['misses'] = self.tracks[key].get('misses',0)+1
+            if self.tracks[key]['misses'] > 3:
+                self.track_lost += 1
+                del self.tracks[key]
+        state.meta['scene_vy'] = float(np.median(flow)) if len(flow)>=2 else None
+        state.meta['fish_detection_count'] = len(fish)
+        return fish, obstacles
+
+    def summary(self):
+        return {'gameplay_frames':self.gameplay,'transition_frames':self.frames-self.gameplay,
+                'control_coverage':self.valid/max(1,self.gameplay),
+                'lost_frame_ratio':self.lost_frames/max(1,self.gameplay),
+                'max_lost_streak':self.max_lost_streak,
+                'reacquire_count':self.reacquire_count,'reacquire_success':self.reacquire_success,
+                'reacquire_success_rate':self.reacquire_success/self.reacquire_count if self.reacquire_count else None,
+                'reacquire_latency_ms':float(np.mean(self.reacquire_ms)) if self.reacquire_ms else None,
+                'fish_track_lost_rate':self.track_lost/max(1,self.track_created),
+                'fish_track_duration_max':max((t['age'] for t in self.tracks.values()),default=0),
+                'first_valid_frame_ms':((self.first_valid_at-self.first_gameplay_at)*1000
+                    if self.first_valid_at is not None and self.first_gameplay_at is not None else None)}

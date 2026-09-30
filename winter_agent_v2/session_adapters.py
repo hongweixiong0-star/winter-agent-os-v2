@@ -41,7 +41,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Iterable, Mapping
 
 from .fishing_session import FishingSessionController
-from .fishing_vision import detect_fishing
+from .fishing_vision import detect_fishing, FishingVision
 from .rally import (
     RallyTarget,
     live_rally_join_point,
@@ -362,6 +362,7 @@ class FishingSessionAdapter(SessionAdapter):
         # Injected for tests; the defaults are the real measured objects.
         self._controller = controller
         self._servo_config = servo_config
+        self._fishing_vision = FishingVision()
         self.stage = STAGE_HOME
         self.casts = 0
         self.casts_target = 1
@@ -393,6 +394,12 @@ class FishingSessionAdapter(SessionAdapter):
         frame = host.capture()
         if frame is None:
             return None
+        if self.stage is STAGE_CONTROLLING:
+            # The entry counters were already read. Don't spend the countdown doing a
+            # second full OCR sweep; the realtime host handles visible start prompts.
+            return FishingDomain(frame=frame)
+        if self.stage is STAGE_LEAVING and self._fishing_vision(frame).meta.get('gameplay'):
+            return FishingDomain(frame=frame)  # no OCR while the level is still running
         text = _text(host, frame)
         domain = FishingDomain(frame=frame, text=text)
         domain.on_home = FISHING_HOME_WORD in text
@@ -491,10 +498,10 @@ class FishingSessionAdapter(SessionAdapter):
             config = ServoConfig(max_session_duration_s=90.0, **dict(self.SERVO_DEFAULTS))
 
         def detector(frame: Any) -> Any:
-            height, width = frame.shape[:2]
-            state = detect_fishing(frame, roi=(round(width / 6), 0, round(width * .86), height))
+            state = self._fishing_vision(frame)
             controller.set_frame(frame)
             return state
+        detector.vision = self._fishing_vision
 
         control = RealtimeControl(
             detector=detector, controller=controller, config=config,

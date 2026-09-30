@@ -488,7 +488,7 @@ class LiveRuntimeSessionHost:
                 points_before=fields.get("points_before"), points_after=fields.get("points_after"),
                 depth_m=fields.get("depth_m"), duration_s=servo.get("duration_s"),
                 control_hz=servo.get("control_hz"), verifier=fields.get("verifier") or {},
-                evidence=str(self.runtime.capture_dir))
+                evidence=str(self.runtime.capture_dir), performance=servo.get('performance') or {})
             store.record_run(run)
             store.observe(role_key, role_id=role_id, bait_current=after,
                           points_total=fields.get("points_after"), now=now)
@@ -667,6 +667,10 @@ class LiveRuntimeSessionHost:
         seen: set[str] = set()
         for _ in range(2):
             frame = self.capture()
+            if control.start_signal is not None:
+                state = control.detector(frame)
+                if control.start_signal(state):
+                    return  # already live: no blocking OCR sweep before taking control
             hits = [token for token in self.ocr(frame)
                     if token.get("text") in control.start_words and token.get("text") not in seen]
             if len(hits) != 1 or not self.lease_ok():
@@ -692,7 +696,7 @@ class LiveRuntimeSessionHost:
                 ready = False
             if ready:
                 return True
-            self.sleep(0.1)
+            self.sleep(0.02)
         return False
 
     def _drive(self, control: RealtimeControl, device: Any) -> Any:
@@ -706,10 +710,19 @@ class LiveRuntimeSessionHost:
 
         holder: dict[str, Any] = {"session": None}
         missing = {"ticks": 0}
+        scenes = {"ticks": 0}
+        trace, samples = [], []
+        drive_started = time.monotonic()
         limit = max(1, int(control.lost_ticks_to_end or 0))
 
         def detector(frame: Any) -> Any:
             state = control.detector(frame)
+            if getattr(state, 'meta', {}).get('gameplay') is False:
+                scenes['ticks'] += 1
+            else:
+                scenes['ticks'] = 0
+            if scenes['ticks'] >= 3 and holder['session'] is not None:
+                holder['session'].abort('LEVEL_ENDED_SCENE_TRANSITION')
             if _target_visible(state):
                 missing["ticks"] = 0
             else:
@@ -720,11 +733,46 @@ class LiveRuntimeSessionHost:
                         session.abort(f"TARGET_GONE_FOR_{missing['ticks']}_TICKS")
             return state
 
-        session = VisualServoSession(device, config=control.config)
+        def on_frame(row, frame, state):
+            decision = getattr(control.controller, 'last', None)
+            trace.append({**row.to_dict(),
+                          'at':row.at,
+                          **(state.to_dict() if hasattr(state,'to_dict') else {}),
+                          'gameplay':getattr(state,'meta',{}).get('gameplay'),
+                          'phase':getattr(decision,'phase',None),
+                          'desired_line_x':getattr(decision,'desired_line_x',None)})
+            if row.index % 20 == 0 and len(samples)<60:
+                samples.append((row.index, frame.copy()))
+        session = VisualServoSession(device, config=control.config, on_frame=on_frame)
         holder["session"] = session
         try:
-            return session.run(detector, control.controller,
-                               max_duration_s=float(control.max_seconds))
+            report = session.run(detector, control.controller,
+                                 max_duration_s=float(control.max_seconds))
+            vision = getattr(control.detector,'vision',None)
+            performance = vision.summary() if vision is not None else {}
+            summary = getattr(control.controller,'summary',None)
+            if callable(summary):
+                performance.update({k:v for k,v in summary().items() if k!='decision_trace'})
+            moved = next((r for r in trace if r.get('moved')),None)
+            first_valid = getattr(vision,'first_valid_at',None) or drive_started
+            performance['first_effective_control_ms'] = ((moved['at']-first_valid)*1000 if moved else None)
+            performance['fish_caught'] = performance['collision_count'] = performance['shield_used'] = None
+            gameplay = [r for r in trace if r.get('gameplay') is not False]
+            performance['control_coverage'] = sum(not r.get('lost') for r in gameplay)/max(1,len(gameplay))
+            performance['idle_frame_ratio'] = sum(not r.get('moved') for r in gameplay)/max(1,len(gameplay))
+            performance['active_steering_ratio'] = sum(bool(r.get('moved')) for r in gameplay)/max(1,len(gameplay))
+            report.performance = performance
+            try:
+                folder = self.runtime.capture_dir / f'fishing_performance_{self.binding.index:03d}'
+                folder.mkdir(parents=True,exist_ok=True)
+                (folder/'timeline.json').write_text(json.dumps({'performance':performance,'frames':trace},
+                    ensure_ascii=False,indent=1),encoding='utf-8')
+                from PIL import Image
+                for index, frame in samples:
+                    Image.fromarray(frame).save(folder/f't{index:05d}.png')
+            except Exception as exc:
+                self.note('fishing_timeline_write_failed',reason=type(exc).__name__)
+            return report
         except Exception as exc:  # noqa: BLE001
             # The servo releases the finger on every exit path it owns; what it cannot do is
             # return a report from a frame it failed to read, so the failure is shaped as one.
@@ -749,6 +797,8 @@ class LiveRuntimeSessionHost:
                 payload[name] = getattr(report, name, None)
         payload.pop("timeline", None)
         payload.pop("touch_sessions", None)
+        if hasattr(report,'performance'):
+            payload['performance'] = report.performance
         return payload
 
     # ---- STEP_PRINTED_TAP ----------------------------------------------------
