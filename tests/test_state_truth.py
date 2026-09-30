@@ -267,11 +267,15 @@ class TheControlCentreIsWired(unittest.TestCase):
 
         self.panel = control_panel
 
-    def test_the_top_bar_is_eight_cells_of_one_vocabulary(self):
+    def test_the_top_bar_is_nine_cells_of_one_vocabulary(self):
         keys = [key for _, key in self.panel.SYSTEM_INDICATORS]
-        self.assertEqual(len(keys), 8, keys)
-        self.assertEqual(len(set(keys)), 8, "two cells sharing a value is a copy that drifts")
+        self.assertEqual(len(keys), 9, keys)
+        self.assertEqual(len(set(keys)), 9, "two cells sharing a value is a copy that drifts")
         self.assertIn("clock", keys)
+        # The ninth cell (operator directive 2026-09-30): one local model became a *runtime*
+        # component when it took over the UNKNOWN-page question, so whether it is up is a fact
+        # about V2 and the operator asked to see it.  It is still one word from the same six.
+        self.assertIn("dot_model", keys)
 
     def test_every_indicator_starts_unconfirmed(self):
         """A bar that is green before anything is read lies about its only job."""

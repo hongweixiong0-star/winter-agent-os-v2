@@ -1484,11 +1484,18 @@ DOT_TEXT: dict[str, str] = {
     "warn": DOT_WARN, "bad": DOT_BAD, "unknown": DOT_UNKNOWN,
 }
 
-# label -> the status value that drives it.  Eight cells and no more: the top bar answers
-# "is it OK", and the detail belongs one click down.
+# label -> the status value that drives it.  One cell per thing an operator must be able to
+# disbelieve at a glance: the top bar answers "is it OK", and the detail belongs one click
+# down.  Nine cells since 2026-09-30, and the ninth is the exception that proves the old
+# rule -- the frozen four layers said "models = replaceable compute *inside WorkBuddy*,
+# never a V2 component", which was true while the only local model belonged to the
+# development platform.  The operator's 2026-09-30 directive made one model a *runtime*
+# component: UI-Venus-2-9B answers the UNKNOWN-page question, so whether it is up is a
+# fact about V2 and it gets a cell.  It is still one word from the same six.
 SYSTEM_INDICATORS: tuple[tuple[str, str], ...] = (
     ("V2", "dot_v2"), ("MAA", "dot_maa"), ("MuMu", "dot_mumu"), ("游戏", "dot_game"),
-    ("AUTO", "dot_auto"), ("WorkBuddy", "dot_wb"), ("预载", "dot_boot"), ("时间", "clock"),
+    ("AUTO", "dot_auto"), ("WorkBuddy", "dot_wb"), ("本地模型", "dot_model"),
+    ("预载", "dot_boot"), ("时间", "clock"),
 )
 
 # Twelve flat tabs became unreadable once every subsystem got its own page, so they are
@@ -1519,6 +1526,12 @@ CATALOG_PATH = ROOT / "knowledge/game/capability_catalog.json"
 EPISODES_PATH = ROOT / "learning/episodes.jsonl"
 BACKEND_LEDGER_PATH = ROOT / "learning/executor_backend.jsonl"
 MODEL_STATS_PATH = ROOT / "learning/workbuddy_model_stats.jsonl"
+# The one runtime local model's two ledgers.  The name and the endpoint come from
+# ``config/v2.json``; liveness comes from the service's own ``/health``; what it last
+# decided comes from these files.  Nothing here owns state.
+LOCAL_GUI_LEDGER_PATH = ROOT / "learning/local_gui_model_calls.jsonl"
+LOCAL_GUI_PLAN_LEDGER_PATH = ROOT / "learning/local_planner_steps.jsonl"
+LOCAL_GUI_CONFIG_PATH = ROOT / "config/v2.json"
 
 MAA_NORMAL, MAA_ADB_FALLBACK, MAA_BROKEN = "● 正常", "● 降级ADB", "● 不可用"
 MAA_UNINITIALISED = "● 未初始化"
@@ -2631,17 +2644,17 @@ def status_defaults() -> dict[str, str]:
         # first audit pass the window must admit it does not know, not print a placeholder
         # that reads like an observation.
         "role": PENDING, "role_state": "", "truth": "",
-        # The eight top-bar indicators, one word each from one vocabulary
+        # The top-bar indicators, one word each from one vocabulary
         # (``state_truth.health_of``).  They start at 未确认 rather than at a plausible
         # "正常": a bar that is green before anything has been read is lying about the
         # only thing it exists to say.
         "dot_v2": DOT_UNKNOWN, "dot_maa": DOT_UNKNOWN, "dot_mumu": DOT_UNKNOWN,
         "dot_game": DOT_UNKNOWN, "dot_auto": DOT_UNKNOWN, "dot_wb": DOT_UNKNOWN,
-        "dot_boot": DOT_UNKNOWN,
+        "dot_model": DOT_UNKNOWN, "dot_boot": DOT_UNKNOWN,
         # The new panels' own lines.
         "why_idle": PENDING, "executor_mix": PENDING, "progress": PENDING,
         "bootstrap": PENDING, "coverage": PENDING, "attention": "暂无需要关注的问题",
-        "watchdog": PENDING,
+        "watchdog": PENDING, "local_model": PENDING, "local_model_last": PENDING,
         # §八's closed-loop card: the eight cells, the trace and the current breakpoint, all
         # from ``unattended_closure``.  And §一's acceptance, which the window runs itself so
         # the operator never has to execute a second command.
@@ -2656,6 +2669,226 @@ def status_defaults() -> dict[str, str]:
         "control_plane": PENDING, "control_plane_loaded": PENDING, "control_plane_disk": PENDING,
         "stats": "本次启动：0 轮 · 0 动作",
     }
+
+
+# ------------------------------------------------------- the one runtime local model
+#
+# Operator directive 2026-09-30: V2 has exactly one local model (UI-Venus-2-9B Q4_K_M) and the
+# window has to answer three questions without the operator opening a log --
+# *which* model, *is it up*, and *what did it last decide*.  Everything below is a derivation
+# from artifacts that already exist, like the rest of this section: the name comes from
+# ``config/v2.json``'s ``local_planner``, liveness from the service's own ``/health``, and the
+# last call from the ledger the client writes.  Nothing here owns state, so a wrong number is
+# fixed where it came from.
+#
+# Two boundaries are encoded in what is deliberately *not* shown:
+#
+# * a known Skill's work is never dressed up as model reasoning.  This line only ever cites
+#   rows the model client itself wrote; a step that a Skill handled has no row here at all.
+# * a model's *claim* is never shown as a verified outcome.  The verdict column is filled
+#   from the verifier's own record or it says 未验证 -- the local model cannot certify itself.
+#: The single source string the runtime's advisor stamps on the rows it writes.  Duplicated as a
+#: literal rather than imported so the panel does not pull the planner into its process just to
+#: compare a string; ``tests/test_local_planner.py`` pins the two together, because a silent
+#: divergence here would make the window show *no* last decision while the ledger was full of them.
+LOCAL_GUI_SOURCE = "LOCAL_GUI_MODEL"
+LOCAL_GUI_MODEL_UNSET = "未读取"
+
+
+def local_gui_model_config(root: Path | None = None) -> dict[str, Any]:
+    """``config/v2.json``'s ``local_planner`` section, or ``{}``.
+
+    Read here rather than imported from the runtime so that turning the model off in the config
+    changes this cell with no code edit -- and so the panel cannot disagree with the file the
+    operator actually edits.
+    """
+    try:
+        payload = json.loads((root or ROOT).joinpath("config/v2.json").read_text(
+            encoding="utf-8", errors="replace"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(payload, Mapping):
+        return {}
+    section = payload.get("local_planner")
+    return dict(section) if isinstance(section, Mapping) else {}
+
+
+def _last_ledger_row(path: Path) -> dict[str, Any]:
+    """The last parseable record of a JSONL ledger, or ``{}``.
+
+    Walks backwards on purpose.  A ledger that is missing, empty or truncated mid-write must
+    say *nothing*; trusting the final line would turn a half-written row into a fabricated
+    "last call", which is the one thing a status line may not do.
+    """
+    try:
+        raw = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {}
+    for line in reversed(raw.strip().splitlines()):
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, Mapping):
+            return dict(row)
+    return {}
+
+
+def local_gui_model_line(root: Path | None = None) -> str:
+    """Which model, under which provider and endpoint -- the operator's first question."""
+    planner = local_gui_model_config(root)
+    if not planner:
+        return f"{LOCAL_GUI_MODEL_UNSET}（config/v2.json 里没有 local_planner 段）"
+    if not planner.get("enabled", False):
+        return "已停用（local_planner.enabled=false）· UNKNOWN 页面按既有规则降级，AUTO 不受影响"
+    name = str(planner.get("model") or "未命名")
+    quant = str(planner.get("quantization") or "").strip()
+    provider = str(planner.get("provider") or "").strip()
+    endpoint = str(planner.get("endpoint") or "").strip()
+    context = planner.get("context")
+    steps = planner.get("max_steps_per_run")
+    bits = [f"{name} {quant}".strip()]
+    if provider:
+        bits.append(provider)
+    if endpoint:
+        bits.append(endpoint)
+    if context:
+        bits.append(f"ctx {context}")
+    if steps:
+        bits.append(f"预算 {steps} 步/轮")
+    bits.append("multimodal（每次调用带当前截图）" if planner.get("multimodal") else "纯文本")
+    return " · ".join(bits)
+
+
+def local_gui_model_last_call(root: Path | None = None) -> str:
+    """Goal / page / decision / target / latency / screenshot proof, from the client's ledger.
+
+    The screenshot fields are printed because they are the only *measurable* answer to "did the
+    model really see the frame": ``image_sent`` plus the byte count and digest come from the
+    request the client built, so a text-only regression shows up here as a missing image rather
+    than as a plausible-looking plan.
+    """
+    planner = local_gui_model_config(root)
+    if planner and not planner.get("enabled", False):
+        return "已停用，不产生调用"
+    row = _last_ledger_row((root or ROOT) / "learning/local_gui_model_calls.jsonl")
+    if not row:
+        return "尚无调用记录（模型只在 UNKNOWN 页面被问到，已知 Skill 不调用它）"
+    when = str(row.get("recorded_at") or "")[:19].replace("T", " ")
+    purpose = str(row.get("purpose") or "?")
+    ok = row.get("ok")
+    verdict = "成功" if ok else f"失败 {str(row.get('error') or '')[:60]}"
+    try:
+        latency = f"{float(row.get('latency_ms') or 0.0) / 1000:.1f}s"
+    except (TypeError, ValueError):
+        latency = "?"
+    bits = [when, f"{purpose}", verdict, latency]
+    if row.get("image_sent"):
+        try:
+            kib = float(row.get("image_bytes") or 0) / 1024
+            bits.append(f"截图 {kib:.0f} KiB ({str(row.get('image_digest') or '')[:8]})")
+        except (TypeError, ValueError):
+            bits.append("截图 已发送")
+    else:
+        bits.append("无截图")
+    if row.get("element_count") is not None:
+        bits.append(f"元素表 {row.get('element_count')}")
+    # The decision comes from the *planner's* ledger, which is a separate file because it
+    # records a separate fact: what the answer was.  The call ledger only knows that a call
+    # happened and what it cost.  A row written by a source this build no longer runs (the
+    # retired provider) is not a "last decision" and must not be shown as one.
+    plan = _last_plan_row((root or ROOT) / LOCAL_GUI_PLAN_LEDGER_PATH)
+    if plan:
+        decision = str(plan.get("decision") or "").strip()
+        target = str(plan.get("target_element_id") or plan.get("semantic_target") or "").strip()
+        for label, value in (("Goal", plan.get("goal")), ("页面", plan.get("page_key")),
+                             ("Decision", decision), ("Target", target)):
+            if str(value or "").strip():
+                bits.append(f"{label} {value}")
+    # The verdict, and only ever the verifier's.  The local model cannot certify its own step:
+    # a plan with no settlement says 未验证 rather than borrowing the plan's own confidence.
+    bits.append(_settlement_line((root or ROOT) / LOCAL_GUI_PLAN_LEDGER_PATH))
+    return " · ".join(str(bit) for bit in bits if str(bit).strip())
+
+
+def _last_plan_row(path: Path) -> dict[str, Any]:
+    """The last *proposal* row this build wrote, or ``{}``.
+
+    Rows from the retired provider are skipped rather than displayed.  Measured 2026-09-30: the
+    first version accepted any row carrying a ``decision`` key, and the ledger's newest row at that
+    moment was an old provider's timeout -- so the window's "最近调用" line claimed the model had
+    been asked about ``BEAST_HUNT``, which it never was.  Attribution has to be by source, and a row
+    whose source this build does not run is not a last decision; it is history.
+    """
+    try:
+        raw = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {}
+    for line in reversed(raw.strip().splitlines()):
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(row, Mapping) or row.get("record") == "outcome":
+            continue
+        if str(row.get("source") or "") == LOCAL_GUI_SOURCE:
+            return dict(row)
+    return {}
+
+
+def _settlement_line(path: Path) -> str:
+    """``Verifier PASS/FAIL/未判定`` from the newest settlement row, or 未验证 when there is none."""
+    try:
+        raw = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return "Verifier 未验证"
+    for line in reversed(raw.strip().splitlines()):
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(row, Mapping) or row.get("record") != "outcome":
+            continue
+        ok = row.get("verifier_ok")
+        word = "Verifier PASS" if ok else "Verifier FAIL" if ok is False else "Verifier 未判定"
+        skill = str(row.get("skill") or "").strip()
+        return f"{word}（{skill}）" if skill else word
+    return "Verifier 未验证"
+
+
+def local_gui_model_truth(root: Path | None = None, *, online: bool | None = None):
+    """A ``TruthValue`` for the model cell, from the config plus the service's own answer.
+
+    ``online is None`` means "not probed yet" and stays 未确认, like every other cell before its
+    first read.  A configured-but-unreachable model is **not** 异常: the runtime is built to
+    defer the UNKNOWN and keep the AUTO round going, so 等待 is the honest word, and the note
+    says which of the two situations it is.
+    """
+    from winter_agent_v2.state_truth import TruthValue, UNKNOWN, LIVE_OBSERVED, PERSISTED
+
+    planner = local_gui_model_config(root)
+    source = "config/v2.json:local_planner + 服务 /health"
+    if not planner:
+        return TruthValue(name="local_model", value="未配置", status=UNKNOWN, source=source,
+                          note="config/v2.json 里没有 local_planner 段")
+    name = str(planner.get("model") or "未命名")
+    quant = str(planner.get("quantization") or "").strip()
+    if not planner.get("enabled", False):
+        return TruthValue(name="local_model", value="已停用", status=PERSISTED, source=source,
+                          note="local_planner.enabled=false：模型不是运行时依赖，"
+                               "UNKNOWN 页面按既有规则降级，已知 Skill 完全不受影响")
+    if online is None:
+        return TruthValue(name="local_model", value=f"{name} {quant}".strip(), status=UNKNOWN,
+                          source=source, note="已配置，但服务还没被探测过")
+    if online:
+        return TruthValue(name="local_model", value=f"{name} {quant}".strip(),
+                          status=LIVE_OBSERVED, source=source,
+                          note=f"{planner.get('provider', '')} 服务在线 · "
+                               f"{planner.get('endpoint', '')}")
+    return TruthValue(name="local_model", value=f"{name} {quant}".strip() + "（离线）",
+                      status=UNKNOWN, source=source,
+                      note="服务没有应答。不是故障：UNKNOWN 会 defer，AUTO 继续跑其它 Goal；"
+                           f"端点 {planner.get('endpoint', '')}")
 
 
 class PanelProbes:
@@ -2701,6 +2934,10 @@ class PanelProbes:
         self._soak_error: str = ""
         self._device: dict[str, Any] = {"ok": None, "status": None, "error": "", "checked_at": ""}
         self._truth: dict[str, Any] = {"ok": None, "report": None, "checked_at": ""}
+        # The one local GUI model's service.  Reachability is a *different* question from
+        # configuration -- the same distinction the gateway probe exists to keep -- so it gets
+        # its own poll and its own record rather than being inferred from the config file.
+        self._local_model: dict[str, Any] = {"online": None, "reason": "", "checked_at": ""}
         self._watch: str = ""
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
@@ -2763,6 +3000,15 @@ class PanelProbes:
         with self._lock:
             return str(self._device.get("error") or "")
 
+    def local_model(self) -> dict[str, Any]:
+        """The local-model probe's whole record: "not probed" and "probe failed" stay distinct."""
+        with self._lock:
+            return dict(self._local_model)
+
+    def local_model_truth(self) -> Any:
+        """The ``TruthValue`` for the model cell, graded from the probe's own answer."""
+        return local_gui_model_truth(self.root, online=self.local_model().get("online"))
+
     def truth(self) -> dict[str, Any]:
         """The last truth-source audit, or an empty record before the first pass.
 
@@ -2793,12 +3039,49 @@ class PanelProbes:
         while not self._stop.is_set():
             self._poll_gateway()
             self._poll_device()
+            # Slower than the gateway: whether a model answers changes on the scale of a start
+            # or a crash, not of a few seconds, and the window must not re-probe for a number
+            # nobody re-reads.
+            if passes % 3 == 0:
+                self._poll_local_model()
             if passes % max(1, self.TRUTH_EVERY) == 0:
                 self._poll_truth()
             passes += 1
             self._stop.wait(self.GATEWAY_INTERVAL)
 
     # -- the probes --------------------------------------------------------
+
+    def _poll_local_model(self) -> None:
+        """Ask the local model's service whether it is up.  Its ``/health``, not its config.
+
+        Configuration and reachability are two questions, and the gateway probe's own history is
+        the reason they are kept apart: inferring one from the other is what made the top bar say
+        异常 about a gateway that was answering.  A model that is configured but silent is a
+        reported state, not an exception -- the runtime defers the UNKNOWN and keeps the round
+        going, so the honest word here is 等待 rather than 异常.
+
+        Short timeout on purpose: this shares a machine with the emulator and with MAA, and a
+        probe that blocks the probe thread is a window that stops updating.
+        """
+        import urllib.request
+
+        state: dict[str, Any] = {"online": None, "reason": "",
+                                 "checked_at": datetime.now().strftime("%H:%M:%S")}
+        planner = local_gui_model_config(self.root)
+        endpoint = str(planner.get("endpoint") or "").rstrip("/")
+        if not planner.get("enabled", False) or not endpoint:
+            state["reason"] = "本机没有启用的本地 GUI 模型"
+        else:
+            try:
+                with urllib.request.urlopen(endpoint + "/health", timeout=3.0) as answer:
+                    state["online"] = int(getattr(answer, "status", 0)) == 200
+                    if not state["online"]:
+                        state["reason"] = f"HTTP {getattr(answer, 'status', '?')}"
+            except Exception as exc:  # noqa: BLE001 - a poll never reaches the UI as an exception
+                state["online"] = False
+                state["reason"] = type(exc).__name__
+        with self._lock:
+            self._local_model = state
 
     def _poll_truth(self) -> None:
         """Every state the window claims to know -- with its source, or saying it does not.
@@ -4766,7 +5049,16 @@ class ControlPanel:
         ttk.Label(evidence, text="顶部状态的真实依据", style="Section.TLabel", background=PANEL).grid(row=0, column=0, columnspan=2, sticky="w")
         self.maa_note_var = tk.StringVar(value=PENDING)
         self.device_note_var = tk.StringVar(value=PENDING)
-        for index, (label, var) in enumerate((("MAA", self.maa_note_var), ("MuMu", self.device_note_var)), 1):
+        # The local model's two lines (operator directive 2026-09-30).  They belong with the other
+        # header cells' evidence because they answer the same question one click down -- which
+        # model, is it up, and what did it last decide -- and the verdict column is the verifier's
+        # record, never the model's own confidence.  A step a known Skill handled has no row here
+        # at all, so no Skill is ever dressed up as model reasoning.
+        for index, (label, var) in enumerate((
+            ("MAA", self.maa_note_var), ("MuMu", self.device_note_var),
+            ("本地模型", self.values["local_model"]),
+            ("最近调用", self.values["local_model_last"]),
+        ), 1):
             ttk.Label(evidence, text=label, style="Muted.TLabel", background=PANEL, width=8).grid(row=index, column=0, sticky="w", pady=2)
             ttk.Label(evidence, textvariable=var, background=PANEL, wraplength=1000, justify="left").grid(row=index, column=1, sticky="w", pady=2)
         self.log = tk.Text(tab, bg="#070b10", fg="#bccbda", relief="flat", font=("Consolas", 9), padx=12, pady=10, wrap="word", height=14); self.log.pack(fill="both", expand=True)
@@ -4986,6 +5278,12 @@ class ControlPanel:
         # Gateway health, **not** the job's last known state (operator P0-3).  A job that
         # says WORKING says nothing about whether anything is reachable.
         self._set_health("dot_wb", report.by_name("gateway_health"))
+        # The one local model (operator directive 2026-09-30).  Graded from the service's own
+        # answer plus the config, never from whether a plan happened to be produced: a model that
+        # is up but was not needed this cycle is still up.
+        self._set_health("dot_model", self.probes.local_model_truth())
+        self.values["local_model"].set(local_gui_model_line(ROOT))
+        self.values["local_model_last"].set(local_gui_model_last_call(ROOT))
         self._workbuddy = report.by_name("workbuddy_job")
         self._gateway_value = report.by_name("gateway_health")
         # The gateway detail line cites AUTO's real state rather than asserting it is fine.

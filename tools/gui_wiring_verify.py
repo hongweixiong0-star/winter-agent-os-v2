@@ -71,6 +71,12 @@ def _stub() -> SimpleNamespace:
         def device_state(self) -> dict[str, Any]:
             return {"ok": None, "status": None}
 
+        def local_model_truth(self):
+            # ``online=None`` on purpose: this verifier must not depend on whether a model
+            # service happens to be listening while the test runs.  The cell's grading logic is
+            # exercised for real; only the socket answer is held at "not probed".
+            return panel.local_gui_model_truth(ROOT, online=None)
+
     stub = SimpleNamespace(values=values, probes=Probes(), indicators={},
                            vision_debug=None, preview_mode=_Var())
     # The helpers the refresh calls, bound to this stub.  Bound *unbound* on purpose: the
