@@ -10,6 +10,42 @@ def _runtime(mode: str, route: str) -> LiveRuntime:
     return runtime
 
 
+def test_exact_goal_scope_excludes_other_training_camps_and_research():
+    runtime = _runtime('DEVELOPMENT_VALIDATION', 'TRAIN')
+    runtime.validation_scope = {'goal_id': 'LANCER_CAMP_TRAINING'}
+    goals = [SimpleNamespace(goal_id=g) for g in ('LANCER_CAMP_TRAINING',
+              'SHIELD_CAMP_TRAINING', 'KEEP_RESEARCH_PRODUCTIVE')]
+    assert [g.goal_id for g in runtime._focus_validation_goals(goals)] == ['LANCER_CAMP_TRAINING']
+
+
+def test_start_rally_target_cannot_be_satisfied_by_join_or_donation():
+    runtime = _runtime('DEVELOPMENT_VALIDATION', '')
+    runtime.validation_scope = {'target_skill': 'START_RALLY'}
+    goals = [SimpleNamespace(goal_id=g) for g in ('PARTICIPATE_BEAR', 'ALLIANCE_ROUTINE')]
+    assert [g.goal_id for g in runtime._focus_validation_goals(goals)] == ['PARTICIPATE_BEAR']
+    assert runtime._validation_skill_allowed('START_RALLY')
+    assert runtime._validation_skill_allowed('OPEN_BEAR_RALLY_LIST')
+    assert not runtime._validation_skill_allowed('JOIN_RALLY')
+    assert not runtime._validation_skill_allowed('ALLIANCE_TECH_CONTRIBUTE')
+
+
+def test_unavailable_concrete_fishing_target_does_not_synthesize_readonly_completion():
+    runtime = _runtime('DEVELOPMENT_VALIDATION', 'FISHING')
+    runtime.validation_scope = {'target_skill': 'PLAY_NORMAL_FISHING_LEVEL'}
+    assert runtime._focus_validation_goals([]) == []
+
+
+def test_scope_role_mismatch_and_production_isolation():
+    goals = [SimpleNamespace(goal_id='KEEP_RESEARCH_PRODUCTIVE')]
+    runtime = _runtime('DEVELOPMENT_VALIDATION', '')
+    runtime.role_id = 'A'
+    runtime.validation_scope = {'role_id': 'B'}
+    assert runtime._focus_validation_goals(goals) == []
+    runtime.execution_mode = 'PRODUCTION'
+    assert runtime._focus_validation_goals(goals) is goals
+    assert runtime._validation_skill_allowed('JOIN_RALLY')
+
+
 def test_validation_focus_keeps_all_goals_on_requested_route():
     goals = [
         SimpleNamespace(goal_id="SHIELD_CAMP_TRAINING"),

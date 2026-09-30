@@ -553,6 +553,7 @@ class LiveRuntime:
         #: deployment decision injected from where the config is read.  ``None`` keeps the
         #: Scheduler's own defaults, which are the directive's first-version parameters.
         role_session_policy: Mapping[str, Any] | None = None,
+        validation_scope: Mapping[str, str] | None = None,
     ) -> None:
         self.device = device
         self.latency_trace_path = Path(latency_trace_path) if latency_trace_path else None
@@ -689,6 +690,7 @@ class LiveRuntime:
         # intentions.  ``PRODUCTION`` is the default, which is what an AUTO cycle is.
         self.execution_mode = str(execution_mode or "PRODUCTION")
         self.validation_focus_route = str(getattr(self.brain, 'current_goal', '') or '')
+        self.validation_scope = dict(validation_scope or {})
         self.trace_id = str(trace_id or "")
         self.job_id = str(job_id or "")
         self.capability = str(capability or "")
@@ -856,26 +858,59 @@ class LiveRuntime:
         return self.capability_gate
 
     def _validation_route_scope_active(self) -> bool:
-        return self.execution_mode == 'DEVELOPMENT_VALIDATION' and bool(self.validation_focus_route)
+        return self.execution_mode == 'DEVELOPMENT_VALIDATION' and bool(
+            self.validation_focus_route or getattr(self, 'validation_scope', {}))
 
     def _focus_validation_goals(self, goals):
         """Bound a leased development probe; production keeps its full global board."""
         if not self._validation_route_scope_active():
             return goals
         from .goal_library import route_for
-        if self.validation_focus_route == 'DAILY':
+        scope = getattr(self, 'validation_scope', {})
+        requested_role = scope.get('role_id')
+        if requested_role and str(getattr(self, 'role_id', '')) != requested_role:
+            return []  # A validation may never borrow another role's live state.
+        requested_route = scope.get('route') or self.validation_focus_route
+        if scope.get('goal_id'):
+            goals = [g for g in goals if g.goal_id == scope['goal_id']]
+        if scope.get('capability_id') or scope.get('target_skill'):
+            from .goal_library import GOAL_CAPABILITY_MAP
+            try:
+                definitions = json.loads((Path(__file__).resolve().parents[1] / GOAL_CAPABILITY_MAP).read_text(encoding='utf-8'))['goals']
+            except (OSError, ValueError, KeyError):
+                return []  # Missing mapping cannot authorize an unrelated fallback.
+            def relevant(goal):
+                capabilities = definitions.get(goal.goal_id, {}).get('capabilities', [])
+                return any(
+                    (not scope.get('capability_id') or c.get('capability') == scope['capability_id'])
+                    and (not scope.get('target_skill') or scope['target_skill'] in c.get('alternatives', []))
+                    for c in capabilities)
+            goals = [g for g in goals if relevant(g)]
+        if not requested_route:
+            return goals
+        if requested_route == 'DAILY':
             return [goal for goal in goals if goal.goal_id == 'DAILY_ACTIVITY_TARGET'
                     or getattr(goal, 'evidence', {}).get('source') == 'LIVE_DAILY_TASK_ROW']
-        scoped = [goal for goal in goals if route_for(goal.goal_id) == self.validation_focus_route]
-        if self.validation_focus_route == 'FISHING' and not any(
+        scoped = [goal for goal in goals if route_for(goal.goal_id) == requested_route]
+        if requested_route == 'FISHING' and not any(
                 getattr(goal.status, 'value', goal.status) == 'READY' for goal in scoped):
             # A bait-blocked probe can still ask the existing read-only session to
             # confirm the client counter. Never synthesize a spendable bait Goal.
             from .goal_library import GoalState, GoalStatus
-            scoped.append(GoalState('OBSERVE_FISHING_STATE', GoalStatus.READY,
+            if not any(scope.get(key) for key in ('goal_id', 'capability_id', 'target_skill')):
+                scoped.append(GoalState('OBSERVE_FISHING_STATE', GoalStatus.READY,
                           available_skills=('READ_FISHING_STATE',), distance=1.0,
                           evidence={'only_allowed_spend':'NONE','source':'DEVELOPMENT_FRESH_READ'}))
         return scoped
+
+    def _validation_skill_allowed(self, skill_id: str) -> bool:
+        scope = getattr(self, 'validation_scope', {})
+        target = scope.get('target_skill')
+        if self.execution_mode != 'DEVELOPMENT_VALIDATION' or not target:
+            return True
+        # Preparation/observation/recovery may support the requested concrete
+        # action. Another transaction cannot substitute for executing that action.
+        return skill_id == target or skill_id.startswith(('OPEN_', 'READ_', 'CHECK_', 'SELECT_', 'OBSERVE_', 'CLOSE_')) or skill_id in {'BACK', 'OPEN_HOME', 'SAFE_STOP'}
 
     def _selectable(self, goals, deferrals: list[Deferral]):
         """The operator's policy and the deferral gate, applied to discovered goals.
@@ -6229,6 +6264,8 @@ class LiveRuntime:
         comparison meaningful.  Returns the runtime's own ``ExecutionResult``, or ``None``
         when the Scheduler refused to dispatch (gone skill, not ready, entry gate).
         """
+        if not self._validation_skill_allowed(skill_id):
+            return None
         world = before
 
         def resolve(semantic: str):
@@ -7089,6 +7126,10 @@ class LiveRuntime:
                 },
             }
             audit_pages.append(page_audit)
+            if not self._validation_skill_allowed(decision.skill):
+                page_audit['verifier_result'] = {'status': 'NOT_ATTEMPTED',
+                    'reason': 'VALIDATION_TARGET_SKILL_NOT_REACHED'}
+                return finish('NO_RUNNABLE_VALIDATION_GOAL')
             page_audit["attempted_skill"] = decision.skill
             page_audit["attempted_reason"] = decision.reason
             self._runtime(agent_state=AgentState.GOAL_RUNNING.value,

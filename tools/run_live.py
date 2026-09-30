@@ -183,6 +183,10 @@ def main() -> int:
              "keep playing while a development agent works; this flag exists so a "
              "diagnostic run can be kept purely observational.",
     )
+    parser.add_argument('--validation-goal', default='')
+    parser.add_argument('--validation-capability', default='')
+    parser.add_argument('--validation-target-skill', default='')
+    parser.add_argument('--validation-role', default='')
     args = parser.parse_args()
 
     config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
@@ -460,6 +464,11 @@ def main() -> int:
         trace_id=args.trace_id,
         job_id=args.job_id,
         capability=args.capability,
+        validation_scope={key: value for key, value in {
+            'role_id': args.validation_role, 'route': args.goal,
+            'goal_id': args.validation_goal, 'capability_id': args.validation_capability,
+            'target_skill': args.validation_target_skill,
+        }.items() if value} if args.execution_mode == 'DEVELOPMENT_VALIDATION' else {},
         expected_lease_id=args.lease_id,
         expected_after_version=args.expected_after_version,
         # The single-UI-owner lock.  Gameplay holds the device by default; a development
