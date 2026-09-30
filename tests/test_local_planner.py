@@ -162,7 +162,7 @@ class PlanBecomesTheExistingAdviceTest(unittest.TestCase):
             # The anchor is the client's own words -- so the point is produced later, from the
             # frame, by the existing grounded_region.  No geometry passed through the model.
             self.assertEqual(advice.target_anchor, {"text": "领取"})
-            self.assertEqual(advice.source, ui_planner.SOURCE_LOCAL_QWEN)
+            self.assertEqual(advice.source, ui_planner.SOURCE_LOCAL_GUI_MODEL)
 
     def test_a_non_executing_decision_taps_nothing(self):
         import tempfile
@@ -279,29 +279,40 @@ def _request(page_key: str = "UNKNOWN::挂机收益"):
 
 
 class _StubClient:
-    """Stands in for ``local_qwen.LocalQwen`` so no test needs the model to exist."""
+    """Stands in for ``local_gui_model.LocalGUIModel`` so no test needs the model to exist.
+
+    ``image_path`` is accepted and recorded rather than ignored: the planner is required to
+    attach the request's own frame, and a stub that swallowed the argument would let that
+    requirement regress silently.
+    """
 
     def __init__(self, text: str, *, ok: bool = True, error: str = "") -> None:
         self.model = "stub-local-tag"
+        self.provider = "STUB"
+        self.quantization = "TEST"
         self.endpoint = "http://127.0.0.1:0"
+        self.multimodal = True
         self.text = text
         self.ok = ok
         self.error = error
         self.calls = 0
         self.prompts: list[str] = []
+        self.images: list[str | None] = []
 
     def available(self, *, force: bool = False):
         return (self.ok, "stub")
 
     def ask_json(self, *, system: str, user: str, purpose: str = "", element_count: int = 0,
-                 timeout_s=None):
-        from winter_agent_v2 import local_qwen
+                 image_path=None, timeout_s=None):
+        from winter_agent_v2 import local_gui_model
 
         self.calls += 1
         self.prompts.append(user)
-        return local_qwen.QwenCall(
+        self.images.append(image_path)
+        return local_gui_model.GUIModelCall(
             ok=self.ok, text=self.text, error=self.error, model=self.model,
             latency_ms=1.0, prompt_chars=len(user),
+            image_sent=bool(image_path), image_bytes=1 if image_path else 0,
         )
 
 
@@ -361,6 +372,237 @@ class TheRuntimeTakesTheAdvisorWithoutLearningWhatItIsTest(unittest.TestCase):
         self.assertNotIn("self._advisor = advisor or", source)
         self.assertIn("_advisor_factory", source)
         self.assertIn("self._advisor = factory()", source)
+
+
+class TheScreenshotChannelIsOpenButTheBoxIsNotTrustedTest(unittest.TestCase):
+    """The 2026-09-30 capability, and the fence around it.
+
+    Before this, ``elements == []`` ended the step: with an empty table the model had nothing
+    to name, so a screen whose controls print no text was unplannable no matter what it looked
+    like.  The migration lets the model point at what it can *see* -- but only as an untrusted
+    proposal that the current frame still has to justify.  These tests hold both halves.
+    """
+
+    def test_an_empty_element_table_no_longer_ends_the_step(self):
+        """The old behaviour, pinned as gone: no elements must not mean no plan."""
+        parsed = ui_planner.parse_plan(
+            reply(goal="EXPLORATION", decision="EXECUTE",
+                  action={"type": "CLICK_ELEMENT", "target_element_id": None},
+                  semantic_target="the compass icon", reason="no text on this control"),
+            elements=[],
+        )
+        self.assertTrue(parsed.ok, parsed.error)
+        assert parsed.plan is not None
+        self.assertEqual(parsed.plan.basis, ui_planner.BASIS_VISION_PROPOSAL)
+        self.assertEqual(parsed.plan.semantic_target, "the compass icon")
+
+    def test_a_normalised_proposal_is_accepted_and_kept(self):
+        parsed = ui_planner.parse_plan(
+            reply(goal="G", decision="EXECUTE",
+                  action={"type": "CLICK_ELEMENT", "target_element_id": None},
+                  semantic_target="close button",
+                  candidate_bbox_norm=[0.85, 0.03, 0.1, 0.05],
+                  reason="the X at the top right"),
+            elements=[],
+        )
+        self.assertTrue(parsed.ok, parsed.error)
+        assert parsed.plan is not None
+        self.assertEqual(parsed.plan.candidate_bbox_norm, (0.85, 0.03, 0.1, 0.05))
+
+    def test_pixel_coordinates_are_refused_by_the_new_channel_too(self):
+        """A pixel is not a normalised fraction, so the old rule survives the new channel."""
+        parsed = ui_planner.parse_plan(
+            reply(goal="G", decision="EXECUTE",
+                  action={"type": "CLICK_ELEMENT", "target_element_id": None},
+                  semantic_target="close button",
+                  candidate_bbox_norm=[612, 38, 72, 64], reason="top right"),
+            elements=[],
+        )
+        self.assertFalse(parsed.ok)
+        self.assertEqual(parsed.error, "PLAN_BOX_NOT_NORMALISED")
+
+    def test_a_malformed_box_is_refused_with_its_own_reason(self):
+        parsed = ui_planner.parse_plan(
+            reply(goal="G", decision="EXECUTE",
+                  action={"type": "CLICK_ELEMENT", "target_element_id": None},
+                  semantic_target="x", candidate_bbox_norm=[0.1, 0.1, 0.2], reason="r"),
+            elements=[],
+        )
+        self.assertFalse(parsed.ok)
+        self.assertEqual(parsed.error, "PLAN_BOX_NOT_FOUR_NUMBERS")
+
+    def test_raw_geometry_is_still_refused_even_next_to_the_allowed_key(self):
+        parsed = ui_planner.parse_plan(
+            reply(goal="G", decision="EXECUTE",
+                  action={"type": "CLICK_ELEMENT", "target_element_id": None},
+                  semantic_target="x", candidate_bbox_norm=[0.1, 0.1, 0.2, 0.2],
+                  point={"x": 340, "y": 812}, reason="r"),
+            elements=[],
+        )
+        self.assertFalse(parsed.ok)
+        self.assertTrue(parsed.error.startswith("PLAN_TRANSPORTED_GEOMETRY"), parsed.error)
+
+    def test_a_named_element_that_is_not_on_this_screen_is_still_refused(self):
+        """An invented id must not fall through to the screenshot channel either."""
+        parsed = ui_planner.parse_plan(
+            reply(goal="G", decision="EXECUTE",
+                  action={"type": "CLICK_ELEMENT", "target_element_id": "E9"},
+                  semantic_target="whatever", reason="r"),
+            elements=ELEMENTS,
+        )
+        self.assertFalse(parsed.ok)
+        self.assertTrue(parsed.error.startswith("PLAN_TARGET_NOT_ON_THIS_SCREEN"), parsed.error)
+
+    def test_an_execute_with_neither_element_nor_semantic_target_is_refused(self):
+        parsed = ui_planner.parse_plan(
+            reply(goal="G", decision="EXECUTE",
+                  action={"type": "CLICK_ELEMENT", "target_element_id": None}, reason="r"),
+            elements=[],
+        )
+        self.assertFalse(parsed.ok)
+        self.assertEqual(parsed.error, "PLAN_EXECUTE_WITHOUT_TARGET")
+
+    def test_the_visual_plan_reaches_the_advice_as_a_bbox_hint(self):
+        """It becomes ``target_bbox`` -- which the frame still has to justify before a tap."""
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = _advisor_with(
+                Path(tmp),
+                reply(goal="G", decision="EXECUTE",
+                      action={"type": "CLICK_ELEMENT", "target_element_id": None},
+                      semantic_target="close button",
+                      candidate_bbox_norm=[0.85, 0.03, 0.1, 0.05], reason="the X"),
+            )
+            advice = advisor.take_request(_request())
+            self.assertIsInstance(advice, unknown_advisor.Advice)
+            assert advice is not None
+            self.assertEqual(advice.target_bbox,
+                             {"x_norm": 0.85, "y_norm": 0.03, "w_norm": 0.1, "h_norm": 0.05})
+            self.assertIn(ui_planner.BASIS_VISION_PROPOSAL, advice.note)
+
+    def test_the_untrusted_region_is_not_grounded_by_the_frame_that_lacks_it(self):
+        """The fence: a proposal over nothing is refused by the EXISTING grounding code."""
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = _advisor_with(
+                Path(tmp),
+                reply(goal="G", decision="EXECUTE",
+                      action={"type": "CLICK_ELEMENT", "target_element_id": None},
+                      semantic_target="close button",
+                      candidate_bbox_norm=[0.85, 0.03, 0.1, 0.05], reason="the X"),
+            )
+            advice = advisor.take_request(_request())
+            assert advice is not None
+            # A frame that drew something entirely elsewhere must not justify the proposal.
+            elsewhere = [{"box_norm": {"x_norm": 0.05, "y_norm": 0.4,
+                                       "w_norm": 0.1, "h_norm": 0.05}, "point": (0.1, 0.42)}]
+            self.assertIsNone(unknown_advisor.justified_point(advice, elsewhere))
+            # And the same proposal IS grounded when the frame really drew that region.
+            here = [{"box_norm": {"x_norm": 0.85, "y_norm": 0.03,
+                                  "w_norm": 0.1, "h_norm": 0.05}, "point": (0.9, 0.055)}]
+            self.assertIsNotNone(unknown_advisor.justified_point(advice, here))
+
+
+class TheVerdictIsJoinedBackToTheAnswerTest(unittest.TestCase):
+    """An advised step's verdict must be provable from record, not inferred.
+
+    The planner's ledger held the proposal and ``episodes.jsonl`` held the verdict, with nothing
+    joining them -- so "the local model acted and the verifier passed" could not be read off the
+    artifacts, and the model's own confidence looked the same as a verified step.  Operator
+    directive 2026-09-30 is explicit that the model may not certify itself, so the join is made
+    at the one place that knows both, and only for the step that consumed the answer.
+    """
+
+    @staticmethod
+    def _decision(skill: str = "ORDINARY_CONTROL[搜索]"):
+        from winter_agent_v2.models import Decision
+
+        return Decision(skill=skill, reason="", confidence=0.0, expected_result="")
+
+    def test_an_outcome_row_settles_the_answer_it_names(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "steps.jsonl"
+            advisor = ui_planner.ManagedAdvisor(
+                client=_StubClient("{}"), ledger=ui_planner.PlannerLedger(path), root=Path(tmp),
+            )
+            advisor.note_outcome("unknown__control__abc", verifier_ok=True,
+                                 skill="ORDINARY_CONTROL[搜索]", result="SUCCESS",
+                                 evidence={"panel_readable_after": True})
+            rows = [json.loads(line) for line in
+                    path.read_text(encoding="utf-8").splitlines() if line.strip()]
+            self.assertEqual(len(rows), 1, rows)
+            self.assertEqual(rows[0]["record"], "outcome")
+            self.assertEqual(rows[0]["request_id"], "unknown__control__abc")
+            self.assertIs(rows[0]["verifier_ok"], True)
+            self.assertEqual(rows[0]["skill"], "ORDINARY_CONTROL[搜索]")
+            self.assertEqual(rows[0]["source"], ui_planner.SOURCE_LOCAL_GUI_MODEL)
+
+    def test_an_answer_with_no_request_id_settles_nothing(self):
+        """A settlement needs something to attach to, so an empty id must not leave a bare row."""
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = _advisor_with(Path(tmp), "{}")
+            advisor.note_outcome("", verifier_ok=True)
+            self.assertFalse((Path(tmp) / "steps.jsonl").exists())
+
+    def test_a_step_the_model_did_not_drive_is_never_settled(self):
+        """The safety property in one line: no id, no settlement."""
+        from winter_agent_v2.runtime import LiveRuntime
+
+        settled: list[str] = []
+
+        class _Advisor:
+            def note_outcome(self, request_id, **kwargs):
+                settled.append(request_id)
+
+        runtime = object.__new__(LiveRuntime)
+        runtime._advisor = _Advisor()
+        runtime._advised_request_id = ""
+        runtime._settle_advised_step(self._decision(), None, "SUCCESS")
+        self.assertEqual(settled, [])
+
+    def test_the_step_that_consumed_the_answer_is_settled_once_and_cleared(self):
+        from winter_agent_v2.runtime import LiveRuntime
+
+        seen: list[tuple[str, dict]] = []
+
+        class _Advisor:
+            def note_outcome(self, request_id, **kwargs):
+                seen.append((request_id, kwargs))
+
+        class _Verdict:
+            ok = True
+            evidence = {"page_returned": True}
+
+        runtime = object.__new__(LiveRuntime)
+        runtime._advisor = _Advisor()
+        runtime._advised_request_id = "unknown__control__zzz"
+        runtime._settle_advised_step(self._decision(), _Verdict(), "SUCCESS")
+        self.assertEqual([row[0] for row in seen], ["unknown__control__zzz"])
+        self.assertIs(seen[0][1]["verifier_ok"], True)
+        self.assertEqual(seen[0][1]["evidence"], {"page_returned": True})
+        # Consumed, not re-filed: a second call for the same step must settle nothing.
+        runtime._settle_advised_step(self._decision(), _Verdict(), "SUCCESS")
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(runtime._advised_request_id, "")
+
+    def test_a_broken_ledger_cannot_fail_an_issued_action(self):
+        """Settlement is bookkeeping; it must never raise into the step that already ran."""
+        from winter_agent_v2.runtime import LiveRuntime
+
+        class _Advisor:
+            def note_outcome(self, request_id, **kwargs):
+                raise OSError("disk full")
+
+        runtime = object.__new__(LiveRuntime)
+        runtime._advisor = _Advisor()
+        runtime._advised_request_id = "x"
+        runtime._settle_advised_step(self._decision(), None, "SUCCESS")
+        self.assertEqual(runtime._advised_request_id, "")
+
+
+def _advisor_with(root: Path, text: str):
+    return ui_planner.ManagedAdvisor(
+        client=_StubClient(text), ledger=ui_planner.PlannerLedger(root / "steps.jsonl"),
+        root=root,
+    )
 
 
 if __name__ == "__main__":

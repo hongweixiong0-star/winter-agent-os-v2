@@ -2205,6 +2205,40 @@ class LiveRuntime:
                 self.task_completion_store.record_episode(episode)
             except Exception:  # noqa: BLE001 - a derived board cannot stop production
                 pass
+        self._settle_advised_step(decision, verification, result)
+
+    def _settle_advised_step(self, decision: Any, verification: Any, result: str) -> None:
+        """Tell the planner what the verifier said about the step its answer drove.
+
+        The two halves of an advised step used to live in two files that nothing joined: the
+        planner's ledger held the proposal, ``episodes.jsonl`` held the verdict.  That made the
+        operator's question -- "did the local model act, and did the game agree?" -- unanswerable
+        from record, and it made a model's own claim of success indistinguishable from a verified
+        one.  This closes the join at the only place that knows both, and only for the step that
+        actually consumed the answer (``_advised_request_id`` is set when an answer is accepted
+        and cleared at the top of every step's resolution).
+
+        Cleared unconditionally: a settlement that could not be written must not stay pending and
+        attach itself to the next step.
+        """
+        request_id = self._advised_request_id
+        if not request_id:
+            return
+        self._advised_request_id = ""
+        advisor = getattr(self, "_advisor", None)
+        note = getattr(advisor, "note_outcome", None)
+        if not callable(note):
+            return
+        try:
+            note(
+                request_id,
+                verifier_ok=None if verification is None else bool(verification.ok),
+                skill=str(getattr(decision, "skill", "") or ""),
+                result=str(result),
+                evidence={} if verification is None else dict(verification.evidence),
+            )
+        except Exception:  # noqa: BLE001 - a ledger must never fail an already-issued action
+            pass
 
     # --------------------------------------------------- per-control experience
 
@@ -4776,6 +4810,11 @@ class LiveRuntime:
         # what an earlier step proved.
         self._ordinary_last = None
         self._l1_context = None
+        # Which model answer this step is allowed to settle.  Cleared here with the other two,
+        # for the reason those are cleared: a step that resolved nothing must not be credited
+        # with the previous step's answer, and (measured 2026-09-30) a request id that outlived
+        # its step would attach a later verifier verdict to a step the model never touched.
+        self._advised_request_id = ""
         if unnamed:
             # The title is what keeps two unnamed screens apart in the ledger key and in a
             # question's id, so it is read before anything is asked about this screen.  One cached
@@ -5135,6 +5174,8 @@ class LiveRuntime:
             "entry": advice.entry,
             "action_level": unknown_advisor.advice_level(advice),
         }
+        # This is the step the answer drives, so this is the step whose verdict settles it.
+        self._advised_request_id = request.request_id
         self._ordinary_tried.add((page, semantic))
         self._ordinary_attempts += 1
         self._ordinary_last = {
@@ -6628,6 +6669,12 @@ class LiveRuntime:
             self._advisor = factory if factory is not None else unknown_advisor.UnknownAdvisor()
         self._last_advice: dict[str, Any] | None = None
         self._last_attempt_summary: dict[str, Any] = {}
+        # The answer this step is allowed to settle: the request id of the advice the step
+        # actually consumed, or "" for a step the model had nothing to do with.  Set when an
+        # answer is accepted, cleared at the top of every resolution, and consumed by
+        # ``_settle_advised_step`` -- so a verifier verdict can never be pinned on a step the
+        # model did not drive.
+        self._advised_request_id: str = ""
         # Utility inputs (operator §四).  All three are loaded once per run: the route
         # card is a measured artefact that does not change inside a run, and the
         # fairness ledger is written back at ``finish``.  Kept on the instance so

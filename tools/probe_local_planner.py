@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from winter_agent_v2 import local_qwen, ui_planner  # noqa: E402
+from winter_agent_v2 import local_gui_model, ui_planner  # noqa: E402
 
 #: A screen shape this project has real questions about: the client's own printed controls on
 #: an unnamed page, with the goal that was standing when the question was filed.  Used only
@@ -52,7 +52,7 @@ def main() -> int:
     args = parser.parse_args()
 
     config = json.loads(Path(args.config).read_text(encoding="utf-8"))
-    client = local_qwen.from_config(config, root=ROOT)
+    client = local_gui_model.from_config(config, root=ROOT)
     if client is None:
         print("local_planner.enabled is false in the config -- nothing to probe")
         return 3
@@ -93,9 +93,14 @@ def main() -> int:
 
     passed = 0
     for trial in range(max(1, args.trials)):
+        # The frame travels with the question.  Without it the client refuses the call by name
+        # (``LOCAL_GUI_MODEL_NO_SCREENSHOT``), because a text-only turn is exactly the P0 defect
+        # the 2026-09-30 migration removed -- so this probe would otherwise report a model
+        # failure for what is really a probe bug.
         call = client.ask_json(
             system=ui_planner.SYSTEM_PROMPT, user=ui_planner.render_packet(packet),
             purpose="probe", element_count=len(elements), timeout_s=args.timeout,
+            image_path=args.frame or None,
         )
         print(f"trial {trial + 1}: ok={call.ok} latency={call.latency_ms:.0f}ms "
               f"prompt={call.prompt_chars}c reply={len(call.text)}c")
@@ -111,6 +116,8 @@ def main() -> int:
         plan = parsed.plan
         print(f"  PLAN : decision={plan.decision} action={plan.action_type} "
               f"element={plan.target_element_id} text={plan.target_text!r}")
+        print(f"         basis={plan.basis} semantic_target={plan.semantic_target!r} "
+              f"region={plan.candidate_bbox_norm}")
         print(f"         expected_page={plan.expected_page!r} reason={plan.reason!r}")
         passed += 1
     print("-" * 78)

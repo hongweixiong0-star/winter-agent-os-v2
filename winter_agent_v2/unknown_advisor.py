@@ -10,9 +10,9 @@ are not enough -- 领主指令 with no recognisable action word, or a step whose
 cannot express.
 
 The third half is a reasoner, and the shape of it is fixed by this project's own standing rule
-(operator section 7, pinned by ``tests/test_qwen_decoupling.py``): **a model is an optional
-provider, never a runtime dependency**.  With no model enabled, every rule-based capability still
-runs.  So this module holds no client, opens no socket and blocks on nothing:
+(operator section 7, pinned by ``tests/test_local_gui_model_decoupling.py``): **a model is an
+optional provider, never a runtime dependency**.  With no model enabled, every rule-based
+capability still runs.  So this module holds no client, opens no socket and blocks on nothing:
 
     the AUTO    writes a structured request to ``learning/unknown_requests/`` and moves on
     the reasoner answers by dropping one file (or by calling ``tools/unknown_advisor.py``)

@@ -99,7 +99,7 @@ def main() -> int:
     parser.add_argument("--config", default=str(ROOT / "config/v2.json"))
     args = parser.parse_args()
 
-    from winter_agent_v2 import local_qwen, page_knowledge, ui_planner
+    from winter_agent_v2 import local_gui_model, page_knowledge, ui_planner
     from winter_agent_v2.executor import Executor
     from winter_agent_v2.executor_router import build_maa_adapter
     from winter_agent_v2.models import Action
@@ -112,7 +112,7 @@ def main() -> int:
         "goal": args.goal, "execute_requested": bool(args.execute),
     }
 
-    client = local_qwen.from_config(config, root=ROOT)
+    client = local_gui_model.from_config(config, root=ROOT)
     if client is None:
         print("local_planner.enabled is false -- nothing to probe")
         return 3

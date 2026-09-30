@@ -10,7 +10,7 @@ Sources, all read-only:
 * ``learning/action_latency.jsonl`` -- per-action phase timings (``action_latency.PHASES``);
 * ``learning/episodes.jsonl``       -- per-action outcome, duration, verifier verdict;
 * ``learning/global_scheduler_state.json`` -- role sessions, switches, idle counters;
-* ``learning/local_qwen_calls.jsonl``      -- Qwen usage, which §13 wants at zero.
+* ``learning/local_gui_model_calls.jsonl`` -- local GUI model usage (UI-Venus-2-9B), which §13 wants at zero.
 
 Usage::
 
@@ -157,7 +157,7 @@ def collect(*, since=None, until=None, commit=None) -> dict:
                          if s is not None]
         if action_stamps:
             qwen_since, qwen_until = min(action_stamps), max(action_stamps)
-    qwen = _in_window(_read_jsonl(ROOT / "learning/local_qwen_calls.jsonl"),
+    qwen = _in_window(_read_jsonl(ROOT / "learning/local_gui_model_calls.jsonl"),
                       qwen_since, qwen_until, None)
 
     by_skill: dict[str, list[float]] = {}
