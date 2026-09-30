@@ -121,3 +121,20 @@ def test_session_ocr_uses_observed_frame_and_disambiguates_dialog_action():
     assert host._locate_printed(None,'发起集结',service)[0] is None
     assert host._locate_printed(None,'发起集结',service,below_text='请设定集结时间')[0] == (360,840)
     assert host._locate_printed(None,'发起集结',service,below_text='不存在的说明')[0] is None
+
+
+def test_polar_dispatch_uses_observed_free_slot_without_inventing_capacity():
+    adapter=BearSessionAdapter(target='POLAR_TERROR')
+    adapter._polar_target_confirmed=True
+    adapter._polar_target_name='猛犸象'
+    adapter._polar_words=['目标：猛犸象','118,110/118,110','出征']
+    adapter._polar_slot_available=True
+    adapter._polar_slot_observed_at=100
+    domain=SimpleNamespace(world=WorldState(page=Page.MARCH),idle_marches=None)
+    assert adapter._polar_step(domain,now=130).target=='出征'
+    assert adapter._polar_step(domain,now=191) is None
+    domain.idle_marches=0
+    assert adapter._polar_step(domain,now=130) is None
+    domain.idle_marches=1
+    adapter._polar_words=['目标：别的目标','118,110/118,110','出征']
+    assert adapter._polar_step(domain,now=130) is None

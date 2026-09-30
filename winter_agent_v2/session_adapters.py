@@ -676,6 +676,9 @@ class BearSessionAdapter(SessionAdapter):
         self._polar_search_sent = self._polar_target_confirmed = self._polar_dispatched = False
         self._polar_words = []
         self._polar_before = None
+        self._polar_slot_observed_at = 0.0
+        self._polar_slot_available = None
+        self._polar_target_name = ''
 
     def configure(self, extras: Mapping[str, Any],
                   resource_budget: Mapping[str, float] | None = None) -> None:
@@ -696,6 +699,9 @@ class BearSessionAdapter(SessionAdapter):
         if self._stamina_polar:
             self._polar_words = [str(t.get('text','')) for t in host.ocr() if isinstance(t,Mapping)]
             self._polar_before = self._polar_before or world
+            if world.page is Page.MAP and world.has_free_march_slot is not None:
+                self._polar_slot_available = world.has_free_march_slot
+                self._polar_slot_observed_at = host.now()
             if self._polar_dispatched and any(w in self._polar_words for w in ('取消集结','解散集结')):
                 text = ' '.join(self._polar_words)
                 countdown = re.search(r'(?<!\d)(\d{1,2}):(\d{2})(?!\d)',text)
@@ -768,7 +774,7 @@ class BearSessionAdapter(SessionAdapter):
 
     def choose_step(self, context: SessionContext, host: SessionHost, domain: Any) -> SessionStep | None:
         if self._stamina_polar:
-            return self._polar_step(domain)
+            return self._polar_step(domain, now=host.now())
         if self.start_once and not self.started and self.starts == 0 and self.joins == 0:
             # One START per session, and it goes first: the bear special slot is what makes
             # the role a leader, and every later join benefits from the rally existing.
@@ -813,7 +819,7 @@ class BearSessionAdapter(SessionAdapter):
         return StepVerdict(StepOutcome.SUCCESS, verdict.reason or "BEAR_STEP_VERIFIED",
                            dict(verdict.evidence or {}))
 
-    def _polar_step(self, domain):
+    def _polar_step(self, domain, *, now=None):
         world = domain.world
         words = self._polar_words
         if self._polar_target_confirmed:
@@ -822,10 +828,19 @@ class BearSessionAdapter(SessionAdapter):
                     return SessionStep(0,STEP_PRINTED_TAP,target='集结中',reason='inspect own newly dispatched rally')
                 return SessionStep(0,STEP_OBSERVE_ONLY,reason='do not duplicate pending rally dispatch')
             if '出征' in words:
-                if domain.idle_marches is None or domain.idle_marches <= 0:
+                slot = domain.idle_marches is not None and domain.idle_marches > 0
+                if domain.idle_marches is None and now is not None:
+                    slot = self._polar_slot_available is True and 0 <= now - self._polar_slot_observed_at <= 90
+                if not slot:
                     return None
-                if not any('胜券在握' in word for word in words):
-                    return None  # unknown/losing troop assessment never authorizes dispatch
+                if any('大概率失败' in word or '战力不足' in word for word in words):
+                    return None
+                troops = any(re.fullmatch(r'[\d,]+/[\d,]+', word) and
+                             int(word.split('/')[0].replace(',','')) > 0 for word in words)
+                target = any('目标' in word and self._polar_target_name and
+                             self._polar_target_name in word for word in words)
+                if not (troops and target) and not any('胜券在握' in word for word in words):
+                    return None  # Current rally formation must confirm troops and target.
                 return SessionStep(0,STEP_PRINTED_TAP,target='出征',reason='authorized polar rally dispatch')
             for word in ('发起集结','集结'):
                 if word in words:
@@ -840,6 +855,7 @@ class BearSessionAdapter(SessionAdapter):
             card = world.beast_search_result or {}
             if card.get('has_rally'):
                 self._polar_target_confirmed = True
+                self._polar_target_name = str(card.get('title_text') or '')
                 return SessionStep(0,STEP_PRINTED_TAP,target='集结',reason='giant tab search returned rally target')
             if card.get('title_text') and card.get('title_level') is not None:
                 label = next((w for w in words if card['title_text'] in w and '等级' in w),None)
@@ -852,6 +868,7 @@ class BearSessionAdapter(SessionAdapter):
             card = world.beast_search_result or {}
             if card.get('has_rally'):
                 self._polar_target_confirmed = True
+                self._polar_target_name = str(card.get('title_text') or '')
                 return SessionStep(0,STEP_PRINTED_TAP,target='集结',reason='current searched polar target')
             return SessionStep(0,STEP_OBSERVE_ONLY,reason='do not duplicate submitted search')
         return SessionStep(0,STEP_SKILL,skill_id='SEARCH_RESOURCE',reason='open shared client search')
