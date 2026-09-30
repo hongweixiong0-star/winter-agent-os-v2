@@ -51,7 +51,7 @@ from PIL import Image
 from . import vision_policy as vp
 from .device_lease import OWNER_GAMEPLAY
 from .models import WorldState
-from .models import Action, ExecutionResult, VerificationResult
+from .models import Action, Decision, ExecutionResult, VerificationResult
 from .ocr import read_frame_size
 from .session_adapters import _stamina_of
 from .session_engine import (
