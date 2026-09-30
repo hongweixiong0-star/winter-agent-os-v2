@@ -959,7 +959,7 @@ def task_completion_display(
         "RESEARCH": "科研", "BUILDING": "建筑", "GATHER": "采集", "STAMINA": "体力",
         "BEAST": "打野", "ICEFIELD_BEAST": "冰原巨兽", "ARENA": "竞技场",
         "ACTIVITY_CLAIM": "活动奖励", "FREE_REWARD": "免费奖励",
-        "ALLIANCE_MOBILIZATION": "联盟总动员", "BEAR": "巨熊", "OTHER_CURRENT_EVENTS": "其他活动",
+        "ALLIANCE_MOBILIZATION": "联盟总动员", "BEAR": "巨熊", "FISHING": "钓鱼", "OTHER_CURRENT_EVENTS": "其他活动",
     }
     for index, role_id in enumerate(role_ids[:2]):
         key = "remaining_a" if index == 0 else "remaining_b"
@@ -988,6 +988,10 @@ def task_completion_display(
         if len(pending) > 7:
             text += f"等 {len(pending)} 项"
         text += f"；完成 {completed}/{observed}，未发现 {unseen} 类"
+        productive = [task_zh.get(kind, kind) for kind, row in tasks.items()
+                      if isinstance(row, dict) and row.get("PRODUCTIVE_CYCLE_VERIFIED")]
+        if productive:
+            text += "；今日生产循环已验证：" + "、".join(productive)
         lines[key] = f"{names.get(role_id, role_id)}：{text}"
     if len(role_ids) < 2:
         lines.setdefault("remaining_b", "角色 B：尚未登记启用角色")

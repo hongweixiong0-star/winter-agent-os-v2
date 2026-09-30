@@ -452,9 +452,12 @@ class TaskCompletionStore:
                 continue
             status = _aggregate_status(members)
             pending = [item for item in members if item["status"] not in {"COMPLETE", "EXPIRED"}]
-            representative = next((item for item in pending if item.get("current_blocker")), None)
+            # A runnable cast and an unobserved reward can coexist. Display the
+            # reason belonging to the aggregate state, not another subgoal's blocker.
+            matching = [item for item in pending if item["status"] == status]
+            representative = next((item for item in matching if item.get("current_blocker")), None)
             if representative is None:
-                representative = next((item for item in pending if item.get("next_action_at")), None)
+                representative = next((item for item in matching if item.get("next_action_at")), None)
             task_rows[task_type] = {
                 "task_type": task_type,
                 "status": status,

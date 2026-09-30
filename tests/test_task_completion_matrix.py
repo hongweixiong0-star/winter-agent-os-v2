@@ -148,3 +148,18 @@ def test_goal_types_cover_current_task_families_and_future_events():
     assert "ALLIANCE_DONATION" in task_types_for_goal("ALLIANCE_DONATION")
     assert "ICEFIELD_BEAST" in task_types_for_goal("SCHEDULED_ICEFIELD_BEAST")
     assert "OTHER_CURRENT_EVENTS" in task_types_for_goal("SCHEDULED_CANYON_CLASH")
+
+
+def test_ready_fishing_cast_does_not_inherit_reward_observation_blocker(tmp_path):
+    store = TaskCompletionStore(tmp_path / "matrix.json")
+    store.observe_role(role_id="A", goals=[
+        {"goal_id": "USE_NORMAL_FISHING_BAIT", "status": "READY",
+         "available_skills": ["PLAY_NORMAL_FISHING_LEVEL"]},
+        {"goal_id": "CLAIM_FISHING_FREE_REWARD", "status": "UNKNOWN",
+         "reason_code": "ENVIRONMENT_BLOCKED", "current_blocker": "reward not read"},
+    ])
+    row = _load(tmp_path / "matrix.json")["roles"]["A"]["daily_board"]["tasks"]["FISHING"]
+    assert row["status"] == "READY"
+    assert row["current_blocker"] is None
+    assert row["reason_code"] is None
+    assert len(row["goal_states"]) == 2
