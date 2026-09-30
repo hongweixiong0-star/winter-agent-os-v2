@@ -161,14 +161,8 @@ def classify_stop_reason(
     if is_fatal_stop(normalized):
         return StopCategory.SYSTEM_FAILURE
     # A verifier miss is evidence about a *step*; the stop reason is evidence about *why the
-    # round ended*.  When the budget ended the round, the miss did not end it -- it is already
-    # recorded per episode -- so it must not relabel the whole round.  ``MAX_ACTIONS_REACHED``
-    # is the one stop reason that structurally cannot be *caused* by a verifier miss: the
-    # runtime reaches it by exhausting its action budget, and this module already declares it
-    # in ``COMPLETED_STOPS``.  So the declared completion is tested before the blanket
-    # ``verifier_failed`` short-circuit, and ``TARGET_SKILL_VERIFIED`` deliberately is not:
-    # that one is reached by a verification *succeeding*, which is the case closest to the
-    # failure and is not what this measurement covers.
+    # round ended*.  So the declared classes of stop reason are tested first, and ``verifier_failed``
+    # only decides a round whose stop reason nothing declares.
     #
     # Measured 2026-09-30 11:21 local (pin b2cb6f1).  Round ``20260930_111430_903715`` issued
     # 24 actions, 23 verified, with one BEAST_SEARCH_TAB miss at step 005; it then kept working
@@ -177,10 +171,6 @@ def classify_stop_reason(
     # panel's ``healthy`` went false, ``should_continue_auto_cycle`` declined, and AUTO stopped
     # while the device sat idle -- and the panel logged no reason at all.
     if token == "MAX_ACTIONS_REACHED":
-        return StopCategory.COMPLETED
-    if verifier_failed:
-        return StopCategory.SYSTEM_FAILURE
-    if token in {item.upper() for item in COMPLETED_STOPS}:
         return StopCategory.COMPLETED
     if normalized.startswith(("ROLE_SWITCHED_TO:", "ROLE_IDENTITY_CHANGED:",
                               "ROLE_SWITCH_FAILED:")):
@@ -191,6 +181,22 @@ def classify_stop_reason(
         return StopCategory.EXPECTED_NO_ACTION
     if token in {item.upper() for item in CAPABILITY_GAP_STOPS}:
         return StopCategory.CAPABILITY_GAP
+    # A verifier miss AND a stop reason nothing declares: only then is this round a system
+    # failure.  The blanket short-circuit used to sit above the two sets, so one miss anywhere
+    # relabelled a round that ended on a stop reason this module itself declares recoverable --
+    # and the panel reads that label as ``healthy``, so AUTO stopped.
+    #
+    # Measured 2026-09-30, the same mislabelling through two different doors, both live:
+    #   11:53  MAX_ACTIONS_REACHED + one miss  -> SYSTEM_FAILURE -> AUTO stopped at 11:58:23
+    #   12:48  SEMANTIC_TARGET_NOT_VERIFIED with every verifier PASSING, so a false ``healthy``
+    #          again -> AUTO stopped at 12:48:39
+    # ``SEMANTIC_TARGET_NOT_VERIFIED`` is in CAPABILITY_GAP_STOPS above and §7 requires
+    # "Recover -> Bounded Retry -> Defer/Skip -> Next Goal" for it, never a stop.  The miss stays
+    # visible: it is a per-step episode and the panel's run summary still counts it.
+    if verifier_failed:
+        return StopCategory.SYSTEM_FAILURE
+    if token in {item.upper() for item in COMPLETED_STOPS}:
+        return StopCategory.COMPLETED
     if str(decision_skill or "") == "SAFE_STOP" and not action_executed:
         return StopCategory.CAPABILITY_GAP
     return StopCategory.SYSTEM_FAILURE

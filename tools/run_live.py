@@ -56,6 +56,7 @@ from winter_agent_v2.capability_gate import CapabilityGate
 # would be an invitation to write "what the disk says now" onto an episode again.
 from winter_agent_v2.vision import SemanticWorldVision
 from winter_agent_v2.runtime_snapshot import RuntimeSnapshotStore
+from winter_agent_v2.runtime_snapshot import StopCategory, state_for_stop_reason
 from winter_agent_v2.resource_rotation import ResourceRotationStore
 from winter_agent_v2.stamina_supply import StaminaSupplyStore
 
@@ -108,22 +109,29 @@ def _superseded_by_head(expected: str, actual: str) -> bool:
     return result.returncode == 0
 
 
-def run_outcome_exit_code(stop_reason: str, accepted_stops: set[str]) -> int:
-    """The round's own terminal reason decides, not the count of misses inside it.
+def run_outcome_exit_code(stop_reason: str, category: StopCategory) -> int:
+    """The round's ending decides, from the one classifier the whole project shares.
 
-    A non-zero exit exists for exactly one purpose here: the panel reads it as
-    ``healthy=False`` and declines the next round (``tools/control_panel.py``
-    ``summarize_runtime_result``).  So this code must mean "the round ended somewhere the
-    project does not accept", never "a step inside the round failed" -- a step failure is
-    already an episode, is already in the panel's run summary, and the shared classifier
-    already refuses to relabel a finished round for it.
+    A non-zero exit has exactly one reader: the panel turns it into ``healthy=False`` and
+    declines the next round (``tools/control_panel.py`` ``summarize_runtime_result``).  So it
+    must mean "this round ended somewhere the project does not accept" -- never "a step inside
+    the round failed", and never "this round hit a capability gap".  A step failure is already an
+    episode, and §7 requires a capability gap to become ``Recover -> Bounded Retry -> Defer/Skip
+    -> Next Goal``, not a stopped AUTO.
 
-    Measured live 2026-09-30 11:53 (pin ``f04714e``): round ``20260930_115308_285819`` had
-    22 of 23 verifiers PASS and ended ``MAX_ACTIONS_REACHED``, which is in ``accepted_stops``;
-    the old ``verified and ...`` gate returned 2 anyway, the panel halted AUTO, and the device
-    sat idle while ``config/control_panel_state.json`` still said ``RUNNING``.
+    Measured live 2026-09-30 -- two rounds, two different doors, one meaning:
+      * 11:53 pin ``f04714e``, round ``20260930_115308_285819``: 22 of 23 verifiers PASS, ended
+        ``MAX_ACTIONS_REACHED`` (in ``accepted_stops``).  The old ``verified and ...`` gate
+        returned 2 anyway; AUTO stopped at 11:58:23.
+      * 12:48 pin ``5e47f32``, ``SEMANTIC_TARGET_NOT_VERIFIED`` with *every* verifier passing.
+        The reason is not in this module's list, so the gate returned 2 again even though the
+        shared classifier calls it ``CAPABILITY_GAP`` and the snapshot says ``SAFE_STOP``; AUTO
+        stopped at 12:48:39.
+
+    Taking the category instead of re-deriving acceptance from a second list is the point: the
+    child and the panel now answer "did this round end acceptably" with one rule.
     """
-    return 0 if stop_reason in accepted_stops else 2
+    return 2 if category is StopCategory.SYSTEM_FAILURE else 0
 
 
 def main() -> int:
@@ -537,28 +545,21 @@ def main() -> int:
     accepted_stops.add("training_page_already_read_not_actionable")
     accepted_stops.add("research_page_already_read_not_actionable")
     # Exit code = how the ROUND ended; ``verified`` = what happened to its STEPS.  Conflating
-    # them is what stopped AUTO, twice, on 2026-09-30.
+    # them stopped AUTO three times on 2026-09-30 (11:21, 11:58, 12:48), so the decision is no
+    # longer re-derived here at all: it comes from the same classifier the panel and the snapshot
+    # use, which is what makes the child's answer and the parent's answer one rule.
     #
-    # Measured 11:53 local, round ``20260930_115308_285819``: 23 steps, 22 verifier PASS, one
-    # ``OPEN_BEAST_SEARCH_TAB`` miss at step 002, then it kept working and ended the budget at
-    # ``MAX_ACTIONS_REACHED``.  That stop reason IS in ``accepted_stops`` above, so the round
-    # ended exactly where the project declares a round may end -- and ``verified`` was False
-    # anyway, so this line returned 2.  The panel reads ``exit_code != 0`` as ``healthy=False``
-    # (``tools/control_panel.py`` ``summarize_runtime_result``), refused the next round, and
-    # logged ``未进入下一轮：本轮被判定为系统故障：MAX_ACTIONS_REACHED`` while the device sat
-    # idle with the operator's intent still RUNNING.  The 11:50 commit fixed the classifier and
-    # ``healthy`` for exactly this round, but this third door was left open, so the same
-    # "one miss kills the round" meaning came back through the exit code.
-    #
-    # The miss stays fully visible: it is a per-step episode, the panel's run summary still
-    # prints ``failures``, and its own classifier already refuses to relabel the round for it.
-    # What must not survive is a *non-zero exit* whose only job is to reach the operator's
-    # ``healthy`` flag.  So the round's own terminal reason decides, which is the rule this
-    # module already wrote down when it built ``accepted_stops``.
-    #
-    # ``verified`` is kept and still computed: it is reported in the run JSON and asserted by
-    # tests, it is simply no longer the exit-code gate.
-    return run_outcome_exit_code(result.stop_reason, accepted_stops)
+    # ``accepted_stops`` above still declares this entry point's own known-honest endings; the
+    # classifier it feeds consumes the shared sets.  ``verified`` is kept and still computed: it
+    # is reported in the run JSON and asserted by tests, it is simply no longer the exit gate.
+    last_step = result.steps[-1] if getattr(result, "steps", None) else None
+    category, _ = state_for_stop_reason(
+        result.stop_reason,
+        decision_skill=str(getattr(getattr(last_step, "decision", None), "skill", "") or ""),
+        action_executed=bool(getattr(getattr(last_step, "execution", None), "executed", False)),
+        verifier_failed=not verified,
+    )
+    return run_outcome_exit_code(result.stop_reason, category)
 
 
 if __name__ == "__main__":
