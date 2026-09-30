@@ -3,6 +3,10 @@ from pathlib import Path
 
 from winter_agent_v2.skills import v2_registry
 from winter_agent_v2.skill_factory import GOAL_REQUIREMENTS, SkillFactory
+from winter_agent_v2.goal_library import GoalLibrary, route_for
+from winter_agent_v2.models import Page, WorldState
+from winter_agent_v2.rally import RallyTarget, rally_target_for_goal
+from winter_agent_v2.session_adapters import route_for as session_route_for
 
 
 def _goals():
@@ -36,3 +40,31 @@ def test_coverage_has_no_retired_polar_skill_and_does_not_require_both_bear_vari
     assert 'PLAY_NORMAL_FISHING_LEVEL' in GOAL_REQUIREMENTS['USE_NORMAL_FISHING_BAIT']
     requirements = SkillFactory(v2_registry(), tmp_path).coverage_requirements()
     assert len({'START_RALLY', 'JOIN_RALLY'}.intersection(requirements['PARTICIPATE_BEAR'])) == 1
+
+
+def test_building_entry_uses_current_registered_navigation():
+    cap = _goals()['KEEP_BUILDING_PRODUCTIVE']['capabilities'][0]
+    assert 'OPEN_BUILDING' not in cap['alternatives']
+    assert all(v2_registry().get(s) for s in cap['alternatives'])
+
+
+def test_mobilization_icefield_goal_reuses_active_polar_route_with_explicit_target():
+    world = WorldState(page=Page.HOME, events={'alliance_mobilization': {
+        'recognized': True, 'status': 'ACTIVE', 'role_id': 'B',
+        'tasks': [{'task_id': 'polar-1', 'task_type': 'ICEFIELD_BEAST',
+                   'accepted': True, 'status': 'IN_PROGRESS', 'progress': 0, 'target': 1}]}})
+    goal = next(g for g in GoalLibrary().discover(world, role_id='B')
+                if g.goal_id == 'ALLIANCE_MOBILIZATION_ICEFIELD_BEAST')
+    assert goal.evidence['rally_target'] == 'POLAR_TERROR'
+    assert rally_target_for_goal(goal.goal_id, goal.evidence) is RallyTarget.POLAR_TERROR
+    assert route_for(goal.goal_id) == 'GIANT_BEAST'
+    assert session_route_for(goal.goal_id, 'START_RALLY').adapter == 'bear'
+    assert goal.goal_id in _goals()
+
+
+def test_training_commit_keeps_existing_atomic_queue_started_verifier():
+    # Real 2026-09-30 episodes: the old session replaced TRAIN_TROOPS with
+    # TAP_FOCUSED_* while already on Page.TRAINING, so no queue was started.
+    for goal in ('SHIELD_CAMP_TRAINING', 'LANCER_CAMP_TRAINING',
+                 'MARKSMAN_CAMP_TRAINING', 'KEEP_TRAINING_PRODUCTIVE'):
+        assert session_route_for(goal, 'TRAIN_TROOPS') is None

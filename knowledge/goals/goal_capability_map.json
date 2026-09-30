@@ -178,7 +178,8 @@
         {
           "capability": "OPEN_BUILDING_PAGE",
           "alternatives": [
-            "OPEN_BUILDING"
+            "OPEN_TASK_FROM_QUICK_PANEL_BUILDING",
+            "OPEN_BUILDING_UPGRADE"
           ]
         },
         {
@@ -493,6 +494,17 @@
             "CONFIRM_MARCH",
             "DISPATCH_MARCH"
           ]
+        }
+      ]
+    },
+    "ALLIANCE_MOBILIZATION_ICEFIELD_BEAST": {
+      "category": "联盟总动员",
+      "composition": "ANY_OF",
+      "runtime_goal": true,
+      "capabilities": [
+        {
+          "capability": "SPEND_STAMINA_ON_RALLY",
+          "alternatives": ["START_RALLY", "JOIN_RALLY"]
         }
       ]
     },

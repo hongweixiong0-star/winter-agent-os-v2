@@ -111,6 +111,8 @@ TRAINING_SKILLS = frozenset({"SELECT_TRAINING_CAMP",
 STAMINA_FLOOR = 30.0
 
 SESSION_ROUTES: tuple[SessionRoute, ...] = (
+    SessionRoute(goal_id='ALLIANCE_MOBILIZATION_ICEFIELD_BEAST',adapter='bear',skills=frozenset({'START_RALLY'}),
+                 step_budget=14,time_budget_s=120.,extras={'target':'POLAR_TERROR','max_joins':1,'stamina_sink':True}),
     SessionRoute(goal_id='AVOID_STAMINA_WASTE',adapter='bear',skills=frozenset({'START_RALLY'}),
                  step_budget=14,time_budget_s=120.,extras={'target':'POLAR_TERROR','max_joins':1,'stamina_sink':True}),
     SessionRoute(goal_id="OBSERVE_FISHING_STATE", adapter="fishing",

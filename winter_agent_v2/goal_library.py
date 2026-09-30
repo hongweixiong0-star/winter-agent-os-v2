@@ -121,7 +121,7 @@ GOAL_ROUTES: dict[str, str] = {
     # Mobilization is a role-local Goal provider. Its accepted task is translated
     # to an existing route; it does not own a Scheduler or executor.
     "ALLIANCE_MOBILIZATION_TROOP_TRAINING_120K": "TRAIN",
-    "ALLIANCE_MOBILIZATION_ICEFIELD_BEAST": "ALLIANCE",
+    "ALLIANCE_MOBILIZATION_ICEFIELD_BEAST": "GIANT_BEAST",
     "ALLIANCE_MOBILIZATION_LARGE_GATHER": "GATHER_RESOURCE",
     "ALLIANCE_MOBILIZATION_BEAST": "BEAST_HUNT",
     "CLAIM_EXPLORATION_IDLE": "EXPLORATION",
@@ -1663,6 +1663,7 @@ class GoalLibrary:
                     "target": target_value,
                     "shared_credit_tags": ["ALLIANCE_MOBILIZATION"],
                     "execution_uses_existing_skills": list(skills),
+                    **({'rally_target': 'POLAR_TERROR'} if task_type == 'ICEFIELD_BEAST' else {}),
                 },
                 distance=(0.0 if complete else
                           max(0.0, target_value - progress_value)
