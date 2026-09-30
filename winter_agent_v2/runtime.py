@@ -860,9 +860,7 @@ class LiveRuntime:
         if self.validation_focus_route == 'DAILY':
             return [goal for goal in goals if goal.goal_id == 'DAILY_ACTIVITY_TARGET'
                     or getattr(goal, 'evidence', {}).get('source') == 'LIVE_DAILY_TASK_ROW']
-        return [goal for goal in goals if route_for(goal.goal_id) == self.validation_focus_route
-                or (self.validation_focus_route == 'DAILY'
-                    and getattr(goal, 'evidence', {}).get('source') == 'LIVE_DAILY_TASK_ROW')]
+        return [goal for goal in goals if route_for(goal.goal_id) == self.validation_focus_route]
 
     def _selectable(self, goals, deferrals: list[Deferral]):
         """The operator's policy and the deferral gate, applied to discovered goals.
@@ -6745,6 +6743,8 @@ class LiveRuntime:
             )
             best_goal = board[0][0] if board else None
             self._note_the_choice(board, before)
+            if best_goal is None and self._validation_route_scope_active():
+                return finish('NO_RUNNABLE_VALIDATION_GOAL')
             if best_goal is not None:
                 self._committed_goal = best_goal.goal_id
             if deferrals:
