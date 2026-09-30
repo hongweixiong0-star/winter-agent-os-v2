@@ -113,9 +113,38 @@ def _data_url(path: Path) -> str:
     return f"data:{mime};base64," + base64.b64encode(path.read_bytes()).decode("ascii")
 
 
+#: Fallback only.  The real source is ``config/v2.json``'s ``local_planner.endpoint``, which is the
+#: same value ``tools/launch_gui_model_server.py`` binds and the runtime calls.
+FALLBACK_ENDPOINT = "http://127.0.0.1:18080"
+
+
+def _default_endpoint() -> str:
+    """The model server's endpoint, read from the config rather than written down here.
+
+    This used to be the literal ``http://127.0.0.1:8080`` -- the WorkBuddy gateway, not the model
+    server.  Measured 2026-10-01: running the probe with no arguments hit the gateway, got
+    ``HTTP 403 {"error":"Missing required header: x-codebuddy-request"}``, and reported
+    ``screenshot_input_verified: false``.  That is a *false negative about the model* caused by an
+    argument default, and it is the worst kind of false alarm in this project -- a working
+    component reading as broken.
+
+    The config is read, not the package imported, because the docstring's intent stands: this probe
+    tests the model, not the client.  ``config/v2.json`` is configuration, not client code, and it
+    is already the one place the endpoint is declared; a literal here would be a second copy of a
+    number that has one.
+    """
+    try:
+        config = json.loads((Path(__file__).resolve().parents[1] / "config" / "v2.json")
+                            .read_text(encoding="utf-8"))
+        endpoint = str((config.get("local_planner") or {}).get("endpoint") or "").strip()
+    except (OSError, ValueError, AttributeError):
+        endpoint = ""
+    return endpoint or FALLBACK_ENDPOINT
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--endpoint", default="http://127.0.0.1:8080")
+    parser.add_argument("--endpoint", default=_default_endpoint())
     parser.add_argument("--model", default="UI-Venus-2-9B")
     parser.add_argument("--image", default="")
     parser.add_argument("--out", default="")
