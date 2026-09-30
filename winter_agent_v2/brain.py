@@ -730,6 +730,10 @@ class RuleBrain:
         # the generic Back won.  One observation per run is a bound, not a loop: nothing here
         # clicks by itself, and a panel with nothing to act on is left by the ordinary flow on
         # the very next step.
+        if world.page is Page.EVENT and self._goal_route() in {
+                'TRAIN', 'RESEARCH', 'BUILDING', 'GATHER_RESOURCE', 'GIANT_BEAST', 'BEAST_HUNT', 'INTEL'}:
+            return Decision('BACK', 'selected_goal_leaves_unrelated_event_session', world.confidence,
+                            'selected_goal_entry_reachable')
         if world.page is Page.EVENT and not self.activity_panel_observed:
             self.activity_panel_observed = True
             if self.current_goal == "EVENT":

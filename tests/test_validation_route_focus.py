@@ -55,6 +55,14 @@ def test_fishing_navigation_reaches_city_before_starting_local_session():
     assert brain.decide(WorldState(page=Page.HOME, confidence=.99), registry).skill == 'READ_FISHING_STATE'
 
 
+def test_productive_goal_leaves_fishing_page_instead_of_planning_unrelated_activity():
+    registry = v2_registry()
+    for route in ('TRAIN', 'RESEARCH', 'BUILDING', 'GATHER_RESOURCE'):
+        brain = RuleBrain()
+        brain.current_goal = route
+        assert brain.decide(WorldState(page=Page.EVENT, confidence=.99), registry).skill == 'BACK'
+
+
 def test_scope_role_mismatch_and_production_isolation():
     goals = [SimpleNamespace(goal_id='KEEP_RESEARCH_PRODUCTIVE')]
     runtime = _runtime('DEVELOPMENT_VALIDATION', '')
