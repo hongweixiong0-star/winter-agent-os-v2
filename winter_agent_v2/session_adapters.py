@@ -686,6 +686,10 @@ class BearSessionAdapter(SessionAdapter):
         if data.get("target"):
             self.target = str(data["target"])
         self._stamina_polar = bool(data.get('stamina_sink'))
+        if data.get('entry_skill'):
+            # START and JOIN are variants selected by the existing Goal/Brain
+            # path. Entering on JOIN must not silently become a captain action.
+            self.start_once = data['entry_skill'] == 'START_RALLY'
         joins = _as_int(data.get("max_joins"))
         if joins and joins > 0:
             self.max_joins = joins

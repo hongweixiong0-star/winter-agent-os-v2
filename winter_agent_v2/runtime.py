@@ -6352,7 +6352,8 @@ class LiveRuntime:
             return None
         plan = plan_for(route, goal_id=goal_id, role_id=self._calendar_role_id(),
                         goal_evidence=getattr(best_goal, "evidence", None))
-        adapter = make_adapter(route.adapter, extras=plan.extras,
+        adapter = make_adapter(route.adapter, extras={**plan.extras,
+                               'entry_skill': page_audit.get('attempted_skill', '')},
                                resource_budget=plan.spec.resource_budget)
         if adapter is None:
             return None

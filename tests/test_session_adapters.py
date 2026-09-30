@@ -510,6 +510,14 @@ class BearSessionAdapterTests(unittest.TestCase):
     def _host(self, worlds, **kwargs):
         return AdapterHost(worlds=worlds, **kwargs)
 
+    def test_production_join_entry_never_requires_start_rally(self):
+        adapter = make_adapter('bear', extras={'entry_skill': 'JOIN_RALLY', 'target': 'BEAR'})
+        context = context_for('PARTICIPATE_BEAR')
+        host = self._host([bear_world([bear_row()])])
+        step = adapter.choose_step(context, host, adapter.observe(context, host))
+        self.assertEqual(step.skill_id, 'JOIN_RALLY')
+        self.assertEqual(adapter.starts, 0)
+
     def test_start_rally_goes_first_and_only_once(self):
         adapter = BearSessionAdapter()
         context = context_for("PARTICIPATE_BEAR")
