@@ -22,7 +22,7 @@ TASK_TYPES: tuple[str, ...] = (
     "DAILY", "INTEL", "MAIL", "REWARD", "ALLIANCE", "ALLIANCE_DONATION",
     "TRAINING", "RESEARCH", "BUILDING", "GATHER", "STAMINA", "BEAST",
     "ICEFIELD_BEAST", "ARENA", "ACTIVITY_CLAIM", "FREE_REWARD",
-    "ALLIANCE_MOBILIZATION", "BEAR", "OTHER_CURRENT_EVENTS",
+    "ALLIANCE_MOBILIZATION", "BEAR", "FISHING", "OTHER_CURRENT_EVENTS",
 )
 
 # These definitions intentionally describe the evidence available in V2's real runtime
@@ -76,6 +76,8 @@ _EXACT_TASK_TYPES: dict[str, tuple[str, ...]] = {
 
 def task_types_for_goal(goal_id: object) -> tuple[str, ...]:
     value = str(goal_id or "").strip().upper()
+    if "FISHING" in value:
+        return ("FISHING",)
     if not value:
         return ()
     exact = _EXACT_TASK_TYPES.get(value)
@@ -471,6 +473,9 @@ class TaskCompletionStore:
             row["completion_events_today"] = len(completion_events.get(task_type, ()))
             if isinstance(previous, Mapping) and previous.get("last_goal_completion"):
                 row["last_goal_completion"] = previous["last_goal_completion"]
+            if isinstance(previous, Mapping) and previous.get("PRODUCTIVE_CYCLE_VERIFIED"):
+                row["PRODUCTIVE_CYCLE_VERIFIED"] = True
+                row["productive_cycle_evidence"] = previous.get("productive_cycle_evidence")
         observed_rows = [row for row in task_rows.values() if row["status"] != "NOT_DISCOVERED"]
         completed = sum(row["status"] == "COMPLETE" for row in observed_rows)
         expired = sum(row["status"] == "EXPIRED" for row in observed_rows)
@@ -576,6 +581,13 @@ class TaskCompletionStore:
                     "at": stamp_text, "episode_id": episode_id, "skill": episode.get("skill"),
                     "scope": "STEP_VERIFIED",
                 }
+                productive = {"TRAIN_TROOPS": "TRAINING", "START_RESEARCH": "RESEARCH",
+                              "RESEARCH": "RESEARCH", "BUILDING_UPGRADE": "BUILDING",
+                              "DISPATCH_MARCH": "GATHER"}.get(str(episode.get("skill") or ""))
+                if productive and productive in task_types_for_goal(goal_id):
+                    row = board["tasks"].setdefault(productive, _empty_daily_task(productive, stamp_text, ""))
+                    row["PRODUCTIVE_CYCLE_VERIFIED"] = True
+                    row["productive_cycle_evidence"] = history["last_step_success"]
             if result == "FAILURE":
                 history["last_failure"] = {
                     "at": stamp_text, "episode_id": episode_id, "skill": episode.get("skill"),

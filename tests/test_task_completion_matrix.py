@@ -8,10 +8,15 @@ def _load(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def test_fishing_has_its_own_completion_category():
+    assert task_types_for_goal("USE_NORMAL_FISHING_BAIT") == ("FISHING",)
+
+
 def test_daily_board_is_role_scoped_and_keeps_event_windows_distinct(tmp_path):
     path = tmp_path / "learning" / "task_completion_matrix.json"
     store = TaskCompletionStore(path)
-    stamp = "2026-09-29T10:00:00+08:00"
+    from datetime import datetime, timezone
+    stamp = datetime.now(timezone.utc).isoformat()
 
     store.observe_role(role_id="A", role_key="ROLE_A", observed_at=stamp, goals=[
         {"goal_id": "MAIL_ROUTINE", "status": "READY", "available_skills": ["OPEN_MAIL"]},
@@ -58,6 +63,7 @@ def test_episode_levels_distinguish_step_success_from_goal_completion(tmp_path):
     assert task["L5"]["proven"] is False
     assert task["last_success"] is None
     assert task["last_step_success"]["scope"] == "STEP_VERIFIED"
+    assert matrix["roles"]["A"]["daily_board"]["tasks"]["TRAINING"]["PRODUCTIVE_CYCLE_VERIFIED"] is True
 
     store.record_episode({
         "execution_mode": "PRODUCTION", "role_id": "A", "episode_id": "e2", "step_id": 3,
