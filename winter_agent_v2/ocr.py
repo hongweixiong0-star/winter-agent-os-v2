@@ -2886,12 +2886,13 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
             section_rows.append((section, row_name, row_y))
 
         if section == "建筑队列":
-            # The row is named by its own text (使馆升级中) and states itself with the
-            # countdown under it, so both lines are read and the row is judged busy when
-            # either says so.  Only the first row is taken: the panel draws 队列2 below
-            # it when the player owns a second building queue, and that row belongs to
-            # the same section rather than being a separate reading.
+            # Each visible queue has its own state. A running first queue must not
+            # hide an idle second queue; purchasing a queue is not an idle queue.
+            building_queues = []
             for name, name_y in rows:
+                if (name in QUICK_PANEL_IDLE_WORDS or name in QUICK_PANEL_COMPLETED_WORDS
+                        or _quick_panel_countdown(name)):
+                    continue
                 state = state_below(name_y)
                 if state is None:
                     continue
@@ -2902,14 +2903,22 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 if timer:
                     running = True
                 completed = state in QUICK_PANEL_COMPLETED_WORDS
-                panel["building"] = {
+                building_queues.append({
                     "name": name,
                     "timer": timer if running else None,
                     "status": "IN_PROGRESS" if running else "COMPLETED" if completed else "IDLE",
                     "queue_available": not running and not completed,
                     "source_word": state,
-                }
-                break
+                })
+            if building_queues:
+                idle = next((queue for queue in building_queues
+                             if queue["queue_available"] is True), None)
+                summary = dict(idle or building_queues[0])
+                summary["queues"] = building_queues
+                # This is about observed queues only, not inferred account capacity.
+                summary["all_queues_busy"] = all(
+                    queue["status"] == "IN_PROGRESS" for queue in building_queues)
+                panel["building"] = summary
 
         elif section == "部队训练":
             camps: dict[str, dict[str, object]] = {}
@@ -3082,7 +3091,12 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 key = camp
                 if key is None:
                     section_key = SECTION_ROW_KEYS.get(section)
-                    if section == "英雄招募":
+                    if section == "建筑队列":
+                        # Locate the queue selected by the same-frame aggregate,
+                        # rather than navigating back into the busy first queue.
+                        if name == (panel.get("building") or {}).get("name"):
+                            key = section_key
+                    elif section == "英雄招募":
                         # The section has two independently actionable rows. Keep both
                         # identities so the free advanced and epic entries cannot collapse
                         # into one goal or one click target.

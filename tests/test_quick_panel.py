@@ -150,6 +150,27 @@ class QuickPanelReaderTests(unittest.TestCase):
         """队列2 sits inside 建筑队列's section, so it must not overwrite the first row."""
         self.assertEqual(self.panel["building"]["name"], "使馆升级中")
 
+    def test_idle_second_queue_generates_ready_building_goal(self) -> None:
+        from winter_agent_v2.goal_library import GoalLibrary
+        tokens = list(PANEL_TOKENS)
+        tokens[4] = _token("空闲中", 223.5, 464.0)
+        panel = read_quick_panel(None, _NullOCR(tuple(tokens)))
+        building = panel["building"]
+        self.assertEqual(building["name"], "队列2")
+        self.assertTrue(building["queue_available"])
+        self.assertFalse(building["all_queues_busy"])
+        self.assertEqual(building["queues"][0]["timer"], "06:14:58")
+        goals = []
+        GoalLibrary._append_queue_goal(goals, "KEEP_BUILDING_PRODUCTIVE", building,
+                                       ("BUILDING_UPGRADE",), 1.0)
+        self.assertEqual(goals[0].status.value, "READY")
+
+    def test_purchase_second_queue_does_not_authorize_building(self) -> None:
+        building = self.panel["building"]
+        self.assertFalse(building["queue_available"])
+        self.assertTrue(building["all_queues_busy"])
+        self.assertEqual(len(building["queues"]), 1)
+
     def test_no_section_is_invented_when_it_was_not_read(self) -> None:
         """A section that could not be read is absent, not reported idle."""
         only_headers = read_quick_panel(
