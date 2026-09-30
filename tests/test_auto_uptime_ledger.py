@@ -126,6 +126,15 @@ class ThePanelRecordsTheRoundItJustDecidedCase:
     """
 
     def _panel_stub(self, monkeypatch, tmp_path: Path):
+        """A stub that carries exactly the interface the recorder is allowed to use.
+
+        Measured live 2026-09-30 12:24:46: an earlier version of the recorder read
+        ``self._state``, and the real panel wrote ``运行时长台账写入失败 ... AttributeError:
+        'ControlPanel' object has no attribute '_state'`` on every round -- because ``_state``
+        belongs to ``QueuePump``.  This stub had been given ``_state`` too, so it agreed with the
+        bug instead of catching it.  The test below now checks the interface against the real
+        class rather than against this dict.
+        """
         cp = importlib.import_module("tools.control_panel")
         ledger = tmp_path / "auto_uptime.jsonl"
         monkeypatch.setattr(cp, "AUTO_UPTIME_LEDGER_PATH", ledger)
@@ -136,10 +145,45 @@ class ThePanelRecordsTheRoundItJustDecidedCase:
 
         panel = type("PanelStub", (), {})()
         panel.runtime_store = type("Store", (), {"read": staticmethod(_read)})()
-        panel._state = {"runtime_loaded_revision": "f04714e+abc"}
         panel._append = lambda message: None
         panel._record_auto_round = cp.ControlPanel._record_auto_round.__get__(panel)
         return cp, panel, ledger
+
+    def test_the_recorder_only_touches_attributes_the_real_panel_has(self):
+        """Structural, because the failure was an interface the stub invented.
+
+        Live failure this pins: 2026-09-30 12:24:46, ``运行时长台账写入失败（不影响 AUTO）：
+        AttributeError: 'ControlPanel' object has no attribute '_state'`` on every round --
+        ``_state`` belongs to ``QueuePump``, and the stub had been handed one too, so the test
+        agreed with the bug instead of catching it.
+
+        Checked against the class source rather than ``hasattr``: the panel assigns these in
+        ``__init__`` (``self.runtime_store = RuntimeSnapshotStore(...)``), so they are instance
+        attributes and would fail a class-level ``hasattr`` even though every real panel has them.
+        """
+        import ast
+
+        cp = importlib.import_module("tools.control_panel")
+        names = set(cp.ControlPanel._record_auto_round.__code__.co_names)
+        tree = ast.parse(Path(cp.__file__).read_text(encoding="utf-8"))
+        defined: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "self":
+                if isinstance(node.ctx, (ast.Store, ast.Del)):
+                    defined.add(node.attr)
+            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                defined.add(node.name)
+            elif isinstance(node, ast.Assign):
+                for target in node.targets:
+                    if isinstance(target, ast.Name):
+                        defined.add(target.id)
+        for name in ("_state", "loaded_revision", "role_id", "runtime_store", "_append",
+                     "AUTO_UPTIME_LEDGER_PATH"):
+            if name in names:
+                assert name in defined, (
+                    f"the recorder reaches for {name!r}, which nothing in control_panel.py ever"
+                    " assigns or defines -- this is the 12:24:46 AttributeError"
+                )
 
     def test_a_continuing_round_is_written_as_continuing(self, monkeypatch, tmp_path: Path):
         cp, panel, ledger = self._panel_stub(monkeypatch, tmp_path)
@@ -151,7 +195,6 @@ class ThePanelRecordsTheRoundItJustDecidedCase:
         assert rows[0]["continues"] is True
         assert rows[0]["halt_reason"] == ""
         assert rows[0]["role_id"] == "1063040265"
-        assert rows[0]["repo_revision"] == "f04714e+abc"
 
     def test_a_halted_round_records_why(self, monkeypatch, tmp_path: Path):
         cp, panel, ledger = self._panel_stub(monkeypatch, tmp_path)

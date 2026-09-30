@@ -6629,11 +6629,14 @@ class ControlPanel:
                     executed=int(summary.get("executed") or 0),
                     verified=int(summary.get("verified") or 0),
                     failures=int(summary.get("failures") or 0),
-                    # The snapshot is the panel's own read of the round that just ended; the
-                    # revision is the one this window loaded, which is what the acceptance
-                    # question ("which code produced this uptime") has to be answerable against.
+                    # Only what this class really owns.  Measured live 2026-09-30 12:24:46: an
+                    # earlier version read ``self._state`` for the code revision and the write
+                    # died with AttributeError -- ``_state`` belongs to QueuePump, not to
+                    # ControlPanel.  The revision of the running code is already recorded
+                    # elsewhere (``desktop_startup.log`` CODE_COMMIT, and the episode's
+                    # ``repo_revision``); the ledger does not need to duplicate it and must not
+                    # depend on an interface this class does not have.
                     role_id=str(getattr(snapshot, "role_id", "") or ""),
-                    repo_revision=str(self._state.get("runtime_loaded_revision") or ""),
                 ),
             )
         except Exception as exc:  # noqa: BLE001 - measurement must never stop the run
