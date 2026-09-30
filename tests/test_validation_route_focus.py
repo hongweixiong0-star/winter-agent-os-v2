@@ -63,6 +63,17 @@ def test_productive_goal_leaves_fishing_page_instead_of_planning_unrelated_activ
         assert brain.decide(WorldState(page=Page.EVENT, confidence=.99), registry).skill == 'BACK'
 
 
+def test_training_scope_can_observe_unread_camps_without_synthesizing_training_action():
+    runtime = _runtime('DEVELOPMENT_VALIDATION', 'TRAIN')
+    selected = runtime._focus_validation_goals([])
+    assert len(selected) == 1
+    assert selected[0].goal_id == 'KEEP_TRAINING_PRODUCTIVE'
+    assert selected[0].available_skills == ('OPEN_QUICK_PANEL',)
+    assert selected[0].evidence['observation_only'] is True
+    runtime.validation_scope = {'target_skill': 'DOES_NOT_EXIST'}
+    assert runtime._focus_validation_goals([]) == []
+
+
 def test_scope_role_mismatch_and_production_isolation():
     goals = [SimpleNamespace(goal_id='KEEP_RESEARCH_PRODUCTIVE')]
     runtime = _runtime('DEVELOPMENT_VALIDATION', '')

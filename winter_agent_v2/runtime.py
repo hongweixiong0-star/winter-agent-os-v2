@@ -892,6 +892,15 @@ class LiveRuntime:
             return [goal for goal in goals if goal.goal_id == 'DAILY_ACTIVITY_TARGET'
                     or getattr(goal, 'evidence', {}).get('source') == 'LIVE_DAILY_TASK_ROW']
         scoped = [goal for goal in goals if route_for(goal.goal_id) == requested_route]
+        if requested_route == 'TRAIN' and not scoped and not any(
+                scope.get(key) for key in ('goal_id', 'capability_id', 'target_skill')):
+            # An unread camp is not a consumptive training authorization. Permit
+            # the existing training navigation to inspect the current role's panel;
+            # only subsequent live queue/strategy checks may authorize TRAIN_TROOPS.
+            from .goal_library import GoalState, GoalStatus
+            scoped.append(GoalState('KEEP_TRAINING_PRODUCTIVE', GoalStatus.READY,
+                          available_skills=('OPEN_QUICK_PANEL',), distance=1.0,
+                          evidence={'observation_only': True, 'source': 'DEVELOPMENT_FRESH_READ'}))
         if requested_route == 'FISHING' and not any(
                 getattr(goal.status, 'value', goal.status) == 'READY' for goal in scoped):
             # A bait-blocked probe can still ask the existing read-only session to
