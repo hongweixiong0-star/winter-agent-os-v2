@@ -3758,6 +3758,26 @@ def read_resource_tab_labels(
     return found
 
 
+def selected_tab_from_live_labels(image_path, labels, semantic):
+    """Bind the current bracket to OCR identity without assuming client tab order."""
+    if not labels:
+        return None
+    with Image.open(image_path) as source:
+        image = source.convert('RGB')
+    width = image.width
+    strokes = semantic._bracket_strokes(image)
+    matches = set()
+    for index, (left, _) in enumerate(strokes):
+        for right, _ in strokes[index + 1:]:
+            if not 130 * width / 720 <= right - left <= 175 * width / 720:
+                continue
+            center = (left + right) / 2 / width
+            candidates = [kind for kind, point in labels.items() if abs(point[0] - center) < 0.03]
+            if len(candidates) == 1:
+                matches.add(candidates[0])
+    return next(iter(matches)) if len(matches) == 1 else None
+
+
 #: The selected-building action bar, as a y-range like the tab strip above.
 #:
 #: Measured 2026-09-22 on the ten live frames that failed ``NAVIGATE_INFANTRY_CAMP``
@@ -5626,7 +5646,8 @@ class HybridVision:
                     # crashed the first live run of this change with
                     # ``AttributeError: 'HybridVision' object has no attribute 'semantic'``.
                     resource_selected_tab=(
-                        self.template_vision.semantic.anchored_tab_kind(image_path)
+                        selected_tab_from_live_labels(image_path, tab_labels, self.template_vision.semantic)
+                        or self.template_vision.semantic.anchored_tab_kind(image_path)
                         if primary.resource_search_open else None
                     ),
                     beast_search_submitted=bool(beast_search_result.get("title_level")),

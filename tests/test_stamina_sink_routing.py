@@ -95,3 +95,15 @@ def test_intel_hud_stamina_survives_popup_without_borrowing_other_role(tmp_path)
     assert stamina.evidence['reused'] is True
     assert not any(g.goal_id == 'AVOID_STAMINA_WASTE' for g in
                    GoalLibrary().discover(WorldState(page=Page.POPUP), observations={}))
+
+
+def test_selected_monster_tab_uses_current_bracket_and_label_not_old_order(tmp_path):
+    from PIL import Image
+    from winter_agent_v2.ocr import selected_tab_from_live_labels
+    path = tmp_path / 'frame.png'
+    Image.new('RGB', (720,1280)).save(path)
+    strokes = SimpleNamespace(_bracket_strokes=lambda image: [(332,10),(474,10)])
+    labels = {'BEAST':(.34,.74),'GIANT_BEAST':(.56,.74)}
+    assert selected_tab_from_live_labels(path,labels,strokes) == 'GIANT_BEAST'
+    assert selected_tab_from_live_labels(path,{'BEAST':(.34,.74)},strokes) is None
+    assert selected_tab_from_live_labels(path,{**labels,'MEAT':(.56,.74)},strokes) is None
