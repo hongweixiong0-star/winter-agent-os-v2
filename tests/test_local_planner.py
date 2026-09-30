@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -318,6 +319,16 @@ class TheRuntimeTakesTheAdvisorWithoutLearningWhatItIsTest(unittest.TestCase):
     are the cheap structural assertions that catch the same scope mistake immediately.
     """
 
+    def setUp(self):
+        # ``capture_dir`` used to be ``ROOT / "learning" / "_tmp_runtime_advisor"`` -- a path inside
+        # the production learning tree.  Nothing happened to create it on this code path, so the
+        # test passed, but it was a latent production write of exactly the kind the 2026-09-30 P0
+        # isolation asks to remove.
+        self._tmp = tempfile.TemporaryDirectory(prefix="runtime-advisor-")
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
     def _runtime(self, **kwargs):
         from types import SimpleNamespace
 
@@ -325,7 +336,7 @@ class TheRuntimeTakesTheAdvisorWithoutLearningWhatItIsTest(unittest.TestCase):
 
         return LiveRuntime(
             device=SimpleNamespace(), vision=None, semantic_vision=SimpleNamespace(),
-            capture_dir=ROOT / "learning" / "_tmp_runtime_advisor", **kwargs
+            capture_dir=Path(self._tmp.name), **kwargs
         )
 
     def test_the_factory_is_stored_under_its_own_name(self):

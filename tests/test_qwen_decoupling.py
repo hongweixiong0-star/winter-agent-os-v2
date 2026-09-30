@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -153,10 +154,21 @@ class RuleBasedBrainStillDecidesTest(unittest.TestCase):
 class ModelFailureIsAValueNotAnExceptionTest(unittest.TestCase):
     """``ask_json`` must never raise: a stopped server is a result, not a crash."""
 
+    def setUp(self):
+        # Not ``ROOT / "learning" / ...``: this file wrote its scratch ledger into the production
+        # learning tree, where the manifest classifies it RUNTIME_MUTABLE as ``learning/**/*.jsonl``.
+        # ``tests/conftest.py`` refuses that write now (2026-09-30 P0,
+        # PRODUCTION_RUNTIME_FILES_TOUCHED_BY_TESTS = 0), and the refusal is how it was found.
+        self._tmp = tempfile.TemporaryDirectory(prefix="qwen-ledger-")
+        self.ledger = Path(self._tmp.name) / "planner_call.jsonl"
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
     def test_an_unreachable_server_returns_a_failed_call(self):
         client = local_qwen.LocalQwen(
             endpoint="http://127.0.0.1:9",  # discard port: nothing listens
-            ledger_path=ROOT / "learning" / "_tmp_planner_call_test.jsonl",
+            ledger_path=self.ledger,
         )
         call = client.ask_json(system="s", user="u", timeout_s=2.0)
         self.assertFalse(call.ok)
@@ -164,17 +176,13 @@ class ModelFailureIsAValueNotAnExceptionTest(unittest.TestCase):
         self.assertEqual(call.text, "")
 
     def test_a_failed_call_is_still_recorded(self):
-        ledger = ROOT / "learning" / "_tmp_planner_call_test.jsonl"
-        ledger = Path(ledger)
+        ledger = self.ledger
         ledger.unlink(missing_ok=True)
         client = local_qwen.LocalQwen(endpoint="http://127.0.0.1:9", ledger_path=ledger)
         client.ask_json(system="s", user="u", timeout_s=2.0)
-        try:
-            rows = [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines()]
-            self.assertEqual(len(rows), 1)
-            self.assertFalse(rows[0]["ok"])
-        finally:
-            ledger.unlink(missing_ok=True)
+        rows = [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines()]
+        self.assertEqual(len(rows), 1)
+        self.assertFalse(rows[0]["ok"])
 
 
 if __name__ == "__main__":

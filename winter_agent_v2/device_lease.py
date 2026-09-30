@@ -28,6 +28,16 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 LEASE_FILE = "learning/DEVICE_LEASE.json"
+# The audit trail beside the lock.  Named as a constant rather than inlined at its two call
+# sites because it is a *write* target: ``tests/conftest.py`` redirects it so a test that
+# takes a lease cannot append rows to the production trail, and a literal would have left
+# the redirection half-done.
+TRAIL_FILE = "learning/device_leases.jsonl"
+# Resolved at construction time from a nameable constant, so a test can point the default
+# lease somewhere harmless.  ``DeviceLease()`` with no argument is the shape production
+# helpers use (``tools/autogen_closed_loop.py``), so an unpatchable default root meant any
+# test of that shape owned the real device.
+DEFAULT_ROOT = Path(__file__).resolve().parents[1]
 
 OWNER_GAMEPLAY = "GAMEPLAY"
 OWNER_DEVELOPMENT_VALIDATION = "DEVELOPMENT_VALIDATION"
@@ -103,7 +113,7 @@ class DeviceLease:
     """The lock.  Every method is safe to call from either owner's process."""
 
     def __init__(self, root: Path | str | None = None, *, ttl_seconds: float = DEFAULT_TTL_SECONDS) -> None:
-        self.root = Path(root) if root else Path(__file__).resolve().parents[1]
+        self.root = Path(root) if root else Path(DEFAULT_ROOT)
         self.path = self.root / LEASE_FILE
         self.ttl_seconds = float(ttl_seconds)
         self._lease_id = ""
@@ -366,7 +376,7 @@ class DeviceLease:
     def _trail(self) -> list[dict]:
         """The audit rows, oldest first.  An unreadable file is an empty trail."""
         try:
-            lines = (self.root / "learning/device_leases.jsonl").read_text(
+            lines = (self.root / TRAIL_FILE).read_text(
                 encoding="utf-8", errors="replace").splitlines()
         except OSError:
             return []
@@ -384,7 +394,7 @@ class DeviceLease:
     def _append(self, row: dict) -> None:
         """The audit trail: §19 requires trace_id, job_id, capability, both times, result."""
         try:
-            path = self.root / "learning/device_leases.jsonl"
+            path = self.root / TRAIL_FILE
             path.parent.mkdir(parents=True, exist_ok=True)
             with path.open("a", encoding="utf-8") as handle:
                 handle.write(json.dumps(
