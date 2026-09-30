@@ -399,6 +399,11 @@ class FishingSessionAdapter(SessionAdapter):
         domain.popup_word = next((word for word in FISHING_POPUP_WORDS if word in text), "")
         domain.result_page = any(word in text for word in FISHING_RESULT_WORDS)
         bait = re.search(FISHING_BAIT_PATTERN, text)
+        if domain.on_home and not bait:
+            # Current HUD crop, outside the realtime gate. Short fractions must not
+            # be interpreted as rotated text (live 9/10 was read as 0L/6).
+            counter = _text(host, frame, region=(.60, .848, .82, .898))
+            bait = re.search(FISHING_BAIT_PATTERN, counter)
         if bait:
             domain.bait, domain.bait_cap = int(bait.group(1)), int(bait.group(2))
         domain.points = _int_match(FISHING_POINTS_PATTERN, text)

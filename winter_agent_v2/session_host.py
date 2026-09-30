@@ -206,7 +206,7 @@ class LiveRuntimeSessionHost:
             return []
         roi = self._roi_of(region)
         try:
-            result = service.recognize(path, roi)
+            result = service.recognize(path, roi, upright=True) if roi else service.recognize(path)
         except Exception:  # noqa: BLE001 - an unreadable frame is "no words", not a crash
             return []
         width = height = 0.0
@@ -739,6 +739,13 @@ class LiveRuntimeSessionHost:
             self._device_lost_seen = True
             return StepExecution(executed=False, reason="DEVICE_LOST", latency_ms=latency_ms())
         point, why = self._locate_printed(path, word, service)
+        if word == "普通关卡" and point is not None:
+            import numpy as np
+            from .fishing_vision import locate_normal_stage
+            with Image.open(path) as image:
+                semantic_point = locate_normal_stage(np.asarray(image.convert("RGB")))
+            if semantic_point is not None:
+                point = semantic_point
         if point is None:
             return StepExecution(executed=False, reason=why, latency_ms=latency_ms(),
                                  evidence={"word": word, "frame": str(path)})
@@ -761,6 +768,7 @@ class LiveRuntimeSessionHost:
                                  reason=f"SESSION_TAP_FAILED:{type(exc).__name__}",
                                  latency_ms=latency_ms())
         self.note("session_printed_tap", word=word, x=x, y=y, frame=str(path))
+        self.sleep(self.binding.settle_seconds)
         return StepExecution(
             executed=True, reason=f"PRINTED_TAP:{word}", latency_ms=latency_ms(),
             tap_point=(x, y), backend="MAA" if hasattr(self.device(), "click") else "ADB",

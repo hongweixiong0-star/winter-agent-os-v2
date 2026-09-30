@@ -61,3 +61,23 @@ def test_current_role_ledger_does_not_double_subtract_observed_bait(tmp_path):
     assert updated.role("ROLE_A").points_total == 190
     assert len(ledger.read_text(encoding="utf-8").splitlines()) == 1
 
+
+def test_numeric_upright_observation_has_a_separate_ocr_cache(tmp_path):
+    from PIL import Image
+    from winter_agent_v2.ocr import OCRService
+    calls = []
+    class Backend:
+        name = "numeric_orientation_fixture"
+        def recognize(self, image):
+            calls.append("auto")
+            return ()
+        def recognize_upright(self, image):
+            calls.append("upright")
+            return ()
+    path = tmp_path / "counter.png"
+    Image.new("RGB", (120, 30), "white").save(path)
+    service = OCRService(Backend())
+    service.recognize(path)
+    service.recognize(path, upright=True)
+    service.recognize(path, upright=True)
+    assert calls == ["auto", "upright"]

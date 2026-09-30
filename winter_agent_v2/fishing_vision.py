@@ -37,6 +37,27 @@ import numpy as np
 #: line and inside the two side rails, so the HUD and the fisherman are excluded.
 WATER_ROI = (120, 430, 620, 1180)
 
+
+def locate_normal_stage(frame: np.ndarray) -> tuple[int, int] | None:
+    """Locate the wide blue normal-stage control on a confirmed fishing home frame.
+
+    The gold treasure control is excluded by colour. Coordinates belong only to this frame;
+    multiple eligible controls remain ambiguous rather than picking a remembered location.
+    """
+    if frame is None or frame.size == 0:
+        return None
+    height, width = frame.shape[:2]
+    top = round(height * 0.85)
+    hsv = cv2.cvtColor(frame[top:], cv2.COLOR_RGB2HSV)
+    blue = cv2.inRange(hsv, (85, 80, 140), (125, 255, 255))
+    components, _ = cv2.findContours(blue, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    targets = []
+    for contour in components:
+        x, y, w, h = cv2.boundingRect(contour)
+        if w >= width * .25 and height * .035 <= h <= height * .12:
+            targets.append((x + w // 2, top + y + h // 2))
+    return targets[0] if len(targets) == 1 else None
+
 #: A column must beat the runner-up by this factor to count as "the line".
 LINE_SEPARATION = 3.0
 #: Minimum dark pixels on the best column for the line to be considered present.

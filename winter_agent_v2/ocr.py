@@ -225,6 +225,13 @@ class RapidOCRBackend:
         self.timing_parse_ms = 0.0
 
     def recognize(self, image: Image.Image) -> tuple[OCRToken, ...]:
+        return self._recognize(image, use_cls=True)
+
+    def recognize_upright(self, image: Image.Image) -> tuple[OCRToken, ...]:
+        """Read a known-upright HUD field without rotating a short numeric label."""
+        return self._recognize(image, use_cls=False)
+
+    def _recognize(self, image: Image.Image, *, use_cls: bool) -> tuple[OCRToken, ...]:
         # VISION_POLICY_V1 section C/F: this is the deepest text-recognition choke
         # point in the project, so the realtime ban is enforced here as a backstop
         # as well as at the named entry points.  Offending code must fail loudly.
@@ -234,7 +241,7 @@ class RapidOCRBackend:
         import time as _t
         _t0 = _t.perf_counter()
 
-        rows, _ = self._engine(np.asarray(image.convert("RGB")))
+        rows, _ = self._engine(np.asarray(image.convert("RGB")), use_cls=use_cls)
         parse_started = time.monotonic()
         if not rows:
             self.timing_parse_ms += (time.monotonic() - parse_started) * 1000
@@ -276,6 +283,9 @@ class ResilientOCRBackend:
     def timing_parse_ms(self) -> float:
         return float(getattr(self.backend, "timing_parse_ms", 0.0))
 
+    def recognize_upright(self, image: Image.Image) -> tuple[OCRToken, ...]:
+        return getattr(self.backend, "recognize_upright", self.backend.recognize)(image)
+
     def recognize(self, image: Image.Image) -> tuple[OCRToken, ...]:
         delay = self.initial_backoff
         for attempt in range(self.retries + 1):
@@ -315,11 +325,12 @@ class OCRService:
         self,
         image_path: Path,
         roi: dict[str, float] | None = None,
+        *, upright: bool = False,
     ) -> OCRResult:
         timing_started = time.monotonic()
         self.timing_calls += 1
         digest = hashlib.sha256(image_path.read_bytes()).hexdigest()
-        key = f"{digest}:{self._roi_key(roi)}:{self.backend.name}"
+        key = f"{digest}:{self._roi_key(roi)}:{self.backend.name}:{upright}"
         if key in self._cache:
             self.timing_cache_hits += 1
             previous = self._cache[key]
@@ -337,7 +348,9 @@ class OCRService:
                     raise ValueError("OCR_ROI_OUT_OF_BOUNDS")
                 image = image.crop((left, top, right, bottom))
             backend_started = time.monotonic()
-            result = OCRResult(self.backend.recognize(image), self.backend.name)
+            reader = (getattr(self.backend, "recognize_upright", self.backend.recognize)
+                      if upright else self.backend.recognize)
+            result = OCRResult(reader(image), self.backend.name)
             self.timing_backend_ms += (time.monotonic() - backend_started) * 1000
         self.timing_total_ms += (time.monotonic() - timing_started) * 1000
         self._cache[key] = result
