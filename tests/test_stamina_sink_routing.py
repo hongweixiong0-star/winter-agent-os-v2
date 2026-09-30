@@ -180,3 +180,24 @@ def test_created_rally_hud_proof_requires_debit_new_march_and_same_row_timer():
     assert BearSessionAdapter._polar_hud_proof(before,replace(after,stamina={'current':284}),tokens) is None
     assert BearSessionAdapter._polar_hud_proof(before,replace(after,march_used=0),tokens) is None
     assert BearSessionAdapter._polar_hud_proof(before,after,tokens[:1]+tokens[2:]) is None
+
+
+def test_live_march_panel_rally_wait_blocks_second_start_even_with_free_slots(tmp_path):
+    from PIL import Image
+    from winter_agent_v2.ocr import read_march_rally_wait
+    from winter_agent_v2.goal_library import GoalLibrary
+    path=tmp_path/'map.png';Image.new('RGB',(720,1280)).save(path)
+    tokens=[SimpleNamespace(text='行军',centre=(70,238)),
+            SimpleNamespace(text='采集中',centre=(90,286)),
+            SimpleNamespace(text='00:17:04',centre=(120,307)),
+            SimpleNamespace(text='集结中',centre=(90,347)),
+            SimpleNamespace(text='00:02:58',centre=(120,367))]
+    ocr=SimpleNamespace(recognize=lambda p:SimpleNamespace(tokens=tokens))
+    reading=read_march_rally_wait(path,ocr,2)
+    assert reading['remaining_seconds']==178 and reading['ownership']=='UNKNOWN'
+    world=WorldState(page=Page.MAP,march_used=2,march_max=6,stamina={'current':243},rally=reading)
+    goal=next(g for g in GoalLibrary().discover(world) if g.goal_id=='AVOID_STAMINA_WASTE')
+    runtime,_=runtime_goal()
+    runtime._sync_brain_goal(goal,SimpleNamespace(capabilities={}))
+    assert runtime.brain.current_goal=='STAMINA_WAIT'
+    assert read_march_rally_wait(path,ocr,None)=={}

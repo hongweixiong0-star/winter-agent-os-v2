@@ -1136,7 +1136,8 @@ class GoalLibrary:
                           "intel_state": dict(world.intel or ((observations or {}).get('intel', {}).get('reading')
                               if not (observations or {}).get('intel', {}).get('overdue', True) else {}) or {}),
                           "idle_marches":world.idle_marches,
-                            "own_rally":dict((world.alliance or {}).get('rally') or
+                            "own_rally":dict(world.rally if world.rally.get('source') == 'LIVE_MARCH_PANEL' else
+                                (world.alliance or {}).get('rally') or
                                 ((observations or {}).get('rally', {}).get('reading')
                                  if not (observations or {}).get('rally', {}).get('overdue', True) else {}) or {})},
                 # Stamina still at or above the floor is exactly the work left to do, and

@@ -3778,6 +3778,32 @@ def selected_tab_from_live_labels(image_path, labels, semantic):
     return next(iter(matches)) if len(matches) == 1 else None
 
 
+def read_march_rally_wait(image_path, ocr, march_used):
+    """Current role's march panel, distinct from an alliance rally list."""
+    if march_used is None:
+        return {}
+    with Image.open(image_path) as image:
+        width, height = image.size
+    tokens = ocr.recognize(image_path).tokens
+    headers = [t for t in tokens if t.text == '行军' and t.centre[0] / width < .4]
+    if len(headers) != 1:
+        return {}
+    rows = [t for t in tokens if t.text == '集结中' and t.centre[0] / width < .4
+            and t.centre[1] > headers[0].centre[1]]
+    if not rows:
+        return {'waiting_rally':False, 'ownership':'NONE', 'source':'LIVE_MARCH_PANEL'}
+    timers = []
+    for row in rows:
+        for t in tokens:
+            if not 0 <= (t.centre[1] - row.centre[1])/height <= .04 or abs(t.centre[0]-row.centre[0])/width > .18:
+                continue
+            match = re.fullmatch(r'(?:(\d{1,2}):)?(\d{1,2}):(\d{2})', t.text)
+            if match:
+                timers.append(int(match[1] or 0)*3600+int(match[2])*60+int(match[3]))
+    return {'waiting_rally':True, 'remaining_seconds':min(timers) if timers else None,
+            'source':'LIVE_MARCH_PANEL', 'ownership':'UNKNOWN', 'target_type':'UNKNOWN'}
+
+
 #: The selected-building action bar, as a y-range like the tab strip above.
 #:
 #: Measured 2026-09-22 on the ten live frames that failed ``NAVIGATE_INFANTRY_CAMP``
@@ -5623,6 +5649,7 @@ class HybridVision:
                     marches=tuple(fused_marches),
                     march_used=march_used,
                     march_max=march_max,
+                    rally=read_march_rally_wait(image_path, self.ocr, march_used) or primary.rally,
                     stamina=stamina,
                     # The tab itself, by its own name.  A search panel whose strip was read is
                     # described by the tabs that were positively found; the bool keeps the

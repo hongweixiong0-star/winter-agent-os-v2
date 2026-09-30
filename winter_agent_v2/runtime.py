@@ -1148,7 +1148,7 @@ class LiveRuntime:
         own = data.get('own_rally') or {}
         sink = choose_stamina_goal(data.get('current'), 'AVAILABLE' if runnable_intel else 'NOT_AVAILABLE',
             not getattr(self,'_giant_stamina_failed',False), not beast_blocked,
-            idle_slots=data.get('idle_marches'), own_rally=bool(own.get('dispatch_pending')) or
+            idle_slots=data.get('idle_marches'), own_rally=bool(own.get('dispatch_pending') or own.get('waiting_rally')) or
                 (own.get('ownership') == 'SELF' and isinstance(own.get('remaining_seconds'),int)
                  and own['remaining_seconds'] > 0))
         route = {'INTEL':'SPEND_STAMINA','GIANT_BEAST':'GIANT_BEAST','BEAST_HUNT':'BEAST_HUNT',
