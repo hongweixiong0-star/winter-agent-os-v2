@@ -40,7 +40,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .executor import Executor
-from .maa_executor import MaaExecutorAdapter, RecognitionOutcome
+from .maa_executor import MaaExecutorAdapter, RecognitionOutcome, _VerbStats
 from .models import Action, ExecutionResult
 
 MAA = "MAA"
@@ -340,6 +340,17 @@ class ExecutorRouter:
         #: Set when a node of another recognition kind was asked to fail informatively:
         #: it distinguishes "the control is absent" from "this node kind is misrouted".
         self.last_recognition_error: str | None = None
+        #: Per-verb outcome tallies, the same shape ``MaaExecutorAdapter`` keeps.
+        #: The bear auto-join guard records its no-op/refusal here, so a guard that
+        #: fires is visible in diagnostics instead of only in the episode stream.
+        self._stats: dict[str, _VerbStats] = {}
+
+    # ------------------------------------------------------------------ stats
+    def _stat(self, verb: str) -> _VerbStats:
+        return self._stats.setdefault(verb, _VerbStats())
+
+    def stats(self) -> dict[str, Any]:
+        return {verb: value.to_dict() for verb, value in self._stats.items()}
 
     # -------------------------------------------------------------- resolution
     def _declared_recognition(self, skill_id: str | None) -> str:

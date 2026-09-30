@@ -37,11 +37,6 @@ STRICT_FILES = ("winter_agent_v2/runtime.py",)
 # Each entry is (attribute, why it is still here).  Fixing one means deleting its
 # entry here -- the ledger test fails on a stale or missing entry by construction.
 KNOWN_DANGLING = {
-    # self._stat("bear_guard").record(ok, ms, reason) on the BEAR_AUTO_JOIN guard
-    # path.  Introduced with the guard in 301feea; ``def _stat`` never existed in
-    # that file.  Latent: only reached when the bear toggle reads ON/UNKNOWN.
-    # The matching recorder exists as ``maa_executor._VerbStats``.
-    "executor_router.py:self._stat",
     # Already tracked by tests/test_wiring_static_resolution.py as a dangling call.
     "ocr.py:self._read_daily_activity_badge",
 }

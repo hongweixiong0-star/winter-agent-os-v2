@@ -12,6 +12,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -468,6 +469,119 @@ class BackendChainTests(unittest.TestCase):
         for name in ("executor_backend", "capture_backend", "recognition_backend", "action_backend"):
             self.assertIn(name, fields)
         self.assertIsInstance(Episode("S", {}, {}, {}, "SUCCESS", None, 0.0, "PRODUCTION").capture_backend, str)
+
+
+class BearAutoJoinGuardTests(unittest.TestCase):
+    """The BEAR_AUTO_JOIN toggle guard must record its outcome, never raise.
+
+    Regression for 2026-09-30.  ``_bear_auto_join_guard`` calls
+    ``self._stat("bear_guard").record(...)``, but that recorder only ever existed
+    on ``MaaExecutorAdapter``: the guard was ported onto ``ExecutorRouter``
+    without it.  Nothing created the attribute, so the first time the bear
+    toggle read ON or UNKNOWN the router raised ``AttributeError`` -- the same
+    "dangling read" shape that had already cost production a 5.9-hour outage on
+    the training-camp path.  It stayed latent because nothing exercised the
+    guard, so these tests are the guard's first behavioural coverage.
+
+    The switch reader is stubbed deliberately: the subject is the guard's
+    contract (no-op vs refusal vs fall-through), not the OCR classifier, which
+    has its own evidence.
+    """
+
+    def _router(self, tmp: str):
+        import numpy as np
+
+        class _Adapter:
+            unavailable_reason = None
+            capture_backend = "MAA_MUMU_EXTRAS"
+
+            def available(self_inner):
+                return True
+
+            def frame(self_inner):
+                # Only the classifier's verdict matters here and it is stubbed,
+                # so a black frame of the real geometry is enough.
+                return np.zeros((1280, 720, 3), dtype=np.uint8)
+
+        adb_device = _StubDevice()
+        resolver = lambda _semantic: (0.5, 0.5)  # noqa: E731
+        router = ExecutorRouter(
+            adb_executor=_executor(adb_device, resolver, ADB),
+            maa_adapter=_Adapter(),
+            routing=RoutingTable(skills={}),
+            ledger=BackendLedger(path=Path(tmp) / "ledger.jsonl"),
+            adb_resolver=resolver,
+        )
+        router.maa_executor = _executor(_StubDevice(), resolver, MAA)
+        return router, adb_device
+
+    def _reads(self, state: str):
+        return mock.patch("winter_agent_v2.bear_state.read_state_from_image",
+                          return_value={"state": state, "reason": "TEST_STUB"})
+
+    def test_the_guard_declines_everything_that_is_not_the_bear_switch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            router, _adb = self._router(tmp)
+            cases = (
+                (Action("TAP_SEMANTIC", "BTN_BEAR_AUTO_JOIN"), "SOME_OTHER_SKILL"),
+                (Action("SWIPE", "BTN_BEAR_AUTO_JOIN"), "BEAR_AUTO_JOIN"),
+                (Action("TAP_SEMANTIC", "BTN_X"), "BEAR_AUTO_JOIN"),
+            )
+            for action, skill_id in cases:
+                with self.subTest(action=action, skill_id=skill_id):
+                    self.assertIsNone(router._bear_auto_join_guard(action, skill_id))
+            # A guard that never fired must not have written a tally either.
+            self.assertEqual(router.stats(), {})
+
+    def test_an_on_switch_is_a_recorded_noop_not_a_crash(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            router, adb_device = self._router(tmp)
+            with self._reads("ON"):
+                result = router.execute(Action("TAP_SEMANTIC", "BTN_BEAR_AUTO_JOIN"),
+                                        skill_id="BEAR_AUTO_JOIN")
+            self.assertTrue(result.executed)
+            self.assertEqual(result.detail["guard"], "NOOP_ALREADY_ON")
+            self.assertEqual(adb_device.taps, [])
+            self.assertEqual(router.stats()["bear_guard"]["successes"], 1)
+            self.assertEqual(router.stats()["bear_guard"]["attempts"], 1)
+
+    def test_an_unknown_switch_is_refused_and_recorded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            router, adb_device = self._router(tmp)
+            with self._reads("UNKNOWN"):
+                result = router.execute(Action("TAP_SEMANTIC", "BTN_BEAR_AUTO_JOIN"),
+                                        skill_id="BEAR_AUTO_JOIN")
+            self.assertFalse(result.executed)
+            self.assertEqual(result.error, "BEAR_TOGGLE_STATE_UNKNOWN")
+            self.assertEqual(result.detail["guard"], "BLOCKED_UNKNOWN_STATE")
+            # The refusal must not have been preceded by a tap.
+            self.assertEqual(adb_device.taps, [])
+            stats = router.stats()["bear_guard"]
+            self.assertEqual((stats["attempts"], stats["successes"], stats["failures"]), (1, 0, 1))
+            self.assertEqual(stats["last_error"], "BLOCKED_UNKNOWN_STATE")
+
+    def test_an_off_switch_falls_through_to_the_normal_route(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            router, adb_device = self._router(tmp)
+            with self._reads("OFF"):
+                self.assertIsNone(router._bear_auto_join_guard(
+                    Action("TAP_SEMANTIC", "BTN_BEAR_AUTO_JOIN"), "BEAR_AUTO_JOIN"))
+                result = router.execute(Action("TAP_SEMANTIC", "BTN_BEAR_AUTO_JOIN"),
+                                        skill_id="BEAR_AUTO_JOIN")
+            self.assertTrue(result.executed)
+            self.assertEqual(len(adb_device.taps), 1)
+            self.assertNotIn("bear_guard", router.stats())
+
+    def test_the_tallies_match_the_maa_adapter_shape(self) -> None:
+        """One diagnostic format, whichever object did the recording."""
+        from winter_agent_v2.maa_executor import _VerbStats
+        with tempfile.TemporaryDirectory() as tmp:
+            router, _adb = self._router(tmp)
+            self.assertIsInstance(router._stat("any_verb"), _VerbStats)
+            self.assertEqual(
+                sorted(router._stat("any_verb").to_dict()),
+                ["attempts", "failures", "last_error", "mean_ms", "success_rate", "successes"],
+            )
 
 
 if __name__ == "__main__":
