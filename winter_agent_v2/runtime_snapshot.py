@@ -104,6 +104,14 @@ NON_FATAL_STOPS = {
     "every_page_this_run_was_fruitless", "GLOBAL_WAIT",
     # Sibling of ``GLOBAL_WAIT``: an honest "nothing planned this tick", not a device fault.
     "ACTIVE_ROLE_NO_CANDIDATE_REOBSERVE",
+    # LOOP_DETECTOR_V1 exhausted its recovery ladder inside one Goal's session and handed
+    # that Goal back (``session_engine.SESSION_DOMAIN_STUCK``).  Registered here for the same
+    # reason ``SEMANTIC_TARGET_NOT_VERIFIED`` is: §7 requires Recover -> Bounded Retry ->
+    # Defer/Skip -> Next Goal, never a stopped AUTO.  The whole point of the defer rung is
+    # that the *other* Goals still get their turn, so a reason that deferred would be a
+    # reason that stopped the agent if it were classified as a system failure -- the exact
+    # contradiction the directive forbids ("Loop Detector 不得停止整个AUTO").
+    "SESSION_DOMAIN_STUCK",
 }
 
 EXPECTED_NO_ACTION_STOPS = frozenset({
@@ -142,8 +150,38 @@ CAPABILITY_GAP_STOPS = frozenset({
     # ``classify_stop_reason`` to SYSTEM_FAILURE, which made the panel's ``healthy`` false and
     # stopped AUTO entirely; measured on pin 7055f02, 2026-09-30, the device then sat idle.
     "ACTIVE_ROLE_NO_CANDIDATE_REOBSERVE",
+    # LOOP_DETECTOR_V1's ladder ran out and handed the Goal back.  It belongs with
+    # ``SEMANTIC_TARGET_NOT_VERIFIED`` -- §7's "Recover -> Bounded Retry -> Defer/Skip -> Next
+    # Goal" is exactly what the ladder already did, so the ending is the *successful* outcome
+    # of the remedy rather than a fault.  Listed here as well as in ``NON_FATAL_STOPS``
+    # because the two tables answer different questions (this one decides the category, that
+    # one decides fatality), and a reader should not have to infer either.
+    "SESSION_DOMAIN_STUCK",
 })
 COMPLETED_STOPS = frozenset({"MAX_ACTIONS_REACHED", "TARGET_SKILL_VERIFIED"})
+
+
+def _declares(token: str, declared: "frozenset[str] | set[str]") -> bool:
+    """Is this reason one the table declares, allowing a ``TOKEN:detail`` suffix?
+
+    Reasons in this project carry detail after a colon, and the oldest example is
+    ``ROLE_SWITCHED_TO:``.  Matching only the bare token means a reason can be *declared*
+    and still fall through to SYSTEM_FAILURE -- which the panel reads as ``healthy=False``,
+    which stops AUTO.  Measured 2026-09-30 on LOOP_DETECTOR_V1's own ending: the engine
+    emits ``SESSION_DOMAIN_STUCK:AAA: the same signature 3x running (ab12cd34ef)`` and the
+    bare-token test called it a system failure, so the first version of the loop detector
+    would have stopped the agent at exactly the moment it had successfully handed a stuck
+    Goal back.
+
+    Only the colon form is accepted.  A *prefix* match on arbitrary text would make
+    ``SEMANTIC_NOT_FOUND_BECAUSE_X`` match ``SEMANTIC_NOT_FOUND``, and widening a "do not
+    stop" table into a substring test is how a classifier starts excusing real faults.
+    """
+    want = {item.upper() for item in declared}
+    if token in want:
+        return True
+    head, sep, _detail = token.partition(":")
+    return bool(sep) and head.strip() in want
 
 
 def classify_stop_reason(
@@ -189,9 +227,9 @@ def classify_stop_reason(
         # A role handoff ends this process intentionally. The control plane starts a
         # fresh cycle, whose first frame must identify the new account before acting.
         return StopCategory.EXPECTED_NO_ACTION
-    if token in {item.upper() for item in EXPECTED_NO_ACTION_STOPS}:
+    if _declares(token, EXPECTED_NO_ACTION_STOPS):
         return StopCategory.EXPECTED_NO_ACTION
-    if token in {item.upper() for item in CAPABILITY_GAP_STOPS}:
+    if _declares(token, CAPABILITY_GAP_STOPS):
         return StopCategory.CAPABILITY_GAP
     # A verifier miss AND a stop reason nothing declares: only then is this round a system
     # failure.  The blanket short-circuit used to sit above the two sets, so one miss anywhere

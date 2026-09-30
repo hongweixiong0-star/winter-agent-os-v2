@@ -51,6 +51,25 @@ from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Any, Callable, Iterable, Mapping, Protocol, runtime_checkable
 
+# LOOP_DETECTOR_V1 as a **common capability of this engine** (operator directive
+# 2026-09-30).  It is imported here rather than implemented per adapter for the same reason
+# the lifecycle is: a loop is a property of "a Goal doing steps", not of fishing or bearing,
+# and four adapters each growing their own repeat counter is four places to get the threshold
+# wrong.  ``loop_detector`` imports the standard library only, so this adds no dependency and
+# cannot become a second runtime, world or model.
+from .loop_detector import (
+    LoopDetector,
+    LoopSignature,
+    RUNG_DEFER_GOAL,
+    RUNG_FEATURE_REOPEN,
+    RUNG_HOME_RECOVERY,
+    RUNG_LOCAL_REOBSERVE,
+    RUNG_SEMANTIC_RETRY,
+    RUNG_WIDEN_OBSERVE,
+    progress_from_outcome,
+    relevant_state_hash,
+)
+
 
 # --------------------------------------------------------------------------- lifecycle
 
@@ -166,6 +185,12 @@ class SessionSpec:
     #: gives the device back.  A session that waits forever is a scheduler that dropped
     #: out of the loop, which is exactly what constraint 8 forbids.
     max_wait_s: float = 45.0
+    #: How many rungs of ``loop_detector.RECOVERY_LADDER`` one session may spend on loops.
+    #: A fourth budget alongside the three retry budgets, deliberately separate: a step that
+    #: fails twice and a step that is issued a *third identical time* are different facts,
+    #: and one counter cannot bound both without making the loop remedy depend on the retry
+    #: budget's value.  Default covers the whole ladder (6 rungs in, `defer_goal` out).
+    max_loop_recoveries: int = 6
     #: The fixed class the yield oracle must report for a preemption to be accepted.
     yield_classes: tuple[str, ...] = ("HARD_EVENT_PREEMPT", "EVENT_DEADLINE", "OPERATOR",
                                       "FATAL", "RECOVERY")
@@ -181,6 +206,7 @@ class SessionSpec:
         object.__setattr__(self, "max_recoveries", max(0, int(self.max_recoveries or 0)))
         object.__setattr__(self, "max_ambiguous_retries", max(0, int(self.max_ambiguous_retries or 0)))
         object.__setattr__(self, "max_wait_s", max(0.0, float(self.max_wait_s or 0.0)))
+        object.__setattr__(self, "max_loop_recoveries", max(0, int(self.max_loop_recoveries or 0)))
         object.__setattr__(self, "goal_id", str(self.goal_id))
         object.__setattr__(self, "adapter", str(self.adapter))
         object.__setattr__(self, "skill_id", str(self.skill_id or ""))
@@ -342,6 +368,15 @@ class StepVerdict:
     outcome: StepOutcome
     reason: str = ""
     evidence: Mapping[str, Any] = field(default_factory=dict)
+    #: Goal-level progress, when the adapter can actually tell.  ``None`` means "the adapter
+    #: did not say", and the loop detector then falls back to the step's own outcome.
+    #:
+    #: The two are not the same fact, and LOOP_DETECTOR_V1's no-progress pattern needs the
+    #: difference: a daily-reward cycle in production has every tap *verified* (``SUCCESS``)
+    #: while ``goal_progress`` stayed False for the whole cycle, which the step outcome alone
+    #: reads as progress and therefore as honest work.  Only the domain knows whether a meter
+    #: moved, so the domain is asked -- and an adapter with nothing to say says nothing.
+    progress: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -419,6 +454,13 @@ class SessionState:
     ambiguous_retries: int = 0
     observes: int = 0
     waits: int = 0
+    #: Rungs of the recovery ladder this session has spent.  Kept here rather than inside
+    #: the detector because it bounds a *session*; the detector owns which rung is next.
+    loop_recoveries: int = 0
+    #: LOOP_DETECTOR_V1.  One per session by construction -- ``run`` builds a fresh
+    #: ``SessionState``, so a Goal that looped cannot leave its rung index for the next
+    #: Goal's session to start from.
+    loop: LoopDetector = field(default_factory=LoopDetector)
     #: Why the session stopped, in the engine's own vocabulary.  Empty while running.
     failure: str = ""
     yield_reason: str = ""
@@ -526,6 +568,17 @@ class SessionHost(Protocol):
     def observe(self, phase: str) -> Any:
         """The runtime's existing observation (full WorldState).  Safe points only."""
 
+    def widen(self, phase: str = "loop_widen") -> Any:
+        """Look again with every expensive sweep allowed, and hand back a fresh WorldState.
+
+        LOOP_DETECTOR_V1's ``widen_observe`` rung.  It is the *same* observation the runtime
+        already performs when a focused look leaves a frame unnamed -- one flag on one code
+        path, not a second reader.  A host that cannot widen (a replay harness, a unit test)
+        simply omits this method and the rung degrades to a plain re-observe; the engine asks
+        with ``getattr`` rather than by catching ``TypeError``, because a ``TypeError`` from
+        inside a real observation must not be misread as "this host cannot widen".
+        """
+
     def execute_step(self, step: SessionStep) -> StepExecution:
         """Run one atomic skill through the single Executor + ExecutorRouter."""
 
@@ -569,6 +622,10 @@ class SessionEngine:
     #: log answers "which goal ran a session and how did it end" without a report.
     START_EVENT = "session_start"
     END_EVENT = "session_end"
+    #: The registered atomic skill the ladder's HOME rung dispatches.  Named here so the rung
+    #: goes through ``host.execute_step`` like any other step -- one executor, not a second
+    #: navigation path.
+    HOME_SKILL = "OPEN_HOME"
 
     def run(self, context: SessionContext, adapter: "SessionAdapter", host: SessionHost) -> SessionResult:
         spec = context.spec
@@ -926,6 +983,39 @@ class SessionEngine:
                 verdict = StepVerdict(StepOutcome.AMBIGUOUS, "VERIFIER_NO_VERDICT")
             last_reason = verdict.reason or last_reason
 
+            # ---- LOOP_DETECTOR_V1 -------------------------------------------------
+            # Only *answered* attempts are shown to the detector.  ``AMBIGUOUS`` means the
+            # client never answered and ``STILL_PENDING`` means honest work is in flight;
+            # both already have their own bounded ladders and their own names, and feeding
+            # them here would relabel "the screen was unreadable" as "the flow is looping"
+            # -- a different fact with a different remedy.  A loop is an *answered* action
+            # that changed nothing.
+            #
+            # Every answered attempt is fed, accepted or not: a success is how a pending
+            # detection learns it was wrong, and dropping it here would leave every claim
+            # permanently un-retracted.
+            if verdict.outcome not in (StepOutcome.AMBIGUOUS, StepOutcome.STILL_PENDING):
+                loop = state.loop.observe(self._signature_for(context, step, execution, verdict))
+                if loop.detected:
+                    state.loop_recoveries += 1
+                    if loop.wants_defer or state.loop_recoveries > context.spec.max_loop_recoveries:
+                        # The ladder is spent.  End the SESSION with a name the stop-reason
+                        # classifier declares recoverable, so the runtime defers this Goal
+                        # and AUTO continues with the next one.  A loop detector that could
+                        # stop AUTO would be a second Scheduler, which this is not.
+                        return self._terminal(context, state, StepOutcome.FAILED,
+                                              f"{SESSION_DOMAIN_STUCK}:{loop.reason}", step,
+                                              execution, semantic_retries, continues=False)
+                    if self._apply_loop_rung(context, state, adapter, host, step, execution, loop):
+                        continue
+                    # A rung that could not be applied must never degrade into "issue the
+                    # same step once more" -- that is the behaviour the detector exists to
+                    # stop.  Fall through to the ordinary failure path, which ends the
+                    # session instead.
+                    return self._terminal(context, state, StepOutcome.FAILED,
+                                          f"{SESSION_DOMAIN_STUCK}:{loop.rung}_UNAVAILABLE",
+                                          step, execution, semantic_retries, continues=False)
+
             if verdict.outcome in _ACCEPTED:
                 state.verified_steps += 1
                 return self._terminal(context, state, verdict.outcome, last_reason, step,
@@ -968,6 +1058,114 @@ class SessionEngine:
         return self._terminal(context, state, StepOutcome.FAILED,
                               f"{SESSION_STEP_NOT_VERIFIED}:{last_reason}", step, None,
                               state.semantic_retries, continues=False)
+
+    # ------------------------------------------------------- LOOP_DETECTOR_V1 plumbing
+
+    @staticmethod
+    def _signature_for(context: SessionContext, step: SessionStep, execution: StepExecution | None,
+                       verdict: StepVerdict) -> LoopSignature:
+        """One attempt, as ``loop_detector`` wants to see it: context, action, feedback.
+
+        The state read is the *after* frame when there is one, because the question the
+        detector asks is "did this action change anything"; the frame the decision was made
+        on would answer "did anything change before the action", which is the wrong fact.
+
+        ``progress`` is the *Goal*-level fact, so the adapter's own answer wins whenever it
+        gave one; the step's outcome is only the fallback.  They are different questions --
+        a step can succeed while the Goal stands still, and that case is precisely the one
+        the no-progress pattern exists for.
+        """
+        state_like = getattr(execution, "after", None)
+        if state_like is None:
+            state_like = getattr(execution, "before", None)
+        page = getattr(state_like, "page", None)
+        outcome = getattr(verdict, "outcome", None)
+        declared = getattr(verdict, "progress", None)
+        return LoopSignature(
+            role_id=str(context.role_id or ""),
+            page=str(getattr(page, "value", page) or ""),
+            goal_id=str(context.goal_id or ""),
+            skill_id=str(getattr(step, "skill_id", "") or ""),
+            semantic_target=str(getattr(step, "target", "") or ""),
+            state_hash=relevant_state_hash(state_like),
+            verifier_outcome=str(getattr(outcome, "value", outcome) or ""),
+            progress=declared if declared is not None else progress_from_outcome(outcome),
+        )
+
+    def _apply_loop_rung(self, context: SessionContext, state: SessionState,
+                         adapter: "SessionAdapter", host: SessionHost, step: SessionStep,
+                         execution: StepExecution | None,
+                         loop: Any) -> bool:
+        """Carry out one rung of the ladder.  ``True`` means "the step may be retried".
+
+        The ladder names the remedies; this only dispatches them onto surfaces that already
+        exist.  Three of the six rungs need no new capability at all:
+
+        * ``semantic_retry`` is the retry loop the caller is already inside;
+        * ``feature_reopen`` is the adapter's own ``recover`` -- domain knowledge the engine
+          does not have and must not invent;
+        * ``home_recovery`` is the registered ``OPEN_HOME`` skill dispatched through
+          ``host.execute_step``, i.e. the same one executor every other step uses.
+
+        ``False`` is returned only when the host cannot do it; the caller then ends the
+        session rather than repeating the step, because a remedy that silently did nothing is
+        indistinguishable from no remedy at all.
+        """
+        rung = str(getattr(loop, "rung", "") or "")
+        if rung == RUNG_SEMANTIC_RETRY:
+            host.sleep(0.3)
+            return True
+        if rung == RUNG_LOCAL_REOBSERVE:
+            return self._loop_look(host, state, "loop_reobserve", widen=False)
+        if rung == RUNG_WIDEN_OBSERVE:
+            return self._loop_look(host, state, "loop_widen", widen=True)
+        if rung == RUNG_FEATURE_REOPEN:
+            try:
+                adapter.recover(context, host, step,
+                                StepVerdict(StepOutcome.FAILED, loop.reason,
+                                            {"loop_pattern": loop.pattern, "loop_rung": rung}))
+            except Exception:  # noqa: BLE001 - an adapter bug is not a licence to repeat the tap
+                return False
+            return True
+        if rung == RUNG_HOME_RECOVERY:
+            return self._loop_home(host, step, rung)
+        if rung == RUNG_DEFER_GOAL:
+            # The last rung is not a remedy, it is the *ending*: the Goal goes back to the
+            # Scheduler and AUTO carries on with the next one.  Named here so all six rungs of
+            # ``RECOVERY_LADDER`` are accounted for in one dispatch, and so a seventh rung
+            # added to the ladder fails loudly at this line instead of silently doing nothing.
+            return False
+        return False
+
+    @staticmethod
+    def _loop_look(host: SessionHost, state: SessionState, phase: str, *, widen: bool) -> bool:
+        """Re-observe.  ``widen`` uses the host's widening look when it has one.
+
+        A host without ``widen`` (a replay harness, a unit test) degrades to an ordinary
+        observation rather than failing the rung: looking again is still strictly better than
+        re-issuing the action, which is the only alternative the rung's failure would leave.
+        """
+        state.observes += 1
+        try:
+            if widen:
+                usable_widen = getattr(host, "widen", None)
+                if callable(usable_widen):
+                    usable_widen(phase)
+                    return True
+            host.observe(phase)
+        except Exception:  # noqa: BLE001
+            return False
+        return True
+
+    def _loop_home(self, host: SessionHost, step: SessionStep, rung: str) -> bool:
+        """Go HOME by dispatching the registered skill, then let the detector judge it."""
+        home = SessionStep(index=step.index, kind=STEP_SKILL, skill_id=self.HOME_SKILL,
+                           reason=f"loop recovery ({rung}): back to a known page")
+        try:
+            execution = host.execute_step(home)
+        except Exception:  # noqa: BLE001
+            return False
+        return bool(getattr(execution, "executed", False))
 
     def _terminal(self, context: SessionContext, state: SessionState, outcome: StepOutcome,
                   reason: str, step: SessionStep, execution: StepExecution | None,
@@ -1030,6 +1228,11 @@ class SessionEngine:
             "SESSION_YIELD_REASON": state.yield_reason or None,
             "SESSION_YIELD_CLASS": state.yield_class or None,
             "SESSION_TRANSITIONS": [f"{a}->{b}" for a, b in state.history],
+            # LOOP_DETECTOR_V1's ledger and its Session Timeline (MAI design 4).  Spread in
+            # here rather than stored separately: one session, one metrics block, so a reader
+            # never has to join two tables to learn whether the session looped.
+            **state.loop.summary(),
+            "SESSION_LOOP_RECOVERIES": state.loop_recoveries,
         }
 
 

@@ -3122,7 +3122,8 @@ class LiveRuntime:
         except Exception:  # noqa: BLE001 - a ledger write must never fail a run
             pass
 
-    def _observe(self, frame_path: Path, *, latency: dict | None = None, phase: str = "before") -> "WorldState":
+    def _observe(self, frame_path: Path, *, latency: dict | None = None, phase: str = "before",
+                 widen: bool = False) -> "WorldState":
         """Look at the screen once, with this step's goal deciding what is worth the seconds.
 
         Operator directive 2026-09-22 ("Goal 驱动的视觉注意力优化").  Everything the observation does
@@ -3140,6 +3141,13 @@ class LiveRuntime:
           observed again with every sweep allowed, which is §五's 扩大观察范围 as a path through the
           code rather than a promise.  That second pass costs only the sweeps, because the per-frame
           answers are keyed to the picture and the chain is not repeated.
+
+        ``widen=True`` asks for that same second pass *deliberately*, on a fresh frame, and it is
+        what LOOP_DETECTOR_V1's ``widen_observe`` rung drives.  The two callers share one code path
+        on purpose: there is exactly one widened look in this runtime, and adding a second entry
+        point that re-implemented it would be the second reader §二 forbids.  The flag only decides
+        *when* the pass happens -- the auto case guards on an unnamed frame, the forced case is a
+        caller that has already concluded the focused look is not enough.
 
         A vision that has no ``focus`` (a test stub, a replay vision) is observed exactly as before.
         """
@@ -3209,6 +3217,24 @@ class LiveRuntime:
             count_call()
             started = time.monotonic()
             state = look(widen=True, reason="widening after an unnamed frame")
+            account("vision", (time.monotonic() - started) * 1000)
+            if accounting is not None:
+                widened_key = f"observe_{phase}_widened"
+                accounting[widened_key] = int(accounting.get(widened_key) or 0) + 1
+        elif widen:
+            # LOOP_DETECTOR_V1 asked for the widened look on purpose: the caller has already
+            # decided this frame needs it, so the auto case's "stayed unnamed" guard does not
+            # apply and would make the rung a no-op on exactly the frames it exists for.
+            # Audible for the same reason as the auto case -- a rung whose only visible symptom
+            # is a failing recovery is a rung nobody can confirm is running.
+            print(
+                f"[attention] {page_hint or '(no page)'} + goal {goal or '(none)'}: widened look "
+                f"requested by the loop detector",
+                flush=True,
+            )
+            count_call()
+            started = time.monotonic()
+            state = look(widen=True, reason="widening on a loop-detector request")
             account("vision", (time.monotonic() - started) * 1000)
             if accounting is not None:
                 widened_key = f"observe_{phase}_widened"

@@ -255,6 +255,33 @@ class LiveRuntimeSessionHost:
         self._last_world_path = path
         return world
 
+    def widen(self, phase: str = "loop_widen") -> Any:
+        """A fresh frame read with every expensive sweep allowed.
+
+        LOOP_DETECTOR_V1's ``widen_observe`` rung, and nothing more: the runtime's own
+        observation with its one widening flag set.  Deliberately a *separate frame* rather
+        than a re-look at the one the decision was made on -- a loop means the last look was
+        not enough, and re-reading the same picture cannot answer a question the picture has
+        already answered.  Costs the sweeps, which is why only the ladder asks for it.
+        """
+        world = self._observe_with(phase, widen=True)
+        self._last_world = world
+        return world
+
+    def _observe_with(self, phase: str, *, widen: bool) -> Any:
+        """Shared body of ``observe`` and ``widen`` -- one reader, two verbosities."""
+        path = self._fresh_path("session_observe", suffix=str(phase or "step"))
+        if self.runtime._device_lost(self.runtime.device.screenshot, path):
+            self._device_lost_seen = True
+            return None
+        world = self.runtime._observe(path, latency=self.binding.latency,
+                                      phase=f"session_{phase}", widen=widen)
+        if self.binding.latency is not None:
+            self.binding.latency.setdefault("session_observes", 0)
+            self.binding.latency["session_observes"] += 1
+        self._last_world_path = path
+        return world
+
     # ------------------------------------------------------------------- one step
 
     def execute_step(self, step: SessionStep) -> StepExecution:
