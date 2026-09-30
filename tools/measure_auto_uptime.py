@@ -24,6 +24,16 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+# The panel log it echoes carries CJK and glyphs such as the halt marker, and this host's
+# default stdout encoding is GBK -- measured 2026-09-30: printing one panel line died with
+# ``UnicodeEncodeError: 'gbk' codec can't encode character '⏹'`` and took the measurement with
+# it.  A read-only measurement must not be the thing that fails.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+    except (AttributeError, ValueError):
+        pass
+
 from winter_agent_v2.runtime_snapshot import (  # noqa: E402
     read_uptime_ledger,
     summarize_uptime,
@@ -31,6 +41,8 @@ from winter_agent_v2.runtime_snapshot import (  # noqa: E402
 
 LEDGER = ROOT / "learning/auto_uptime.jsonl"
 PANEL_LOG = ROOT / "learning/control_panel/panel.log"
+#: The deployment record: one line per panel start, naming the commit that start loaded.
+LOG = ROOT / "learning/control_panel/desktop_startup.log"
 SNAPSHOT = ROOT / "learning/runtime_snapshot.json"
 OUT = ROOT / "learning/auto_uptime_acceptance.json"
 
@@ -42,17 +54,73 @@ def _tail(path: Path, lines: int = 6) -> list[str]:
         return []
 
 
+def _loaded_revision() -> str:
+    """The revision the running panel loaded, from its own startup record.
+
+    The ledger is append-only across deployments, so folding all of it would credit the current
+    code with rounds the previous pin produced -- measured 2026-09-30: the first run of this tool
+    reported ``longest_consecutive_continues=4`` built entirely from rows written by the *old*
+    code, which is not evidence about the fix.  Every ledger row already carries the stop reason
+    and the panel writes one row per round; what it cannot carry is a revision (the recorder must
+    not depend on interfaces the panel does not own -- see ``_record_auto_round``), so the
+    deployment boundary comes from ``desktop_startup.log`` instead.
+    """
+    try:
+        for line in reversed(LOG.read_text(encoding="utf-8", errors="replace").splitlines()):
+            marker = "CODE_COMMIT="
+            if marker in line:
+                return line.split(marker, 1)[1].split()[0].strip()
+    except OSError:
+        pass
+    return ""
+
+
+def _rows_for(rows: list[dict], revision: str) -> list[dict]:
+    """Rows written at or after ``revision`` was deployed, i.e. rows this code produced."""
+    if not revision:
+        return []
+    # The ledger has no revision column by design, so the boundary is the moment that revision
+    # was recorded as loaded.  Rows are appended in time order, so the first row after that
+    # timestamp starts the current deployment's series.
+    return [row for row in rows if str(row.get("recorded_at") or "") >= _loaded_at(revision)]
+
+
+def _loaded_at(revision: str) -> str:
+    """The UTC instant ``revision`` was loaded, from the same startup record."""
+    try:
+        for line in reversed(LOG.read_text(encoding="utf-8", errors="replace").splitlines()):
+            marker = "CODE_COMMIT="
+            if marker in line and line.split(marker, 1)[1].split()[0].strip() == revision:
+                stamp = line.strip().lstrip("[").split("]", 1)[0]
+                return datetime.fromisoformat(stamp).astimezone(timezone.utc).isoformat()
+    except (OSError, ValueError):
+        pass
+    return ""
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--need", type=int, default=3)
     parser.add_argument("--timeout-min", type=float, default=30.0)
     parser.add_argument("--poll-seconds", type=float, default=15.0)
+    parser.add_argument("--all-deployments", action="store_true",
+                        help="fold the whole ledger instead of only the loaded revision")
     args = parser.parse_args(argv)
+
+    revision = _loaded_revision()
+    since = _loaded_at(revision)
+    print(f"[scope] loaded revision {revision or '(unknown)'} since {since or '(unknown)'}"
+          f"{' -- folding ALL deployments' if args.all_deployments else ''}", flush=True)
+
+    def _scoped(rows: list[dict]) -> list[dict]:
+        if args.all_deployments or not revision:
+            return rows
+        return [row for row in rows if str(row.get("recorded_at") or "") >= since]
 
     deadline = time.time() + args.timeout_min * 60
     seen = 0
     while True:
-        rows = read_uptime_ledger(LEDGER)
+        rows = _scoped(read_uptime_ledger(LEDGER))
         if len(rows) != seen:
             seen = len(rows)
             for row in rows[-2:]:
@@ -75,10 +143,13 @@ def main(argv: list[str] | None = None) -> int:
             break
         time.sleep(args.poll_seconds)
 
-    rows = read_uptime_ledger(LEDGER)
+    rows = _scoped(read_uptime_ledger(LEDGER))
     summary = summarize_uptime(rows)
     payload = {
         "measured_at": datetime.now(timezone.utc).isoformat(),
+        "loaded_revision": revision,
+        "loaded_at": since,
+        "scope": "all_deployments" if args.all_deployments else "loaded_revision",
         "summary": summary,
         "rows": rows,
         "panel_log_tail": _tail(PANEL_LOG, 25),

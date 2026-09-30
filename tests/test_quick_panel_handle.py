@@ -36,17 +36,54 @@ from winter_agent_v2.verifier import verify_ordinary_control_tried  # noqa: E402
 
 AUTO = ROOT / "dataset/raw/control_panel/runtime_auto"
 
+
+def _newest_frame(pattern: str):
+    """The newest archived frame matching ``pattern``, or None when it is gone.
+
+    The screenshot retention policy legitimately prunes old run frames, so a fixture glob can
+    come back empty.  Indexing that empty list is what made this module un-collectable --
+    measured 2026-09-30: ``EXPANDED_FRAME`` no longer exists on disk and the whole ``pytest
+    tests`` run stopped with ``IndexError: list index out of range`` during collection, which
+    blocks every other file in the suite.  Missing evidence must degrade to a skip, never to a
+    collection error: the two tests that need this frame assert a real geometric fact, and a
+    skip is the honest report for "the fixture is not on this checkout".
+    """
+    hits = sorted(AUTO.glob("*/" + pattern))
+    return hits[-1] if hits else None
+
+
+#: Fixtures that this checkout no longer carries, so the tests using them skip by name instead
+#: of failing as if the reader had regressed.
+MISSING_FIXTURES: dict[str, str] = {}
+
+
+def _fixture(label: str, pattern: str):
+    frame = _newest_frame(pattern)
+    if frame is None:
+        MISSING_FIXTURES[label] = pattern
+    return frame
+
+
 #: The city view with the panel closed -- the handle is drawn at the frame's left edge.
-COLLAPSED_FRAME = sorted(AUTO.glob("*/" + "*_step_008_before_20260922T110032859453.png"))[-1]
+COLLAPSED_FRAME = _fixture("COLLAPSED_FRAME", "*_step_008_before_20260922T110032859453.png")
 
 #: The world map with the panel closed: a different page, the same control, the same point.
-COLLAPSED_MAP_FRAME = sorted(AUTO.glob("*/" + "*_step_010_before_20260922T105043712428.png"))[-1]
+COLLAPSED_MAP_FRAME = _fixture("COLLAPSED_MAP_FRAME", "*_step_010_before_20260922T105043712428.png")
 
 #: The one frame in this project whose quick panel really reads as open: the handle's other state.
-EXPANDED_FRAME = sorted(AUTO.glob("*/" + "*_step_001_before_20260921T133510479855.png"))[-1]
+EXPANDED_FRAME = _fixture("EXPANDED_FRAME", "*_step_001_before_20260921T133510479855.png")
 
 #: A full-screen event page: no city HUD, so no handle.  The negative case.
-NO_HANDLE_FRAME = sorted(AUTO.glob("*/" + "*_step_002_before_20260922T083049654040.png"))[-1]
+NO_HANDLE_FRAME = _fixture("NO_HANDLE_FRAME", "*_step_002_before_20260922T083049654040.png")
+
+
+def _skip_without(*labels: str):
+    """Skip only the tests whose fixture is genuinely absent, and say which one."""
+    missing = [label for label in labels if label in MISSING_FIXTURES]
+    return unittest.skipIf(
+        bool(missing),
+        "fixture pruned from this checkout by screenshot retention: " + ", ".join(missing),
+    )
 
 #: The operator's own capture of the collapsed handle, kept in the repository as evidence.  Its game
 #: viewport is 690x1231 (the file carries a 49 px white margin down its left side), which is 4%
@@ -116,6 +153,7 @@ class TheLocatorTests(unittest.TestCase):
         self.assertIsNotNone(world)
         self.assertEqual(city["point_norm"], world["point_norm"])
 
+    @_skip_without("EXPANDED_FRAME")
     def test_the_expanded_handle_points_the_other_way(self):
         found = find_quick_panel_handle(EXPANDED_FRAME, panel_open=True)
         self.assertIsNotNone(found)
@@ -171,6 +209,7 @@ class TheLocatorTests(unittest.TestCase):
 class TheFrameReadingTests(unittest.TestCase):
     """The reading carries the collapsed state, so a tap can be judged by the panel opening."""
 
+    @_skip_without("EXPANDED_FRAME")
     def test_the_open_panel_measures_its_own_handle(self):
         """The expanded point used to be an estimate from the panel's rows; it is measured now.
 
