@@ -27,7 +27,9 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from winter_agent_v2 import learning_funnel, offline_learning, unknown_learning  # noqa: E402
+from winter_agent_v2 import (  # noqa: E402
+    learning_funnel, offline_learning, ui_venus_offline, unknown_learning,
+)
 
 
 def _episodes(root: Path, limit: int = 20000) -> list[dict]:
@@ -84,6 +86,15 @@ def _run_offline(root: Path) -> int:
         root=root, episodes=_episodes(root), write=True
     )
     print(json.dumps(summary, ensure_ascii=False, indent=1))
+    # ...and the same clusters typed through §16's contract.  Reported, never gating: the pass has
+    # already grouped and written, and the contract layer's job is to say which of those clusters
+    # could be *cited* -- a cluster whose frames cannot be traced to an episode produces nothing at
+    # all, which is the honest answer and one the summary above cannot express.
+    typed = ui_venus_offline.record_clusters(
+        ui_venus_offline.clusters_from_dir(root / offline_learning.CANDIDATE_DIR),
+        ledger=ui_venus_offline.OfflineLedger(root / ui_venus_offline.OFFLINE_LEDGER_PATH),
+    )
+    print(json.dumps(typed, ensure_ascii=False, indent=1))
     return 0
 
 

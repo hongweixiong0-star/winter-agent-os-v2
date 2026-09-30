@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from winter_agent_v2 import learning_funnel as lf
+from winter_agent_v2 import ui_venus_contract
 
 
 def _write(path: Path, rows) -> None:
@@ -35,22 +36,68 @@ class EmptyProjectTests(unittest.TestCase):
         self.assertIsNone(stages["grounding_valid"].count)
         self.assertTrue(stages["grounding_valid"].unmeasured_reason)
         # A stage whose source exists and is simply empty *is* measurable, and reads 0.
-        self.assertEqual(stages["model_proposed"].count, 0)
+        self.assertEqual(stages["venus_proposed"].count, 0)
 
     def test_stages_the_registry_owns_are_never_guessed(self):
         with tempfile.TemporaryDirectory() as tmp:
             funnel = lf.build_funnel(root=tmp)
         stages = {stage.stage: stage for stage in funnel.funnel}
-        for name in ("live_verified", "stable"):
+        for name in ("live_verified", "stable_promoted"):
             self.assertIsNone(stages[name].count)
             self.assertIn("REGISTRY_OWNS_THIS", stages[name].unmeasured_reason)
 
     def test_the_funnel_order_is_the_directives_order(self):
         self.assertEqual(lf.FUNNEL_STAGES[0], "unknown_observed")
-        self.assertEqual(lf.FUNNEL_STAGES[-1], "stable")
+        self.assertEqual(lf.FUNNEL_STAGES[-1], "stable_promoted")
         with tempfile.TemporaryDirectory() as tmp:
             funnel = lf.build_funnel(root=tmp)
         self.assertEqual(tuple(stage.stage for stage in funnel.funnel), lf.FUNNEL_STAGES)
+
+    def test_the_stage_names_are_the_contracts_own(self):
+        """Section 26 names sixteen layers; the console and the writers must count the same ones.
+
+        Pinned against the contract rather than against this module, so a rename in one place that
+        was not made in the other fails here instead of producing a funnel with a stage nobody
+        feeds.
+        """
+        self.assertEqual(lf.FUNNEL_STAGES, ui_venus_contract.FUNNEL_LAYERS)
+        self.assertEqual(len(lf.FUNNEL_STAGES), 16)
+        for old, new in lf.LEGACY_STAGE_ALIASES.items():
+            self.assertIn(new, lf.FUNNEL_STAGES, old)
+
+    def test_the_contract_ledgers_measure_the_layers_that_used_to_be_blind(self):
+        """The three layers the 2026-10-01 report called unmeasurable, now measured.
+
+        Written as a fixture of real ledger rows rather than as an assertion about the code: the
+        claim being tested is that a refused grounding and a refused spend are *distinguishable*
+        after the fact, which is what the old design could not do.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write(root / lf.ONLINE_LEDGER, [
+                {"recorded_at": datetime.now(timezone.utc).isoformat(),
+                 "admitted": True, "verdict": {"ok": True, "stage": "", "detail": "grounded:x"}},
+                {"recorded_at": datetime.now(timezone.utc).isoformat(),
+                 "admitted": True, "verdict": {"ok": True, "stage": "", "detail": ""}},
+                {"recorded_at": datetime.now(timezone.utc).isoformat(),
+                 "admitted": False,
+                 "verdict": {"ok": False, "stage": "GROUNDING", "code": "UNKNOWN_GROUNDING_FAILED",
+                             "family": "GROUNDING"}},
+                {"recorded_at": datetime.now(timezone.utc).isoformat(),
+                 "admitted": False,
+                 "verdict": {"ok": False, "stage": "RISK_SPEND", "code": "PLAN_SPEND_BLOCKED",
+                             "family": "AUTHORITY"}},
+            ])
+            funnel = lf.build_funnel(root=root)
+        stages = {stage.stage: stage for stage in funnel.funnel}
+        self.assertEqual(stages["grounding_valid"].count, 1)
+        self.assertEqual(stages["grounding_rejected"].count, 1)
+        self.assertEqual(stages["risk_gate_allowed"].count, 2)
+        self.assertEqual(stages["risk_gate_rejected"].count, 1)
+        self.assertEqual(funnel.metrics["CONTRACT_ONLINE_REFUSAL_FAMILIES"],
+                         {"GROUNDING": 1, "AUTHORITY": 1})
+        self.assertEqual(funnel.metrics["grounding_valid / venus_proposed"], None,
+                         "a zero denominator is unmeasured, not 0% survival")
 
 
 class CountingTests(unittest.TestCase):

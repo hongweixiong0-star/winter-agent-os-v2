@@ -45,6 +45,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
+from . import ui_venus_contract
 from . import unknown_advisor
 
 #: Where verified UNKNOWN steps accumulate.  Beside the episode stream and the planner ledger, so
@@ -70,10 +71,12 @@ MIN_SINGLE_STEP_SESSIONS = 2
 #: (section 14's own list: 攻击 / START_RALLY / JOIN_RALLY / 撤回 / 道具 / 加速).  Such a chain is
 #: still recorded -- the evidence is real -- but it is filed ``SLOW_PROMOTION`` so the existing
 #: risk gate gives it the long route.
-HIGH_RISK_WORDS: tuple[str, ...] = (
-    "攻击", "发起集结", "加入集结", "集结", "撤回", "道具", "加速", "立即完成",
-    "attack", "rally", "recall", "speedup", "start_rally", "join_rally",
-)
+#:
+#: The words themselves come from the contract rather than being restated here.  Two risk
+#: vocabularies are two risk *rules*, and the one nobody re-reads is the one a spend gets through;
+#: ``ui_venus_contract`` is where the single copy lives (it also owns the ``SPEND_WORDS`` import
+#: from ``unknown_advisor``, so all three modes check the same boundary).
+HIGH_RISK_WORDS: tuple[str, ...] = ui_venus_contract.HIGH_RISK_WORDS
 
 #: What a compiled record's promotion route is.  Named rather than boolean so the reviewer sees
 #: the risk decision in the file instead of having to re-derive it.

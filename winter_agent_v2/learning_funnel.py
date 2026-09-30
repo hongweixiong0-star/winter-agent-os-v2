@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from . import offline_learning, skill_repair, unknown_learning
+from . import ui_venus_contract, ui_venus_offline, ui_venus_online, ui_venus_repair
 
 #: The stores this fold reads.  Named here rather than inline so the report can say which file a
 #: number came from without the reader having to guess.
@@ -44,6 +45,14 @@ SKILL_CANDIDATES = unknown_learning.CANDIDATE_SKILL_DIR
 REPAIR_CANDIDATES = skill_repair.CANDIDATE_PATCH_DIR
 OFFLINE_CLUSTERS = offline_learning.CLUSTERS_PATH
 
+#: The three contract ledgers (section 30's "独立 ledger").  Reading them is what turns three of
+#: section 26's layers from "unmeasured, and here is why" into measurements: the ONLINE ledger
+#: records every admitted and every refused action with the stage it stopped at, which is exactly
+#: what ``grounding_valid`` / ``grounding_rejected`` / ``risk_gate_*`` are.
+ONLINE_LEDGER = ui_venus_online.ONLINE_LEDGER_PATH
+REPAIR_LEDGER = ui_venus_repair.REPAIR_LEDGER_PATH
+OFFLINE_LEDGER = ui_venus_offline.OFFLINE_LEDGER_PATH
+
 #: The words a runtime uses for the source of a planner call.  Both appear in the ledger's own
 #: history: ``LOCAL_QWEN`` before the 2026-09-30 migration and ``LOCAL_GUI_MODEL`` after it, and a
 #: fold that knew only the second would report the first as "no planner calls at all".
@@ -51,21 +60,23 @@ PLANNER_SOURCES = ("LOCAL_GUI_MODEL", "LOCAL_QWEN")
 
 #: The stage names, in funnel order.  Fixed here so the console and the report cannot disagree
 #: about what the funnel is.
-FUNNEL_STAGES: tuple[str, ...] = (
-    "unknown_observed",
-    "model_proposed",
-    "grounding_valid",
-    "risk_allowed",
-    "maa_executed",
-    "verifier_progress",
-    "verifier_success",
-    "candidate_step",
-    "candidate_skill",
-    "replay_pass",
-    "shadow_pass",
-    "live_verified",
-    "stable",
-)
+#: Section 26's layers, imported from the contract rather than restated.  The console and every
+#: writer count these exact words: a layer that existed in one list and not the other is how the
+#: funnel and the code that feeds it would start describing different pipelines.
+FUNNEL_STAGES: tuple[str, ...] = ui_venus_contract.FUNNEL_LAYERS
+
+#: What the 2026-10-01 rename did, kept so a ledger or a saved ``learning_funnel.json`` written
+#: under the older names can still be read.  The contract's names are canonical: two names for one
+#: layer is two rows in a report that is supposed to answer "where does the funnel leak".
+LEGACY_STAGE_ALIASES: dict[str, str] = {
+    "model_proposed": "venus_proposed",
+    "risk_allowed": "risk_gate_allowed",
+    "candidate_step": "candidate_step_created",
+    "candidate_skill": "candidate_skill_created",
+    "replay_pass": "candidate_replay_pass",
+    "shadow_pass": "candidate_shadow_pass",
+    "stable": "stable_promoted",
+}
 
 
 def _now() -> str:
@@ -179,6 +190,37 @@ def _ratio(numerator: int | None, denominator: int | None) -> float | None:
     return round(numerator / denominator, 4)
 
 
+def _verdict_field(row: Mapping[str, Any], name: str) -> str:
+    """One field of a contract ledger row's ``verdict`` block, or ``""``.
+
+    Contract rows (section 30's independent ledgers) nest the outcome under ``verdict``; the older
+    planner rows carry ``error`` at the top level.  Read through one function so a fold cannot
+    accidentally compare a nested field to a top-level one and find nothing.
+    """
+    verdict = row.get("verdict")
+    if isinstance(verdict, Mapping):
+        return str(verdict.get(name) or "")
+    return ""
+
+
+def _families(rows: Iterable[Mapping[str, Any]]) -> dict[str, int]:
+    """Refusals grouped by the contract's own families (``PARSE``/``TARGET``/``GROUNDING``/...).
+
+    Section 26's question is "where does the funnel leak"; a per-code tally answers "which exact
+    rule fired", and both are needed, so this is computed beside the counts rather than instead.
+    """
+    out: dict[str, int] = {}
+    for row in rows:
+        verdict = row.get("verdict") if isinstance(row.get("verdict"), Mapping) else {}
+        family = str(verdict.get("family") or "") or ui_venus_contract.code_family(
+            verdict.get("code") or row.get("error") or ""
+        )
+        if not family:
+            continue
+        out[family] = out.get(family, 0) + 1
+    return out
+
+
 def build_funnel(
     *,
     root: Path | str = ".",
@@ -260,6 +302,29 @@ def build_funnel(
     executed_ok = [row for row in executed if row.get("verifier_ok") is True]
     executed_fail = [row for row in executed if row.get("verifier_ok") is False]
 
+    # -- the contract ledgers (section 26's middle layers) ----------------------------------------
+    #
+    # These three layers were unmeasured in the 2026-10-01 report, and the reason given was that the
+    # refusal sites did not persist anything.  They do now: every ONLINE action, admitted or
+    # refused, is one row in ``learning/ui_venus_online.jsonl`` with the stage it stopped at.  So
+    # the honest answer changes from "cannot be measured" to a number -- and where the number still
+    # cannot be complete (a box whose grounding was deferred to the runtime), the reason says which
+    # part is missing rather than rounding it away.
+    online_rows = _read_lines(base / ONLINE_LEDGER)
+    online_admitted = [row for row in online_rows if row.get("admitted")]
+    online_refused = [row for row in online_rows if not row.get("admitted")]
+    grounding_valid = [
+        row for row in online_admitted if str(_verdict_field(row, "detail")).startswith("grounded:")
+    ]
+    grounding_rejected = [
+        row for row in online_refused if _verdict_field(row, "stage") == "GROUNDING"
+    ]
+    risk_rejected = [
+        row for row in online_refused if _verdict_field(row, "stage") == "RISK_SPEND"
+    ]
+    repair_rows = _read_lines(base / REPAIR_LEDGER)
+    offline_rows = _read_lines(base / OFFLINE_LEDGER)
+
     funnel = (
         FunnelCounts(
             "unknown_observed",
@@ -268,26 +333,42 @@ def build_funnel(
             unmeasured_reason="" if (requests or verified_steps) else "NO_UNKNOWN_FILED_YET",
         ),
         FunnelCounts(
-            "model_proposed",
+            "venus_called",
             len(plans),
             source=str(PLANNER_LEDGER),
             unmeasured_reason="" if plans else "NO_PLANNER_CALLS_YET",
         ),
         FunnelCounts(
-            "grounding_valid",
-            None,
+            "venus_proposed",
+            len([row for row in plans if row.get("decision")]),
             source=str(PLANNER_LEDGER),
             unmeasured_reason=(
-                "GROUNDING_RESULT_NOT_PERSISTED -- the runtime refuses an ungrounded point on "
-                "stdout only; the funnel cannot separate 'the model pointed nowhere' from "
-                "'the model was never asked'. Recording this needs a row at the refusal site."
+                "" if plans else "NO_PLANNER_CALLS_YET"
             ),
         ),
         FunnelCounts(
-            "risk_allowed",
-            None,
-            source=str(PLANNER_LEDGER),
-            unmeasured_reason="RISK_REFUSAL_NOT_PERSISTED -- same gap as grounding_valid",
+            "grounding_valid",
+            len(grounding_valid) if online_rows else None,
+            source=str(ONLINE_LEDGER),
+            unmeasured_reason="" if online_rows else "NO_CONTRACT_ACTIONS_RECORDED_YET",
+        ),
+        FunnelCounts(
+            "grounding_rejected",
+            len(grounding_rejected) if online_rows else None,
+            source=str(ONLINE_LEDGER),
+            unmeasured_reason="" if online_rows else "NO_CONTRACT_ACTIONS_RECORDED_YET",
+        ),
+        FunnelCounts(
+            "risk_gate_allowed",
+            len(online_admitted) if online_rows else None,
+            source=str(ONLINE_LEDGER),
+            unmeasured_reason="" if online_rows else "NO_CONTRACT_ACTIONS_RECORDED_YET",
+        ),
+        FunnelCounts(
+            "risk_gate_rejected",
+            len(risk_rejected) if online_rows else None,
+            source=str(ONLINE_LEDGER),
+            unmeasured_reason="" if online_rows else "NO_CONTRACT_ACTIONS_RECORDED_YET",
         ),
         FunnelCounts(
             "maa_executed",
@@ -311,28 +392,31 @@ def build_funnel(
             unmeasured_reason="" if executed else "NO_ADVISED_STEP_SETTLED_YET",
         ),
         FunnelCounts(
-            "candidate_step",
+            "candidate_step_created",
             len(verified_steps),
             source=str(unknown_learning.LEARNED_STEPS_PATH),
             unmeasured_reason="" if verified_steps else "NO_VERIFIED_STEP_YET",
         ),
         FunnelCounts(
-            "candidate_skill",
+            "candidate_skill_created",
             len(candidates),
             source=str(SKILL_CANDIDATES),
             unmeasured_reason="" if candidates else "NOTHING_COMPILED_YET",
         ),
-        FunnelCounts("replay_pass", None, unmeasured_reason="REPLAY_RUNS_OUTSIDE_THE_RUNTIME"),
-        FunnelCounts("shadow_pass", None, unmeasured_reason="SHADOW_RUNS_OUTSIDE_THE_RUNTIME"),
+        FunnelCounts("candidate_replay_pass", None,
+                     unmeasured_reason="REPLAY_RUNS_OUTSIDE_THE_RUNTIME"),
+        FunnelCounts("candidate_shadow_pass", None,
+                     unmeasured_reason="SHADOW_RUNS_OUTSIDE_THE_RUNTIME"),
         FunnelCounts(
             "live_verified", None,
             unmeasured_reason="REGISTRY_OWNS_THIS -- the learning ledgers deliberately cannot say it",
         ),
         FunnelCounts(
-            "stable", None,
+            "stable_promoted", None,
             unmeasured_reason="REGISTRY_OWNS_THIS -- see knowledge/goals/capability_skill_map.json",
         ),
     )
+    stage_counts = {stage.stage: stage.count for stage in funnel}
 
     repeat_rate = _ratio(len(named_page_calls_today), len(plans_today))
     metrics = {
@@ -345,7 +429,7 @@ def build_funnel(
         # because a first day with no history cannot move an average, and a reader should see both.
         "UNKNOWN_REPEAT_MODEL_CALL_RATE_ALL_TIME": _ratio(len(named_page_calls), len(plans)),
         "CANDIDATE_TO_STABLE_RATE": None,
-        "CANDIDATE_TO_STABLE_RATE_REASON": "STABLE is the registry's word; see FUNNEL stage 'stable'",
+        "CANDIDATE_TO_STABLE_RATE_REASON": "STABLE is the registry's word; see stage 'stable_promoted'",
         "SKILL_REPAIR_SUCCESS_RATE": _ratio(len(repairs_verified), len(repairs) or None),
         "KNOWN_MODEL_CALLS": len(named_page_calls),
         "KNOWN_MODEL_CALLS_TODAY": len(named_page_calls_today),
@@ -371,6 +455,25 @@ def build_funnel(
         "OFFLINE_UNKNOWN_CLUSTERS": int(clusters.get("clusters") or 0),
         "OFFLINE_KNOWLEDGE_CANDIDATES": int(clusters.get("candidate_knowledge") or 0),
         "PROPOSAL_REFUSALS": proposal_refusals,
+        # -- section 26's own ratios, as ratios rather than as neighbouring numbers ---------------
+        #
+        # A funnel is read as a sequence of survival rates; publishing six counts and leaving the
+        # reader to divide them is how "the numbers are there" and "the numbers answer the question"
+        # drift apart.  ``_ratio`` returns ``None`` for a zero denominator, so a layer nobody has
+        # reached reads as unmeasured rather than as 0% survival.
+        **{
+            f"{numerator} / {denominator}": _ratio(
+                stage_counts.get(numerator), stage_counts.get(denominator)
+            )
+            for numerator, denominator in ui_venus_contract.FUNNEL_RATIOS
+        },
+        # -- the three contract ledgers, by mode (section 30) -------------------------------------
+        "CONTRACT_ONLINE_ROWS": len(online_rows),
+        "CONTRACT_ONLINE_ADMITTED": len(online_admitted),
+        "CONTRACT_ONLINE_REFUSED": len(online_refused),
+        "CONTRACT_ONLINE_REFUSAL_FAMILIES": _families(online_refused),
+        "CONTRACT_REPAIR_ROWS": len(repair_rows),
+        "CONTRACT_OFFLINE_ROWS": len(offline_rows),
     }
 
     # Section 36's console, in Chinese, with the field each line reads.  Chinese because the
@@ -407,6 +510,9 @@ def build_funnel(
             "page_store": str(PAGE_STORE_INDEX),
             "element_store": str(ELEMENT_STORE_INDEX),
             "offline_clusters": str(OFFLINE_CLUSTERS),
+            "online_ledger": str(ONLINE_LEDGER),
+            "repair_ledger": str(REPAIR_LEDGER),
+            "offline_ledger": str(OFFLINE_LEDGER),
         },
     )
 

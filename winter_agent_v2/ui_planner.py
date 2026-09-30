@@ -62,6 +62,7 @@ from typing import Any, Mapping
 
 from . import context_budget
 from . import local_gui_model
+from . import ui_venus_online
 from . import unknown_advisor
 from .context_budget import HISTORY_TARGET
 
@@ -922,6 +923,28 @@ class ManagedAdvisor:
                 })
             return self._delegate_take(request, registry)
 
+        # The 2026-10-01 contract's gate, and the reason it is here rather than only in the
+        # parser.  ``parse_plan`` reads *shape*; this reads the four rules a shape cannot carry:
+        # section 8's precedence (a usable element existed and the model went around it with a
+        # box), section 13's reason cap, and section 5's frame identity.  A reply that fails is
+        # refused by name and never becomes an Advice, which is the difference between "the
+        # contract exists" and "the contract is load-bearing".
+        contract_verdict = self._contract_gate(
+            plan=plan, question=question, elements=elements, frame_path=frame_path,
+            page_key=page_key, request_id=request_id, raw=parsed.raw,
+        )
+        if not contract_verdict.ok:
+            self.last_outcome = {"decision": plan.decision, "error": contract_verdict.code}
+            self.ledger.append({
+                "recorded_at": datetime.now(timezone.utc).isoformat(),
+                "source": SOURCE_LOCAL_GUI_MODEL, "page_key": page_key, "goal": plan.goal,
+                "decision": plan.decision, "error": contract_verdict.code,
+                "stage": contract_verdict.stage, "detail": contract_verdict.detail[:200],
+                "element_count": len(elements), "latency_ms": call.latency_ms,
+                "budget": budget_row,
+            })
+            return self._delegate_take(request, registry)
+
         return self._advice_for(plan, question, elements, request_id)
 
     def ask(self, request: Any, *, force: bool = False) -> bool:
@@ -1078,6 +1101,100 @@ class ManagedAdvisor:
                 return (f"{entry.get('skill', '')}[{entry.get('control', '')}] -> "
                         f"{entry.get('observed', '')}")
         return ""
+
+    def _online_ledger(self) -> ui_venus_online.OnlineLedger:
+        """This planner's contract ledger, created on first use.
+
+        Lazily, because the ledger's path depends on ``root``, and because a construction site
+        that never plans should not create a file.  ``getattr`` rather than a field read for the
+        same reason the other helpers use it: a test may build this object without ``__init__``.
+        """
+        ledger = getattr(self, "contract_ledger", None)
+        if ledger is None:
+            ledger = ui_venus_online.OnlineLedger(
+                Path(self.root) / ui_venus_online.ONLINE_LEDGER_PATH
+            )
+            self.contract_ledger = ledger
+        return ledger
+
+    def _contract_gate(
+        self, *, plan: Plan, question: Any, elements: list[dict[str, Any]],
+        frame_path: str, page_key: str, request_id: str, raw: str,
+    ) -> Any:
+        """Run the 2026-10-01 contract over one validated plan, and record the outcome.
+
+        Built from the *question's own* evidence -- its recorded OCR becomes the element table and
+        its recorded frame digest becomes the element table's identity -- so the check is about the
+        screen the model was actually shown, not about a screen somebody re-read afterwards.
+        """
+        from . import ui_venus_contract as contract
+
+        digest = str(getattr(question, "frame_digest", "") or "")
+        frame_id = f"frame_{digest}" if digest else ""
+        table = ui_venus_online.ElementTable(
+            frame_id=frame_id,
+            frame_hash=f"sha256:{digest}" if digest else "",
+            items=tuple(
+                ui_venus_online.ElementItem(
+                    id=str(entry.get("id") or ""),
+                    semantic=str(entry.get("semantic") or ""),
+                    text=str(entry.get("text") or ""),
+                    kind=str(entry.get("kind") or ""),
+                    # Tri-state, and the absence of the key must stay absent: an element table
+                    # built from a request's plain OCR never measured pressability, and turning
+                    # that into ``False`` here would refuse every element the planner can name.
+                    executable=(
+                        None if "executable" not in entry else bool(entry.get("executable"))
+                    ),
+                    area=str(entry.get("area") or ""),
+                )
+                for entry in elements
+                if isinstance(entry, Mapping)
+            ),
+        )
+        screenshot = (
+            ui_venus_online.FrameIdentity.of(frame_path, frame_id=frame_id)
+            if frame_path else ui_venus_online.FrameIdentity()
+        )
+        role_id = str(getattr(question, "character", "") or getattr(question, "role_id", "") or "")
+        packet = ui_venus_online.UIVenusContextPacketV1(
+            identity=ui_venus_online.Identity(
+                role_id=role_id,
+                goal_id=str(getattr(question, "goal", "") or ""),
+            ),
+            frame=ui_venus_online.FrameRef(
+                frame_id=screenshot.frame_id, frame_hash=screenshot.frame_hash),
+            world=ui_venus_online.WorldRef(
+                page=page_key, page_confidence=getattr(question, "page_confidence", None)),
+            session=ui_venus_online.SessionRef(step_index=self.steps),
+            elements=table,
+            allowed_actions=OFFERED_ACTIONS,
+            # The planner offers only control-free actions, so the envelope is the closed default:
+            # a spend is refused by the contract's risk gate rather than by an assumption here.
+            risk=contract.RiskEnvelope(),
+        )
+        action = ui_venus_online.UIVenusSemanticActionV1(
+            decision=plan.decision,
+            action_type=plan.action_type,
+            target_element_id=plan.target_element_id,
+            semantic_target=plan.semantic_target,
+            candidate_bbox_norm=plan.candidate_bbox_norm,
+            expected_page=plan.expected_page,
+            expected_result=plan.expected_result,
+            confidence=plan.confidence,
+            reason=plan.reason,
+            basis=plan.basis,
+        )
+        verdict = ui_venus_online.validate_action(action, packet=packet)
+        ledger = self._online_ledger()
+        if verdict.ok:
+            ledger.record_action(action, verdict=verdict, trace_id=request_id,
+                                 page_key=page_key, goal_id=packet.identity.goal_id)
+        else:
+            ledger.record_refusal(code=verdict.code, stage=verdict.stage, detail=verdict.detail,
+                                  trace_id=request_id, page_key=page_key,
+                                  goal_id=packet.identity.goal_id, raw=raw)
+        return verdict
 
     def _advice_for(self, plan: Plan, question: Any, elements: list[dict[str, Any]],
                     request_id: str) -> unknown_advisor.Advice | None:

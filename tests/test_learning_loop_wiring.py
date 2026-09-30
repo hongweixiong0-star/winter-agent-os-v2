@@ -37,6 +37,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from winter_agent_v2 import page_knowledge, skill_repair, unknown_learning  # noqa: E402
+from winter_agent_v2 import ui_venus_repair  # noqa: E402
 from winter_agent_v2.brain import RuleBrain  # noqa: E402
 from winter_agent_v2.models import Page, WorldState  # noqa: E402
 from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
@@ -136,6 +137,11 @@ def _runtime(*, ocr, learned: unknown_learning.VerifiedStepLedger) -> LiveRuntim
     root = Path(tempfile.mkdtemp(prefix="learning_loop_"))
     runtime._ui_pages = page_knowledge.PageCandidateStore(root=root / "pages")
     runtime._transitions = page_knowledge.TransitionLedger(path=root / "t.json")
+    # Every runtime output path this file can reach is redirected *at the harness* rather than per
+    # test.  The repair channel writes two things now -- the trigger's question file (``_repair_root``,
+    # which the tests below set) and the section-14 contract row -- and a test that redirected only
+    # the first would quietly write into the repo, which conftest's production-write guard catches.
+    runtime._repair_contract_ledger = root / "ui_venus_repair.jsonl"
     return runtime
 
 
@@ -389,6 +395,69 @@ class RepairChannelTests(unittest.TestCase):
             )
             files = list((Path(tmp) / "repairs").glob("*.json"))
         self.assertEqual(files, [], "a run broken by a success is not a run of failures")
+
+
+class RepairContractWiringTests(unittest.TestCase):
+    """Section 14's packet, exercised on the live escalation path rather than only in its own suite.
+
+    The reason this is worth a test of its own: the packet is built by an *adapter* over the trigger
+    module's request, and an adapter that read the wrong field names, or that was handed a request
+    with no frame, would fail silently -- the question file would still be written and nobody would
+    learn that the model was never really askable.  The ledger row is what turns that into evidence.
+    """
+
+    def _filed_rows(self, tmp: str, *, frame: Path | None) -> list[dict]:
+        runtime = _runtime(ocr=_StubOCR(),
+                           learned=unknown_learning.VerifiedStepLedger(Path(tmp) / "s.jsonl"))
+        runtime._repair_root = Path(tmp) / "repairs"
+        ledger_path = runtime._repair_contract_ledger
+        runtime.registry = SimpleNamespace(
+            get=lambda skill_id: SimpleNamespace(maturity="STABLE", semantic_goal="领取登录奖励"))
+        decision = SimpleNamespace(skill="CLAIM_LOGIN_GIFT", reason="SEMANTIC_TARGET_NOT_FOUND")
+        for _ in range(skill_repair.REPAIR_TRIGGER_FAILURES):
+            runtime._maybe_request_repair(
+                decision=decision,
+                verification=SimpleNamespace(ok=False, reason="SEMANTIC_TARGET_NOT_FOUND",
+                                             evidence={}),
+                result="FAILURE",
+                before=WorldState(page=Page.UNKNOWN),
+                frame=frame if frame is not None else "",
+            )
+        return ui_venus_repair.RepairLedger(ledger_path).rows()
+
+    def test_an_escalation_is_typed_through_the_contracts_own_packet(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            rows = self._filed_rows(tmp, frame=_frame(Path(tmp)))
+        self.assertEqual(len(rows), 1, "one escalation, one question, one packet row")
+        row = rows[0]
+        self.assertEqual(row["kind"], "PACKET")
+        self.assertEqual(row["skill_id"], "CLAIM_LOGIN_GIFT")
+        self.assertEqual(row["maturity"], "STABLE")
+        self.assertEqual(row["consecutive_failures"], skill_repair.REPAIR_TRIGGER_FAILURES)
+        self.assertEqual(row["frame_id"], "unnamed_screen")
+        self.assertTrue(row["frame_hash"].startswith("sha256:"))
+        self.assertTrue(row["admitted"], row["verdict"])
+
+    def test_an_escalation_with_no_frame_is_recorded_as_unaskable(self):
+        """No picture means the model was never really asked, and the row says so.
+
+        This is the failure the contract exists to make visible: the request file is written either
+        way, so without the row an escalation that no model could answer would look exactly like a
+        well-formed one.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            rows = self._filed_rows(tmp, frame=None)
+        self.assertEqual(len(rows), 1)
+        self.assertFalse(rows[0]["admitted"])
+        self.assertEqual(rows[0]["verdict"]["code"], "CONTEXT_FRAME_MISMATCH")
+        self.assertEqual(rows[0]["frame_id"], "")
+
+    def test_the_ledger_row_carries_no_coordinate(self):
+        """Section 30: the repair ledger records a rule change, and never a position."""
+        with tempfile.TemporaryDirectory() as tmp:
+            rows = self._filed_rows(tmp, frame=_frame(Path(tmp)))
+        for field in ("x_norm", "y_norm", "candidate_bbox_norm", "proposed_region_untrusted"):
+            self.assertNotIn(field, rows[0], field)
 
 
 class CompilationEndToEndTests(unittest.TestCase):

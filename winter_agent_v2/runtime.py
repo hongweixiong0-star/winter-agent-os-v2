@@ -23,6 +23,7 @@ from . import event_schedule
 from . import unknown_advisor
 from . import skill_repair
 from . import unknown_learning
+from . import ui_venus_repair
 from .executor import Executor
 from .policy import SafetyPolicy
 from . import semantic_executor as click_retry
@@ -2457,6 +2458,57 @@ class LiveRuntime:
             )
         except (OSError, TypeError, ValueError):
             pass
+        # ...and the same question typed through §14's packet, so the contract is exercised on the
+        # live path rather than only in its own tests.
+        self._note_repair_contract(request, skill_id=trigger.skill_id, before=before, frame=frame)
+
+    def _note_repair_contract(self, request: Any, *, skill_id: str, before: Any,
+                              frame: Any) -> None:
+        """Type one repair question through section 14's packet and record whether it is askable.
+
+        Not a gate and not a second flow.  The request file is written either way and
+        ``skill_repair`` still owns "when is a skill escalated"; what this adds is *evidence* -- the
+        contract's own validator, run against live data once per escalation, so a packet the model
+        could not really be asked with (no current frame, a skill that states neither its aim nor
+        its verifier's requirement) becomes a ledger row instead of a silence.
+
+        The success evidence is the skill's *own* verified steps, read from the same ledger the
+        reuse path reads: section 14's whole point is that the model must be told this worked
+        before, and this project already has exactly that, keyed by screen and goal rather than by
+        frame.  A handful are attached -- section 14 asks for representative successes, not the
+        history.
+        """
+        try:
+            page_key = str(getattr(request, "page_key", "") or "")
+            goal_id = str(getattr(request, "goal_id", "") or "")
+            maturity = ""
+            try:
+                known = getattr(self, "registry", None)
+                entry = known.get(skill_id) if known is not None else None
+                maturity = str(getattr(entry, "maturity", "") or "")
+            except Exception:  # noqa: BLE001 - an unknown skill id is not an error on this path
+                maturity = ""
+            successes = unknown_learning.learned_steps_for(
+                self._learned_ledger_rows(), page_key=page_key, goal_id=goal_id
+            )[:3]
+            packet = ui_venus_repair.packet_from_request(
+                request,
+                maturity=maturity,
+                success_evidence=successes,
+                elements={"frame_id": Path(str(frame)).stem, "items": []},
+            )
+            verdict = packet.validate()
+            ui_venus_repair.RepairLedger(self._repair_ledger_path()).record_packet(
+                packet, verdict=verdict, trace_id=str(getattr(request, "request_id", "") or ""))
+        except Exception:  # noqa: BLE001 - a measurement must never fail an already-filed question
+            pass
+
+    def _repair_ledger_path(self) -> Path:
+        """Where this mode's ledger goes.  Overridable so a test never writes into the repo."""
+        explicit = getattr(self, "_repair_contract_ledger", None)
+        if explicit:
+            return Path(explicit)
+        return Path(__file__).resolve().parents[1] / ui_venus_repair.REPAIR_LEDGER_PATH
 
 
     def _note_learned_step(self, *, decision: Any, verification: Any, result: str,
