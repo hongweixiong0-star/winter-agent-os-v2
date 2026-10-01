@@ -2877,3 +2877,42 @@ bootstrap 尝试**（该文件只在 `_mark_bootstrap_attempt` 时写）。
 不能当成「系统永远做不到」；**报告数字时必须同时报告构造条件**；② 一个**恒为真**的门
 = 一条**永不执行**的路径，且它**静默**；③ 判定「这红是我改的吗」用 `git stash push -- <文件>`
 回退重跑（本轮 5 failed 经此证明为**既有**，与我的改动无关，已如实写进提交信息）。
+
+## ⚠ 「已经有机制」与「这一类从来没被算过」是两件事（2026-10-02，`4e796ed`）
+
+操作者《开发指令审查总则》§5 点名禁止：`启用Goal → UNKNOWN → priority=-inf → 永远没人再看`。
+**先按 §14 查已有机制**，结果是个需要分辨的答案：
+
+`candidate_policy.CandidateAttemptPool` **确实已是** "persistent starvation counter consumed by the
+one Scheduler" —— 但 `eligible()` 要求 `skill.state is SkillState.CANDIDATE`，
+**它只覆盖「有 skill 的候选」**，完全不覆盖**无 skill 的 UNKNOWN**（实测 21 个，含
+`USE_FREE_ARENA_ATTEMPTS` / `LABYRINTH_DAILY` / 19 个 `SCHEDULED_*`）。
+⇒ **不是"已有机制没接线"，是"这一类从来没有被任何机制算过"。**
+**分辨方法**：读它的**入选条件**（`eligible`），不是读它的名字或 docstring。
+
+**修复（`goal_utility.observation_ticket`）三条边界，缺一不可**：
+1. **只对 `UNKNOWN` 生效** —— `COMPLETE`/`BLOCKED`/`SCHEDULED_NOT_OPEN`/`EXPIRED` 保持 `-inf`；
+   观察改变不了这些状态，重新定价就是本模块存在的理由所反对的「重新分级」。
+2. **只对声明了 `evidence["required_observation"]` 的生效** —— 这是 §5 的后半句：
+   一个 Goal 只有在**系统能说清"它在等什么"**时才准留在板上。没声明的**行为完全不变**，
+   所以这**不是**大赦。
+3. **上限 300**，按板上**已有的间隔**选（routine 70-250 / intel 800 / bear 1000 / stamina 2455），
+   不是取整好看。⇒ 高价值 UNKNOWN 能压过普通 routine（§一 要求），**够不到真正付钱的工作**。
+**票是常量 ⇒ 必须有轮换**：实测（带 ledger）"刚中过的票"会输给"等了几小时的 routine"，
+这就是 `fairness_bonus` 的作用；没有它，常量票会变成 §9 的「低价值任务霸占」换了件衣服。
+
+**票不是许可**：它只让 Goal **被 Scheduler 看见**；能不能动仍归 `capability_bootstrap`
+（拒绝消耗/集结/购买动词）与 capability gate。**Safety 与 Liveness 分开（§6）就是这个意思。**
+
+**工具**：`tools/invariant_review.py` 机器化检查总则 §22 的 12 项 + §17 的模拟世界（Role A/B）。
+改动前 **6 PASS / 2 FAIL**（正是上面两条）→ 改动后 **9 PASS / 0 FAIL / 4 UNMEASURED**；
+§17 世界从 "ROLE_B 5 选 1" 变成 "5 选 4"（剩的是 BLOCKED-带condition 与 SCHEDULED_NOT_OPEN —— 等待，不是丢失）。
+
+**一次自纠（比代码更值得记）**：`NO_SINGLE_GOAL_BLOCKS_AUTO` 我最初断言「受阻目标必须离开板」，
+**与 `NO_PERMANENT_UNKNOWN_BLACKHOLE` 直接矛盾**（一个要它消失，一个要它留下）。
+§5 要的是「别把其他目标一起拖下水」。**改的是检查，不是代码** —— 两个不变量互相打架时，
+先怀疑检查写错了。
+
+**判定「这红是我改的吗」的坑**：`git stash push -- <文件>` 回退重跑是正确手法，但
+**`stash pop` 会按 `core.autocrlf` 重写行尾 ⇒ md5 必变**。此时**不要**把 md5 不同当成"改动丢了"，
+要用**功能断言**（`'observation_ticket' in src`）确认内容回来了。我本轮误判过一次。
