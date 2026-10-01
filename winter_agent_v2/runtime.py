@@ -5512,6 +5512,8 @@ class LiveRuntime:
             if skill is None or not skill.ready(fresh):
                 return None
         measured, _, _, _ = self._advice_evidence(page, path, self._ocr_service())
+        row_regions, _ = self._quick_panel_advice_regions(fresh, path)
+        measured = row_regions + measured
         if anchor:
             hit = ui_collection.anchored_region(anchor, measured)
             hits = [hit] if hit is not None else []
@@ -5533,6 +5535,34 @@ class LiveRuntime:
         hit["point"] = [float(box["x_norm"]) + float(box["w_norm"]) / 2,
                         float(box["y_norm"]) + float(box["h_norm"]) / 2]
         return hit, path, fresh
+
+    @staticmethod
+    def _quick_panel_advice_regions(frame: WorldState, path: Path):
+        """Expose actual row buttons, not their non-interactive OCR labels."""
+        panel = frame.quick_panel or {}
+        source = str((panel.get("handle") or {}).get("measured_on") or "")
+        if not panel.get("open") or not source or Path(source).resolve() != Path(path).resolve():
+            return [], []
+        regions, boxes = [], []
+        for row in panel.get("rows") or []:
+            box = row.get("arrow_box_norm") or {}
+            if row.get("arrow_basis") != "ROW_BUTTON_SCAN" or not all(
+                    isinstance(box.get(k), (int, float)) for k in ("x_norm", "y_norm", "w_norm", "h_norm")):
+                continue
+            if (box["w_norm"] <= 0 or box["h_norm"] <= 0 or box["x_norm"] < 0
+                    or box["y_norm"] < 0 or box["x_norm"] + box["w_norm"] > 1
+                    or box["y_norm"] + box["h_norm"] > 1):
+                continue
+            key = str(row.get("key") or "")
+            semantic = "QUICK_PANEL_ROW_" + key
+            text = str(row.get("label") or key)
+            regions.append({"text": text, "box_norm": dict(box),
+                            "basis": "CURRENT_FRAME_QUICK_PANEL_ROW", "score": 0.9,
+                            "detail": {"semantic": semantic, "locator": "ROW_BUTTON_SCAN"}})
+            boxes.append({"text": text, "confidence": 0.9, **dict(box),
+                          "element_kind": "INTERACTIVE_CONTROL", "element_semantic": semantic,
+                          "element_executable": True})
+        return regions, boxes
 
     def _advised_control(
         self,
@@ -5625,6 +5655,10 @@ class LiveRuntime:
         observed = frame.to_dict()
         ocr = self._ocr_service()
         regions, boxes, texts, template_note = self._advice_evidence(page, frame_path, ocr)
+        row_regions, row_boxes = self._quick_panel_advice_regions(frame, frame_path)
+        regions = row_regions + regions
+        boxes = row_boxes + boxes
+        texts = tuple(row["text"] for row in row_regions) + texts
         request = unknown_advisor.build_request(
             unknown_type=unknown_advisor.UNKNOWN_CONTROL,
             page_label=page,
