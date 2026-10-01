@@ -2546,7 +2546,8 @@ class LiveRuntime:
                 page_after = control_experience.label(getattr(after, "page", "") or "")
             episode_id = str(getattr(getattr(self, "capture_dir", None), "name", "") or "")
             step = unknown_learning.record_verified_step(
-                request_id=str(getattr(self, "_last_advice", {}).get("request_id", "") or ""),
+                request_id=str(context.get("request_id")
+                               or getattr(self, "_last_advice", {}).get("request_id", "") or ""),
                 session_id=episode_id,
                 episode_id=episode_id,
                 step_index=int(step_id or 0),
@@ -5230,7 +5231,7 @@ class LiveRuntime:
             if unnamed:
                 advised = self._advised_control(
                     page,
-                    "",
+                    title,
                     frame_path,
                     frame,
                     unnamed=True,
@@ -5796,6 +5797,20 @@ class LiveRuntime:
                 "source": "LEARNED",
                 "confidence": float(hit.get("confidence") or 0.0),
                 "frame": str(frame_path),
+            }
+            # A reuse has no model settlement, but its own verifier result must
+            # strengthen (or reject) the learned step just like the first encounter.
+            self._advised_learn_context = {
+                "request_id": str(row.get("request_id") or ""),
+                "page_key": key,
+                "goal": str(goal or ""),
+                "semantic": semantic,
+                "basis": "LEARNED_VERIFIED_STEP",
+                "grounding_basis": "CURRENT_FRAME_OCR",
+                "expected_result": str(row.get("expected_result") or ""),
+                "frame": str(frame_path),
+                "attempts": 0,
+                "visual_evidence": {"reader": "LEARNED_VERIFIED_STEP", "ocr_anchor": word},
             }
             self._note_printed(
                 semantic,

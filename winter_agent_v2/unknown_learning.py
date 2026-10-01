@@ -529,7 +529,8 @@ def learned_steps_for(
     matching = [
         dict(row) for row in rows
         if str(row.get("page_before", "")) == str(page_key)
-        and (not goal_id or not row.get("goal_id") or str(row.get("goal_id")) == str(goal_id))
+        and bool(goal_id)
+        and str(row.get("goal_id") or "") == str(goal_id)
         and row.get("verifier_ok") is True
         and not row.get("no_progress")
         and row.get("semantic_target")
