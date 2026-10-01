@@ -646,6 +646,7 @@ class RoleSwitchController:
 
         target_role_id = str(target.get("role_id") or "")
         deadline = self.monotonic() + timeout
+        home_navigation_attempts = 0
         while self.monotonic() <= deadline:
             path = self._capture("target_home_after_profile")
             text = self._text(path)
@@ -666,6 +667,16 @@ class RoleSwitchController:
                     and world is not None and world.page is Page.HOME
                     and world.popup is None):
                 return path
+            if (identity is not None and identity[0] == target_role_id
+                    and world is not None and world.page is Page.MAP
+                    and world.popup is None and home_navigation_attempts < 2):
+                # Native auto-join can move the client to MAP after the profile
+                # read (observed 2026-10-01). Waiting alone never restores HOME.
+                # Reuse the source-side city entry on this freshly identified
+                # MAP frame; formation/rally pages remain untouched, and an
+                # accepted click is not proof that the role switch is complete.
+                home_navigation_attempts += 1
+                self._click_text(path, exact=("城镇",))
             self.sleeper(self.poll_seconds)
         return None
 
