@@ -32,6 +32,16 @@ except OSError:
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+# ``tools/`` is the directory this file lives in.  ``runpy.run_path`` -- which is how
+# the pinned launcher runs the panel -- does not put it on sys.path the way
+# ``python tools/control_panel.py`` would, so the sibling module below has to be made
+# importable explicitly.
+TOOLS_DIR = Path(__file__).resolve().parent
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
+
+import panel_window  # noqa: E402
+
 from winter_agent_v2 import runtime_env
 from winter_agent_v2 import winproc
 from winter_agent_v2 import event_schedule
@@ -415,142 +425,36 @@ def _acquire_single_instance() -> bool:
     return True
 
 
+# A second launch must answer the question the double-click asked.  The implementation
+# lives in ``tools/panel_window.py`` because the launcher needs the same behaviour
+# before it calls schtasks: the task is registered IgnoreNew, so once a panel is
+# running a second ``schtasks /Run`` starts nothing and this module is never loaded.
+# One copy of the Win32 probing, two callers.
 # ---------------------------------------------------------------------------
-# A double-click that opens nothing is indistinguishable from a broken shortcut.
-#
-# The mutex above is right -- one panel owns one AUTO -- but until 2026-10-01 it was
-# the *only* thing that happened on a second launch: the process returned 0 with no
-# window, no line in any log, and the launcher still printed 成功.  An operator whose
-# panel was behind other windows, minimised, or frozen after a sleep had no way to
-# tell "already running" from "the shortcut is dead".  Measured 2026-10-01: the panel
-# was alive but silent from 12:03:42 until the machine rebooted at 20:41, so every
-# double-click in those 8.5 hours opened nothing at all.
-#
-# So the second launch now answers what the operator actually asked -- show me the
-# panel -- by activating the window that already exists, and names the reason plainly
-# when it cannot.
-# ---------------------------------------------------------------------------
-
-SW_SHOW = 5
-SW_RESTORE = 9
-WM_NULL = 0x0000
-SMTO_ABORTIFHUNG = 0x0002
-WINDOW_PROBE_TIMEOUT_MS = 2000
 
 
 def _existing_panel_pid() -> int:
     """The pid the live panel recorded, or ``0`` when there is nothing readable."""
-    try:
-        raw = panel_pid_path().read_text(encoding="utf-8").strip()
-    except OSError:
-        return 0
-    try:
-        return int(raw)
-    except ValueError:
-        return 0
-
-
-def _top_level_windows(pid: int) -> list[int]:
-    """Handles of every top-level window owned by ``pid``, visible or not.
-
-    ``EnumWindows`` rather than .NET's ``MainWindowHandle``: that property reports 0
-    for a Tk top-level, so on 2026-10-01 20:47 it answered "no window" while
-    ``EnumWindows`` showed a visible 1376x859 window titled "Winter Agent OS V2 —
-    无尽冬日 AI 指挥中心".  A check built on the wrong API would have concluded the
-    healthy panel did not exist.
-    """
-    if os.name != "nt":
-        return []
-    user32 = ctypes.windll.user32
-    found: list[int] = []
-    callback_type = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p)
-
-    def _visit(hwnd: int, _lparam: int) -> bool:
-        owner = ctypes.c_ulong()
-        user32.GetWindowThreadProcessId(ctypes.c_void_p(hwnd), ctypes.byref(owner))
-        if owner.value == pid:
-            found.append(int(hwnd))
-        return True
-
-    user32.EnumWindows(callback_type(_visit), 0)
-    return found
-
-
-def _window_is_responding(hwnd: int) -> bool:
-    """False when the window's thread is not pumping messages, i.e. a frozen panel.
-
-    ``SendMessageTimeout`` returns nonzero for "the call succeeded" (the message's own
-    result lands in the out-parameter), so a zero here really does mean timeout or
-    failure -- measured on the healthy panel 2026-10-01 20:49.
-    """
-    if os.name != "nt":
-        return True
-    result = ctypes.c_void_p()
-    sent = ctypes.windll.user32.SendMessageTimeoutW(
-        ctypes.c_void_p(hwnd), WM_NULL, 0, 0, SMTO_ABORTIFHUNG,
-        WINDOW_PROBE_TIMEOUT_MS, ctypes.byref(result),
-    )
-    return bool(sent)
-
-
-def _activate_window(hwnd: int) -> None:
-    """Show and raise ``hwnd``.
-
-    Windows may refuse the foreground change, but the window is restored to a visible
-    state either way, which is what the operator asked for by double-clicking.
-    """
-    if os.name != "nt":
-        return
-    user32 = ctypes.windll.user32
-    user32.ShowWindow(ctypes.c_void_p(hwnd), SW_SHOW)
-    user32.ShowWindow(ctypes.c_void_p(hwnd), SW_RESTORE)
-    user32.SetForegroundWindow(ctypes.c_void_p(hwnd))
-
-
-def _notify_operator(message: str) -> None:
-    """Show an operator-visible box.  ``pythonw`` has no console, so a print is invisible."""
-    if os.name != "nt":
-        return
-    try:
-        ctypes.windll.user32.MessageBoxW(None, message, "Winter Agent OS V2", 0x40 | 0x1000)
-    except Exception:  # a missing window station must not turn into a traceback
-        pass
-
-
-def _bring_existing_panel_forward() -> str:
-    """Activate the panel that already holds the lock.  Empty string means shown."""
-    if os.name != "nt":
-        return "当前平台不支持自动显示窗口"
-    pid = _existing_panel_pid()
-    if not pid:
-        return "它没有留下可读的进程号（panel.pid）"
-    if not winproc.alive(pid, timeout=2.0):
-        return f"它记录的进程 {pid} 已经不在了（留下的锁尚未释放）"
-    windows = _top_level_windows(pid)
-    if not windows:
-        return f"进程 {pid} 在运行，但没有可显示的窗口"
-    if not _window_is_responding(windows[0]):
-        return f"进程 {pid} 的窗口没有响应（可能卡在某一轮里）"
-    _activate_window(windows[0])
-    return ""
+    return panel_window.read_panel_pid(panel_pid_path())
 
 
 def _report_existing_panel() -> None:
     """Answer the operator's double-click instead of exiting silently.
 
-    The diagnosis is wrapped: this runs on the way out of a launch that is about to
-    return 0, so an exception here would turn "show me the panel" back into the silent
-    second-click this whole block exists to remove.
+    This covers the mutex half: the launcher did start an instance and the
+    single-instance gate refused it.  Wrapped, because it runs on the way out of a
+    launch that is about to return 0 -- an exception here would restore the silent
+    second-click it exists to remove.
     """
     try:
-        problem = _bring_existing_panel_forward()
+        code, reason = panel_window.focus_existing_panel(panel_pid_path())
     except Exception as exc:  # noqa: BLE001 - the operator needs the reason, not a traceback
-        problem = f"检查已有面板时出错：{type(exc).__name__}: {exc}"
-    if not problem:
+        code, reason = panel_window.UNAVAILABLE, f"检查已有面板时出错：{type(exc).__name__}: {exc}"
+    if code == panel_window.SHOWN:
         return
-    _notify_operator(
+    panel_window.notify_operator(
         "Winter Agent OS V2 的面板已经在运行，但没有把它显示出来：\n\n"
-        f"{problem}\n\n"
+        f"{reason}\n\n"
         "双击不会打开第二个面板（一个面板对应一份 AUTO，这是设计如此）。\n"
         "请在任务管理器中结束该面板进程后重新双击；如果它已经卡住，重启计算机最干净。"
     )
