@@ -55,3 +55,7 @@ HEAD/origin=fe78e9cd93198fc9c91c7d21e57ccadfbf109d27；代码PIN=5a0aeb2458113a8
 ## 2026-10-01T20:07:39.406701+00:00 当前生产结果更新
 
 代码HEAD/PIN951abbd；普通AUTO040016已真实完成entry→strip→TAB三步Verifier PASS，识别7日期列、8活动条目。详情断点为observer OCR headings与executor colored bar选择不一致；951abbd沿真实before frame重放已纠正expected identity，须下次普通AUTO确认详情/全扫描。不要重复开发前述接线。模型窗口实际6次：3REPLAN/2拒绝/1OBSERVE，仍无grounded模型动作/候选/SECOND成功；不宣布学习闭环完成。
+
+## 2026-10-01T20:09:34.473305+00:00 真机详情闭环更新
+
+951abbd普通AUTO 20261002_040522_770261 / ROLE_A：7日期列、6真正可点击活动条目；6次OPEN_DETAIL与6次RETURN都Verifier PASS，随后进入体力/情报，未再停在日历。先前8项为OCR候选标题，含不可点击section headings，不等于8条真实可操作活动。角色B必须自己fresh读取；活动参与、预约/战斗时间及Venus学习仍不因日历读取成功而完成。WorkBuddy队列02跳过A已完成扫描，重点B/due suppression/真实剩余条件。

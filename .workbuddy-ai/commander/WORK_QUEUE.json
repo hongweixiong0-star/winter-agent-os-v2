@@ -196,7 +196,7 @@
       "objective": "继承最新日历due/store修复，实机证明扫描不再饿死其他Goal及可信时间唤醒",
       "timebox_minutes": 90,
       "why_now": "9592b43已记录日历Goal每frame再生吃掉AUTO，直接阻塞其他真实任务；本单先继承Root可能已完成的新修复，不重复建设日历系统。",
-      "current_evidence": "Inherited413bd4c/e9f68da calendar persistence/due;9341eee hub/strip navigation;5a0aeb2 timer rejection+four-swipe bound;951abbd same-frame colored-bar identity. Live040016:entry/scroll/TAB allPASS,7date columns+8entries. Detail expected heading vs actual colored bar mismatch was reproduced and replay corrected951abbd; latest live detail/full scan still pending. Do not rebuild these implementations.",
+      "current_evidence": "Inherited413bd4c/e9f68da calendar persistence/due;9341eee hub/strip navigation;5a0aeb2 timer rejection+four-swipe bound;951abbd same-frame colored-bar identity. Live040016:entry/scroll/TAB allPASS,7date columns+8entries. Detail expected heading vs actual colored bar mismatch was reproduced and replay corrected951abbd; latest live detail/full scan still pending. Do not rebuild these implementations. LIVE UPDATE:951abbd ordinary040522 ROLE_A proves6actual visible detail OPEN+RETURN PASS, thencontinuesSTAMINA/INTEL. RoleB/full next-day freshness still needs own livecheck. Do not reproduce alreadycompletedA scan merely forrecord.",
       "root_cause_or_hypothesis": "Confirmed and fixed three chain defects:default regular hub not accepted;cropped tab OCR fell back to ticking body state;observer OCR-only headings differed from executor colored-bar selection. Remaining live detail retest must inherit951abbd before developing.",
       "files_to_inspect": [
         "winter_agent_v2/event_calendar.py",
@@ -216,7 +216,7 @@
         "tests/test_event_schedule.py",
         "本单focused calendar starvation regression"
       ],
-      "implementation_hint": "First verify loaded951abbd and inspect newest ordinary AUTO trace. Require detail identity/occurrence from same fresh colored-bar reader used by executor; keep preview/battle times separate. If existing fixes pass, only record live completion and starvation metrics. Further code only for a concrete new failure. No timer-as-tab, no blanket Verifier widening, <=4strip swipes/run.",
+      "implementation_hint": "First verify loaded951abbd and inspect newest ordinary AUTO trace. Require detail identity/occurrence from same fresh colored-bar reader used by executor; keep preview/battle times separate. If existing fixes pass, only record live completion and starvation metrics. Further code only for a concrete new failure. No timer-as-tab, no blanket Verifier widening, <=4strip swipes/run. RoleA6detail loop now liveproven:skip completed work. Focus roleB own due/pending condition and daily suppression, never copy A state or fake activity times.",
       "test_plan": "定时源/角色分隔、成功scan后不每frame重复、失败cooldown、其他READY工作能被选择、到点wake→既有Scheduler的targeted tests；不以降低Verifier标准换通过。",
       "replay_plan": "使用最新日历Episode/frames及循环timeline，重放同一frame反复discover与已扫描状态，确保预告/报名/开放/战斗时间分层。",
       "live_plan": "交接后观察普通AUTO一次实际日历扫描→持久化→下一真实任务；等待可信时间wake只在当期真有条件时验，不为验收填造时间或闲等。",
@@ -226,7 +226,9 @@
         "visible_date_columns": 7,
         "observed_entries": 8,
         "detail_identity_failure_frame_replay_fixed": true,
-        "full_calendar_scan_completed": false
+        "full_calendar_scan_completed": false,
+        "role_A_visible_detail_pass": 6,
+        "role_A_scan_continued_other_goals": true
       },
       "target_metric": {
         "calendar_repeated_same_frame_goals": 0,
@@ -727,9 +729,9 @@
     }
   ],
   "base_facts": {
-    "captured_at": "2026-10-01T20:07:39.406701+00:00",
-    "head": "951abbdd039c4955f2cd99fd442ae2aea56ffae3",
-    "origin_main": "951abbdd039c4955f2cd99fd442ae2aea56ffae3",
+    "captured_at": "2026-10-01T20:09:34.473305+00:00",
+    "head": "b186903e95c7881fa6c68aa04cc44ab68a2a1ab7",
+    "origin_main": "b186903e95c7881fa6c68aa04cc44ab68a2a1ab7",
     "prod_pin": "951abbdd039c4955f2cd99fd442ae2aea56ffae3",
     "prod_clean": true,
     "runtime_snapshot": {
@@ -766,10 +768,13 @@
       "latest_code": "951abbdd039c4955f2cd99fd442ae2aea56ffae3",
       "first_live_hub_entry_pass": "20261002_035332_495268 OPEN_EVENT_CALENDAR_FROM_MAP; navigation progress only",
       "first_scroll_revealed_calendar": "Actual step002 after frame shows calendar; full OCR missed it then body timers falsely classified as tabs. Fixed5a0aeb2 with exact frame ROI replay.",
-      "strict_grid_read": "TRUE live 20261002_040016_826018:HOME entry -> current strip swipe -> calendar tab, all3VerifierPASS;7date columns09/30..10/06 and8entries. Full detail scan still not complete.",
+      "strict_grid_read": "LIVE_VERIFIED951abbd ordinary AUTO040522, roleA:entry/strip/TAB PASS,7date columns,6grounded clickable activity entries",
       "evidence": "learning/episodes.jsonl and dataset/raw/control_panel/runtime_auto/20261002_035332_495268",
       "budget": "four actual strip swipe attempts per run, then sameGoal yields; other READY goals continue",
-      "detail_blocker": "Observer used OCR-only headings while executor selected actual colored bar.951abbd connects same-frame colored-bar reader; exact failure-frame replay now predicts ICEBOUND_TREASURE_TRAINING matching actual detail. Latest live retest pending."
+      "detail_blocker": "FIXED_LIVE:6 current visible details allOPEN+RETURN VerifierPASS in040522; scheduler proceeded to AVOID_STAMINA_WASTE and CLEAR_INTEL. This is calendar reading, not activity participation or Venus learned skill.",
+      "role_A_detail_verifier_pass": 6,
+      "role_B_full_detail_scan": "AWAITING_NEXT_ROLE_SESSION",
+      "role_scope_validation": "RoleA scan completion cannot imply roleB scan complete"
     }
   },
   "archive_path": ".workbuddy-ai/commander/archive/20261002T033533_codex_commander",
