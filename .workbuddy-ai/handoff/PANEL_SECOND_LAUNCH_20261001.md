@@ -191,3 +191,42 @@ panel_window.py --wait 30        (新)  非 0 → 报明原因 + pause，exit 1
 **另外**：`.NET` 的 `MainWindowHandle`、`SMTO_ABORTIFHUNG`、`EnumWindows` 的第一项,
 这三个看起来最顺手的 API **在这台机器上各有一次会把健康面板判成不存在**。
 三次都被**真机读数**抓住，一次都没有被单元测试抓住。
+
+---
+
+## H. 落地状态（2026-10-01 21:1x）
+
+**已提交**（本地 `main`，尚未推到 `origin/main`）：
+
+| sha | 内容 |
+|---|---|
+| `44c04a8` | 第一版，**位置是错的**：机制放在 `control_panel.main()` 的单实例分支（+153/-1），并且**漏提交** `.cmd` 与 `panel_window.py` |
+| `1e5c24a` | **本轮的正式版本**：答案移到 `.cmd` 的 `schtasks` 之前；新增 `tools/panel_window.py`；`main()` 改薄委托（141 行 → 35 行）；含本报告 |
+| `198fc38` | 记忆同步（`MEMORY.md` + 两份当日日志） |
+
+**pin 已更新**：`tools/repin_production.py --to 1e5c24a` → `RESULT: CLEAN_OUTSIDE_DATA`。
+`control_panel.py` 不在 `VERSION_RELEVANT_FILES` 里，但 `Start-Winter-Agent-V2.cmd` 与
+`tools/panel_window.py` 必须在这一版上。**不要** repin 到 `198fc38`——那只是记忆。
+
+**推送未完成，原因不是失败，是守卫主动拦截**：
+
+```
+active agent      : 9d7dd6eb
+REFUSING: a WorkBuddy escalation job is editing this tree right now.
+```
+
+`9d7dd6eb` 是**面板运行时真实发起的自我修复 job**
+（key `TAP_FOCUSED_TRAINING_CAMP_SHIELD|SEMANTIC_TARGET_NOT_VERIFIED`），`state=WORKING`，
+心跳持续刷新（13:09:31 → 13:12:30 UTC）。
+
+**没有用 `--allow-active-agent` 绕过**：该开关的前提是「tree coherent / `check_wiring`
+problems: 0」，而本项目当前有 **15 项既有积压**（F 节），条件不满足；且这个守卫是为
+2026-09-17「升级 job 的半成品被扫进无关提交、`main` 短暂不一致」那次真实事故加的。
+**正确做法是等 job 结束再推**：
+
+```
+./.venv/Scripts/python.exe tools/scan_public_repo.py   # 已跑：0 forbidden / 0 secret / 0 pii / 0 gap
+./.venv/Scripts/python.exe tools/git_sync.py push
+```
+
+收尾时 `git status -sb` 为 `## main...origin/main [ahead 3]`。
