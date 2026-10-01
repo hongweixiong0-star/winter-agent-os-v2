@@ -1,469 +1,794 @@
 {
   "schema_version": "3",
-  "generated_at": "2026-09-24T18:00:00+08:00",
-  "generated_by": "Codex Commander",
-  "review_type": "COMPREHENSIVE_AUDIT_REPAIR_PLAN",
-  "supersedes": "2026-09-21 queue (archived at archive/WORK_QUEUE_20260921_superseded_20260924.json); preserve prior results and reconcile WB-0921-01 in task 01",
-  "base_facts": {
-    "head": "789271789ae0b691d97435b26fe64861b3719595",
-    "cutoff": "2026-09-24T09:35:49Z",
-    "dirty_paths_at_capture": 711,
-    "production_today": "Do not rely on legacy 699/635/64 summary; current schema requires explicit audit adapter.",
-    "runtime": "IDLE; runtime_thread_alive=false; scheduler_loop_alive=false; page=EXPLORATION; stop_reason=exploration_income_not_ready; march capacity unknown.",
-    "execution_state": "WB-0921-01 IN_PROGRESS since 2026-09-21 with no recent result; task 01 must reconcile ownership before edits.",
-    "bear": "No START_RALLY/JOIN_RALLY Episode in last verified audit; parser/policy are offline and not production-wired; no live event operation authorized by this plan."
+  "generated_by": "Codex Commander / sole Release Owner",
+  "review_type": "DELTA_HANDOFF_CALENDAR_STARVATION_AND_CAPABILITY_BOOTSTRAP",
+  "supersedes": "替换旧2026-09-24正式队列；原三文件按字节+SHA256归档。旧WorkBuddy execution/results/blocked/review不改，由WorkBuddy在任务01核验。",
+  "project_root": "E:/无尽冬日智能体",
+  "runtime_channel": {
+    "workbuddy_enabled": false,
+    "auto_submit_jobs": false,
+    "role": "developer-only queue; never game runtime model fallback"
+  },
+  "handoff_gate": {
+    "activation_state": "ARMED_WAITING_HANDOFF",
+    "currently_active_release_owner": "Codex current thread",
+    "codex_continues_now": true,
+    "trigger_any": [
+      {
+        "type": "codex_quota_remaining_percent_lte",
+        "value": 15
+      },
+      {
+        "type": "codex_paused_or_offline"
+      }
+    ],
+    "trigger_is_not_proof_of_transfer": true,
+    "require_before_writes": [
+      "读取最新Codex Review/handoff与git/production实际状态",
+      "确认Codex暂停/离线或quota阈值，并记录WorkBuddy接手任务所有权",
+      "确认当前文件修改归属和现有设备租约；没有并发输入/代码写入",
+      "所有发布动作先确认Root已明确移交Release Owner；当前quota刷新与本queue READY都不等于移交"
+    ],
+    "release_operations_require": "显式Release Owner移交记录；仅quota数字、旧进程不存在或本queue READY不能自行证明移交。",
+    "until_release_owner_transferred": {
+      "push_main": false,
+      "repin_production": false,
+      "reload_auto": false
+    },
+    "user_action": "用户只需启动WorkBuddy，它读取正式WORK_QUEUE；不得要求用户手工复制任务。",
+    "no_device_takeover_while_codex_active": true,
+    "quota_status_at_capture": {
+      "remaining_percent": 19,
+      "measured_at": "2026-10-02T04:06:00+08:00",
+      "codex_continues_now": true,
+      "note": "Refresh account-wide limits before handoff; <=15% activates explicit queued handoff."
+    },
+    "conditional_release_authorization": "When Codex explicitly yields due quota/offline and no Codex write/device/release is active, WorkBuddy task01 may record exclusive release-owner claim and proceed with the queued developer tasks. This user-authorized conditional handoff does not permit concurrent releases."
   },
   "execution_budget": {
-    "timebox_minutes": 720,
-    "target_window_hours": "12",
-    "note": "10 bounded work orders totaling 12 hours; individual tasks stop at their timebox, blockers do not idle the queue. Live game operation is out of scope."
+    "total_timebox_minutes": 525,
+    "maximum_active_work_hours": 8.75,
+    "target_observation_window_hours": "12–24仅作为条件允许的普通AUTO背景观察，不承诺12小时有效开发",
+    "note": "8单30–90分钟，最大主动timebox合计525分钟；缺窗口/条件明确记录后转下一单，不空等。"
+  },
+  "architecture_constraints": [
+    "一个Global Scheduler",
+    "一个WorldState体系",
+    "一个MAA Executor与DeviceLease",
+    "一个Generic Session Engine",
+    "唯一UI-Venus-2-9B Q4_K_M，context32768",
+    "Known Skill/semantic retry/L0/L1/Fishing realtime模型调用0",
+    "runtime WorkBuddy retired"
+  ],
+  "reporting_contract": {
+    "writer": "WorkBuddy via existing tools/cq.py",
+    "files": [
+      "EXECUTION_STATE.json",
+      "results/<task_id>.json",
+      "BLOCKED_QUEUE.json",
+      "REVIEW_REQUESTS.md"
+    ],
+    "code_commit_rule": "明确一个根因一个小commit，显式add文件/块，不批量提交dirty或runtime数据",
+    "mandatory_maturity_separation": [
+      "CODE_EXISTS",
+      "TEST_PASS",
+      "MODEL_PROPOSED",
+      "GROUNDING_VALID",
+      "MAA_EXECUTED",
+      "SCREEN_CHANGED",
+      "VERIFIER_PASS",
+      "GOAL_COMPLETE",
+      "CANDIDATE_REUSED",
+      "SKILL_REUSABLE",
+      "LIVE_VERIFIED",
+      "STABLE"
+    ]
   },
   "orders": [
     {
       "required_tool": [
         ".venv/Scripts/python.exe",
-        "tools/cq.py",
         "git",
-        "现有离线回放/pytest工具"
+        "tools/cq.py",
+        "现有 Runtime / MAA / DeviceLease / pytest"
       ],
-      "preferred_backend": "离线代码/回放；不控制游戏设备",
-      "fallback_backend": "纯静态核查；不足以证明的项标 BLOCKED",
+      "recommended_tool": "优先现有 Runtime、MAA、Verifier、UI-Venus 与 Learning Funnel；仅对明确根因做小改动。",
+      "preferred_backend": "MAA current-frame semantic execution；唯一 UI-Venus 仅 ONLINE_UNKNOWN；32K context",
+      "fallback_backend": "现有 deterministic / L1 learned step / bounded local reobserve；ADB 仅既有 fallback，不绕过租约",
       "do_not_touch": [
-        "真实游戏操作、体力/加速/付费、发起或加入集结、角色切换",
-        "历史 Episode 与历史统计",
-        "其他任务/WorkBuddy 已有未提交改动",
-        "新建 Scheduler/Manager/Brain/WorldState/Vision/MAA Executor",
-        "Codex 三文件以外的任务执行态/result 文件"
+        "第二 Scheduler / Executor / WorldState / Session Engine / 本地模型",
+        "MAI runtime；WorkBuddy retired runtime channel 或自动模型派发",
+        "Codex 仍拥有的共享 dirty 代码与未确认归属文件",
+        "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
+        "其他角色实时状态、探索授权、资源预算",
+        "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
+        "未移交 Release Owner 时的 main push / production repin / reload",
+        "WORK_QUEUE.json / CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md 原 Work Order",
+        "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop",
+        "Codex仍活跃时并发输入/共享代码写入；陈旧snapshot alive字段不得当进程实证"
       ],
-      "test_plan": "schema/状态读取器的单元或读取核对。",
-      "replay_plan": "不需要；纯状态对账。",
-      "live_plan": "本批只允许观察进程/日志/文件，不连接或操作游戏；真实 Bear live 验证另行排期。",
-      "timebox_minutes": 60,
       "status": "READY",
-      "task_id": "WB-0924-01",
+      "activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。",
+      "task_id": "WB-1002-01-HANDOFF-FACTS",
       "priority": "P0",
-      "objective": "对账旧在途单并建立当前任务所有权/运行基线",
-      "why_now": "Commander 队列仍是 9/21 基线，EXECUTION_STATE 将 WB-0921-01 标为 IN_PROGRESS；先判定是否有未交接改动，避免覆盖。",
-      "current_evidence": "2026-09-24 17:35:49 runtime_snapshot 为 IDLE；worker/scheduler_loop=false；HEAD 7892717；工作树 dirty/untracked 711；旧 task started 9/21 且没有近期 result。",
-      "root_cause_or_hypothesis": "执行态滞留；状态文件/实际进程与共享工作树未同步。",
-      "files_to_inspect": "git status/log、旧 WORK_QUEUE、EXECUTION_STATE、旧 task result、runtime_snapshot、相关进程/租约记录",
-      "files_allowed_to_modify": "仅本单 result 与 WorkBuddy 自有状态文件（不得改 Codex 队列/指令/Review）；如发现代码归属冲突则不改代码。",
-      "implementation_hint": "先检查在途任务结果与最近写入时间；列出确切未提交文件所有权；确认远端同步状态；输出可继续/过期/冲突分类，不将时间先后当成功。",
-      "verifier": "HEAD/branch、dirty path count、活动进程/租约、旧 task 判定均有可复核来源；无文件被覆盖。",
-      "before_metric": "当前 commander 基线过期，WB-0921-01 状态不明。",
-      "target_metric": "给出一份唯一、带时间戳的基线；明确可安全接手与不得碰的文件。",
-      "acceptance": [
-        "列出 revision、工作树、runtime、租约和在途任务事实。",
-        "未确认所有权的改动没有覆盖。",
-        "WorkBuddy 在自己的 result/EXECUTION_STATE 记录结论。"
+      "objective": "恢复接手时真实事实并确认唯一Release Owner、文件所有权与安全继续条件",
+      "why_now": "旧正式队列仍是9/24；当前开发HEAD9592b43而PINd7a86c4，runtime快照最后01:13后陈旧，Root确认当前无panel/worker并正在恢复，不能从旧alive字段启动重复控制面。",
+      "current_evidence": "2026-10-02 03:28 CST：HEAD=origin/main=9592b438e91cf0d5ed2972cea3e03394ff2f2495；生产manifest expected_commit=d7a86c47b4e8d6ff763b18b0ba73255824dabd9f；runtime last_tick=2026-10-01T17:13:24.856138Z。Root是本会话唯一Release Owner，继续开发且额度已刷新98%；恢复正在进行。 更新03:36+: Root已提交calendar/Bootstrap并repin4598da3；fresh snapshot alive，但agent_state DEGRADED需读取实际原因，不能把alive算Goal成功。接手继承最新恢复，不再按旧03:25停机假设重启。",
+      "root_cause_or_hypothesis": "工作单/旧在途任务及snapshot时间口径过期；生产代码与开发HEAD差异实际存在。具体停止原因由Root调查，不虚构worker crash或重复启动。",
+      "files_to_inspect": [
+        ".workbuddy-ai/commander/WORK_QUEUE.json",
+        ".workbuddy-ai/commander/EXECUTION_STATE.json",
+        ".workbuddy-ai/commander/results/",
+        ".workbuddy-ai/handoff/",
+        "learning/runtime_snapshot.json",
+        "learning/CONTROL_PLANE_RELOAD_REQUIRED.json",
+        "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/PRODUCTION_PIN.json",
+        "git status/log/HEAD/origin/main",
+        "现有panel/worker/Scheduler/lease实际进程与最新日志"
       ],
+      "files_allowed_to_modify": [
+        ".workbuddy-ai/commander/EXECUTION_STATE.json（WorkBuddy通过cq.py）",
+        ".workbuddy-ai/commander/results/WB-1002-01-HANDOFF-FACTS.json",
+        ".workbuddy-ai/commander/BLOCKED_QUEUE.json",
+        ".workbuddy-ai/commander/REVIEW_REQUESTS.md"
+      ],
+      "implementation_hint": "先读新Review和Root最新handoff，核对旧WB-0921在途任务是否已结束，不改Codex原单。记录实际进程PID/命令路径、HEAD/PIN/loaded fingerprint及snapshot freshness。若Root已恢复，继承其事实，不重复重启。quota<=15%/Codex离线仅触发交接申请；未明确Release Owner移交不得repin/reload/push，未确认文件归属不得编辑共享代码。",
+      "test_plan": "只读schema/时间新鲜度与进程/配置一致性检查；不跑大型suite，不占设备。",
+      "replay_plan": "对照停止/重载日志与当前PID，正常run结束、控制面重载和异常退出分别分类；历史18/24不能直接加算本轮crash。",
+      "live_plan": "本单只被动读取进程/日志/快照。由Root完成当前恢复；只有明确Release Owner移交后，按现有安全边界/设备租约完成必要恢复，恢复后fresh role/page/queues，不执行旧规划。",
+      "verifier": "单一所有权有可信移交或仍为Codexactive的明确记录；当前运行与时间戳可追溯，旧任务有结算依据；没有第二panel/worker、没有覆盖原dirty。",
+      "before_metric": {
+        "queue_baseline": "2026-09-24",
+        "snapshot_fresh": false,
+        "main_at_capture": "9592b43",
+        "pin_at_capture": "d7a86c4",
+        "runtime_recovery_owner": "Codex Root",
+        "snapshot_fresh_at_refresh": true,
+        "main_at_refresh": "4598da3e3d3543e1a869902e1e230da902843344",
+        "pin_at_refresh": "4598da3e3d3543e1a869902e1e230da902843344"
+      },
+      "target_metric": {
+        "ownership_recorded": true,
+        "actual_revision_recorded": true,
+        "stale_snapshot_not_used_as_alive_proof": true,
+        "concurrent_release_owners": 0
+      },
+      "acceptance": [
+        "用户只需启动WorkBuddy读取正式队列，无需复制任务。",
+        "Codex仍active时只读并等待交接，不自行取得发布权。",
+        "所有后续单使用本单的fresh facts和文件/设备所有权；未获交接只做不冲突的只读检查。"
+      ],
+      "timebox_minutes": 45,
+      "stop_condition": "Codex仍活跃未移交、文件归属不清、已有控制面恢复在途或日志不足；45分钟上限。",
+      "fallback_action": "在WorkBuddy自有结果/REVIEW_REQUESTS记WAITING_FOR_HANDOFF或NEEDS_EVIDENCE；保留旧数据，不重复启动、不删除锁。可转后续只读证据核验；不得越过所有权门禁。",
       "dependencies": [],
-      "stop_condition": "发现仍在运行的写入任务、活动设备控制或无法确认的文件所有权。",
-      "fallback_action": "记录 blocker 并暂停冲突范围；转下一项仅做独立只读审查。"
+      "files_scope": [
+        ".workbuddy-ai/commander/EXECUTION_STATE.json（WorkBuddy通过cq.py）",
+        ".workbuddy-ai/commander/results/WB-1002-01-HANDOFF-FACTS.json",
+        ".workbuddy-ai/commander/BLOCKED_QUEUE.json",
+        ".workbuddy-ai/commander/REVIEW_REQUESTS.md"
+      ]
     },
     {
       "required_tool": [
         ".venv/Scripts/python.exe",
-        "tools/cq.py",
         "git",
-        "现有离线回放/pytest工具"
+        "tools/cq.py",
+        "现有 Runtime / MAA / DeviceLease / pytest"
       ],
-      "preferred_backend": "离线代码/回放；不控制游戏设备",
-      "fallback_backend": "纯静态核查；不足以证明的项标 BLOCKED",
+      "recommended_tool": "优先现有 Runtime、MAA、Verifier、UI-Venus 与 Learning Funnel；仅对明确根因做小改动。",
+      "preferred_backend": "MAA current-frame semantic execution；唯一 UI-Venus 仅 ONLINE_UNKNOWN；32K context",
+      "fallback_backend": "现有 deterministic / L1 learned step / bounded local reobserve；ADB 仅既有 fallback，不绕过租约",
       "do_not_touch": [
-        "真实游戏操作、体力/加速/付费、发起或加入集结、角色切换",
-        "历史 Episode 与历史统计",
-        "其他任务/WorkBuddy 已有未提交改动",
-        "新建 Scheduler/Manager/Brain/WorldState/Vision/MAA Executor",
-        "Codex 三文件以外的任务执行态/result 文件"
+        "第二 Scheduler / Executor / WorldState / Session Engine / 本地模型",
+        "MAI runtime；WorkBuddy retired runtime channel 或自动模型派发",
+        "Codex 仍拥有的共享 dirty 代码与未确认归属文件",
+        "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
+        "其他角色实时状态、探索授权、资源预算",
+        "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
+        "未移交 Release Owner 时的 main push / production repin / reload",
+        "WORK_QUEUE.json / CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md 原 Work Order",
+        "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
       ],
-      "test_plan": "生命周期状态转换表测试；退出分类正反例；任务相关回归。",
-      "replay_plan": "模拟正常 idle、异常退出、watchdog恢复状态，不启动真实 AUTO。",
-      "live_plan": "本批只允许观察进程/日志/文件，不连接或操作游戏；真实 Bear live 验证另行排期。",
+      "status": "READY",
+      "task_id": "WB-1002-02-CALENDAR-STARVATION",
+      "priority": "P0",
+      "objective": "继承最新日历due/store修复，实机证明扫描不再饿死其他Goal及可信时间唤醒",
       "timebox_minutes": 90,
-      "status": "READY",
-      "task_id": "WB-0924-02",
-      "priority": "P0",
-      "objective": "定位并修复 worker/scheduler lifecycle 停止或退出归因缺口",
-      "why_now": "当前 AUTO 没有运行循环，巨熊 readiness 即使提升也无法保证运行。",
-      "current_evidence": "最新 snapshot agent_state=IDLE、runtime_thread_alive=false、scheduler_loop_alive=false、reason=exploration_income_not_ready；历史 unexpected exits=15 / watchdog restart=21。",
-      "root_cause_or_hypothesis": "SAFE_STOP/IDLE 被 UI 展示为正常完成，或 supervisor 未按预期恢复；具体原因须由状态写入路径和日志证明。",
-      "files_to_inspect": "winter_agent_v2/runtime.py、runtime_snapshot.py、runtime lifecycle/control_panel、learning/control_panel 日志、任务01结果",
-      "files_allowed_to_modify": "只改可明确归属的 lifecycle/状态写入模块和对应测试；不碰控制面板 UI或设备控制，除非根因直接指向且任务01确认所有权。",
-      "implementation_hint": "追踪 IDLE/STOPPED/DEGRADED 写入点，区分正常任务边界、人工停止、环境退出、未捕获异常；修复最小缺陷并保持历史计数不可变。",
-      "verifier": "状态原因与实际 worker/scheduler 线程状态一致；生命周期异常可被归因，历史计数不被重写。",
-      "before_metric": "worker 和 scheduler loop 均 false；原因标签只说明当前 goal 不可执行。",
-      "target_metric": "单一可复现缺陷修复并覆盖分类；若仅因操作员未启动而不是软件故障，明确结论而不改代码。",
+      "why_now": "9592b43已记录日历Goal每frame再生吃掉AUTO，直接阻塞其他真实任务；本单先继承Root可能已完成的新修复，不重复建设日历系统。",
+      "current_evidence": "Inherited413bd4c/e9f68da calendar persistence/due;9341eee hub/strip navigation;5a0aeb2 timer rejection+four-swipe bound;951abbd same-frame colored-bar identity. Live040016:entry/scroll/TAB allPASS,7date columns+8entries. Detail expected heading vs actual colored bar mismatch was reproduced and replay corrected951abbd; latest live detail/full scan still pending. Do not rebuild these implementations.",
+      "root_cause_or_hypothesis": "Confirmed and fixed three chain defects:default regular hub not accepted;cropped tab OCR fell back to ticking body state;observer OCR-only headings differed from executor colored-bar selection. Remaining live detail retest must inherit951abbd before developing.",
+      "files_to_inspect": [
+        "winter_agent_v2/event_calendar.py",
+        "winter_agent_v2/event_schedule.py",
+        "winter_agent_v2/goal_library.py",
+        "winter_agent_v2/runtime.py",
+        "tests/test_event_calendar_reader.py",
+        "tests/test_event_calendar.py",
+        "当前日历和日程记录"
+      ],
+      "files_allowed_to_modify": [
+        "winter_agent_v2/event_schedule.py（已确认无Root并发且仅due/store/cooldown最小根因）",
+        "winter_agent_v2/goal_library.py（相同Goal去重/观察due最小接线）",
+        "winter_agent_v2/runtime.py（日历扫描结果真实写回，需明确文件所有权）",
+        "tests/test_event_calendar_reader.py",
+        "tests/test_event_calendar.py",
+        "tests/test_event_schedule.py",
+        "本单focused calendar starvation regression"
+      ],
+      "implementation_hint": "First verify loaded951abbd and inspect newest ordinary AUTO trace. Require detail identity/occurrence from same fresh colored-bar reader used by executor; keep preview/battle times separate. If existing fixes pass, only record live completion and starvation metrics. Further code only for a concrete new failure. No timer-as-tab, no blanket Verifier widening, <=4strip swipes/run.",
+      "test_plan": "定时源/角色分隔、成功scan后不每frame重复、失败cooldown、其他READY工作能被选择、到点wake→既有Scheduler的targeted tests；不以降低Verifier标准换通过。",
+      "replay_plan": "使用最新日历Episode/frames及循环timeline，重放同一frame反复discover与已扫描状态，确保预告/报名/开放/战斗时间分层。",
+      "live_plan": "交接后观察普通AUTO一次实际日历扫描→持久化→下一真实任务；等待可信时间wake只在当期真有条件时验，不为验收填造时间或闲等。",
+      "verifier": "日历扫描动作的实际page/detail/返回Verifier；scan时间或失败cooldown持久化；后续非日历Goal实际派发/推进；已存在可信time的wake有因果trace。",
+      "before_metric": {
+        "grid_live_verified": true,
+        "visible_date_columns": 7,
+        "observed_entries": 8,
+        "detail_identity_failure_frame_replay_fixed": true,
+        "full_calendar_scan_completed": false
+      },
+      "target_metric": {
+        "calendar_repeated_same_frame_goals": 0,
+        "calendar_due_persistence_verified": true,
+        "ready_noncalendar_goal_not_starved": true,
+        "fabricated_event_times": 0
+      },
       "acceptance": [
-        "复现/追踪一个具体状态路径。",
-        "增加或修正相关测试。",
-        "不宣称 AUTO 已恢复或通过无人值守验证。"
+        "同一角色同一scan实例只有一个Goal，在执行/等待验证期间不会重复派发。",
+        "完成或有界失败后不因日历阻塞训练/科研/建筑/UNKNOWN。",
+        "所有活动维持已注册与等待窗口区别，到点仍由唯一Scheduler醒来。"
       ],
+      "stop_condition": "90分钟无明确root cause或live improvement；Root正在改同一文件；需要第二调度器；无可读日历则保留具体观察条件。",
+      "fallback_action": "写已确认timer/root cause与AWAITING_LIVE/NEEDS_EVIDENCE；若日历暂不可用则采用现有cooldown后转下一Goal，普通AUTO继续，不伪装全部就绪。",
       "dependencies": [
-        "WB-0924-01"
+        "WB-1002-01-HANDOFF-FACTS"
       ],
-      "stop_condition": "需要接管他人改动、依赖设备状态或无法在无设备条件下复现。",
-      "fallback_action": "保存追踪与 blocker；不得为完成指标启动游戏点击或后台长跑。"
+      "files_scope": [
+        "winter_agent_v2/event_schedule.py（已确认无Root并发且仅due/store/cooldown最小根因）",
+        "winter_agent_v2/goal_library.py（相同Goal去重/观察due最小接线）",
+        "winter_agent_v2/runtime.py（日历扫描结果真实写回，需明确文件所有权）",
+        "tests/test_event_calendar_reader.py",
+        "tests/test_event_calendar.py",
+        "tests/test_event_schedule.py",
+        "本单focused calendar starvation regression"
+      ],
+      "activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。"
     },
     {
       "required_tool": [
         ".venv/Scripts/python.exe",
-        "tools/cq.py",
         "git",
-        "现有离线回放/pytest工具"
+        "tools/cq.py",
+        "现有 Runtime / MAA / DeviceLease / pytest"
       ],
-      "preferred_backend": "离线代码/回放；不控制游戏设备",
-      "fallback_backend": "纯静态核查；不足以证明的项标 BLOCKED",
+      "recommended_tool": "优先现有 Runtime、MAA、Verifier、UI-Venus 与 Learning Funnel；仅对明确根因做小改动。",
+      "preferred_backend": "MAA current-frame semantic execution；唯一 UI-Venus 仅 ONLINE_UNKNOWN；32K context",
+      "fallback_backend": "现有 deterministic / L1 learned step / bounded local reobserve；ADB 仅既有 fallback，不绕过租约",
       "do_not_touch": [
-        "真实游戏操作、体力/加速/付费、发起或加入集结、角色切换",
-        "历史 Episode 与历史统计",
-        "其他任务/WorkBuddy 已有未提交改动",
-        "新建 Scheduler/Manager/Brain/WorldState/Vision/MAA Executor",
-        "Codex 三文件以外的任务执行态/result 文件"
+        "第二 Scheduler / Executor / WorldState / Session Engine / 本地模型",
+        "MAI runtime；WorkBuddy retired runtime channel 或自动模型派发",
+        "Codex 仍拥有的共享 dirty 代码与未确认归属文件",
+        "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
+        "其他角色实时状态、探索授权、资源预算",
+        "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
+        "未移交 Release Owner 时的 main push / production repin / reload",
+        "WORK_QUEUE.json / CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md 原 Work Order",
+        "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
       ],
-      "test_plan": "样本 ledger/episode schema fixtures；旧 schema 和当前 schema；空/缺字段应失败而不是成功给 0。",
-      "replay_plan": "跑一次只读汇总，与抽样原始记录人工对照；不修补历史日志。",
-      "live_plan": "本批只允许观察进程/日志/文件，不连接或操作游戏；真实 Bear live 验证另行排期。",
-      "timebox_minutes": 60,
       "status": "READY",
-      "task_id": "WB-0924-03",
+      "task_id": "WB-1002-03-BOOTSTRAP-FIRST-SECOND",
       "priority": "P0",
-      "objective": "修复 production ledger/episode 审计读取口径并建立 schema 自检",
-      "why_now": "旧审计器读取旧字段，可能输出虚假零点击/空动作统计，污染坐标合规结论。",
-      "current_evidence": "tools/audit_coord_production.py 从 action.kind/kind 取动作类型；当前 ledger 使用过 action_kind/action_target 等字段；episode outcome schema 也不统一。",
-      "root_cause_or_hypothesis": "分析器未版本化/无 schema guard，旧代码静默把字段缺失当 0。",
-      "files_to_inspect": "tools/audit_coord_production.py、audit_coord_production2.py、learning/executor_backend.jsonl、learning/episodes.jsonl、相关 tests",
-      "files_allowed_to_modify": "审计工具和其测试；不得批量重写 ledger/Episode 或更改生产记录。",
-      "implementation_hint": "根据当前真实样本定义显式 schema adapter；缺字段时报 schema mismatch；仅能将关联键明确的记录 join，不用时间近似冒充因果。",
-      "verifier": "每个统计字段都能追溯源键；当前日志统计无静默空值；历史值未变。",
-      "before_metric": "旧脚本字段与当前账本结构不匹配，历史汇总不可采信。",
-      "target_metric": "审计器能解析已知当前 schema并拒绝未知 schema；人工抽查至少 10 条匹配一致。",
+      "objective": "在已接生产的安全Bootstrap/学习窗口取得真实FIRST→Candidate→SECOND无模型复用闭环",
+      "timebox_minutes": 90,
+      "why_now": "用户最新 P0 是 AUTO Capability Discovery Coverage；已有 UNKNOWN 在 Scheduler 前被过滤，当前学习尚未闭环。",
+      "current_evidence": "WorkBuddy已在Codex额度中断期间提交Runtime/Bootstrap、learning window和UNKNOWN observation ticket：0d53e9d/4e796ed等已在main9592b43，勿重新开发。Oct1最后可归因核验为5次Venus call、grounding0/candidate0/SECOND未达；该计数不是当前实时总数，先从最新trace核实。ROLE_A射手营799真实训练model0不算FIRST。 更新：Root已提交4598da3把Bootstrap探索绑定到选中安全Goal入口，当前PIN继承；本单直接验证FIRST/SECOND而非重建入口投影。",
+      "root_cause_or_hypothesis": "安全发现/窗口现有实现需证明普通AUTO确实到达并形成可靠坐标无关Candidate；完整闭环缺口必须由最新失败trace决定，不能假定尚未接线。",
+      "files_to_inspect": [
+        "winter_agent_v2/capability_bootstrap.py",
+        "winter_agent_v2/runtime.py",
+        "winter_agent_v2/ui_planner.py",
+        "winter_agent_v2/unknown_learning.py",
+        "winter_agent_v2/learning_funnel.py",
+        "learning/ui_venus_online.jsonl",
+        "learning/local_planner_steps.jsonl",
+        "最新 Codex handoff"
+      ],
+      "files_allowed_to_modify": [
+        "winter_agent_v2/capability_bootstrap.py",
+        "winter_agent_v2/runtime.py 的既有Bootstrap/UNKNOWN接线",
+        "winter_agent_v2/unknown_learning.py 的最小候选沉淀修复",
+        "tests/test_runtime_capability_discovery_lane.py",
+        "本单 targeted regression tests"
+      ],
+      "implementation_hint": "复用project_runtime_discovery、learning_window及UNKNOWN ticket，保留原Goal ID/role/frame/strictscope，不创建第二任务队列。真实未知低风险入口优先；已知Skill不能故意关掉制造FIRST。预算2model/screen、4safe steps、1visit/run/现有cooldown；frame hash/target typedidentity/Policy/lease真实检查。windowUNKNOWN仅安全观察，不授权参加。",
+      "test_plan": "只跑Bootstrap/帧身份/未知学习trace/second encounter相关回归；补具体失败回归；避免整套suite长时间停AUTO。",
+      "replay_plan": "使用本轮真实UNKNOWN Episode与frame重放，验证UNKNOWN→bootstrap可选、同Goal因果trace和Candidate不保留一次性bbox。",
+      "live_plan": "交接条件与租约满足后，普通AUTO选真实Bootstrap；记录safe entry、Venus proposal、grounding、Policy、MAA、fresh Verifier，第一次成功立即保存。下一真实相同身份先复用Candidate；无需模型才算SECOND。没有适用UI则转下一单，不强造失败。",
+      "verifier": "FIRST model_used+grounding_valid+MAA executed+Verifier PASS；Candidate created；SECOND model_used=false+MAA executed+Verifier PASS；关联trace/parent/role/goal/frame，点击请求不算PASS。",
+      "before_metric": {
+        "learning_pipeline_code": "COMMITTED_IN_MAIN",
+        "last_verified_window": "2026-10-01 prior handoff, stale counts",
+        "latest_genuine_calls": "RECHECK_CURRENT_LEDGER",
+        "first_second_live_closure": "NOT_PROVEN_BY_CURRENT_HANDOFF"
+      },
+      "target_metric": {
+        "verified_first_case": 1,
+        "coordinate_free_candidate_step": 1,
+        "verified_model_free_second_case": 1,
+        "model_calls_per_screen_max": 2
+      },
       "acceptance": [
-        "保存修复前后汇总与输入 schema 版本。",
-        "确认历史日志 hash/mtime未被改。",
-        "对不具备稳定 join key 的指标明确标 unavailable。"
+        "真实六项证据全部满足才可宣称学习闭环；不足保持 AWAITING_LIVE/NEEDS_EVIDENCE。",
+        "单Goal失败后AUTO继续其他Goal/Role；候选定位只用当前帧。",
+        "result区分CODE_EXISTS/TEST_PASS/MODEL_PROPOSED/GROUNDING/MAA/VERIFIER/CANDIDATE_REUSED。"
       ],
+      "stop_condition": "90分钟或局部预算耗尽；无可靠低风险当前帧目标；设备/模型不可用；已有能力可直接完成而无真实UNKNOWN。",
+      "fallback_action": "记录具体阻塞、成功前置步骤和当前trace；写 WorkBuddy BLOCKED_QUEUE/results，不伪造完整成功，自动下一单。",
       "dependencies": [
-        "WB-0924-01"
+        "WB-1002-01-HANDOFF-FACTS",
+        "WB-1002-02-CALENDAR-STARVATION"
       ],
-      "stop_condition": "发现历史 Episode 需要迁移/回写，或必须更改生产采集协议才能验证。",
-      "fallback_action": "只交付只读审计结论和所需 schema proposal，不篡改历史。"
+      "files_scope": [
+        "winter_agent_v2/capability_bootstrap.py",
+        "winter_agent_v2/runtime.py 的既有Bootstrap/UNKNOWN接线",
+        "winter_agent_v2/unknown_learning.py 的最小候选沉淀修复",
+        "tests/test_runtime_capability_discovery_lane.py",
+        "本单 targeted regression tests"
+      ],
+      "activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。"
     },
     {
       "required_tool": [
         ".venv/Scripts/python.exe",
-        "tools/cq.py",
         "git",
-        "现有离线回放/pytest工具"
+        "tools/cq.py",
+        "现有 Runtime / MAA / DeviceLease / pytest"
       ],
-      "preferred_backend": "离线代码/回放；不控制游戏设备",
-      "fallback_backend": "纯静态核查；不足以证明的项标 BLOCKED",
+      "recommended_tool": "优先现有 Runtime、MAA、Verifier、UI-Venus 与 Learning Funnel；仅对明确根因做小改动。",
+      "preferred_backend": "MAA current-frame semantic execution；唯一 UI-Venus 仅 ONLINE_UNKNOWN；32K context",
+      "fallback_backend": "现有 deterministic / L1 learned step / bounded local reobserve；ADB 仅既有 fallback，不绕过租约",
       "do_not_touch": [
-        "真实游戏操作、体力/加速/付费、发起或加入集结、角色切换",
-        "历史 Episode 与历史统计",
-        "其他任务/WorkBuddy 已有未提交改动",
-        "新建 Scheduler/Manager/Brain/WorldState/Vision/MAA Executor",
-        "Codex 三文件以外的任务执行态/result 文件"
+        "第二 Scheduler / Executor / WorldState / Session Engine / 本地模型",
+        "MAI runtime；WorkBuddy retired runtime channel 或自动模型派发",
+        "Codex 仍拥有的共享 dirty 代码与未确认归属文件",
+        "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
+        "其他角色实时状态、探索授权、资源预算",
+        "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
+        "未移交 Release Owner 时的 main push / production repin / reload",
+        "WORK_QUEUE.json / CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md 原 Work Order",
+        "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
       ],
-      "test_plan": "固定 tap 与固定 swipe 的正反例；合法 frame-derived container swipe 的通过用例。",
-      "replay_plan": "用已有 MAP/非 MAP 帧离线解析；无设备动作。",
-      "live_plan": "本批只允许观察进程/日志/文件，不连接或操作游戏；真实 Bear live 验证另行排期。",
-      "timebox_minutes": 60,
       "status": "READY",
-      "task_id": "WB-0924-04",
+      "task_id": "WB-1002-04-UNKNOWN-COVERAGE-ARENA",
       "priority": "P1",
-      "objective": "修复固定 SWIPE 宪法检查与地图手势锚定",
-      "why_now": "当前固定 MAP gesture 被静态扫描器列为 NOTE，漏掉了附件对手势容器锚定的要求。",
-      "current_evidence": "winter_agent_v2/skills.py 当前含固定向量 SWIPE 0.50,0.62,0.50,0.30；旧 scanner 偏重 tap hardcoding。",
-      "root_cause_or_hypothesis": "规则只阻止固定点击，没有把滑动向量按目标容器解析。",
-      "files_to_inspect": "winter_agent_v2/skills.py、executor/gesture resolver、tools/check_coordinate_hardcoding.py、knowledge/ui/navigation_matrix.json、相关 tests",
-      "files_allowed_to_modify": "仅手势动作解析/扫描工具/对应测试；不修改 UI 模板或其他页面动作。",
-      "implementation_hint": "先找现有地图容器/边界观测；若无法定位，拒绝 gesture 并报告候选状态，不凭屏幕百分比继续滑；只有证实全屏地图平移才可写明确例外。",
-      "verifier": "生产 gesture 均由当前帧锚点解析或命中有理由的例外；scanner 对固定 SWIPE 给出 VIOLATION/显式审查。",
-      "before_metric": "一个固定向量被 scanner 允许为 NOTE。",
-      "target_metric": "无静默固定 SWIPE 豁免；检查工具相关回归通过。",
-      "acceptance": [
-        "输出从固定向量到当前 UI 容器的可追踪关系，或安全拒绝。",
-        "不改变其他动作目标。"
-      ],
-      "dependencies": [
-        "WB-0924-01"
-      ],
-      "stop_condition": "找不到当前帧容器证据且改动需要真实屏幕手势校准。",
-      "fallback_action": "保持该动作拒绝/标 BLOCKED；不通过硬编码坐标“修复”。"
-    },
-    {
-      "required_tool": [
-        ".venv/Scripts/python.exe",
-        "tools/cq.py",
-        "git",
-        "现有离线回放/pytest工具"
-      ],
-      "preferred_backend": "离线代码/回放；不控制游戏设备",
-      "fallback_backend": "纯静态核查；不足以证明的项标 BLOCKED",
-      "do_not_touch": [
-        "真实游戏操作、体力/加速/付费、发起或加入集结、角色切换",
-        "历史 Episode 与历史统计",
-        "其他任务/WorkBuddy 已有未提交改动",
-        "新建 Scheduler/Manager/Brain/WorldState/Vision/MAA Executor",
-        "Codex 三文件以外的任务执行态/result 文件"
-      ],
-      "test_plan": "fake clock 的预约前后转换、缺失/无效预约、worker idle→wake→tick、stop/shutdown、role identity mismatch。",
-      "replay_plan": "确定性 fake clock 与线程/async lifecycle mock；绝不等待真实活动。",
-      "live_plan": "本批只允许观察进程/日志/文件，不连接或操作游戏；真实 Bear live 验证另行排期。",
-      "timebox_minutes": 90,
-      "status": "READY",
-      "task_id": "WB-0924-05",
-      "priority": "P0",
-      "objective": "接通 timed-event readiness 与现有 runtime 生命周期，不新建调度器",
-      "why_now": "项目宪法要求活动准备不能只依赖普通任务刚好触发一次 tick；当前 worker 停止时没有 tick。",
-      "current_evidence": "event_schedule.py 与 Scheduler.readiness 已实现；learning/timed_event_schedule.json 缺失；scheduler.py readiness 只是决策排序加权；runtime loop 当前停止。",
-      "root_cause_or_hypothesis": "已有单 Scheduler 可排优先级，但没有生命周期层恢复/定时唤醒语义；没有预约时必须继续 IDLE。",
-      "files_to_inspect": "winter_agent_v2/event_schedule.py、scheduler.py、runtime.py、runtime_snapshot.py、tests/test_event_readiness_wake.py",
-      "files_allowed_to_modify": "仅现有 Scheduler/runtime lifecycle 与测试；不新增第二 Scheduler/Manager/Timer service。",
-      "implementation_hint": "在现有 worker wait/lifecycle 中接入预约最近 deadline 的有限等待/唤醒信号；启动时重新读取预约；无预约/坏数据保持空闲；防重复 tick 与角色错配。",
-      "verifier": "有效预约到点可使现有 runtime 重新执行一个调度周期；无预约不产生活动 Goal/操作；仍只有一个 Scheduler。",
-      "before_metric": "现状只有 tick 内 readiness bonus；预约文件缺失。",
-      "target_metric": "所有临界状态覆盖且无真实等待；单 Scheduler 架构检查通过。",
-      "acceptance": [
-        "明确唤醒责任位于现有 lifecycle。",
-        "没有预约时不猜时间。",
-        "停止/退出能中断等待。"
-      ],
-      "dependencies": [
-        "WB-0924-02",
-        "WB-0924-03"
-      ],
-      "stop_condition": "实现需要新建平行 scheduler、需要游戏内 schedule 采集，或 shutdown 不能安全中止。",
-      "fallback_action": "保留 event_schedule 的纯函数并报告接口缺口，不绕过架构。"
-    },
-    {
-      "required_tool": [
-        ".venv/Scripts/python.exe",
-        "tools/cq.py",
-        "git",
-        "现有离线回放/pytest工具"
-      ],
-      "preferred_backend": "离线代码/回放；不控制游戏设备",
-      "fallback_backend": "纯静态核查；不足以证明的项标 BLOCKED",
-      "do_not_touch": [
-        "真实游戏操作、体力/加速/付费、发起或加入集结、角色切换",
-        "历史 Episode 与历史统计",
-        "其他任务/WorkBuddy 已有未提交改动",
-        "新建 Scheduler/Manager/Brain/WorldState/Vision/MAA Executor",
-        "Codex 三文件以外的任务执行态/result 文件"
-      ],
-      "test_plan": "历史 2/3/6 队样本；capacity未知、过期观测、role switch、Gather召回中的occupancy与动态reserve边界；不固定reserve=2。",
-      "replay_plan": "状态快照 fixture/replay；不 dispatch march 或 recall。",
-      "live_plan": "本批只允许观察进程/日志/文件，不连接或操作游戏；真实 Bear live 验证另行排期。",
-      "timebox_minutes": 90,
-      "status": "READY",
-      "task_id": "WB-0924-06",
-      "priority": "P0",
-      "objective": "完善 Role-scoped March Capacity/Occupancy/Reservation 失效规则",
-      "why_now": "正确角色和当前可用队列是巨熊 Join/Start 与 Gather 的安全前置；快照容量全未知。",
-      "current_evidence": "runtime_snapshot march_used/march_max=null；WorldState 有相关字段；旧 directives 已要求 role scoped 与动态 capacity。",
-      "root_cause_or_hypothesis": "Capacity 与 occupancy/reservation 的来源、freshness、role switch 失效可能未统一。",
-      "files_to_inspect": "winter_agent_v2/models.py、state_truth.py、vision.py、reservation/policy modules、ROLE_SWITCH 路径、相关 tests、任务01基线",
-      "files_allowed_to_modify": "现有 WorldState/Knowledge/march policy模块与测试；不增建第二套状态管理器。",
-      "implementation_hint": "明确 capacity / occupied (IDLE/GATHERING/MARCHING/RETURNING/UNKNOWN) / reservation 三层；附 role_id/observed_at/confidence；role change 清空瞬时观测，静态成长资料仅作 prior。",
-      "verifier": "available_for_goal 仅从同角色新鲜 capacity−occupancy−reservation 算出；未知不会变 0/固定数；切角色绝不沿用上角色状态。",
-      "before_metric": "最新 frame capacity字段 null；旧项目规范禁止硬编码容量与 reservation。",
-      "target_metric": "角色隔离、过期、未知和保留策略均有测试；没有角色固定 march_slots/reserve。",
-      "acceptance": [
-        "输出字段定义与来源/新鲜度。",
-        "测试证明 role switch invalidate。",
-        "不得宣称真机容量识别通过。"
-      ],
-      "dependencies": [
-        "WB-0924-01",
-        "WB-0924-03"
-      ],
-      "stop_condition": "字段接线需要改动归属不明模块，或当前 UI 无法区分容量与占用。",
-      "fallback_action": "保留 UNKNOWN，提交明确观测缺口与最小后续 live 观测清单。"
-    },
-    {
-      "required_tool": [
-        ".venv/Scripts/python.exe",
-        "tools/cq.py",
-        "git",
-        "现有离线回放/pytest工具"
-      ],
-      "preferred_backend": "离线代码/回放；不控制游戏设备",
-      "fallback_backend": "纯静态核查；不足以证明的项标 BLOCKED",
-      "do_not_touch": [
-        "真实游戏操作、体力/加速/付费、发起或加入集结、角色切换",
-        "历史 Episode 与历史统计",
-        "其他任务/WorkBuddy 已有未提交改动",
-        "新建 Scheduler/Manager/Brain/WorldState/Vision/MAA Executor",
-        "Codex 三文件以外的任务执行态/result 文件"
-      ],
-      "test_plan": "多行/不同顺序/绿色Join/灰色或未知/满员/过期/无空闲队列/目标非Bear/一行消失等夹具。",
-      "replay_plan": "现存 bear/rally 帧离线回放；报告每行读数与最终策略选择，不发点击。",
-      "live_plan": "本批只允许观察进程/日志/文件，不连接或操作游戏；真实 Bear live 验证另行排期。",
-      "timebox_minutes": 90,
-      "status": "READY",
-      "task_id": "WB-0924-07",
-      "priority": "P0",
-      "objective": "将 rally list reader 与行策略接入现有 JOIN_RALLY 决策链（先离线）",
-      "why_now": "离线解析器和选择策略没有 production call site；Episode 历史没有 START/JOIN。",
-      "current_evidence": "rally.py 有 read_rally_list/choose_bear_operation/fastest_joinable_bear；当前调用仅限测试/工具；reader 从当前帧读取行。",
-      "root_cause_or_hypothesis": "Brain 的 generic JOIN_RALLY 目标解析没有消费 RallyListReading，因此“能读”与“会选”分离。",
-      "files_to_inspect": "winter_agent_v2/rally.py、brain.py、goal_library.py、skills.py、runtime.py、vision/OCR入口、相关 rally tests",
-      "files_allowed_to_modify": "只改现有 Goal/Brain/Skill/Verifier接线与 tests；不复制外部固定坐标。",
-      "implementation_hint": "把已观察当前帧的 reading 作为 decision evidence 输入；按 event role、joinable、timer、容量和正常 idle slot筛选；缺字段为 UNKNOWN并拒绝动作；按钮坐标只能从当帧目标框解析。",
-      "verifier": "调度决定携带被选 row 的帧证据和当前按钮框；任何无唯一安全目标的输入返回 SAFE_STOP/观察动作。",
-      "before_metric": "解析器与policy函数离线存在，生产未调用。",
-      "target_metric": "端到端 decision replay 通过；对错误行/满员/未知均拒绝；无live点击。",
-      "acceptance": [
-        "列出新的生产调用链及证据字段。",
-        "不把 template 命中单独当 JOIN 成功。",
-        "对list scroll仅处理已有可见区域，不滚动固定位置。"
-      ],
-      "dependencies": [
-        "WB-0924-05",
-        "WB-0924-06"
-      ],
-      "stop_condition": "现有 OCR API 无法提供 frame/token 坐标，或真实截图资产来源/许可不明。",
-      "fallback_action": "保持当前帧证据驱动的 SAFE_STOP；报告缺失接口与样本需求。"
-    },
-    {
-      "required_tool": [
-        ".venv/Scripts/python.exe",
-        "tools/cq.py",
-        "git",
-        "现有离线回放/pytest工具"
-      ],
-      "preferred_backend": "离线代码/回放；不控制游戏设备",
-      "fallback_backend": "纯静态核查；不足以证明的项标 BLOCKED",
-      "do_not_touch": [
-        "真实游戏操作、体力/加速/付费、发起或加入集结、角色切换",
-        "历史 Episode 与历史统计",
-        "其他任务/WorkBuddy 已有未提交改动",
-        "新建 Scheduler/Manager/Brain/WorldState/Vision/MAA Executor",
-        "Codex 三文件以外的任务执行态/result 文件"
-      ],
-      "test_plan": "成功入队、未点击、队列计数变化但目标不符、突然满员、role mismatch、数据 stale/unknown 的正反样本。",
-      "replay_plan": "只用归档帧/WorldState fixtures；不点按钮。",
-      "live_plan": "本批只允许观察进程/日志/文件，不连接或操作游戏；真实 Bear live 验证另行排期。",
+      "objective": "按真实Goal诊断补一个未到达的低风险UNKNOWN入口，优先竞技场入口与免费次数观察",
       "timebox_minutes": 60,
+      "why_now": "用户要求所有已启用任务主动接入AUTO；有Goal/Skill不等于Scheduler会选或MAA能定位，最新诊断已暴露共享semantic resolution缺口。Arena的live attempts仍需角色级实际读数。",
+      "current_evidence": "SEMANTIC_TARGET_DIAGNOSIS_20261002.md对373条历史定位失败统计；多个Goal/Skill决策认为可见而resolver miss，但历史统计不是本轮实时根因。当前executor.py/runtime.py/runtime_snapshot.py有Root正在做recognition_error归因/修复dirty。复用，不重复。Arena观察必须fresh且role-scoped。",
+      "root_cause_or_hypothesis": "既有执行链可能只缺真实入口/当前帧语义、attempt reader或观察Goal可选性；先区分POLICY_DISABLED、WAITING_WINDOW、missing_observation、NO_EXECUTABLE_SKILL，未知不得被伪装READY。",
+      "files_to_inspect": [
+        "winter_agent_v2/goal_library.py",
+        "winter_agent_v2/capability_bootstrap.py",
+        "winter_agent_v2/capability_gate.py",
+        "winter_agent_v2/skills.py",
+        "knowledge/goals/goal_capability_map.json",
+        "最新 capability coverage matrix",
+        "winter_agent_v2/runtime.py",
+        "winter_agent_v2/vision.py",
+        "winter_agent_v2/models.py",
+        "winter_agent_v2/runtime.py 的Bootstrap入口",
+        "knowledge/ui_semantics/",
+        "当前竞技场入口截图/既有候选",
+        ".workbuddy-ai/handoff/SEMANTIC_TARGET_DIAGNOSIS_20261002.md",
+        "winter_agent_v2/executor.py",
+        "winter_agent_v2/executor_router.py",
+        "learning/episodes.jsonl"
+      ],
+      "files_allowed_to_modify": [
+        "已有Capability Coverage/Goal metadata最小真实映射修正",
+        "已有Arena页/尝试次数reader/导航的最小缺口（确认文件归属后）",
+        "已有current-frame语义resolver的明确根因（不要重复Root当前dirty）",
+        "对应focused candidate/entry/role isolation tests",
+        "既有知识/模板CANDIDATE登记（真实来源，坐标不持久化）"
+      ],
+      "implementation_hint": "先做Goal→capability alternatives→registeredSkill→runtimebinding→candidate→当前状态→Verifier逐Goal唯一reason；至少落一个可安全观察的缺口，不为了数字生成伪Skill。Arena先OPEN/READ_FREE_ATTEMPTS，actual live attempts决定READY/WAIT，红点不等于战斗。bootstrap只安全OPEN/OBSERVE/READ，不代替正常战斗授权。",
+      "test_plan": "focused Goal候选/route/binding/role isolation与当前帧resolver回归；新Arena读数UNKNOWN/已用完/当前可用分开。不大型suite。",
+      "replay_plan": "来自真实Arena或具体resolver失败帧；没有真实Arena帧不编造UI/坐标。",
+      "live_plan": "正常Role Session到达对应角色后安全进入目标，读真实attempts/入口；有明确current conditions才由既有正常Goal执行普通任务。至少保留safe step证据并回Scheduler；无UI转其他缺口。",
+      "verifier": "entry page confirmed与free attempts实际读数/来源/角色/最近观察；MAA请求不算进入或战斗成功，UNKNOWN不能改成READY。",
+      "before_metric": "覆盖和Arena值接手实时重算，旧metadata数量不能当完成率。",
+      "target_metric": {
+        "one_previously_unreached_safe_goal_observed": true,
+        "each_enabled_goal_has_unique_diagnostic_reason": true,
+        "arena_attempts_state": "fresh role-scoped value OR precise missing condition",
+        "fabricated_ready_goals": 0
+      },
+      "acceptance": [
+        "至少一项当前真实安全入口由普通AUTO选中/实际观察且有Verifier。",
+        "Arena无帧/无次数证据保持UNKNOWN+具体gap，不伪装READY。",
+        "成功前置步骤即时保存L1并继续其他Goal，角色实时状态不共享。"
+      ],
+      "stop_condition": "60分钟，现有live帧不存在/无安全目标/同文件Root正在改；不能为coverage转未经授权战斗。",
+      "fallback_action": "给每Goal唯一为什么没做的reason，保存具体missing observation/entry/root cause并下一单，旧pending不占生产任务槽。",
+      "dependencies": [
+        "WB-1002-01-HANDOFF-FACTS",
+        "WB-1002-02-CALENDAR-STARVATION"
+      ],
+      "files_scope": [
+        "已有Capability Coverage/Goal metadata最小真实映射修正",
+        "已有Arena页/尝试次数reader/导航的最小缺口（确认文件归属后）",
+        "已有current-frame语义resolver的明确根因（不要重复Root当前dirty）",
+        "对应focused candidate/entry/role isolation tests",
+        "既有知识/模板CANDIDATE登记（真实来源，坐标不持久化）"
+      ],
+      "activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。"
+    },
+    {
+      "required_tool": [
+        ".venv/Scripts/python.exe",
+        "git",
+        "tools/cq.py",
+        "现有 Runtime / MAA / DeviceLease / pytest"
+      ],
+      "recommended_tool": "优先现有 Runtime、MAA、Verifier、UI-Venus 与 Learning Funnel；仅对明确根因做小改动。",
+      "preferred_backend": "MAA current-frame semantic execution；唯一 UI-Venus 仅 ONLINE_UNKNOWN；32K context",
+      "fallback_backend": "现有 deterministic / L1 learned step / bounded local reobserve；ADB 仅既有 fallback，不绕过租约",
+      "do_not_touch": [
+        "第二 Scheduler / Executor / WorldState / Session Engine / 本地模型",
+        "MAI runtime；WorkBuddy retired runtime channel 或自动模型派发",
+        "Codex 仍拥有的共享 dirty 代码与未确认归属文件",
+        "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
+        "其他角色实时状态、探索授权、资源预算",
+        "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
+        "未移交 Release Owner 时的 main push / production repin / reload",
+        "WORK_QUEUE.json / CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md 原 Work Order",
+        "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
+      ],
       "status": "READY",
-      "task_id": "WB-0924-08",
+      "task_id": "WB-1002-05-RESEARCH-RETURN",
+      "priority": "P1",
+      "objective": "修复并实机验证科研子页面安全返回与Scheduler交接，不陷入BACK循环",
+      "timebox_minutes": 60,
+      "why_now": "科研已能启动，但返回层级/Session归属仍是当前真实blocker之一。",
+      "current_evidence": "此前科研自动启动和截图Verifier已有成功，禁止重做。ROLE_B曾busy；本单按接手fresh state处理，剩余是科研子页面返回层级与Scheduler交接真实证明，不能为指标强行再开科研。",
+      "root_cause_or_hypothesis": "子页面层级误识别、BACK不生效或结束后页面状态归属不清；具体原因必须由fresh before/after证明。",
+      "files_to_inspect": [
+        "winter_agent_v2/brain.py 科研离页分支",
+        "winter_agent_v2/runtime.py 局部恢复/Goal yield",
+        "winter_agent_v2/verifier.py",
+        "winter_agent_v2/vision.py",
+        "tests/test_research_verifier.py",
+        "tests/test_research_tree_production_frames.py",
+        "真实科研Episode"
+      ],
+      "files_allowed_to_modify": [
+        "具体科研返回/页面归属最小修复",
+        "现有Verifier的必要层级识别修复",
+        "科研返回相关targeted tests"
+      ],
+      "implementation_hint": "识别当前页→一个有Verifier的返回动作→fresh确认层级→Scheduler。复用semantic retry/loop detector，不无限BACK，不因busy重复开科研；无需等待当前倒计时自然结束才能验证返回。",
+      "test_plan": "真实page transition/known busy科研返回回归；一个Goal局部失败不终止AUTO。",
+      "replay_plan": "本轮及历史真实研究树/详情/主城截图重放，保证不把子页面当HOME。",
+      "live_plan": "在当前真实科研页或普通AUTO自然进入时验证一次退出；不为KPI强开研究，busy只观察/返回。",
+      "verifier": "正确页面层级恢复+后续不同Goal实际继续；一次BACK输入不是恢复成功。",
+      "before_metric": "研究queue已busy；本阶段研究返回真机闭环未证明。",
+      "target_metric": {
+        "research_return_verifier_pass": 1,
+        "back_loop_after_session": 0,
+        "auto_next_goal_after_return": 1
+      },
+      "acceptance": [
+        "真实返回层级被Verifier确认。",
+        "不污染下一个Goal/role状态。",
+        "保留旧研究启动能力。"
+      ],
+      "stop_condition": "60分钟无真实适用页面；连续局部恢复预算耗尽；代码根因需公共大重构。",
+      "fallback_action": "保存观察/成功导航与具体缺口，defer研究局部流程，继续其他Goal。",
+      "dependencies": [
+        "WB-1002-01-HANDOFF-FACTS",
+        "WB-1002-02-CALENDAR-STARVATION"
+      ],
+      "files_scope": [
+        "具体科研返回/页面归属最小修复",
+        "现有Verifier的必要层级识别修复",
+        "科研返回相关targeted tests"
+      ],
+      "activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。"
+    },
+    {
+      "required_tool": [
+        ".venv/Scripts/python.exe",
+        "git",
+        "tools/cq.py",
+        "现有 Runtime / MAA / DeviceLease / pytest"
+      ],
+      "recommended_tool": "优先现有 Runtime、MAA、Verifier、UI-Venus 与 Learning Funnel；仅对明确根因做小改动。",
+      "preferred_backend": "MAA current-frame semantic execution；唯一 UI-Venus 仅 ONLINE_UNKNOWN；32K context",
+      "fallback_backend": "现有 deterministic / L1 learned step / bounded local reobserve；ADB 仅既有 fallback，不绕过租约",
+      "do_not_touch": [
+        "第二 Scheduler / Executor / WorldState / Session Engine / 本地模型",
+        "MAI runtime；WorkBuddy retired runtime channel 或自动模型派发",
+        "Codex 仍拥有的共享 dirty 代码与未确认归属文件",
+        "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
+        "其他角色实时状态、探索授权、资源预算",
+        "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
+        "未移交 Release Owner 时的 main push / production repin / reload",
+        "WORK_QUEUE.json / CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md 原 Work Order",
+        "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
+      ],
+      "status": "READY",
+      "task_id": "WB-1002-06-GIANT-RALLY-VERIFIER",
+      "priority": "P1",
+      "objective": "证明普通体力巨兽任务使用真实当前搜索结果并由own-rally Verifier确认发起结果",
+      "timebox_minutes": 75,
+      "why_now": "搜索和集结按钮链已执行过，但own ownership/target/debit证据不全，不能把屏幕集结中当自己成功。",
+      "current_evidence": "Stamina→GIANT_BEAST已有既有专用路线、显式POLAR_TERROR及RallyCreated Verifier。Oct1一条MAP集结计时不能单独证明own-rally/stamina因果；最新START_RALLY PASS需读取完整Episode。接手先查是否已被后续生产证明，避免重复耗体力。",
+      "root_cause_or_hypothesis": "搜索结果/自己行军/目标身份reader或Verifier证据归属缺口；不是缺第二套Rally。当前新版可能已修，先核对新production证据。",
+      "files_to_inspect": [
+        "winter_agent_v2/session_adapters.py BearSessionAdapter polar branch",
+        "winter_agent_v2/rally.py",
+        "winter_agent_v2/vision.py",
+        "winter_agent_v2/verifier.py verify_rally_created",
+        "winter_agent_v2/operations_policy.py",
+        "真实 giant search/session episodes"
+      ],
+      "files_allowed_to_modify": [
+        "真实当前帧巨兽/own-rally reader的最小修复",
+        "既有rally_created Verifier证据绑定",
+        "对应polar/session focused tests"
+      ],
+      "implementation_hint": "明确rally_target=POLAR_TERROR，复用START_RALLY现有Session。Bootstrap只OPEN/SEARCH/READ；实际START/DISPATCH仍由当前Stamina Policy、role/capacity/formation授权。已有行军或结果不明先observe，禁止盲redispatch。",
+      "test_plan": "own-rally证明与target/role不匹配拒绝，SEARCH结果实际识别及reserved_for_stamina可被自身用；相关Session回归。",
+      "replay_plan": "检查真实22:09帧和最新START_RALLY PASS Episode，分别列known/unknown证据，不补写历史。",
+      "live_plan": "沿普通AUTO当前已授权stamina>=30且Intel不可执行→giant分支；fresh slots/target/role/formation；发起后确认SELF+POLAR_TERROR+实际rally状态。若已有自己rally等待，观察而不重复消耗。",
+      "verifier": "RALLY_CREATED严格target/ownership/状态变化证据；参数化Verifier真实调用，MAA按钮成功不算Goal成功。",
+      "before_metric": "先前own-rally闭环未证明；当前最新PASS待因果核对。",
+      "target_metric": {
+        "self_polar_rally_verified": 1,
+        "blind_duplicate_dispatch": 0,
+        "borrowed_role_capacity": 0
+      },
+      "acceptance": [
+        "真实主动START路线而非无关JOIN。",
+        "已有证据覆盖则直接继承，不重造测试。",
+        "失败返回Global Scheduler，AUTO继续。"
+      ],
+      "stop_condition": "75分钟无可用队列/体力/明确目标；ownership未知且没有合法观测；存在活动hard deadline。",
+      "fallback_action": "记录 AWAITING_LIVE 与缺slot/target/ownership具体条件；普通野怪/其他Goal仍可继续。",
+      "dependencies": [
+        "WB-1002-01-HANDOFF-FACTS",
+        "WB-1002-02-CALENDAR-STARVATION"
+      ],
+      "files_scope": [
+        "真实当前帧巨兽/own-rally reader的最小修复",
+        "既有rally_created Verifier证据绑定",
+        "对应polar/session focused tests"
+      ],
+      "activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。"
+    },
+    {
+      "required_tool": [
+        ".venv/Scripts/python.exe",
+        "git",
+        "tools/cq.py",
+        "现有 Runtime / MAA / DeviceLease / pytest"
+      ],
+      "recommended_tool": "优先现有 Runtime、MAA、Verifier、UI-Venus 与 Learning Funnel；仅对明确根因做小改动。",
+      "preferred_backend": "MAA current-frame semantic execution；唯一 UI-Venus 仅 ONLINE_UNKNOWN；32K context",
+      "fallback_backend": "现有 deterministic / L1 learned step / bounded local reobserve；ADB 仅既有 fallback，不绕过租约",
+      "do_not_touch": [
+        "第二 Scheduler / Executor / WorldState / Session Engine / 本地模型",
+        "MAI runtime；WorkBuddy retired runtime channel 或自动模型派发",
+        "Codex 仍拥有的共享 dirty 代码与未确认归属文件",
+        "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
+        "其他角色实时状态、探索授权、资源预算",
+        "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
+        "未移交 Release Owner 时的 main push / production repin / reload",
+        "WORK_QUEUE.json / CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md 原 Work Order",
+        "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
+      ],
+      "status": "READY",
+      "task_id": "WB-1002-07-BUILD-STARTED",
+      "priority": "P1",
+      "objective": "让建筑空闲Goal从安全观察/入口推进到真实BUILD_STARTED证据",
+      "timebox_minutes": 60,
+      "why_now": "building升级页导航及当前帧快捷面板行有修复，尚不能用入口打开替代建筑启动。",
+      "current_evidence": "建筑已有生产Goal/Skill/Verifier，UI-Venus曾对building label TEXT_LABEL grounding reject。最新runtime/typedcontrols可能已修；BUILD_STARTED必须在当前角色真实queue/timer中确认，现有handoff尚不足证明新启动。",
+      "root_cause_or_hypothesis": "快捷面板身份→建筑页→资源/前置→升级执行→queue Verifier之间仍有具体缺口；先用真实frame定位。",
+      "files_to_inspect": [
+        "winter_agent_v2/building_identity.py",
+        "winter_agent_v2/brain.py BUILDING route",
+        "winter_agent_v2/runtime.py building resolver",
+        "winter_agent_v2/verifier.py verify_building_upgrade",
+        "knowledge/ui_semantics/",
+        "真实building episodes"
+      ],
+      "files_allowed_to_modify": [
+        "真实建筑入口/identity最小修复",
+        "BUILD_STARTED/queue证据缺口",
+        "对应building targeted tests",
+        "必要当前UI语义/候选模板"
+      ],
+      "implementation_hint": "复用当前panel row与selected building upgrade入口、既有BUILDING_UPGRADE，不新执行器；资源普通消费按当前测试角色Policy授权，未知前置先observe。Verifier需queue/timer/building state或资源+queue组合。",
+      "test_plan": "selected building身份保持、按钮打开≠启动、queue已有running不重复提交、current-frame定位相关回归。",
+      "replay_plan": "真实before/after building页面和queueROI重放，排除旧frame/错建筑。",
+      "live_plan": "当前角色实际building queue idle且资源/前置Policy满足时普通AUTO一次升级；busy保存expected_finish_at继续其他Goal。",
+      "verifier": "BUILD_STARTED/对应building queue进入IN_PROGRESS或可信倒计时变化；资源变化单独不足。",
+      "before_metric": "本阶段尚无新建筑真实启动证据；导航/Verifier接线修复待inherit。",
+      "target_metric": {
+        "building_queue_started_verified": 1,
+        "duplicate_start_while_busy": 0
+      },
+      "acceptance": [
+        "同一个既有KEEP_BUILDING_PRODUCTIVE Goal完成生产循环。",
+        "真实目标进展与入口Step分开报告。",
+        "缺条件时明确WAIT，不假COMPLETED。"
+      ],
+      "stop_condition": "60分钟真实queue不空闲/前置资源不满足/当前目标未知；本单预算或高优先deadline到达。",
+      "fallback_action": "保存安全导航Candidate与具体precondition，AWAITING_LIVE/WAITING，继续Scheduler。",
+      "dependencies": [
+        "WB-1002-01-HANDOFF-FACTS",
+        "WB-1002-02-CALENDAR-STARVATION"
+      ],
+      "files_scope": [
+        "真实建筑入口/identity最小修复",
+        "BUILD_STARTED/queue证据缺口",
+        "对应building targeted tests",
+        "必要当前UI语义/候选模板"
+      ],
+      "activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。"
+    },
+    {
+      "required_tool": [
+        ".venv/Scripts/python.exe",
+        "git",
+        "tools/cq.py",
+        "现有 Runtime / MAA / DeviceLease / pytest"
+      ],
+      "recommended_tool": "优先现有 Runtime、MAA、Verifier、UI-Venus 与 Learning Funnel；仅对明确根因做小改动。",
+      "preferred_backend": "MAA current-frame semantic execution；唯一 UI-Venus 仅 ONLINE_UNKNOWN；32K context",
+      "fallback_backend": "现有 deterministic / L1 learned step / bounded local reobserve；ADB 仅既有 fallback，不绕过租约",
+      "do_not_touch": [
+        "第二 Scheduler / Executor / WorldState / Session Engine / 本地模型",
+        "MAI runtime；WorkBuddy retired runtime channel 或自动模型派发",
+        "Codex 仍拥有的共享 dirty 代码与未确认归属文件",
+        "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
+        "其他角色实时状态、探索授权、资源预算",
+        "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
+        "未移交 Release Owner 时的 main push / production repin / reload",
+        "WORK_QUEUE.json / CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md 原 Work Order",
+        "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
+      ],
+      "status": "READY",
+      "task_id": "WB-1002-08-STABILITY-RESOURCES",
       "priority": "P0",
-      "objective": "补 JOIN_RALLY verifier 与满员/失效安全恢复（离线阶段）",
-      "why_now": "点击 Join 不足以证明加入；当前没有真实 Rally Episode 也没有完整异常闭环。",
-      "current_evidence": "runtime 注册 verify_rally_joined；Bear UI checklist 仍把 sudden full、no joinable、wrong role 等列为缺项；无 live JOIN Episode。",
-      "root_cause_or_hypothesis": "verifier 可能使用通用 march count变化，无法证明目标 Rally 和角色身份关联。",
-      "files_to_inspect": "winter_agent_v2/verifier.py、runtime.py、rally.py、models.py、tests/*rally*、Bear UI checklist/coverage",
-      "files_allowed_to_modify": "verifier 与测试；清单只更新可核实状态，不能把候选提升 live。",
-      "implementation_hint": "明确 before/after 条件：相同 role、同一目标活动、normal slot占用或join status变化；失败后重新观察一次，满员/未知/目标变化即退出。",
-      "verifier": "只有 post-state 对目标 Rally 的关联证据能 PASS；普通 march count变化单独不算；异常分支不重复点击。",
-      "before_metric": "零真实 rally Episodes；verifier代码不是 live 证据。",
-      "target_metric": "verifier负控区分“点击”与“成功加入”，历史记录不改。",
+      "objective": "核对最新运行版本、已修worker crash、AUTO跨边界持续性与32K模型资源影响",
+      "timebox_minutes": 45,
+      "why_now": "真实worker crash优先于功能扩展；交接需保证新代码加载且Model/MAA/MuMu长期稳定。",
+      "current_evidence": "当前snapshot最后01:13 CST、18 unexpected exits/24 watchdog，是历史累计且已陈旧；Root03:25确认panel/worker当前不存在并恢复中。旧23:02:53 badge crash已c74f0bb修复，不重做。曾采样RTX dedicated峰7914.96MiB/shared291.61MiB/RAM23.073GiB/OOM0只对应Oct1短窗口，当前需重测。 更新03:36+: snapshot重新鲜活、alive true、agent_state DEGRADED；Root恢复后需读实际P0/具体degraded原因。计数仍18/24，不表示新增退出。",
+      "root_cause_or_hypothesis": "已确认badge helper crash已修，不能重新实现。剩余P0若有异常须exception/traceback/role/goal/page/revision因果定位；显存高本身不等于故障。",
+      "files_to_inspect": [
+        "learning/runtime_snapshot.json",
+        "控制面/worker日志",
+        "learning/episodes.jsonl",
+        "生产PIN/loaded revision",
+        "config/v2.json",
+        "tools/profile_device_impact.py",
+        "实际GPU/内存计数器"
+      ],
+      "files_allowed_to_modify": [
+        "唯一已复现新crash/环境恢复最小根因模块",
+        "对应focused regression test",
+        "既有telemetry缺失字段的最小补齐"
+      ],
+      "implementation_hint": "本单被动观察，至少2个真实normal run boundary；分开正常结束/重载/异常。当前恢复由Root完成，队列不得并发重启。唯一Venuscontext32768保持，只有实测OOM/shared持续上涨/p95恶化/MuMu卡顿再逐步调offload；不为了显存漂亮降context或挪GPU。",
+      "test_plan": "新具体P0修复targeted测试；禁止主动kill原子动作worker，不人为制造crash，不大型suite抢设备/panel clock。",
+      "replay_plan": "核对23:02badge异常与c74修复的原始trace；正常run结束/reload/异常分类分开。",
+      "live_plan": "接手后最新production恢复且ownership确认时，被动观察45分钟内普通AUTO至少2个run boundary，资源采样窗口明确，不占lease；自然crash才采trace及bounded recovery证明，不故意kill或消耗特殊鱼饵。",
+      "verifier": "runtime_thread_alive/scheduler_loop_alive与进程一致；loaded revision可归因；自然crash有trace并后续AUTO恢复；资源采样明确窗口。",
+      "before_metric": {
+        "snapshot_last_tick": "2026-10-01T17:13:24.856138Z",
+        "snapshot_stale": true,
+        "unexpected_exits_historical": 18,
+        "watchdog_restarts_historical": 24,
+        "root_recovery_in_progress": true,
+        "model_context": 32768,
+        "snapshot_fresh_after_root_recovery": true
+      },
+      "target_metric": {
+        "new_unexplained_worker_exits": 0,
+        "normal_run_boundaries_verified_min": 2,
+        "cuda_oom": 0,
+        "workbuddy_runtime_enabled": false
+      },
       "acceptance": [
-        "LIVE_VERIFIED维持未完成。",
-        "无足够帧则列出确切活动窗口待采集UI状态。"
+        "未发生新异常也如实记NEW_CRASH=0，不能宣称人为恢复live测试。",
+        "报告HEAD/PROD_PIN/loaded fingerprint/PROD_CLEAN与mutable排除范围。",
+        "资源实测不猜Shared/显存；AUTO运行不因本单终止。"
       ],
+      "stop_condition": "45分钟或新P0需Root/ReleaseOwner优先处理；没有发布权不得repin/reload/push，活动硬deadline停止开发输入。",
+      "fallback_action": "通过现有Supervisor保持AUTO；新异常根因不清则保存BLOCKED/REVIEW_REQUESTS并转其他无设备任务。",
       "dependencies": [
-        "WB-0924-07"
+        "WB-1002-01-HANDOFF-FACTS",
+        "WB-1002-02-CALENDAR-STARVATION",
+        "WB-1002-03-BOOTSTRAP-FIRST-SECOND",
+        "WB-1002-04-UNKNOWN-COVERAGE-ARENA",
+        "WB-1002-05-RESEARCH-RETURN",
+        "WB-1002-06-GIANT-RALLY-VERIFIER",
+        "WB-1002-07-BUILD-STARTED"
       ],
-      "stop_condition": "必须实时点击才能满足断言，或旧帧无法区分队伍目标/角色。",
-      "fallback_action": "BLOCKED待真实活动证据；不制造任务状态。"
+      "files_scope": [
+        "唯一已复现新crash/环境恢复最小根因模块",
+        "对应focused regression test",
+        "既有telemetry缺失字段的最小补齐"
+      ],
+      "activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。"
+    }
+  ],
+  "base_facts": {
+    "captured_at": "2026-10-01T20:07:39.406701+00:00",
+    "head": "951abbdd039c4955f2cd99fd442ae2aea56ffae3",
+    "origin_main": "951abbdd039c4955f2cd99fd442ae2aea56ffae3",
+    "prod_pin": "951abbdd039c4955f2cd99fd442ae2aea56ffae3",
+    "prod_clean": true,
+    "runtime_snapshot": {
+      "updated_at": "2026-10-01T20:07:38.941790+00:00",
+      "role_id": "1063040265",
+      "current_goal": "AVOID_STAMINA_WASTE",
+      "current_skill": "OPEN_MAP",
+      "agent_state": "GOAL_RUNNING",
+      "runtime_thread_alive": true,
+      "scheduler_loop_alive": true,
+      "unexpected_worker_exits": 18,
+      "watchdog_restart_count": 24,
+      "last_fatal_error": null,
+      "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED"
+    },
+    "loaded_revisions": [
+      "4598da3e3d3543e1a869902e1e230da902843344+dc6f5267bfc03460",
+      "4598da3e3d3543e1a869902e1e230da902843344+545a85731c688e98",
+      "4598da3e3d3543e1a869902e1e230da902843344+fd5e7108ba6007ba",
+      "4598da3e3d3543e1a869902e1e230da902843344+014e09637a8ece79",
+      "9341eeed14b2313e78b8efc8c3067cf8da1969ac+84889e9c43170334",
+      "9341eeed14b2313e78b8efc8c3067cf8da1969ac+56f6591220eb5a56",
+      "5a0aeb2458113a83e395e5c9dbe5d291a5cf179f+f243654dd248afd6"
+    ],
+    "learning_loop_completed": false,
+    "calendar_fix_commits": [
+      "413bd4c",
+      "e9f68da",
+      "9341eee",
+      "5a0aeb2"
+    ],
+    "targeted_tests": "125 passed related; not cumulative completion KPI",
+    "calendar_live": {
+      "latest_code": "951abbdd039c4955f2cd99fd442ae2aea56ffae3",
+      "first_live_hub_entry_pass": "20261002_035332_495268 OPEN_EVENT_CALENDAR_FROM_MAP; navigation progress only",
+      "first_scroll_revealed_calendar": "Actual step002 after frame shows calendar; full OCR missed it then body timers falsely classified as tabs. Fixed5a0aeb2 with exact frame ROI replay.",
+      "strict_grid_read": "TRUE live 20261002_040016_826018:HOME entry -> current strip swipe -> calendar tab, all3VerifierPASS;7date columns09/30..10/06 and8entries. Full detail scan still not complete.",
+      "evidence": "learning/episodes.jsonl and dataset/raw/control_panel/runtime_auto/20261002_035332_495268",
+      "budget": "four actual strip swipe attempts per run, then sameGoal yields; other READY goals continue",
+      "detail_blocker": "Observer used OCR-only headings while executor selected actual colored bar.951abbd connects same-frame colored-bar reader; exact failure-frame replay now predicts ICEBOUND_TREASURE_TRAINING matching actual detail. Latest live retest pending."
+    }
+  },
+  "archive_path": ".workbuddy-ai/commander/archive/20261002T033533_codex_commander",
+  "generated_at": "2026-10-02T03:36:20+08:00",
+  "review_updates": [
+    {
+      "at": "2026-10-02T03:38:11+08:00",
+      "source": "local git, external production manifest, runtime snapshot",
+      "main": "4598da3e3d3543e1a869902e1e230da902843344",
+      "origin_main": "9592b438e91cf0d5ed2972cea3e03394ff2f2495",
+      "pin": "4598da3e3d3543e1a869902e1e230da902843344",
+      "runtime_state": "IDLE",
+      "notes": "Root has already committed calendar and bootstrap entry fixes; task02/03 first inherit+validate live, never rebuild."
     },
     {
-      "required_tool": [
-        ".venv/Scripts/python.exe",
-        "tools/cq.py",
-        "git",
-        "现有离线回放/pytest工具"
-      ],
-      "preferred_backend": "离线代码/回放；不控制游戏设备",
-      "fallback_backend": "纯静态核查；不足以证明的项标 BLOCKED",
-      "do_not_touch": [
-        "真实游戏操作、体力/加速/付费、发起或加入集结、角色切换",
-        "历史 Episode 与历史统计",
-        "其他任务/WorkBuddy 已有未提交改动",
-        "新建 Scheduler/Manager/Brain/WorldState/Vision/MAA Executor",
-        "Codex 三文件以外的任务执行态/result 文件"
-      ],
-      "test_plan": "special slot unknown/available/unavailable、hero busy、preset身份未知、troop容量不足、event closed、start成功/失败回放夹具。",
-      "replay_plan": "归档 Bear frames 与合成观察数据；不发起真实集结。",
-      "live_plan": "本批只允许观察进程/日志/文件，不连接或操作游戏；真实 Bear live 验证另行排期。",
-      "timebox_minutes": 90,
-      "status": "READY",
-      "task_id": "WB-0924-09",
-      "priority": "P1",
-      "objective": "补 START_RALLY leader 与编队选择的离线生产路径/边界",
-      "why_now": "当前没有 leader 成功 Episode；hero/preset选择状态和 Bear特殊发起槽未被当前角色验证。",
-      "current_evidence": "bear_ui_coverage标记leader start无真机证据，hero selection/preset identity候选，actual battle report缺失。",
-      "root_cause_or_hypothesis": "通用 START_RALLY skill/verifier 注册不足以证明特殊槽、正确角色和编队真的满足。",
-      "files_to_inspect": "rally.py、skills.py、verifier.py、goal_library.py、models.py、template manifest、相关测试和现存Bear帧",
-      "files_allowed_to_modify": "只改现有技能/策略/verifier/测试；不引入预约UI假设或新状态管理器。",
-      "implementation_hint": "用 typed role (LEADER/JOINER/AUTO) 和新鲜 special-slot observation作决策；未验证英雄/兵力/preset时不 dispatch；leader verifier要求真实 rally created 状态。",
-      "verifier": "Start动作需角色/事件/特殊槽/编队条件全新鲜；验证出现目标集结/正确等待状态，否则失败归因到具体前置。",
-      "before_metric": "无 START_RALLY Episode；UI与战斗报告仍缺。",
-      "target_metric": "离线决策/Verifier负控完成；LIVE_VERIFIED、actual battle保持未完成。",
-      "acceptance": [
-        "不假定预约界面存在。",
-        "不将行军普通队列与 Bear特殊发起容量混用。",
-        "未验证字段为 UNKNOWN。"
-      ],
-      "dependencies": [
-        "WB-0924-06",
-        "WB-0924-08"
-      ],
-      "stop_condition": "缺少可信当前UI样本或任何动作需要真实游戏操作。",
-      "fallback_action": "完成可完成的静态/回放准备；对真实活动步骤记录单独的 live blocker。"
-    },
-    {
-      "required_tool": [
-        ".venv/Scripts/python.exe",
-        "tools/cq.py",
-        "git",
-        "现有离线回放/pytest工具"
-      ],
-      "preferred_backend": "离线代码/回放；不控制游戏设备",
-      "fallback_backend": "纯静态核查；不足以证明的项标 BLOCKED",
-      "do_not_touch": [
-        "真实游戏操作、体力/加速/付费、发起或加入集结、角色切换",
-        "历史 Episode 与历史统计",
-        "其他任务/WorkBuddy 已有未提交改动",
-        "新建 Scheduler/Manager/Brain/WorldState/Vision/MAA Executor",
-        "Codex 三文件以外的任务执行态/result 文件"
-      ],
-      "test_plan": "相关定向测试、必要的宪法静态扫描、格式/JSON合法性。",
-      "replay_plan": "按 revision 固定回放，记录结果文件路径/散列。",
-      "live_plan": "本批只允许观察进程/日志/文件，不连接或操作游戏；真实 Bear live 验证另行排期。",
-      "timebox_minutes": 30,
-      "status": "READY",
-      "task_id": "WB-0924-10",
-      "priority": "P1",
-      "objective": "执行本批目标回归、宪法检查并交接未完成项",
-      "why_now": "此前事实口径陈旧、工作树大、所有真机 Bear能力未验证；需要给下一轮明确状态。",
-      "current_evidence": "HEAD/工作树/runtime/Queue存在不同新鲜度；89个旧定向测试不能覆盖本批每个改动。",
-      "root_cause_or_hypothesis": "若不重核revision及证据，离线通过可能被误报为实机完成。",
-      "files_to_inspect": "本批实际改动文件、pytest相关目录、check_coordinate_hardcoding、check_wiring、WORK_QUEUE、本批results",
-      "files_allowed_to_modify": "仅测试/交接报告及WorkBuddy自有状态；不改Codex三文件、不清理工作树。",
-      "implementation_hint": "按实际改动运行最小充分测试；在结论中区分 unit/replay/live；给出剩余活动窗口验收项与明确blocker。",
-      "verifier": "测试与回放可复现；失败归属具体任务；未执行真机步骤明确标为 NOT_RUN。",
-      "before_metric": "当前旧review/queue过期；Bear live证据缺失。",
-      "target_metric": "每个完成结论能关联当前 revision、改动和验证证据；列明所有未做事项；不写历史episode。",
-      "acceptance": [
-        "不宣称巨熊自动化完整或72h unattended达成。",
-        "给出后续真机最小安全验证清单和阻塞条件。"
-      ],
-      "dependencies": [
-        "WB-0924-02",
-        "WB-0924-03",
-        "WB-0924-04",
-        "WB-0924-05",
-        "WB-0924-06",
-        "WB-0924-07",
-        "WB-0924-08",
-        "WB-0924-09"
-      ],
-      "stop_condition": "依赖任务仍 IN_PROGRESS/BLOCKED 或出现未归属改动。",
-      "fallback_action": "提交回归覆盖与blocker清单，不折算或隐藏阻塞。"
+      "at": "2026-10-01T20:07:39.406701+00:00",
+      "head": "951abbdd039c4955f2cd99fd442ae2aea56ffae3",
+      "prod_pin": "951abbdd039c4955f2cd99fd442ae2aea56ffae3",
+      "actual_progress": "Calendar grid real3-stepPASS;detail identity minimum fix951abbd with replay;FULL scan andVenusCandidateSECOND pending"
     }
   ]
 }
