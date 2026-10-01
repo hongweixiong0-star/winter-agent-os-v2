@@ -274,7 +274,7 @@ def _joined_window(
             stages = ["candidate_step_created"]
             if row.get("model_used") is False and row.get("reused_from_trace_id"):
                 stages += ["candidate_step_reused", "second_verifier_success"]
-        failed_outcome = record == "outcome" and row.get("verifier_ok") is False
+        failed_outcome = (record == "outcome" and row.get("verifier_ok") is False) or explicit == "verifier_failed"
         if not stages and not failed_outcome:
             continue
         material = str(row.get("event_id") or row.get("call_id") or row.get("action_id") or "")
@@ -304,19 +304,45 @@ def _joined_window(
         elif row.get("model_used") is False and trace["model_used"] is None:
             trace["model_used"] = False
         for stage in stages:
-            key = (trace_id, stage, "" if stage in ("unknown_observed", "second_encounter") else material)
+            key = (trace_id, stage, "" if stage in (
+                "unknown_observed", "second_encounter", "candidate_step_created",
+                "candidate_step_reused", "second_verifier_success",
+            ) else material)
             if key in seen:
                 continue
             seen.add(key)
             counts[stage] = int(counts.get(stage) or 0) + 1
             trace["stages"][stage] = int(trace["stages"].get(stage) or 0) + 1
-        if record == "outcome" and row.get("verifier_ok") is False:
-            trace["verifier_failures"] += 1
+        if failed_outcome:
+            failure_key = (trace_id, "verifier_failed", material)
+            if failure_key not in seen:
+                seen.add(failure_key)
+                trace["verifier_failures"] += 1
         if str(row.get("decision") or "").upper() == "REPLAN":
             trace["replans"] += 1
         if row.get("fallback_call") is True:
             trace["fallback_calls"] += 1
     unknowns = int(counts["unknown_observed"] or 0)
+    closures: list[dict[str, str]] = []
+    first_stages = ("venus_called", "venus_proposed", "grounding_valid", "risk_gate_allowed",
+                    "maa_executed", "verifier_success", "candidate_step_created")
+    second_stages = ("candidate_step_reused", "maa_executed", "second_verifier_success")
+    for second in traces.values():
+        first = traces.get(second["parent_trace_id"])
+        if not first or first is second:
+            continue
+        if not all(int(first["stages"].get(stage) or 0) > 0 for stage in first_stages):
+            continue
+        if not all(int(second["stages"].get(stage) or 0) > 0 for stage in second_stages):
+            continue
+        if second["model_used"] is not False or int(second["stages"].get("venus_called") or 0):
+            continue
+        if (first["role_id"], first["goal_id"], first["unknown_identity"]) != (
+            second["role_id"], second["goal_id"], second["unknown_identity"],
+        ):
+            continue
+        closures.append({"first_trace_id": first["trace_id"], "second_trace_id": second["trace_id"],
+                         "unknown_identity": first["unknown_identity"]})
     metrics = {
         "JOINED_TRACE_COUNT": len(traces), "JOINED_UNATTRIBUTED_WINDOW_ROWS": rejected,
         "VENUS_CALLS_PER_UNKNOWN": _ratio(int(counts["venus_called"] or 0), unknowns),
@@ -326,6 +352,7 @@ def _joined_window(
         "VERIFIER_FAILURES": sum(t["verifier_failures"] for t in traces.values()),
         "REPLANS": sum(t["replans"] for t in traces.values()),
         "FALLBACK_CALLS": sum(t["fallback_calls"] for t in traces.values()),
+        "FIRST_SECOND_CLOSURES": len(closures), "FIRST_SECOND_CLOSURE_TRACES": closures,
     }
     return counts, tuple(traces.values()), metrics
 

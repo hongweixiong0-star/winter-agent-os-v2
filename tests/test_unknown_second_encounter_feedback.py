@@ -20,6 +20,7 @@ def test_reuse_without_model_records_only_its_own_verified_second_encounter(tmp_
     runtime.learned_ledger = ledger
     runtime._candidate_skill_dir = tmp_path / "candidates"
     runtime.capture_dir = tmp_path / "second-session"
+    runtime.episode_store = SimpleNamespace(path=tmp_path / "episodes" / "events.jsonl")
     runtime.role_id = "role-b"
     runtime._ordinary_tried = set()
     runtime._ordinary_attempts = 0

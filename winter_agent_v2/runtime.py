@@ -2553,7 +2553,8 @@ class LiveRuntime:
                 "goal_id": context.get("goal", ""), "page_key": context.get("page_key", ""),
                 "frame_id": context.get("frame_id", ""), "frame_hash": context.get("frame_hash", ""),
                 "episode_id": context.get("episode_id", ""), "model_used": context.get("model_used"),
-                "unknown_identity": unknown_state_identity(goal_id=str(context.get("goal", "")),
+                "reused_from_trace_id": context.get("reused_from_trace_id", ""),
+                "unknown_identity": context.get("unknown_identity") or unknown_state_identity(goal_id=str(context.get("goal", "")),
                     page=str(context.get("page_key", "")), semantic=str(context.get("semantic", "")),
                     state_signature=str(context.get("relevant_state_signature", ""))), **evidence,
             })
@@ -2625,6 +2626,7 @@ class LiveRuntime:
                 verifier_evidence=dict(getattr(verification, "evidence", {}) or {}),
                 model_used=context.get("model_used"),
                 reused_from_trace_id=str(context.get("reused_from_trace_id") or ""),
+                unknown_identity=str(context.get("unknown_identity") or ""),
                 ledger=getattr(self, "learned_ledger", None) or unknown_learning.VerifiedStepLedger(
                     Path(__file__).resolve().parents[1] / unknown_learning.LEARNED_STEPS_PATH
                 ),
@@ -5421,6 +5423,88 @@ class LiveRuntime:
             brain.ordinary_scan_exhausted = True
         return None
 
+    def _unknown_navigation_target(
+        self, semantic: str, frame: WorldState, frame_path: Path, *, skill_id: str,
+    ) -> tuple[float, float] | None:
+        """Use the existing planner only after a registered navigation locator misses."""
+        navigation = (skill_id.startswith("OPEN_")
+                      or skill_id.startswith("TAP_FOCUSED_TRAINING_CAMP_"))
+        if not navigation or frame.page in {Page.LOADING, Page.MAINTENANCE}:
+            return None
+        if not getattr(self, "_committed_goal", "") or not self._calendar_role_id():
+            return None
+        lease = getattr(self, "device_lease", None)
+        held = lease.holder() if lease is not None else None
+        if held is not None and held.owner != OWNER_GAMEPLAY and not self._owns_the_lease(held):
+            return None
+        if (getattr(self, "execution_mode", "") == OWNER_DEVELOPMENT_VALIDATION
+                and (held is None or not self._owns_the_lease(held))):
+            return None
+        # This is a missing control on a known page, not a missing page identity.
+        # Keep the selected Goal/Skill and its real verifier; no alternative Goal
+        # or model-declared COMPLETE can satisfy this navigation step.
+        self._unknown_semantic_target = semantic
+        self._unknown_skill_id = skill_id
+        self._advised_learn_context = {}
+        self._advised_request_id = ""
+        try:
+            return self._advised_control(frame.page.value, "", frame_path, frame,
+                                         unnamed=not frame.known, confidence=frame.confidence)
+        except Exception as exc:  # noqa: BLE001 - one optional provider cannot stop AUTO
+            print(f"[advisor] {skill_id}/{semantic} deferred: {type(exc).__name__}: {exc}", flush=True)
+            self._advised_learn_context = {}
+            return None
+        finally:
+            self._unknown_semantic_target = ""
+            self._unknown_skill_id = ""
+
+    def _refresh_advised_region(self, page, title, before, region, *, anchor=None):
+        """Re-identify a proposal's measured element after inference, without old geometry."""
+        path = self._capture_path(int(getattr(self, "_ordinary_attempts", 0)), "model_reground")
+        if self._device_lost(self.device.screenshot, path):
+            return None
+        fresh = self._observe(path)
+        if fresh.page != before.page or self._l1_state(fresh, title) != self._l1_state(before, title):
+            return None
+        if getattr(self, "_multi_role_enabled", False):
+            identified = self.role_switch_controller.identify_current_role(path)
+            if identified is not None and identified[0] != self._calendar_role_id():
+                return None
+        lease = getattr(self, "device_lease", None)
+        held = lease.holder() if lease is not None else None
+        if held is not None and held.owner != OWNER_GAMEPLAY and not self._owns_the_lease(held):
+            return None
+        if (getattr(self, "execution_mode", "") == OWNER_DEVELOPMENT_VALIDATION
+                and (held is None or not self._owns_the_lease(held))):
+            return None
+        skill_id = str(getattr(self, "_unknown_skill_id", "") or "")
+        if skill_id:
+            skill = self.registry.get(skill_id)
+            if skill is None or not skill.ready(fresh):
+                return None
+        measured, _, _, _ = self._advice_evidence(page, path, self._ocr_service())
+        if anchor:
+            hit = ui_collection.anchored_region(anchor, measured)
+            hits = [hit] if hit is not None else []
+        else:
+            text = str(region.get("text") or "").strip()
+            detail = region.get("detail") or {}
+            template = str(detail.get("template_path") or "")
+            hits = [hit for hit in measured
+                    if hit.get("basis") == region.get("basis") and (
+                        (template and str((hit.get("detail") or {}).get("template_path") or "") == template)
+                        or (not template and text and str(hit.get("text") or "").strip() == text))]
+        # Repeated labels are not an identity. A changed/ambiguous target defers.
+        if len(hits) != 1:
+            return None
+        hit = dict(hits[0])
+        box = hit.get("box_norm") or {}
+        if not all(key in box for key in ("x_norm", "y_norm", "w_norm", "h_norm")):
+            return None
+        hit["point"] = [float(box["x_norm"]) + float(box["w_norm"]) / 2,
+                        float(box["y_norm"]) + float(box["h_norm"]) / 2]
+        return hit, path, fresh
+
     def _advised_control(
         self,
         page: str,
@@ -5539,13 +5623,15 @@ class LiveRuntime:
             last_attempt=dict(getattr(self, "_last_attempt_summary", {}) or {}),
             question=(
                 f"这张屏幕（页面模型读作 {page}，标题 {title or '未读出'}）上，与当前 Goal {goal or '(未定)'} "
-                "相关的普通低风险控件在哪里？请给出定位依据与 proposed_action。"
+                f"相关的控件在哪里？当前无法定位的语义目标为 "
+                f"{getattr(self, '_unknown_semantic_target', '') or '(未命名控件)'}。"
+                "只推进这个目标，不打开无关功能。请给出定位依据与 proposed_action。"
             ),
         )
         # Request files historically identify a page, not an encounter. Keep that
         # compatibility key and bind this execution attempt to its own causal trace.
         import uuid
-        from .ui_venus_online import unknown_state_identity
+        from .ui_venus_online import FrameIdentity, unknown_state_identity
         request.trace_id = f"unknown_{uuid.uuid4().hex}"
         request.parent_trace_id = str(getattr(self, "trace_id", "") or "")
         request.role_session_id = str(getattr(self, "role_session_id", "")
@@ -5649,6 +5735,22 @@ class LiveRuntime:
         point = (float(region["point"][0]), float(region["point"][1]))
         basis = str(region.get("basis") or "")
 
+        # Inference can outlive a page transition. Re-locate the measured element's
+        # identity on a fresh screenshot; the proposal's old point is never carried
+        # across frames. Pure replay callers have no device and issue no real input.
+        if getattr(self, "device", None) is not None:
+            refreshed = self._refresh_advised_region(page, title, frame, region, anchor=advice.target_anchor)
+            if refreshed is None:
+                self._learning_event("GROUNDING_REJECTED", {
+                    "trace_id": request.trace_id, "parent_trace_id": request.parent_trace_id,
+                    "role_id": request.character, "goal": goal, "page_key": key,
+                    "unknown_identity": request.unknown_identity,
+                }, reason="POST_INFERENCE_CONTEXT_OR_TARGET_CHANGED")
+                return None
+            region, frame_path, frame = refreshed
+            point = (float(region["point"][0]), float(region["point"][1]))
+            basis = str(region.get("basis") or "")
+
         # §五: the boundary is on *this candidate*, not on the page it sits on.
         reason = self._advice_risk(advice, region)
         if reason:
@@ -5695,8 +5797,11 @@ class LiveRuntime:
             "request_id": request.request_id,
             "trace_id": request.trace_id,
             "parent_trace_id": request.parent_trace_id,
-            "frame_id": request.frame_id,
-            "frame_hash": request.frame_digest,
+            "frame_id": FrameIdentity.of(frame_path).frame_id,
+            "frame_hash": FrameIdentity.of(frame_path).frame_hash,
+            "proposal_frame_id": request.frame_id,
+            "proposal_frame_hash": FrameIdentity.of(Path(request.frame_path), frame_id=request.frame_id).frame_hash,
+            "unknown_identity": request.unknown_identity,
             "role_id": request.character,
             "episode_id": request.episode_id,
             "call_id": str(getattr(advisor, "last_outcome", {}).get("call_id") or ""),
@@ -5906,14 +6011,18 @@ class LiveRuntime:
             }
             # A reuse has no model settlement, but its own verifier result must
             # strengthen (or reject) the learned step just like the first encounter.
+            from .ui_venus_online import FrameIdentity
+            import uuid
+            reuse_frame_id = f"frame_{unknown_advisor.frame_digest(frame_path)}"
             self._advised_learn_context = {
-                "trace_id": str(row.get("trace_id") or ""),
-                "parent_trace_id": str(row.get("parent_trace_id") or ""),
+                "trace_id": f"reuse_{uuid.uuid4().hex}",
+                "parent_trace_id": str(row.get("trace_id") or ""),
                 "reused_from_trace_id": str(row.get("trace_id") or ""),
+                "unknown_identity": str(row.get("unknown_identity") or ""),
                 "role_id": self._calendar_role_id(),
                 "episode_id": str(getattr(getattr(self, "capture_dir", None), "name", "") or ""),
-                "frame_id": f"frame_{unknown_advisor.frame_digest(frame_path)}",
-                "frame_hash": unknown_advisor.frame_digest(frame_path),
+                "frame_id": reuse_frame_id,
+                "frame_hash": FrameIdentity.of(frame_path, frame_id=reuse_frame_id).frame_hash,
                 "relevant_state_signature": self._l1_state(frame, title),
                 "model_used": False,
                 "request_id": str(row.get("request_id") or ""),
@@ -5928,6 +6037,7 @@ class LiveRuntime:
                 "visual_evidence": {"reader": "LEARNED_VERIFIED_STEP", "ocr_anchor": word,
                                     "template_path": template_path},
             }
+            self._learning_event("SECOND_ENCOUNTER", self._advised_learn_context)
             self._learning_event("CANDIDATE_STEP_REUSED", self._advised_learn_context)
             self._note_printed(
                 semantic,
@@ -7051,10 +7161,13 @@ class LiveRuntime:
         world = before
 
         def resolve(semantic: str):
-            return self._resolve_semantic_target(
+            point = self._resolve_semantic_target(
                 semantic, world, frame_path=before_path,
                 resource=planned_resource, rally_target=rally_target,
             )
+            if point is not None:
+                return point
+            return self._unknown_navigation_target(semantic, world, before_path, skill_id=skill_id)
 
         adb_executor = Executor(
             production=True, dry_run=False, device=self.adb_device,
@@ -8098,7 +8211,7 @@ class LiveRuntime:
             # Bind the current frame and Goal target so the ADB fallback and MAA
             # LIST_DYNAMIC resolver apply one target identity to this observation.
             def resolve(semantic: str):
-                return self._resolve_semantic_target(
+                point = self._resolve_semantic_target(
                     semantic,
                     before,
                     frame_path=before_path,
@@ -8106,6 +8219,10 @@ class LiveRuntime:
                     untried_intel_pins=untried_intel_pins,
                     rally_target=rally_target,
                 )
+                if point is not None:
+                    return point
+                return self._unknown_navigation_target(semantic, before, before_path,
+                                                       skill_id=decision.skill)
 
             def verify_current_step(before_state: WorldState, after_state: WorldState):
                 if decision.skill in {"START_RALLY", "JOIN_RALLY"}:

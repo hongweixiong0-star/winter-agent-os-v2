@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import json
+import pytest
 
 from winter_agent_v2 import learning_funnel as funnel
 from winter_agent_v2 import unknown_learning as learning
@@ -49,6 +50,22 @@ def test_reuse_requires_target_and_current_relevant_state_when_requested(tmp_pat
                                      semantic_target="SHIELD", relevant_state_signature="FOCUSED") == []
     # Generic semantic knowledge may cross roles; its live preconditions must still match.
     assert matches[0]["unknown_identity"] != ledger.rows()[1]["unknown_identity"]
+
+
+def test_explicit_unknown_identity_is_provenance_not_the_learned_semantic_key(tmp_path):
+    ledger = learning.VerifiedStepLedger(tmp_path / "steps.jsonl")
+    step = learning.record_verified_step(
+        goal_id="TRAIN", page_before="HOME", page_after="TRAINING",
+        semantic_target="ORDINARY_CONTROL[训练]", relevant_state_signature="MARKSMAN_FOCUSED",
+        unknown_identity="TRAIN|HOME|MARKSMAN_CAMP_ENTRY|MARKSMAN_FOCUSED",
+        verifier_ok=True, ledger=ledger,
+    )
+    row = ledger.rows()[0]
+    assert row["unknown_identity"] == "TRAIN|HOME|MARKSMAN_CAMP_ENTRY|MARKSMAN_FOCUSED"
+    assert row["semantic_target"] == "ORDINARY_CONTROL[训练]"
+    assert step.key.startswith("HOME|TRAIN|ORDINARY_CONTROL[训练]|TRAINING")
+    assert learning.learned_steps_for([row], page_key="HOME", goal_id="TRAIN",
+                                     semantic_target="MARKSMAN_CAMP_ENTRY") == []
 
 
 def _write(path, rows):
@@ -126,3 +143,41 @@ def test_same_legacy_request_id_cannot_join_results_across_roles(tmp_path):
     report = funnel.build_funnel(root=tmp_path, now=now)
     assert report.joined_funnel["verifier_success"] == 0
     assert report.metrics["JOINED_UNATTRIBUTED_WINDOW_ROWS"] == 1
+
+
+@pytest.mark.parametrize("second_model_used", [False, True])
+def test_first_second_closure_requires_a_new_model_free_verified_execution(tmp_path, second_model_used):
+    now = datetime.now(timezone.utc)
+    first_stages = ("UNKNOWN_OBSERVED", "VENUS_CALLED", "VENUS_PROPOSED", "GROUNDING_VALID",
+                    "RISK_GATE_ALLOWED", "MAA_EXECUTED", "VERIFIER_SUCCESS", "CANDIDATE_STEP_CREATED")
+    rows = [_event(now, stage, call="first-call", model_used=True) for stage in first_stages]
+    second_stages = ("SECOND_ENCOUNTER", "CANDIDATE_STEP_REUSED", "MAA_EXECUTED", "SECOND_VERIFIER_SUCCESS")
+    rows += [_event(now, stage, trace="second", call="second-action", parent_trace_id="first",
+                    model_used=second_model_used) for stage in second_stages]
+    _write(tmp_path / funnel.ONLINE_LEDGER, rows)
+    _write(tmp_path / learning.LEARNED_STEPS_PATH, [
+        {**_event(now, "", trace="first"), "step_index": 3, "semantic_target": "MARKSMAN",
+         "verifier_ok": True, "model_used": True},
+        {**_event(now, "", trace="second", parent_trace_id="first"), "step_index": 4,
+         "semantic_target": "MARKSMAN", "verifier_ok": True, "model_used": second_model_used,
+         "reused_from_trace_id": "first"},
+    ])
+    report = funnel.build_funnel(root=tmp_path, now=now)
+    # Stage event and durable step record represent one creation/reuse, regardless of row keys.
+    assert report.joined_funnel["candidate_step_created"] == 2
+    assert report.joined_funnel["candidate_step_reused"] == 1
+    assert report.joined_funnel["second_verifier_success"] == 1
+    assert report.metrics["FIRST_SECOND_CLOSURES"] == (0 if second_model_used else 1)
+
+
+def test_runtime_and_planner_failed_settlement_count_one_real_verifier_failure(tmp_path):
+    now = datetime.now(timezone.utc)
+    rows = [
+        _event(now, "UNKNOWN_OBSERVED"),
+        _event(now, "VERIFIER_FAILED", call="call-1"),
+        _event(now, "VERIFIER_FAILED", call="call-1", record="outcome", verifier_ok=False),
+    ]
+    _write(tmp_path / funnel.ONLINE_LEDGER, rows)
+    report = funnel.build_funnel(root=tmp_path, now=now)
+    assert report.metrics["VERIFIER_FAILURES"] == 1
+    assert report.joined_funnel["verifier_success"] == 0

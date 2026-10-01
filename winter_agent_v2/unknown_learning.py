@@ -166,6 +166,9 @@ class LearnedStepCandidate:
     frame_id: str = ""
     frame_hash: str = ""
     relevant_state_signature: str = ""
+    #: Identity of the UNKNOWN that initiated this encounter. A proposed control's actual
+    #: verified semantic may differ; this provenance never overrides the reuse key below.
+    unknown_identity: str = ""
     model_used: bool | None = None
     reused_from_trace_id: str = ""
     #: The AUTO run this step happened in.  Named ``session_id`` rather than reusing
@@ -235,7 +238,7 @@ class LearnedStepCandidate:
         row["source_frames"] = list(self.source_frames)
         row["key"] = self.key
         row["schema_version"] = "1.0"
-        row["unknown_identity"] = ui_venus_online.unknown_state_identity(
+        row["unknown_identity"] = self.unknown_identity or ui_venus_online.unknown_state_identity(
             goal_id=self.goal_id, page=self.page_before, semantic=self.semantic_target,
             state_signature=self.relevant_state_signature,
         )
@@ -669,6 +672,7 @@ def record_verified_step(
     relevant_state_signature: str = "",
     model_used: bool | None = None,
     reused_from_trace_id: str = "",
+    unknown_identity: str = "",
     session_id: str = "",
     episode_id: str = "",
     step_index: int = 0,
@@ -707,6 +711,7 @@ def record_verified_step(
         frame_id=str(frame_id),
         frame_hash=str(frame_hash),
         relevant_state_signature=str(relevant_state_signature),
+        unknown_identity=str(unknown_identity),
         model_used=model_used if isinstance(model_used, bool) else None,
         reused_from_trace_id=str(reused_from_trace_id),
         session_id=str(session_id),
