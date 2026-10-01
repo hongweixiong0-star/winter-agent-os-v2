@@ -4840,6 +4840,17 @@ class HybridVision:
                     return True
             except Exception:  # noqa: BLE001 - a missing template must not break observation
                 continue
+        # The live wall menu with a tutorial hand misses all three old templates.
+        # Only the active building route pays for this fallback; a label alone
+        # cannot prove a selected building or authorize an upgrade.
+        attention = getattr(semantic, "attention", {}) or {}
+        if str(attention.get("goal") or "") in {"BUILDING", "KEEP_BUILDING_PRODUCTIVE"}:
+            tokens = self.ocr.recognize(image_path).tokens
+            actions = read_building_action_tokens(tokens, read_frame_size(image_path))
+            identity = read_building_identity(tokens)
+            if (set(actions.get("actions") or {}) >= {"详情", "升级"}
+                    and identity.name and identity.level is not None):
+                return True
         return False
 
     def _read_intel_dialog_title(self, image_path: Path, primary: WorldState) -> WorldState | None:
