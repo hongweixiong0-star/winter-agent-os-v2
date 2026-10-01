@@ -5359,7 +5359,10 @@ class HybridVision:
                 result, frame_size=frame_size
             )
             if classified.page is Page.DAILY and classified.daily:
-                classified = self._read_daily_activity_badge(image_path, classified)
+                # Daily work is read from current OCR controls and task rows.
+                # No measured DAILY activity-badge reader exists: inventing a
+                # red-dot reading here would both guess reward state and bypass
+                # the entry_badges table's UNKNOWN-for-unmeasured contract.
                 classified = _stamp_daily_task_evidence(classified, image_path)
             if classified.page is Page.TRAINING and classified.training:
                 # Where the three tabs are drawn, read now: this branch RETURNS, so a fold

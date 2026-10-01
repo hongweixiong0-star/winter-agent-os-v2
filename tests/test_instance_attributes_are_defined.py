@@ -36,10 +36,7 @@ STRICT_FILES = ("winter_agent_v2/runtime.py",)
 # Known debt elsewhere in the package, discovered by running this same audit.
 # Each entry is (attribute, why it is still here).  Fixing one means deleting its
 # entry here -- the ledger test fails on a stale or missing entry by construction.
-KNOWN_DANGLING = {
-    # Already tracked by tests/test_wiring_static_resolution.py as a dangling call.
-    "ocr.py:self._read_daily_activity_badge",
-}
+KNOWN_DANGLING = set()
 
 
 def _dangling_reads(path: Path) -> list[tuple[str, int]]:
