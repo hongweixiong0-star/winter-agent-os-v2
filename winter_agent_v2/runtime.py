@@ -1938,6 +1938,69 @@ class LiveRuntime:
             role_id=self._calendar_role_id(), skill_id=evidence.get("bootstrap_skill_id"),
             frame_id=evidence.get("bootstrap_frame_id"), stage=evidence.get("bootstrap_stage"))
 
+    def _read_due_calendar_entry(self, world: WorldState, frame: Path) -> WorldState:
+        """Read calendar UI on this frame only when maintenance or a return is due."""
+        from . import event_calendar
+        role = self._calendar_role_id()
+        pending = event_schedule.calendar_detail_return_pending(role)
+        if world.page is Page.UNKNOWN:
+            return replace(world, events={**world.events, "calendar_detail_return_pending": True}) if pending else world
+        if world.page not in {Page.HOME, Page.MAP, Page.EVENT}:
+            return world
+        if not (pending or event_schedule.calendar_scan_due(role)):
+            return world
+        ocr = self._ocr_service()
+        if ocr is None:
+            return world
+        result = ocr.recognize(frame)
+        size = read_frame_size(frame)
+        events = dict(world.events or {})
+        if world.page in {Page.HOME, Page.MAP}:
+            entry = event_calendar.read_calendar_entry(result.tokens, frame_size=size)
+            if entry:
+                events["calendar_entry"] = entry
+            if pending:
+                event_schedule.clear_calendar_detail_return_pending(role,
+                    observed_at=world.timestamp or datetime.now(timezone.utc),
+                    reason=f"fresh_known_page_{world.page.value}", evidence_ref=str(frame))
+            return replace(world, events=events)
+        calendar = event_calendar.read_event_calendar(result.tokens, frame_size=size)
+        detail = event_calendar.read_event_detail(result.tokens, event_label=None, frame_size=size)
+        if detail.get("recognized") is True:
+            if calendar.get("details_visible") is True or pending:
+                events.pop("calendar", None)
+                events["calendar_overlay_detected"] = True
+                saved = event_schedule.latest_calendar_snapshot(role, kind="EVENT_DETAIL") or {}
+                prior = saved.get("observation") or {}
+                if prior.get("event_id") == detail.get("event_id"):
+                    detail = {**detail, **{key: prior[key] for key in (
+                        "matched_event_id", "matched_occurrence_key", "calendar_origin") if key in prior}}
+                if not detail.get("matched_occurrence_key"):
+                    grid = event_schedule.latest_calendar_snapshot(role) or {}
+                    candidates = [row for row in grid.get("entries") or []
+                                  if row.get("event_id") == detail.get("event_id")
+                                  and row.get("details_observed") is not True]
+                    if len(candidates) == 1:
+                        detail.update(matched_event_id=candidates[0].get("event_id"),
+                                      matched_occurrence_key=candidates[0].get("occurrence_key"))
+                detail["calendar_origin"] = "GRID_ENTRY"
+            events["calendar_detail"] = detail
+        elif calendar.get("recognized") is True:
+            events["calendar"] = event_schedule.annotate_calendar_observation(role, calendar)
+        return replace(world, events=events)
+
+    def _record_calendar_observation(self, world: WorldState, frame=None) -> None:
+        role = self._calendar_role_id()
+        events = world.events or {}
+        stamp = world.timestamp or datetime.now(timezone.utc)
+        calendar, detail = events.get("calendar"), events.get("calendar_detail")
+        if isinstance(detail, Mapping) and detail.get("recognized") is True:
+            event_schedule.record_calendar_detail(role_id=role, observation=detail,
+                observed_at=stamp, evidence_ref=str(frame or ""))
+        elif isinstance(calendar, Mapping) and calendar.get("recognized") is True:
+            event_schedule.record_calendar_snapshot(role_id=role, observation=calendar,
+                observed_at=stamp, evidence_ref=str(frame or ""))
+
     def _record_goals(self, world: WorldState, frame: Path | str | None = None):
         """Discover this frame's goals, persist the board, and hand them back.
 
@@ -1950,13 +2013,14 @@ class LiveRuntime:
         world would only be a second chance for the two answers to disagree.
         """
         self._record_observations(world, frame=frame)
+        self._record_calendar_observation(world, frame)
         role_id = self._calendar_role_id()
-        calendar_snapshot = None
+        calendar_snapshot = event_schedule.latest_calendar_snapshot(role_id)
         event_rows = world.events if isinstance(world.events, Mapping) else {}
         live_calendar = event_rows.get("calendar")
         if role_id and isinstance(live_calendar, Mapping) and live_calendar.get("recognized") is True:
             calendar_snapshot = {
-                **dict(live_calendar),
+                **event_schedule.annotate_calendar_observation(role_id, live_calendar),
                 "role_id": role_id,
                 "observed_at": str(world.timestamp or datetime.now(timezone.utc).isoformat()),
             }
@@ -4022,7 +4086,7 @@ class LiveRuntime:
             started = time.monotonic()
             state = self._annotate_gather_formation(state, frame_path)
             account("formation", (time.monotonic() - started) * 1000)
-            return state
+            return self._read_due_calendar_entry(state, frame_path)
         goal = str(getattr(getattr(self, "brain", None), "current_goal", "") or "")
         page_hint = str(getattr(self, "_last_known_label", "") or "")
 
@@ -4083,7 +4147,7 @@ class LiveRuntime:
         started = time.monotonic()
         state = self._annotate_gather_formation(state, frame_path)
         account("formation", (time.monotonic() - started) * 1000)
-        return state
+        return self._read_due_calendar_entry(state, frame_path)
 
     def _annotate_gather_formation(self, world: WorldState, frame_path: Path) -> WorldState:
         """Attach current-frame hero identities with role-scoped availability."""
@@ -7416,7 +7480,7 @@ class LiveRuntime:
         honest answer there is that this layer cannot answer -- not an exception thrown in the
         middle of a live run.
         """
-        for holder in (self.vision, self.semantic_vision):
+        for holder in (getattr(self, "vision", None), getattr(self, "semantic_vision", None)):
             service = getattr(holder, "ocr", None)
             if service is not None:
                 return service
