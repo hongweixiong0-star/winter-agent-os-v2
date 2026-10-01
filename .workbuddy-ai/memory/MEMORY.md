@@ -2761,3 +2761,48 @@ adb 前台变成 `com.gof.china/DDUnityLaunchActivity`（自愈执行了 `LAUNCH
 **顺带记住两个操作事实**：① `schtasks /Run` 在任务**已在运行**时返回 **errorlevel 0**
 （打印「信息: … 正在运行」+「成功」），所以不需要为"面板已在运行"加特判；
 ② 任务"上次结果"= `267009 (0x41301)` 表示**当前正在运行**。
+
+## ⚠「第二次双击」也必须被设计：面板已在运行时，双击不能什么都没有（2026-10-01 第二轮）
+
+**现象**：操作员报「桌面快捷方式还是打不开」。但 `.cmd` / `preflight` / 计划任务**全部正常**
+（实测 exit 0、`VERDICT: PASS`、「成功: 尝试运行」）。真正被击中的是**面板已在运行时的又一次双击**：
+**没有窗口、没有任何日志、`schtasks` 仍打印"成功"**——与"快捷方式坏了"完全无法区分。
+
+**两条独立静默路径，叠加**：
+1. 计划任务注册为 `MultipleInstancesPolicy=IgnoreNew`。面板持有命名 Mutex 时，
+   `schtasks /Run` **什么都不启动**，打印「正在运行」并**仍返回 0**；⇒ launcher
+   （`launch_pinned_production.py`）**根本没被调用** ⇒ 写在 `control_panel.main()` 里的
+   任何"已有面板"处理代码**永远不会执行**。
+2. 若面板不是由任务启动（`desktop_startup.log` 09:59:02 有一条 `SystemExit: 0`，证明可达），
+   `_acquire_single_instance()` 命中 Mutex → `main()` **裸 `return 0`** → 同样静默。
+
+**2026-10-01 的 8.5 小时**：面板活着但 `panel.log` 自 **12:03:42** 起一字不写（连周期刷新都没有）、
+`PRODUCTION_LAUNCH.log` **无 12:xx 的 SystemExit**（⇒ 不是崩溃，是整机睡眠/冻结），
+**但它仍持有单实例锁**；系统事件 1074 @ **20:41:43** 用户重启，`LastBootUpTime=20:42:07` 才释放。
+**12:03–20:41 之间的每一次双击都被静默拒绝。**
+
+**修复位置**：主体必须在 **`.cmd` 里、`schtasks` 之前**问「有面板在跑吗」，因为 `IgnoreNew`
+使 `main()` 那条路对普通双击**不可达**。（`main()` 的分支保留并改为薄委托，09:59 证明它也可达。
+**两处都要修**。）⇒ 通用问法：**"这段代码在操作员那条路径上真的会被执行吗"**，而不是"它写对了吗"。
+
+**窗口代码独立成 `tools/panel_window.py`**（轻量：只有 `ctypes` + `winproc.alive`，
+**不 import `control_panel`**），使 `.cmd` 能在加载面板**之前**调用；三态返回
+`SHOWN(0)/ABSENT(1)/UNAVAILABLE(2)`，`.cmd` 按 `errorlevel` 分流。
+
+**三个 Win32 实测陷阱（全部改变了实现）**：
+1. **`.NET Process.MainWindowHandle` 对 Tk 顶层窗口返回 0**。实测 `HasWindow=False`，
+   而 `EnumWindows` 列出可见的 **1376x859** 窗口。用错 API 会把**健康面板判成不存在** ⇒ 用 `EnumWindows`。
+2. **`SMTO_ABORTIFHUNG` 把最小化的健康窗口判成无响应**：实测等满 **2000 ms 返回 0**；
+   `SMTO_NORMAL` **219 ms 就答上**。而"最小化"正是回来的操作员最可能遇到的状态 ⇒
+   `WINDOW_PROBE_FLAGS = SMTO_NORMAL`（**不是名字更"安全"的那个**），并有测试钉住。
+3. **`EnumWindows` 顺序是 `TtkMonitorClass, TkTopLevel, MSCTFIME UI, IME`** —— `windows[0]`
+   **不是**面板窗口 ⇒ 按 `PANEL_WINDOW_CLASS = "TkTopLevel"` 过滤。
+
+**探测是"附注"不是"门槛"**：面板跑 AUTO 轮次时**阻塞自己的消息循环**，故"窗口没响应"对
+**健康但忙碌**的面板也为真。所以 `focus_existing_panel` **无论如何先举窗口**，只在举不起来
+（pid 读不到 / pid 已死但锁还在 / 进程无窗口）时才弹消息框（`pythonw` 没有控制台，只能 `MessageBoxW`）。
+
+**验证**：端到端而非单测 —— 把面板最小化（`iconic=True, rect=(-32000,-32000,…)`）后**真实双击**：
+`.cmd` 打印「面板已在运行，已切换到它的窗口。」、**exit 0**、`iconic=False`、
+`rect=(156,101,1532,960)`。`test_startup_semantics` 61 项 + 组合 **294 passed / 14 subtests**；
+变异验证（裸 `return 0` / 去掉忙碌分支 / 还原 `SMTO_ABORTIFHUNG`）各自**恰好红一项**。
