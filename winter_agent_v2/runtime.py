@@ -5458,6 +5458,22 @@ class LiveRuntime:
             self._unknown_semantic_target = ""
             self._unknown_skill_id = ""
 
+    def _take_failed_navigation_retry(self, goal_id: str, frame: WorldState, allowed):
+        """One model-backed navigation recovery after the Scheduler selects that same Goal."""
+        key = (self._calendar_role_id(), goal_id)
+        pending = getattr(self, "_navigation_unknown_pending", {}).pop(key, None)
+        if not pending or frame.page != pending["page"]:
+            return None
+        skill_id = pending["skill"]
+        skill = self.registry.get(skill_id)
+        if (skill_id not in allowed or not self._validation_skill_allowed(skill_id)
+                or skill is None or not skill.ready(frame)):
+            return None
+        self._force_unknown_navigation_target = pending["semantic"]
+        self._failed_controls.pop(pending["semantic"], None)
+        return Decision(skill_id, f"ONLINE_UNKNOWN_NAVIGATION:{pending['reason']}",
+                        frame.confidence, "registered_navigation_verifier")
+
     def _refresh_advised_region(self, page, title, before, region, *, anchor=None):
         """Re-identify a proposal's measured element after inference, without old geometry."""
         path = self._capture_path(int(getattr(self, "_ordinary_attempts", 0)), "model_reground")
@@ -7547,6 +7563,8 @@ class LiveRuntime:
         # one retry per camp, after role, page, popup, panel, and static-camera checks.
         training_focus_retry_used: set[str] = set()
         pending_training_focus_retry: dict[str, Any] | None = None
+        self._navigation_unknown_pending = {}
+        self._navigation_unknown_attempted = set()
         # Consecutive ticks this run re-observed the active role instead of acting.  Cleared
         # whenever an action actually executes, so it counts a streak and not a total.
         role_refresh_ticks = 0
@@ -8172,6 +8190,10 @@ class LiveRuntime:
                               runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=decision.reason,
                               last_fatal_error=decision.reason if is_fatal_stop(decision.reason) else None)
                 return finish(decision.reason)
+            self._force_unknown_navigation_target = ""
+            recovered_navigation = self._take_failed_navigation_retry(selected_id, before, allowed)
+            if recovered_navigation is not None:
+                decision = recovered_navigation
             if decision.skill not in allowed or decision.skill not in self.VERIFIED_ATOMIC:
                 # Rule A: a task this run cannot carry out yields to the next one.  Only when
                 # there is no goal to hold back -- a named run's own route, or a goal already
@@ -8211,6 +8233,9 @@ class LiveRuntime:
             # Bind the current frame and Goal target so the ADB fallback and MAA
             # LIST_DYNAMIC resolver apply one target identity to this observation.
             def resolve(semantic: str):
+                if semantic == getattr(self, "_force_unknown_navigation_target", ""):
+                    return self._unknown_navigation_target(semantic, before, before_path,
+                                                           skill_id=decision.skill)
                 point = self._resolve_semantic_target(
                     semantic,
                     before,
@@ -8974,6 +8999,27 @@ class LiveRuntime:
                             verifier=verification.reason,
                         )
                         continue
+                # A located navigation control can still fail its real verifier.
+                # After existing settle/retry recovery, give this selected Goal
+                # one fresh model-grounded attempt, retaining its original Skill
+                # preconditions and verifier. Other Goals and hard events keep
+                # their normal Scheduler arbitration on the next iteration.
+                navigation = (decision.skill.startswith("OPEN_")
+                              or decision.skill.startswith("TAP_FOCUSED_TRAINING_CAMP_"))
+                semantic = (tick.execution.action.target or "") if tick.execution is not None else ""
+                retry_key = (self._calendar_role_id(), self._step_goal(best_goal), semantic)
+                if (navigation and semantic and best_goal is not None and index < max_actions
+                        and before.page == after.page
+                        and retry_key not in self._navigation_unknown_attempted
+                        and not is_fatal_stop(verification.reason)):
+                    self._navigation_unknown_attempted.add(retry_key)
+                    self._navigation_unknown_pending[retry_key[:2]] = {
+                        "skill": decision.skill, "semantic": semantic, "page": after.page,
+                        "reason": verification.reason,
+                    }
+                    self._runtime(next_action="fresh_unknown_navigation_if_same_goal_selected",
+                                  verifier=verification.reason)
+                    continue
                 # Operator §二.5 / §二.7, 2026-09-21: one step that did not reach its
                 # final state no longer ends the whole run.  Measured cause: the run
                 # held one goal, that goal's step failed its verifier, and every other

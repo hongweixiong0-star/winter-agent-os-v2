@@ -105,3 +105,41 @@ def test_navigation_conditions_are_rechecked_after_model(tmp_path):
     live._unknown_skill_id = "OPEN_MARKSMAN_TRAINING"
     live.registry = SimpleNamespace(get=lambda _: SimpleNamespace(ready=lambda _: False))
     assert live._refresh_advised_region("HOME", "", WorldState(page=Page.HOME), measured()) is None
+
+
+def pending_retry(live):
+    live._navigation_unknown_pending = {("role-a", "MARKSMAN_CAMP_TRAINING"): {
+        "skill": "OPEN_MARKSMAN_TRAINING", "semantic": "CAMP", "page": Page.HOME,
+        "reason": "CAMP_MENU_NOT_PROVEN",
+    }}
+    live._failed_controls = {"CAMP": "CAMP_MENU_NOT_PROVEN"}
+    live.registry = SimpleNamespace(get=lambda _: SimpleNamespace(ready=lambda _: True))
+
+
+def test_failed_navigation_can_only_resume_selected_same_goal_once(tmp_path):
+    live = runtime(tmp_path)
+    pending_retry(live)
+    allowed = {"OPEN_MARKSMAN_TRAINING"}
+    assert live._take_failed_navigation_retry("OTHER_GOAL", WorldState(page=Page.HOME), allowed) is None
+    decision = live._take_failed_navigation_retry("MARKSMAN_CAMP_TRAINING", WorldState(page=Page.HOME), allowed)
+    assert decision.skill == "OPEN_MARKSMAN_TRAINING"
+    assert live._force_unknown_navigation_target == "CAMP"
+    assert "CAMP" not in live._failed_controls
+    assert live._take_failed_navigation_retry("MARKSMAN_CAMP_TRAINING", WorldState(page=Page.HOME), allowed) is None
+
+
+def test_changed_navigation_page_cannot_resume_failed_action(tmp_path):
+    live = runtime(tmp_path)
+    pending_retry(live)
+    assert live._take_failed_navigation_retry("MARKSMAN_CAMP_TRAINING", WorldState(page=Page.MAP),
+                                             {"OPEN_MARKSMAN_TRAINING"}) is None
+    assert live._failed_controls["CAMP"] == "CAMP_MENU_NOT_PROVEN"
+
+
+def test_retry_cannot_bypass_current_skill_preconditions(tmp_path):
+    live = runtime(tmp_path)
+    pending_retry(live)
+    live.registry.get = lambda _: SimpleNamespace(ready=lambda _: False)
+    assert live._take_failed_navigation_retry("MARKSMAN_CAMP_TRAINING", WorldState(page=Page.HOME),
+                                             {"OPEN_MARKSMAN_TRAINING"}) is None
+    assert "CAMP" in live._failed_controls
