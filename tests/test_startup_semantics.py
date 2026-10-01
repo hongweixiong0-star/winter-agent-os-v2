@@ -711,5 +711,142 @@ class LauncherEncodingTest(unittest.TestCase):
                           f"{path.name} should document its own encoding rule near the top")
 
 
+class ExistingPanelVisibilityTest(unittest.TestCase):
+    """A second double-click must open *something* when a panel already owns the lock.
+
+    The single-instance mutex is the right design -- one panel owns one AUTO -- but
+    until 2026-10-01 it was the only thing that happened on a repeat launch: the
+    process returned 0 with no window, no line in any log, and the launcher still
+    printed 成功.  Measured live that day: the panel was alive but silent from
+    12:03:42 until the machine rebooted at 20:41, so every double-click in those 8.5
+    hours opened nothing at all, and nothing anywhere said why.
+    """
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        log = mock.patch.object(panel, "PANEL_LOG_PATH", str(self.tmp / "panel.log"))
+        log.start()
+        self.addCleanup(log.stop)
+        self.pid_path = panel.panel_pid_path()
+
+    def _install(self, *, pid: int | None = 4321, alive: bool = True,
+                 windows: tuple[int, ...] = (99,), responding: bool = True):
+        """Wire the probe so the test exercises the decision, not Win32."""
+        if pid is not None:
+            self.pid_path.write_text(str(pid), encoding="utf-8")
+        patchers = {
+            "alive": mock.patch.object(panel.winproc, "alive", return_value=alive),
+            "windows": mock.patch.object(panel, "_top_level_windows", return_value=list(windows)),
+            "responding": mock.patch.object(panel, "_window_is_responding", return_value=responding),
+            "activate": mock.patch.object(panel, "_activate_window"),
+            "notify": mock.patch.object(panel, "_notify_operator"),
+        }
+        started = {name: p.start() for name, p in patchers.items()}
+        for p in patchers.values():
+            self.addCleanup(p.stop)
+        return started
+
+    # -- reading what the running panel recorded -----------------------------
+
+    def test_the_pid_comes_from_the_file_the_panel_writes_for_itself(self):
+        self.pid_path.write_text("12345", encoding="utf-8")
+        self.assertEqual(panel._existing_panel_pid(), 12345)
+
+    def test_a_missing_or_unreadable_pid_is_not_an_error(self):
+        # Before the first panel writes it, and after a partial write, the honest
+        # answer is "I do not know", not an exception on the launch path.
+        self.assertEqual(panel._existing_panel_pid(), 0)
+        self.pid_path.write_text("not-a-pid", encoding="utf-8")
+        self.assertEqual(panel._existing_panel_pid(), 0)
+
+    def test_the_path_is_derived_from_the_log_path_so_tests_do_not_touch_production(self):
+        # A test window writing the real panel.pid would aim the stop command -- and
+        # this activation -- at the wrong process.
+        self.assertEqual(panel.panel_pid_path().parent, Path(panel.PANEL_LOG_PATH).parent)
+
+    # -- the decision --------------------------------------------------------
+
+    def test_a_live_panel_with_a_window_is_brought_to_the_front(self):
+        hooks = self._install()
+        self.assertEqual(panel._bring_existing_panel_forward(), "")
+        hooks["activate"].assert_called_once_with(99)
+
+    def test_a_frozen_window_is_named_instead_of_being_raised_to_the_front(self):
+        # Raising a hung window would answer the double-click with a white box and
+        # teach the operator nothing.
+        hooks = self._install(responding=False)
+        problem = panel._bring_existing_panel_forward()
+        self.assertIn("4321", problem)
+        self.assertNotEqual(problem, "")
+        hooks["activate"].assert_not_called()
+
+    def test_a_dead_pid_is_reported_even_though_its_lock_is_still_held(self):
+        # This is the 2026-10-01 shape: the mutex outlives a panel that was killed, so
+        # "already running" is false and must not be said.
+        hooks = self._install(alive=False)
+        self.assertNotEqual(panel._bring_existing_panel_forward(), "")
+        hooks["activate"].assert_not_called()
+
+    def test_a_process_with_no_window_at_all_is_reported(self):
+        hooks = self._install(windows=())
+        self.assertNotEqual(panel._bring_existing_panel_forward(), "")
+        hooks["activate"].assert_not_called()
+
+    def test_no_pid_file_means_the_question_cannot_be_answered(self):
+        self._install(pid=None)
+        self.assertNotEqual(panel._bring_existing_panel_forward(), "")
+
+    # -- what the operator ends up seeing ------------------------------------
+
+    def test_nothing_interrupts_the_operator_when_the_window_comes_up(self):
+        hooks = self._install()
+        panel._report_existing_panel()
+        hooks["notify"].assert_not_called()
+
+    def test_the_operator_is_told_the_reason_when_the_window_cannot_be_shown(self):
+        hooks = self._install(alive=False)
+        with mock.patch.object(panel, "_bring_existing_panel_forward",
+                               return_value="它记录的进程 4321 已经不在了"):
+            panel._report_existing_panel()
+        hooks["notify"].assert_called_once()
+        message = hooks["notify"].call_args.args[0]
+        self.assertIn("4321", message)
+        # The box is the only feedback there is, so it has to say what to do next.
+        self.assertIn("任务管理器", message)
+
+    def test_a_failing_probe_still_tells_the_operator_something(self):
+        # This code runs on the way out of a launch that is about to return 0.  An
+        # exception here would restore the silent second-click it exists to remove.
+        hooks = self._install()
+        with mock.patch.object(panel, "_bring_existing_panel_forward",
+                               side_effect=OSError("no window station")):
+            panel._report_existing_panel()
+        hooks["notify"].assert_called_once()
+        self.assertIn("no window station", hooks["notify"].call_args.args[0])
+
+    # -- the wiring the whole defect lived in --------------------------------
+
+    def test_a_second_launch_reports_and_builds_no_window(self):
+        # The regression itself: main() used to return 0 straight from the gate.
+        with mock.patch.object(panel, "_acquire_single_instance", return_value=False), \
+             mock.patch.object(panel, "_report_existing_panel") as reported, \
+             mock.patch.object(panel.tk, "Tk") as tk_factory:
+            self.assertEqual(panel.main(), 0)
+        reported.assert_called_once_with()
+        tk_factory.assert_not_called()
+
+    def test_the_gate_is_asked_before_anything_is_reported(self):
+        # A first launch must not look at panel.pid at all: on a cold start the file
+        # holds the pid of the panel that died last, and acting on it would raise a
+        # corpse's window.
+        with mock.patch.object(panel, "_acquire_single_instance", return_value=True), \
+             mock.patch.object(panel, "_report_existing_panel") as reported, \
+             mock.patch.object(panel, "ControlPanel"), \
+             mock.patch.object(panel.tk, "Tk") as tk_factory:
+            panel.main()
+        reported.assert_not_called()
+        tk_factory.assert_called_once()
+
+
 if __name__ == "__main__":
     unittest.main()
