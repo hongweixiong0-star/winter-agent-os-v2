@@ -1131,9 +1131,20 @@ class ManagedAdvisor:
 
         digest = str(getattr(question, "frame_digest", "") or "")
         frame_id = f"frame_{digest}" if digest else ""
+        screenshot = (
+            ui_venus_online.FrameIdentity.of(frame_path, frame_id=frame_id)
+            if frame_path else ui_venus_online.FrameIdentity()
+        )
+        # UnknownRequest stores a 16-character digest for request deduplication;
+        # FrameIdentity stores the full SHA256. Extend only when the bytes still
+        # match the recorded request. Changed/missing frames remain mismatches.
+        expected_hash = f"sha256:{digest}" if digest else ""
+        current_digest = screenshot.frame_hash.removeprefix("sha256:")
+        if len(digest) == 16 and current_digest.startswith(digest):
+            expected_hash = screenshot.frame_hash
         table = ui_venus_online.ElementTable(
             frame_id=frame_id,
-            frame_hash=f"sha256:{digest}" if digest else "",
+            frame_hash=expected_hash,
             items=tuple(
                 ui_venus_online.ElementItem(
                     id=str(entry.get("id") or ""),
@@ -1151,10 +1162,6 @@ class ManagedAdvisor:
                 for entry in elements
                 if isinstance(entry, Mapping)
             ),
-        )
-        screenshot = (
-            ui_venus_online.FrameIdentity.of(frame_path, frame_id=frame_id)
-            if frame_path else ui_venus_online.FrameIdentity()
         )
         role_id = str(getattr(question, "character", "") or getattr(question, "role_id", "") or "")
         packet = ui_venus_online.UIVenusContextPacketV1(
