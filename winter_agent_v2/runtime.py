@@ -1065,6 +1065,12 @@ class LiveRuntime:
                 # Already offered this run and already found unusable; the line was written the
                 # first time, so this pass stays quiet rather than repeating it.
                 continue
+            if (goal.goal_id == "DISCOVER_EVENT_CALENDAR"
+                    and goal.available_skills == ("SCROLL_REGULAR_EVENT_TABS",)
+                    and getattr(self, "_calendar_tab_swipe_count", 0) >= 4):
+                self._yielded_goals.add(goal.goal_id)
+                self._narrate_once("calendar tab navigation budget exhausted; continue other goals")
+                continue
             out.append(goal)
         return out
 
@@ -9053,6 +9059,8 @@ class LiveRuntime:
             else:
                 self._scheduler.executor = executor
             self._mark_bootstrap_attempt(best_goal)
+            if decision.skill == "SCROLL_REGULAR_EVENT_TABS":
+                self._calendar_tab_swipe_count = getattr(self, "_calendar_tab_swipe_count", 0) + 1
             tick = self._scheduler.tick(before, decision)
             latency["scheduler_tick_ms"] = (time.monotonic() - phase_started) * 1000
             page_audit["attempted_skill"] = tick.decision.skill

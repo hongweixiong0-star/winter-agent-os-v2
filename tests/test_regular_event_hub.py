@@ -115,3 +115,13 @@ def test_micro_ocr_shift_does_not_hide_the_numeric_position_for_progress_verifie
     assert after["tab_signature"] != before["tab_signature"]
     assert abs(after["tab_positions_norm"]["峡谷会战"][0]
                - before["tab_positions_norm"]["峡谷会战"][0]) < 0.03
+
+
+def test_missing_tab_ocr_requests_strip_read_without_treating_timers_as_tabs():
+    rows = [row for row in hub_tokens() if row.text not in ("兵工厂争夺战", "峡谷会战")]
+    rows.extend([token("1天20:06:00", 81, 273, 150, 30),
+                 token("排名：82", 526, 302, 130, 28)])
+    result = read_regular_event_hub(rows, frame_size=(720, 1280))
+    assert result["recognized"] and result["display_name"] == "联盟总动员"
+    assert result["tabs"] == [] and result["scroll_to_start_norm"] is None
+    assert result["tabstrip_roi_norm"]

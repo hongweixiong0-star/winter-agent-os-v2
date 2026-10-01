@@ -295,27 +295,30 @@ def read_regular_event_hub(
     if len(headings) != 1:
         return {**result, "reason": "NO_UNAMBIGUOUS_LARGE_TOP_HEADING"}
     heading = headings[0]
-    titles = sorted((r for r in rows if _candidate_title(r["label"])
+    def navigation_label(label: str) -> bool:
+        # A ticking timer or score is body state, not another activity tab.
+        return (_candidate_title(label) and not re.search(r"[\d:：/%+,.]", label)
+                and not any(word in label for word in ("积分", "排名", "次数", "阶段", "满级", "已完成")))
+
+    titles = sorted((r for r in rows if navigation_label(r["label"])
                      and r["top"] > heading["bottom"] + heading["height"]
-                     and r["height"] >= max(height * 0.02, heading["height"] * 0.65)
+                     and r["height"] >= max(height * 0.02, heading["height"] * 0.9)
                      and r["y"] <= height * 0.5), key=lambda r: r["y"])
     body_markers = ("积分", "排名", "奖励", "可接次数", "已完成", "进行中",
                     "活动时间", "剩余", "阶段", "前往", "任务")
     for title in titles:
         possible_tabs = [r for r in rows
-                         if r["label"] in ("日历", "活动日历") or _candidate_title(r["label"])]
+                         if r["label"] in ("日历", "活动日历") or navigation_label(r["label"])]
         possible_tabs = [r for r in possible_tabs
                          if r["top"] > heading["bottom"]
                          and r["bottom"] < title["top"]
                          and height * 0.01 <= r["height"] <= heading["height"] * 1.1]
-        if not possible_tabs:
-            continue
         # Use the densest current horizontal band, never a historical row pitch.
         bands = [[r for r in possible_tabs
                   if abs(r["y"] - anchor["y"]) <= max(r["height"], anchor["height"]) * 0.8]
                  for anchor in possible_tabs]
         tabs = max(bands, key=lambda band: (len({r["label"] for r in band}),
-                                           sum(r["confidence"] for r in band)))
+                                           sum(r["confidence"] for r in band)), default=[])
         unique_tabs = []
         for row in sorted(tabs, key=lambda r: r["x"]):
             if not any(row["label"] == prev["label"]
@@ -324,6 +327,8 @@ def read_regular_event_hub(
         body = [r for r in rows if r["top"] >= title["bottom"]
                 and any(marker in r["label"] for marker in body_markers)]
         if not body:
+            continue
+        if not tabs and not event_goal.event_id_for_label(title["label"]):
             continue
         tabs = unique_tabs
         signature_rows = [

@@ -3,6 +3,8 @@ from types import SimpleNamespace
 
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.goal_library import GoalLibrary, GoalStatus
+from winter_agent_v2.goal_library import GoalState
+from winter_agent_v2.capability_gate import CapabilityGate
 from winter_agent_v2.models import Page, WorldState
 from winter_agent_v2.ocr import OCRResult, OCRToken
 from winter_agent_v2.runtime import LiveRuntime
@@ -107,3 +109,17 @@ def test_partial_tab_ocr_is_lifted_from_crop_to_same_frame(tmp_path):
     assert result["recognized"] and result["scroll_to_start_norm"]
     assert result["tab_positions_norm"]["峡谷会战"] == [round(165/720, 5), round(170.5/1280, 5)]
     assert len(calls) == 2 and calls[0][0] == calls[1][0] == frame
+
+
+def test_scroll_budget_defers_calendar_without_stopping_other_ready_goals():
+    runtime = object.__new__(LiveRuntime)
+    runtime._calendar_tab_swipe_count = 4
+    runtime._yielded_goals = set()
+    runtime._policy_allows = lambda goal_id: True
+    runtime._gate = lambda: CapabilityGate.empty()
+    runtime._narrate_once = lambda text: None
+    calendar = GoalState("DISCOVER_EVENT_CALENDAR", GoalStatus.READY,
+                         available_skills=("SCROLL_REGULAR_EVENT_TABS",))
+    mail = GoalState("MAIL_ROUTINE", GoalStatus.READY, available_skills=("OPEN_MAIL",))
+    assert runtime._selectable([calendar, mail], []) == [mail]
+    assert "DISCOVER_EVENT_CALENDAR" in runtime._yielded_goals
