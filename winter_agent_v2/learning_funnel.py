@@ -166,6 +166,9 @@ class LearningFunnel:
     metrics: dict[str, Any] = field(default_factory=dict)
     console: dict[str, Any] = field(default_factory=dict)
     sources: dict[str, Any] = field(default_factory=dict)
+    joined_funnel: dict[str, int | None] = field(default_factory=dict)
+    joined_traces: tuple[dict[str, Any], ...] = ()
+    historical_unattributed: dict[str, Any] = field(default_factory=dict)
 
     def to_row(self) -> dict[str, Any]:
         return {
@@ -176,6 +179,9 @@ class LearningFunnel:
             "metrics": dict(self.metrics),
             "console": dict(self.console),
             "sources": dict(self.sources),
+            "joined_funnel": dict(self.joined_funnel),
+            "joined_traces": list(self.joined_traces),
+            "historical_unattributed": dict(self.historical_unattributed),
         }
 
 
@@ -219,6 +225,109 @@ def _families(rows: Iterable[Mapping[str, Any]]) -> dict[str, int]:
             continue
         out[family] = out.get(family, 0) + 1
     return out
+
+
+def _joined_window(
+    rows: Iterable[Mapping[str, Any]], *, since: datetime, until: datetime,
+) -> tuple[dict[str, int | None], tuple[dict[str, Any], ...], dict[str, Any]]:
+    """Count dated, attributed stages, never infer a device action from model settlement.
+
+    Old request filenames and plan rows lack a join identity. They remain in the historical
+    bucket; they cannot inflate the new FIRST / SECOND production acceptance counts.
+    """
+    stage_names = FUNNEL_STAGES + ("candidate_step_reused", "second_verifier_success",
+                                   "second_encounter")
+    counts: dict[str, int | None] = {stage: 0 for stage in stage_names}
+    for stage in ("candidate_replay_pass", "candidate_shadow_pass", "live_verified", "stable_promoted"):
+        counts[stage] = None
+    traces: dict[str, dict[str, Any]] = {}
+    seen: set[tuple[str, str, str]] = set()
+    rejected = 0
+    for row in _within(rows, since=since):
+        stamp = datetime.fromisoformat(str(row.get("recorded_at") or row.get("created_at")))
+        if stamp.tzinfo is None:
+            stamp = stamp.replace(tzinfo=timezone.utc)
+        if stamp > until:
+            continue
+        trace_id = str(row.get("trace_id") or row.get("request_id") or "")
+        goal = str(row.get("goal_id") or row.get("goal") or "")
+        role = str(row.get("role_id") or row.get("role") or row.get("character") or "")
+        page = str(row.get("page") or row.get("page_key") or row.get("page_before") or "")
+        if not (trace_id and goal and role and page):
+            rejected += 1
+            continue
+        explicit = str(row.get("layer") or row.get("stage") or "").lower()
+        stages = [explicit] if explicit in stage_names else []
+        record = str(row.get("record") or "")
+        if not stages and record == "model_call":
+            stages = ["venus_called"]
+        elif not stages and record == "proposal":
+            stages = ["venus_proposed"]
+        elif not stages and record == "outcome":
+            if row.get("maa_executed") is True:
+                stages.append("maa_executed")
+            if row.get("verifier_ok") is True:
+                stages.append("verifier_success")
+            elif str(row.get("result") or "") == "PROGRESS":
+                stages.append("verifier_progress")
+        elif not stages and row.get("verifier_ok") is True and row.get("semantic_target"):
+            stages = ["candidate_step_created"]
+            if row.get("model_used") is False and row.get("reused_from_trace_id"):
+                stages += ["candidate_step_reused", "second_verifier_success"]
+        failed_outcome = record == "outcome" and row.get("verifier_ok") is False
+        if not stages and not failed_outcome:
+            continue
+        material = str(row.get("event_id") or row.get("call_id") or row.get("action_id") or "")
+        if not material and row.get("step_index") is not None:
+            material = f"{row.get('episode_id', '')}:{row['step_index']}"
+        identity = str(row.get("unknown_identity") or "")
+        if not identity:
+            identity = ui_venus_online.unknown_state_identity(
+                goal_id=goal, page=page, semantic=str(row.get("semantic_target") or ""),
+                state_signature=str(row.get("relevant_state_signature") or row.get("situation") or ""),
+            )
+        trace = traces.setdefault(trace_id, {
+            "trace_id": trace_id, "parent_trace_id": str(row.get("parent_trace_id") or ""),
+            "role_id": role, "goal_id": goal, "page": page, "unknown_identity": identity,
+            "stages": {}, "first_seen": str(row.get("recorded_at") or row.get("created_at") or ""),
+            "last_seen": "", "model_used": None, "verifier_failures": 0,
+            "replans": 0, "fallback_calls": 0,
+        })
+        # A shared request id from the historical reader may span different roles/goals. It
+        # does not license joining their results into one production learning encounter.
+        if trace["role_id"] != role or trace["goal_id"] != goal:
+            rejected += 1
+            continue
+        trace["last_seen"] = max(trace["last_seen"], str(row.get("recorded_at") or row.get("created_at") or ""))
+        if row.get("model_used") is True or "venus_called" in stages:
+            trace["model_used"] = True
+        elif row.get("model_used") is False and trace["model_used"] is None:
+            trace["model_used"] = False
+        for stage in stages:
+            key = (trace_id, stage, "" if stage in ("unknown_observed", "second_encounter") else material)
+            if key in seen:
+                continue
+            seen.add(key)
+            counts[stage] = int(counts.get(stage) or 0) + 1
+            trace["stages"][stage] = int(trace["stages"].get(stage) or 0) + 1
+        if record == "outcome" and row.get("verifier_ok") is False:
+            trace["verifier_failures"] += 1
+        if str(row.get("decision") or "").upper() == "REPLAN":
+            trace["replans"] += 1
+        if row.get("fallback_call") is True:
+            trace["fallback_calls"] += 1
+    unknowns = int(counts["unknown_observed"] or 0)
+    metrics = {
+        "JOINED_TRACE_COUNT": len(traces), "JOINED_UNATTRIBUTED_WINDOW_ROWS": rejected,
+        "VENUS_CALLS_PER_UNKNOWN": _ratio(int(counts["venus_called"] or 0), unknowns),
+        "PROPOSALS_PER_UNKNOWN": _ratio(int(counts["venus_proposed"] or 0), unknowns),
+        "CANDIDATE_REUSE_SUCCESS": int(counts["second_verifier_success"] or 0),
+        "GROUNDING_REJECTIONS": int(counts["grounding_rejected"] or 0),
+        "VERIFIER_FAILURES": sum(t["verifier_failures"] for t in traces.values()),
+        "REPLANS": sum(t["replans"] for t in traces.values()),
+        "FALLBACK_CALLS": sum(t["fallback_calls"] for t in traces.values()),
+    }
+    return counts, tuple(traces.values()), metrics
 
 
 def build_funnel(
@@ -284,10 +393,12 @@ def build_funnel(
     named_page_calls = [
         row for row in plans
         if str(row.get("page_key") or "") and not str(row.get("page_key") or "").startswith("UNKNOWN")
+        and str(row.get("call_context") or "") != "ONLINE_UNKNOWN"
     ]
     named_page_calls_today = [
         row for row in plans_today
         if str(row.get("page_key") or "") and not str(row.get("page_key") or "").startswith("UNKNOWN")
+        and str(row.get("call_context") or "") != "ONLINE_UNKNOWN"
     ]
 
     proposal_refusals: dict[str, int] = {}
@@ -494,12 +605,70 @@ def build_funnel(
         "今日游戏任务完成率": metrics["GAME_TASK_COMPLETION_RATE"],
     }
 
+    joined_counts, joined_traces, joined_metrics = _joined_window(
+        [*planner_calls, *online_rows, *learned_rows.rows()], since=since, until=moment,
+    )
+    historical = {
+        "scope": "HISTORICAL_UNATTRIBUTED_AGGREGATES",
+        "not_production_acceptance": True,
+        "reason": "Legacy files/rows are not joined under one dated Goal/Role/encounter trace.",
+        "all_time_counts": {stage.stage: stage.count for stage in funnel},
+        "planner_rows": len(planner_calls), "request_files": len(requests),
+    }
+    metrics.update(joined_metrics)
+    metrics["FUNNEL_MEASUREMENT_SCOPE"] = (
+        "JOINED_TIMESTAMP_WINDOW" if joined_traces else "HISTORICAL_UNATTRIBUTED_ONLY"
+    )
+    metrics["JOINED_WINDOW_START"] = since.isoformat()
+    metrics["JOINED_WINDOW_END"] = moment.isoformat()
+    metrics["HISTORICAL_UNKNOWN_MODEL_CALLS"] = len(plans)
+    metrics["HISTORICAL_KNOWN_PAGE_MODEL_CALLS"] = len(named_page_calls)
+    if joined_traces:
+        funnel = tuple(
+            FunnelCounts(stage=stage, count=joined_counts[stage],
+                         source="JOINED_TIMESTAMP_WINDOW: planner/online/verified-step traces",
+                         unmeasured_reason="REGISTRY_OWNS_THIS" if joined_counts[stage] is None else "")
+            for stage in FUNNEL_STAGES
+        )
+        metrics["UNKNOWN_MODEL_CALLS_TODAY"] = int(joined_counts["venus_called"] or 0)
+        metrics["UNKNOWN_MODEL_CALLS"] = int(joined_counts["venus_called"] or 0)
+        metrics["UNKNOWN_VERIFIED_STEPS_CREATED_TODAY"] = int(joined_counts["candidate_step_created"] or 0)
+        metrics["UNKNOWN_VERIFIED_STEPS_CREATED"] = int(joined_counts["candidate_step_created"] or 0)
+        metrics["UNKNOWN_VERIFIER_PASS_RATE"] = _ratio(
+            joined_counts["verifier_success"], joined_counts["maa_executed"],
+        )
+        metrics["KNOWN_MODEL_CALLS_TODAY"] = sum(
+            1 for row in _within(planner_calls, since=since)
+            if str(row.get("call_context") or "") == "KNOWN_SKILL"
+            and str(row.get("record") or "") == "model_call"
+        )
+        metrics["KNOWN_MODEL_CALLS"] = metrics["KNOWN_MODEL_CALLS_TODAY"]
+        for numerator, denominator in ui_venus_contract.FUNNEL_RATIOS:
+            metrics[f"{numerator} / {denominator}"] = _ratio(
+                joined_counts.get(numerator), joined_counts.get(denominator),
+            )
+        console.update({
+            "今日 UI-Venus 调用": joined_counts["venus_called"],
+            "UNKNOWN 次数": joined_counts["unknown_observed"],
+            "UNKNOWN 成功解决": joined_counts["verifier_success"],
+            "Verifier 通过数": joined_counts["verifier_success"],
+            "KNOWN_MODEL_CALLS": metrics["KNOWN_MODEL_CALLS_TODAY"],
+        })
+    else:
+        # Preserve legacy consumers' keys, while marking every aggregate as historical. The
+        # strict joined_funnel always remains available and never treats those totals as live.
+        for stage in funnel:
+            stage.source = f"HISTORICAL_UNATTRIBUTED: {stage.source}"
+
     return LearningFunnel(
         generated_at=_now(),
         window_days=int(window_days),
         funnel=funnel,
         metrics=metrics,
         console=console,
+        joined_funnel=joined_counts,
+        joined_traces=joined_traces,
+        historical_unattributed=historical,
         sources={
             "planner_ledger": str(PLANNER_LEDGER),
             "episodes": str(EPISODES),

@@ -45,7 +45,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
-from . import ui_venus_contract
+from . import ui_venus_contract, ui_venus_online
 from . import unknown_advisor
 
 #: Where verified UNKNOWN steps accumulate.  Beside the episode stream and the planner ledger, so
@@ -118,6 +118,35 @@ def risk_route(*, semantic: str, action_type: str, expected_result: str = "") ->
     return ROUTE_FAST
 
 
+_EPHEMERAL_GEOMETRY_KEYS = frozenset({
+    "x", "y", "x1", "y1", "x2", "y2", "left", "top", "right", "bottom",
+    "x_norm", "y_norm", "w_norm", "h_norm", "bbox", "box", "box_norm",
+    "candidate_bbox", "candidate_bbox_norm", "target_bbox", "target_point",
+    "point", "point_norm", "center_norm", "click_point", "tap_point", "roi",
+    "proposed_region_untrusted", "matched_region", "rect", "coordinates",
+})
+
+
+def durable_evidence(value: Any) -> Any:
+    """Retain semantic evidence without carrying a previous frame's click geometry.
+
+    Queue counts, timers and verifier facts remain evidence. Locator identities (template,
+    OCR anchor or named relation) remain knowledge; their measured points do not.
+    """
+    if isinstance(value, Mapping):
+        return {
+            str(key): durable_evidence(item)
+            for key, item in value.items()
+            if str(key).lower() not in _EPHEMERAL_GEOMETRY_KEYS
+            and "bbox" not in str(key).lower()
+        }
+    if isinstance(value, (list, tuple)):
+        return [durable_evidence(item) for item in value]
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return str(value)
+
+
 @dataclass(frozen=True)
 class LearnedStepCandidate:
     """One UNKNOWN step the verifier passed, described the way a skill would describe it.
@@ -132,6 +161,13 @@ class LearnedStepCandidate:
     recorded_at: str = ""
     #: Which ask this step consumed.  Joins back to ``learning/local_planner_steps.jsonl``.
     request_id: str = ""
+    trace_id: str = ""
+    parent_trace_id: str = ""
+    frame_id: str = ""
+    frame_hash: str = ""
+    relevant_state_signature: str = ""
+    model_used: bool | None = None
+    reused_from_trace_id: str = ""
     #: The AUTO run this step happened in.  Named ``session_id`` rather than reusing
     #: ``episode_id`` because a session is the unit section 15 counts repeats over, and an AUTO
     #: run is the only unit the runtime actually knows.
@@ -168,6 +204,7 @@ class LearnedStepCandidate:
     # ---- outcome -------------------------------------------------------------
     verifier_ok: bool = False
     verifier_reason: str = ""
+    verifier_evidence: dict[str, Any] = field(default_factory=dict)
     expected_result: str = ""
     actual_result: str = ""
     #: How many consecutive failures preceded this success in the same session, so a recovered
@@ -187,16 +224,23 @@ class LearnedStepCandidate:
         semantic one.  A frame digest would make every repeat look new, which is the bug this
         module exists to prevent.
         """
-        return "|".join((
+        key = "|".join((
             str(self.page_before), str(self.goal_id),
             str(self.semantic_target or self.action_type), str(self.page_after),
         ))
+        return f"{key}|state={self.relevant_state_signature}" if self.relevant_state_signature else key
 
     def as_row(self) -> dict[str, Any]:
         row = asdict(self)
         row["source_frames"] = list(self.source_frames)
         row["key"] = self.key
         row["schema_version"] = "1.0"
+        row["unknown_identity"] = ui_venus_online.unknown_state_identity(
+            goal_id=self.goal_id, page=self.page_before, semantic=self.semantic_target,
+            state_signature=self.relevant_state_signature,
+        )
+        row["visual_evidence"] = durable_evidence(self.visual_evidence)
+        row["verifier_evidence"] = durable_evidence(self.verifier_evidence)
         return row
 
 
@@ -308,6 +352,8 @@ def _chain_key(step: Mapping[str, Any]) -> str:
         str(step.get("action_type", "")),
         str(step.get("page_after", "")),
     ))
+    if step.get("relevant_state_signature"):
+        material += f"|state={step['relevant_state_signature']}"
     return hashlib.sha256(material.encode("utf-8")).hexdigest()[:10]
 
 
@@ -392,6 +438,10 @@ def _chain_record(chain: Sequence[Mapping[str, Any]]) -> CandidateSkill:
                     f"element {s.get('semantic_target')} locatable by {s.get('grounding_basis')}"
                     for s in chain
                     if s.get("semantic_target") and s.get("grounding_basis")
+                ]
+                + [
+                    f"state is {s.get('relevant_state_signature')}"
+                    for s in chain if s.get("relevant_state_signature")
                 ]
             )
         ),
@@ -514,6 +564,8 @@ def learned_steps_for(
     *,
     page_key: str,
     goal_id: str,
+    semantic_target: str = "",
+    relevant_state_signature: str = "",
 ) -> list[dict[str, Any]]:
     """Verified steps this project already knows for one screen and goal, best first.
 
@@ -534,6 +586,9 @@ def learned_steps_for(
         and row.get("verifier_ok") is True
         and not row.get("no_progress")
         and row.get("semantic_target")
+        and (not semantic_target or str(row.get("semantic_target")) == str(semantic_target))
+        and (not relevant_state_signature
+             or str(row.get("relevant_state_signature") or "") == str(relevant_state_signature))
     ]
     if not matching:
         return []
@@ -607,6 +662,13 @@ class LearningStats:
 def record_verified_step(
     *,
     request_id: str = "",
+    trace_id: str = "",
+    parent_trace_id: str = "",
+    frame_id: str = "",
+    frame_hash: str = "",
+    relevant_state_signature: str = "",
+    model_used: bool | None = None,
+    reused_from_trace_id: str = "",
     session_id: str = "",
     episode_id: str = "",
     step_index: int = 0,
@@ -623,6 +685,7 @@ def record_verified_step(
     visual_evidence: Mapping[str, Any] | None = None,
     verifier_ok: bool = False,
     verifier_reason: str = "",
+    verifier_evidence: Mapping[str, Any] | None = None,
     expected_result: str = "",
     actual_result: str = "",
     attempts_before_success: int = 0,
@@ -639,6 +702,13 @@ def record_verified_step(
     step = LearnedStepCandidate(
         recorded_at=_now(),
         request_id=str(request_id),
+        trace_id=str(trace_id),
+        parent_trace_id=str(parent_trace_id),
+        frame_id=str(frame_id),
+        frame_hash=str(frame_hash),
+        relevant_state_signature=str(relevant_state_signature),
+        model_used=model_used if isinstance(model_used, bool) else None,
+        reused_from_trace_id=str(reused_from_trace_id),
         session_id=str(session_id),
         episode_id=str(episode_id),
         step_index=int(step_index),
@@ -652,9 +722,10 @@ def record_verified_step(
         basis=str(basis),
         grounding_basis=str(grounding_basis),
         area=str(area),
-        visual_evidence=dict(visual_evidence or {}),
+        visual_evidence=durable_evidence(visual_evidence or {}),
         verifier_ok=bool(verifier_ok),
         verifier_reason=str(verifier_reason)[:200],
+        verifier_evidence=durable_evidence(verifier_evidence or {}),
         expected_result=str(expected_result)[:200],
         actual_result=str(actual_result)[:200],
         attempts_before_success=int(attempts_before_success),

@@ -14,7 +14,7 @@ def test_reuse_without_model_records_only_its_own_verified_second_encounter(tmp_
     learning.record_verified_step(
         request_id="first-request", session_id="first-session", goal_id="DAILY",
         page_before="UNKNOWN::奖励", page_after="HOME", semantic_target="ORDINARY_CONTROL[关闭]",
-        verifier_ok=True, expected_result="home_open", ledger=ledger,
+        verifier_ok=True, expected_result="home_open", relevant_state_signature="fresh", ledger=ledger,
     )
     runtime = object.__new__(LiveRuntime)
     runtime.learned_ledger = ledger

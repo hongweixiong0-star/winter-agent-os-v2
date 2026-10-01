@@ -59,6 +59,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
+from uuid import uuid4
 
 from . import context_budget
 from . import local_gui_model
@@ -766,6 +767,8 @@ class ManagedAdvisor:
         self._per_screen: dict[str, int] = {}
         self._asked: dict[str, Any] = {}
         self._requests: dict[str, Any] = {}
+        self._call_contexts: dict[str, dict[str, Any]] = {}
+        self._observed_traces: set[str] = set()
         self.last_action = last_action
         self.last_result = last_result
         self.last_outcome: dict[str, Any] = {}
@@ -864,6 +867,12 @@ class ManagedAdvisor:
         # which is the only situation that can read one.  Measured 2026-09-30: asked
         # unconditionally, a REPLAN reply spent 29 of its 147 output tokens on a box it could
         # not use.
+        trace = self._call_trace(question, page_key=page_key, frame_path=frame_path)
+        self._call_contexts[request_id] = trace
+        if trace["trace_id"] not in self._observed_traces:
+            self._trace_stage("UNKNOWN_OBSERVED", trace)
+            self._observed_traces.add(trace["trace_id"])
+        self._trace_stage("VENUS_CALLED", trace, element_count=len(elements))
         call = self.client.ask_json(
             system=SYSTEM_PROMPT, user=render_packet(packet), purpose="ui_plan",
             element_count=len(elements), image_path=frame_path or None,
@@ -877,8 +886,11 @@ class ManagedAdvisor:
         budget_row = budget_report.to_row()
         budget_row["actual_prompt_tokens"] = int(call.prompt_tokens)
         if not call.ok:
-            self.last_outcome = {"decision": "", "error": call.error}
+            self.last_outcome = {**trace, "decision": "", "error": call.error}
+            self._trace_stage("VENUS_CALL_FAILED", trace, error=call.error,
+                              latency_ms=call.latency_ms)
             self.ledger.append({
+                **trace,
                 "recorded_at": datetime.now(timezone.utc).isoformat(),
                 "source": SOURCE_LOCAL_GUI_MODEL, "page_key": page_key,
                 "goal": str(getattr(question, "goal", "") or ""),
@@ -889,8 +901,11 @@ class ManagedAdvisor:
 
         parsed = parse_plan(call.text, elements=elements, actions=OFFERED_ACTIONS)
         if not parsed.ok:
-            self.last_outcome = {"decision": "", "error": parsed.error}
+            self.last_outcome = {**trace, "decision": "", "error": parsed.error}
+            self._trace_stage("VENUS_PROPOSAL_REJECTED", trace, error=parsed.error,
+                              latency_ms=call.latency_ms)
             self.ledger.append({
+                **trace,
                 "recorded_at": datetime.now(timezone.utc).isoformat(),
                 "source": SOURCE_LOCAL_GUI_MODEL, "page_key": page_key,
                 "goal": str(getattr(question, "goal", "") or ""),
@@ -902,13 +917,20 @@ class ManagedAdvisor:
         plan = parsed.plan
         assert plan is not None
         self.last_outcome = {
+            **trace,
             "decision": plan.decision, "action_type": plan.action_type,
             "target_element_id": plan.target_element_id, "target_text": plan.target_text,
             "reason": plan.reason,
         }
-        row = plan.to_row(page_key=page_key)
+        row = {**trace, **plan.to_row(page_key=page_key)}
+        row["requested_semantic_target"] = trace["semantic_target"]
         row["budget"] = budget_row
         self.ledger.append(row)
+        self._trace_stage("VENUS_PROPOSED", trace, decision=plan.decision,
+                          action_type=plan.action_type,
+                          target_element_id=plan.target_element_id,
+                          proposed_semantic_target=plan.semantic_target or plan.target_text,
+                          latency_ms=call.latency_ms)
         if plan.decision != "EXECUTE":
             # OBSERVE / REPLAN / COMPLETE / DEFER / BLOCKED all mean the same thing to the
             # executor: nothing is tapped this step.  Section 8 is explicit that COMPLETE is
@@ -916,6 +938,7 @@ class ManagedAdvisor:
             # verifier owns the verdict.
             if plan.decision == "COMPLETE":
                 self.ledger.append({
+                    **trace,
                     "recorded_at": datetime.now(timezone.utc).isoformat(),
                     "source": SOURCE_LOCAL_GUI_MODEL, "page_key": page_key, "goal": plan.goal,
                     "decision": "COMPLETE_CLAIM", "verified": False,
@@ -934,8 +957,10 @@ class ManagedAdvisor:
             page_key=page_key, request_id=request_id, raw=parsed.raw,
         )
         if not contract_verdict.ok:
-            self.last_outcome = {"decision": plan.decision, "error": contract_verdict.code}
+            self.last_outcome = {**trace, "decision": plan.decision,
+                                 "error": contract_verdict.code}
             self.ledger.append({
+                **trace,
                 "recorded_at": datetime.now(timezone.utc).isoformat(),
                 "source": SOURCE_LOCAL_GUI_MODEL, "page_key": page_key, "goal": plan.goal,
                 "decision": plan.decision, "error": contract_verdict.code,
@@ -1003,7 +1028,9 @@ class ManagedAdvisor:
             "reason": str((evidence or {}).get("reason") or "")[:160],
         }
         self.ledger.append({
+            **getattr(self, "_call_contexts", {}).get(str(request_id), {}),
             "record": "outcome",
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
             "source": SOURCE_LOCAL_GUI_MODEL,
             "request_id": str(request_id),
             "verifier_ok": None if verifier_ok is None else bool(verifier_ok),
@@ -1011,6 +1038,13 @@ class ManagedAdvisor:
             "skill": str(skill),
             "verifier_evidence": dict(evidence or {}),
         })
+        trace = getattr(self, "_call_contexts", {}).get(str(request_id))
+        if trace is not None:
+            stage = ("VERIFIER_SUCCESS" if verifier_ok is True else
+                     "VERIFIER_FAILED" if verifier_ok is False else "VERIFIER_PENDING")
+            self._trace_stage(stage, trace, skill=str(skill), result=str(result),
+                              verifier_ok=verifier_ok,
+                              verifier_evidence=dict(evidence or {}))
 
     # ----------------------------------------------------------- session memory
     def note_step(
@@ -1117,6 +1151,49 @@ class ManagedAdvisor:
             self.contract_ledger = ledger
         return ledger
 
+    def _call_trace(self, question: Any, *, page_key: str,
+                    frame_path: str) -> dict[str, Any]:
+        """Join one real call to its UNKNOWN; geometry never enters this identity."""
+        semantic = str(getattr(question, "semantic_target", "") or "")
+        state = str(getattr(question, "relevant_state_signature", "") or "")
+        goal = str(getattr(question, "goal", "") or "")
+        identity = ui_venus_online.unknown_state_identity(
+            goal_id=goal, page=page_key, semantic=semantic, state_signature=state)
+        digest = str(getattr(question, "frame_digest", "") or "")
+        frame_id = str(getattr(question, "frame_id", "") or
+                       (f"frame_{digest}" if digest else ""))
+        frame = ui_venus_online.FrameIdentity.of(frame_path, frame_id=frame_id)
+        return {
+            "mode": ui_venus_online.MODE_ONLINE,
+            "trace_id": str(getattr(question, "trace_id", "") or
+                            f"unknown_{uuid4().hex}"),
+            "parent_trace_id": str(getattr(question, "parent_trace_id", "") or ""),
+            "call_id": f"venus_{uuid4().hex}",
+            "request_id": str(getattr(question, "request_id", "") or ""),
+            "unknown_identity": identity,
+            "role_id": str(getattr(question, "character", "") or
+                           getattr(question, "role_id", "") or ""),
+            "role_session_id": str(getattr(question, "role_session_id", "") or ""),
+            "goal_id": goal,
+            "page": page_key,
+            "page_key": page_key,
+            "semantic_target": semantic,
+            "relevant_state_signature": state,
+            "episode_id": str(getattr(question, "episode_id", "") or ""),
+            "frame_id": frame.frame_id,
+            "frame_hash": frame.frame_hash,
+        }
+
+    def _trace_stage(self, stage: str, trace: Mapping[str, Any], **details: Any) -> None:
+        self._online_ledger().append({
+            **dict(trace), **details,
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
+            "source": SOURCE_LOCAL_GUI_MODEL,
+            "record": "learning_trace",
+            "stage": stage,
+            "layer": stage.lower(),
+        })
+
     def _contract_gate(
         self, *, plan: Plan, question: Any, elements: list[dict[str, Any]],
         frame_path: str, page_key: str, request_id: str, raw: str,
@@ -1130,7 +1207,8 @@ class ManagedAdvisor:
         from . import ui_venus_contract as contract
 
         digest = str(getattr(question, "frame_digest", "") or "")
-        frame_id = f"frame_{digest}" if digest else ""
+        frame_id = str(getattr(question, "frame_id", "") or
+                       (f"frame_{digest}" if digest else ""))
         screenshot = (
             ui_venus_online.FrameIdentity.of(frame_path, frame_id=frame_id)
             if frame_path else ui_venus_online.FrameIdentity()
@@ -1167,6 +1245,7 @@ class ManagedAdvisor:
         packet = ui_venus_online.UIVenusContextPacketV1(
             identity=ui_venus_online.Identity(
                 role_id=role_id,
+                role_session_id=str(getattr(question, "role_session_id", "") or ""),
                 goal_id=str(getattr(question, "goal", "") or ""),
             ),
             frame=ui_venus_online.FrameRef(
@@ -1194,13 +1273,18 @@ class ManagedAdvisor:
         )
         verdict = ui_venus_online.validate_action(action, packet=packet)
         ledger = self._online_ledger()
+        trace = getattr(self, "_call_contexts", {}).get(request_id)
+        trace_id = str((trace or {}).get("trace_id") or request_id)
         if verdict.ok:
-            ledger.record_action(action, verdict=verdict, trace_id=request_id,
+            ledger.record_action(action, verdict=verdict, trace_id=trace_id,
                                  page_key=page_key, goal_id=packet.identity.goal_id)
         else:
             ledger.record_refusal(code=verdict.code, stage=verdict.stage, detail=verdict.detail,
-                                  trace_id=request_id, page_key=page_key,
+                                  trace_id=trace_id, page_key=page_key,
                                   goal_id=packet.identity.goal_id, raw=raw)
+        if trace is not None:
+            self._trace_stage("CONTRACT_ALLOWED" if verdict.ok else "CONTRACT_REJECTED",
+                              trace, verdict=verdict.as_row(), admitted=verdict.ok)
         return verdict
 
     def _advice_for(self, plan: Plan, question: Any, elements: list[dict[str, Any]],

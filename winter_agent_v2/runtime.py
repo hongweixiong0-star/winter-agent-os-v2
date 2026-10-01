@@ -992,7 +992,15 @@ class LiveRuntime:
                 self._stamina_route(goal,self._gate())
             if not self._policy_allows(goal.goal_id):
                 continue
-            blocked = self._gate().blocks(goal)
+            gate = self._gate()
+            validation_goal = str(getattr(self, 'validation_scope', {}).get('goal_id') or '')
+            lease = getattr(self, 'device_lease', None)
+            held = lease.holder() if lease is not None else None
+            if (self.execution_mode == 'DEVELOPMENT_VALIDATION' and validation_goal
+                    and held is not None and self._owns_the_lease(held)):
+                blocked = gate.blocks(goal, validation_goal_id=validation_goal)
+            else:
+                blocked = gate.blocks(goal)
             if blocked is not None and goal.goal_id == 'AVOID_STAMINA_WASTE' and blocked.capability == 'SPEND_STAMINA_ON_BEAST' and (goal.evidence or {}).get('stamina_sink') in {'INTEL','GIANT_BEAST'}:
                 blocked = None  # a failed solo-beast path cannot veto another stamina sink
             if blocked is not None:
@@ -2258,6 +2266,17 @@ class LiveRuntime:
                 self.task_completion_store.record_episode(episode)
             except Exception:  # noqa: BLE001 - a derived board cannot stop production
                 pass
+        learn_context = getattr(self, "_advised_learn_context", None) or {}
+        if learn_context and execution is not None and execution.executed:
+            self._learning_event("MAA_EXECUTED" if execution.backend == "MAA" else "INPUT_SENT",
+                learn_context, action_backend=execution.backend, skill_id=decision.skill)
+            if verification is not None:
+                self._learning_event("VERIFIER_SUCCESS" if verification.ok else "VERIFIER_FAILED",
+                    learn_context, verifier_reason=verification.reason,
+                    verifier_evidence=dict(verification.evidence))
+                if verification.ok and observed_change not in {"NONE", "UNKNOWN", ""}:
+                    self._learning_event("VERIFIER_PROGRESS", learn_context,
+                        observed_change=observed_change)
         self._settle_advised_step(decision, verification, result)
         # ...and the same step again, for the durable record §11/§12 ask for.  Its own call for
         # the same reason the three above have their own: a step that has already been issued and
@@ -2519,6 +2538,28 @@ class LiveRuntime:
         return Path(__file__).resolve().parents[1] / ui_venus_repair.REPAIR_LEDGER_PATH
 
 
+    def _learning_event(self, stage: str, context: Mapping[str, Any], **evidence: Any) -> None:
+        """Append causal evidence to the existing online ledger; never fail gameplay."""
+        if not context.get("trace_id"):
+            return
+        try:
+            from .ui_venus_online import OnlineLedger, unknown_state_identity
+            store = getattr(self, "episode_store", None)
+            root = Path(store.path).resolve().parents[1] if store else Path(__file__).resolve().parents[1]
+            OnlineLedger(root / "learning/ui_venus_online.jsonl").append({
+                "recorded_at": datetime.now(timezone.utc).isoformat(), "stage": stage,
+                "trace_id": context["trace_id"], "parent_trace_id": context.get("parent_trace_id", ""),
+                "call_id": context.get("call_id", ""), "role_id": context.get("role_id", ""),
+                "goal_id": context.get("goal", ""), "page_key": context.get("page_key", ""),
+                "frame_id": context.get("frame_id", ""), "frame_hash": context.get("frame_hash", ""),
+                "episode_id": context.get("episode_id", ""), "model_used": context.get("model_used"),
+                "unknown_identity": unknown_state_identity(goal_id=str(context.get("goal", "")),
+                    page=str(context.get("page_key", "")), semantic=str(context.get("semantic", "")),
+                    state_signature=str(context.get("relevant_state_signature", ""))), **evidence,
+            })
+        except (OSError, TypeError, ValueError):
+            pass
+
     def _note_learned_step(self, *, decision: Any, verification: Any, result: str,
                            observed_change: str, after: Any, step_id: int = 0) -> None:
         """File the step the model drove, if the verifier passed it (§11/§12).
@@ -2576,6 +2617,14 @@ class LiveRuntime:
                 actual_result=str(observed_change or ""),
                 attempts_before_success=int(context.get("attempts") or 0),
                 source_frames=[str(context.get("frame") or "")],
+                trace_id=str(context.get("trace_id") or ""),
+                parent_trace_id=str(context.get("parent_trace_id") or ""),
+                frame_id=str(context.get("frame_id") or ""),
+                frame_hash=str(context.get("frame_hash") or ""),
+                relevant_state_signature=str(context.get("relevant_state_signature") or ""),
+                verifier_evidence=dict(getattr(verification, "evidence", {}) or {}),
+                model_used=context.get("model_used"),
+                reused_from_trace_id=str(context.get("reused_from_trace_id") or ""),
                 ledger=getattr(self, "learned_ledger", None) or unknown_learning.VerifiedStepLedger(
                     Path(__file__).resolve().parents[1] / unknown_learning.LEARNED_STEPS_PATH
                 ),
@@ -2584,6 +2633,10 @@ class LiveRuntime:
             # action it has just learned.  That would be §15's defect reproduced inside a single
             # run, which is the one place it would be hardest to notice.
             self._learned_cache = None
+            self._learning_event("CANDIDATE_STEP_CREATED", context)
+            if context.get("model_used") is False:
+                self._learning_event("SECOND_VERIFIER_SUCCESS", context,
+                    verifier_evidence=dict(getattr(verification, "evidence", {}) or {}))
             print(
                 f"[learned] verified step filed: {step.semantic_target or step.action_type} "
                 f"on {step.page_before} -> {step.page_after or '(no page change)'} "
@@ -5489,6 +5542,20 @@ class LiveRuntime:
                 "相关的普通低风险控件在哪里？请给出定位依据与 proposed_action。"
             ),
         )
+        # Request files historically identify a page, not an encounter. Keep that
+        # compatibility key and bind this execution attempt to its own causal trace.
+        import uuid
+        from .ui_venus_online import unknown_state_identity
+        request.trace_id = f"unknown_{uuid.uuid4().hex}"
+        request.parent_trace_id = str(getattr(self, "trace_id", "") or "")
+        request.role_session_id = str(getattr(self, "role_session_id", "")
+                                      or getattr(getattr(self, "capture_dir", None), "name", ""))
+        request.episode_id = str(getattr(getattr(self, "capture_dir", None), "name", "") or "")
+        request.frame_id = f"frame_{request.frame_digest}"
+        request.semantic_target = str(getattr(self, "_unknown_semantic_target", "") or "")
+        request.relevant_state_signature = situation
+        request.unknown_identity = unknown_state_identity(goal_id=goal, page=key,
+            semantic=request.semantic_target, state_signature=situation)
         # The question travels to whoever is answering it, not just its id.  A local planner
         # plans from the question's own evidence (the page, the goal, the OCR this frame
         # produced), so it needs the record; the retired answer-file reader was happy with the
@@ -5625,6 +5692,16 @@ class LiveRuntime:
         # ``CLICK_ELEMENT`` and that is not a placeholder: this method's whole contract is "return
         # a point to tap", so any other name would be describing a mechanism that does not exist.
         self._advised_learn_context = {
+            "request_id": request.request_id,
+            "trace_id": request.trace_id,
+            "parent_trace_id": request.parent_trace_id,
+            "frame_id": request.frame_id,
+            "frame_hash": request.frame_digest,
+            "role_id": request.character,
+            "episode_id": request.episode_id,
+            "call_id": str(getattr(advisor, "last_outcome", {}).get("call_id") or ""),
+            "relevant_state_signature": situation,
+            "model_used": True,
             "page_key": key,
             "goal": goal,
             "semantic": semantic,
@@ -5643,8 +5720,12 @@ class LiveRuntime:
                 "ocr_anchor": str(region.get("text") or advice.target_semantics or ""),
                 "region_basis": str(region.get("basis") or ""),
                 "control_type": str(advice.action_kind or ""),
+                "template_path": str((region.get("detail") or {}).get("template_path") or ""),
             },
         }
+        self._learning_event("GROUNDING_VALID", self._advised_learn_context,
+            grounding_basis="CURRENT_FRAME_VERIFIED_REGION", locator_basis=basis)
+        self._learning_event("RISK_GATE_ALLOWED", self._advised_learn_context)
         self._ordinary_tried.add((page, semantic))
         self._ordinary_attempts += 1
         self._ordinary_last = {
@@ -5768,12 +5849,29 @@ class LiveRuntime:
             if str(row.get("risk_route") or "") == unknown_learning.ROUTE_BLOCKED:
                 continue
             semantic = str(row.get("semantic_target") or "")
+            recorded_state = str(row.get("relevant_state_signature") or "")
+            if recorded_state and recorded_state != self._l1_state(frame, title):
+                continue
             word = page_knowledge.word_from_control(semantic)
-            if not word or word == semantic:
+            visual = row.get("visual_evidence") or {}
+            template_path = str(visual.get("template_path") or "")
+            if (not word or word == semantic) and not template_path:
                 continue
             if (page, word) in self._ordinary_tried:
                 continue
-            hit = find_printed_words(frame_path, (word,), ocr)
+            hit = find_printed_words(frame_path, (word,), ocr) if word and word != semantic else None
+            if hit is None and template_path:
+                # Search the current complete frame with the existing matcher.
+                # The durable step stores a template identity, never a click point.
+                matches = ui_collection.template_regions(frame_path, [{
+                    "template_path": template_path, "semantic": semantic,
+                    "roi_norm": {"x_norm": 0, "y_norm": 0, "w_norm": 1, "h_norm": 1},
+                }], min_score=0.9)
+                if len(matches) == 1:
+                    box = matches[0]["box_norm"]
+                    hit = {"center_norm": (box["x_norm"] + box["w_norm"] / 2,
+                        box["y_norm"] + box["h_norm"] / 2), "box_norm": box,
+                        "confidence": matches[0]["score"]}
             if hit is None:
                 continue
             point = (float(hit["center_norm"][0]), float(hit["center_norm"][1]))
@@ -5809,6 +5907,15 @@ class LiveRuntime:
             # A reuse has no model settlement, but its own verifier result must
             # strengthen (or reject) the learned step just like the first encounter.
             self._advised_learn_context = {
+                "trace_id": str(row.get("trace_id") or ""),
+                "parent_trace_id": str(row.get("parent_trace_id") or ""),
+                "reused_from_trace_id": str(row.get("trace_id") or ""),
+                "role_id": self._calendar_role_id(),
+                "episode_id": str(getattr(getattr(self, "capture_dir", None), "name", "") or ""),
+                "frame_id": f"frame_{unknown_advisor.frame_digest(frame_path)}",
+                "frame_hash": unknown_advisor.frame_digest(frame_path),
+                "relevant_state_signature": self._l1_state(frame, title),
+                "model_used": False,
                 "request_id": str(row.get("request_id") or ""),
                 "page_key": key,
                 "goal": str(goal or ""),
@@ -5818,8 +5925,10 @@ class LiveRuntime:
                 "expected_result": str(row.get("expected_result") or ""),
                 "frame": str(frame_path),
                 "attempts": 0,
-                "visual_evidence": {"reader": "LEARNED_VERIFIED_STEP", "ocr_anchor": word},
+                "visual_evidence": {"reader": "LEARNED_VERIFIED_STEP", "ocr_anchor": word,
+                                    "template_path": template_path},
             }
+            self._learning_event("CANDIDATE_STEP_REUSED", self._advised_learn_context)
             self._note_printed(
                 semantic,
                 key,
