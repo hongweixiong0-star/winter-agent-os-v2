@@ -729,13 +729,25 @@ class CapabilityGate:
         _SKILL_CAPABILITY_CACHE[skill] = resolved
         return resolved
 
-    def blocks(self, goal: GoalState, *, now: datetime | None = None) -> Deferral | None:
-        """Why this goal must step aside, or ``None`` when it may be selected."""
+    def blocks(
+        self, goal: GoalState, *, now: datetime | None = None,
+        validation_goal_id: str = "",
+    ) -> Deferral | None:
+        """Why this goal must step aside, or ``None`` when it may be selected.
+
+        A caller owning a development validation lease may explicitly probe its
+        exact Goal despite historical no-progress evidence. This only lifts that
+        local retry cooldown; capability blockers, pending reloads and the normal
+        runtime authorization checks still apply. Production passes no Goal ID.
+        """
         moment = now or datetime.now(timezone.utc)
         found = self._capability_deferral(goal.goal_id)
         if found is None:
             found = self._no_progress_deferral(goal, moment)
             if found is None:
+                return None
+            if (validation_goal_id and goal.goal_id == validation_goal_id
+                    and not self.reload_pending):
                 return None
             window = self.no_progress_probe_minutes
         else:
