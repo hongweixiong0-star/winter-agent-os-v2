@@ -908,6 +908,14 @@ class LiveRuntime:
         requested_route = scope.get('route') or self.validation_focus_route
         if scope.get('goal_id'):
             goals = [g for g in goals if g.goal_id == scope['goal_id']]
+            if (not goals and requested_route == 'TRAIN'
+                    and scope['goal_id'] in {'SHIELD_CAMP_TRAINING', 'LANCER_CAMP_TRAINING', 'MARKSMAN_CAMP_TRAINING'}):
+                # The panel supplies the first queue observation. An exact camp
+                # probe must be able to reach it without authorizing training.
+                from .goal_library import GoalState, GoalStatus
+                goals = [GoalState(scope['goal_id'], GoalStatus.READY,
+                    available_skills=('OPEN_QUICK_PANEL',), distance=1.0,
+                    evidence={'observation_only': True, 'source': 'DEVELOPMENT_FRESH_READ'})]
         if scope.get('capability_id') or scope.get('target_skill'):
             from .goal_library import GOAL_CAPABILITY_MAP
             try:
