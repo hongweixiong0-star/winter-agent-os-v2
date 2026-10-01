@@ -2806,3 +2806,45 @@ adb 前台变成 `com.gof.china/DDUnityLaunchActivity`（自愈执行了 `LAUNCH
 `.cmd` 打印「面板已在运行，已切换到它的窗口。」、**exit 0**、`iconic=False`、
 `rect=(156,101,1532,960)`。`test_startup_semantics` 61 项 + 组合 **294 passed / 14 subtests**；
 变异验证（裸 `return 0` / 去掉忙碌分支 / 还原 `SMTO_ABORTIFHUNG`）各自**恰好红一项**。
+
+## ⚠ 审计必须测「Scheduler 看到的板」，不是「库直接吐出的板」（2026-10-01 第三轮）
+
+**我犯的错**：写 `tools/full_auto_coverage_audit.py` 时直接调 `GoalLibrary.discover()`，
+得出 `BOARD_ONLY_NO_SKILL = 0`，据此差点宣布「缺 skill 已经不是瓶颈」。
+**真相**：runtime **从不**用裸板 —— `runtime._project_capability_discovery`（`runtime.py:1957`）
+先调 `capability_bootstrap.project_runtime_discovery` 投影一遍，**投影才决定 UNKNOWN 能否
+变成安全的同目标发现候选**。**测裸板 = 仪器指错对象，且它与自己一致，所以不会报错。**
+这与本项目反复出现的「两条入口互相掩盖」是同一族：**先问「运行时真的用这个吗」**。
+
+**修正后**（`safe_steps_by_goal` 故意留空 = 最坏情况：目标已知、页面未知、从未定位过入口控件）：
+
+```
+MISSING_NAVIGATION   273   ← 真正的墙
+MISSING_VERIFIER     115
+MISSING_OBSERVATION   47
+MISSING_SKILL          2   ← 「缺 skill 就排除」只占 2 次
+```
+
+**这重排了工作**：操作者指令针对的前提（「没有 Skill 所以 AUTO 完全不管」）在当前代码里
+**几乎不成立**；真正的墙是**导航**。`USE_FREE_ARENA_ATTEMPTS`、`LABYRINTH_DAILY`、
+`ALLIANCE_TIMED_EVENTS` 与 19 个 `SCHEDULED_*` **都在板上、有价格、可发现**，但
+**不在 `GOAL_ROUTES`**（`ROUTE_DOMAINS` 里也没有 `ARENA`）⇒ `route_for()` 返回 `None`
+⇒ bootstrap 只能说 `MISSING_NAVIGATION`。**它们不是被拒绝，是无处可去。**
+
+**两个结构性事实（本轮实测）**：
+- `goal_utility.rank()` 会 `continue` 掉 `available_skills` 为空的 Goal（该模块第 515 行）；
+- `GoalStatus.UNKNOWN ∈ NOT_ACTIONABLE` ⇒ `GoalState.priority = -inf` ⇒ 21 个 Goal 永久从
+  Scheduler 消失（含 `USE_FREE_ARENA_ATTEMPTS`）。
+
+**已存在的机制（不要重建）**：`capability_bootstrap.project_runtime_discovery` 已完整实现
+§五/§十二/§十三/§十七 —— `OBSERVATION_GAP`/`NAVIGATION_GAP`/`CAPABILITY_GAP` 分类、
+budget（`max_model_calls=2` / `max_navigation_steps=4` / `cooldown_after_failure_seconds=300`）、
+`bootstrap_participation_authorized=False`（禁止消耗）、危险动作（ATTACK/RALLY/TRAIN/PURCHASE/
+RECALL…）一律拒绝，且有 `tests/test_runtime_capability_discovery_lane.py` **18 项**保护。
+**它已接线**（`runtime.py:1957` / `8179` / `8889`）。**缺的不是机制，是入口知识。**
+`learning/capability_bootstrap/runtime_discovery.json` **从未生成** ⇒ 真机上**从未发生过一次
+bootstrap 尝试**（该文件只在 `_mark_bootstrap_attempt` 时写）。
+
+**教训**：① 写测量工具前先确认**运行时用哪个对象**；②「机制存在」≠「机制会触发」——
+要问「哪一步会让它产生第一个候选」；③ `MISSING_*` 分类词必须**直接用运行时的原话**
+（`capability_bootstrap` 的字符串），自造同义词会让审计与运行时各说各话却各自自洽。
