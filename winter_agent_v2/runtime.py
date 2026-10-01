@@ -5418,7 +5418,10 @@ class LiveRuntime:
         """
         advisor = getattr(self, "_advisor", None)
         key = page_knowledge.page_key(page, title)
-        goal = str(getattr(getattr(self, "brain", None), "current_goal", "") or "")
+        brain = getattr(self, "brain", None)
+        goal = str(getattr(self, "_committed_goal", "")
+                   or getattr(brain, "goal_id", "")
+                   or getattr(brain, "current_goal", "") or "")
         # The learned attempt is placed here, not at the top of the method, because it needs the
         # same ``goal`` the question is filed under -- a learned action for one goal is not
         # knowledge about another.  And it is placed **before** the ``advisor is None`` return
@@ -5445,7 +5448,6 @@ class LiveRuntime:
         # character are read out of it, and ``to_dict`` on a whole WorldState is not free on a path
         # that runs on every step of an unnamed screen.
         observed = frame.to_dict()
-        player = observed.get("player")
         ocr = self._ocr_service()
         regions, boxes, texts, template_note = self._advice_evidence(page, frame_path, ocr)
         request = unknown_advisor.build_request(
@@ -5460,7 +5462,9 @@ class LiveRuntime:
             entry_page=getattr(self, "_last_known_label", ""),
             world_state=observed,
             situation=situation,
-            character=str(player.get("name")) if isinstance(player, Mapping) else "",
+            # The HUD's name is not role identity. Unknown remains empty until
+            # the same role-scoped live identity guard used by scheduling confirms it.
+            character=self._calendar_role_id(),
             template_match=template_note,
             ledger_match="; ".join(
                 f"{control}->{row.after_page}"
