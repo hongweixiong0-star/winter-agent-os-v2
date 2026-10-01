@@ -33,6 +33,7 @@ preparation on a wrong minute.
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -42,6 +43,9 @@ from typing import Any, Mapping
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE_PATH = ROOT / "learning/timed_event_schedule.json"
+DEFAULT_PATH = STATE_PATH
+GLOBAL_CALENDAR_SCOPE = "UNSCOPED_CLIENT"
+CALENDAR_SCAN_INTERVAL_SECONDS = 24 * 60 * 60
 
 
 class ReadinessPhase(str, Enum):
@@ -296,7 +300,10 @@ def save(schedules: Mapping[str, RoleSchedule], path: Path | str | None = None) 
     """Write the schedule atomically, so a crash cannot leave a half-written clock."""
     target = Path(path) if path is not None else STATE_PATH
     target.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
+    # Calendar observations share this existing store. Updating reservations
+    # must preserve observations (and other source metadata), not erase them.
+    payload = _schedule_payload(target)
+    payload.update({
         "schema_version": "1.1",
         "_read_me": (
             "按角色的活动预约时钟与实时开放观测分开保存。reserved_start 仅来自可信时间来源；"
@@ -304,7 +311,20 @@ def save(schedules: Mapping[str, RoleSchedule], path: Path | str | None = None) 
         ),
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "roles": [schedule.as_json() for schedule in schedules.values()],
-    }
+    })
+    return _write_schedule_payload(payload, target)
+
+
+def _schedule_payload(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _write_schedule_payload(payload: dict[str, Any], target: Path) -> Path:
+    target.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(
         "w", dir=target.parent, delete=False, suffix=".tmp", encoding="utf-8"
     ) as handle:
@@ -312,6 +332,225 @@ def save(schedules: Mapping[str, RoleSchedule], path: Path | str | None = None) 
         temp_name = handle.name
     Path(temp_name).replace(target)
     return target
+
+
+def _calendar_scope(role_id: str) -> str:
+    return str(role_id or "").strip() or GLOBAL_CALENDAR_SCOPE
+
+
+def _calendar_moment(value: datetime | str | None) -> datetime | None:
+    if isinstance(value, datetime):
+        return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+    if not value:
+        return None
+    try:
+        moment = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        return moment if moment.tzinfo is not None else moment.replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def latest_calendar_snapshot(
+    role_id: str, path: Path | str | None = None, *, kind: str = "CALENDAR_GRID",
+) -> dict[str, Any] | None:
+    """Read only this role's observation; unconfirmed identity has its own bucket."""
+    payload = _schedule_payload(Path(path) if path is not None else STATE_PATH)
+    scopes = payload.get("calendar_observations") or {}
+    scope = scopes.get(_calendar_scope(role_id), {}) if isinstance(scopes, dict) else {}
+    result = scope.get(kind) if isinstance(scope, dict) else None
+    return deepcopy(result) if isinstance(result, dict) else None
+
+
+def calendar_scan_pending(role_id: str, path: Path | str | None = None) -> bool:
+    grid = latest_calendar_snapshot(role_id, path)
+    return bool(grid and any(
+        isinstance(row, dict) and row.get("tap_norm") and row.get("details_observed") is not True
+        for row in grid.get("entries") or ()
+    ))
+
+
+def calendar_scan_due(
+    role_id: str, *, now: datetime | None = None, path: Path | str | None = None,
+    interval_seconds: float = CALENDAR_SCAN_INTERVAL_SECONDS,
+) -> bool:
+    """A completed read stays fresh for a day; an interrupted scan can continue."""
+    grid = latest_calendar_snapshot(role_id, path)
+    observed = _calendar_moment((grid or {}).get("observed_at"))
+    moment = _calendar_moment(now) or datetime.now(timezone.utc)
+    if observed is None or observed > moment + timedelta(seconds=5):
+        return True
+    return calendar_scan_pending(role_id, path) or (moment - observed).total_seconds() >= interval_seconds
+
+
+def _calendar_row_days(row: Mapping[str, Any]) -> tuple[str, ...]:
+    values = row.get("calendar_dates_raw") or (
+        row.get("calendar_date_raw"), row.get("calendar_end_date_raw"),
+    )
+    return tuple(str(value) for value in values if value)
+
+
+def _prior_calendar_row(row: Mapping[str, Any], old_rows: list[dict]) -> dict | None:
+    key = row.get("occurrence_key")
+    exact = [old for old in old_rows if key and old.get("occurrence_key") == key]
+    if len(exact) == 1:
+        return exact[0]
+    # Do not carry a past occurrence's outcome just because its event name
+    # repeats. Date evidence is required when OCR changes an identifier.
+    days = _calendar_row_days(row)
+    if not days:
+        return None
+    name = str(row.get("display_name") or "").strip()
+    matching = [old for old in old_rows if _calendar_row_days(old) == days and (
+        old.get("event_id") == row.get("event_id")
+        or (name and name in {
+            str(old.get("display_name") or "").strip(),
+            str((old.get("detail_observation") or {}).get("display_name") or "").strip(),
+        })
+    )]
+    return matching[0] if len(matching) == 1 else None
+
+
+def annotate_calendar_observation(
+    role_id: str, observation: Mapping[str, Any], path: Path | str | None = None,
+) -> dict[str, Any]:
+    """Merge inspected status into fresh rows without importing saved geometry."""
+    result = deepcopy(dict(observation))
+    grid = latest_calendar_snapshot(role_id, path) or {}
+    old_rows = [row for row in grid.get("entries") or () if isinstance(row, dict)]
+    rows = [dict(row) for row in result.get("entries") or () if isinstance(row, Mapping)]
+    for row in rows:
+        old = _prior_calendar_row(row, old_rows)
+        if old:
+            row.update({key: deepcopy(old[key]) for key in (
+                "details_observed", "details_observed_at", "detail_evidence_ref", "detail_observation",
+            ) if key in old})
+    result["entries"] = rows
+    return result
+
+
+def calendar_next_entry(
+    role_id: str, current_entries: list[dict], path: Path | str | None = None,
+) -> dict[str, Any] | None:
+    """Choose only among current-frame entries; the store supplies no click point."""
+    reading = annotate_calendar_observation(role_id, {"entries": current_entries}, path)
+    return next((row for row in reading["entries"]
+                 if row.get("details_observed") is not True and row.get("tap_norm")
+                 and row.get("event_id")), None)
+
+
+def record_calendar_snapshot(
+    *, role_id: str, observation: Mapping[str, Any],
+    observed_at: datetime | str | None = None, evidence_ref: str | None = None,
+    path: Path | str | None = None,
+) -> dict[str, Any] | None:
+    """Persist raw calendar evidence without turning previews into battle clocks.
+
+    A detail/partial overlay cannot replace the last full grid. Detail success
+    is credited to one observed occurrence, never every same-name row or role.
+    This function leaves the existing ``roles`` reservations entirely intact.
+    """
+    if observation.get("recognized") is not True:
+        return None
+    target = Path(path) if path is not None else STATE_PATH
+    payload = _schedule_payload(target)
+    scopes = payload.get("calendar_observations")
+    if not isinstance(scopes, dict):
+        scopes = {}
+        payload["calendar_observations"] = scopes
+    scope_key = _calendar_scope(role_id)
+    scope = scopes.get(scope_key)
+    if not isinstance(scope, dict):
+        scope = {}
+        scopes[scope_key] = scope
+    moment = _calendar_moment(observed_at)
+    if observed_at is not None and moment is None:
+        return None
+    moment = moment or datetime.now(timezone.utc)
+    reading = deepcopy(dict(observation))
+    kind = str(reading.get("kind") or (
+        "CALENDAR_GRID" if "entries" in reading or "visible_dates_raw" in reading else "EVENT_DETAIL"
+    ))
+    if kind == "CALENDAR_GRID" and reading.get("details_visible") is True:
+        kind = "CALENDAR_GRID_OVERLAY"
+    previous = _calendar_moment((scope.get(kind) or {}).get("observed_at"))
+    if previous is not None and moment < previous:
+        return deepcopy(scope[kind])
+    snapshot = {
+        **reading,
+        "kind": kind, "scope_key": scope_key,
+        "scope": "ROLE" if role_id else GLOBAL_CALENDAR_SCOPE,
+        "role_id": str(role_id) if role_id else None,
+        "observed_at": moment.isoformat(), "evidence_ref": evidence_ref,
+        "source": str(reading.get("source") or "UNKNOWN"),
+        "observation": reading,
+    }
+    grid = scope.get("CALENDAR_GRID") or {}
+    old_rows = [row for row in grid.get("entries") or () if isinstance(row, dict)]
+    if kind == "CALENDAR_GRID":
+        rows = annotate_calendar_observation(role_id, reading, target)["entries"]
+        snapshot["entries"] = rows
+        scope["detail_return"] = {"pending": False, "observed_at": moment.isoformat(),
+                                   "reason": "fresh_full_calendar_grid", "evidence_ref": evidence_ref}
+    elif kind == "EVENT_DETAIL":
+        occurrence = str(reading.get("matched_occurrence_key") or "")
+        event_id = str(reading.get("matched_event_id") or reading.get("event_id") or "")
+        matched = next((row for row in old_rows if occurrence
+                        and row.get("occurrence_key") == occurrence), None)
+        if matched is None and not occurrence and event_id:
+            # The existing calendar Brain opens the first uninspected visible
+            # row; do not credit the second occurrence of that event as well.
+            matched = next((row for row in old_rows if row.get("event_id") == event_id
+                            and row.get("details_observed") is not True), None)
+        if matched is not None:
+            matched.update({"details_observed": True, "details_observed_at": moment.isoformat(),
+                            "detail_evidence_ref": evidence_ref, "detail_observation": reading})
+            snapshot["matched_occurrence_key"] = matched.get("occurrence_key")
+        if matched is not None or reading.get("calendar_origin") == "GRID_ENTRY":
+            scope["detail_return"] = {"pending": True, "observed_at": moment.isoformat(),
+                                       "evidence_ref": evidence_ref}
+    scope[kind] = snapshot
+    payload["updated_at"] = moment.isoformat()
+    _write_schedule_payload(payload, target)
+    return deepcopy(snapshot)
+
+
+def record_calendar_detail(**kwargs: Any) -> dict[str, Any] | None:
+    """The same store entry point, explicitly naming the already-read detail."""
+    observation = dict(kwargs.pop("observation"))
+    observation["kind"] = "EVENT_DETAIL"
+    return record_calendar_snapshot(observation=observation, **kwargs)
+
+
+def calendar_detail_return_pending(
+    role_id: str, path: Path | str | None = None, *, now: datetime | None = None,
+) -> bool:
+    """A recent opened detail needs a bounded return, not a permanent BACK goal."""
+    payload = _schedule_payload(Path(path) if path is not None else STATE_PATH)
+    state = (payload.get("calendar_observations") or {}).get(_calendar_scope(role_id), {}).get("detail_return", {})
+    observed = _calendar_moment(state.get("observed_at"))
+    moment = _calendar_moment(now) or datetime.now(timezone.utc)
+    return state.get("pending") is True and observed is not None and 0 <= (moment - observed).total_seconds() <= 1800
+
+
+def clear_calendar_detail_return_pending(
+    role_id: str, *, observed_at: datetime | str | None = None, reason: str,
+    evidence_ref: str | None = None, path: Path | str | None = None,
+) -> bool:
+    target = Path(path) if path is not None else STATE_PATH
+    payload = _schedule_payload(target)
+    scope = (payload.get("calendar_observations") or {}).get(_calendar_scope(role_id), {})
+    state = scope.get("detail_return") or {}
+    if state.get("pending") is not True:
+        return False
+    moment = _calendar_moment(observed_at) or datetime.now(timezone.utc)
+    prior = _calendar_moment(state.get("observed_at"))
+    if prior is not None and moment < prior:
+        return False
+    scope["detail_return"] = {"pending": False,
+        "observed_at": moment.isoformat(),
+        "reason": reason, "evidence_ref": evidence_ref}
+    _write_schedule_payload(payload, target)
+    return True
 
 
 def record_reservation(
