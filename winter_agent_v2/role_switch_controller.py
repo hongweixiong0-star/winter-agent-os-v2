@@ -622,15 +622,16 @@ class RoleSwitchController:
                 # left untouched. It can be retried after the next observation.
                 return None
             avatar = self.identify_current_role(path)
-            if avatar and avatar[0] == str(target.get("role_id") or ""):
-                return path
             if avatar and avatar[0] != str(target.get("role_id") or ""):
                 return None
             try:
                 world = self.vision.observe(path)
                 from .models import Page
 
-                if world.page is Page.HOME and world.popup is None:
+                # HOME can remain visible beneath the login fade/animation.
+                # Require the target avatar on this same frame before opening it.
+                if (avatar and avatar[0] == str(target.get("role_id") or "")
+                        and world.page is Page.HOME and world.popup is None):
                     return path
             except Exception:  # noqa: BLE001
                 pass

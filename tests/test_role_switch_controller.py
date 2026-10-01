@@ -208,6 +208,45 @@ def test_wait_for_target_home_closes_recharge_offer_before_accepting_role(tmp_pa
     assert closed == [offer]
 
 
+def test_target_home_waits_for_avatar_after_home_detected_under_login_fade(tmp_path, monkeypatch):
+    _store, controller = _role_switch_fixture(tmp_path)
+    fade = tmp_path / "login-fade.png"
+    home = tmp_path / "visible-home.png"
+    frames = iter((fade, home))
+    seen = []
+    monkeypatch.setattr(controller, "_capture", lambda _label: next(frames))
+    monkeypatch.setattr(controller, "_text", lambda _path: "")
+
+    def identity(path):
+        seen.append(Path(path))
+        return ("role-b", 0.99) if Path(path) == home else None
+
+    monkeypatch.setattr(controller, "identify_current_role", identity)
+    controller.sleeper = lambda _seconds: None
+    assert controller._wait_for_target_home(controller.roles["role-b"], timeout=1.0) == home
+    assert seen == [fade, home]
+
+
+def test_target_avatar_does_not_make_popup_frame_ready_for_profile_click(tmp_path, monkeypatch):
+    _store, controller = _role_switch_fixture(tmp_path)
+    popup = tmp_path / "popup.png"
+    home = tmp_path / "visible-home.png"
+    frames = iter((popup, home))
+    observed = []
+    monkeypatch.setattr(controller, "_capture", lambda _label: next(frames))
+    monkeypatch.setattr(controller, "_text", lambda _path: "")
+    monkeypatch.setattr(controller, "identify_current_role", lambda _path: ("role-b", 0.99))
+
+    def observe(path):
+        observed.append(Path(path))
+        return SimpleNamespace(page=Page.HOME, popup="unknown" if Path(path) == popup else None)
+
+    controller.vision = SimpleNamespace(observe=observe)
+    controller.sleeper = lambda _seconds: None
+    assert controller._wait_for_target_home(controller.roles["role-b"], timeout=1.0) == home
+    assert observed == [popup, home]
+
+
 def test_paid_offer_close_uses_live_purchase_popup_close_candidate(tmp_path, monkeypatch):
     _store, controller = _role_switch_fixture(tmp_path)
     candidate = tmp_path / "dataset/candidate/templates/btn_close__step_001_before__0.png"
