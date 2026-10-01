@@ -20,6 +20,7 @@ from . import goal_utility
 from . import ui_collection
 from . import page_knowledge
 from . import event_schedule
+from .capability_bootstrap import DEFAULT_BUDGET, project_runtime_discovery
 from . import unknown_advisor
 from . import skill_repair
 from . import unknown_learning
@@ -1047,6 +1048,12 @@ class LiveRuntime:
                 blocked = gate.blocks(goal, validation_goal_id=validation_goal)
             else:
                 blocked = gate.blocks(goal)
+            if ((goal.evidence or {}).get("bootstrap_observation_only") is True
+                    and blocked is not None and blocked.state != "DEVELOPMENT_PENDING"
+                    and not gate.reload_pending):
+                # A capability gap still blocks ordinary execution, while this
+                # bounded projection can only observe or open a safe entry.
+                blocked = None
             if blocked is not None and goal.goal_id == 'AVOID_STAMINA_WASTE' and blocked.capability == 'SPEND_STAMINA_ON_BEAST' and (goal.evidence or {}).get('stamina_sink') in {'INTEL','GIANT_BEAST'}:
                 blocked = None  # a failed solo-beast path cannot veto another stamina sink
             if blocked is not None:
@@ -1313,6 +1320,7 @@ class LiveRuntime:
         example, a training Goal opening the research row). The concrete goal id is the
         authority for row ownership; clear both fields when the board has no runnable Goal.
         """
+        self._bootstrap_context = dict(getattr(best_goal, "evidence", {}) or {}) if best_goal is not None else {}
         if best_goal is None:
             changed = self.brain.current_goal is not None or bool(getattr(self.brain, "goal_id", ""))
             self.brain.current_goal = None
@@ -1737,6 +1745,199 @@ class LiveRuntime:
         # unhealthy device from making account switching mathematically impossible.
         return max(self.role_switch_cost, min(180.0, median_ms / 1000.0))
 
+    def _bootstrap_state(self):
+        """Cooldowns for observation attempts, not another task queue or WorldState."""
+        if not hasattr(self, "_bootstrap_cooldowns"):
+            path = getattr(self, "bootstrap_state_path", None)
+            self._bootstrap_cooldowns = {}
+            if path is None and getattr(self, "episode_store", None) is not None:
+                path = Path(self.episode_store.path).resolve().parent / "capability_bootstrap/runtime_discovery.json"
+                self.bootstrap_state_path = path
+            if path is not None:
+                try:
+                    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+                    self._bootstrap_cooldowns = {
+                        key: {"cooldown_until": value.get("cooldown_until")}
+                        for key, value in payload.items() if isinstance(value, dict)
+                        and value.get("cooldown_until")
+                    }
+                except (OSError, ValueError, TypeError):
+                    pass
+        return self._bootstrap_cooldowns
+
+    def _learning_window_open(self) -> bool:
+        """May this run spend one step preparing safe discovery while real work exists?
+
+        Operator directive 2026-10-01 §二十四: "让无人值守时间变成自动补能力时间".  The rule
+        this replaces -- *prepare discovery only when there is no known executable work at all*
+        (``if not known_work``) -- is correct about priority and, measured 2026-10-01, it never
+        fires in production: the board always has something runnable, so the element table was
+        never built, ``capability_bootstrap`` was never given a candidate step, and
+        ``learning/capability_bootstrap/runtime_discovery.json`` had never been written once in
+        the project's history.  The learning window was closed permanently and nothing said so.
+
+        One shot per process, not per step: preparing candidates costs a full-frame OCR and this
+        module's own rule is "do not widen OCR or call a model merely to prepare a coverage
+        report".  Note the flag is set *before* the answer is known -- a run that opens the window
+        and then finds nothing to offer does not get to pay for it on every subsequent step.
+
+        Everything that bounds the attempt downstream stays where it already is: one visit per
+        run and a 300 s cooldown come from ``capability_bootstrap``'s own budget (read here rather
+        than restated), and consumption, rally and purchase verbs are refused inside the
+        projection.  This function grants no permission; it only stops the door being welded shut.
+        """
+        if getattr(self, "_learning_window_used", False):
+            return False
+        self._learning_window_used = True
+        try:
+            state = self._bootstrap_state()
+        except Exception:  # noqa: BLE001 - an unreadable ledger must not open a window
+            return False
+        row = state.get("__run__") if isinstance(state, dict) else None
+        visits = int((row or {}).get("visits_this_run") or 0) if isinstance(row, dict) else 0
+        return visits < DEFAULT_BUDGET["max_bootstrap_visits_per_run"]
+
+    def _project_capability_discovery(self, goals, world, frame):
+        """Offer safe current-frame discovery to the existing Goal/Scheduler board."""
+        from .goal_library import GoalStatus
+        registry = getattr(self, "registry", None)
+        if registry is None:
+            return goals
+        role = self._calendar_role_id()
+        if not role or not frame or world.page in {Page.LOADING, Page.MAINTENANCE}:
+            return goals
+        from .ui_venus_online import FrameIdentity
+        try:
+            identity = FrameIdentity.of(Path(frame))
+        except (OSError, ValueError):
+            return goals
+        registered = {skill.id for skill in registry.all()
+                      if skill.state.value != "BLOCKED" and not skill.session_only}
+        enabled = {goal.goal_id for goal in goals if self._policy_allows(goal.goal_id)}
+        cooldowns = self._bootstrap_state()
+        known_work = any(
+            goal.goal_id in enabled and goal.status in {GoalStatus.READY, GoalStatus.DISCOVERED}
+            and route_for(goal.goal_id) and goal.goal_id not in getattr(self, "_yielded_goals", set())
+            and any(sid in registered and sid in self.VERIFIED_ATOMIC for sid in goal.available_skills)
+            and self._gate().blocks(goal) is None for goal in goals
+        )
+        elements, steps = [], {}
+        # Do not widen OCR or call a model merely to prepare a coverage report.
+        # Safe discovery gets the device only after the known executable work yields.
+        #
+        # ...and once per run even when it does not yield (2026-10-01 §二十四).  The original
+        # condition made the learning window unreachable in production, which is the opposite of
+        # "unattended time is learning time" -- see ``_learning_window_open`` for the measurement.
+        if not known_work or self._learning_window_open():
+            try:
+                elements = ui_collection.build_element_table(Path(frame), self._ocr_service(), page=world.page.value)
+            except (OSError, ValueError, AttributeError):
+                elements = []
+            row_regions, _ = self._quick_panel_advice_regions(world, Path(frame))
+            elements = list(elements) + [
+                {"id": f"ROW_{index}", "kind": "INTERACTIVE_CONTROL", "executable": True,
+                 "semantic": row["detail"]["semantic"], "text": row["text"]}
+                for index, row in enumerate(row_regions)
+            ]
+            hints = {
+                "ARENA": ("竞技场",), "RESEARCH": ("学院", "研究"),
+                "BUILDING": ("建筑", "建设"), "TRAINING": ("兵营", "训练营"),
+                "MAIL": ("邮件",), "DAILY": ("日常任务", "任务"),
+                "ALLIANCE": ("联盟",), "EVENT": ("常规活动",),
+            }
+            for goal in goals:
+                if goal.goal_id not in enabled or goal.goal_id in getattr(self, "_yielded_goals", set()):
+                    continue
+                candidates = []
+                for sid in goal.available_skills:
+                    skill = registry.get(sid)
+                    if (skill is None or sid not in registered or sid not in self.VERIFIED_ATOMIC
+                            or not skill.ready(world)):
+                        continue
+                    action_type = "OBSERVE" if skill.action.kind == "OBSERVE" else "OPEN" if sid.startswith("OPEN_") else ""
+                    if not action_type or sid.startswith("OPEN_MARCH"):
+                        continue
+                    target_id = ""
+                    if action_type == "OPEN":
+                        point = self._resolve_semantic_target(str(skill.action.target or ""), world, frame_path=Path(frame))
+                        if point is None:
+                            continue
+                        target_id = f"SKILL_{sid}"
+                        elements.append({"id": target_id, "kind": "INTERACTIVE_CONTROL", "executable": True,
+                                         "semantic": skill.action.target})
+                    candidates.append({"skill_id": sid, "action_type": action_type,
+                        "semantic_target": str(skill.action.target or ""), "target_id": target_id,
+                        "role_id": role, "frame_id": identity.frame_id})
+                route = route_for(goal.goal_id)
+                labels = list(hints.get(str(route or ""), ()))
+                if "ARENA" in goal.goal_id:
+                    labels.extend(hints["ARENA"])
+                evidence = goal.evidence or {}
+                labels += [str(evidence[key]) for key in ("event_name", "display_name", "activity_name") if evidence.get(key)]
+                for index, element in enumerate(elements):
+                    text = str(element.get("text") or "").strip()
+                    if (not text or text not in labels or element.get("executable") is not True
+                            or element.get("kind") not in {"INTERACTIVE_CONTROL", "COMPOSITE_CONTROL", "ICON"}):
+                        continue
+                    element.setdefault("id", f"ENTRY_{index}")
+                    candidates.append({"skill_id": "TRY_ORDINARY_CONTROL", "action_type": "OPEN",
+                        "semantic_target": str(element.get("semantic") or ""),
+                        "target_id": element["id"], "role_id": role, "frame_id": identity.frame_id,
+                        "entry_label": text, "model_required": True})
+                if candidates:
+                    steps[goal.goal_id] = candidates
+        projection = project_runtime_discovery(
+            goals, world, role_id=role, frame_id=identity.frame_id,
+            current_frame_elements={"frame_id": identity.frame_id, "role_id": role, "elements": elements},
+            enabled_goal_ids=enabled, safe_steps_by_goal=steps, cooldowns=cooldowns,
+            registry_ids=registered, verifier_bindings=self.VERIFIED_ATOMIC,
+        )
+        projected = list(projection.goals)
+        for goal in projected:
+            if not (goal.evidence or {}).get("bootstrap_stage"):
+                continue
+            step = next(item for item in steps[goal.goal_id] if item["skill_id"] == goal.evidence["bootstrap_skill_id"]
+                        and item["target_id"] == goal.evidence["bootstrap_target_id"])
+            goal.evidence["bootstrap_entry_label"] = step.get("entry_label", "")
+            goal.evidence["bootstrap_goal_id"] = goal.goal_id
+        self._bootstrap_diagnostics = list(projection.diagnostics)
+        self._runtime(capability_discovery=list(projection.diagnostics))
+        return projected
+
+    def _bootstrap_decision(self, goal, world):
+        evidence = dict(getattr(goal, "evidence", {}) or {})
+        if not evidence.get("bootstrap_stage"):
+            return None
+        skill = self.registry.get(str(evidence.get("bootstrap_skill_id") or ""))
+        if skill is None or not skill.ready(world):
+            return Decision("WAIT", "BOOTSTRAP_ENTRY_NOT_READY", world.confidence, "fresh observation required")
+        return Decision(skill.id, f"CAPABILITY_BOOTSTRAP:{evidence['bootstrap_gap']}",
+                        world.confidence, "safe entry/state observation; goal completion remains unproven")
+
+    def _mark_bootstrap_attempt(self, goal):
+        evidence = dict(getattr(goal, "evidence", {}) or {})
+        if not evidence.get("bootstrap_stage"):
+            return
+        state = self._bootstrap_state()
+        key = f"{self._calendar_role_id()}|{goal.goal_id}"
+        row = state.setdefault(key, {})
+        row["attempts_this_run"] = int(row.get("attempts_this_run") or 0) + 1
+        row["cooldown_until"] = (datetime.now(timezone.utc) + timedelta(seconds=300)).isoformat()
+        state.setdefault("__run__", {})["visits_this_run"] = 1
+        path = getattr(self, "bootstrap_state_path", None)
+        if path is not None:
+            try:
+                path = Path(path)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                pending = path.with_suffix(".tmp")
+                pending.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+                os.replace(pending, path)
+            except OSError as exc:
+                self._narrate_once(f"bootstrap cooldown persistence failed: {type(exc).__name__}")
+        self._record_session_timeline("CAPABILITY_BOOTSTRAP_ATTEMPT", goal_id=goal.goal_id,
+            role_id=self._calendar_role_id(), skill_id=evidence.get("bootstrap_skill_id"),
+            frame_id=evidence.get("bootstrap_frame_id"), stage=evidence.get("bootstrap_stage"))
+
     def _record_goals(self, world: WorldState, frame: Path | str | None = None):
         """Discover this frame's goals, persist the board, and hand them back.
 
@@ -1789,6 +1990,7 @@ class LiveRuntime:
         except (TypeError, ValueError):
             pass
         goals = discover(world, **discover_kwargs)
+        goals = self._project_capability_discovery(goals, world, frame)
         for goal in goals:
             if goal.goal_id == 'AVOID_STAMINA_WASTE':
                 self._stamina_route(goal, self._gate())
@@ -4129,6 +4331,100 @@ class LiveRuntime:
         invented point.  Every guard below exists because a real frame made the
         guess wrong at least once.
         """
+        if semantic == "QUICK_PANEL_SCROLL_CURRENT":
+            # A semantic swipe needs four current-frame endpoints, not a string
+            # of historical coordinates. Reread the visible panel before using
+            # the gesture its row/container reader measured from this screenshot.
+            if frame.page is not Page.HOME or frame_path is None or (frame.quick_panel or {}).get("open") is not True:
+                return None
+            ocr = self._ocr_service()
+            if ocr is None:
+                return None
+            from .ocr import read_quick_panel
+            try:
+                panel = read_quick_panel(Path(frame_path), ocr)
+                point = panel.get("scroll_swipe_norm") if panel.get("open") is True else None
+                if not isinstance(point, (tuple, list)) or len(point) != 4:
+                    return None
+                gesture = tuple(float(value) for value in point)
+            except (OSError, TypeError, ValueError):
+                return None
+            return gesture if all(0.0 <= value <= 1.0 for value in gesture) and gesture[1] > gesture[3] else None
+        if semantic in {"BTN_FREE_RECRUIT_ADVANCED", "BTN_FREE_RECRUIT_EPIC"}:
+            # The HOME quick panel repeats these labels. Only the current hero
+            # recruit cards' own explicit free counts and Free control authorize
+            # a target; a cached card/template never supplies this spending tap.
+            if frame.page is not Page.HERO or frame_path is None:
+                return None
+            ocr = self._ocr_service()
+            if ocr is None:
+                return None
+            from .ocr import OCRPageClassifier
+            try:
+                fresh = OCRPageClassifier().classify(
+                    ocr.recognize(Path(frame_path)), frame_size=read_frame_size(Path(frame_path))
+                )
+                if fresh.page is not Page.HERO:
+                    return None
+                key = "HERO_RECRUIT_" + semantic.removeprefix("BTN_FREE_RECRUIT_")
+                rows = [row for row in (fresh.rewards or {}).get("hero_recruit_rows", ())
+                        if isinstance(row, Mapping) and row.get("key") == key]
+                if len(rows) != 1:
+                    return None
+                row = rows[0]
+                if (row.get("free_available") is not True or int(row.get("free_remaining") or 0) <= 0
+                        or row.get("source") != "LIVE_CLIENT_OCR"
+                        or "今日免费招募剩余" not in str(row.get("free_source_word") or "")):
+                    return None
+                point = row.get("free_button_norm")
+                if not isinstance(point, (tuple, list)) or len(point) != 2:
+                    return None
+                target = tuple(float(value) for value in point)
+            except (OSError, TypeError, ValueError):
+                return None
+            return target if all(0.0 <= value <= 1.0 for value in target) else None
+        if semantic == "EVENT_CALENDAR_NEXT_DETAIL":
+            # The store supplies only inspected-state attribution. Positions and
+            # occurrence identity are reread from the current visible calendar;
+            # stale taps from a prior scan never enter this resolver.
+            events = frame.events or {}
+            calendar = events.get("calendar") or {}
+            detail = events.get("calendar_detail") or {}
+            if (frame.page is not Page.EVENT or frame_path is None
+                    or not isinstance(calendar, Mapping) or calendar.get("recognized") is not True
+                    or (isinstance(detail, Mapping) and detail.get("recognized") is True)):
+                return None
+            role_id = self._calendar_role_id()
+            ocr = self._ocr_service()
+            if not role_id or ocr is None:
+                return None
+            from .event_calendar import read_event_calendar
+            try:
+                current = read_event_calendar(
+                    ocr.recognize(Path(frame_path)).tokens,
+                    frame_size=read_frame_size(Path(frame_path)), frame_path=Path(frame_path),
+                )
+                if current.get("recognized") is not True or current.get("details_visible") is True:
+                    return None
+                row = event_schedule.calendar_next_entry(role_id, current.get("entries") or ())
+                if (not isinstance(row, Mapping) or not row.get("occurrence_key")
+                        or not row.get("event_id") or not row.get("title_box")):
+                    return None
+                point = row.get("tap_norm")
+                if not isinstance(point, (tuple, list)) or len(point) != 2:
+                    return None
+                target = tuple(float(value) for value in point)
+            except (OSError, TypeError, ValueError):
+                return None
+            return target if all(0.0 <= value <= 1.0 for value in target) else None
+        if semantic == "EVENT_CALENDAR_TAB":
+            # Its template art also appears on HOME. The tab exists only inside
+            # the recognized regular-event detail or calendar page.
+            events = frame.events or {}
+            if (frame.page is not Page.EVENT or not any(
+                    isinstance(events.get(key), Mapping) and events[key].get("recognized") is True
+                    for key in ("calendar", "calendar_detail"))):
+                return None
         if semantic == "RALLY_ROW_JOIN_BUTTON":
             if frame.page is not Page.ALLIANCE:
                 return None
@@ -5694,6 +5990,11 @@ class LiveRuntime:
             return learned
         if advisor is None:
             return None
+        bootstrap = getattr(self, "_bootstrap_context", {}) or {}
+        if bootstrap.get("bootstrap_stage"):
+            if int(bootstrap.get("model_calls_this_screen") or 0) >= 2:
+                return None
+            bootstrap["model_calls_this_screen"] = int(bootstrap.get("model_calls_this_screen") or 0) + 1
         situation = self._l1_state(frame, title)
         # Serialised once: the request needs it as the world state, the state signature and the
         # character are read out of it, and ``to_dict`` on a whole WorldState is not free on a path
@@ -6067,6 +6368,9 @@ class LiveRuntime:
             if recorded_state and recorded_state != self._l1_state(frame, title):
                 continue
             word = page_knowledge.word_from_control(semantic)
+            bootstrap = getattr(self, "_bootstrap_context", {}) or {}
+            if bootstrap.get("bootstrap_stage") and word != str(bootstrap.get("bootstrap_entry_label") or ""):
+                continue
             visual = row.get("visual_evidence") or {}
             template_path = str(visual.get("template_path") or "")
             if (not word or word == semantic) and not template_path:
@@ -6275,6 +6579,17 @@ class LiveRuntime:
         "不要求先写完整招募 Skill 才能首次免费招募" possible without loosening anything: the first
         free attempt is an *entry*, and whether the page charges for it is decided by the page.
         """
+        bootstrap = getattr(self, "_bootstrap_context", {}) or {}
+        if bootstrap.get("bootstrap_stage"):
+            allowed_label = str(bootstrap.get("bootstrap_entry_label") or "")
+            allowed_semantic = str(bootstrap.get("bootstrap_semantic_target") or "")
+            actual_label = str(region.get("text") or "").strip()
+            actual_semantic = str((region.get("detail") or {}).get("semantic") or "")
+            if not ((allowed_label and allowed_label == actual_label)
+                    or (allowed_semantic and allowed_semantic == actual_semantic)):
+                return "BOOTSTRAP_SAFE_ENTRY_IDENTITY_MISMATCH"
+            if any(word in actual_label for word in ("购买", "使用", "消耗", "出征", "攻击", "集结", "召回", "确认")):
+                return "BOOTSTRAP_RESOURCE_ACTION_NOT_AUTHORIZED"
         level = unknown_advisor.advice_level(advice)
         identity = " ".join(
             [
@@ -7897,7 +8212,8 @@ class LiveRuntime:
                 leave = self.brain.leave_terminal_page(before)
             if leave is None:
                 leave = self._deferral_replan(before, deferrals, best_goal)
-            decision = leave if leave is not None else self.brain.decide(before, self.registry)
+            bootstrap_decision = self._bootstrap_decision(best_goal, before)
+            decision = bootstrap_decision or (leave if leave is not None else self.brain.decide(before, self.registry))
             decision = self._stop_instead_of_looking_again(before, decision, best_goal)
             global_credited_goal_ids: tuple[str, ...] = ()
             if self._multi_role_enabled and self._role_identity_confirmed:
@@ -8372,7 +8688,7 @@ class LiveRuntime:
             # failure of one Goal's internal sequence says nothing about the other Goals, and
             # the loop's next iteration re-arbitrates, which is the whole point of constraint 8.
             session_route = (session_adapters.route_for(selected_id, decision.skill)
-                             if index < max_actions else None)
+                             if index < max_actions and not (getattr(best_goal, "evidence", {}) or {}).get("bootstrap_stage") else None)
             if session_route is not None:
                 page_audit["session_route"] = {
                     "goal_id": selected_id, "adapter": session_route.adapter,
@@ -8606,6 +8922,7 @@ class LiveRuntime:
                 )
             else:
                 self._scheduler.executor = executor
+            self._mark_bootstrap_attempt(best_goal)
             tick = self._scheduler.tick(before, decision)
             latency["scheduler_tick_ms"] = (time.monotonic() - phase_started) * 1000
             page_audit["attempted_skill"] = tick.decision.skill

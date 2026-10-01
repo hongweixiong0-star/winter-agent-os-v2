@@ -45,10 +45,212 @@ from __future__ import annotations
 import json
 import os
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
+
+
+@dataclass(frozen=True)
+class RuntimeDiscoveryProjection:
+    """A read-only projection onto the existing Goal board, never another queue."""
+
+    goals: tuple[Any, ...]
+    diagnostics: tuple[dict[str, Any], ...]
+
+
+_DISCOVERY_ACTIONS = frozenset({
+    "OBSERVE", "READ", "OPEN", "OPEN_PAGE", "OPEN_KNOWN_PAGE", "BACK",
+    "CLOSE_POPUP", "SCROLL", "READ_TIMER", "READ_COUNTER", "SELECT_TAB",
+})
+_DISCOVERY_CONTROL_KINDS = frozenset({"INTERACTIVE_CONTROL", "COMPOSITE_CONTROL"})
+_DISCOVERY_SPEND_ACTIONS = frozenset({
+    "ATTACK", "DISPATCH", "START_RALLY", "JOIN_RALLY", "RECALL", "RECALL_MARCH",
+    "TRAIN", "TRAIN_TROOPS", "PROMOTE", "RESEARCH", "BUILD", "BUILDING_UPGRADE",
+    "USE_ITEM", "SPEEDUP", "BUY", "PURCHASE", "CONFIRM", "DELETE", "TRANSFER",
+})
+
+
+def _discovery_count(value: Any) -> int:
+    try:
+        return max(0, int(value or 0))
+    except (ValueError, TypeError, OverflowError):
+        # An invalid counter is not permission to restart unbounded exploration.
+        return 10**9
+
+
+def _discovery_time(value: Any) -> datetime | None:
+    if isinstance(value, datetime):
+        return value if value.tzinfo else None
+    if isinstance(value, str) and value:
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            return parsed if parsed.tzinfo else None
+        except ValueError:
+            pass
+    return None
+
+
+#: The bootstrap budget, at module level because the runtime has to read one of these numbers.
+#:
+#: ``max_bootstrap_visits_per_run`` decides whether the runtime may spend a step preparing
+#: candidates *while real work still exists* (operator directive 2026-10-01 §二十四: unattended
+#: time is learning time).  A second copy of that number in ``runtime`` would drift from this
+#: one, and the runtime would then gate on a figure the projection no longer honours.
+DEFAULT_BUDGET: dict[str, int] = {
+    "max_bootstrap_attempts": 1, "max_model_calls": 2,
+    "max_navigation_steps": 4, "max_bootstrap_visits_per_run": 1,
+    "cooldown_after_failure_seconds": 300, "max_duration_seconds": 90,
+}
+
+
+def project_runtime_discovery(
+    goals: Iterable[Any], world: Any, *, role_id: str, frame_id: str,
+    current_frame_elements: Sequence[Mapping[str, Any]] | Mapping[str, Any] = (),
+    enabled_goal_ids: Iterable[str] | None = None,
+    disabled_goal_ids: Iterable[str] = (),
+    safe_steps_by_goal: Mapping[str, Sequence[Mapping[str, Any]] | Mapping[str, Any]] | None = None,
+    cooldowns: Mapping[str, Mapping[str, Any]] | None = None,
+    registry_ids: Iterable[str] = (), verifier_bindings: Iterable[str] = (),
+    now: datetime | None = None, limits: Mapping[str, Any] | None = None,
+) -> RuntimeDiscoveryProjection:
+    """Offer a bounded safe step on the *same* otherwise unreachable Goal.
+
+    The caller supplies the current-frame element table and trusted safe-step declarations
+    after applying policy/validation scope. No pixels, device actions, persistence, model
+    calls or policy changes occur here. A step still needs the normal executor's fresh
+    grounding, lease and Verifier. Window uncertainty can authorize observation, never
+    participation. Mutable attempt/cooldown state belongs to the existing runtime.
+    """
+    from .goal_library import GoalStatus, route_for
+
+    moment = now or datetime.now(timezone.utc)
+    enabled = None if enabled_goal_ids is None else set(enabled_goal_ids)
+    disabled, registered, verified = map(set, (disabled_goal_ids, registry_ids, verifier_bindings))
+    steps_by_goal, ledger = safe_steps_by_goal or {}, cooldowns or {}
+    budget = dict(DEFAULT_BUDGET)
+    budget.update({key: _discovery_count(value) for key, value in (limits or {}).items() if key in budget})
+    table_valid = bool(role_id and frame_id)
+    if isinstance(current_frame_elements, Mapping):
+        table_valid = table_valid and current_frame_elements.get("frame_id") == frame_id
+        table_valid = table_valid and current_frame_elements.get("role_id") == role_id
+        elements = current_frame_elements.get("elements") or ()
+    else:
+        # A bare table is transported with the frame_id/role_id supplied by the caller.
+        elements = current_frame_elements
+    by_id = {str(item.get("id") or ""): item for item in elements if isinstance(item, Mapping)}
+    output, diagnostics = [], []
+    for goal in goals:
+        evidence = dict(getattr(goal, "evidence", {}) or {})
+        goal_id = str(goal.goal_id)
+        status = goal.status
+        route = route_for(goal_id)
+        existing = tuple(getattr(goal, "available_skills", ()) or ())
+        skills_exist = bool(existing) and any(skill in registered for skill in existing)
+        verifiers_exist = bool(existing) and any(skill in registered and skill in verified for skill in existing)
+        diagnostic = {
+            "goal_id": goal_id, "role_id": role_id, "frame_id": frame_id,
+            "reason": "MISSING_SKILL", "gap_type": "CAPABILITY_GAP",
+            "provider_emits": True, "route_exists": route is not None,
+            "skill_exists": skills_exist, "verifier_exists": verifiers_exist,
+            "scheduler_selectable": False, "safe_entry_exists": False,
+        }
+        projected = goal
+        reason = ""
+        if goal_id in disabled or (enabled is not None and goal_id not in enabled):
+            reason = "POLICY_DISABLED"
+        elif evidence.get("policy_disabled") or evidence.get("policy_disabled_by_user"):
+            reason = "POLICY_DISABLED"
+        elif status in {GoalStatus.COMPLETE, GoalStatus.EXPIRED}:
+            reason = "COMPLETE"
+        elif status is GoalStatus.IN_PROGRESS:
+            reason = "WAIT_UNTIL"
+        elif status is GoalStatus.SCHEDULED_NOT_OPEN:
+            reason = "WAIT_UNTIL"
+        elif evidence.get("condition") in {"queue_busy", "timer", "no_idle_march", "waiting_window"}:
+            reason = "WAIT_UNTIL"
+        elif evidence.get("risk_blocked") or evidence.get("requires_implementation"):
+            reason = "RISK_BLOCKED"
+            diagnostic["gap_detail"] = "CAPABILITY_GAP_REQUIRES_IMPLEMENTATION"
+        elif evidence.get("live_failure_deferred"):
+            reason = "LIVE_FAILURE_DEFERRED"
+        elif status in {GoalStatus.READY, GoalStatus.DISCOVERED} and route and verifiers_exist:
+            reason = "READY_EXECUTABLE"
+            diagnostic["scheduler_selectable"] = True
+        else:
+            if evidence.get("required_observation") or evidence.get("missing_page_identity"):
+                gap, default_reason = "OBSERVATION_GAP", "MISSING_OBSERVATION"
+            elif not route or evidence.get("missing_navigation"):
+                gap, default_reason = "NAVIGATION_GAP", "MISSING_NAVIGATION"
+            elif skills_exist and not verifiers_exist:
+                gap, default_reason = "CAPABILITY_GAP", "MISSING_VERIFIER"
+            else:
+                gap, default_reason = "CAPABILITY_GAP", "MISSING_SKILL"
+            diagnostic["gap_type"] = gap
+            reason = default_reason
+            data = ledger.get(f"{role_id}|{goal_id}", ledger.get(goal_id, {})) or {}
+            run = ledger.get("__run__", {}) or {}
+            until = _discovery_time(data.get("cooldown_until"))
+            invalid_cooldown = bool(data.get("cooldown_until")) and until is None
+            exhausted = (
+                _discovery_count(data.get("attempts_this_run")) >= budget["max_bootstrap_attempts"]
+                or _discovery_count(data.get("navigation_steps")) >= budget["max_navigation_steps"]
+                or _discovery_count(run.get("visits_this_run")) >= budget["max_bootstrap_visits_per_run"]
+            )
+            if invalid_cooldown or (until and until > moment) or exhausted:
+                reason = "BOOTSTRAP_COOLDOWN"
+                diagnostic["wait_until"] = until.isoformat() if until else None
+            elif table_valid and evidence.get("role_id", role_id) == role_id:
+                supplied = steps_by_goal.get(goal_id, ())
+                candidates = (supplied,) if isinstance(supplied, Mapping) else supplied
+                for step in candidates:
+                    if not isinstance(step, Mapping):
+                        continue
+                    skill = str(step.get("skill_id") or "")
+                    action = str(step.get("action_type") or "").upper()
+                    if (skill not in registered or skill not in verified
+                            or action not in _DISCOVERY_ACTIONS or action in _DISCOVERY_SPEND_ACTIONS
+                            or skill in _DISCOVERY_SPEND_ACTIONS or skill.startswith(("USE_", "DISPATCH_", "RECALL_", "CLAIM_", "FREE_HERO_RECRUIT"))
+                            or step.get("role_id") != role_id or step.get("frame_id") != frame_id
+                            or step.get("risk_blocked") or step.get("spends_resources")):
+                        continue
+                    if step.get("model_required") and _discovery_count(data.get("model_calls_this_screen")) >= budget["max_model_calls"]:
+                        reason = "BOOTSTRAP_COOLDOWN"
+                        continue
+                    target_id = str(step.get("target_id") or "")
+                    if action not in {"OBSERVE", "READ", "READ_TIMER", "READ_COUNTER"}:
+                        element = by_id.get(target_id)
+                        if (not element or element.get("kind") not in _DISCOVERY_CONTROL_KINDS
+                                or element.get("executable") is not True
+                                or element.get("frame_id", frame_id) != frame_id
+                                or element.get("role_id", role_id) != role_id
+                                or (step.get("semantic_target") and step["semantic_target"] != element.get("semantic"))):
+                            continue
+                    # Clear production urgency only on this observation projection. It
+                    # remains the original Goal and can regain its real READY priority later.
+                    bootstrap = {
+                        "bootstrap_stage": "OBSERVE_STATE" if action in {"OBSERVE", "READ", "READ_TIMER", "READ_COUNTER"} else "FIND_ENTRY",
+                        "bootstrap_gap": gap, "bootstrap_original_status": status.value,
+                        "bootstrap_role_id": role_id, "bootstrap_frame_id": frame_id,
+                        "bootstrap_skill_id": skill, "bootstrap_action_type": action,
+                        "bootstrap_semantic_target": str(step.get("semantic_target") or ""),
+                        "bootstrap_target_id": target_id, "bootstrap_budget": dict(budget),
+                        "bootstrap_observation_only": True,
+                        "bootstrap_participation_authorized": False,
+                    }
+                    projected = replace(goal, status=GoalStatus.DISCOVERED,
+                        available_skills=(skill,), remaining_seconds=None, reward_value=0.0,
+                        daily_loss=0.0, event_synergy=0.0, development_value=20.0,
+                        resource_cost=0.0, risk=0.0, evidence={**evidence, **bootstrap})
+                    reason = "BOOTSTRAP_READY"
+                    diagnostic.update(safe_entry_exists=True, scheduler_selectable=True,
+                                      bootstrap_stage=bootstrap["bootstrap_stage"],
+                                      selected_skill=skill, target_id=target_id)
+                    break
+        diagnostic["reason"] = reason
+        output.append(projected)
+        diagnostics.append(diagnostic)
+    return RuntimeDiscoveryProjection(tuple(output), tuple(diagnostics))
 
 # ----------------------------------------------------------------- lifecycle
 
