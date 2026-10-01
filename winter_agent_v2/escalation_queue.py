@@ -2115,6 +2115,7 @@ class EscalationQueueAdapter:
         # names live in workbuddy_model_router.py.
         self.model_stats = ModelStatsStore(model_stats_path(self.root))
         self._build_request = escalation_request_from_project
+        self._last_submission_block_reason = ""
 
     # -- the AUTO hook ----------------------------------------------------
 
@@ -2294,7 +2295,9 @@ class EscalationQueueAdapter:
             )
             if not job_id:
                 return RunObservation(
-                    preload_note=f"{chosen.code}: queued (gateway unavailable)"
+                    preload_note=f"{chosen.code}: " + (
+                        self._last_submission_block_reason or "queued (gateway unavailable)"
+                    )
                 )
             return RunObservation(preloaded=(chosen.code,))
         except Exception as exc:  # noqa: BLE001 - a background pass must never raise
@@ -2624,7 +2627,8 @@ class EscalationQueueAdapter:
                 if job_id:
                     submitted.append(job_id)
                 else:
-                    skipped.append((candidate.signature.key, "queued: gateway unavailable"))
+                    skipped.append((candidate.signature.key,
+                                    self._last_submission_block_reason or "queued: gateway unavailable"))
                     self._record(candidate, dispatch)
 
             # The consumer for records that were created but never dispatched.
@@ -2664,7 +2668,8 @@ class EscalationQueueAdapter:
                 if job_id:
                     submitted.append(job_id)
                 else:
-                    skipped.append((record.key, "queued: gateway unavailable"))
+                    skipped.append((record.key,
+                                    self._last_submission_block_reason or "queued: gateway unavailable"))
         except Exception as exc:  # noqa: BLE001
             errors.append(f"dispatch failed: {type(exc).__name__}: {exc}")
 
@@ -2850,6 +2855,13 @@ class EscalationQueueAdapter:
         was invisible in the ledger, so a record could sit NEW for an hour while every
         row made it look like nothing was wrong.
         """
+        # This is the shared final boundary for AUTO gaps, pending consumers and bootstrap.
+        # Retiring only UNKNOWN dispatch left all three paths able to launch a coding job.
+        # Re-read the existing config here so a running panel cannot retain stale permission.
+        self._last_submission_block_reason = self._automatic_submission_block_reason()
+        if self._last_submission_block_reason:
+            self._record(candidate, Dispatch(NOT_ESCALATABLE, self._last_submission_block_reason), origin=origin)
+            return ""
         availability = self.bridge.is_available()
         revision = repo_revision(self.root)
         self._record(candidate, dispatch, origin=origin)
@@ -2922,6 +2934,30 @@ class EscalationQueueAdapter:
                 "reason": "created but never dispatched until the consumer re-offered it",
             })
         return submission.job_id
+
+    def _automatic_submission_block_reason(self) -> str:
+        """Honor retirement without changing the historical-job settlement path.
+
+        Standalone legacy adapters without a V2 config retain their existing behavior. A
+        present, unreadable config cannot authorize a new job; direct operator bridge calls
+        are separate from these automatic queue producers.
+        """
+        path = self.root / "config/v2.json"
+        if not path.exists():
+            return ""
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8-sig"))
+        except (OSError, ValueError):
+            return "WORKBUDDY_AUTO_SUBMISSION_DISABLED: config/v2.json unreadable"
+        section = payload.get("workbuddy_channel") if isinstance(payload, Mapping) else None
+        if section is None:
+            return ""
+        if not isinstance(section, Mapping):
+            return "WORKBUDDY_AUTO_SUBMISSION_DISABLED: invalid workbuddy_channel"
+        for flag in ("enabled", "auto_submit_jobs", "auto_escalate"):
+            if flag in section and not _is_true(section[flag]):
+                return f"WORKBUDDY_AUTO_SUBMISSION_DISABLED: workbuddy_channel.{flag}=false"
+        return ""
 
     # -- reconciliation ---------------------------------------------------
 
