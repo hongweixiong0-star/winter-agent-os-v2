@@ -8,7 +8,9 @@ from .models import Action, ExecutionResult
 from .policy import SafetyPolicy
 
 
-NormalizedTargetResolver = Callable[[str], tuple[float, float] | None]
+NormalizedTargetResolver = Callable[
+    [str], tuple[float, float] | tuple[float, float, float, float] | None
+]
 
 
 class Executor:
@@ -66,7 +68,7 @@ class Executor:
         policy = self.policy.evaluate(action)
         if not policy.allowed:
             return self._result(False, action, policy.reason)
-        if (action.kind.startswith("TAP") or action.kind == "PRESS_BACK") and not self.production:
+        if (action.kind.startswith("TAP") or action.kind in {"PRESS_BACK", "SWIPE"}) and not self.production:
             return self._result(False, action, "DRY_RUN_BLOCKED_DEVICE_ACTION")
         if action.kind == "OBSERVE":
             return self._result(True, action)
@@ -76,6 +78,8 @@ class Executor:
             center = self.target_resolver(action.target)
             if center is None:
                 return self._result(False, action, "SEMANTIC_TARGET_NOT_VERIFIED")
+            if not isinstance(center, (tuple, list)) or len(center) != 2:
+                return self._result(False, action, "SEMANTIC_TARGET_INVALID")
             x_norm, y_norm = center
             if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
                 return self._result(False, action, "SEMANTIC_TARGET_OUT_OF_BOUNDS")
@@ -115,14 +119,22 @@ class Executor:
             return self._result(True, action, latency_ms=round(latency_ms, 2),
                                 recognition_backend="NONE")
         if action.kind == "SWIPE":
-            # ``target`` carries "x1_norm,y1_norm,x2_norm,y2_norm" and payload may
-            # carry a duration. Used only to move scrollable in-game lists
-            # (resource-target strip, event lists) before a semantic tap.
+            # Semantic gestures come from the current-frame resolver. Keep the
+            # existing explicit four-number form for already-defined gestures.
             if self.device is None:
                 return self._result(False, action, "DEVICE_ADAPTER_NOT_CONNECTED")
+            target = str(action.target or "")
             try:
-                x1, y1, x2, y2 = (float(part) for part in str(action.target or "").split(","))
-            except ValueError:
+                if "," in target:
+                    gesture = target.split(",")
+                else:
+                    gesture = self.target_resolver(target) if self.target_resolver and target else None
+                    if gesture is None:
+                        return self._result(False, action, "SEMANTIC_TARGET_NOT_VERIFIED")
+                if not isinstance(gesture, (tuple, list)) or len(gesture) != 4:
+                    return self._result(False, action, "SWIPE_TARGET_INVALID")
+                x1, y1, x2, y2 = (float(part) for part in gesture)
+            except (TypeError, ValueError):
                 return self._result(False, action, "SWIPE_TARGET_INVALID")
             if not all(0.0 <= value <= 1.0 for value in (x1, y1, x2, y2)):
                 return self._result(False, action, "SWIPE_TARGET_OUT_OF_BOUNDS")
