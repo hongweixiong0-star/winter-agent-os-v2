@@ -3,13 +3,13 @@
   "generated_by": "tools/ui_navigation_matrix.py",
   "contract_file": "skill_factory.py",
   "counts": {
-    "skills": 116,
-    "schedulable": 102,
-    "navigation_like_entries": 53,
-    "schedulable_navigation_entries": 51,
-    "distinct_targets": 93,
-    "semantics_with_templates": 266,
-    "semantics_with_templates_and_no_skill": 200
+    "skills": 152,
+    "schedulable": 140,
+    "navigation_like_entries": 73,
+    "schedulable_navigation_entries": 71,
+    "distinct_targets": 124,
+    "semantics_with_templates": 293,
+    "semantics_with_templates_and_no_skill": 217
   },
   "operator_functions": [
     {
@@ -37,21 +37,30 @@
     {
       "function": "兵营/盾兵-矛兵-射手",
       "registered_entry_skills": [
+        "COLLECT_TRAINING_BATCH",
         "OPEN_INFANTRY_TRAINING",
         "SELECT_INFANTRY_CAMP",
         "SELECT_TRAINING_CAMP",
+        "TAP_FOCUSED_TRAINING_CAMP_LANCER",
+        "TAP_FOCUSED_TRAINING_CAMP_MARKSMAN",
+        "TAP_FOCUSED_TRAINING_CAMP_SHIELD",
         "TRAIN_TROOPS"
       ],
       "schedulable_entry_skills": [
+        "COLLECT_TRAINING_BATCH",
         "OPEN_INFANTRY_TRAINING",
         "SELECT_INFANTRY_CAMP",
         "SELECT_TRAINING_CAMP",
+        "TAP_FOCUSED_TRAINING_CAMP_LANCER",
+        "TAP_FOCUSED_TRAINING_CAMP_MARKSMAN",
+        "TAP_FOCUSED_TRAINING_CAMP_SHIELD",
         "TRAIN_TROOPS"
       ],
-      "path_count": 4,
-      "semantics_with_templates": 20,
+      "path_count": 8,
+      "semantics_with_templates": 21,
       "semantics_with_templates_and_no_skill": [
         "BTN_OPEN_TRAINING",
+        "BTN_REGULAR_EVENT_TREASURE_TRAINING",
         "BTN_TRAINING_ACCELERATE",
         "BTN_TRAINING_MENU_LABEL",
         "BTN_TRAINING_SPEEDUP",
@@ -98,17 +107,24 @@
     {
       "function": "联盟捐献",
       "registered_entry_skills": [
-        "ALLIANCE_TECH_CONTRIBUTE"
+        "ALLIANCE_TECH_CONTRIBUTE",
+        "CLOSE_ALLIANCE_TECH_DONATION_DETAILS",
+        "OPEN_ALLIANCE_RECOMMENDED_TECH_NODE",
+        "OPEN_ALLIANCE_TECH_FROM_HOME"
       ],
-      "schedulable_entry_skills": [],
-      "path_count": 0,
-      "semantics_with_templates": 13,
+      "schedulable_entry_skills": [
+        "ALLIANCE_TECH_CONTRIBUTE",
+        "CLOSE_ALLIANCE_TECH_DONATION_DETAILS",
+        "OPEN_ALLIANCE_RECOMMENDED_TECH_NODE",
+        "OPEN_ALLIANCE_TECH_FROM_HOME"
+      ],
+      "path_count": 4,
+      "semantics_with_templates": 15,
       "semantics_with_templates_and_no_skill": [
         "ALLIANCE_TECH_ATTEMPTS_23_OF_25",
         "ALLIANCE_TECH_ATTEMPTS_24_OF_25",
         "ALLIANCE_TECH_ATTEMPTS_25_OF_25",
         "ALLIANCE_TECH_RECOMMENDED",
-        "BTN_ALLIANCE_TECH",
         "DAILY_ALLIANCE_CONTRIBUTE_3_OF_5",
         "DAILY_ALLIANCE_CONTRIBUTE_5_OF_20",
         "DIALOG_ALLIANCE_TECH",
@@ -194,19 +210,23 @@
         "OPEN_BEAST_SEARCH_TAB",
         "RELAX_RESOURCE_LEVEL",
         "SEARCH_RESOURCE",
+        "SELECT_GIANT_BEAST_TAB",
         "SELECT_RESOURCE",
         "SUBMIT_BEAST_SEARCH",
+        "SUBMIT_GIANT_BEAST_SEARCH",
         "SUBMIT_RESOURCE_SEARCH"
       ],
       "schedulable_entry_skills": [
         "OPEN_BEAST_SEARCH_TAB",
         "RELAX_RESOURCE_LEVEL",
         "SEARCH_RESOURCE",
+        "SELECT_GIANT_BEAST_TAB",
         "SELECT_RESOURCE",
         "SUBMIT_BEAST_SEARCH",
+        "SUBMIT_GIANT_BEAST_SEARCH",
         "SUBMIT_RESOURCE_SEARCH"
       ],
-      "path_count": 6,
+      "path_count": 8,
       "semantics_with_templates": 9,
       "semantics_with_templates_and_no_skill": [
         "BTN_SEARCH_BEAST_TAB",
@@ -221,18 +241,22 @@
     {
       "function": "巨兽/自动加入",
       "registered_entry_skills": [
+        "BEAR_AUTO_JOIN",
         "JOIN_RALLY",
+        "SELECT_GIANT_BEAST_TAB",
         "START_RALLY"
       ],
       "schedulable_entry_skills": [
         "JOIN_RALLY",
+        "SELECT_GIANT_BEAST_TAB",
         "START_RALLY"
       ],
-      "path_count": 2,
+      "path_count": 3,
       "semantics_with_templates": 8,
       "semantics_with_templates_and_no_skill": [
         "BTN_AUTO_JOIN",
         "BTN_CONFIRM_START_RALLY",
+        "BTN_JOIN_ROW",
         "POPUP_TITLE_START_RALLY",
         "STATUS_RALLY_COUNTDOWN",
         "STATUS_RALLY_JOINED",
@@ -246,9 +270,10 @@
         "VERIFY_GATHERING"
       ],
       "schedulable_entry_skills": [
-        "START_GATHER"
+        "START_GATHER",
+        "VERIFY_GATHERING"
       ],
-      "path_count": 1,
+      "path_count": 2,
       "semantics_with_templates": 9,
       "semantics_with_templates_and_no_skill": [
         "RESOURCE_BEAST",
@@ -316,19 +341,39 @@
         "DAILY_CLAIM_REWARDS",
         "DAILY_HERO_RECRUIT",
         "DISMISS_DAILY_REWARD",
+        "FOLLOW_DAILY_TASK",
         "OPEN_DAILY",
+        "OPEN_EVENT_CALENDAR_DETAIL",
+        "OPEN_EVENT_CALENDAR_FROM_HOME",
+        "OPEN_EVENT_CALENDAR_FROM_MAP",
+        "OPEN_EVENT_CALENDAR_TAB",
+        "READ_EVENT_CALENDAR",
+        "SCROLL_REGULAR_EVENT_TABS",
         "SELECT_DAILY_TAB"
       ],
       "schedulable_entry_skills": [
         "DAILY_CLAIM_REWARDS",
+        "DAILY_HERO_RECRUIT",
         "DISMISS_DAILY_REWARD",
+        "FOLLOW_DAILY_TASK",
         "OPEN_DAILY",
+        "OPEN_EVENT_CALENDAR_DETAIL",
+        "OPEN_EVENT_CALENDAR_FROM_HOME",
+        "OPEN_EVENT_CALENDAR_FROM_MAP",
+        "OPEN_EVENT_CALENDAR_TAB",
+        "READ_EVENT_CALENDAR",
+        "SCROLL_REGULAR_EVENT_TABS",
         "SELECT_DAILY_TAB"
       ],
-      "path_count": 4,
-      "semantics_with_templates": 24,
+      "path_count": 12,
+      "semantics_with_templates": 32,
       "semantics_with_templates_and_no_skill": [
         "ALLIANCE_GIFTS_DAILY_COUNTER",
+        "BTN_REGULAR_EVENT_EXCLUSIVE_GEAR_FORGE",
+        "BTN_REGULAR_EVENT_FISHING_TOURNAMENT",
+        "BTN_REGULAR_EVENT_ICEBOUND_TREASURE",
+        "BTN_REGULAR_EVENT_MYSTERY_SHOP",
+        "BTN_REGULAR_EVENT_TREASURE_TRAINING",
         "DAILY_ACTIVITY_270",
         "DAILY_ACTIVITY_280",
         "DAILY_ACTIVITY_65",
@@ -346,7 +391,8 @@
         "STATUS_DAILY_MULTI_CLAIMABLE",
         "STATUS_DAILY_TASK_AVAILABLE",
         "STATUS_DAILY_TASK_CLAIMABLE",
-        "TAB_DAILY_TASKS_SELECTED"
+        "TAB_DAILY_TASKS_SELECTED",
+        "TAB_EVENT_CALENDAR"
       ]
     },
     {
@@ -398,7 +444,7 @@
       "destination_page": "UNKNOWN",
       "schedulable": false,
       "verifier": "UNKNOWN",
-      "visual_evidence": "DYNAMIC_RESOLVER",
+      "visual_evidence": 1,
       "navigation_like": false
     },
     {
@@ -407,9 +453,20 @@
       "action": "TAP_SEMANTIC:BTN_ALLIANCE_TECH_CONTRIBUTE_MEAT",
       "target": "BTN_ALLIANCE_TECH_CONTRIBUTE_MEAT",
       "destination_page": "UNKNOWN",
-      "schedulable": false,
-      "verifier": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
       "visual_evidence": 2,
+      "navigation_like": false
+    },
+    {
+      "skill": "ASSIGN_GATHER_HERO",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:ASSIGN_EXACT_GATHER_HERO",
+      "target": "ASSIGN_EXACT_GATHER_HERO",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_gather_specialist_assigned",
+      "visual_evidence": "DYNAMIC_RESOLVER",
       "navigation_like": false
     },
     {
@@ -433,6 +490,17 @@
       "verifier": "verify_safe_back",
       "visual_evidence": 0,
       "navigation_like": true
+    },
+    {
+      "skill": "BEAR_AUTO_JOIN",
+      "source_page": "ALLIANCE",
+      "action": "TAP_SEMANTIC:BTN_BEAR_AUTO_JOIN",
+      "target": "BTN_BEAR_AUTO_JOIN",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": false
     },
     {
       "skill": "BEAST_HUNT",
@@ -523,6 +591,28 @@
       "navigation_like": false
     },
     {
+      "skill": "CLEAR_GATHER_HEROES",
+      "source_page": "MARCH",
+      "action": "TAP_SEMANTIC:REMOVE_GATHER_HERO",
+      "target": "REMOVE_GATHER_HERO",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_gather_hero_removed",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": false
+    },
+    {
+      "skill": "CLOSE_ALLIANCE_TECH_DONATION_DETAILS",
+      "source_page": "ALLIANCE",
+      "action": "TAP_SEMANTIC:BTN_ALLIANCE_TECH_DETAILS_CLOSE",
+      "target": "BTN_ALLIANCE_TECH_DETAILS_CLOSE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_alliance_tech_details_closed",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
       "skill": "CLOSE_POPUP",
       "source_page": "POPUP",
       "action": "TAP_SEMANTIC:BTN_CLOSE",
@@ -578,6 +668,17 @@
       "navigation_like": false
     },
     {
+      "skill": "COLLECT_TRAINING_BATCH",
+      "source_page": "TRAINING",
+      "action": "TAP_SEMANTIC:BTN_CLAIM_TRAINING_BATCH",
+      "target": "BTN_CLAIM_TRAINING_BATCH",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_training_batch_claimed",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": false
+    },
+    {
       "skill": "CONFIRM_EXPLORATION_IDLE_CLAIM",
       "source_page": "POPUP",
       "action": "TAP_SEMANTIC:BTN_EXPLORATION_IDLE_CONFIRM",
@@ -605,8 +706,8 @@
       "action": "TAP_SEMANTIC:BTN_DAILY_GO_HERO_RECRUIT",
       "target": "BTN_DAILY_GO_HERO_RECRUIT",
       "destination_page": "UNKNOWN",
-      "schedulable": false,
-      "verifier": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
       "visual_evidence": 1,
       "navigation_like": false
     },
@@ -809,6 +910,39 @@
       "navigation_like": false
     },
     {
+      "skill": "FOLLOW_DAILY_TASK",
+      "source_page": "DAILY",
+      "action": "TAP_SEMANTIC:BTN_DAILY_TASK_GO",
+      "target": "BTN_DAILY_TASK_GO",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_daily_task_followed",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": false
+    },
+    {
+      "skill": "FREE_HERO_RECRUIT_ADVANCED",
+      "source_page": "HERO",
+      "action": "TAP_SEMANTIC:BTN_FREE_RECRUIT_ADVANCED",
+      "target": "BTN_FREE_RECRUIT_ADVANCED",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": false
+    },
+    {
+      "skill": "FREE_HERO_RECRUIT_EPIC",
+      "source_page": "HERO",
+      "action": "TAP_SEMANTIC:BTN_FREE_RECRUIT_EPIC",
+      "target": "BTN_FREE_RECRUIT_EPIC",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": false
+    },
+    {
       "skill": "GATHER_RESOURCE",
       "source_page": "HOME",
       "action": "RUN_WORKFLOW:GATHER_RESOURCE",
@@ -866,12 +1000,12 @@
     {
       "skill": "JOIN_RALLY",
       "source_page": "UNKNOWN",
-      "action": "TAP_SEMANTIC:BTN_JOIN_ROW",
-      "target": "BTN_JOIN_ROW",
+      "action": "TAP_SEMANTIC:RALLY_ROW_JOIN_BUTTON",
+      "target": "RALLY_ROW_JOIN_BUTTON",
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "<lambda>",
-      "visual_evidence": 1,
+      "visual_evidence": "DYNAMIC_RESOLVER",
       "navigation_like": false
     },
     {
@@ -937,7 +1071,7 @@
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "verify_open_alliance",
-      "visual_evidence": 1,
+      "visual_evidence": 2,
       "navigation_like": true
     },
     {
@@ -948,6 +1082,39 @@
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "verify_open_alliance_gifts",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_ALLIANCE_RECOMMENDED_TECH_NODE",
+      "source_page": "ALLIANCE",
+      "action": "TAP_SEMANTIC:BTN_ALLIANCE_TECH_RECOMMENDED_NODE",
+      "target": "BTN_ALLIANCE_TECH_RECOMMENDED_NODE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_alliance_tech_node_opened",
+      "visual_evidence": 2,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_ALLIANCE_TECH_FROM_HOME",
+      "source_page": "ALLIANCE",
+      "action": "TAP_SEMANTIC:BTN_ALLIANCE_TECH",
+      "target": "BTN_ALLIANCE_TECH",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_alliance_tech_opened",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_BEAR_RALLY_LIST",
+      "source_page": "ALLIANCE",
+      "action": "TAP_SEMANTIC:BTN_ALLIANCE_WAR",
+      "target": "BTN_ALLIANCE_WAR",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_bear_rally_list_open",
       "visual_evidence": 1,
       "navigation_like": true
     },
@@ -963,6 +1130,50 @@
       "navigation_like": true
     },
     {
+      "skill": "OPEN_BUILDING_UPGRADE",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:BTN_SELECTED_BUILDING_UPGRADE",
+      "target": "BTN_SELECTED_BUILDING_UPGRADE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_COMPLETED_TRAINING_CAMP_LANCER",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_LANCER_CAMP_ENTRY",
+      "target": "QUICK_PANEL_ROW_LANCER_CAMP_ENTRY",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_MARKSMAN_CAMP_ENTRY",
+      "target": "QUICK_PANEL_ROW_MARKSMAN_CAMP_ENTRY",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_COMPLETED_TRAINING_CAMP_SHIELD",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_SHIELD_CAMP_ENTRY",
+      "target": "QUICK_PANEL_ROW_SHIELD_CAMP_ENTRY",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
       "skill": "OPEN_DAILY",
       "source_page": "HOME",
       "action": "TAP_SEMANTIC:BTN_OPEN_DAILY",
@@ -970,7 +1181,51 @@
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "verify_open_daily",
-      "visual_evidence": 2,
+      "visual_evidence": 3,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_EVENT_CALENDAR_DETAIL",
+      "source_page": "EVENT",
+      "action": "TAP_SEMANTIC:EVENT_CALENDAR_NEXT_DETAIL",
+      "target": "EVENT_CALENDAR_NEXT_DETAIL",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_event_calendar_detail_open",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_EVENT_CALENDAR_FROM_HOME",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:REGULAR_EVENT_ENTRY",
+      "target": "REGULAR_EVENT_ENTRY",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_event_calendar_open",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_EVENT_CALENDAR_FROM_MAP",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:REGULAR_EVENT_ENTRY",
+      "target": "REGULAR_EVENT_ENTRY",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_event_calendar_open",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_EVENT_CALENDAR_TAB",
+      "source_page": "EVENT",
+      "action": "TAP_SEMANTIC:EVENT_CALENDAR_TAB",
+      "target": "EVENT_CALENDAR_TAB",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_event_calendar_tab_open",
+      "visual_evidence": 1,
       "navigation_like": true
     },
     {
@@ -982,6 +1237,17 @@
       "schedulable": true,
       "verifier": "verify_open_exploration",
       "visual_evidence": 2,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_GATHER_HERO_PICKER",
+      "source_page": "MARCH",
+      "action": "TAP_SEMANTIC:OPEN_GATHER_HERO_PICKER",
+      "target": "OPEN_GATHER_HERO_PICKER",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_gather_hero_picker_open",
+      "visual_evidence": "DYNAMIC_RESOLVER",
       "navigation_like": true
     },
     {
@@ -1091,7 +1357,7 @@
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "verify_power_details_open",
-      "visual_evidence": 2,
+      "visual_evidence": 3,
       "navigation_like": true
     },
     {
@@ -1103,6 +1369,17 @@
       "schedulable": true,
       "verifier": "verify_power_overview_open",
       "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_QUICK_PANEL",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_HANDLE",
+      "target": "QUICK_PANEL_HANDLE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_ordinary_control_tried",
+      "visual_evidence": "DYNAMIC_RESOLVER",
       "navigation_like": true
     },
     {
@@ -1139,6 +1416,17 @@
       "navigation_like": true
     },
     {
+      "skill": "OPEN_TASK_FROM_QUICK_PANEL_BUILDING",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_BUILDING",
+      "target": "QUICK_PANEL_ROW_BUILDING",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_panel_building_queue_opened",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
       "skill": "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT",
       "source_page": "HOME",
       "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_HERO_RECRUIT",
@@ -1146,6 +1434,17 @@
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "verify_ordinary_control_tried",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT_EPIC",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_HERO_RECRUIT_EPIC",
+      "target": "QUICK_PANEL_ROW_HERO_RECRUIT_EPIC",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
       "visual_evidence": "DYNAMIC_RESOLVER",
       "navigation_like": true
     },
@@ -1168,7 +1467,7 @@
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "<lambda>",
-      "visual_evidence": "DYNAMIC_RESOLVER",
+      "visual_evidence": 1,
       "navigation_like": true
     },
     {
@@ -1179,6 +1478,17 @@
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "verify_ordinary_control_tried",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_TASK_FROM_QUICK_PANEL_PET_TREASURE",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_PET_TREASURE",
+      "target": "QUICK_PANEL_ROW_PET_TREASURE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_quick_panel_pet_entry_opened",
       "visual_evidence": "DYNAMIC_RESOLVER",
       "navigation_like": true
     },
@@ -1205,6 +1515,28 @@
       "navigation_like": true
     },
     {
+      "skill": "OPEN_TECH_TREE",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:BTN_LAB_RESEARCH",
+      "target": "BTN_LAB_RESEARCH",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_research_page_open",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
+      "skill": "PLAY_NORMAL_FISHING_LEVEL",
+      "source_page": "UNKNOWN",
+      "action": "OBSERVE:FISHING_SESSION",
+      "target": "FISHING_SESSION",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": "OBSERVE",
+      "navigation_like": false
+    },
+    {
       "skill": "READ_COUNTER",
       "source_page": "UNKNOWN",
       "action": "READ_COUNTER",
@@ -1213,6 +1545,28 @@
       "schedulable": false,
       "verifier": "UNKNOWN",
       "visual_evidence": 0,
+      "navigation_like": false
+    },
+    {
+      "skill": "READ_EVENT_CALENDAR",
+      "source_page": "EVENT",
+      "action": "OBSERVE:EVENT_CALENDAR",
+      "target": "EVENT_CALENDAR",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_event_calendar_read",
+      "visual_evidence": "OBSERVE",
+      "navigation_like": false
+    },
+    {
+      "skill": "READ_FISHING_STATE",
+      "source_page": "UNKNOWN",
+      "action": "OBSERVE:FISHING_STATE",
+      "target": "FISHING_STATE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": "OBSERVE",
       "navigation_like": false
     },
     {
@@ -1304,6 +1658,17 @@
       "navigation_like": false
     },
     {
+      "skill": "RETURN_EVENT_CALENDAR",
+      "source_page": "EVENT",
+      "action": "PRESS_BACK",
+      "target": "UNKNOWN",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_event_calendar_returned",
+      "visual_evidence": 0,
+      "navigation_like": true
+    },
+    {
       "skill": "SCAN_MAP_FOR_BEAST",
       "source_page": "MAP",
       "action": "SWIPE:0.50,0.62,0.50,0.30",
@@ -1311,6 +1676,28 @@
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "verify_beast_scan_observed",
+      "visual_evidence": "SWIPE",
+      "navigation_like": false
+    },
+    {
+      "skill": "SCROLL_QUICK_PANEL_TASKS",
+      "source_page": "HOME",
+      "action": "SWIPE:QUICK_PANEL_SCROLL_CURRENT",
+      "target": "QUICK_PANEL_SCROLL_CURRENT",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_quick_panel_scrolled",
+      "visual_evidence": "SWIPE",
+      "navigation_like": false
+    },
+    {
+      "skill": "SCROLL_REGULAR_EVENT_TABS",
+      "source_page": "EVENT",
+      "action": "SWIPE:REGULAR_EVENT_TABS_SCROLL_CURRENT",
+      "target": "REGULAR_EVENT_TABS_SCROLL_CURRENT",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_regular_event_tabs_scrolled",
       "visual_evidence": "SWIPE",
       "navigation_like": false
     },
@@ -1363,10 +1750,32 @@
       "source_page": "GROWTH_TASKS",
       "action": "TAP_SEMANTIC:BTN_DAILY_TAB_TASKS",
       "target": "BTN_DAILY_TAB_TASKS",
-      "destination_page": "DAILY",
+      "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "verify_daily_tab_selected",
       "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_GATHER_HERO",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:PICK_EXACT_GATHER_HERO",
+      "target": "PICK_EXACT_GATHER_HERO",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_gather_hero_picker_selected",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_GIANT_BEAST_TAB",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:GIANT_BEAST_SEARCH_TAB",
+      "target": "GIANT_BEAST_SEARCH_TAB",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": "DYNAMIC_RESOLVER",
       "navigation_like": true
     },
     {
@@ -1469,6 +1878,17 @@
       "navigation_like": true
     },
     {
+      "skill": "SELECT_RESEARCH_NODE",
+      "source_page": "RESEARCH",
+      "action": "TAP_SEMANTIC:RESEARCH_NODE_NEXT",
+      "target": "RESEARCH_NODE_NEXT",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_research_node_inspected",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
       "skill": "SELECT_RESOURCE",
       "source_page": "MAP",
       "action": "TAP_SEMANTIC:RESOURCE_DYNAMIC",
@@ -1546,6 +1966,17 @@
       "navigation_like": true
     },
     {
+      "skill": "SUBMIT_GIANT_BEAST_SEARCH",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:BTN_RESOURCE_SEARCH_SUBMIT",
+      "target": "BTN_RESOURCE_SEARCH_SUBMIT",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": 6,
+      "navigation_like": true
+    },
+    {
       "skill": "SUBMIT_RESOURCE_SEARCH",
       "source_page": "MAP",
       "action": "TAP_SEMANTIC:BTN_RESOURCE_SEARCH_SUBMIT",
@@ -1555,6 +1986,39 @@
       "verifier": "verify_resource_found",
       "visual_evidence": 6,
       "navigation_like": true
+    },
+    {
+      "skill": "TAP_FOCUSED_TRAINING_CAMP_LANCER",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:TRAINING_CAMP_BODY_FROM_FOCUS",
+      "target": "TRAINING_CAMP_BODY_FROM_FOCUS",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": false
+    },
+    {
+      "skill": "TAP_FOCUSED_TRAINING_CAMP_MARKSMAN",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:TRAINING_CAMP_BODY_FROM_FOCUS",
+      "target": "TRAINING_CAMP_BODY_FROM_FOCUS",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": false
+    },
+    {
+      "skill": "TAP_FOCUSED_TRAINING_CAMP_SHIELD",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:TRAINING_CAMP_BODY_FROM_FOCUS",
+      "target": "TRAINING_CAMP_BODY_FROM_FOCUS",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": false
     },
     {
       "skill": "TRAIN_TROOPS",
@@ -1595,8 +2059,8 @@
       "action": "OBSERVE:STATUS_GATHERING",
       "target": "STATUS_GATHERING",
       "destination_page": "UNKNOWN",
-      "schedulable": false,
-      "verifier": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
       "visual_evidence": 2,
       "navigation_like": false
     },
@@ -1621,37 +2085,15 @@
       "verifier": "verify_camp_menu_reobserved",
       "visual_evidence": "OBSERVE",
       "navigation_like": false
-    },
-    {
-      "skill": "OPEN_ALLIANCE_RECOMMENDED_TECH_NODE",
-      "source_page": "ALLIANCE",
-      "action": "TAP_SEMANTIC",
-      "target": "BTN_ALLIANCE_TECH_RECOMMENDED_NODE",
-      "destination_page": "ALLIANCE",
-      "schedulable": true,
-      "verifier": "ALLIANCE_TECH_NODE_OPEN",
-      "visual_evidence": [
-        "PAGE_ALLIANCE_TECH",
-        "BTN_ALLIANCE_TECH_RECOMMENDED_NODE"
-      ],
-      "navigation_like": true
-    },
-    {
-      "skill": "CLOSE_ALLIANCE_TECH_DONATION_DETAILS",
-      "source_page": "ALLIANCE",
-      "action": "TAP_SEMANTIC",
-      "target": "BTN_ALLIANCE_TECH_DETAILS_CLOSE",
-      "destination_page": "ALLIANCE",
-      "schedulable": true,
-      "verifier": "ALLIANCE_TECH_DETAILS_CLOSED",
-      "visual_evidence": [
-        "DIALOG_ALLIANCE_TECH",
-        "BTN_ALLIANCE_TECH_DETAILS_CLOSE"
-      ],
-      "navigation_like": true
     }
   ],
   "goals": [
+    {
+      "goal": "ALLIANCE_MOBILIZATION_ICEFIELD_BEAST",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
     {
       "goal": "ALLIANCE_ROUTINE",
       "declared_skills": [],
@@ -1731,13 +2173,37 @@
       "schedulable_path_count": 0
     },
     {
+      "goal": "MAIL_ROUTINE",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
+      "goal": "OBSERVE_FISHING_STATE",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
       "goal": "PARTICIPATE_BEAR",
       "declared_skills": [],
       "navigation_paths": [],
       "schedulable_path_count": 0
     },
     {
+      "goal": "TRAVEL_SUPPLY",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
       "goal": "USE_FREE_ARENA_ATTEMPTS",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
+      "goal": "USE_NORMAL_FISHING_BAIT",
       "declared_skills": [],
       "navigation_paths": [],
       "schedulable_path_count": 0
@@ -1797,14 +2263,6 @@
       "templates": 1
     },
     {
-      "semantic": "BTN_ALLIANCE_TECH",
-      "templates": 1
-    },
-    {
-      "semantic": "BTN_ALLIANCE_WAR",
-      "templates": 1
-    },
-    {
       "semantic": "BTN_AUTO_JOIN",
       "templates": 1
     },
@@ -1814,6 +2272,10 @@
     },
     {
       "semantic": "BTN_CANCEL",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_CANYON_VOTE",
       "templates": 1
     },
     {
@@ -1841,6 +2303,22 @@
       "templates": 1
     },
     {
+      "semantic": "BTN_GEAR_FORGE_POINT_SOURCE",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_GEAR_FORGE_RULES",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_HERO_STORYBOOK",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_JOIN_ROW",
+      "templates": 1
+    },
+    {
       "semantic": "BTN_MARCH_EXPAND",
       "templates": 1
     },
@@ -1865,6 +2343,26 @@
       "templates": 1
     },
     {
+      "semantic": "BTN_REGULAR_EVENT_EXCLUSIVE_GEAR_FORGE",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_REGULAR_EVENT_FISHING_TOURNAMENT",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_REGULAR_EVENT_ICEBOUND_TREASURE",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_REGULAR_EVENT_MYSTERY_SHOP",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_REGULAR_EVENT_TREASURE_TRAINING",
+      "templates": 1
+    },
+    {
       "semantic": "BTN_REMOVE_ALL",
       "templates": 2
     },
@@ -1882,6 +2380,10 @@
     },
     {
       "semantic": "BTN_SUBMIT_BEAST_SEARCH",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_TERRITORY_HUNTING_TRAP_GO",
       "templates": 1
     },
     {
@@ -2049,11 +2551,27 @@
       "templates": 4
     },
     {
+      "semantic": "ORDINARY_CONTROL[前往]",
+      "templates": 1
+    },
+    {
+      "semantic": "ORDINARY_CONTROL[继续领取]",
+      "templates": 1
+    },
+    {
       "semantic": "ORDINARY_CONTROL[跳过]",
       "templates": 1
     },
     {
       "semantic": "ORDINARY_CONTROL[退出]",
+      "templates": 1
+    },
+    {
+      "semantic": "ORDINARY_CONTROL[部队]",
+      "templates": 1
+    },
+    {
+      "semantic": "ORDINARY_CONTROL[部队编组]",
       "templates": 1
     },
     {
@@ -2317,6 +2835,14 @@
       "templates": 1
     },
     {
+      "semantic": "STATE_CITY_VIEW",
+      "templates": 1
+    },
+    {
+      "semantic": "STATE_WILDERNESS_VIEW",
+      "templates": 1
+    },
+    {
       "semantic": "STATUS_ALLIANCE_AUTO_HELP_ACTIVE",
       "templates": 1
     },
@@ -2466,6 +2992,14 @@
     },
     {
       "semantic": "TAB_DAILY_TASKS_SELECTED",
+      "templates": 1
+    },
+    {
+      "semantic": "TAB_EVENT_CALENDAR",
+      "templates": 1
+    },
+    {
+      "semantic": "TAB_HERO_EQUIPMENT",
       "templates": 1
     },
     {

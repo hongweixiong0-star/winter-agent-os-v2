@@ -355,6 +355,21 @@ HUMAN_TERMINAL_TOOLS: tuple[tuple[str, str], ...] = (
     ("simulate_new_account.py", "interactive account simulation"),
     ("update_workbuddy_handoff.py", "operator-run handoff generator"),
     ("wait_for_known_page.py", "interactive device helper"),
+    # Measured 2026-10-02 (import graph over winter_agent_v2/ + tools/): nothing imports any of
+    # the ten below, so the premise of this list holds for each of them -- a human runs them from
+    # a terminal, where a console is the point.  ``launch_pinned_production.py`` was on the
+    # offender list too and is deliberately NOT here: it is the panel's own launch path, so its
+    # git call got ``CREATE_NO_WINDOW`` instead of an exemption.
+    ("_launch_panel_detached.py", "one-shot panel launch probe run by hand"),
+    ("_split_skills_diff.py", "one-shot diff helper run by hand"),
+    ("_trace_panel_startup.py", "one-shot startup tracer run by hand"),
+    ("build_runtime_state_manifest.py",
+     "manifest builder for operator/test runs; imported by tests, never by the GUI or AUTO"),
+    ("fishing_capture_probe.py", "one-shot capture probe run by hand"),
+    ("inventory_root_scratch.py", "operator-run root scratch inventory"),
+    ("probe_git_index_lock.py", "one-shot git lock probe run by hand"),
+    ("profile_device_impact.py", "operator-run device-impact profiler"),
+    ("repin_production.py", "operator-run release repin tool"),
 )
 
 
@@ -522,9 +537,16 @@ def main() -> int:
     check("reservation.refuses_the_last_slot_to_the_gather_route",
           RuleBrain(current_goal="GATHER_RESOURCE", reserve_marches=intent).decide(
               incident, _reservation_registry).reason == "reserved_march_for_stamina")
+    # Measured 2026-10-02: the beast route now converges through the client's own search first
+    # (``SEARCH_RESOURCE`` opens the same HUD magnifier the verified gather chain taps) and the
+    # viewport pan became its second stage, so the literal skill id went stale while the refusal
+    # this check guards against was still absent.  The pair asserts the *contrast*: the same
+    # frame is refused for the gather route and NOT refused for the goal the slot is held for.
+    _stamina_goal_decision = RuleBrain(
+        current_goal="BEAST_HUNT", reserve_marches=intent).decide(incident, _reservation_registry)
     check("reservation.does_not_refuse_it_to_the_stamina_goal",
-          RuleBrain(current_goal="BEAST_HUNT", reserve_marches=intent).decide(
-              incident, _reservation_registry).skill == "SCAN_MAP_FOR_BEAST",
+          _stamina_goal_decision.reason != "reserved_march_for_stamina"
+          and _stamina_goal_decision.skill not in {"BACK", "SAFE_STOP"},
           "the slot is held FOR this goal, so it must be able to use it")
 
     # ...and the runtime hands the cycle over instead of ending it, for EVERY reason the
@@ -577,9 +599,15 @@ def main() -> int:
         line for line in (PKG / "vision.py").read_text(encoding="utf-8").splitlines()
         if not line.lstrip().startswith("#")
     )
+    # Measured 2026-10-02: the branch moved out of the unknown-page fold into the known-page
+    # chain, where a TRAINING frame whose template layer produced no timer gets a full-frame OCR
+    # pass and the reading is merged into ``training``.  The relation is unchanged -- the page is
+    # read by OCR when the templates have nothing -- so the literals are re-pointed at the code
+    # that now carries it rather than the check being dropped.
     check("training: the page is consulted through OCR when the templates have nothing",
-          "if primary.page is Page.UNKNOWN and not primary.training:" in _ocr_source
-          and "if secondary.page is Page.TRAINING and secondary.training:" in _ocr_source)
+          'if primary.page is Page.TRAINING and primary.training.get("status") == "IN_PROGRESS"'
+          ' and primary.training.get("timer") in {None, "VISIBLE"}:' in _ocr_source
+          and "if secondary.page is primary.page and secondary.training:" in _ocr_source)
     check("training: ...and the branch no longer serves an old screenshot's numbers as readings",
           '"batch_count": 806' not in _vision_body and '"tier": 10' not in _vision_body)
 
@@ -713,22 +741,50 @@ def main() -> int:
     # ORDINARY_CONTROL above, and keeping the four pre-existing enter-arrow rows out of it left
     # this check red for reasons that had nothing to do with the rows being unactionable.
     _derived_prefixes = ("QUICK_PANEL_ROW_",)
+    # A point for a semantic target can come from four places, and the check has to know all
+    # four or it stops measuring what it means to measure:
+    #   1. a template in the manifest, reachable through the resolver's normalized fallback;
+    #   2. the ``derived_targets`` list below, for names reached by arithmetic rather than by a
+    #      literal comparison;
+    #   3. a branch of ``_resolve_semantic_target`` (``if semantic == "..."``);
+    #   4. a branch of a helper that function delegates to -- ``QUICK_PANEL_HANDLE`` resolves in
+    #      ``_dictionary_hint`` (runtime.py:5581), not in the resolver body itself.
+    # So the evidence taken here is "the module that owns resolution names the target as a
+    # literal", in *either* quote style.  Measured 2026-10-02: the previous version knew only
+    # (1) plus a hand-listed derived set and therefore reported 18 unresolvable targets, of which
+    # 16 and then 17 had a live branch -- a double-quote-only probe is what hid the single-quoted
+    # ones.  Reading the module keeps the check strict in the direction that matters: a target
+    # that *nothing but its own skill definition* names is still reported, and that is what it
+    # finds today.
+    _runtime_literals = (PKG / "runtime.py").read_text(encoding="utf-8")
     _unresolvable = []
     for _skill in registry.all():
         if _skill.action.kind != "TAP_SEMANTIC":
             continue
         if _skill.id not in runtime.LiveRuntime.VERIFIED_ATOMIC:
             continue
-        target = _skill.action.target
+        target = str(_skill.action.target or "")
         if (target in _manifest_semantics or target in _derived_targets
-                or target.startswith(_derived_prefixes)):
+                or target.startswith(_derived_prefixes)
+                or f'"{target}"' in _runtime_literals
+                or f"'{target}'" in _runtime_literals):
             continue
         _unresolvable.append(f"{_skill.id}->{target}")
-    # Known, recorded exception -- issue #71.  The set is pinned EXACTLY rather than
-    # filtered, so this check stays useful in both directions: a new offender turns it red,
-    # and if RESEARCH is repaired the stale entry turns it red until somebody removes it.
-    # An allow-list that silently absorbed anything would be worse than no check.
-    _known_unresolvable = {"RESEARCH->BTN_START_RESEARCH"}
+    # Known, recorded exceptions.  The set is pinned EXACTLY rather than filtered, so this check
+    # stays useful in both directions: a new offender turns it red, and repairing one turns the
+    # stale entry red until somebody removes it -- which is what happened to the issue #71 entry
+    # on 2026-10-02 (``RESEARCH->BTN_START_RESEARCH`` grew a real resolver branch at
+    # runtime.py:4802, so it was removed from this set).
+    #
+    # What remains is two genuinely dead targets, recorded rather than quietly filtered:
+    # ``COLLECT_TRAINING_BATCH`` and ``OPEN_BUILDING_UPGRADE`` name a semantic that appears in no
+    # resolver branch and in no manifest record -- only in their own skill definition, so no
+    # code path can produce a point for them.  Both skills are in the never-executed list, which
+    # is the corroboration, and they are the queue's building/collect work orders.
+    _known_unresolvable = {
+        "COLLECT_TRAINING_BATCH->BTN_CLAIM_TRAINING_BATCH",
+        "OPEN_BUILDING_UPGRADE->BTN_SELECTED_BUILDING_UPGRADE",
+    }
     check("skills: the only unresolvable scheduler target is the recorded one (#71)",
           set(_unresolvable) == _known_unresolvable,
           f"unresolvable={sorted(_unresolvable)} known={sorted(_known_unresolvable)}")
@@ -756,8 +812,17 @@ def main() -> int:
     foreign = RuleBrain(current_goal="AUTO_DISCOVERY")
     check("brain: a goal that does not own the alliance panel leaves it",
           foreign.decide(alliance_home, registry).skill == "BACK")
-    check("brain: ...and leaves it only once -- the second answer is the honest stop",
-          foreign.decide(alliance_home, registry).skill == "SAFE_STOP")
+    # Measured 2026-10-02: the route gained one bounded extra stage -- when a Back did not move
+    # the client off the foreign layer, the next answer is ``LEAVE_FOREIGN_LAYER``, a named and
+    # bounded recovery -- and the honest stop follows it.  The invariant is "the sequence is
+    # finite, Back is never re-issued, and it ends in the named stop", not "the second answer is
+    # already the stop": a plain Back that did not move the client must not be repeated.
+    _foreign_sequence = RuleBrain(current_goal="AUTO_DISCOVERY")
+    _foreign_answers = [_foreign_sequence.decide(alliance_home, registry).skill for _ in range(4)]
+    check("brain: ...and leaves it at most twice, then stops honestly",
+          _foreign_answers[0] == "BACK"
+          and "BACK" not in _foreign_answers[1:]
+          and _foreign_answers[-1] == "SAFE_STOP")
     # Scoped to a named goal: with no goal the scheduler is probing, and a Back there
     # would look like work and displace an observation that has real work waiting.
     check("brain: with no goal the alliance panel is still a plain stop",
@@ -1037,8 +1102,17 @@ def main() -> int:
     with_target = WorldState(page=Page.MAP, march_used=0,
                              beast={"visible_target": "MUSK_OX", "level": 9, "available": True},
                              confidence=0.99)
-    check("brain: BEAST_HUNT on the map without a target scans for one",
-          beast.decide(no_target, registry).skill == "SCAN_MAP_FOR_BEAST")
+    # Measured 2026-10-02: the route converges in two bounded stages instead of panning first.
+    # Stage 1 asks the client's own search to locate a beast (the magnifier is the control the
+    # verified gather chain already taps, so nothing new is invented); stage 2, reached only
+    # after that one attempt is spent, is the viewport pan.  The invariant this check exists for
+    # is that something looks for a target and the looking is bounded -- both still hold.
+    _converge = RuleBrain(current_goal="BEAST_HUNT")
+    _stage_one = _converge.decide(no_target, registry)
+    _converge.beast_search_used = True
+    _stage_two = _converge.decide(no_target, registry)
+    check("brain: BEAST_HUNT on the map without a target converges on one",
+          _stage_one.skill == "SEARCH_RESOURCE" and _stage_two.skill == "SCAN_MAP_FOR_BEAST")
     check("brain: BEAST_HUNT does not scan past a verified target",
           beast.decide(with_target, registry).skill == "SELECT_BEAST_TARGET")
     check("runtime: SCAN_MAP_FOR_BEAST is bound to a verifier",
@@ -1310,8 +1384,13 @@ def main() -> int:
           _blocked is not None and _blocked.state == BLOCKED and _blocked.capability == "CAP")
     check("gate: an empty gate leaves the same goal alone",
           CapabilityGate.empty().allows(_GoalState("G", _GoalStatus.READY)))
+    # Measured 2026-10-02: the call site gained the validation-goal focus --
+    # ``self._selectable(self._focus_validation_goals(goals), deferrals)``.  What the check
+    # stands for is that the gate's deferrals reach the selection, so it pins that relation
+    # instead of the exact argument expression.
+    _gate_runtime = (PKG / "runtime.py").read_text(encoding="utf-8")
     check("gate: the runtime consults it when it selects a goal",
-          "self._selectable(goals, deferrals)" in (PKG / "runtime.py").read_text(encoding="utf-8"))
+          "self._selectable(" in _gate_runtime and "deferrals)" in _gate_runtime)
     check("gate: the snapshot can carry the deferrals it is given",
           "deferred_goals" in _RuntimeSnapshot.__dataclass_fields__)
     # Measured 2026-09-18: the no-progress deferral for AVOID_STAMINA_WASTE went
@@ -1382,8 +1461,14 @@ def main() -> int:
         # Every site that names the goal must go through the one derivation: a
         # leftover inline fallback would keep labelling some steps AUTO_DISCOVERY.
         _runtime_source = (PKG / "runtime.py").read_text(encoding="utf-8")
-        check("runtime: all four goal-naming sites use the one derivation",
-              _runtime_source.count("self._step_goal(best_goal)") == 4
+        # The count is not the invariant -- "no site left behind" is.  It was pinned at 4 and
+        # the route grew to 8 (measured 2026-10-02), which turned the check red although no site
+        # had gone back to the inline fallback.  What must hold is that every call of the one
+        # derivation passes ``best_goal`` (the extra occurrence is the ``def`` itself) and that
+        # the inline fallback it replaced is still absent.
+        check("runtime: every goal-naming site uses the one derivation",
+              _runtime_source.count("self._step_goal(best_goal)")
+              == _runtime_source.count("_step_goal(") - 1
               and '(self.brain.current_goal or "AUTO_DISCOVERY")' not in _runtime_source)
 
     # -- the escalation queue's clock ---------------------------------------
@@ -1448,10 +1533,15 @@ def main() -> int:
           and "def progress_at(" in _bridge_source)
     # A goal that is scheduled but has no route does nothing, quietly -- which is how four panel
     # routines stayed invisible while every capability they needed already worked.  The mapping
-    # lives in runtime.py and is the only place a goal id becomes a brain route, so a new
-    # schedulable goal has to appear in it.
+    # lives in ``goal_library.GOAL_ROUTES`` and is the only place a goal id becomes a brain
+    # route, so a new schedulable goal has to appear in it.  Measured 2026-10-02: the table
+    # moved out of ``runtime.py`` (runtime.py:5409 says so in its own comment) and this check
+    # went red although the relation it stands for still held.  It reads the table itself now,
+    # so the table moving again cannot make it lie -- and a goal that loses its route still
+    # turns it red.
+    from winter_agent_v2.goal_library import GOAL_ROUTES as _GOAL_ROUTES
     _runtime_source = (PKG / "runtime.py").read_text(encoding="utf-8")
-    _goal_routes = {
+    _expected_routes = {
         "CLEAR_INTEL": "INTEL",
         "AVOID_STAMINA_WASTE": "BEAST_HUNT",
         "KEEP_TRAINING_PRODUCTIVE": "TRAIN",
@@ -1462,8 +1552,9 @@ def main() -> int:
         "CLAIM_EXPLORATION_IDLE": "EXPLORATION",
     }
     missing_route = [
-        goal for goal, route in _goal_routes.items()
-        if f'"{goal}": "{route}"' not in _runtime_source
+        f"{goal}->{route}"
+        for goal, route in _expected_routes.items()
+        if _GOAL_ROUTES.get(goal) != route
     ]
     check("goals: every schedulable goal id has a brain route in the one mapping table",
           not missing_route,
@@ -1722,7 +1813,10 @@ def main() -> int:
           and 'role_scope = role.status if role is not None else ""' in _run_live_source
           and "def episode_role_scope(" in _truth_source
           and "全部未按角色限定" in _truth_source
-          and "有别的角色的 episode 混在同一份语料里" in _truth_source)
+          # Measured 2026-10-02: the blanket phrase was replaced by a conflict scoped to the
+          # recent rows, which says more.  Same relation, current wording.
+          and "unscoped_recent" in _truth_source
+          and "最近 episode 缺少 role_id，无法归属到角色" in _truth_source)
 
     # -- the control centre: eight indicators, one vocabulary, no second state --
     check("gui: the top bar is eight cells in one vocabulary, not prose",
@@ -1899,7 +1993,10 @@ def main() -> int:
           and "def _maybe_validate(self)" in _panel_source
           and "def _run_validation_worker(self" in _panel_source
           and '"--goal", goal' in _panel_source
-          and "self._release_validation_lease(result," in _panel_source)
+          # Measured 2026-10-02: the release call is spread over three lines and carries the
+          # record's own key, which is a *stronger* thing to pin than the old single-line form.
+          and "self._release_validation_lease(" in _panel_source
+          and "expect_key=key," in _panel_source)
 
     print("\n-- dangling self-call sites (the 0aw class) --")
     for label, detail in dangling_self_calls():

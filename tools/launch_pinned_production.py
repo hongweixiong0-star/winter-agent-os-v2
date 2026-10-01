@@ -30,10 +30,19 @@ class PinError(RuntimeError):
     pass
 
 
+#: ``CREATE_NO_WINDOW``.  This file runs under ``pythonw`` from the Task Scheduler action, so
+#: it has no console of its own; a bare ``subprocess.run`` here would pop one on the operator's
+#: desktop every launch.  ``tools/check_wiring.py`` scans this file on purpose -- it is the
+#: panel's launch path, not an operator diagnostic -- so the flag is passed directly rather
+#: than exempting the file.
+CREATE_NO_WINDOW = 0x08000000
+
+
 def _git(*args: str) -> str:
     result = subprocess.run(
         ["git", *args], cwd=CODE_ROOT, capture_output=True, text=True,
         encoding="utf-8", errors="replace", timeout=20, check=False,
+        creationflags=CREATE_NO_WINDOW,
     )
     if result.returncode:
         raise PinError(f"git {' '.join(args)} failed: {result.stderr.strip()}")
