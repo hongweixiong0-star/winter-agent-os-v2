@@ -1874,6 +1874,13 @@ class LiveRuntime:
                     labels.extend(hints["ARENA"])
                 evidence = goal.evidence or {}
                 labels += [str(evidence[key]) for key in ("event_name", "display_name", "activity_name") if evidence.get(key)]
+                if goal.goal_id.startswith("SCHEDULED_") and evidence.get("event_id"):
+                    # Activity registration uses name/aliases; these authorize only
+                    # the same bounded entry observation, never participation.
+                    if evidence.get("name"):
+                        labels.append(str(evidence["name"]))
+                    labels.extend(str(label) for label in evidence.get("aliases", ())
+                                  if isinstance(label, str) and label)
                 for index, element in enumerate(elements):
                     text = str(element.get("text") or "").strip()
                     if (not text or text not in labels or element.get("executable") is not True

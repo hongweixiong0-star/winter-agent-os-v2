@@ -242,3 +242,45 @@ def test_bootstrap_different_role_or_goal_never_resolves_click(discovery):
     runtime.role_id = "B"
     assert runtime._ordinary_control_candidate(discovery.world, discovery.frame) is None
     runtime._advised_control.assert_not_called()
+
+
+@pytest.mark.parametrize("identity", [
+    {"name": "联盟总动员"},
+    {"name": "Alliance Mobilization", "aliases": ["联盟总动员"]},
+])
+def test_registered_event_name_or_alias_matches_only_current_safe_entry(discovery, identity):
+    goal_id = "SCHEDULED_ALLIANCE_MOBILIZATION"
+    event = GoalState(goal_id, GoalStatus.UNKNOWN, available_skills=(), evidence={
+        "event_id": "ALLIANCE_MOBILIZATION", "window": "UNKNOWN", **identity,
+    })
+    discovery.table.return_value = [{**discovery.entry, "id": "CURRENT_MOBILIZATION",
+                                    "semantic": "ALLIANCE_MOBILIZATION_ENTRY", "text": "联盟总动员"}]
+    goals = projected(discovery, [event])
+    assert route_for(goal_id) is None
+    assert goals[0].goal_id == goal_id
+    assert goals[0].status is GoalStatus.DISCOVERED
+    assert goals[0].available_skills == ("TRY_ORDINARY_CONTROL",)
+    assert goals[0].evidence["bootstrap_entry_label"] == "联盟总动员"
+    assert goals[0].evidence["bootstrap_observation_only"] is True
+    assert goals[0].evidence["bootstrap_participation_authorized"] is False
+    assert goals[0].evidence["window"] == "UNKNOWN"
+
+
+def test_known_event_waiting_window_is_not_reopened_by_visible_entry(discovery):
+    event = GoalState("SCHEDULED_ALLIANCE_MOBILIZATION", GoalStatus.SCHEDULED_NOT_OPEN,
+                      evidence={"event_id": "ALLIANCE_MOBILIZATION", "name": "联盟总动员"})
+    discovery.table.return_value = [{**discovery.entry, "text": "联盟总动员"}]
+    assert projected(discovery, [event])[0] is event
+    assert discovery.runtime._bootstrap_diagnostics[0]["reason"] == "WAIT_UNTIL"
+
+
+@pytest.mark.parametrize("evidence", [
+    {"event_id": "ALLIANCE_MOBILIZATION", "name": "峡谷会战"},
+    {"name": "联盟总动员"},
+])
+def test_unidentified_event_or_unmatched_name_cannot_authorize_entry(discovery, evidence):
+    event = GoalState("SCHEDULED_ALLIANCE_MOBILIZATION", GoalStatus.UNKNOWN,
+                      evidence=evidence)
+    discovery.table.return_value = [{**discovery.entry, "text": "联盟总动员"}]
+    assert projected(discovery, [event])[0] is event
+    assert discovery.runtime._bootstrap_diagnostics[0]["reason"] == "MISSING_NAVIGATION"
