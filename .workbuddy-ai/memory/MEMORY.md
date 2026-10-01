@@ -2848,3 +2848,32 @@ bootstrap 尝试**（该文件只在 `_mark_bootstrap_attempt` 时写）。
 **教训**：① 写测量工具前先确认**运行时用哪个对象**；②「机制存在」≠「机制会触发」——
 要问「哪一步会让它产生第一个候选」；③ `MISSING_*` 分类词必须**直接用运行时的原话**
 （`capability_bootstrap` 的字符串），自造同义词会让审计与运行时各说各话却各自自洽。
+
+## ⚠ 修正上一节：`MISSING_NAVIGATION 273` 是审计的构造，不是生产事实（同日，`0d53e9d`）
+
+上一节写「真正的墙是导航」。**那 273 次是审计里传 `safe_steps_by_goal={}`（故意的最坏情况）
+得到的**，它测的是「不提供任何入口时落在哪一档」，**不等于「系统无法导航」**。
+`capability_bootstrap` 的顺序是**先算 gap 分类、再看有没有 safe step**，有 step 就覆盖成
+`BOOTSTRAP_READY`。生产里 runtime **会**生成入口候选（`runtime.py:1806-1851`，含
+`hints["ARENA"]=("竞技场",)` 且 `if "ARENA" in goal.goal_id`）。
+
+**真正的断点在别处**：`runtime.py:1795` 的 `if not known_work:`（硬门）。`known_work` 要求
+「存在 READY/DISCOVERED **且有 route** **且有 VERIFIED_ATOMIC skill**」的 goal，而板上**永远有 13 个**
+⇒ 该分支**从不进入** ⇒ 从不建 element table、从不给 `capability_bootstrap` 候选步骤
+⇒ **`learning/capability_bootstrap/runtime_discovery.json`（唯一写入方是 `_mark_bootstrap_attempt`）
+在项目历史上从未生成过一次** ⇒ **学习窗口一次都没开过，且没有任何地方报错**。
+
+**已修**：`if not known_work or self._learning_window_open():` —— 每**进程**一次，标志在得到
+答案**之前**就置位（否则「开了窗口却没东西可给」会每步重复付一次全帧 OCR）。预算数字改为
+**引用** `capability_bootstrap.DEFAULT_BUDGET["max_bootstrap_visits_per_run"]`（不再复制）；
+一次访问/run、300 s cooldown、`bootstrap_participation_authorized=False`、危险动作拒绝**全部未动**。
+**这是开门，不是授权。**
+
+**另外一个语义确认**：`capability_bootstrap` 的 `__run__` 计数**不需要额外清零** ——
+`_bootstrap_state()` 读文件时只保留带 `cooldown_until` 的键，`__run__` 被过滤掉，
+所以它天然是**进程内**状态、跨 run 归零。看代码时不要误判为"永久关闭"。
+
+**教训**：① **审计的构造参数会伪装成"发现"** —— 传 `{}` 测出的缺口只说明「无入口时卡在哪」，
+不能当成「系统永远做不到」；**报告数字时必须同时报告构造条件**；② 一个**恒为真**的门
+= 一条**永不执行**的路径，且它**静默**；③ 判定「这红是我改的吗」用 `git stash push -- <文件>`
+回退重跑（本轮 5 failed 经此证明为**既有**，与我的改动无关，已如实写进提交信息）。
