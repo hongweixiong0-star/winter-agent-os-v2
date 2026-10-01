@@ -42,10 +42,18 @@ nothing.
 
 What this module deliberately does NOT do
 -----------------------------------------
-* No exploration bonus.  §四.7's "DISCOVERED gets a fair chance but may not occupy real
-  work's resources" is **already** the sweep design: ``_sweep_value`` prices an unread
-  page at 80-180, above routine gathering and below any claim.  Adding a second bonus
-  would double-count it.
+* No second exploration bonus for *runnable* goals.  §四.7's "DISCOVERED gets a fair chance but
+  may not occupy real work's resources" is **already** the sweep design: ``_sweep_value`` prices
+  an unread page at 80-180, above routine gathering and below any claim.  Adding a bonus on top of
+  it would double-count the same signal.
+
+  The observation ticket is a different thing rather than a second copy of it: it applies only
+  where the sweep cannot reach -- a goal whose ``priority`` is ``-inf`` and which therefore never
+  entered the ranking at all.  Operator directive 2026-10-02 §5 forbids leaving such a goal
+  permanently invisible ("启用Goal → UNKNOWN → priority=-inf → 永远没人再看"), and §11 requires its
+  value to come from what the goal is worth rather than from whether a skill happens to exist.
+  ``observation_ticket`` is that decision; see its docstring for what bounds it, and
+  ``tools/invariant_review.py`` for the measurement that showed it was needed.
 * No invented experience.  A route with no measured attempts scores zero, not a guess
   (operator §四.8).  The measured numbers come from
   ``knowledge/strategy/stamina_routes.json``, which until now **no code read** -- the
@@ -393,6 +401,66 @@ def red_dot_bonus(world: Any, goal_id: str) -> tuple[float, tuple[str, ...]]:
     return (RED_DOT_BONUS, entries) if entries else (0.0, ())
 
 
+#: What it is worth to *go and look* at a goal we cannot run yet.
+#:
+#: Operator directive 2026-10-02 §5 and §11, and the reason this module no longer answers "-inf"
+#: for every UNKNOWN: §5 forbids "启用Goal → UNKNOWN → priority=-inf → 永远没人再看", and §11
+#: requires GoalValue to be decoupled from ExecutionReadiness.  A goal that cannot be executed
+#: this frame is still work -- observation work -- and the board has to be able to say so.
+#:
+#: Measured 2026-10-02 before this existed: ``tools/invariant_review.py`` reported
+#: NO_PERMANENT_UNKNOWN_BLACKHOLE = FAIL and HIGH_VALUE_UNKNOWN_NOT_STARVED = FAIL, and its
+#: simulated §17 world selected one goal out of five for a role whose work was entirely UNKNOWN.
+#:
+#: The ceilings are chosen the same way ``RED_DOT_BONUS`` was -- against the gaps that already
+#: exist on the board, never for roundness.  Routine work prices at 70-250, intel at 800, the bear
+#: at 1000, the stamina goal near 2455.  300 lets a genuinely valuable UNKNOWN outrank ordinary
+#: routine work, which is what §一 asks for ("HIGH_VALUE_UNKNOWN 必须能够和 HIGH_VALUE_KNOWN 直接
+#: 竞争"), and still cannot reach the work that pays.  0.5 is the share because looking is worth
+#: half of doing: it produces no goal progress, and pricing it at par would let a board of
+#: unknowns outrank the work that actually advances the account.
+OBSERVATION_TICKET_CEILING = 300.0
+OBSERVATION_TICKET_SHARE = 0.5
+
+
+def observation_ticket(goal: Any) -> float:
+    """What this goal is worth to observe, or 0 when it may not be observed at all.
+
+    Two gates, both of them the project's own existing declarations rather than new policy:
+
+    * the status must be ``UNKNOWN``.  ``COMPLETE``, ``BLOCKED``, ``SCHEDULED_NOT_OPEN`` and
+      ``EXPIRED`` keep their ``-inf``: those statuses say "not this frame" for reasons observation
+      cannot change, and re-pricing them would be the re-tiering this module exists to avoid.
+    * the goal must carry ``evidence["required_observation"]``.  That field already exists and
+      already names what has to be read off the client -- ``USE_NORMAL_FISHING_BAIT`` and the
+      fishing claims set it.  Requiring it is §5's second half: a goal may stay unreachable only
+      while the system can say *what it is waiting to learn*.  A goal with nothing to observe gets
+      no ticket and stays off the board, which keeps this from becoming a blanket amnesty.
+
+    A ticket is **not** permission.  It puts the goal where the Scheduler can see it; whether
+    anything may then happen is still decided by ``capability_bootstrap`` (which refuses
+    consumption, rally and purchase verbs outright) and by the capability gate.
+    """
+    status = getattr(goal, "status", None)
+    if str(getattr(status, "value", status) or "") != "UNKNOWN":
+        return 0.0
+    evidence = getattr(goal, "evidence", None)
+    if not isinstance(evidence, Mapping) or not evidence.get("required_observation"):
+        return 0.0
+    from .goal_library import deadline_pressure  # local: goal_library imports this module
+
+    def number(name: str) -> float:
+        return _number(getattr(goal, name, None)) or 0.0
+
+    raw = (deadline_pressure(getattr(goal, "remaining_seconds", None))
+           + number("reward_value") + number("daily_loss")
+           + number("event_synergy") + number("development_value")
+           - number("resource_cost") - number("risk"))
+    if raw <= 0:
+        return 0.0
+    return min(OBSERVATION_TICKET_CEILING, raw * OBSERVATION_TICKET_SHARE)
+
+
 @dataclass(frozen=True)
 class UtilityBreakdown:
     """Every term of one goal's utility, so a decision can be explained (§九)."""
@@ -405,6 +473,12 @@ class UtilityBreakdown:
     repeat_failure: float = 0.0
     red_dot: float = 0.0
     event_readiness: float = 0.0
+    #: Set when this goal could not run at all and was priced by an observation ticket instead.
+    #: In that case it **equals** ``base`` -- recorded separately only so the decision log can say
+    #: so, rather than leaving the reader to infer it from an empty ``available_skills`` list.
+    #: Deliberately not added into ``total``: the ticket *is* the base, and counting one signal
+    #: twice is what this module's own docstring forbids.
+    observation: float = 0.0
     #: The entries whose own dot produced ``red_dot``.  Carried here rather than looked up again by
     #: the caller because the frame the term was computed on is the only frame that can explain it.
     red_dot_on: tuple[str, ...] = ()
@@ -430,6 +504,7 @@ class UtilityBreakdown:
             "red_dot": round(self.red_dot, 1),
             "red_dot_on": list(self.red_dot_on),
             "event_readiness": round(self.event_readiness, 1),
+            "observation": round(self.observation, 1),
             "dynamic": round(self.dynamic, 1),
             "total": round(self.total, 1),
         }
@@ -449,6 +524,9 @@ class UtilityBreakdown:
             parts.append(f"red-dot {self.red_dot:+.1f} on {'/'.join(self.red_dot_on)}")
         if self.event_readiness:
             parts.append(f"event-readiness {self.event_readiness:+.1f}")
+        if self.observation:
+            parts.append(f"observation-ticket {self.observation:.1f} (unrunnable, nothing learned "
+                         f"yet -- the ticket is the base, not an extra term)")
         return ", ".join(parts) if parts else "catalogue price only"
 
 
@@ -467,8 +545,15 @@ def utility(
     recomputed here -- see the module docstring for why that matters.
     """
     base = float(goal.priority)
+    ticket = 0.0
     if base == float("-inf"):
-        return UtilityBreakdown(goal_id=str(goal.goal_id), base=base)
+        # §5/§11: an unrunnable goal is not a nonexistent one.  A goal that has declared what it
+        # is waiting to observe is priced as observation work rather than answered "-inf" and
+        # dropped from the board; a goal that has declared nothing keeps the old answer exactly.
+        ticket = observation_ticket(goal)
+        if ticket <= 0:
+            return UtilityBreakdown(goal_id=str(goal.goal_id), base=base)
+        base = ticket
     skills = tuple(getattr(goal, "available_skills", ()) or ())
     dot, dot_entries = red_dot_bonus(world, str(goal.goal_id)) if world is not None else (0.0, ())
     return UtilityBreakdown(
@@ -481,6 +566,7 @@ def utility(
         red_dot=dot,
         red_dot_on=dot_entries,
         event_readiness=max(0.0, float(event_readiness)),
+        observation=ticket,
     )
 
 
@@ -512,7 +598,10 @@ def rank(
     rows = ledger or {}
     scored: list[tuple[float, int, Any, UtilityBreakdown]] = []
     for index, goal in enumerate(goals):
-        if not getattr(goal, "available_skills", ()):
+        if not getattr(goal, "available_skills", ()) and observation_ticket(goal) <= 0:
+            # §5: "no skill" is a different execution strategy, not an exclusion condition.
+            # A goal with something to observe stays on the board; one with neither a skill nor
+            # anything to observe still does not.
             continue
         breakdown = utility(
             goal, world=world, facts=facts,
