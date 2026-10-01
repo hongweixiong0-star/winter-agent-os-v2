@@ -3,7 +3,8 @@ from pathlib import Path
 
 from winter_agent_v2.skills import v2_registry
 from winter_agent_v2.skill_factory import GOAL_REQUIREMENTS, SkillFactory
-from winter_agent_v2.goal_library import GoalLibrary, route_for
+from winter_agent_v2.goal_library import GoalLibrary, ROUTE_DOMAINS, route_for
+from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.models import Page, WorldState
 from winter_agent_v2.rally import RallyTarget, rally_target_for_goal
 from winter_agent_v2.session_adapters import route_for as session_route_for
@@ -58,6 +59,12 @@ def test_mobilization_icefield_goal_reuses_active_polar_route_with_explicit_targ
     assert goal.evidence['rally_target'] == 'POLAR_TERROR'
     assert rally_target_for_goal(goal.goal_id, goal.evidence) is RallyTarget.POLAR_TERROR
     assert route_for(goal.goal_id) == 'GIANT_BEAST'
+    assert route_for(goal.goal_id) in ROUTE_DOMAINS
+    assert route_for('GIANT_BEAST') == 'GIANT_BEAST'
+    brain = RuleBrain()
+    brain.current_goal = route_for(goal.goal_id)
+    brain.goal_id = goal.goal_id
+    assert brain.decide(WorldState(page=Page.MAP), v2_registry()).skill == 'START_RALLY'
     assert session_route_for(goal.goal_id, 'START_RALLY').adapter == 'bear'
     assert goal.goal_id in _goals()
 

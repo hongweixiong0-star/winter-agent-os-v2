@@ -142,6 +142,7 @@ GOAL_ROUTES: dict[str, str] = {
 ROUTE_DOMAINS: tuple[str, ...] = (
     "HOME", "GATHER_RESOURCE", "BEAST_HUNT", "INTEL", "MAIL",
     "EXPLORATION", "DAILY", "ALLIANCE", "RESEARCH", "TRAIN", "BUILDING", "EVENT", "FISHING",
+    "GIANT_BEAST",
 )
 
 
@@ -161,6 +162,12 @@ def route_for(goal_id: str | None) -> str | None:
     value = str(goal_id or "")
     if value in ROUTE_DOMAINS:
         return value
+    if value.startswith("CLAIM_FREE_"):
+        # The current reward reader emits page-scoped goals. Reuse the page's
+        # existing reward route; unknown pages must not inherit Gather by default.
+        reward_page = value.removeprefix("CLAIM_FREE_")
+        if reward_page in {"MAIL", "DAILY", "ALLIANCE", "EXPLORATION", "INTEL", "EVENT"}:
+            return reward_page
     return GOAL_ROUTES.get(value)
 
 

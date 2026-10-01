@@ -94,7 +94,12 @@ def test_every_goal_the_capability_table_names_has_a_route():
     # Not every entry is a schedulable goal on this board -- the table also carries goals the
     # operator has not enabled.  What must not happen is one of *these* silently reaching the
     # scheduler, so the assertion is over the ones ``discover`` actually emits.
-    leaked = sorted(g for g in missing if g in _discoverable())
+    discovered = _discoverable()
+    # Provider and awaiting-observation records are visible but have no executable
+    # work yet. Apply the same selectable-goal invariant as the page-sweep guard.
+    leaked = sorted(g for g in missing if g in discovered
+                    and discovered[g].available_skills
+                    and discovered[g].priority != float('-inf'))
     assert not leaked, f"discoverable goals with no route: {leaked}"
 
 
