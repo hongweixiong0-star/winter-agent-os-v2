@@ -4531,8 +4531,21 @@ class LiveRuntime:
                 frame.page is not Page.HOME
                 or frame_path is None
                 or training.get("navigation") != "PANEL_CAMP_FOCUSED"
-                or training.get("camp_focus_source") != "CURRENT_FRAME_SELECTION_HALO"
             ):
+                return None
+            if training.get("camp_focus_source") == "REOBSERVED_STATIC_CITY_VIEW":
+                # The bounded retry already registered this exact new frame
+                # against the original city view. It is an ephemeral reading,
+                # not a persistent locator or a point from a different capture.
+                if (str(training.get("camp_focus_current_frame") or "") != str(frame_path)
+                        or training.get("camp_focus_retry_attempt") != 1):
+                    return None
+                point = training.get("camp_focus_tap_norm")
+                if (isinstance(point, (tuple, list)) and len(point) == 2
+                        and all(isinstance(v, (float, int)) and 0 <= v <= 1 for v in point)):
+                    return tuple(point)
+                return None
+            if training.get("camp_focus_source") != "CURRENT_FRAME_SELECTION_HALO":
                 return None
             from .camp_ring import focused_camp_body_tap_norm
 
