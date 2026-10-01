@@ -66,6 +66,7 @@ class RuntimeSnapshot:
     # this field was silently dropped, so the one place an operator looks to ask "why
     # is AUTO not doing that" would have said nothing.
     deferred_goals: list[dict[str, Any]] = field(default_factory=list)
+    capability_discovery: list[dict[str, Any]] = field(default_factory=list)
     updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 

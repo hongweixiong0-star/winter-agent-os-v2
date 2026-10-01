@@ -5648,6 +5648,24 @@ class LiveRuntime:
         self._ordinary_declined = None
         if frame.page in (Page.MAINTENANCE, Page.LOADING):
             return None
+        bootstrap = getattr(self, "_bootstrap_context", {}) or {}
+        if bootstrap.get("bootstrap_stage"):
+            self._ordinary_last = {}
+            self._l1_context = None
+            self._advised_request_id = ""
+            self._advised_learn_context = {}
+            if (bootstrap.get("bootstrap_goal_id") != str(getattr(self, "_committed_goal", "") or "")
+                    or bootstrap.get("bootstrap_role_id") != self._calendar_role_id()
+                    or not bootstrap.get("bootstrap_entry_label")):
+                return None
+            self._unknown_semantic_target = str(bootstrap.get("bootstrap_semantic_target") or bootstrap["bootstrap_entry_label"])
+            self._unknown_skill_id = "TRY_ORDINARY_CONTROL"
+            try:
+                return self._advised_control(frame.page.value, "", Path(frame_path), frame,
+                                             unnamed=not frame.known, confidence=frame.confidence)
+            finally:
+                self._unknown_semantic_target = ""
+                self._unknown_skill_id = ""
         ocr = self._ocr_service()
         if ocr is None:
             return None
