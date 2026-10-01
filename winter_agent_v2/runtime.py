@@ -1978,7 +1978,9 @@ class LiveRuntime:
                     observed_at=world.timestamp or datetime.now(timezone.utc),
                     reason=f"fresh_known_page_{world.page.value}", evidence_ref=str(frame))
             return replace(world, events=events)
-        calendar = event_calendar.read_event_calendar(result.tokens, frame_size=size)
+        # Match the executor's colored-bar grounding: a section heading read by
+        # OCR is not automatically the next clickable calendar entry.
+        calendar = event_calendar.read_event_calendar(result.tokens, frame_size=size, frame_path=frame)
         detail = event_calendar.read_event_detail(result.tokens, event_label=None, frame_size=size)
         hub = self._regular_event_hub_on_frame(frame, result=result)
         if hub.get("recognized") is True:
