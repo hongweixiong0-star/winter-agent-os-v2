@@ -75,3 +75,9 @@ HEAD/origin=fe78e9cd93198fc9c91c7d21e57ccadfbf109d27；代码PIN=5a0aeb2458113a8
 ## 2026-10-01T20:09:34.473305+00:00 真机详情闭环更新
 
 951abbd普通AUTO 20261002_040522_770261 / ROLE_A：7日期列、6真正可点击活动条目；6次OPEN_DETAIL与6次RETURN都Verifier PASS，随后进入体力/情报，未再停在日历。先前8项为OCR候选标题，含不可点击section headings，不等于8条真实可操作活动。角色B必须自己fresh读取；活动参与、预约/战斗时间及Venus学习仍不因日历读取成功而完成。WorkBuddy队列02跳过A已完成扫描，重点B/due suppression/真实剩余条件。
+
+## 2026-10-01T20:11:47.141043+00:00 明确额度交接授权（覆盖此前Codex continues字样）
+
+当前剩余约16%，Root在本turn结束后主动让出开发发布权，WorkBuddy可按任务01核对无并发源码写入/发布/设备lease并记录独占claim后执行本队列，包括小提交、正常push与安全pin/reload。无需用户逐项确认。本授权用于开发，retired runtime channel仍禁止恢复。尚未取得WorkBuddy实际开始执行证据，不能报告它已运行。Codex heartbeat后续只读核验交接，不竞争owner。
+
+当前AUTO控制面19756、worker24832实际存活，最新CLEAR_INTEL；生产代码951abbd clean，main后续仅Commander文档。保留既有dirty/untracked全部成果，当前tracked Python源码无未提交改动。

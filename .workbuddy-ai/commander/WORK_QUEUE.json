@@ -10,9 +10,9 @@
     "role": "developer-only queue; never game runtime model fallback"
   },
   "handoff_gate": {
-    "activation_state": "ARMED_WAITING_HANDOFF",
+    "activation_state": "AUTHORIZED_AFTER_CODEX_TURN_END",
     "currently_active_release_owner": "Codex current thread",
-    "codex_continues_now": true,
+    "codex_continues_now": false,
     "trigger_any": [
       {
         "type": "codex_quota_remaining_percent_lte",
@@ -24,12 +24,12 @@
     ],
     "trigger_is_not_proof_of_transfer": true,
     "require_before_writes": [
-      "读取最新Codex Review/handoff与git/production实际状态",
-      "确认Codex暂停/离线或quota阈值，并记录WorkBuddy接手任务所有权",
-      "确认当前文件修改归属和现有设备租约；没有并发输入/代码写入",
-      "所有发布动作先确认Root已明确移交Release Owner；当前quota刷新与本queue READY都不等于移交"
+      "确认本Codex turn已经结束、无其他release writer",
+      "核对最新code951abbd/pin/loaded worker、Git/当前AUTO、现有DeviceLease",
+      "保存并结算旧执行态，不重写原WorkOrder；通过task01记录WorkBuddy独占claim",
+      "Claim后才执行开发push/安全pin/reload，不与Codex heartbeat并发"
     ],
-    "release_operations_require": "显式Release Owner移交记录；仅quota数字、旧进程不存在或本queue READY不能自行证明移交。",
+    "release_operations_require": "Root has explicitly authorized transfer after this turn; WorkBuddy must record exclusive task01 claim and recheck no concurrent input/release before publishing.",
     "until_release_owner_transferred": {
       "push_main": false,
       "repin_production": false,
@@ -38,12 +38,15 @@
     "user_action": "用户只需启动WorkBuddy，它读取正式WORK_QUEUE；不得要求用户手工复制任务。",
     "no_device_takeover_while_codex_active": true,
     "quota_status_at_capture": {
-      "remaining_percent": 19,
-      "measured_at": "2026-10-02T04:06:00+08:00",
-      "codex_continues_now": true,
-      "note": "Refresh account-wide limits before handoff; <=15% activates explicit queued handoff."
+      "remaining_percent": 16,
+      "captured_at": "2026-10-01T20:11:47.141043+00:00",
+      "codex_continues_now": false
     },
-    "conditional_release_authorization": "When Codex explicitly yields due quota/offline and no Codex write/device/release is active, WorkBuddy task01 may record exclusive release-owner claim and proceed with the queued developer tasks. This user-authorized conditional handoff does not permit concurrent releases."
+    "conditional_release_authorization": "When Codex explicitly yields due quota/offline and no Codex write/device/release is active, WorkBuddy task01 may record exclusive release-owner claim and proceed with the queued developer tasks. This user-authorized conditional handoff does not permit concurrent releases.",
+    "explicit_codex_yield_at": "2026-10-01T20:11:47.141043+00:00",
+    "release_owner_transfer_authorized": true,
+    "next_release_owner": "WorkBuddy after exclusive task01 claim",
+    "actual_workbuddy_execution_started": false
   },
   "execution_budget": {
     "total_timebox_minutes": 525,
@@ -729,23 +732,23 @@
     }
   ],
   "base_facts": {
-    "captured_at": "2026-10-01T20:09:34.473305+00:00",
-    "head": "b186903e95c7881fa6c68aa04cc44ab68a2a1ab7",
-    "origin_main": "b186903e95c7881fa6c68aa04cc44ab68a2a1ab7",
+    "captured_at": "2026-10-01T20:11:47.141043+00:00",
+    "head": "c2d02ae1aab923667443486a282d575065d7a01b",
+    "origin_main": "c2d02ae1aab923667443486a282d575065d7a01b",
     "prod_pin": "951abbdd039c4955f2cd99fd442ae2aea56ffae3",
     "prod_clean": true,
     "runtime_snapshot": {
-      "updated_at": "2026-10-01T20:07:38.941790+00:00",
+      "updated_at": "2026-10-01T20:11:46.768819+00:00",
       "role_id": "1063040265",
-      "current_goal": "AVOID_STAMINA_WASTE",
-      "current_skill": "OPEN_MAP",
+      "current_goal": "CLEAR_INTEL",
+      "current_skill": "OPEN_INTEL_HERO_JOURNEY_TARGET",
       "agent_state": "GOAL_RUNNING",
       "runtime_thread_alive": true,
       "scheduler_loop_alive": true,
       "unexpected_worker_exits": 18,
       "watchdog_restart_count": 24,
       "last_fatal_error": null,
-      "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED"
+      "stop_reason": null
     },
     "loaded_revisions": [
       "4598da3e3d3543e1a869902e1e230da902843344+dc6f5267bfc03460",
