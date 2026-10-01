@@ -101,6 +101,10 @@ class RuleBrain:
         # second sighting of the same unclaimed panel proves the tap does not work
         # (see the GET_MORE_STAMINA branch).
         self.stamina_claim_attempts = 0
+        # An exhausted board may be left once, but reopening it on MAP sees the
+        # same pins already attempted in this run. Preserve that local fact until
+        # a new untried pin is actually observed or a fresh run starts.
+        self.intel_board_exhausted_left = False
         # A separate flag for the camp panel's affordability gate.  It must not
         # reuse ``stamina_panel_checked``: that flag gates the map's
         # free-stamina check, and the gate below deliberately *routes towards*
@@ -2257,7 +2261,12 @@ class RuleBrain:
                     # Returning SAFE_STOP here can spend the remaining goal-yield budget
                     # on the Intel page and end the whole production run without checking
                     # those tasks.
+                    if self.intel_board_exhausted_left:
+                        return Decision("SAFE_STOP", "intel_no_untried_pins", 1.0, "switch_task")
+                    self.intel_board_exhausted_left = True
                     return Decision("BACK", "intel_board_exhausted_return_to_map", world.confidence, "map_opened")
+                if isinstance(world.intel.get("untried_pins"), int) and world.intel["untried_pins"] > 0:
+                    self.intel_board_exhausted_left = False
                 # The board is a pin map: pins are sighted but no card is open,
                 # so the mission type cannot be known yet - the card only exists
                 # after a pin is tapped.  Tap one to find out; whatever opens
@@ -2508,6 +2517,8 @@ class RuleBrain:
                 self.stamina_panel_checked = True
                 return Decision("OPEN_STAMINA_SOURCES", "free_stamina_gift_not_yet_checked_this_run", world.confidence, "stamina_sources_open")
             if self._intel_like:
+                if self.intel_board_exhausted_left:
+                    return Decision("SAFE_STOP", "intel_no_untried_pins", 1.0, "switch_task")
                 return Decision("OPEN_INTEL", "intel_goal_from_world_map", world.confidence, "intel_page_open")
             if self.current_goal == "BEAST_HUNT":
                 if world.idle_marches is not None and world.idle_marches <= 0:
