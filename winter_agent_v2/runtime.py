@@ -120,7 +120,7 @@ from .verifier import (
     verify_event_calendar_read, verify_event_calendar_detail_open,
     verify_event_calendar_returned, verify_training_batch_claimed,
     verify_free_hero_recruit, verify_quick_panel_scrolled,
-    verify_quick_panel_pet_entry_opened, verify_gathering,
+    verify_quick_panel_pet_entry_opened, verify_gathering, verify_regular_event_tabs_scrolled,
 )
 
 
@@ -358,6 +358,7 @@ class LiveRuntime:
         "OPEN_EVENT_CALENDAR_FROM_HOME": verify_event_calendar_open,
         "OPEN_EVENT_CALENDAR_FROM_MAP": verify_event_calendar_open,
         "OPEN_EVENT_CALENDAR_TAB": verify_event_calendar_tab_open,
+        "SCROLL_REGULAR_EVENT_TABS": verify_regular_event_tabs_scrolled,
         "READ_EVENT_CALENDAR": verify_event_calendar_read,
         "OPEN_EVENT_CALENDAR_DETAIL": verify_event_calendar_detail_open,
         "RETURN_EVENT_CALENDAR": verify_event_calendar_returned,
@@ -1973,6 +1974,9 @@ class LiveRuntime:
             return replace(world, events=events)
         calendar = event_calendar.read_event_calendar(result.tokens, frame_size=size)
         detail = event_calendar.read_event_detail(result.tokens, event_label=None, frame_size=size)
+        hub = self._regular_event_hub_on_frame(frame, result=result)
+        if hub.get("recognized") is True:
+            events["regular_events_hub"] = hub
         if detail.get("recognized") is True:
             if calendar.get("details_visible") is True or pending:
                 events.pop("calendar", None)
@@ -1995,6 +1999,29 @@ class LiveRuntime:
         elif calendar.get("recognized") is True:
             events["calendar"] = event_schedule.annotate_calendar_observation(role, calendar)
         return replace(world, events=events)
+
+    def _regular_event_hub_on_frame(self, frame: Path, *, result=None):
+        """Read the navigation strip on this frame, widening only its actual ROI."""
+        from .event_calendar import read_regular_event_hub
+        from .ocr import OCRToken
+        ocr = self._ocr_service()
+        if ocr is None:
+            return {}
+        size = read_frame_size(frame)
+        result = result if result is not None else ocr.recognize(frame)
+        hub = read_regular_event_hub(result.tokens, frame_size=size)
+        roi = hub.get("tabstrip_roi_norm")
+        if (hub.get("recognized") is True and hub.get("calendar_tab_visible") is not True
+                and not hub.get("scroll_to_start_norm") and roi and size):
+            # ROI OCR boxes are crop-local. Project them back onto this exact
+            # frame before the reader determines a container or a gesture.
+            local = ocr.recognize(frame, roi=roi)
+            dx, dy = round(roi["x_norm"] * size[0]), round(roi["y_norm"] * size[1])
+            lifted = tuple(OCRToken(token.text, token.confidence,
+                                   tuple((x + dx, y + dy) for x, y in token.box))
+                           for token in local.tokens if token.box)
+            hub = read_regular_event_hub((*result.tokens, *lifted), frame_size=size)
+        return hub
 
     def _record_calendar_observation(self, world: WorldState, frame=None) -> None:
         role = self._calendar_role_id()
@@ -4488,13 +4515,27 @@ class LiveRuntime:
             except (OSError, TypeError, ValueError):
                 return None
             return target if all(0.0 <= value <= 1.0 for value in target) else None
-        if semantic == "EVENT_CALENDAR_TAB":
+        if semantic in {"EVENT_CALENDAR_TAB", "REGULAR_EVENT_TABS_SCROLL_CURRENT"}:
             # Its template art also appears on HOME. The tab exists only inside
             # the recognized regular-event detail or calendar page.
             events = frame.events or {}
-            if (frame.page is not Page.EVENT or not any(
+            if frame.page is not Page.EVENT or frame_path is None:
+                return None
+            fresh_hub = self._regular_event_hub_on_frame(Path(frame_path))
+            if fresh_hub.get("recognized") is True:
+                key = "calendar_tab_tap_norm" if semantic == "EVENT_CALENDAR_TAB" else "scroll_to_start_norm"
+                point = fresh_hub.get(key)
+                expected_len = 2 if semantic == "EVENT_CALENDAR_TAB" else 4
+                if isinstance(point, (tuple, list)) and len(point) == expected_len:
+                    target = tuple(float(value) for value in point)
+                    return target if all(0.0 <= value <= 1.0 for value in target) else None
+                if semantic == "REGULAR_EVENT_TABS_SCROLL_CURRENT":
+                    return None
+            if semantic == "REGULAR_EVENT_TABS_SCROLL_CURRENT":
+                return None
+            if not any(
                     isinstance(events.get(key), Mapping) and events[key].get("recognized") is True
-                    for key in ("calendar", "calendar_detail"))):
+                    for key in ("calendar", "calendar_detail")):
                 return None
         if semantic == "RALLY_ROW_JOIN_BUTTON":
             if frame.page is not Page.ALLIANCE:

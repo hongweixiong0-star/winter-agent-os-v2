@@ -1069,6 +1069,9 @@ class OCRPageClassifier:
         calendar_reading = event_calendar.read_event_calendar(
             eligible, frame_size=frame_size
         )
+        regular_event_hub = event_calendar.read_regular_event_hub(eligible, frame_size=frame_size)
+        if regular_event_hub.get("recognized") is True:
+            found.append(Page.EVENT)
         if calendar_reading.get("recognized") is True:
             # A calendar page needs its heading, several visible date anchors and event-like
             # entries together. The small Home/Map rail label alone cannot name this page.
@@ -1325,6 +1328,8 @@ class OCRPageClassifier:
             # A future listing is not a live scoring window. Keeping it separate prevents a
             # preview title from creating an actionable minimum-guarantee goal.
             events["calendar"] = calendar_reading
+        if regular_event_hub.get("recognized") is True:
+            events["regular_events_hub"] = regular_event_hub
         if page is Page.ALLIANCE:
             texts = [token.text for token in eligible]
             if bear_trap_detail:

@@ -1796,9 +1796,11 @@ def verify_event_calendar_open(before: WorldState, after: WorldState) -> Verific
     """The regular-events entry succeeds only when its actual client page is observed."""
     calendar = (after.events or {}).get("calendar") if isinstance(after.events, dict) else None
     detail = (after.events or {}).get("calendar_detail") if isinstance(after.events, dict) else None
+    hub = (after.events or {}).get("regular_events_hub") if isinstance(after.events, dict) else None
     grid_recognized = isinstance(calendar, dict) and calendar.get("recognized") is True
     detail_recognized = isinstance(detail, dict) and detail.get("recognized") is True
-    recognized = grid_recognized or detail_recognized
+    hub_recognized = isinstance(hub, dict) and hub.get("recognized") is True
+    recognized = grid_recognized or detail_recognized or hub_recognized
     ok = before.page in {Page.HOME, Page.MAP} and after.page is Page.EVENT and recognized
     return VerificationResult(
         ok,
@@ -1809,6 +1811,8 @@ def verify_event_calendar_open(before: WorldState, after: WorldState) -> Verific
             "calendar_recognized": recognized,
             "calendar_grid_recognized": grid_recognized,
             "calendar_detail_recognized": detail_recognized,
+            "regular_events_hub_recognized": hub_recognized,
+            "navigation_progress_only": hub_recognized and not (grid_recognized or detail_recognized),
             "visible_dates": list((calendar or {}).get("visible_dates_raw") or ()),
             "entry_count": len((calendar or {}).get("entries") or ()),
             "detail_event_id": (detail or {}).get("event_id"),
@@ -1819,21 +1823,43 @@ def verify_event_calendar_open(before: WorldState, after: WorldState) -> Verific
 def verify_event_calendar_tab_open(before: WorldState, after: WorldState) -> VerificationResult:
     """Prove the calendar tab was selected from the regular-events activity panel."""
     before_detail = (before.events or {}).get("calendar_detail") if isinstance(before.events, dict) else None
+    before_hub = (before.events or {}).get("regular_events_hub") if isinstance(before.events, dict) else None
     calendar = (after.events or {}).get("calendar") if isinstance(after.events, dict) else None
     recognized = isinstance(calendar, dict) and calendar.get("recognized") is True
     ok = (
         before.page is Page.EVENT and after.page is Page.EVENT
-        and isinstance(before_detail, dict) and before_detail.get("recognized") is True
+        and ((isinstance(before_detail, dict) and before_detail.get("recognized") is True)
+             or (isinstance(before_hub, dict) and before_hub.get("recognized") is True))
         and recognized
     )
     return VerificationResult(
         ok,
         "OK" if ok else "EVENT_CALENDAR_TAB_NOT_OPEN",
         {"detail_recognized_before": isinstance(before_detail, dict) and before_detail.get("recognized") is True,
+         "hub_recognized_before": isinstance(before_hub, dict) and before_hub.get("recognized") is True,
          "calendar_grid_recognized_after": recognized,
          "visible_dates": list((calendar or {}).get("visible_dates_raw") or ()),
          "entry_count": len((calendar or {}).get("entries") or ())},
     )
+
+
+def verify_regular_event_tabs_scrolled(before: WorldState, after: WorldState) -> VerificationResult:
+    """Scrolling proves navigation progress, never activity or calendar completion."""
+    old = (before.events or {}).get("regular_events_hub") or {}
+    new = (after.events or {}).get("regular_events_hub") or {}
+    same_hub = (before.page is Page.EVENT and after.page is Page.EVENT
+                and old.get("recognized") is True and new.get("recognized") is True)
+    old_tabs, new_tabs = old.get("tab_positions_norm") or {}, new.get("tab_positions_norm") or {}
+    moved = bool(set(new_tabs) - set(old_tabs)) or any(
+        abs(float(new_tabs[label][0]) - float(old_tabs[label][0])) >= 0.03
+        for label in set(old_tabs) & set(new_tabs)
+        if len(old_tabs[label]) == 2 and len(new_tabs[label]) == 2
+    )
+    revealed = old.get("calendar_tab_visible") is not True and new.get("calendar_tab_visible") is True
+    ok = same_hub and (moved or revealed)
+    return VerificationResult(ok, "OK" if ok else "REGULAR_EVENT_TABS_SCROLL_NOT_PROVEN",
+                              {"same_hub": same_hub, "tabstrip_changed": moved,
+                               "calendar_tab_revealed": revealed, "navigation_progress_only": True})
 
 
 def verify_event_calendar_read(before: WorldState, after: WorldState) -> VerificationResult:

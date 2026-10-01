@@ -9,6 +9,7 @@ supplies a coordinate or manufactures a time.
 from __future__ import annotations
 
 import hashlib
+import math
 import re
 from difflib import SequenceMatcher
 from pathlib import Path
@@ -251,6 +252,118 @@ def read_calendar_entry(tokens: Iterable[Any], *, frame_size: tuple[int, int] | 
         "source": "CURRENT_FRAME_OCR",
         "confidence": float(getattr(token, "confidence", 0.0) or 0.0),
     }
+
+
+def read_regular_event_hub(
+    tokens: Iterable[Any], *, frame_size: tuple[int, int] | None,
+) -> dict[str, Any]:
+    """Recognize the regular-event shell separately from a calendar grid/detail.
+
+    The selected event may have no printed date range. A large top heading, a tab above
+    a distinct event title, and the event's body text establish the shell. One observed
+    tab is enough for page identity, but at least two distinct aligned tabs are needed
+    to authorize a horizontal swipe. All action geometry expires with these OCR tokens.
+    """
+    result: dict[str, Any] = {
+        "kind": "REGULAR_EVENT_HUB", "recognized": False,
+        "calendar_tab_visible": False, "calendar_tab_tap_norm": None,
+        "scroll_to_start_norm": None, "tab_signature": "",
+        "tab_positions_norm": {},
+        "tabstrip_roi_norm": None, "source": "CURRENT_FRAME_OCR",
+    }
+    width, height = frame_size or (0, 0)
+    if width <= 0 or height <= 0:
+        return {**result, "reason": "NO_FRAME_GEOMETRY"}
+    rows = []
+    for token in tokens:
+        label = re.sub(r"\s+", "", str(getattr(token, "text", "") or ""))
+        points = _box(token)
+        if not label or not points or not all(math.isfinite(v) for p in points for v in p):
+            continue
+        left, right = min(p[0] for p in points), max(p[0] for p in points)
+        top, bottom = min(p[1] for p in points), max(p[1] for p in points)
+        if not (0 <= left < right <= width and 0 <= top < bottom <= height):
+            continue
+        confidence = float(getattr(token, "confidence", 0.0) or 0.0)
+        if not math.isfinite(confidence) or confidence < 0.65:
+            continue
+        rows.append({"label": label, "left": left, "right": right, "top": top,
+                     "bottom": bottom, "x": (left + right) / 2, "y": (top + bottom) / 2,
+                     "height": bottom - top, "confidence": confidence})
+    headings = [r for r in rows if r["label"] == "常规活动"
+                and r["height"] >= height * 0.02 and r["y"] <= height * 0.12]
+    if len(headings) != 1:
+        return {**result, "reason": "NO_UNAMBIGUOUS_LARGE_TOP_HEADING"}
+    heading = headings[0]
+    titles = sorted((r for r in rows if _candidate_title(r["label"])
+                     and r["top"] > heading["bottom"] + heading["height"]
+                     and r["height"] >= max(height * 0.02, heading["height"] * 0.65)
+                     and r["y"] <= height * 0.5), key=lambda r: r["y"])
+    body_markers = ("积分", "排名", "奖励", "可接次数", "已完成", "进行中",
+                    "活动时间", "剩余", "阶段", "前往", "任务")
+    for title in titles:
+        possible_tabs = [r for r in rows
+                         if r["label"] in ("日历", "活动日历") or _candidate_title(r["label"])]
+        possible_tabs = [r for r in possible_tabs
+                         if r["top"] > heading["bottom"]
+                         and r["bottom"] < title["top"]
+                         and height * 0.01 <= r["height"] <= heading["height"] * 1.1]
+        if not possible_tabs:
+            continue
+        # Use the densest current horizontal band, never a historical row pitch.
+        bands = [[r for r in possible_tabs
+                  if abs(r["y"] - anchor["y"]) <= max(r["height"], anchor["height"]) * 0.8]
+                 for anchor in possible_tabs]
+        tabs = max(bands, key=lambda band: (len({r["label"] for r in band}),
+                                           sum(r["confidence"] for r in band)))
+        unique_tabs = []
+        for row in sorted(tabs, key=lambda r: r["x"]):
+            if not any(row["label"] == prev["label"]
+                       and abs(row["x"] - prev["x"]) <= row["height"] for prev in unique_tabs):
+                unique_tabs.append(row)
+        body = [r for r in rows if r["top"] >= title["bottom"]
+                and any(marker in r["label"] for marker in body_markers)]
+        if not body:
+            continue
+        tabs = unique_tabs
+        signature_rows = [
+            f"{r['label']}:{r['left']/width:.5f},{r['top']/height:.5f},"
+            f"{r['right']/width:.5f},{r['bottom']/height:.5f}" for r in tabs
+        ]
+        roi_top = heading["bottom"] + heading["height"] * 0.15
+        roi_bottom = title["top"] - title["height"] * 0.15
+        if roi_bottom <= roi_top:
+            continue
+        calendar_tabs = [r for r in tabs if r["label"] in ("日历", "活动日历")]
+        calendar = calendar_tabs[0] if len(calendar_tabs) == 1 else None
+        result.update({
+            "recognized": True, "reason": "CURRENT_HEADING_TAB_AND_EVENT_BODY",
+            "display_name": title["label"], "event_id": _event_id(title["label"]),
+            "calendar_tab_visible": bool(calendar_tabs),
+            "calendar_tab_tap_norm": ([round(calendar["x"] / width, 5),
+                                       round(calendar["y"] / height, 5)] if calendar else None),
+            "tab_signature": "|".join(signature_rows),
+            "tab_positions_norm": {
+                r["label"]: [round(r["x"] / width, 5), round(r["y"] / height, 5)]
+                for r in tabs if sum(other["label"] == r["label"] for other in tabs) == 1
+            },
+            "tabstrip_roi_norm": {"x_norm": 0.0, "y_norm": round(roi_top / height, 5),
+                                  "w_norm": 1.0, "h_norm": round((roi_bottom - roi_top) / height, 5)},
+            "tabs": [{"label": r["label"], "confidence": r["confidence"]} for r in tabs],
+            "body_evidence": [r["label"] for r in body],
+        })
+        # A visible calendar is directly tappable; don't also authorize an unnecessary swipe.
+        if not calendar_tabs and len({r["label"] for r in tabs}) >= 2:
+            left, right = min(r["left"] for r in tabs), max(r["right"] for r in tabs)
+            tab_height = max(r["height"] for r in tabs)
+            margin = max(tab_height * 0.8, (right - left) * 0.12)
+            start, end = left + margin, right - margin
+            y = sum(r["y"] for r in tabs) / len(tabs)
+            if end - start >= tab_height * 2 and roi_top < y < roi_bottom:
+                result["scroll_to_start_norm"] = [round(start / width, 5), round(y / height, 5),
+                                                  round(end / width, 5), round(y / height, 5)]
+        return result
+    return {**result, "reason": "EVENT_BODY_OR_TAB_STRUCTURE_MISSING"}
 
 
 def read_event_calendar(

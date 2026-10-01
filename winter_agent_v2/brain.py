@@ -642,6 +642,16 @@ class RuleBrain:
                     "OPEN_EVENT_CALENDAR_DETAIL", "open_next_uninspected_visible_calendar_entry",
                     world.confidence, "event_calendar_detail_open",
                 )
+            hub = events.get("regular_events_hub") or {}
+            if world.page is Page.EVENT and hub.get("recognized") is True:
+                if hub.get("calendar_tab_visible") is True:
+                    return Decision("OPEN_EVENT_CALENDAR_TAB", "current_regular_event_hub_calendar_tab_visible",
+                                    world.confidence, "event_calendar_tab_opened")
+                if hub.get("scroll_to_start_norm"):
+                    return Decision("SCROLL_REGULAR_EVENT_TABS", "calendar_tab_outside_current_activity_strip",
+                                    world.confidence, "regular_event_tabs_scrolled")
+                return Decision("SAFE_STOP", "regular_event_tab_container_not_grounded",
+                                world.confidence, "defer_calendar_continue_other_goals")
             if world.page is Page.HOME and entry.get("visible") is True:
                 return Decision(
                     "OPEN_EVENT_CALENDAR_FROM_HOME", "calendar_scan_due_and_entry_seen_on_current_home_frame",

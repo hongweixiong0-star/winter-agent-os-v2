@@ -1854,6 +1854,21 @@ class GoalLibrary:
                 distance=0.0,
             ))
             return
+        hub = events.get("regular_events_hub")
+        if world.page is Page.EVENT and isinstance(hub, Mapping) and hub.get("recognized") is True:
+            skill = ("OPEN_EVENT_CALENDAR_TAB" if hub.get("calendar_tab_visible") is True
+                     else "SCROLL_REGULAR_EVENT_TABS" if hub.get("scroll_to_start_norm") else None)
+            goals.append(GoalState(
+                "DISCOVER_EVENT_CALENDAR", GoalStatus.READY if skill else GoalStatus.UNKNOWN,
+                available_skills=(skill,) if skill else (),
+                reward_value=300, daily_loss=450, development_value=250,
+                evidence={"role_id": scoped_role_id, "scope": scope,
+                          "operation": "CONTINUE_FROM_CURRENT_REGULAR_EVENT_HUB",
+                          "navigation_progress_only": True,
+                          "required_observation": None if skill else "current_activity_tab_container"},
+                distance=0.0,
+            ))
+            return
         if world.page not in {Page.HOME, Page.MAP}:
             return
         try:
