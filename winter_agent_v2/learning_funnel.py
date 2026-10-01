@@ -322,7 +322,11 @@ def _joined_window(
             trace["replans"] += 1
         if row.get("fallback_call") is True:
             trace["fallback_calls"] += 1
-    unknowns = int(counts["unknown_observed"] or 0)
+    # Replans can start another causal trace for the same semantic UNKNOWN.
+    # The denominator is its role-scoped identity, not the number of attempts.
+    unknowns = len({(trace["role_id"], trace["unknown_identity"] or trace["trace_id"])
+                    for trace in traces.values()
+                    if int(trace["stages"].get("unknown_observed") or 0)})
     closures: list[dict[str, str]] = []
     first_stages = ("venus_called", "venus_proposed", "grounding_valid", "risk_gate_allowed",
                     "maa_executed", "verifier_success", "candidate_step_created")
@@ -345,6 +349,7 @@ def _joined_window(
                          "unknown_identity": first["unknown_identity"]})
     metrics = {
         "JOINED_TRACE_COUNT": len(traces), "JOINED_UNATTRIBUTED_WINDOW_ROWS": rejected,
+        "JOINED_UNIQUE_UNKNOWNS": unknowns,
         "VENUS_CALLS_PER_UNKNOWN": _ratio(int(counts["venus_called"] or 0), unknowns),
         "PROPOSALS_PER_UNKNOWN": _ratio(int(counts["venus_proposed"] or 0), unknowns),
         "CANDIDATE_REUSE_SUCCESS": int(counts["second_verifier_success"] or 0),

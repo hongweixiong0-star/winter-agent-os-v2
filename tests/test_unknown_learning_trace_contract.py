@@ -181,3 +181,16 @@ def test_runtime_and_planner_failed_settlement_count_one_real_verifier_failure(t
     report = funnel.build_funnel(root=tmp_path, now=now)
     assert report.metrics["VERIFIER_FAILURES"] == 1
     assert report.joined_funnel["verifier_success"] == 0
+
+
+def test_same_semantic_unknown_across_attempt_traces_is_one_denominator(tmp_path):
+    now = datetime.now(timezone.utc)
+    _write(tmp_path / funnel.ONLINE_LEDGER, [
+        _event(now, stage, trace=trace, call=trace)
+        for trace in ("attempt-1", "attempt-2")
+        for stage in ("UNKNOWN_OBSERVED", "VENUS_CALLED", "VENUS_PROPOSED")
+    ])
+    report = funnel.build_funnel(root=tmp_path, now=now)
+    assert report.metrics["JOINED_TRACE_COUNT"] == 2
+    assert report.metrics["JOINED_UNIQUE_UNKNOWNS"] == 1
+    assert report.metrics["VENUS_CALLS_PER_UNKNOWN"] == 2
