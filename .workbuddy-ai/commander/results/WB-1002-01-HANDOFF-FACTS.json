@@ -1,0 +1,63 @@
+{
+  "TASK_ID": "WB-1002-01-HANDOFF-FACTS",
+  "ROOT_CAUSE": "三类过期事实叠加，而不是一个代码缺陷。① 旧正式队列仍是 2026-09-24 的 WB-0921 批次，其 WB-0921-01 在 EXECUTION_STATE 里仍写着 IN_PROGRESS / result=None，但该队列已被 2026-10-02 队列取代（archive/WORK_QUEUE_20260921_superseded_20260924.json），10 个旧单零执行证据；② 运行快照最后 tick = 2026-10-01T23:17:04Z，面板 pid 19756 已不存在、pump 心跳 720s 过期、0 worker，因此任何 'snapshot alive' 字段都不能当作当前进程证据；③ dev HEAD(8d6990e) 与生产 PIN(951abbd) 版本号不同，但差额只有 3 个 commander 文档提交（CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md / WORK_QUEUE.json），tracked Python 源码零差异，所以这不是一次未发布的代码分叉。",
+  "CHANGED_FILES": [
+    ".workbuddy-ai/commander/EXECUTION_STATE.json (via tools/cq.py init/start/finish)",
+    ".workbuddy-ai/commander/results/WB-1002-01-HANDOFF-FACTS.json"
+  ],
+  "TEST_RESULT": "本单按 test_plan 只做只读一致性检查，不跑大型 suite、不占设备。实际执行：tools/panel_restart.py --status、tools/state_truth_audit.py --stale、tools/preflight.py、tools/cq.py plan/init、git rev-parse/status/log/worktree list、进程表与学习态文件新鲜度核对。附带把 tools/check_wiring.py 只读跑了一次用于给出'安全继续条件'的真实基线，结论见 REMAINING_ISSUE（problems=13，全部为守卫陈旧/生成物陈旧，非本轮引入）。",
+  "LIVE_ATTEMPTS": 0,
+  "LIVE_SUCCESS": 0,
+  "LIVE_FAILURE": 0,
+  "BEFORE": "接管前事实：EXECUTION_STATE.current_task=WB-0921-01(IN_PROGRESS, result=None)；旧队列 base 2026-09-24；runtime_snapshot.updated_at=2026-10-01T23:17:06Z，agent_state=IDLE，stop_reason=MAX_ACTIONS_REACHED；runtime_thread_alive=false；panel pid 19756 alive=False、pump 心跳 720s、workers=0；DEVICE_LEASE.json 的 lease(5a0d9596...) 已于 2026-10-01T20:04:35Z released_at 归还；state_truth_audit 报 27 态 / 7 过期 / 1 冲突（version_active 951abbd vs HEAD 8d6990e）。没有任何 panel / worker / run_live 进程在跑，AUTO 停机。",
+  "AFTER": "本单结束时的可追溯事实（全部现场实测，非沿用旧值）：\n\n[所有权] Codex 在 2026-10-01T20:11:47.141043+00:00 明确让出开发与发布权（WORK_QUEUE.handoff_gate.explicit_codex_yield_at / release_owner_transfer_authorized=true / next_release_owner='WorkBuddy after exclusive task01 claim'；LAST_CODEX_REVIEW 同刻写明授权 WorkBuddy 做小提交、正常 push 与安全 pin/reload，且无需逐项确认）。此后 3h16m（至本单核验时刻 2026-10-01T23:28Z）无任何 Codex 提交：HEAD 仍停在授权提交 8d6990e（2026-10-02T04:11:48+08:00）。worktree list 显示 6 个 codex worktree 仍在磁盘，但生产 worktree winter-prod-pinned 的 HEAD 仍是 951abbd，未被写入。CONCURRENT_RELEASE_OWNERS = 0；本会话记录独占 claim，成为下一任 Release Owner。\n\n[版本真值] dev HEAD = origin/main = 8d6990e9a388fc7560f2d397b1225ab6d4bbc284（已 push，git_sync_state last_push_status=PUSHED）。生产 PIN(worktree 根 PRODUCTION_PIN.json) expected_commit = 951abbdd039c4955f2cd99fd442ae2aea56ffae3，production_branch=codex/production-pin-recovery，data_root=E:\\无尽冬日智能体，config/knowledge/learning/dataset 四个目录以 JUNCTION 挂进共享数据根（实测 dir /AL 确认，非 symlink）。git diff --stat 951abbd..HEAD 只有 .workbuddy-ai/commander/ 三文件 ⇒ PROD 与 DEV 的**代码**等价，差异是文档版本号。\n\n[进程真值] panel.pid=19756 alive=False；pump.json 最后 last_tick=07:16:17（本地），mtime 2026-10-01T23:16:17Z；runtime_snapshot/global_scheduler_state/goal_state 最后写入 2026-10-01T23:17:06Z；panel.log 最后三行是正常的连续运行循环（07:14:37 已启用连续运行 → 07:15:04 运行环境预检通过 → 07:15:04 自动运行已启动），之后无任何输出，无崩溃报告。crashes/ 里最新一份是 2026-10-01T15:02:53Z（本地 23:02:53，8.4 小时前）的 HybridVision._read_daily_activity_badge AttributeError（Codex 已由 c74f0bb 修复），**panel 死亡那一刻(≈23:17Z)没有 crash 报告**。⇒ 面板是被静默回收/终止，不是 worker 崩溃。进程表实测无 python 面板、无 run_live worker；只有 adb.exe、codex.exe 及其 node 子进程、以及两个与本项目无关的 python.exe。\n\n[设备真值] learning/DEVICE_LEASE.json：owner=DEVELOPMENT_VALIDATION、lease_id=5a0d959629864bf4be4d82a1bf0f5dcc、released_at=2026-10-01T20:04:35.915033Z、expires_at=2026-10-01T20:07:32Z、result=PIN_UPDATED。已过期且已归还 ⇒ 无活动租约。preflight 实测设备在线：127.0.0.1:7555 [720,1280] foreground=com.gof.china，解释器 .venv\\Scripts\\python.exe，VERDICT=PASS，AUTO may run。\n\n[角色真值] learning/role_identity.json: role_id=1061663148（xhw / DIW / 王国4298 / 8391.4万），由 state_truth.record_role 于 2026-10-01T20:15:04Z 从真机帧写入，verification=LIVE_ROLE_SWITCH_PROFILE_AND_HOME_VERIFIED。global_scheduler_state: active_role_id=1061663148，last_switch 2026-10-01T20:15:04Z 由 1063040265→1061663148（ROLE_SESSION_END NO_WORK_STREAK），global_next_wakeup_at=2026-10-02T11:16:35.890522Z，末次决策 KEEP_ROLE / goal=DISCOVER_EVENT_CALENDAR / skill=OPEN_EVENT_CALENDAR_DETAIL / 理由 ROLE_SESSION_LOCKED batch 0/36。\n\n[旧任务结算] WB-0921-01..WB-0921-10 全部零执行证据（01=IN_PROGRESS 但 result=None，02..10=PENDING），其队列原文件已按字节归档于 archive/WORK_QUEUE_20260921_superseded_20260924.json，由 2026-10-02 的 8 单 schema3 队列取代。结算方式：不在原地重写旧记录，只在 EXECUTION_STATE 中由 cq.py 建立新队列条目；EXECUTION_STATE.current_task 的 WB-0921-01 是陈旧指针，**不得**据此恢复旧工作。\n\n[文件所有权] 1309 项脏文件构成已分解：1285 未跟踪 + 24 已修改；按目录 dataset 413 / learning 284 / knowledge 185 / tools 61 / .workbuddy-ai 18 / tests 8 / 其余为根目录 out*.txt 与报告。**tracked Python 源码零未提交修改**（与 LAST_CODEX_REVIEW 2026-10-01T20:11 的陈述一致）。未跟踪代码 70 项，最新 mtime 2026-10-01T15:26:35Z（tests/test_runtime_capability_discovery_lane.py），全部早于 Codex 的授权提交 20:11Z ⇒ 无 Codex 在途未提交代码需要保护。winter_agent_v2/formation_policy.py 虽未跟踪，但用 import 图核对确认**没有任何 tracked 模块 import 它**（先前 grep 到的命中都是文档路径串与局部变量名），因此 HEAD 的 import 完整性不受影响。决定：保留全部 dirty/untracked 成果，不以清工作树为目标。",
+  "VERIFIER_RESULT": "PASS（按本单 verifier 三条判据逐条现场测量，非推断）。\n1. 单一所有权有可信移交：PASS — 授权时刻 2026-10-01T20:11:47.141043Z 有机器可读字段（explicit_codex_yield_at / release_owner_transfer_authorized=true / next_release_owner）与同刻人写 Review 双证；授权后 3h16m 无新 Codex 提交；实际并发 release writer 数 = 0。\n2. 当前运行与时间戳可追溯：PASS — 快照 tick 23:17:06Z、pump 07:16:17、panel.pid 19756 alive=False、0 worker、DEVICE_LEASE 已 released_at、preflight 设备在线，六个来源互相一致且都带时间戳；**没有把陈旧 snapshot 的 alive 字段当作进程存活证据**（panel_restart --status 明确报 'snapshot is 670s old, too stale to judge'）。\n3. 没有第二 panel/worker、没有覆盖原 dirty：PASS — 进程表实测 0 个面板/worker；本单对受保护路径只读，写入仅限 files_scope 内两份 commander 文件；未执行任何 git add/reset/clean/checkout/restore。",
+  "EVIDENCE": {
+    "claim": "本会话（WorkBuddy）在 WB-1002-01 记录独占 claim：release_owner=WorkBuddy，claim_at=2026-10-01T23:28Z 起，承接自 Codex 2026-10-01T20:11:47.141043Z 的显式让渡；授权范围=小提交 + 正常 push + 安全 pin/reload；retired runtime channel 仍禁止恢复。",
+    "authorization_fields": [
+      ".workbuddy-ai/commander/WORK_QUEUE.json -> handoff_gate.explicit_codex_yield_at / release_owner_transfer_authorized / next_release_owner",
+      ".workbuddy-ai/commander/LAST_CODEX_REVIEW.md -> '2026-10-01T20:11:47.141043+00:00 明确额度交接授权'"
+    ],
+    "revisions": {
+      "head": "8d6990e9a388fc7560f2d397b1225ab6d4bbc284",
+      "origin_main": "8d6990e9a388fc7560f2d397b1225ab6d4bbc284",
+      "prod_pin": "951abbdd039c4955f2cd99fd442ae2aea56ffae3",
+      "prod_pin_file": "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/PRODUCTION_PIN.json",
+      "code_delta_pin_to_head": "none (.workbuddy-ai/commander/{CODEX_DIRECTIVES.md,LAST_CODEX_REVIEW.md,WORK_QUEUE.json} only)",
+      "last_push": "2026-10-01T20:11:59.109334+00:00 PUSHED head=8d6990e"
+    },
+    "process_reality": {
+      "panel_pid_recorded": 19756,
+      "panel_alive": false,
+      "pump_last_tick": "07:16:17 (local)",
+      "pump_heartbeat_age_s": 720,
+      "workers": 0,
+      "runtime_snapshot_updated_at": "2026-10-01T23:17:06.939727+00:00",
+      "runtime_snapshot_age_at_check": "670s -> too stale to judge",
+      "stop_reason": "MAX_ACTIONS_REACHED"
+    },
+    "device": {
+      "lease_released_at": "2026-10-01T20:04:35.915033Z",
+      "lease_expired_at": "2026-10-01T20:07:32Z",
+      "active_lease": false,
+      "preflight": "PASS - 127.0.0.1:7555 [720,1280] foreground=com.gof.china"
+    },
+    "old_queue_settlement": {
+      "tasks": "WB-0921-01..10",
+      "execution_evidence": "none (01 IN_PROGRESS result=None; 02..10 PENDING)",
+      "archived_queue": ".workbuddy-ai/commander/archive/WORK_QUEUE_20260921_superseded_20260924.json",
+      "superseded_by": "WORK_QUEUE.json schema_version=3 generated_at 2026-10-02T03:36:20+08:00"
+    },
+    "dirty_tree": {
+      "total": 1309,
+      "untracked": 1285,
+      "modified": 24,
+      "tracked_python_modified": 0,
+      "newest_untracked_code_mtime": "2026-10-01T15:26:35.014118Z"
+    }
+  },
+  "PATCH_STATUS": "DONE_READONLY_CLAIM_RECORDED",
+  "REMAINING_ISSUE": "1) AUTO 当前停机且不是崩在一个可归因的错误上：panel.log 在 07:15:04 '自动运行已启动' 之后无任何输出，23:17Z 那一刻没有 crash 报告，进程表里 panel 与 worker 同时消失 —— 与 tools/panel_restart.py 自己记录的宿主行为一致（'This host reclaims a detached child's whole process tree when the calling process finishes its turn', 2026-09-18 实测）。即面板若由某个会结束的调用进程派生，就会在那一轮结束时被整树回收。这属于 WB-1002-08 的 'AUTO 跨边界持续性' 主题，需要作为独立根因处理（正确做法是让面板由长生命周期宿主启动，而不是再次从工具轮次里派生）。\n2) tools/check_wiring.py 在当前 HEAD 上报 problems=13，而本项目长期口径是 problems: 0（本文件历史记录多处如此）。已分类：多数是**守卫陈旧**（守卫最后一次更新 925858d 2026-09-27，之后代码大幅演进），已确证一例——'goals: every schedulable goal id has a brain route' 断言在 runtime.py 里找字面量 '\"CLEAR_INTEL\": \"INTEL\"'，而该映射已迁到 goal_library.GOAL_ROUTES（runtime.py:5409 注释明写），关系仍成立、只是断言找错了文件；另一类是**生成物陈旧**（knowledge/ui/navigation_matrix.json committed counts=116 skills vs fresh=152，需重跑 tools/ui_navigation_matrix.py）。该项使任何后续改动都无法用守卫区分'我改坏了'与'本来就红'，应先恢复绿色基线。\n3) 能力预载闸门仍未 ARMED：pump.json preload_note = GATE_REFUSED / NOT_ARMED_MAIN_LOOP_P0 (P0-A=PARTIAL, P0-D=NOT PROVEN, P0-E=PARTIAL, P0-F=NOT PROVEN)，台账 0 条 bootstrap 行，对应 WB-1002-03 的 FIRST→Candidate→SECOND 闭环仍无证据。\n4) 本机无法从进程内部观测 Codex 会话是否已真正结束；只能由'显式授权字段 + 3h16m 零写入 + 无设备/租约活动'三条外部证据推断移交成立。若 Codex 之后再次写入，本会话须按 handoff_gate 重新让路。",
+  "NEXT_RECOMMENDATION": "按队列顺序推进，但先插一件所有后续单都依赖的事：\n(a) 先把 tools/check_wiring.py 的 13 项红恢复为可解释的绿色基线（逐项判定'守卫陈旧 / 生成物陈旧 / 真实回归'，只改陈旧守卫与重生成生成物，**不为了变绿而放宽断言**；任何暴露出的真实回归单独最小修复）。判据：problems=0 且每个被改动的断言都能指出它现在读的是当前唯一真值源。\n(b) 同时按 WB-1002-08 的真实根因处理 AUTO 跨边界停机：让面板由长生命周期宿主启动（而不是从工具轮次派生），然后用 2 个真实 run boundary 证明它跨边界存活。判据：panel.pid 指向的进程在两次 run boundary 之后仍 alive、pump 心跳新鲜、episodes.jsonl 新增行带 verifier PASS。\n(c) 然后执行 WB-1002-02：继承 951abbd 的日历修复，用真实 AUTO trace 验证 detail identity / due 持久化 / 不饿死其它 Goal，跳过 ROLE_A 已完成的 6 次 detail 扫描。",
+  "recorded_at": "2026-10-01T23:32:27+00:00"
+}

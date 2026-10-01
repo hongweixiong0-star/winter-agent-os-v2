@@ -6,24 +6,20 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x455 all-time; recent=126 (last 2d), last seen 2026-09-24T13:27:02.849145+00:00 — TRY_ORDINARY_CONTROL(56), SELECT_RESOURCE(50), OPEN_HOME(45)
-- **POPUP_CLOSE_NOT_PROVEN** x90 all-time; recent=76 (last 2d), last seen 2026-09-23T23:15:34.464669+00:00 — CLOSE_POPUP(82), DISMISS_REAL_MONEY_OFFER(7), RECONNECT_SESSION(1)
-- **POWER_DETAILS_NOT_PROVEN** x38 all-time; recent=38 (last 2d), last seen 2026-09-24T13:38:56.204884+00:00 — OPEN_POWER_DETAILS(38)
-- **BEAST_DISPATCH_NOT_PROVEN** x67 all-time; recent=29 (last 2d), last seen 2026-09-24T04:49:35.547754+00:00 — DISPATCH_BEAST(67)
-- **SAFE_BACK_NOT_PROVEN** x97 all-time; recent=20 (last 2d), last seen 2026-09-23T13:08:24.805139+00:00 — BACK(97)
-- **NO_EXECUTION** x54 all-time; recent=13 (last 2d), last seen 2026-09-24T09:17:07.995622+00:00 — SAFE_STOP(54)
-- `ALLIANCE_HELP` never succeeded (attempts=1, failure=0)
-- `CANCEL_DUPLICATE_TARGET` never succeeded (attempts=1, failure=1)
-- `DISMISS_EXPLORATION_REWARD` never succeeded (attempts=1, failure=1)
-- `DISMISS_MAIL_REWARD` never succeeded (attempts=1, failure=1)
-- `OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN` never succeeded (attempts=1, failure=1)
-- `RESEARCH` never succeeded (attempts=1, failure=0)
-- `SAFE_STOP` never succeeded (attempts=54, failure=54)
-- `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
-- `SELECT_BEAST_TARGET_MAMMOTH` never succeeded (attempts=8, failure=8)
-- `SELECT_INFANTRY_CAMP` never succeeded (attempts=3, failure=3)
-- `WAIT` never succeeded (attempts=1, failure=1)
-- 732 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md']
+- **SEMANTIC_TARGET_NOT_VERIFIED** x331 all-time; recent=221 (last 2d), last seen 2026-10-01T23:46:27.628789+00:00 — TRY_ORDINARY_CONTROL(129), SELECT_RESOURCE(54), SELECT_BEAST_TARGET_MAMMOTH(28)
+- **NO_EXECUTION** x119 all-time; recent=119 (last 2d), last seen 2026-10-01T17:13:06.859072+00:00 — OBSERVE_ONLY(65), PRINTED_TAP(36), TAP_FOCUSED_TRAINING_CAMP_SHIELD(6)
+- **BEAST_SEARCH_TAB_NOT_PROVEN** x42 all-time; recent=42 (last 2d), last seen 2026-10-01T14:26:25.615786+00:00 — OPEN_BEAST_SEARCH_TAB(42)
+- **GIANT_BEAST_SEARCH_NOT_PROVEN** x37 all-time; recent=37 (last 2d), last seen 2026-10-01T23:43:26.106266+00:00 — SUBMIT_GIANT_BEAST_SEARCH(37)
+- **PANEL_BUILDING_QUEUE_NOT_PROVEN** x26 all-time; recent=24 (last 2d), last seen 2026-10-01T14:47:42.510571+00:00 — OPEN_TASK_FROM_QUICK_PANEL_BUILDING(26)
+- **FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN** x33 all-time; recent=18 (last 2d), last seen 2026-10-01T15:53:18.494813+00:00 — TAP_FOCUSED_TRAINING_CAMP_SHIELD(12), TAP_FOCUSED_TRAINING_CAMP_MARKSMAN(11), TAP_FOCUSED_TRAINING_CAMP_LANCER(10)
+- `OPEN_BUILDING_UPGRADE` never succeeded (attempts=17, failure=17)
+- `READ_FISHING_STATE` never succeeded (attempts=2, failure=2)
+- `REALTIME` never succeeded (attempts=27, failure=8)
+- `SELECT_BEAST_TARGET_MAMMOTH` never succeeded (attempts=28, failure=28)
+- `SELECT_MARCH_TO_RECALL` never succeeded (attempts=2, failure=2)
+- `TAP_FOCUSED_TRAINING_CAMP_LANCER` never succeeded (attempts=16, failure=16)
+- `TAP_FOCUSED_TRAINING_CAMP_MARKSMAN` never succeeded (attempts=19, failure=19)
+- 1367 uncommitted file(s): ['M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md']
 <!-- /AUTO:open_issues -->
 
 ---

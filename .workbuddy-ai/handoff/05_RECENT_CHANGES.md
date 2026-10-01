@@ -6,24 +6,21 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
-- `e3d00ad 2026-09-24T17:51:59+08:00 feat(login-gift): the ordinary AUTO can now open the panel itself, and claims only a client-highlighted node`
-- `7892717 2026-09-24T17:12:10+08:00 feat(login-gift): the highlighted day node was tapped, and the claim is proven by the client's own two marks`
-- `d7460ac 2026-09-24T17:11:28+08:00 feat(readiness): a preparation window needs a clock, not a frame`
-- `e7ae378 2026-09-24T17:10:58+08:00 fix(rally): read which rally a green + belongs to, and make the two rally actions deliverable`
-- `d5b4647 2026-09-24T14:29:02+08:00 fix(event-panel): the 鐧诲綍濂界ぜ panel has a name, and a just-opened screen is observed before any flow leaves it`
-- `e590784 2026-09-24T12:12:02+08:00 measure(live-ops): the click was never dead -- the response is 0.75 s long, and BACK raises a quit dialog`
-- `078a238 2026-09-24T11:49:24+08:00 measure(live-ops): the HUD did not move -- the previous round's cause was wrong`
-- `cf34588 2026-09-24T11:30:37+08:00 fix(ui-collection): an element is now a typed control, and the label鈫抍ontrol relation is measured`
-- `54132db 2026-09-24T11:00:25+08:00 fix(planner): the advisor is built per run, and COMPLETE is not DEFER`
-- `d789714 2026-09-24T10:51:45+08:00 fix(unknown-channel): the retirement marker must not change what an existing key means`
-- `24b4293 2026-09-24T10:29:32+08:00 feat(planner): the local Qwen plans structured UI actions, and the WorkBuddy channel is retired`
-- `0e96f02 2026-09-24T07:57:44+08:00 docs(gateway-contract): the official API at 2.147.0, and who owns the session`
+- `8d6990e 2026-10-02T04:11:48+08:00 docs(commander): authorize exclusive WorkBuddy handoff as quota runs low`
+- `c2d02ae 2026-10-02T04:09:35+08:00 docs(commander): record live calendar detail closure and remaining role work`
+- `b186903 2026-10-02T04:07:40+08:00 docs(commander): queue eight bounded production closure orders`
+- `951abbd 2026-10-02T04:04:31+08:00 fix(vision): use grounded calendar bars for detail verifier identity`
+- `fe78e9c 2026-10-02T03:59:41+08:00 test(vision): isolate the calendar navigation budget regression`
+- `5a0aeb2 2026-10-02T03:58:37+08:00 fix(vision): exclude ticking body text from activity tab navigation`
+- `9341eee 2026-10-02T03:51:35+08:00 fix(wiring): continue calendar discovery through the current activity tab strip`
+- `5c818ed 2026-10-02T03:49:35+08:00 fix(wiring): discover registered activity entries by current localized names`
+- `d3e6e5e 2026-10-02T03:38:22+08:00 test(learning): cover safe discovery in global production arbitration`
+- `4598da3 2026-10-02T03:32:36+08:00 fix(learning): bind bootstrap exploration to the selected safe goal entry`
+- `e9f68da 2026-10-02T03:30:29+08:00 fix(runtime): connect due calendar reads and persist verified detail observations`
+- `413bd4c 2026-10-02T03:29:55+08:00 fix(wiring): persist role calendar observations and read due client entries`
 
-Uncommitted changes: 732
-- `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
-- ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
-- ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
-- ` M .workbuddy-ai/commander/WORK_QUEUE.json`
+Uncommitted changes: 1367
+- `M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
 - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
 - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
@@ -32,14 +29,17 @@ Uncommitted changes: 732
 - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
 - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
 - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M .workbuddy-ai/memory/2026-09-23.md`
-- ` M .workbuddy-ai/memory/2026-09-24.md`
-- ` M .workbuddy-ai/memory/2026-09-25.md`
-- ` M .workbuddy/memory/2026-09-21.md`
-- ` M .workbuddy/memory/2026-09-23.md`
-- ` M .workbuddy/memory/2026-09-24.md`
-- ` M .workbuddy/memory/2026-09-25.md`
-- ` M config/control_panel_state.json`
+- ` M .workbuddy-ai/memory/2026-09-30.md`
+- ` M .workbuddy-ai/memory/2026-10-02.md`
+- ` M .workbuddy/memory/MEMORY.md`
+- ` M dataset/candidate/template_manifest.json`
+- ` M docs/CAPABILITY_COVERAGE.md`
+- ` M docs/CURRENT_TRUTH.md`
+- ` M docs/TOP_FAILURES.md`
+- ` M evidence/INDEX.json`
+- ` M knowledge/analysis/top_failures.json`
+- ` M knowledge/goals/capability_skill_map.json`
+- ` M knowledge/perception/candidates/INDEX.json`
 <!-- /AUTO:recent_commits -->
 
 ---

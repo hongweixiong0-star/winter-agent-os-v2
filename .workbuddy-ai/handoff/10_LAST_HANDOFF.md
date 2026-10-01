@@ -53,35 +53,35 @@ job 锁被拒 → `POST /api/v1/jobs` HTTP 500。修复：`service_environment()
 <!-- /HANDWRITTEN:2026-09-24 -->
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-24T14:12:42+00:00
+HANDOFF TIME: 2026-10-01T23:48:29+00:00
 LAST GOOD COMMIT: e4fd245
-WORKING TREE: 732 dirty file(s)
-  ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M .workbuddy-ai/handoff/08_LIVE_METRICS.json']
+WORKING TREE: 1367 dirty file(s)
+  ['M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M .workbuddy-ai/handoff/08_LIVE_METRICS.json', ' M .workbuddy-ai/handoff/09_RUNTIME_STATE.json', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md', ' M .workbuddy-ai/memory/2026-09-30.md']
 
-WHAT FINISHED (machine-visible): 18 skills live verified, 45 stable, 517 commit(s) in history
+WHAT FINISHED (machine-visible): 13 skills live verified, 59 stable, 831 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
-WHAT NOT VERIFIED: 23 skills never executed, 11 never succeeded
+WHAT NOT VERIFIED: 64 skills never executed, 7 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
-STOPPED AT: agent_state=GOAL_RUNNING stop_reason=None
-LAST PRODUCTION EPISODE: {"skill": "TRY_ORDINARY_CONTROL", "result": "SUCCESS", "recorded_at": "2026-09-24T14:12:39.187146+00:00", "episode_id": "20260924_221133_799917", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260924_221133_799917\\20260924_221133_799917_step_002_before_20260924T141211756490.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260924_221133_799917\\20260924_221133_799917_step_002_after_20260924T141225409168.png"}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 455, "recent": 126, "last_seen": "2026-09-24T13:27:02.849145+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2, "2026-09-17": 3, "2026-09-18": 2, "2026-09-19": 16, "2026-09-20": 89, "2026-09-21": 53, "2026-09-22": 87, "2026-09-23": 57, "2026-09-24": 19}, "undated": 31, "top_skills": [["TRY_ORDINARY_CONTROL", 56], ["SELECT_RESOURCE", 50], ["OPEN_HOME", 45]]}
+STOPPED AT: agent_state=GOAL_RUNNING stop_reason=SEMANTIC_TARGET_NOT_VERIFIED
+LAST PRODUCTION EPISODE: {"skill": "INTEL_HERO_START_MARCH", "result": "SUCCESS", "recorded_at": "2026-10-01T23:48:20.871810+00:00", "episode_id": "20261002_074546_725925", "before_screenshot": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_074546_725925\\20261002_074546_725925_step_016_before_20261001T234814961413.png", "after_screenshot": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_074546_725925\\20261002_074546_725925_step_016_after_settle_retry_20261001T234816807363.png"}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 331, "recent": 221, "last_seen": "2026-10-01T23:46:27.628789+00:00", "dates": {"2026-09-26": 24, "2026-09-27": 46, "2026-09-28": 38, "2026-09-29": 2, "2026-09-30": 155, "2026-10-01": 66}, "undated": 0, "top_skills": [["TRY_ORDINARY_CONTROL", 129], ["SELECT_RESOURCE", 54], ["SELECT_BEAST_TARGET_MAMMOTH", 28]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 732
+DIRTY FILES: 1367
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
-LIVE STATUS: PASS (unexpected_worker_exits=15)
+LIVE STATUS: PASS (unexpected_worker_exits=18)
 
 GIT SYNC (is the public mirror current?):
-SYNC STATE at 2026-09-24T14:12:42+00:00
+SYNC STATE at 2026-10-01T23:48:29+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : e3d00ad51849bc3521f5539d5daa1a8485e870e8
-remote_head       : e590784283ed5b9a4c82c69431c7217f1960c2f7   (local remote-tracking ref; run tools/git_sync.py status to refresh)
-unpushed_commits  : 5   (behind: 0)
-git_dirty         : True (732 path(s))
-last_push_at      : 2026-09-23T14:43:30.540683+00:00
+local_head        : 8d6990e9a388fc7560f2d397b1225ab6d4bbc284
+remote_head       : 8d6990e9a388fc7560f2d397b1225ab6d4bbc284   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+unpushed_commits  : 0   (behind: 0)
+git_dirty         : True (1367 path(s))
+last_push_at      : 2026-10-01T20:11:59.109334+00:00
 last_push_status  : PUSHED
-verdict           : LOCAL IS AHEAD by 5 commit(s) -- run `python tools/git_sync.py push`
+verdict           : GitHub mirrors the local tree
 
 KNOWN RISKS:
 - Live Verified depends on screenshots that are NOT in git (see .gitignore); they are machine-local.

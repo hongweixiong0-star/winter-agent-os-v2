@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-09-24T14:12:42+00:00",
-  "queue_generated_at": "2026-09-24T18:00:00+08:00",
-  "current_task": "WB-0921-01",
+  "updated_at": "2026-10-01T23:32:27+00:00",
+  "queue_generated_at": "2026-10-02T03:36:20+08:00",
+  "current_task": null,
   "tasks": {
     "WB-0BA-PIN-EXHAUSTION": {
       "status": "DONE",
@@ -319,6 +319,58 @@
     "WB-0924-10": {
       "status": "PENDING",
       "priority": "P1",
+      "queue_status": "READY",
+      "result_file": null
+    },
+    "WB-1002-01-HANDOFF-FACTS": {
+      "status": "DONE",
+      "priority": "P0",
+      "queue_status": "READY",
+      "result_file": "results/WB-1002-01-HANDOFF-FACTS.json",
+      "started_at": "2026-10-01T23:32:27+00:00",
+      "finished_at": "2026-10-01T23:32:27+00:00",
+      "verdict": "DONE_READONLY_CLAIM_RECORDED",
+      "summary": "本单结束时的可追溯事实（全部现场实测，非沿用旧值）：\n\n[所有权] Codex 在 2026-10-01T20:11:47.141043+00:00 明确让出开发与发布权（WORK_QUEUE.handoff_gate.explicit_codex_yield_at / release_owner_transfer_authorized=true / next_release_owner='WorkBuddy after exclusive task01 claim'；LAST_CODEX_REVIEW 同刻写明授权 WorkBuddy 做小提交、正常 push 与安全 pin/reload，"
+    },
+    "WB-1002-02-CALENDAR-STARVATION": {
+      "status": "PENDING",
+      "priority": "P0",
+      "queue_status": "READY",
+      "result_file": null
+    },
+    "WB-1002-03-BOOTSTRAP-FIRST-SECOND": {
+      "status": "PENDING",
+      "priority": "P0",
+      "queue_status": "READY",
+      "result_file": null
+    },
+    "WB-1002-04-UNKNOWN-COVERAGE-ARENA": {
+      "status": "PENDING",
+      "priority": "P1",
+      "queue_status": "READY",
+      "result_file": null
+    },
+    "WB-1002-05-RESEARCH-RETURN": {
+      "status": "PENDING",
+      "priority": "P1",
+      "queue_status": "READY",
+      "result_file": null
+    },
+    "WB-1002-06-GIANT-RALLY-VERIFIER": {
+      "status": "PENDING",
+      "priority": "P1",
+      "queue_status": "READY",
+      "result_file": null
+    },
+    "WB-1002-07-BUILD-STARTED": {
+      "status": "PENDING",
+      "priority": "P1",
+      "queue_status": "READY",
+      "result_file": null
+    },
+    "WB-1002-08-STABILITY-RESOURCES": {
+      "status": "PENDING",
+      "priority": "P0",
       "queue_status": "READY",
       "result_file": null
     }
