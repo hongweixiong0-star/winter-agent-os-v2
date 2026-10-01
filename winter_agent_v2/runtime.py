@@ -114,6 +114,13 @@ from .verifier import (
     verify_gather_hero_removed,
     verify_gather_specialist_assigned,
 )
+from .verifier import (
+    verify_event_calendar_open, verify_event_calendar_tab_open,
+    verify_event_calendar_read, verify_event_calendar_detail_open,
+    verify_event_calendar_returned, verify_training_batch_claimed,
+    verify_free_hero_recruit, verify_quick_panel_scrolled,
+    verify_quick_panel_pet_entry_opened, verify_gathering,
+)
 
 
 @dataclass(frozen=True)
@@ -344,6 +351,15 @@ class LiveRuntime:
         # is registered but never dispatched -- the failure mode #45 already recorded.
         "CLAIM_LOGIN_GIFT": verify_login_gift_claimed,
         "OPEN_LOGIN_GIFT": verify_login_gift_panel_open,
+        # These steps already have a reader, Goal/Brain route and atomic action.
+        # Bind their real observed postconditions so the live loop can dispatch
+        # them; calendar registration or a sent tap alone proves none of them.
+        "OPEN_EVENT_CALENDAR_FROM_HOME": verify_event_calendar_open,
+        "OPEN_EVENT_CALENDAR_FROM_MAP": verify_event_calendar_open,
+        "OPEN_EVENT_CALENDAR_TAB": verify_event_calendar_tab_open,
+        "READ_EVENT_CALENDAR": verify_event_calendar_read,
+        "OPEN_EVENT_CALENDAR_DETAIL": verify_event_calendar_detail_open,
+        "RETURN_EVENT_CALENDAR": verify_event_calendar_returned,
         "OPEN_INTEL_HERO_JOURNEY_TARGET": verify_intel_hero_target_open,
         "INTEL_HERO_START_MARCH": verify_intel_hero_march_open,
         "INTEL_HERO_DISPATCH": verify_intel_hero_dispatched,
@@ -357,6 +373,7 @@ class LiveRuntime:
         # verify_march_count_readable for the measurement.
         "CHECK_MARCH": verify_march_count_readable,
         "DISPATCH_MARCH": verify_wood_dispatch_from_march,
+        "VERIFY_GATHERING": lambda b, a: verify_gathering(a),
         "CLEAR_GATHER_HEROES": verify_gather_hero_removed,
         "OPEN_GATHER_HERO_PICKER": verify_gather_hero_picker_open,
         "SELECT_GATHER_HERO": verify_gather_hero_picker_selected,
@@ -420,8 +437,20 @@ class LiveRuntime:
         "INTEL_BEAST_START_MARCH": verify_intel_beast_march_open,
         "DISPATCH_INTEL_BEAST": verify_intel_beast_dispatch,
         "BUILDING_UPGRADE": lambda before, after: verify_building_upgrade(before, after, str(before.building.get("id", ""))),
+        # Opening the selected upgrade sheet is navigation, distinct from
+        # BUILDING_UPGRADE's queue-start proof. Unknown identity/cost still
+        # cannot authorize the separate resource-spending action.
+        "OPEN_BUILDING_UPGRADE": lambda b, a: VerificationResult(
+            b.page is Page.HOME and a.page is Page.BUILDING
+            and a.building.get("upgrade_dialog_visible") is True,
+            "BUILDING_UPGRADE_PANEL_OPENED" if a.page is Page.BUILDING
+            and a.building.get("upgrade_dialog_visible") is True
+            else "BUILDING_UPGRADE_PANEL_NOT_PROVEN",
+            {"page_before": b.page.value, "page_after": a.page.value,
+             "upgrade_dialog_visible": a.building.get("upgrade_dialog_visible")}),
         "RESEARCH": lambda before, after: verify_research_started(before, after, str(before.research.get("node", ""))),
         "TRAIN_TROOPS": lambda before, after: verify_training_started(before, after, str(before.training.get("troop_type", ""))),
+        "COLLECT_TRAINING_BATCH": verify_training_batch_claimed,
         "OPEN_POWER_OVERVIEW": verify_power_overview_open,
         "OPEN_POWER_DETAILS": verify_power_details_open,
         "NAVIGATE_INFANTRY_CAMP": verify_infantry_camp_highlighted,
@@ -461,6 +490,23 @@ class LiveRuntime:
         "COLLECT_MY_REWARDS_ROW": lambda b, a: verify_panel_row_done_collected(b, a, row_key="MY_REWARDS"),
         "OPEN_TASK_FROM_QUICK_PANEL_ALLIANCE_DONATION": verify_ordinary_control_tried,
         "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT": verify_ordinary_control_tried,
+        "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT_EPIC": lambda b, a: VerificationResult(
+            b.page is Page.HOME and b.quick_panel.get("open") is True
+            and a.page is Page.HERO and a.quick_panel.get("open") is not True,
+            "HERO_RECRUIT_PAGE_OPENED" if a.page is Page.HERO
+            else "HERO_RECRUIT_PAGE_NOT_PROVEN",
+            {"page_before": b.page.value, "page_after": a.page.value}),
+        "OPEN_TASK_FROM_QUICK_PANEL_PET_TREASURE": verify_quick_panel_pet_entry_opened,
+        "FREE_HERO_RECRUIT_ADVANCED": lambda b, a: verify_free_hero_recruit(b, a, "HERO_RECRUIT_ADVANCED"),
+        "FREE_HERO_RECRUIT_EPIC": lambda b, a: verify_free_hero_recruit(b, a, "HERO_RECRUIT_EPIC"),
+        # The daily task's 前往 button opens recruitment. It does not itself
+        # perform a draw or complete/claim the daily task.
+        "DAILY_HERO_RECRUIT": lambda b, a: VerificationResult(
+            b.page is Page.DAILY and a.page is Page.HERO,
+            "HERO_RECRUIT_PAGE_OPENED" if a.page is Page.HERO
+            else "HERO_RECRUIT_PAGE_NOT_PROVEN",
+            {"page_before": b.page.value, "page_after": a.page.value}),
+        "SCROLL_QUICK_PANEL_TASKS": verify_quick_panel_scrolled,
         "OPEN_TASK_FROM_QUICK_PANEL_MY_REWARDS": verify_ordinary_control_tried,
         # The hop that did not exist: switch the training page to another barracks when the
         # one on screen has its queue busy.  Operator §八, "一个兵营正在训练，不得阻止其他空闲
