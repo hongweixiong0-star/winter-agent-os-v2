@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [ValidateSet("gather", "observe")]
     [string]$Mode = "gather"
@@ -13,7 +13,15 @@ $RuntimePath = Join-Path $ProjectRoot "tools\run_live.py"
 # the whole launcher ran with "MAA_IMPORT_FAILED:ModuleNotFoundError" (and no
 # cv2 at all: winter_agent_v2.matchers imports it at module scope).  Preflight
 # below refuses to start rather than let that degrade silently.
-$PythonPath = "E:\无尽冬日智能体\.venv\Scripts\python.exe"
+#
+# ENCODING -- resolved from this script's own directory, and this file is saved
+# as UTF-8 *with* BOM.  Both matter.  Windows PowerShell 5.1 reads a BOM-less
+# script in the system ANSI codepage (CP936 here), so a literal path in this file
+# was re-decoded as CP936 -- measured 2026-10-01 09:46: the backslash before
+# `.venv` was swallowed and Test-Path said the interpreter did not exist.  A path
+# derived at runtime has no bytes to re-decode, and the BOM is what makes 5.1
+# read the messages below as UTF-8.  Do not save this file without the BOM.
+$PythonPath = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
 $MuMuPath = "D:\Program Files\Netease\MuMu Player 12\nx_main\MuMuNxMain.exe"
 $MuMuManagerPath = "D:\Program Files\Netease\MuMu Player 12\nx_main\MuMuManager.exe"
 $LogRoot = Join-Path $ProjectRoot "learning\launcher"

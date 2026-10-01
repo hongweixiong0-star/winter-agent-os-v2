@@ -31,6 +31,13 @@ sys.path.insert(0, str(ROOT))
 from tools import control_panel as panel  # noqa: E402
 from tools import preflight  # noqa: E402
 
+#: The codepage cmd.exe reads a batch file in on this machine.  cmd has no
+#: encoding sniffing and no BOM support at all: it decodes every byte with the
+#: system OEM codepage, so that -- not UTF-8 -- is the codec a launcher test has
+#: to use.  Chinese Windows is 936, which is also what PowerShell 5.1 uses for a
+#: BOM-less script and what the .lnk on the desktop stores its path in.
+BATCH_CODEPAGE = "cp936"
+
 
 class OperatorIntentStateTest(unittest.TestCase):
     """The one piece of operator intent that outlives the window."""
@@ -510,8 +517,13 @@ class LaunchGateWiringTest(unittest.TestCase):
         prints, and the comment block above the gate names the flag on purpose, so
         both would answer "does this file mention --launch-gate" with a misleading
         yes either way.
+
+        Read in the codepage cmd.exe actually reads batch files in, not UTF-8: the
+        launcher's operator-facing text is CP936, and reading it as UTF-8 with
+        ``errors="replace"`` is how a test can look straight at a mis-encoded
+        launcher and still see nothing wrong.
         """
-        text = self.LAUNCHER.read_text(encoding="utf-8", errors="replace")
+        text = self.LAUNCHER.read_bytes().decode(BATCH_CODEPAGE, errors="replace")
         out = []
         for line in text.splitlines():
             stripped = line.strip()
@@ -555,6 +567,148 @@ class LaunchGateWiringTest(unittest.TestCase):
         self.assertEqual(preflight.LAUNCH_GATE_SECTIONS, ("interpreter",))
         self.assertNotEqual(preflight.LAUNCH_GATE_SECTIONS, preflight.CORE_SECTIONS)
         self.assertIn("device", preflight.CORE_SECTIONS)
+
+
+class LauncherEncodingTest(unittest.TestCase):
+    """The launcher has to survive the codepage its reader uses, not the one we wish it used.
+
+    Regression for the 2026-10-01 09:43 failure -- the *second* one in the same
+    file, and the one the fixes of the morning did not touch.  ``LauncherGateWiringTest``
+    was already reading this file and it was green, because it read it as UTF-8
+    with ``errors="replace"``: the bytes a Windows shell cannot parse are exactly
+    the bytes that decoding choice papers over.
+
+    What the operator saw on a double-click, reproduced by running the file:
+
+        文件名、目录名或卷标语法不正确。
+        [Winter Agent OS V2] 找不到生产解释器：%WINTER_PYTHONW
+
+    The file was UTF-8 and cmd.exe read it as CP936.  cmd has no BOM support and
+    no sniffing, so the Chinese bytes of the project path were decoded as CP936
+    pairs -- which shifts byte alignment by one and lets a Chinese character
+    *swallow* the ASCII byte that follows it.  Measured on the real file and on a
+    minimal probe: the closing quote of ``cd /d "E:\\<project>"`` was eaten (hence
+    the syntax error, not "path not found"), the backslash before ``.venv`` was
+    eaten (``if not exist`` then said the interpreter was missing), and the ``%``
+    opening ``%WINTER_PYTHONW%`` was eaten (hence the literal variable name in the
+    message).  Nothing in the process could report any of it: the launcher is not
+    imported by anything, and it never reached the gate.
+
+    Two independent defences, and the tests pin both:
+
+    * encoding -- the batch file is written in ``BATCH_CODEPAGE``; the PowerShell
+      sibling is UTF-8 *with* BOM, because 5.1 honours the BOM and otherwise uses
+      the same ANSI codepage (measured: the same Chinese path lost the same
+      backslash and ``Test-Path`` returned False);
+    * structure -- every line that decides control flow is pure ASCII, and the
+      root is ``%~dp0`` / ``$ProjectRoot`` instead of a literal.  A path expanded
+      at runtime has no bytes to re-decode, so re-encoding the file degrades the
+      *messages* instead of the *mechanism*.
+    """
+
+    BATCH = ROOT / "Start-Winter-Agent-V2.cmd"
+    SHELL = ROOT / "Start-Winter-Agent-V2.ps1"
+
+    #: Statements whose job is to talk to the operator, and which are therefore
+    #: allowed to carry non-ASCII.  Anything else has to be ASCII: a translated
+    #: path or a translated parameter is what the codepage corrupts.
+    MESSAGE_VERBS = ("echo", "Write-Host", "throw", "Read-Host", "rem", "::")
+
+    @staticmethod
+    def _comments_and_messages(line: str) -> bool:
+        return line.strip().lower().startswith(tuple(v.lower() for v in LauncherEncodingTest.MESSAGE_VERBS))
+
+    def test_the_batch_launcher_is_written_in_the_codepage_cmd_reads(self):
+        raw = self.BATCH.read_bytes()
+        self.assertFalse(
+            raw.startswith(b"\xef\xbb\xbf"),
+            "cmd.exe has no BOM support: it would try to run the BOM as a command",
+        )
+        try:
+            text = raw.decode(BATCH_CODEPAGE)
+        except UnicodeDecodeError as exc:
+            self.fail(
+                f"Start-Winter-Agent-V2.cmd is not decodable in {BATCH_CODEPAGE}, so cmd.exe "
+                f"will misread it exactly as it did on 2026-10-01: {exc}. Save the file in "
+                f"{BATCH_CODEPAGE}, and keep every control-flow line ASCII."
+            )
+        # A file that decodes two ways is the silent case: the codepage read and
+        # the UTF-8 read disagree, and only one of them is what the shell does.
+        try:
+            as_utf8 = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            as_utf8 = None
+        if as_utf8 is not None:
+            self.assertEqual(
+                text, as_utf8,
+                "this file decodes differently as UTF-8 and as the codepage cmd.exe uses; "
+                "the launcher must not depend on which one the reader picks",
+            )
+
+    def test_no_control_flow_line_carries_bytes_the_codepage_can_corrupt(self):
+        # The structural half of the fix, and the half that does not depend on
+        # anyone remembering the encoding rule: if the mechanism is ASCII, a
+        # future re-encoding can garble the messages but cannot stop the launch.
+        raw = self.BATCH.read_bytes()
+        offenders = []
+        for number, line in enumerate(raw.decode(BATCH_CODEPAGE).splitlines(), start=1):
+            if any(ord(ch) > 127 for ch in line) and not self._comments_and_messages(line):
+                offenders.append((number, line.strip()))
+        self.assertEqual(
+            offenders, [],
+            "these batch lines carry non-ASCII outside a comment or an echo, so a "
+            "mis-decoded Chinese character can swallow the ASCII byte that follows "
+            "it and change what the file does:\n"
+            + "\n".join(f"  line {n}: {t}" for n, t in offenders),
+        )
+
+    def test_the_batch_launcher_takes_its_root_from_its_own_location(self):
+        # This is what makes the test above hold: `%~dp0` is expanded by cmd from
+        # the command line in UTF-16, so the project's Chinese path never appears
+        # in the file's bytes at all.
+        text = self.BATCH.read_bytes().decode(BATCH_CODEPAGE)
+        self.assertIn('set "WINTER_ROOT=%~dp0"', text)
+        self.assertIn('cd /d "%WINTER_ROOT%"', text)
+        self.assertIn('set "WINTER_PYTHON=%WINTER_ROOT%.venv\\Scripts\\python.exe"', text)
+        self.assertIn('set "WINTER_PYTHONW=%WINTER_ROOT%.venv\\Scripts\\pythonw.exe"', text)
+
+    def test_the_powershell_launcher_is_utf8_with_a_bom(self):
+        # 5.1 uses the system ANSI codepage for a BOM-less script, so without the
+        # BOM this file has the batch file's bug.  Measured 2026-10-01 09:46 on a
+        # three-file probe: no BOM -> the interpreter path lost its backslash and
+        # Test-Path said False; with BOM -> True.
+        raw = self.SHELL.read_bytes()
+        self.assertEqual(
+            raw[:3], b"\xef\xbb\xbf",
+            "Start-Winter-Agent-V2.ps1 must keep its UTF-8 BOM: Windows PowerShell 5.1 "
+            "reads a BOM-less script in the system ANSI codepage",
+        )
+        raw.decode("utf-8")  # and it must be UTF-8 after the BOM
+
+    def test_the_powershell_launcher_derives_its_paths_instead_of_spelling_them(self):
+        raw = self.SHELL.read_bytes()
+        self.assertEqual(raw[:3], b"\xef\xbb\xbf")
+        text = raw[3:].decode("utf-8")
+        self.assertIn('$PythonPath = Join-Path $ProjectRoot ".venv\\Scripts\\python.exe"', text)
+        offenders = []
+        for number, line in enumerate(text.splitlines(), start=1):
+            if any(ord(ch) > 127 for ch in line) and not self._comments_and_messages(line):
+                offenders.append((number, line.strip()))
+        self.assertEqual(
+            offenders, [],
+            "the PowerShell launcher must keep non-ASCII inside its messages:\n"
+            + "\n".join(f"  line {n}: {t}" for n, t in offenders),
+        )
+
+    def test_the_encoding_rules_are_written_down_where_the_next_editor_looks(self):
+        # These files are edited by tools that rewrite them as UTF-8 no-BOM by
+        # default, which is how this bug is going to come back. The rule has to be
+        # in the file itself, not only in a test the editor does not read.
+        for path, keyword in ((self.BATCH, "cp936"), (self.SHELL, "BOM")):
+            head = path.read_bytes()[:1200]
+            head = head[3:] if head[:3] == b"\xef\xbb\xbf" else head
+            self.assertIn(keyword.lower(), head.decode("utf-8", errors="replace").lower(),
+                          f"{path.name} should document its own encoding rule near the top")
 
 
 if __name__ == "__main__":

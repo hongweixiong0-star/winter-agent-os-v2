@@ -27,3 +27,15 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "E:\无尽冬日智能�
 ```
 
 当前桌面入口可启动已经进入有界 LiveRuntime 的邮件、Intel、普通野怪与 `GATHER_RESOURCE`；其余真实 Skill 会在能力页展示，但不会被 GUI 伪装成可运行入口。控制台使用单实例、单执行通道，ADB 与 Runtime 子进程在后台无窗口运行。遇到未知页面、满行军队列或 Verifier 失败时会安全停止，不会猜测点击。GUI 只消费现有 World State、Runtime、Skill Registry、Knowledge 和 Learning 数据，不承担 Brain 或 Scheduler 逻辑。
+
+## 入口脚本的编码约定
+
+两个入口脚本由**不能嗅探编码**的宿主程序读取，所以文件的字节必须迁就读者：
+
+- `Start-Winter-Agent-V2.cmd` 由 `cmd.exe` 读取，而 `cmd.exe` 一律按**系统 OEM 代码页**（本机 936）解码整份文件，且不支持 BOM。所以该文件保存为 **CP936**，并且**所有决定控制流的行都是纯 ASCII** —— 项目根目录用 `%~dp0` 从命令行取（UTF-16，与文件字节无关），不写字面路径。中文只允许出现在 `rem` 与 `echo` 里。
+- `Start-Winter-Agent-V2.ps1` 由 Windows PowerShell 5.1 读取：**无 BOM 时按同一个 ANSI 代码页解码**。所以保存为 **UTF-8 带 BOM**，路径同样从 `$ProjectRoot` 推导。不要把 BOM 去掉。
+- `.py` 文件不受影响（Python 3 源码默认 UTF-8）。
+
+**为什么这不是洁癖。** 2026-09-20（`7c5bca6`）把解释器路径从纯 ASCII 的 `E:\dongri-mumu-bot\.venv` 挪进含中文的项目目录之后，`Start-Winter-Agent-V2.cmd` 每次双击都在闸门之前就退出：中文 UTF-8 字节被按 CP936 错位解码，会**吞掉紧随其后的 ASCII 字节** —— 路径里的 `\` 被吞，守卫于是判定"找不到生产解释器"；`cd /d "E:\…"` 的收尾引号也被吞，所以报的是"文件名、目录名或卷标语法不正确"而不是"找不到路径"。这条路上没有任何东西能报告它：启动脚本不被任何模块 import，而面板是**另一条**入口（计划任务直接跑 `launch_pinned_production.py`），所以 11 天里双击一直是坏的，只是被 `schtasks /Run` 这条替代路径盖住了。
+
+`tests/test_startup_semantics.py::LauncherEncodingTest` 现在钉住这些不变量：批处理必须能按 CP936 解码且无 BOM、控制流行不得含非 ASCII、根目录必须来自 `%~dp0`；脚本文件必须保留 BOM 且路径来自 `$ProjectRoot`。（做过变异验证：把编码改回去，6 项里 5 项变红。）

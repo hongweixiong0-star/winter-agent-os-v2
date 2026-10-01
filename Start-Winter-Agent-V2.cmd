@@ -2,25 +2,44 @@
 rem ---------------------------------------------------------------------------
 rem Winter Agent OS V2 -- production desktop entry point.
 rem
+rem ENCODING -- read this before editing this file.
+rem cmd.exe reads a batch file in the *system OEM codepage* (CP936 on this
+rem machine), not in UTF-8.  So keep this file CP936-encoded, and keep every
+rem line that decides *control flow* free of non-ASCII.  A UTF-8 file does not
+rem fail loudly here: the Chinese bytes of the project path are re-decoded as
+rem CP936, which shifts byte alignment and swallows the ASCII byte that follows
+rem each Chinese run.  Measured 2026-10-01 09:43 -- as UTF-8 this file lost the
+rem closing quote of `cd /d "E:\<project>"` (cmd: "ÎÄ¼şÃû¡¢Ä¿Â¼Ãû»ò¾í±êÓï·¨²»ÕıÈ·")
+rem and the backslash before `.venv`, so it reported the interpreter missing and
+rem the operator's double-click could never reach the gate below.
+rem tests/test_startup_semantics.py::LauncherEncodingTest pins the encoding.
+rem
+rem The root is `%~dp0` (where this file is), not a literal path.  A literal would
+rem put the project's Chinese path into executable lines -- the lines the codepage
+rem can corrupt -- and duplication is what drifts.  `%~dp0` is expanded by cmd
+rem from the command line in UTF-16, so it is correct no matter how this file is
+rem encoded.
+rem
 rem This used to launch the panel from a script that did not run preflight, so a
 rem wrong interpreter reached production unnoticed: on 2026-09-17 the panel was
 rem running on a generic runtime python without maa/cv2, the worker inherited it
 rem ("PYTHON_PATH = Path(sys.executable).with_name("python.exe")"), and every
 rem skill promoted to MAA silently fell back to ADB capture -- 324 ms against
-rem 8.92 ms, measured live.  The interpreter below is the one
-rem tools/preflight.py proves; a preflight failure now stops the launch instead
-rem of degrading it.  Override with config/v2.json -> runtime.python_path if the
-rem environment moves.
+rem 8.92 ms, measured live.  The interpreter below is the one tools/preflight.py
+rem proves; a preflight failure stops the launch instead of degrading it.
+rem Override with config/v2.json -> runtime.python_path if the environment moves.
 rem ---------------------------------------------------------------------------
-cd /d "E:\æ— å°½å†¬æ—¥æ™ºèƒ½ä½“"
 
-set "WINTER_PYTHON=E:\æ— å°½å†¬æ—¥æ™ºèƒ½ä½“\.venv\Scripts\python.exe"
-set "WINTER_PYTHONW=E:\æ— å°½å†¬æ—¥æ™ºèƒ½ä½“\.venv\Scripts\pythonw.exe"
+set "WINTER_ROOT=%~dp0"
+cd /d "%WINTER_ROOT%"
+
+set "WINTER_PYTHON=%WINTER_ROOT%.venv\Scripts\python.exe"
+set "WINTER_PYTHONW=%WINTER_ROOT%.venv\Scripts\pythonw.exe"
 
 if not exist "%WINTER_PYTHONW%" (
-    echo [Winter Agent OS V2] æ‰¾ä¸åˆ°ç”Ÿäº§è§£é‡Šå™¨ï¼š%WINTER_PYTHONW%
-    echo è¯Šæ–­ï¼špython tools\preflight.py
-    echo ä¿®å¤ï¼šåœ¨ config\v2.json çš„ runtime.python_path æŒ‡å®šå¯ç”¨è§£é‡Šå™¨ã€‚
+    echo [Winter Agent OS V2] ÕÒ²»µ½Éú²ú½âÊÍÆ÷£º %WINTER_PYTHONW%
+    echo Õï¶Ï£º python tools\preflight.py
+    echo ĞŞ¸´£º ÔÚ config\v2.json µÄ runtime.python_path Ö¸¶¨¿ÉÓÃ½âÊÍÆ÷¡£
     pause
     exit /b 1
 )
@@ -42,24 +61,24 @@ rem promoted skill quietly on ADB at 324 ms against MAA's 8.92 ms.
 "%WINTER_PYTHON%" "tools\preflight.py" --launch-gate
 if errorlevel 1 (
     echo.
-    echo [Winter Agent OS V2] è¿è¡Œç¯å¢ƒé¢„æ£€æœªé€šè¿‡ï¼Œå·²é˜»æ­¢å¯åŠ¨ã€‚
-    echo è§£é‡Šå™¨ä¸å¯ç”¨ï¼šé¢æ¿ä¸å®ƒæ´¾ç”Ÿçš„ worker ä¼šç»§æ‰¿åŒä¸€ä¸ªè§£é‡Šå™¨ï¼Œè¿›ç¨‹å†…æ— æ³•è‡ªæ„ˆã€‚
-    echo è®¾å¤‡ç±»é—®é¢˜ï¼ˆæ¨¡æ‹Ÿå™¨æœªå¯åŠ¨ / æ¸¸æˆæœªåœ¨å‰å°ï¼‰ä¸é˜»æ­¢å¼€çª— â€”â€” é¢æ¿ä¼šå¯åŠ¨å®ƒä»¬ã€‚
-    echo è¯Šæ–­ï¼špython tools\preflight.py
-    echo ä¿®å¤ï¼šåœ¨ config\v2.json çš„ runtime.python_path æŒ‡å®šå¯ç”¨è§£é‡Šå™¨ã€‚
+    echo [Winter Agent OS V2] ÔËĞĞ»·¾³Ô¤¼ìÎ´Í¨¹ı£¬ÒÑ×èÖ¹Æô¶¯¡£
+    echo ½âÊÍÆ÷²»¿ÉÓÃ£º Ãæ°åÓëËüÅÉÉúµÄ worker »á¼Ì³ĞÍ¬Ò»¸ö½âÊÍÆ÷£¬½ø³ÌÄÚÎŞ·¨×ÔÓú¡£
+    echo Éè±¸ÀàÎÊÌâ£¨Ä£ÄâÆ÷Î´Æô¶¯ / ÓÎÏ·Î´ÔÚÇ°Ì¨£©²»×èÖ¹¿ª´° ¡ª¡ª Ãæ°å»áÆô¶¯ËüÃÇ¡£
+    echo Õï¶Ï£º python tools\preflight.py
+    echo ĞŞ¸´£º ÔÚ config\v2.json µÄ runtime.python_path Ö¸¶¨¿ÉÓÃ½âÊÍÆ÷¡£
     pause
     exit /b 1
 )
 
 rem The acceptance soak is measured by the window, so the window has to be able to say which
-rem launch path it came from (P0 2026-09-18 Â§ä¸‰).  A GUI started by a development tool cannot
+rem launch path it came from (P0 2026-09-18 ¡ìÈı).  A GUI started by a development tool cannot
 rem be kept alive -- that host reaps its children when its call ends, measured on panels
 rem 24936/25408 -- so a soak from one is recorded as DEVELOPMENT_ENV_LIMITATION rather than
 rem counted as evidence.  This marker is that declaration; it is inherited by the child.
 set "WINTER_AGENT_LAUNCH_PATH=desktop"
 
 rem Task Scheduler owns the interactive process so it survives the short-lived
-rem desktop launcher.  Its pythonw action runs launch_panel_logged.py, which
+rem desktop launcher.  Its pythonw action runs launch_pinned_production.py, which
 rem records startup exceptions in learning\control_panel\desktop_startup.log.
 schtasks /Run /TN "WinterAgentV2Panel"
 if errorlevel 1 (
