@@ -114,6 +114,7 @@ def test_partial_tab_ocr_is_lifted_from_crop_to_same_frame(tmp_path):
 def test_scroll_budget_defers_calendar_without_stopping_other_ready_goals():
     runtime = object.__new__(LiveRuntime)
     runtime._calendar_tab_swipe_count = 4
+    runtime.execution_mode = "PRODUCTION"
     runtime._yielded_goals = set()
     runtime._policy_allows = lambda goal_id: True
     runtime._gate = lambda: CapabilityGate.empty()
