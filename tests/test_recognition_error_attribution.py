@@ -70,14 +70,23 @@ class TheRefusalIsNamedTests(unittest.TestCase):
     """Every guard that returns ``None`` also says which guard it was."""
 
     def test_a_non_navigation_skill_is_named(self):
+        """The first live row this recorder produced (2026-10-02T07:45:24Z) was a SELECT_RESOURCE
+        miss, and the honest statement about it is that the advisor was never applicable -- the
+        miss belongs to the registered locator.  Kept separate from the transient-page case, which
+        would send a reader somewhere else entirely."""
         rt = _runtime()
         code = _refusal(rt, "SOMETHING", WorldState(page=Page.MAP), "TRY_ORDINARY_CONTROL")
-        self.assertEqual(code, "UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION_OR_TRANSIENT_PAGE")
+        self.assertEqual(code, "UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION")
 
     def test_a_transient_page_is_named(self):
         rt = _runtime()
         code = _refusal(rt, "BTN_X", WorldState(page=Page.LOADING), "OPEN_SOMETHING")
-        self.assertEqual(code, "UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION_OR_TRANSIENT_PAGE")
+        self.assertEqual(code, "UNKNOWN_NAV:TRANSIENT_PAGE")
+
+    def test_the_two_refusals_that_used_to_share_a_name_are_distinguishable(self):
+        a = _refusal(_runtime(), "X", WorldState(page=Page.MAP), "TRY_ORDINARY_CONTROL")
+        b = _refusal(_runtime(), "X", WorldState(page=Page.LOADING), "OPEN_SOMETHING")
+        self.assertNotEqual(a, b)
 
     def test_a_panel_dependent_target_with_its_panel_closed_is_named(self):
         """The measured 2026-10-02 case: the control is not drawn until its panel is open, so the

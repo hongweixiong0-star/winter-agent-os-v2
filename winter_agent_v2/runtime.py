@@ -6032,8 +6032,15 @@ class LiveRuntime:
         self._unknown_navigation_refusal = ""
         navigation = (skill_id.startswith("OPEN_")
                       or skill_id.startswith("TAP_FOCUSED_TRAINING_CAMP_"))
-        if not navigation or frame.page in {Page.LOADING, Page.MAINTENANCE}:
-            return _refuse("UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION_OR_TRANSIENT_PAGE")
+        # Two different facts, kept apart because they send a reader to two different places.  The
+        # first live row this recorder produced (2026-10-02T07:45:24Z, SELECT_RESOURCE /
+        # SEMANTIC_TARGET_NOT_VERIFIED) came back under a combined name, which read as "the page was
+        # transient" when the true statement was "this control is not navigation, so the advisor was
+        # never asked and the miss belongs to the registered locator".
+        if not navigation:
+            return _refuse("UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION")
+        if frame.page in {Page.LOADING, Page.MAINTENANCE}:
+            return _refuse("UNKNOWN_NAV:TRANSIENT_PAGE")
         if (semantic in PANEL_DEPENDENT_NAVIGATION_TARGETS
                 and not getattr(frame, "resource_search_open", False)):
             # The locator did not miss for lack of looking: this control is not drawn until its
