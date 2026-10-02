@@ -33,6 +33,7 @@ preparation on a wrong minute.
 from __future__ import annotations
 
 import json
+import re
 from copy import deepcopy
 import tempfile
 from dataclasses import dataclass, field
@@ -389,6 +390,53 @@ def _calendar_row_days(row: Mapping[str, Any]) -> tuple[str, ...]:
     return tuple(str(value) for value in values if value)
 
 
+def _calendar_day_key(token: Any) -> tuple[int, int] | None:
+    """``(month, day)`` from either spelling the client prints, or ``None`` if it is not a day.
+
+    The grid strip and the detail page spell the same day differently -- ``10/04`` is what the
+    live detail's occurrence key carried on 2026-10-02, while the older grid fixtures use
+    ``9月26日`` -- so both are parsed into numbers before anything is compared.  A token that is
+    not a date at all (``WRONG``) answers ``None``, which is what keeps a malformed key from
+    being read as evidence.
+    """
+    text = str(token or "").strip()
+    match = (re.fullmatch(r"(\d{1,2})\s*/\s*(\d{1,2})", text)
+             or re.fullmatch(r"(\d{1,2})\s*月\s*(\d{1,2})\s*日", text))
+    if match is None:
+        return None
+    return int(match.group(1)), int(match.group(2))
+
+
+def _row_carrying_the_details_dates(
+    occurrence: str, old_rows: list[dict], event_id: str,
+) -> dict | None:
+    """The one uninspected row of this event whose own dates carry every date the detail named.
+
+    This is the date-containment reading of "which occurrence was that detail?".  It is
+    deliberately closed on both sides:
+
+    * it never guesses -- the detail must have named at least one real day, and exactly one row
+      must carry them all; two rows that fit is a coin flip and a coin flip credits nothing;
+    * it can never credit a second occurrence from the first occurrence's detail, because the
+      row it credits stops being uninspected and so stops being a candidate.
+    """
+    wanted = {key for key in (_calendar_day_key(part) for part in str(occurrence).split("|"))
+              if key is not None}
+    if not wanted:
+        return None
+    candidates: list[dict] = []
+    for row in old_rows:
+        if str(row.get("event_id") or "") != event_id:
+            continue
+        if row.get("details_observed") is True or not row.get("tap_norm"):
+            continue
+        row_days = {key for key in (_calendar_day_key(day) for day in _calendar_row_days(row))
+                    if key is not None}
+        if wanted <= row_days:
+            candidates.append(row)
+    return candidates[0] if len(candidates) == 1 else None
+
+
 def _prior_calendar_row(row: Mapping[str, Any], old_rows: list[dict]) -> dict | None:
     key = row.get("occurrence_key")
     exact = [old for old in old_rows if key and old.get("occurrence_key") == key]
@@ -496,9 +544,26 @@ def record_calendar_snapshot(
         event_id = str(reading.get("matched_event_id") or reading.get("event_id") or "")
         matched = next((row for row in old_rows if occurrence
                         and row.get("occurrence_key") == occurrence), None)
+        if matched is None and occurrence:
+            # The keys disagree for a mundane reason: they are different derivations of the
+            # same idea.  The grid row's key is the first and last date of its visible strip;
+            # the detail page prints its own dates.  So a key that matches no row is *not*
+            # evidence that a different occurrence was read, and the dates the detail does
+            # carry are the evidence that says which row it belongs to.
+            #
+            # Measured 2026-10-02, sanctioned pinned panel, 4.4 unattended hours: role
+            # 1061663148's grid held ``ICEBOUND_TREASURE_TRAINING|10/02|10/06`` while every
+            # detail it opened read ``ICEBOUND_TREASURE_TRAINING|10/04|10/04`` -- and 10/04 is
+            # inside the row's ``calendar_dates_raw``.  The old code matched on key equality
+            # only, so nothing was ever credited, ``calendar_scan_pending`` stayed true,
+            # ``calendar_scan_due`` had to stay true, and AUTO re-opened the same six entries
+            # 668 times: 84% of every run, for hours.  The other role finished its scan on the
+            # same grid only because its last detail happened to yield a key equal to its row's.
+            matched = _row_carrying_the_details_dates(occurrence, old_rows, event_id)
         if matched is None and not occurrence and event_id:
-            # The existing calendar Brain opens the first uninspected visible
-            # row; do not credit the second occurrence of that event as well.
+            # The frame offered no key at all, so there is no date evidence either.  Unchanged
+            # from before: the Brain opens the *first* uninspected visible row, so crediting
+            # that one is what advances the scan, and a credited row is never chosen again.
             matched = next((row for row in old_rows if row.get("event_id") == event_id
                             and row.get("details_observed") is not True), None)
         if matched is not None:
