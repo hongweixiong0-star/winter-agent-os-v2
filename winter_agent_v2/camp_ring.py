@@ -227,10 +227,34 @@ def focused_camp_body_tap_norm(image_path: Path) -> tuple[float, float] | None:
     The search is limited to the centered city area where the panel's row-entry transition
     places the selected camp. It requires a large, near-round warm component and refuses
     ambiguous/missing matches. This prevents the many small gold HUD/activity icons around
-    the frame from becoming a tap target. The ring is a focus marker, not the building's hit
-    area: live MAA exploration on 射手营 and 矛兵营 showed a tap on the building body opens
-    the action bar, while a tap on the ring only dismisses the tutorial hand. The body target
-    is measured relative to the current-frame ring, so camera movement is followed.
+    the frame from becoming a tap target.
+
+    **What this function returns, stated as the code does it**: the centre of the surviving
+    warm component -- i.e. the ring's own centre -- and not a point displaced from the ring.
+    An earlier revision of this docstring claimed "the ring is a focus marker, not the
+    building's hit area ... the body target is measured relative to the current-frame ring",
+    which described a body offset the code has not applied since 2026-09-26. The offset was
+    removed on evidence (`camp_ring.py`'s own note: the live Lancer route landed on the lower
+    roof, dismissed the tutorial hand, and did not open the action bar), and re-adding one is
+    not the fix for a first tap that does not open the bar -- see the measurement below.
+
+    Measured 2026-10-02 over every ``TAP_FOCUSED_TRAINING_CAMP_*`` step that day (12 steps,
+    all three camps): 6 FAILURE and 6 SUCCESS, and **every** failure is followed 4-5 s later by
+    a success of the same skill on the same camp. The paired examples carry the *same*
+    coordinate, so the coordinate is not what differed:
+
+        02:18:52 MARKSMAN point=(0.5021, 0.4602) FAILURE   -> 02:18:56 same point SUCCESS
+        04:01:14 SHIELD   point=(0.5021, 0.4613) FAILURE   -> 04:01:19 same point SUCCESS
+        04:12:39 LANCER   point=(0.4632, 0.4660) FAILURE   -> 04:12:43 same point SUCCESS
+        04:13:21 SHIELD   point=(0.5021, 0.4797) FAILURE   -> 04:13:26 same point SUCCESS
+
+    and the successful frames are exactly the ones where this function returns ``None``
+    (no halo left), because the runtime's gated retry then reuses the remembered point through
+    ``REOBSERVED_STATIC_CITY_VIEW`` instead of re-measuring. The first tap is absorbed by the
+    client's tutorial hand; the second reaches the building. That two-tap interaction is why
+    ``verifier.can_reobserve_focused_training_camp_after_nonmenu_tap`` exists, and the honest
+    answer to "the first tap did not open the bar" is to let that bounded retry run -- not to
+    move this point, which two previous rounds tried on single frames and reverted.
     """
     with Image.open(image_path) as source:
         rgb = np.asarray(source.convert("RGB"))
