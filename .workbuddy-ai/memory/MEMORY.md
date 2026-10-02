@@ -3429,3 +3429,38 @@ streak 喂给 fairness bonus ⇒ **结构上无法报告推进的目标，因它
 
 （与本项目已记录的前两次 A/B 教训同族：`cp`/`mv` 顺序、repin 用 `HEAD`。
 **三次都是"测量手段错了"，不是"代码错了"** ⇒ 测量手段本身需要版本化与标记校验。）
+
+## 通则：「项目已有可用语义」≠「项目同意在这里用它」（2026-10-03，否决一次实现）
+
+我给 `SAFE_STOP` 路径补了一条 episode，用的是项目既有的
+`result="INCOMPLETE"` / `session_outcome="STILL_PENDING"` 语义
+（`session_adapters.STEP_OBSERVE_ONLY` 已在用，164 行实测）。
+**看起来是纯粹的接线，错了。**
+
+`tests/test_backend_provenance.py::test_a_safe_stop_never_becomes_an_episode`
+—— **测试名就是契约**：
+
+> "the runtime returns **before** `_record_episode` for SAFE_STOP, so an all-empty row is
+> **not a runtime artefact**" … "Pinned here because it matters to anyone **computing failure
+> rates** from the stream"
+
+**它是 P0 数据完整性修复的一部分**（同文件记录了"文件从 52 条记录掉到 5 条"的事故）。
+它保护的区分是：**"运行时拒绝" vs "别处写进来的脏行"**。
+我的修复让运行时**开始**产出那种行 ⇒ 污染了它要保护的区分 ⇒ **实现错了，不是测试滞后。**
+
+> **规则一：既有测试分三类——① 描述现状 ② 禁止某种行为 ③ 钉住回归。第 ②类最危险。**
+> **判据：测试名里含 `never` / `not` / `must not` / `cannot` 的就是第 ②类。**
+> **违反它 = 实现错，不是测试滞后。**
+>
+> **规则二：动手前 `grep tests/ "<行为关键词>"`，而不是 `grep 源码 "相似语义"`。**
+> 我查到"项目有 `INCOMPLETE` 语义"就动手了，**却没查"项目对这个场景已经有什么测试"**。
+> **"有能力做"与"被允许做"是两个问题。**
+>
+> **规则三：回归测试的选取范围要覆盖"被改动的行为所在的领域"，而不是"我以为相关的文件"。**
+> 我只跑了自改的 5 个文件 + A/B 的 4 个文件，**两次都没包含那个文件**。
+> **A/B 的文件清单本身也要 review：它是上一次挑的，不是这一次该挑的。**
+
+**处置**：`git revert b35ae52` → `683753d`，工作树还原（含一次 `git stash push`
+把旧实现带回、已 `git checkout --` 清除），生产树 repin 并回读确认标记 = 0。
+**保留诊断结论（11.5% 孤儿率是真实的），但正确的修法不是往 episode 加一行——
+下一步应先查"当初为什么把这条钉成契约"（那次 P0 事故的教训），再找不破坏它的记录位置。**
