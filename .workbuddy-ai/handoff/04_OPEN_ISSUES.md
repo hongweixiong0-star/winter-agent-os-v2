@@ -6,18 +6,18 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x327 all-time; recent=256 (last 2d), last seen 2026-10-02T10:46:09.488710+00:00 — TRY_ORDINARY_CONTROL(96), SELECT_RESOURCE(86), OPEN_HOME(33)
-- **GIANT_BEAST_SEARCH_NOT_PROVEN** x64 all-time; recent=64 (last 2d), last seen 2026-10-02T08:32:12.901195+00:00 — SUBMIT_GIANT_BEAST_SEARCH(64)
-- **NO_EXECUTION** x125 all-time; recent=47 (last 2d), last seen 2026-10-02T09:53:35.648862+00:00 — OBSERVE_ONLY(65), PRINTED_TAP(39), TAP_FOCUSED_TRAINING_CAMP_SHIELD(6)
-- **BEAST_SEARCH_TAB_NOT_PROVEN** x54 all-time; recent=36 (last 2d), last seen 2026-10-02T06:48:32.057019+00:00 — OPEN_BEAST_SEARCH_TAB(54)
-- **PANEL_BUILDING_QUEUE_NOT_PROVEN** x25 all-time; recent=25 (last 2d), last seen 2026-10-02T04:39:54.729414+00:00 — OPEN_TASK_FROM_QUICK_PANEL_BUILDING(25)
-- **FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN** x28 all-time; recent=24 (last 2d), last seen 2026-10-02T04:13:21.744721+00:00 — TAP_FOCUSED_TRAINING_CAMP_LANCER(10), TAP_FOCUSED_TRAINING_CAMP_SHIELD(9), TAP_FOCUSED_TRAINING_CAMP_MARKSMAN(9)
-- `OPEN_BUILDING_UPGRADE` never succeeded (attempts=12, failure=12)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x332 all-time; recent=255 (last 2d), last seen 2026-10-02T12:20:03.392522+00:00 — TRY_ORDINARY_CONTROL(98), SELECT_RESOURCE(86), SELECT_BEAST_TARGET_MAMMOTH(34)
+- **GIANT_BEAST_SEARCH_NOT_PROVEN** x66 all-time; recent=61 (last 2d), last seen 2026-10-02T12:19:45.411572+00:00 — SUBMIT_GIANT_BEAST_SEARCH(66)
+- **NO_EXECUTION** x126 all-time; recent=45 (last 2d), last seen 2026-10-02T12:27:00.511127+00:00 — OBSERVE_ONLY(65), PRINTED_TAP(39), TAP_FOCUSED_TRAINING_CAMP_SHIELD(6)
+- **BEAST_SEARCH_TAB_NOT_PROVEN** x54 all-time; recent=28 (last 2d), last seen 2026-10-02T06:48:32.057019+00:00 — OPEN_BEAST_SEARCH_TAB(54)
+- **PANEL_BUILDING_QUEUE_NOT_PROVEN** x26 all-time; recent=26 (last 2d), last seen 2026-10-02T11:29:52.082851+00:00 — OPEN_TASK_FROM_QUICK_PANEL_BUILDING(26)
+- **FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN** x28 all-time; recent=22 (last 2d), last seen 2026-10-02T04:13:21.744721+00:00 — TAP_FOCUSED_TRAINING_CAMP_LANCER(10), TAP_FOCUSED_TRAINING_CAMP_SHIELD(9), TAP_FOCUSED_TRAINING_CAMP_MARKSMAN(9)
+- `OPEN_BUILDING_UPGRADE` never succeeded (attempts=13, failure=13)
 - `READ_FISHING_STATE` never succeeded (attempts=2, failure=2)
 - `REALTIME` never succeeded (attempts=27, failure=8)
 - `SELECT_BEAST_TARGET_LABELLED` never succeeded (attempts=4, failure=4)
-- `SELECT_BEAST_TARGET_MAMMOTH` never succeeded (attempts=32, failure=32)
-- 1477 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json']
+- `SELECT_BEAST_TARGET_MAMMOTH` never succeeded (attempts=34, failure=34)
+- 1515 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', 'MM .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md', 'MM .workbuddy-ai/commander/WORK_QUEUE.json']
 <!-- /AUTO:open_issues -->
 
 ---

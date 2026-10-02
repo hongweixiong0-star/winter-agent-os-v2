@@ -6,40 +6,40 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `164de5e 2026-10-02T20:34:15+08:00 fix(schedule): 20 activity rows were unroutable, and 3 ticketed goals were unroutable too`
+- `5bfe164 2026-10-02T19:30:06+08:00 docs(commander): WB-1002-23 -- the duplicate commits are explained; the reverts are not`
+- `00c139d 2026-10-02T19:30:04+08:00 docs(commander): WB-1002-23 -- the duplicate commits are explained; the reverts are not`
+- `9b76e15 2026-10-02T19:27:44+08:00 docs(memory): WB-1002-22 -- a green test on a route production never takes`
+- `756631c 2026-10-02T19:27:42+08:00 docs(memory): WB-1002-22 -- a green test on a route production never takes`
+- `3a6ea9f 2026-10-02T19:25:58+08:00 docs(commander): WB-1002-22 closed -- the fix was already green and the router never called it`
+- `081d48b 2026-10-02T19:25:56+08:00 docs(commander): WB-1002-22 closed -- the fix was already green and the router never called it`
 - `5a04821 2026-10-02T19:12:16+08:00 fix(routing): the node that answered 0 times in 10 is not the router's first choice`
 - `0434e07 2026-10-02T18:45:51+08:00 docs(memory): WB-1002-20 -- a value that was read and then thrown away`
 - `f1614f7 2026-10-02T18:44:17+08:00 docs(commander): WB-1002-20 closed -- the tap point was read off the frame and thrown away`
 - `130d8bb 2026-10-02T18:38:35+08:00 fix(select): the material tabs' tap point was read off the frame and thrown away`
 - `9766283 2026-10-02T18:24:21+08:00 docs(memory): WB-1002-16 -- read a failure's own two frames before trusting the guard's verdict`
-- `45aad62 2026-10-02T18:22:44+08:00 docs(commander): WB-1002-16 closed -- the refused march had already gone out`
-- `76a5e90 2026-10-02T18:12:02+08:00 fix(gather): the dispatch verifier refused a march that had already gone out`
-- `89d4c64 2026-10-02T17:49:07+08:00 docs(memory): WB-1002-15 -- check the layer below before inventing a vocabulary`
-- `512a84a 2026-10-02T17:47:39+08:00 docs(commander): WB-1002-15 closed -- the MAA path names its refusals; the live values are not in yet`
-- `61adba7 2026-10-02T17:36:41+08:00 feat(router): the MAA node path names its refusals, score included`
-- `1260e68 2026-10-02T17:27:20+08:00 docs(memory): WB-1002-14 -- enumerate the family from the decision, not from the guards`
-- `2740cce 2026-10-02T17:26:07+08:00 docs(commander): WB-1002-14 closed -- the guard fired live, four minutes after the repin`
 
-Uncommitted changes: 1477
+Uncommitted changes: 1515
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
-- ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
+- `MM .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
-- ` M .workbuddy-ai/commander/WORK_QUEUE.json`
+- `MM .workbuddy-ai/commander/WORK_QUEUE.json`
+- `D  .workbuddy-ai/commander/results/WB-1002-22-BUILDING-UPGRADE-ROUTE.json`
+- `MM .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+- `MM .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
+- `MM .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- `MM .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- `MM .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+- `MM .workbuddy-ai/handoff/08_LIVE_METRICS.json`
+- `MM .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
+- `MM .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
 - ` M .workbuddy-ai/memory/2026-09-30.md`
+- `MM .workbuddy-ai/memory/2026-10-02.md`
+- `MM .workbuddy-ai/memory/MEMORY.md`
+- `MM .workbuddy/memory/2026-10-02.md`
+- `MM .workbuddy/memory/MEMORY.md`
 - ` M START_HERE.md`
-- ` M dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png`
-- ` M dataset/candidate/template_manifest.json`
-- ` M docs/CAPABILITY_COVERAGE.md`
-- ` M docs/CURRENT_TRUTH.md`
-- ` M docs/TOP_FAILURES.md`
-- ` M knowledge/analysis/top_failures.json`
-- ` M knowledge/goals/capability_skill_map.json`
-- ` M knowledge/perception/candidates/INDEX.json`
-- ` M knowledge/perception/pages/INDEX.json`
-- ` M knowledge/preload/INDEX.json`
-- ` M knowledge/preload/TROOP_SELECT.json`
-- ` M knowledge/ui/page_transitions.json`
-- ` M learning/current_truth.json`
 <!-- /AUTO:recent_commits -->
 
 ---

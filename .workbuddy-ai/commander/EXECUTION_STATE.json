@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-02T11:25:00+00:00",
+  "updated_at": "2026-10-02T12:44:57+00:00",
   "queue_generated_at": "2026-10-02T03:36:20+08:00",
   "current_task": null,
   "tasks": {
@@ -471,6 +471,14 @@
       "result_file": "results/WB-1002-22-BUILDING-UPGRADE-ROUTE.json",
       "verdict": "MERGED_AND_DEPLOYED: commit 5a04821a745dc0aaa073d59d3c7b16d75510b2ac on top of 0434e07; repin_production.py --to 5a04821 reports HEAD = 5a04821, status rows outside data dirs = 0, RESULT: CLEAN_OUTSIDE_DATA, manifest expected_commit 130d8bb -> 5a04821; pushed 0434e07..5a04821 to origin/main. Pin tree verified: routing preferred=ADB fallback=MAA recognition_backend=LEGACY recognition=None, not_migrated carries OPEN_BUILDING_UPGRADE_RECOGNITION, pipeline_autogen.py carries the guard, the new test file is present.",
       "summary": "{'route': 'OPEN_BUILDING_UPGRADE preferred=ADB fallback=MAA recognition_backend=LEGACY', 'recognition': 'empty -- retired by removal, which is how this file already retires a node (SEARCH_RESOURCE is the precedent, and test_recognition_backend_declaration forbids a node beside a LEGACY declaration)'"
+    },
+    "WB-1002-24-SCHEDULED-ROWS-ARE-ROUTABLE": {
+      "status": "DONE",
+      "started_at": "2026-10-02T12:35:55+00:00",
+      "finished_at": "2026-10-02T12:44:57+00:00",
+      "result_file": "results/WB-1002-24-SCHEDULED-ROWS-ARE-ROUTABLE.json",
+      "verdict": "MERGED_AND_DEPLOYED: commit 164de5e5c2e01492342450cc5731cb242a373d62 on top of 5bfe164; repin_production.py --to 164de5e reports HEAD = 164de5e, status rows outside data dirs = 0, RESULT: CLEAN_OUTSIDE_DATA, manifest expected_commit 5a04821 -> 164de5e; pushed 5bfe164..164de5e to origin/main.",
+      "summary": "{'route': \"SCHEDULED_* -> EVENT, declared by the rows' own registered_goal_ids\", 'declaration': \"both constructors carry required_observation naming the event's own live window and participation conditions\", 'refusal': 'an unrouted goal keeps its ticket (the invariants require it on the board) and i"
     }
   },
   "history": [
