@@ -3464,3 +3464,38 @@ streak 喂给 fairness bonus ⇒ **结构上无法报告推进的目标，因它
 把旧实现带回、已 `git checkout --` 清除），生产树 repin 并回读确认标记 = 0。
 **保留诊断结论（11.5% 孤儿率是真实的），但正确的修法不是往 episode 加一行——
 下一步应先查"当初为什么把这条钉成契约"（那次 P0 事故的教训），再找不破坏它的记录位置。**
+
+## 通则：被否决之后，先把「正确位置」查出来再动手（2026-10-03）
+
+`b35ae52` 违反 `test_a_safe_stop_never_becomes_an_episode` 被 revert（`683753d`）后，
+我没有立刻找第二个地方下手，而是先把**所有可能的记录位置**查完并写下约束。查完发现：
+
+| 位置 | 结论 |
+|---|---|
+| `episodes.jsonl` | ❌ 契约明确禁止（`test_a_safe_stop_never_becomes_an_episode`） |
+| `decisions.jsonl` | ❌ 契约是"每次**目标改变**记一行"，且面板读它 |
+| `auto_uptime.jsonl` | ❌ **run 级**（一 run 一行），而拒绝是 **step 级** |
+| `learning/fruitless_run_audit.jsonl` | ✅ **字段齐备、有测试钉住，只是门太窄** |
+
+最后那一条的证据链（本轮最有用的一段）：
+`runtime.py:8245 append_fruitless_audit(reason)` 里**只有一个 `if`**：
+`reason != self.NOTHING_LEFT_TO_LOOK_AT: return` ⇒ **只记一种拒绝**；
+真机实测该 reason 出现 **0 次**、文件**从未生成** ⇒ **通道是死的**。
+而 `tests/test_no_repeated_look_around.py` **已经证明 SAFE_STOP 能被这样记录**：
+`row["per_page"][-1]["attempted_skill"] == "SAFE_STOP"`、
+`verifier_result.status == "NOT_ATTEMPTED"`。
+
+**⇒ 我上一轮想在 `episodes` 里造的东西，项目早就在 `per_page` 里做成了并钉住了。
+错的不是"要不要记"，是"记在哪"。**
+
+> **规则：一次修复被否决后，不要立刻找第二个地方下手。**
+> **先把所有候选位置的**粒度**（run 级 vs step 级）与**契约**（谁读它、什么测试钉住它）
+> 列出来。粒度不匹配是最常见的否决原因，而它**读代码看不出来**——
+> `auto_uptime` 看起来"是记录运行结果的"，但它是 **一 run 一行**，
+> 装不下一个 run 里的多次拒绝。
+>
+> **判据：新增记录前先答三问 —— ① 粒度对不对（run/step/goal）② 谁读它 ③ 哪个测试钉住它。**
+> 三问答不上来就不要写。
+
+**另一条**：**"通道存在"≠"通道在工作"。** `fruitless_run_audit.jsonl` 有配置、有代码、有测试，
+**真机 0 次触发、文件从未生成**。**判据：去 `learning/` 里数那个文件的行数，别看代码里有没有它。**
