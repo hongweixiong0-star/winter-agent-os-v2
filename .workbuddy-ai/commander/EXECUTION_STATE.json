@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-02T06:31:45+00:00",
+  "updated_at": "2026-10-02T06:45:14+00:00",
   "queue_generated_at": "2026-10-02T03:36:20+08:00",
   "current_task": null,
   "tasks": {
@@ -371,10 +371,14 @@
       "result_file": null
     },
     "WB-1002-07-BUILD-STARTED": {
-      "status": "PENDING",
+      "status": "BLOCKED",
       "priority": "P1",
       "queue_status": "READY",
-      "result_file": null
+      "result_file": null,
+      "started_at": "2026-10-02T06:32:49+00:00",
+      "finished_at": "2026-10-02T06:45:14+00:00",
+      "verdict": "BLOCKED",
+      "blocker": "BUILD_STARTED cannot be proven: verify_building_upgrade (verifier.py:1631) requires after.building['queue_building'] and an AST scan of winter_agent_v2 finds no writer of that key -- only the two reads at verifier.py:1634/1636 and a comment at vision.py:2093. Its producer was deleted on 2026-09-17 (CAP-B01, the fabricated STOREHOUSE/queue_building constants in vision.py), so target_ok is always False. The remaining input 城墙 also has no id: BUILDING_IDS omits it and knowledge/game/buildings.json has no wall record. Closing either needs evidence this machine does not have -- what the client prints for a running upgrade of the selected building -- and guessing it would buy a BUILD_STARTED that does not mean an upgrade began."
     },
     "WB-1002-08-STABILITY-RESOURCES": {
       "status": "DONE",

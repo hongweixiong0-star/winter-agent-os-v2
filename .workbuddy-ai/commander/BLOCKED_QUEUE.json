@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-02T05:30:18+00:00",
+  "updated_at": "2026-10-02T06:45:14+00:00",
   "items": [
     {
       "task_id": "WB-0AZ-BEAST-BACK-VERIFY",
@@ -144,6 +144,17 @@
         "One historical reply (2026-09-30) put an action name in the decision slot: PLAN_DECISION_UNKNOWN: 'CLOSE_POPUP'. The schema enum should make that impossible and the three recent EXECUTE replies carry exactly the four required keys, so it may already be contained -- but it is unverified either way and would silently discard a step if it recurs.",
         "My previous round's observation-ticket fix holds at the utility layer (observation_ticket 50.0, rank() keeps USE_FREE_ARENA_ATTEMPTS and LABYRINTH_DAILY; previously 0.0 and dropped). They are still absent from board_runnable_goal_ids, and that is correct rather than a second defect: board_runnable_ids is filtered purely by status in RUNNABLE_STATUSES, and both goals are UNKNOWN. The ticket governs selection, not status. What neither goal has is available_skills ([]), which is WB-1002-04's subject.",
         "The same-window 2 PLAN_TARGET_IS_NOT_A_CONTROL refusals on the same target 14 hours apart (E21, E24, both TEXT_LABEL, both reason '点击城墙下方的升级按钮') are the shipped behaviour of two guards agreeing; the fix above changes what the model is told, so a repeat after deploy would be evidence the model ignored the named target rather than that it never saw it."
+      ]
+    },
+    {
+      "task_id": "WB-1002-07-BUILD-STARTED",
+      "root_cause_found": true,
+      "attempts": "3 recorded live attempts of the target step (05:11:45, 05:51:29, 06:39:54), all read from the episode stream; 0 attempts of my own on the device this round, because the order's live_plan gates a run on the building queue being idle and the prerequisites being satisfied by policy and I could not reach that state inside the timebox without taking the device.",
+      "changes_made": "winter_agent_v2/runtime.py: one resolver branch for BTN_SELECTED_BUILDING_UPGRADE, reading the current frame's building['upgrade_tap_norm'], guarded like its sibling BTN_LAB_RESEARCH (page HOME, 2-sequence, in range). tests/test_building_upgrade_entry_target.py: 9 tests. tools/check_wiring.py: removed the now-repaired target from _known_unresolvable and rewrote the comment to record why it was dead.",
+      "evidence": "Episodes: three OPEN_BUILDING_UPGRADE failures, identical state_before, SEMANTIC_TARGET_NOT_VERIFIED in 0.157-0.172 s with empty after_screenshot, plus the 06:39 loop (OPEN_QUICK_PANEL -> OPEN_TASK_FROM_QUICK_PANEL_BUILDING x3 -> OPEN_BUILDING_UPGRADE FAILURE -> OPEN_QUICK_PANEL). Replay on the archived frame through HybridVision with the runtime's own attention reproduces state_before.building byte-for-byte and the new branch returns (0.5, 0.7195). AST scan: no writer of queue_building in winter_agent_v2. check_wiring problems=0, and the guard caught the repair by itself.",
+      "blocker": "BUILD_STARTED cannot be proven: verify_building_upgrade (verifier.py:1631) requires after.building['queue_building'] and an AST scan of winter_agent_v2 finds no writer of that key -- only the two reads at verifier.py:1634/1636 and a comment at vision.py:2093. Its producer was deleted on 2026-09-17 (CAP-B01, the fabricated STOREHOUSE/queue_building constants in vision.py), so target_ok is always False. The remaining input 城墙 also has no id: BUILDING_IDS omits it and knowledge/game/buildings.json has no wall record. Closing either needs evidence this machine does not have -- what the client prints for a running upgrade of the selected building -- and guessing it would buy a BUILD_STARTED that does not mean an upgrade began.",
+      "recommended_codex_review": [
+        "The order's objective is not met and I am not claiming partial credit for it: the entry hop is fixed, but 建筑空闲Goal cannot reach BUILD_STARTED evidence while verify_building_upgrade requires a field nothing writes. If Codex prefers the verifier to be repaired this round rather than decided next round, say which vocabulary is authoritative (printed label vs internal id) and I will wire it in one change; I did not choose on your behalf because the choice is exactly what decides whether a later 'BUILD_STARTED' means an upgrade really began."
       ]
     }
   ],

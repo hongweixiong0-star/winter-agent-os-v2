@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `9a227da 2026-10-02T14:44:10+08:00 fix(building): the selected building's 升级 control was in the frame and nothing read it`
+- `d1856df 2026-10-02T14:31:53+08:00 docs(commander): WB-1002-08 closed, with the merged observation window and two self-checks`
+- `b92ca76 2026-10-02T14:30:44+08:00 docs(commander): WB-1002-08 -- no new crash, and a deployed fix the window cannot run`
 - `012eaab 2026-10-02T14:25:18+08:00 fix(reload): the detector is itself a control-plane module`
 - `ec258bd 2026-10-02T14:24:45+08:00 fix(reload): list the two modules the window runs itself but whose staleness is silent`
 - `bf26ddd 2026-10-02T14:18:07+08:00 docs(memory): the question fix is delivered but not sufficient, and the loop it exposed`
@@ -15,12 +18,10 @@ Last 12 commits (newest first):
 - `5620547 2026-10-02T14:01:51+08:00 docs(planner): the auto-collected crops fail the calibration my own last round recommended they be wired on`
 - `6c1abb6 2026-10-02T14:01:10+08:00 fix(retention): the calibration corpus's frames are evidence too, and have to survive the sweep`
 - `8589935 2026-10-02T13:53:09+08:00 docs(planner): two control stores with two reachabilities, and a retention sweep that deletes fixtures`
-- `f80093b 2026-10-02T13:52:37+08:00 fix(collection): the manifest record keeps the printed label it was filed under`
-- `137f881 2026-10-02T13:33:42+08:00 docs(planner): the acceptance doc's §3 breakpoint is fixed; what is still open is composite-control coverage`
-- `1d58c76 2026-10-02T13:31:12+08:00 docs(commander): record the funnel wall, the two defects before it, and WB-1002-03 as blocked`
 
-Uncommitted changes: 1445
-- `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
+Uncommitted changes: 1455
+- `M .workbuddy-ai/commander/BLOCKED_QUEUE.json`
+- ` M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
@@ -39,7 +40,6 @@ Uncommitted changes: 1445
 - ` M knowledge/analysis/top_failures.json`
 - ` M knowledge/execution/backend_routing.json`
 - ` M knowledge/goals/capability_skill_map.json`
-- ` M knowledge/perception/candidates/INDEX.json`
 <!-- /AUTO:recent_commits -->
 
 ---
