@@ -4280,18 +4280,54 @@ class LiveRuntime:
             })
         role_scope = str(getattr(self, "role_scope", "") or "").upper()
         live_scope = role_scope in {"LIVE_OBSERVED", "FRESH_RUNTIME"}
+        # What the page itself produced, and nothing else.  This used to fall back to
+        # ``self._active_gather_resource`` -- a *memory of another goal's plan*, set only while the
+        # GATHER_RESOURCE goal runs -- so the record could not be told apart from a frame reading.
+        # Measured 2026-10-02 (WB-1002-16): a MEAT dispatch was refused because the formation
+        # carried "WOOD", which came from the MARCH reader's own synthesized placeholder and from
+        # this fallback; ``resource_type`` was never a frame fact.  The resource the dispatch is for
+        # is stamped by ``_stamp_gather_formation_resource``, where the plan is known.
+        observed_resource = str(getattr(world, "resource_target", "") or "").strip().upper() or None
         record = {
             **observation,
             "role_id": str(getattr(self, "role_id", "") or "") if live_scope else None,
             "role_scope": role_scope or "UNKNOWN",
             "observed_at": str(world.timestamp or datetime.now(timezone.utc).isoformat()),
             "source_frame": str(frame_path),
-            "resource_type": str(
-                world.resource_target or getattr(self, "_active_gather_resource", "") or ""
-            ).upper() or None,
+            "resource_type": observed_resource,
+            # The pair that keeps the two apart for the next reader: what this frame said, and
+            # which of the two sources answered.
+            "resource_observed": observed_resource,
+            "resource_source": "PAGE" if observed_resource else "NONE",
             "specialist_availability": "UNKNOWN",
         }
         return replace(world, hero_troop={**dict(world.hero_troop or {}), "gather_formation": record})
+
+    def _stamp_gather_formation_resource(self, world: WorldState, resource: str) -> WorldState:
+        """Record the resource the dispatch is for, and say that it came from the plan.
+
+        The formation page states its resource only as a picture (its header prints 生肉/木材/...),
+        and no declared record reads it yet, so "which resource is this formation for" cannot be
+        answered from the frame.  The honest source is therefore the dispatch's own plan, stamped
+        here -- the one place that knows it, and the same value written into ``world.resource_target``
+        immediately before this is called.  ``resource_observed`` keeps whatever the page produced,
+        so a future header reader flips ``resource_source`` to ``PAGE`` and turns the verifier's
+        resource clause back into a real check without any other change.
+
+        A frame with no formation record is returned untouched: there is nothing to stamp, and
+        inventing an empty one would put a formation on a screen that has none.
+        """
+        formation = (world.hero_troop or {}).get("gather_formation")
+        if not isinstance(formation, dict):
+            return world
+        stamped = {
+            **formation,
+            "resource_type": str(resource or "").strip().upper() or None,
+            "resource_source": "PLANNED",
+        }
+        return replace(world, hero_troop={
+            **dict(world.hero_troop or {}), "gather_formation": stamped,
+        })
 
     def _annotate_gather_picker(self, world: WorldState, frame_path: Path) -> WorldState:
         """Match only the exact resource specialist on the current role's picker frame."""
@@ -8408,6 +8444,10 @@ class LiveRuntime:
                 self._active_gather_resource = planned_resource
             if before.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                 before = replace(before, resource_target=planned_resource)
+                # The observation cannot have read the resource on these pages (see
+                # ``_stamp_gather_formation_resource``), so the plan is stamped into the formation
+                # record here -- after the line above, so the two can never disagree.
+                before = self._stamp_gather_formation_resource(before, planned_resource)
             self._runtime(last_tick_time=datetime.now(timezone.utc).isoformat(),
                           page=before.page.value, confidence=before.confidence,
                           vision="READY" if before.known else "UNKNOWN", screenshot_path=str(before_path),

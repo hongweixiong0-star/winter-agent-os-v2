@@ -39,7 +39,11 @@ class P0SemanticVisionTests(unittest.TestCase):
         state = self.vision.observe(ROOT / "dataset/raw/live_resource_attempt7.png")
         self.assertEqual(state.page, Page.RESOURCE_DETAIL)
         self.assertTrue(state.resource_available)
-        self.assertEqual(state.resource_target, "WOOD")
+        # The gather control proves the page and the availability; it never said WOOD.  This branch
+        # answered ``resource_target="WOOD"`` until 2026-10-02, which is what froze a WOOD formation
+        # into the record of a MEAT dispatch and refused a ready march (WB-1002-16).  The resource
+        # the route will gather is written where the plan is known, not invented by the reader.
+        self.assertIsNone(state.resource_target)
 
     def test_live_march_page(self) -> None:
         state = self.vision.observe(ROOT / "dataset/raw/live_march_attempt7_one_troop.png")

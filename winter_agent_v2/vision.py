@@ -2090,7 +2090,16 @@ class SemanticWorldVision:
                 confidence=0.99,
             )
         if match("BTN_DISPATCH"):
-            return WorldState(page=Page.MARCH, resource_target="WOOD", confidence=0.99)
+            # The button proves the page, not the resource.  This branch used to answer
+            # ``resource_target="WOOD"`` as well, which the picture never showed -- the formation
+            # page prints its resource in the header (生肉/木材/煤炭/铁矿) and nothing here reads it.
+            # Its own siblings above and below claim only what their template evidences, and the
+            # invented value went into evidence: ``_annotate_gather_formation`` froze it into the
+            # formation record, so a MEAT dispatch was refused for carrying a "WOOD" formation
+            # (measured 2026-10-02, WB-1002-16: the run had cleared the formation to
+            # READY_WITH_SPECIALIST for MEAT and the verifier still refused it).  What the dispatch
+            # will send is stamped where the plan is known, not guessed here.
+            return WorldState(page=Page.MARCH, confidence=0.99)
         if match("BTN_BUILD_UPGRADE"):
             # ``upgradeable`` is the fact this frame proves: the 升级 control is drawn.
             #
@@ -2515,9 +2524,11 @@ class SemanticWorldVision:
         if match("STATUS_EXPLORATION_IDLE_CLAIMED"):
             return WorldState(page=Page.EXPLORATION, exploration={"status":"CLAIMED"}, confidence=0.99)
         if match("BTN_GATHER"):
+            # Same rule as the dispatch button above: the control proves the page, not the
+            # resource.  ``resource_available`` is what this template actually evidences, and the
+            # resource the route will gather is written where the plan is known.
             return WorldState(
                 page=Page.RESOURCE_DETAIL,
-                resource_target="WOOD",
                 resource_available=True,
                 confidence=0.99,
             )

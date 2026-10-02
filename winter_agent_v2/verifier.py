@@ -1414,10 +1414,30 @@ def verify_wood_dispatch_from_march(before: WorldState, after: WorldState) -> Ve
     formation = (before.hero_troop or {}).get("gather_formation")
     formation_policy = "MISSING_CURRENT_ROLE_SCOPED_FORMATION"
     formation_ok = False
+    role_scoped = False
+    # Two questions, answered separately, because the lumped ``STALE_OR_ROLE_UNSCOPED_FORMATION``
+    # this used to collapse them into said neither:
+    #
+    #   1. is this formation the current role's, observed on this frame?  (role scope below)
+    #   2. does the resource the page states agree with the resource being dispatched?
+    #
+    # Only the page's own statement can answer (2).  The three outcomes are therefore kept apart:
+    # ``NOT_STATED_BY_PAGE`` (the normal case today -- the header is a picture and no declared
+    # record reads it, so there is nothing to disagree with, and the resource agreement comes from
+    # the verified entry transition ``verify_march_page_open`` instead), ``AGREES``, ``DISAGREES``.
+    #
+    # Why it had to change.  Measured 2026-10-02 (WB-1002-16): the run cleared a MEAT formation to
+    # READY_WITH_SPECIALIST -- the policy it was following asked for exactly the slots it removed --
+    # and the dispatch was refused anyway.  ``formation.resource_type`` held a frozen "WOOD" that
+    # came from the MARCH reader's own synthesized placeholder rather than from the frame, and
+    # because this clause ran first the policy below was never evaluated at all.  Seven of the eight
+    # sub-conditions held on that frame; the comparison was the only one that failed, and it could
+    # not pass for any resource but the placeholder.
+    resource_clause = "NOT_OBSERVED"
     if isinstance(formation, dict):
         observed_at = str(formation.get("observed_at") or "")
         expected_observed_at = str(before.timestamp or "")
-        role_scoped_current = (
+        role_scoped = (
             formation.get("status") == "OBSERVED"
             and formation.get("page") == "PAGE_FORMATION"
             and formation.get("role_scope") in {"LIVE_OBSERVED", "FRESH_RUNTIME"}
@@ -1425,15 +1445,25 @@ def verify_wood_dispatch_from_march(before: WorldState, after: WorldState) -> Ve
             and bool(str(formation.get("source_frame") or "").strip())
             and bool(expected_observed_at)
             and observed_at == expected_observed_at
-            and str(formation.get("resource_type") or "").upper() == str(before.resource_target or "").upper()
         )
-        if not role_scoped_current:
+        if not role_scoped:
             formation_policy = "STALE_OR_ROLE_UNSCOPED_FORMATION"
         else:
-            from .hero_portraits import evaluate_gather_formation
-            policy = evaluate_gather_formation(str(before.resource_target or ""), formation)
-            formation_policy = str(policy.get("status") or "UNKNOWN")
-            formation_ok = formation_policy in {"READY_WITH_SPECIALIST", "READY_EMPTY"}
+            source = str(formation.get("resource_source") or "").upper()
+            stated = str(formation.get("resource_type") or "").upper()
+            if source != "PAGE" or not stated:
+                resource_clause = "NOT_STATED_BY_PAGE"
+            else:
+                resource_clause = (
+                    "AGREES" if stated == str(before.resource_target or "").upper() else "DISAGREES"
+                )
+            if resource_clause == "DISAGREES":
+                formation_policy = "FORMATION_RESOURCE_DISAGREES"
+            else:
+                from .hero_portraits import evaluate_gather_formation
+                policy = evaluate_gather_formation(str(before.resource_target or ""), formation)
+                formation_policy = str(policy.get("status") or "UNKNOWN")
+                formation_ok = formation_policy in {"READY_WITH_SPECIALIST", "READY_EMPTY"}
     after_state = any(state in {MarchState.MARCHING, MarchState.GATHERING} for state in after.marches)
     # The formation page does not expose the global march counter, and the
     # idle map can hide it completely. A fixed ``>= 2`` requirement therefore
@@ -1450,9 +1480,11 @@ def verify_wood_dispatch_from_march(before: WorldState, after: WorldState) -> Ve
             "wood_march_page": before_ok,
             "gather_formation_policy": formation_policy,
             "gather_formation_policy_ok": formation_ok,
-            "gather_formation_is_current_role_scoped": formation_policy not in {
-                "MISSING_CURRENT_ROLE_SCOPED_FORMATION", "STALE_OR_ROLE_UNSCOPED_FORMATION",
-            },
+            "gather_formation_role_scoped": role_scoped,
+            "gather_formation_resource_clause": resource_clause,
+            # Kept under its old name for readers of past rows; it now answers its own question --
+            # role scope -- instead of also folding in the resource comparison.
+            "gather_formation_is_current_role_scoped": role_scoped,
             "active_state": after_state,
             "active_queue_visible": queue_ok,
             "march_used": after.march_used,

@@ -250,10 +250,25 @@ def test_gather_dispatch_verifier_rejects_missing_stale_or_cross_role_formation(
     assert not result.ok
     assert result.evidence["gather_formation_policy"] == "MISSING_CURRENT_ROLE_SCOPED_FORMATION"
 
-    for changes in (
-        {"role_scope": "PERSISTED", "role_id": "test-alt-role"},
-        {"role_scope": "LIVE_OBSERVED", "role_id": "test-alt-role", "resource_type": "MEAT"},
-        {"role_scope": "LIVE_OBSERVED", "role_id": "test-alt-role", "observed_at": "old-frame"},
+    # Each mutation is now rejected by the clause it actually exercises, and the clause is named.
+    # The single STALE_OR_ROLE_UNSCOPED_FORMATION they all reported could not say which -- and that
+    # lumping is what hid the defect fixed on 2026-10-02 (WB-1002-16): the resource comparison was
+    # one of its eight sub-conditions, it read a value the frame never stated, and so it refused a
+    # formation the policy had just called READY_WITH_SPECIALIST.
+    #
+    # Note what the cross-role case does NOT prove.  The verifier asks only that ``role_id`` be
+    # *non-empty*; it never asks that it be ours, because it has no independent statement of ours to
+    # compare against.  This case was previously rejected by the resource comparison rather than by
+    # the role, which made it look covered.  On a real frame the ``observed_at ==
+    # before.timestamp`` clause is what makes the non-empty check sufficient -- a formation read
+    # under another role cannot carry this frame's timestamp -- but that is an argument, not a
+    # check, so it is written down here instead of silently relied on.
+    for changes, exercised in (
+        ({"role_scope": "PERSISTED", "role_id": "test-alt-role"}, "role-scope"),
+        ({"role_scope": "LIVE_OBSERVED", "role_id": "test-alt-role",
+          "resource_type": "MEAT", "resource_source": "PAGE"}, "resource"),
+        ({"role_scope": "LIVE_OBSERVED", "role_id": "test-alt-role",
+          "observed_at": "old-frame"}, "role-scope"),
     ):
         before = WorldState(page=Page.MARCH, resource_target="WOOD")
         formation = _observation(availability="UNKNOWN")
@@ -262,6 +277,7 @@ def test_gather_dispatch_verifier_rejects_missing_stale_or_cross_role_formation(
             "role_id": "test-alt-role",
             "role_scope": "LIVE_OBSERVED",
             "resource_type": "WOOD",
+            "resource_source": "PLANNED",
             "source_frame": "current-march-frame.png",
             "observed_at": before.timestamp,
             **changes,
@@ -269,7 +285,12 @@ def test_gather_dispatch_verifier_rejects_missing_stale_or_cross_role_formation(
         before.hero_troop["gather_formation"] = formation
         result = verify_wood_dispatch_from_march(before, after)
         assert not result.ok
-        assert result.evidence["gather_formation_policy"] == "STALE_OR_ROLE_UNSCOPED_FORMATION"
+        if exercised == "resource":
+            assert result.evidence["gather_formation_resource_clause"] == "DISAGREES"
+            assert result.evidence["gather_formation_policy"] == "FORMATION_RESOURCE_DISAGREES"
+        else:
+            assert result.evidence["gather_formation_role_scoped"] is False
+            assert result.evidence["gather_formation_policy"] == "STALE_OR_ROLE_UNSCOPED_FORMATION"
 
 
 def test_unknown_resource_and_unknown_slot_never_become_dispatch_ready():
