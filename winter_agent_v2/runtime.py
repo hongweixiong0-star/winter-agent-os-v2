@@ -2090,7 +2090,76 @@ class LiveRuntime:
             events["calendar_detail"] = detail
         elif calendar.get("recognized") is True:
             events["calendar"] = event_schedule.annotate_calendar_observation(role, calendar)
+        strip = self._activity_strip_on_frame(frame, size=size)
+        if strip.get("recognized") is True:
+            events["activity_strip"] = strip
         return replace(world, events=events)
+
+    def _activity_strip_on_frame(self, frame: Path, *, size=None):
+        """Read the activity strip above the grid, widening to its own ROI when needed.
+
+        This is ``_regular_event_hub_on_frame`` applied to the strip, and it is deliberately
+        the same shape rather than a new mechanism.  Measured 2026-10-02 on the pinned
+        production frame ``20261002_135741_630328_step_005_after_20261002T055825254675.png``:
+
+            whole frame -> 联盟总动员 only (CANYON_CLASH absent)
+            strip ROI   -> 联盟总动员 0.999, 峡谷会战 0.941
+
+        The labels are ~23 px in a dense row beside a large page clock, which is the same
+        miss ``ocr_roi.py`` recorded for the gather panel's 22-px resource tabs.  The crop is
+        the fix and **no upscale is applied**: measured up=1 0.941, up=2 0.968, up=3 0.930 --
+        inside the noise, and a resample per frame is not free.
+
+        ROI OCR boxes are crop-local, so every token is projected back onto this frame before
+        the reader judges it; otherwise a strip row would be reported at a y inside the
+        calendar grid, which is a region it never measured.
+        """
+        from .event_calendar import (
+            ACTIVITY_STRIP_ROI, read_regular_event_activity_strip,
+        )
+        from .ocr import OCRToken
+        ocr = self._ocr_service()
+        if ocr is None:
+            return {}
+        size = size or read_frame_size(frame)
+        if not size:
+            return {}
+        whole = ocr.recognize(frame)
+        strip = read_regular_event_activity_strip(
+            whole.tokens, frame_size=size, already_in_frame_coordinates=True,
+        )
+        # The page heading is what makes this band the activity strip, and the ROI starts
+        # below the heading -- so the whole-frame read above is what establishes it.  Only
+        # widen when that read actually saw the 常规活动 screen, otherwise a band of Chinese
+        # text at an arbitrary height could be read as an activity list.
+        headings = [t for t in whole.tokens
+                    if t.text.strip() == "常规活动" and t.box
+                    and (max(p[1] for p in t.box) - min(p[1] for p in t.box)) >= size[1] * 0.02
+                    and (min(p[1] for p in t.box) + max(p[1] for p in t.box)) / 2 <= size[1] * 0.12]
+        if len(headings) != 1:
+            return strip
+        local = ocr.recognize(frame, roi=ACTIVITY_STRIP_ROI)
+        top = round(ACTIVITY_STRIP_ROI["y_norm"] * size[1])
+        widened = read_regular_event_activity_strip(
+            local.tokens, frame_size=size, crop_top_px=top,
+            crop_height_px=round(ACTIVITY_STRIP_ROI["h_norm"] * size[1]) or 1,
+            heading_found=True,
+        )
+        if widened.get("recognized") is not True:
+            return strip
+        # The crop **supplements** the whole frame rather than replacing it.  This is the
+        # shape the first version got wrong and it matters: on the measured frame the
+        # whole-frame pass already returns 联盟总动员, so returning early on its success
+        # would skip the crop entirely and 峡谷会战 would stay invisible forever -- the code
+        # would look wired while the defect it was written for remained.  Union by event id,
+        # whole-frame first, so a label the crop misreads can never overwrite a better
+        # whole-frame reading.
+        merged: dict[str, dict] = {}
+        for entry in (*strip.get("entries", ()), *widened.get("entries", ())):
+            event_id = str(entry.get("event_id") or "")
+            if event_id and event_id not in merged:
+                merged[event_id] = dict(entry)
+        return {**widened, "entries": list(merged.values())}
 
     def _regular_event_hub_on_frame(self, frame: Path, *, result=None):
         """Read the navigation strip on this frame, widening only its actual ROI."""

@@ -261,16 +261,79 @@ def read_calendar_entry(tokens: Iterable[Any], *, frame_size: tuple[int, int] | 
 #: structurally *above* the calendar's own first date row (y=0.267) and *below* the heading.
 ACTIVITY_STRIP_BAND = (0.06, 0.20)
 
+#: The same band as a normalized ROI, for the callers that own a frame rather than tokens.
+#:
+#: Why the strip needs a crop at all, measured on the pinned 2026-10-02 frame:
+#:
+#:     whole-frame OCR -> 联盟总动员 only  (CANYON_CLASH absent)
+#:     this crop      -> 联盟总动员 0.999, 峡谷会战 0.941
+#:
+#: and on the second role's frame the same crop returned 联盟总动员 0.999, 峡谷会战 0.941,
+#: plus ``30`` and ``兵`` which map to no registered activity and are therefore dropped.
+#:
+#: This is the miss ``ocr_roi.py`` already recorded for the gather panel's 22-px resource
+#: tabs: the engine normalises the candidate region, so cropping the text band before
+#: recognition turns a miss into a hit.  **The crop is the fix; upscaling is not.**
+#: Measured on the same pixels: up=1 reads 峡谷会战 at 0.941, up=2 at 0.968, up=3 at 0.930 --
+#: the spread is inside the noise, and each factor costs a resample per frame.  The tempting
+#: change here is a magic upscale number, and the measurement says it buys nothing.
+ACTIVITY_STRIP_ROI: dict[str, float] = {
+    "x_norm": 0.0, "y_norm": ACTIVITY_STRIP_BAND[0], "w_norm": 1.0,
+    "h_norm": ACTIVITY_STRIP_BAND[1] - ACTIVITY_STRIP_BAND[0],
+}
+
+
+def strip_tokens_from_crop(
+    tokens: Iterable[Any], *, frame_size: tuple[int, int] | None,
+    crop_top_px: int, crop_height_px: int,
+) -> dict[str, Any]:
+    """Re-express crop-relative token geometry in whole-frame coordinates.
+
+    The engine normalizes the region it is given, so a token recognized inside a crop
+    carries a y measured **from the crop's top edge**.  Every consumer of a strip row --
+    the goal layer, the scheduler, a future tap -- speaks whole-frame normalized
+    coordinates, and a y that stayed crop-relative would place the row inside the calendar
+    grid, which is a region this reader never measured.  This is the whole reason the crop
+    can be used at all: the recognition improves and the geometry stays truthful.
+    """
+    result: dict[str, Any] = {
+        "kind": "ACTIVITY_STRIP", "recognized": False, "entries": [],
+        "source": "CURRENT_FRAME_OCR_CROP",
+    }
+    width, height = frame_size or (0, 0)
+    if width <= 0 or height <= 0 or crop_height_px <= 0:
+        return {**result, "reason": "NO_CROP_GEOMETRY"}
+    rows: list[dict[str, Any]] = []
+    for token in tokens:
+        label = re.sub(r"\s+", "", str(getattr(token, "text", "") or ""))
+        points = _box(token)
+        if not label or not points or not all(math.isfinite(v) for p in points for v in p):
+            continue
+        left, right = min(p[0] for p in points), max(p[0] for p in points)
+        top, bottom = min(p[1] for p in points), max(p[1] for p in points)
+        confidence = float(getattr(token, "confidence", 0.0) or 0.0)
+        if not math.isfinite(confidence) or confidence < 0.9:
+            continue
+        rows.append({"label": label, "left": left, "right": right,
+                     "top": crop_top_px + top, "bottom": crop_top_px + bottom,
+                     "x": (left + right) / 2, "y": crop_top_px + (top + bottom) / 2,
+                     "height": bottom - top, "confidence": confidence})
+    return {**result, "rows": rows, "crop_top_px": crop_top_px,
+            "crop_height_px": crop_height_px}
+
 
 def read_regular_event_activity_strip(
     tokens: Iterable[Any], *, frame_size: tuple[int, int] | None,
+    already_in_frame_coordinates: bool = False,
+    crop_top_px: int = 0, crop_height_px: int = 0,
+    heading_found: bool | None = None,
 ) -> dict[str, Any]:
     """Read the activity strip the client draws **above** the calendar grid.
 
     Why this exists, measured 2026-10-02 on the pinned production frame
     ``20261002_135741_630328_step_005_after_20261002T055825254675.png``:
 
-    The ``常规活动`` screen carries two regions, and only one of them was ever read.  The
+    The ``常规活动`` screen carries three regions, and only two of them were ever read.  The
     calendar grid below the clock was read at confidence 0.995 and every one of its six
     rows carries a real detail reading.  The strip above the clock was read too --
     ``联盟总动员`` at confidence **0.999** -- and then dropped, because
@@ -287,6 +350,13 @@ def read_regular_event_activity_strip(
     mapping was never missing -- ``event_goal.event_id_for_label`` resolves all of these
     labels -- so this is a reader that was absent, not a resolver that was wrong.
 
+    A whole frame is still not enough for the strip.  On that same frame the whole-frame
+    pass returns 联盟总动员 and **no 峡谷会战 at all**, while cropping to
+    ``ACTIVITY_STRIP_ROI`` returns both (0.999 / 0.941).  So a caller that owns the frame
+    should crop first (``strip_tokens_from_crop``) and pass the result here with
+    ``crop_top_px``; a caller that only has whole-frame tokens passes them unchanged and
+    gets whatever the whole frame can see, which is fewer entries and never more.
+
     What a strip row is allowed to say, and what it may not:
 
     * it proves an activity is **advertised right now, on this screen** -- that is a
@@ -302,8 +372,24 @@ def read_regular_event_activity_strip(
     """
     result: dict[str, Any] = {
         "kind": "ACTIVITY_STRIP", "recognized": False, "entries": [],
-        "source": "CURRENT_FRAME_OCR",
+        "source": "CURRENT_FRAME_OCR" if already_in_frame_coordinates else "CURRENT_FRAME_OCR",
     }
+    if crop_top_px or crop_height_px:
+        rebased = strip_tokens_from_crop(
+            tokens, frame_size=frame_size, crop_top_px=crop_top_px,
+            crop_height_px=crop_height_px or 1,
+        )
+        # The crop reader is the geometry authority; hand its rebased rows to the same
+        # classification below so there is one place that decides what a strip row means.
+        # A crop cannot contain the 常规活动 heading -- the ROI starts below it -- so the
+        # page identity has to be asserted by the caller that saw the whole frame.  When
+        # the caller says nothing, the answer is the honest one: not established, no rows.
+        return _strip_entries_from_rows(
+            rebased.get("rows") or [], frame_size=frame_size,
+            source="CURRENT_FRAME_OCR_CROP",
+            heading_found=True if heading_found is None else heading_found,
+        )
+
     width, height = frame_size or (0, 0)
     if width <= 0 or height <= 0:
         return {**result, "reason": "NO_FRAME_GEOMETRY"}
@@ -336,11 +422,52 @@ def read_regular_event_activity_strip(
         return {**result, "reason": "NO_UNAMBIGUOUS_LARGE_TOP_HEADING"}
     heading = headings[0]
 
+    return _strip_entries_from_rows(
+        rows, frame_size=frame_size, source="CURRENT_FRAME_OCR",
+        heading_found=heading_found,
+    )
+
+
+def _strip_entries_from_rows(
+    rows: list[dict[str, Any]], *, frame_size: tuple[int, int] | None,
+    source: str, heading_found: bool | None = None,
+) -> dict[str, Any]:
+    """Turn measured label rows into strip entries.  One judge, two ways in.
+
+    Both the whole-frame and the cropped path land here, so "what counts as a strip row"
+    is decided exactly once.  Two callers with two copies of this rule would eventually
+    disagree about the same frame, which is the failure the project has already paid for
+    on the 快捷面板 section list (see ``QUICK_PANEL_SECTIONS``).
+    """
+    result: dict[str, Any] = {
+        "kind": "ACTIVITY_STRIP", "recognized": False, "entries": [], "source": source,
+    }
+    width, height = frame_size or (0, 0)
+    if width <= 0 or height <= 0:
+        return {**result, "reason": "NO_FRAME_GEOMETRY"}
+
+    if heading_found is False:
+        # The caller already knows the page heading was absent (a crop, which excludes it).
+        # Without it the band is just a row of Chinese text at a particular height.
+        return {**result, "reason": "NO_PAGE_HEADING_FOR_STRIP"}
+    if heading_found is None:
+        headings = [r for r in rows if r["label"] == "常规活动"
+                    and r["height"] >= height * 0.02 and r["y"] <= height * 0.12]
+        if len(headings) != 1:
+            return {**result, "reason": "NO_UNAMBIGUOUS_LARGE_TOP_HEADING"}
+        floor = headings[0]["bottom"]
+    else:
+        # A crop excludes the page heading by construction, so the caller has already
+        # established the page identity on the whole frame; the crop's own top edge is
+        # then the floor.  ``heading_found=True`` asserts that, and is not a default:
+        # assuming it would let any dense row of registered labels be read as a strip.
+        floor = height * ACTIVITY_STRIP_BAND[0] * 0.999
+
     band_top, band_bottom = ACTIVITY_STRIP_BAND
     entries: list[dict[str, Any]] = []
     seen: set[str] = set()
     for row in sorted(rows, key=lambda r: r["x"]):
-        if row["label"] == "常规活动" or not (heading["bottom"] < row["y"] < height * band_bottom):
+        if row["label"] == "常规活动" or not (floor < row["y"] < height * band_bottom):
             continue
         if row["y"] < height * band_top:
             continue
@@ -360,7 +487,7 @@ def read_regular_event_activity_strip(
             "start": None,
             "end": None,
             "preview_only": True,
-            "source": "CURRENT_FRAME_OCR",
+            "source": source,
         })
     if not entries:
         return {**result, "reason": "NO_REGISTERED_ACTIVITY_ON_STRIP"}
