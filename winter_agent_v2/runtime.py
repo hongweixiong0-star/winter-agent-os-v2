@@ -317,6 +317,30 @@ def _verify_rally_action(skill_id: str, before: WorldState, after: WorldState, t
 #: could have answered.
 PANEL_DEPENDENT_NAVIGATION_TARGETS = frozenset({"BEAST_SEARCH_TAB", "GIANT_BEAST_SEARCH_TAB"})
 
+#: The client label(s) that identify a route's entry control on the current frame, used to build a
+#: **bounded, current-frame** observation candidate for a goal that has no skill yet: the label is
+#: matched against the frame's own element table, and the resulting control must resolve through the
+#: ordinary locator before it can be tapped.  Nothing here is a coordinate.
+#:
+#: Keyed by **route domain**, and that is the point: it was keyed ``TRAINING`` while the route domain
+#: is ``TRAIN``, so ``hints.get("TRAIN")`` returned ``()`` and every training goal got an empty label
+#: set -- no entry candidate, and nothing anywhere said so.  The two tables name the same domain and
+#: must agree on the name; ``tests/test_scheduled_goals_are_routable.py`` pins that they do.
+#:
+#: Only labels this project has already declared belong here.  Writing a plausible glossary is worse
+#: than leaving a domain out: the measured client prints 探险 on the bottom navigation, so a
+#: reasonable-looking 探索 for ``EXPLORATION`` would have been a wrong label that looked right.
+#: A domain with no entry here is a recorded absence, not a misnaming.
+#:
+#: ``ARENA`` is present although it is not a route domain: ``USE_FREE_ARENA_ATTEMPTS`` names the
+#: arena in its goal id and the disabled-inert path looks the label up directly.
+ROUTE_ENTRY_HINTS: dict[str, tuple[str, ...]] = {
+    "ARENA": ("竞技场",), "RESEARCH": ("学院", "研究"),
+    "BUILDING": ("建筑", "建设"), "TRAIN": ("兵营", "训练营"),
+    "MAIL": ("邮件",), "DAILY": ("日常任务", "任务"),
+    "ALLIANCE": ("联盟",), "EVENT": ("常规活动",),
+}
+
 
 class LiveRuntime:
     """Bounded production loop built around the one V2 Scheduler.
@@ -1107,6 +1131,22 @@ class LiveRuntime:
                 # Already offered this run and already found unusable; the line was written the
                 # first time, so this pass stays quiet rather than repeating it.
                 continue
+            if route_for(goal.goal_id) is None:
+                # Priced on the board but not actable, and those are two different facts.  A goal
+                # can reach here with no route -- the observation ticket deliberately prices a
+                # declared-but-unobserved goal even when nothing can act on it yet, because
+                # "priced but not selectable" is the honest state and "unpriced and invisible" is
+                # §5's forbidden blackhole (see ``observation_ticket``).  What must not happen is
+                # the step: ``_sync_brain_goal`` sets ``brain.current_goal = route_for(goal_id)``,
+                # so a null route leaves ``RuleBrain`` in its default branch, which is its gather
+                # branch -- measured before, and recorded in ``tests/test_every_goal_has_a_route``:
+                # "the goals were emitted, priced, selected, and then produced no action".
+                # So the refusal is recorded here, by name, and the Scheduler takes the next goal.
+                self._unrouted_goals.add(goal.goal_id)
+                self._narrate_once(
+                    f"{goal.goal_id} is priced as observable but has no route; not actable yet"
+                )
+                continue
             if (goal.goal_id == "DISCOVER_EVENT_CALENDAR"
                     and goal.available_skills == ("SCROLL_REGULAR_EVENT_TABS",)
                     and getattr(self, "_calendar_tab_swipe_count", 0) >= 4):
@@ -1888,12 +1928,7 @@ class LiveRuntime:
                  "semantic": row["detail"]["semantic"], "text": row["text"]}
                 for index, row in enumerate(row_regions)
             ]
-            hints = {
-                "ARENA": ("竞技场",), "RESEARCH": ("学院", "研究"),
-                "BUILDING": ("建筑", "建设"), "TRAINING": ("兵营", "训练营"),
-                "MAIL": ("邮件",), "DAILY": ("日常任务", "任务"),
-                "ALLIANCE": ("联盟",), "EVENT": ("常规活动",),
-            }
+            hints = ROUTE_ENTRY_HINTS
             for goal in goals:
                 if goal.goal_id not in enabled or goal.goal_id in getattr(self, "_yielded_goals", set()):
                     continue
@@ -8304,6 +8339,11 @@ class LiveRuntime:
         # skill that is not ready, or a candidate pool that is spent), which says nothing about
         # the next cycle.  Without it, yielding would re-pick the same goal forever.
         self._yielded_goals: set[str] = set()
+        # Goals the chooser priced but the run cannot act on, because they have no route yet.  Kept
+        # beside ``_yielded_goals`` for the same reason: "why is AUTO not doing this" has to be
+        # answerable from the artifacts.  They stay on the board -- see ``observation_ticket`` on
+        # why an unpriced goal would be worse -- and are refused at selection instead.
+        self._unrouted_goals: set[str] = set()
         # The last stamina the run believes, seeded from the store so a misread in *this* run
         # can still be judged against what the previous run read.  See
         # ``_reject_a_dropped_digit``.

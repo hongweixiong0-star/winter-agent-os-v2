@@ -442,6 +442,16 @@ def observation_ticket(goal: Any) -> float:
       while the system can say *what it is waiting to learn*.  A goal with nothing to observe gets
       no ticket and stays off the board, which keeps this from becoming a blanket amnesty.
 
+    A route is deliberately **not** required here.  It was tried, on 2026-10-02, to close the
+    separate defect that a priced goal with no route is selected and then given
+    ``brain.current_goal = None``; ``tools/invariant_review.py`` refuted it immediately, with three
+    invariants -- ``NO_PERMANENT_UNKNOWN_BLACKHOLE``, ``HIGH_VALUE_UNKNOWN_NOT_STARVED`` and
+    ``NEVER_OBSERVED_UNKNOWN_STILL_ON_BOARD`` -- all of which define "on the board" as *this
+    function's* answer.  So the ticket's job is to make the goal visible even when nothing can act
+    on it yet, and refusing to *act* on an unrouted goal belongs at the selection boundary, where
+    ``runtime._selectable`` records it by name.  Priced but not selectable is the honest state;
+    unpriced and invisible is §5's forbidden blackhole.
+
     A ticket is **not** permission.  It puts the goal where the Scheduler can see it; whether
     anything may then happen is still decided by ``capability_bootstrap`` (which refuses
     consumption, rally and purchase verbs outright) and by the capability gate.

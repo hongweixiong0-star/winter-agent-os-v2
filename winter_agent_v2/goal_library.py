@@ -162,6 +162,15 @@ def route_for(goal_id: str | None) -> str | None:
     value = str(goal_id or "")
     if value in ROUTE_DOMAINS:
         return value
+    if value.startswith("SCHEDULED_"):
+        # Every activity row the calendar emits is ``SCHEDULED_{event_id}``, and the id is generated
+        # per discovered event, so no table can hold it.  This is a **declared** route rather than a
+        # convenient one: the rows carry ``registered_goal_ids``, and the ones that name a goal name
+        # ``DISCOVER_EVENT_CALENDAR`` and ``EVENT_MINIMUM_GUARANTEE`` -- both ``EVENT``.  Without it
+        # they were unroutable, so together with no ``required_observation`` they were priced at
+        # ``-inf`` and never observed: measured 2026-10-02, 20 rows on a live board, every one
+        # classified ``MISSING_NAVIGATION`` with ``route_exists=False``.
+        return "EVENT"
     if value.startswith("CLAIM_FREE_"):
         # The current reward reader emits page-scoped goals. Reuse the page's
         # existing reward route; unknown pages must not inherit Gather by default.
@@ -1995,6 +2004,13 @@ class GoalLibrary:
                     "window": window.value,
                     "live_reading": False,
                     "availability_state": "AWAITING_LIVE_CLIENT_READING",
+                    # The row already says it is waiting for a live reading; this is the field the
+                    # observation ticket reads, and without it "waiting" priced at -inf and nothing
+                    # was ever scheduled to go and look.
+                    "required_observation": (
+                        "this event's own page once opened: whether its window is open and what its "
+                        "live participation conditions are"
+                    ),
                     "dispatch_rule": "use the registered event flow only after the current client identifies the event and its live conditions",
                     "fallback": "match a registered generic event flow, then use the current UI planner when a step is missing",
                 },
@@ -2025,6 +2041,13 @@ class GoalLibrary:
                     "start": None,
                     "end": None,
                     "participation_conditions": "UNKNOWN",
+                    # Same declaration as the registered rows, and for the same measured reason: the
+                    # calendar preview cannot say whether the window is open or what participating
+                    # costs, and those are the facts the ticket exists to go and read.
+                    "required_observation": (
+                        "this event's own page once opened from the calendar row: whether its window "
+                        "is open, what participating in it costs, and its current points"
+                    ),
                     "fallback": "match a registered generic event flow after live page and conditions are observed",
                 },
                 distance=1.0,
