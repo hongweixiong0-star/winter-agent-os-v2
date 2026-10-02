@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-02T08:40:03+00:00",
+  "updated_at": "2026-10-02T09:01:31+00:00",
   "queue_generated_at": "2026-10-02T03:36:20+08:00",
   "current_task": null,
   "tasks": {
@@ -423,6 +423,14 @@
       "result_file": "results/WB-1002-12-CAMP-FIRST-TAP.json",
       "verdict": "MERGED_AND_DEPLOYED: a71a9c6b0b4dc55dfc1bef3c1e98ab9f429ebfcd, repinned (PRODUCTION_PIN.json expected_commit 84e15e54754f84c72daf4cc7dbe05b1951405cad -> a71a9c6b0b4dc55dfc1bef3c1e98ab9f429ebfcd), RESULT: CLEAN_OUTSIDE_DATA, pushed to origin/main (dd9387e..a71a9c6). The deployed change is documentation inside a shipped module -- the module's contract now states what the code does and carries the 12-step measurement, so the next attempt at that coordinate has to argue with data.",
       "summary": "{'defects_confirmed': 0, 'defects_falsified_with_reproducible_evidence': 3, 'documented_contract_now_matches_the_implementation': 1, 'next_layer_sized': \"WB-1002-13: 22 of the day's 53 non-navigation resolver misses still carry only NOT_A_NAVIGATION_ACTION (SELECT_RESOURCE 10, SELECT_BEAST_TARGET_MA"
+    },
+    "WB-1002-13-LOCATOR-ATTRIBUTION": {
+      "status": "DONE",
+      "started_at": "2026-10-02T09:01:30+00:00",
+      "finished_at": "2026-10-02T09:01:31+00:00",
+      "result_file": "results/WB-1002-13-LOCATOR-ATTRIBUTION.json",
+      "verdict": "MERGED_AND_DEPLOYED: 731c1253579418efbd757209e6b0a8a800b7d574, repinned, RESULT: CLEAN_OUTSIDE_DATA, pushed to origin/main (e201c7f..731c125). The deployed revision was confirmed running by its own episodes within about two minutes.",
+      "summary": "{'new_method': 'SemanticROIVision.resource_tab_swipe_without_offset(resource, visible_kinds) -> one pitch, or None when the answer would be a guess', 'branch_shape': 'the existing scroll branch now computes its delta from either source and acts only if non-zero, which reproduces the old gate (offset"
     }
   },
   "history": [

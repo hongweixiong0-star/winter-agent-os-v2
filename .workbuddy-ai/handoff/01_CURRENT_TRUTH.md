@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-10-02T08:40:07+00:00`
+- generated_at: `2026-10-02T09:01:34+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `a71a9c6` on `main`
+- commit: `731c125` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,14 +10,13 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 866
-- HEAD: `a71a9c6` — docs(camp): the ring IS the returned point, and the first tap is meant to be absorbed (2026-10-02T16:37:57+08:00)
-- working tree: 1460 dirty file(s)
+- commits: 869
+- HEAD: `731c125` — fix(resource): let the strip-scroll recovery run when the offset is missing (2026-10-02T16:52:47+08:00)
+- working tree: 1461 dirty file(s)
   - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
   - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
   - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
   - ` M .workbuddy-ai/commander/README.md`
-  - ` M .workbuddy-ai/commander/WORK_QUEUE.json`
   - ` M .workbuddy-ai/memory/2026-09-30.md`
   - ` M START_HERE.md`
   - ` M dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png`
@@ -33,6 +32,7 @@
   - ` M knowledge/preload/INDEX.json`
   - ` M knowledge/preload/TROOP_SELECT.json`
   - ` M knowledge/ui/page_transitions.json`
+  - ` M learning/current_truth.json`
 
 ### A2. Public mirror
 
@@ -41,13 +41,13 @@ reports, not a side note. `remote_head` is the local remote-tracking ref: it is 
 fresh as the last fetch, and `tools/git_sync.py status` is what refreshes it.
 
 ```
-SYNC STATE at 2026-10-02T08:40:07+00:00
+SYNC STATE at 2026-10-02T09:01:34+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : a71a9c6b0b4dc55dfc1bef3c1e98ab9f429ebfcd
-remote_head       : a71a9c6b0b4dc55dfc1bef3c1e98ab9f429ebfcd   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+local_head        : 731c1253579418efbd757209e6b0a8a800b7d574
+remote_head       : 731c1253579418efbd757209e6b0a8a800b7d574   (local remote-tracking ref; run tools/git_sync.py status to refresh)
 unpushed_commits  : 0   (behind: 0)
-git_dirty         : True (1460 path(s))
+git_dirty         : True (1461 path(s))
 last_push_at      : 2026-10-02T06:58:22.838057+00:00
 last_push_status  : PUSHED
 verdict           : GitHub mirrors the local tree
@@ -55,22 +55,22 @@ verdict           : GitHub mirrors the local tree
 
 ## B. Runtime
 
-- agent_state: `GOAL_RUNNING`
+- agent_state: `IDLE`
 - runtime_thread_alive: True / scheduler_loop_alive: True
 - unexpected_worker_exits: 18
 - watchdog_restart_count: 24
 - last_fatal_error: None
-- stop_reason: SEMANTIC_TARGET_NOT_VERIFIED
-- page: MAP  march: 0/None
-- updated_at: 2026-10-02T08:40:10.889989+00:00
+- stop_reason: ROLE_SWITCHED_TO:1061663148
+- page: MARCH  march: None/None
+- updated_at: 2026-10-02T09:01:01.308973+00:00
 
 ## C. Episode stream
 
-- rows: 10091 (production 10091)  modes: {'PRODUCTION': 10091}
-- success / failure: 9081 / 760
-- success rate over decided: **0.9228**
+- rows: 10167 (production 10167)  modes: {'PRODUCTION': 10167}
+- success / failure: 9152 / 765
+- success rate over decided: **0.9229**
 - mixed-case `result` rows (normalise on read, never rewrite): 0
-- last episode: `{"skill": "SELECT_RESOURCE", "result": "FAILURE", "recorded_at": "2026-10-02T08:39:58.102991+00:00", "episode_id": "20261002_163833_049060", "before_screenshot": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_163833_049060\\20261002_163833_049060_step_008_before_20261002T083951514680.png", "after_screenshot": ""}`
+- last episode: `{"skill": "INTEL_BEAST_START_MARCH", "result": "SUCCESS", "recorded_at": "2026-10-02T09:00:04.488049+00:00", "episode_id": "20261002_165737_833327", "before_screenshot": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_165737_833327\\20261002_165737_833327_step_019_before_20261002T090001246009.png", "after_screenshot": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_165737_833327\\20261002_165737_833327_step_019_after_settle_retry_20261002T090002757882.png"}`
 
 ## D. Registry and lifecycle
 
@@ -162,23 +162,23 @@ verdict           : GitHub mirrors the local tree
 ### Stable
 
 - `ATTACK_BEAST_CARD` success=5 rate=1.0
-- `BACK` success=904 rate=0.9837
+- `BACK` success=910 rate=0.9838
 - `CLAIM_FREE_STAMINA` success=10 rate=1.0
 - `CONFIRM_EXPLORATION_IDLE_CLAIM` success=57 rate=1.0
 - `DAILY_CLAIM_REWARDS` success=20 rate=1.0
 - `DISMISS_EXPLORATION_GENERIC_REWARD` success=47 rate=0.9592
-- `DISMISS_INTEL_GENERIC_REWARD` success=102 rate=0.9903
+- `DISMISS_INTEL_GENERIC_REWARD` success=107 rate=0.9907
 - `DISMISS_SHARED_REWARD` success=34 rate=1.0
-- `DISPATCH_INTEL_BEAST` success=50 rate=0.9259
+- `DISPATCH_INTEL_BEAST` success=51 rate=0.9273
 - `DISPATCH_MARCH` success=8 rate=1.0
-- `EXECUTE_INTEL_RESCUE_SURVIVORS` success=20 rate=0.8696
+- `EXECUTE_INTEL_RESCUE_SURVIVORS` success=21 rate=0.875
 - `EXPLORATION_IDLE_CLAIM` success=60 rate=0.8333
 - `FOLLOW_DAILY_TASK` success=15 rate=0.8824
-- `INTEL_BEAST_START_MARCH` success=57 rate=1.0
-- `INTEL_CLAIM_REWARDS` success=102 rate=1.0
+- `INTEL_BEAST_START_MARCH` success=59 rate=1.0
+- `INTEL_CLAIM_REWARDS` success=105 rate=1.0
 - `INTEL_HERO_DISPATCH` success=38 rate=1.0
 - `INTEL_HERO_START_MARCH` success=42 rate=1.0
-- `MAIL_CLAIM_REWARDS` success=74 rate=0.9867
+- `MAIL_CLAIM_REWARDS` success=76 rate=0.987
 - `OPEN_ALLIANCE` success=5 rate=1.0
 - `OPEN_BEAR_RALLY_LIST` success=14 rate=1.0
 - `OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN` success=15 rate=0.8333
@@ -187,15 +187,15 @@ verdict           : GitHub mirrors the local tree
 - `OPEN_EVENT_CALENDAR_FROM_HOME` success=129 rate=0.9021
 - `OPEN_EVENT_CALENDAR_TAB` success=127 rate=1.0
 - `OPEN_EXPLORATION` success=66 rate=0.9851
-- `OPEN_HOME` success=600 rate=0.9479
+- `OPEN_HOME` success=607 rate=0.9455
 - `OPEN_INFANTRY_TRAINING` success=53 rate=1.0
-- `OPEN_INTEL` success=455 rate=1.0
-- `OPEN_INTEL_BEAST_TARGET` success=59 rate=0.9219
-- `OPEN_INTEL_HERO_JOURNEY_TARGET` success=51 rate=1.0
-- `OPEN_INTEL_RESCUE_SURVIVORS_TARGET` success=20 rate=0.9091
-- `OPEN_MAIL` success=50 rate=1.0
-- `OPEN_MAP` success=743 rate=0.9987
-- `OPEN_QUICK_PANEL` success=1043 rate=1.0
+- `OPEN_INTEL` success=460 rate=1.0
+- `OPEN_INTEL_BEAST_TARGET` success=61 rate=0.9242
+- `OPEN_INTEL_HERO_JOURNEY_TARGET` success=53 rate=1.0
+- `OPEN_INTEL_RESCUE_SURVIVORS_TARGET` success=21 rate=0.913
+- `OPEN_MAIL` success=51 rate=1.0
+- `OPEN_MAP` success=751 rate=0.9987
+- `OPEN_QUICK_PANEL` success=1053 rate=1.0
 - `OPEN_STAMINA_SOURCES` success=15 rate=0.9375
 - `OPEN_TASK_FROM_QUICK_PANEL_LANCER` success=16 rate=0.9412
 - `OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN` success=22 rate=1.0
@@ -204,13 +204,13 @@ verdict           : GitHub mirrors the local tree
 - `OPEN_TECH_TREE` success=10 rate=1.0
 - `RETURN_EVENT_CALENDAR` success=1234 rate=0.9992
 - `SCAN_MAP_FOR_BEAST` success=26 rate=1.0
-- `SCROLL_QUICK_PANEL_TASKS` success=32 rate=0.9697
+- `SCROLL_QUICK_PANEL_TASKS` success=33 rate=0.9706
 - `SCROLL_REGULAR_EVENT_TABS` success=165 rate=0.994
-- `SEARCH_RESOURCE` success=236 rate=0.9402
-- `SELECT_GIANT_BEAST_TAB` success=82 rate=0.9425
-- `SELECT_INTEL_BEAST_MISSION` success=11 rate=0.9167
-- `SELECT_INTEL_PIN` success=205 rate=0.9903
-- `SELECT_MAIL_ALLIANCE_TAB` success=15 rate=1.0
+- `SEARCH_RESOURCE` success=239 rate=0.9409
+- `SELECT_GIANT_BEAST_TAB` success=83 rate=0.9432
+- `SELECT_INTEL_BEAST_MISSION` success=12 rate=0.9231
+- `SELECT_INTEL_PIN` success=210 rate=0.9906
+- `SELECT_MAIL_ALLIANCE_TAB` success=16 rate=1.0
 - `SELECT_MAIL_REPORT_TAB` success=8 rate=1.0
 - `SELECT_MAIL_SYSTEM_TAB` success=7 rate=1.0
 - `SELECT_RESEARCH_NODE` success=10 rate=1.0
@@ -228,17 +228,17 @@ verdict           : GitHub mirrors the local tree
 - `OPEN_DAILY` success=32 failure=13 rate=0.7111
 - `OPEN_TASK_FROM_QUICK_PANEL_BUILDING` success=35 failure=27 rate=0.5645
 - `OPEN_TASK_FROM_QUICK_PANEL_RESEARCH` success=14 failure=6 rate=0.7
-- `PRINTED_TAP` success=117 failure=62 rate=0.6536
-- `SELECT_RESOURCE` success=7 failure=74 rate=0.0864
-- `SUBMIT_GIANT_BEAST_SEARCH` success=47 failure=69 rate=0.4052
+- `PRINTED_TAP` success=119 failure=63 rate=0.6538
+- `SELECT_RESOURCE` success=7 failure=76 rate=0.0843
+- `SUBMIT_GIANT_BEAST_SEARCH` success=48 failure=69 rate=0.4103
 - `TRY_ORDINARY_CONTROL` success=24 failure=103 rate=0.189
 
 ## E. Top failures
 
 Failure | Count | Top skills
 ---|---:|---
-`SEMANTIC_TARGET_NOT_VERIFIED` | 321 | TRY_ORDINARY_CONTROL(103), SELECT_RESOURCE(74), OPEN_HOME(32)
-`NO_EXECUTION` | 123 | OBSERVE_ONLY(65), PRINTED_TAP(37), TAP_FOCUSED_TRAINING_CAMP_SHIELD(6)
+`SEMANTIC_TARGET_NOT_VERIFIED` | 325 | TRY_ORDINARY_CONTROL(103), SELECT_RESOURCE(76), OPEN_HOME(34)
+`NO_EXECUTION` | 124 | OBSERVE_ONLY(65), PRINTED_TAP(38), TAP_FOCUSED_TRAINING_CAMP_SHIELD(6)
 `GIANT_BEAST_SEARCH_NOT_PROVEN` | 64 | SUBMIT_GIANT_BEAST_SEARCH(64)
 `BEAST_SEARCH_TAB_NOT_PROVEN` | 54 | OPEN_BEAST_SEARCH_TAB(54)
 `PANEL_BUILDING_QUEUE_NOT_PROVEN` | 25 | OPEN_TASK_FROM_QUICK_PANEL_BUILDING(25)
@@ -279,9 +279,9 @@ TRAVEL_SUPPLY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | CLAIM_FREE_
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 19151  present: 19151
+- referenced screenshots: 19297  present: 19297
 - missing: []
-- episodes carrying screenshot references: 9800
+- episodes carrying screenshot references: 9875
 
 ## H. Commercial bot parity
 
@@ -291,17 +291,17 @@ TRAVEL_SUPPLY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | CLAIM_FREE_
 
 ## I. Latest runtime log
 
-- {"path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log", "modified_at": "2026-10-02T08:38:01+00:00", "size_bytes": 107609, "last_stop_reason": null}
+- {"path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log", "modified_at": "2026-10-02T09:01:24+00:00", "size_bytes": 232309, "last_stop_reason": null}
 - recent crash reports: ['E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20260921_092331_166289_unified_worker.json', 'E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20260921_094236_608796_unified_worker.json', 'E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20260930_144623_899653_auto_subprocess.json', 'E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20260930_144831_908327_auto_subprocess.json', 'E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261001_230253_798994_auto_subprocess.json']
 
 ## J. Backend axis (MAA vs ADB)
 
 - source: `learning/executor_backend.jsonl` vs `knowledge/execution/backend_routing.json`
 - ledger rows: 20000 (last 200 summarised)
-- used_backend: {"ADB": 107, "MAA": 93}
-- capture_backend: {"ADB_EXEC_OUT": 107, "MAA_MUMU_EXTRAS": 93}
+- used_backend: {"ADB": 110, "MAA": 90}
+- capture_backend: {"ADB_EXEC_OUT": 110, "MAA_MUMU_EXTRAS": 90}
 - promoted to MAA in routing: 41 ['BACK', 'BEAR_AUTO_JOIN', 'CLOSE_POPUP', 'COLLECT_TRAINING_BATCH', 'DAILY_CLAIM_REWARDS', 'DISMISS_BATTLE_VICTORY', 'DISPATCH_MARCH', 'EXPLORATION_IDLE_CLAIM', 'FOLLOW_DAILY_TASK', 'FREE_HERO_RECRUIT_ADVANCED', 'INTEL_CLAIM_REWARDS', 'INTEL_HERO_DISPATCH', 'INTEL_HERO_START_MARCH', 'JOIN_RALLY', 'MAIL_CLAIM_REWARDS', 'OPEN_ALLIANCE', 'OPEN_ALLIANCE_GIFTS', 'OPEN_ALLIANCE_TECH_FROM_HOME', 'OPEN_BEAR_RALLY_LIST', 'OPEN_BUILDING_UPGRADE', 'OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN', 'OPEN_DAILY', 'OPEN_EVENT_CALENDAR_FROM_HOME', 'OPEN_EVENT_CALENDAR_FROM_MAP', 'OPEN_EXPLORATION', 'OPEN_HOME', 'OPEN_INTEL', 'OPEN_MAIL', 'OPEN_POWER_OVERVIEW', 'OPEN_RESEARCH', 'OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT', 'RESEARCH', 'SEARCH_RESOURCE', 'SELECT_MAIL_ALLIANCE_TAB', 'SELECT_MAIL_REPORT_TAB', 'SELECT_MAIL_SYSTEM_TAB', 'SELECT_RESOURCE', 'START_GATHER', 'START_RALLY', 'SUBMIT_BEAST_SEARCH', 'SUBMIT_RESOURCE_SEARCH']
 - promoted but RAN ON ADB: {}
-- last step: OPEN_HOME via MAA at 2026-10-02T08:40:10.825917+00:00
+- last step: INTEL_BEAST_START_MARCH via ADB at 2026-10-02T09:00:02.227015+00:00
 
 > used_backend is what the step really did. A skill listed under promoted_but_ran_on_adb took the 324 ms ADB frame path while its own record claims MAA EmulatorExtras at 8.92 ms -- check tools/preflight.py before trusting the run.

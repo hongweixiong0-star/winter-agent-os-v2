@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `731c125 2026-10-02T16:52:47+08:00 fix(resource): let the strip-scroll recovery run when the offset is missing`
+- `e201c7f 2026-10-02T16:42:03+08:00 docs(memory): WB-1002-12 -- pair a failure with the next success before calling it a defect`
+- `b1c4c80 2026-10-02T16:40:52+08:00 docs(commander): WB-1002-12 closed with three falsifications and no fix, which is the result`
 - `a71a9c6 2026-10-02T16:37:57+08:00 docs(camp): the ring IS the returned point, and the first tap is meant to be absorbed`
 - `dd9387e 2026-10-02T15:58:13+08:00 docs(memory): WB-1002-11 -- and the two lessons that outlive the fix`
 - `1200898 2026-10-02T15:57:02+08:00 docs(commander): WB-1002-11 closed -- the largest failure block can now name itself`
@@ -15,16 +18,12 @@ Last 12 commits (newest first):
 - `70b093f 2026-10-02T15:19:26+08:00 fix(vision): the bracket lock was loose enough to veto its own true pair`
 - `5ee4e79 2026-10-02T14:58:12+08:00 docs(commander): WB-1002-04 blocked -- arena stays unknown, and my own fix does not reach the board`
 - `dff2b1b 2026-10-02T14:55:09+08:00 fix(audit): report the chooser's number and a reason, and record a regression I caused`
-- `cc7cf87 2026-10-02T14:46:18+08:00 docs(commander): WB-1002-07 blocked -- entry fixed, but the proof cannot be satisfied`
-- `9a227da 2026-10-02T14:44:10+08:00 fix(building): the selected building's 升级 control was in the frame and nothing read it`
-- `d1856df 2026-10-02T14:31:53+08:00 docs(commander): WB-1002-08 closed, with the merged observation window and two self-checks`
 
-Uncommitted changes: 1460
+Uncommitted changes: 1461
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
-- ` M .workbuddy-ai/commander/WORK_QUEUE.json`
 - ` M .workbuddy-ai/memory/2026-09-30.md`
 - ` M START_HERE.md`
 - ` M dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png`
@@ -40,6 +39,7 @@ Uncommitted changes: 1460
 - ` M knowledge/preload/INDEX.json`
 - ` M knowledge/preload/TROOP_SELECT.json`
 - ` M knowledge/ui/page_transitions.json`
+- ` M learning/current_truth.json`
 <!-- /AUTO:recent_commits -->
 
 ---
