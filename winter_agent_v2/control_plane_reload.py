@@ -43,9 +43,30 @@ MARKER_NAME = "CONTROL_PLANE_RELOAD_REQUIRED.json"
 #: Named explicitly rather than derived by walking imports: the point is to be inspectable.  A
 #: reader asking "why is this window telling me to reload" should be able to read the list and
 #: agree, and a list computed at runtime from a module graph would be correct and unarguable
-#: with.  ``escalation_queue`` and ``device_lease`` are here because the window folds the ledger
-#: and reads the lease in its own process; ``gateway_service`` and ``workbuddy_bridge`` because
-#: they are what the top bar's gateway cell is computed from -- the measured symptom.
+#: with.
+#:
+#: **The criterion is: does *this window* execute it in its own process?**  A worker reload
+#: cannot help with any of these, because the stale copy is inside the window.
+#:
+#: ``escalation_queue`` and ``device_lease`` are here because the window folds the ledger and
+#: reads the lease in its own process; ``gateway_service`` and ``workbuddy_bridge`` because
+#: they are what the top bar's gateway cell is computed from -- the measured symptom.  Those
+#: five came from a *visible* failure: on 2026-09-18 the gateway fix was committed and the
+#: window went on showing "WorkBuddy 异常".
+#:
+#: ``retention`` and ``learning_funnel`` were added on 2026-10-02 for the other half of the
+#: criterion -- the window runs them too, but their staleness is *silent*, which is why the
+#: symptom-driven list missed them.  ``_enforce_retention`` calls the sweep once per round and
+#: the sweep deletes files; ``_refresh_learning_funnel`` folds the funnel once per round and
+#: that fold is the number the console shows.  Measured that day: the window had loaded
+#: 951abbd, the disk was at 90e73f6, ``changed_paths_since`` returned 50 paths including
+#: ``winter_agent_v2/retention.py``, ``touched_control_plane`` returned ``()`` and
+#: ``needs_reload`` returned False -- so the window reported 已同步（无需重载）while running the
+#: pre-fix sweep against the shared data root.  A fix that lands in a silent module is not
+#: deployed, and this is the only notice that can say so.
+#:
+#: A module belongs here when the window starts calling it in-process, not when its staleness
+#: becomes visible; the two names above are the precedent for that rule.
 CONTROL_PLANE_PATHS: tuple[str, ...] = (
     "tools/control_panel.py",
     "winter_agent_v2/workbuddy_bridge.py",
@@ -54,6 +75,9 @@ CONTROL_PLANE_PATHS: tuple[str, ...] = (
     "winter_agent_v2/device_lease.py",
     "winter_agent_v2/version_identity.py",
     "winter_agent_v2/state_truth.py",
+    # Executed by the window itself, once per round (see the criterion above).
+    "winter_agent_v2/retention.py",
+    "winter_agent_v2/learning_funnel.py",
 )
 
 

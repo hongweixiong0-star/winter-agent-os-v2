@@ -61,11 +61,48 @@ def test_a_window_that_never_recorded_its_version_does_not_claim_to_be_stale():
 
 def test_every_named_control_plane_file_is_recognised():
     """The list is the reason a reader can agree with the notice, so it must be complete."""
-    for path in ("tools/control_panel.py", "winter_agent_v2/workbuddy_bridge.py",
-                 "winter_agent_v2/gateway_service.py", "winter_agent_v2/escalation_queue.py",
-                 "winter_agent_v2/device_lease.py"):
-        assert path in cpr.CONTROL_PLANE_PATHS, path
+    for path in cpr.CONTROL_PLANE_PATHS:
+        assert cpr.touched_control_plane([path]) == (path,), path
         assert cpr.needs_reload(LOADED, DISK, [path]) is True, path
+
+
+@pytest.mark.parametrize("path, why", [
+    ("winter_agent_v2/retention.py",
+     "the window runs the retention sweep in its own process, once per round, in "
+     "_enforce_retention -- so a fix there is not active until the window is replaced, and "
+     "this module deletes files, which is the worst thing to be silently stale about"),
+    ("winter_agent_v2/learning_funnel.py",
+     "the window folds the funnel in its own process at every round boundary in "
+     "_refresh_learning_funnel, and that fold is the number the console shows"),
+])
+def test_a_module_the_window_executes_itself_is_on_the_list(path, why):
+    """The criterion is the one the constant already documents: does *this window* run it?
+
+    Measured 2026-10-02 on the live window.  ``CONTROL_PLANE_PATHS`` was built from the
+    2026-09-18 symptom -- the gateway cell went on showing "WorkBuddy 异常" after the fix
+    landed -- so it lists the modules whose staleness was *visible*.  These two were not:
+    a stale sweep and a stale fold both fail silently, and the sweep fails by deleting
+    evidence.  The window's own predicate, run from the pinned tree with the revision it
+    really loaded (951abbd) against the disk (90e73f6), returned:
+
+        changed_paths_since()  -> 50 paths, including winter_agent_v2/retention.py
+        touched_control_plane() -> ()
+        needs_reload()          -> False
+
+    so the window reported 已同步（无需重载）while running the pre-fix sweep 1,546 times.
+    """
+    assert path in cpr.CONTROL_PLANE_PATHS, why
+    assert cpr.touched_control_plane([path]) == (path,), why
+
+
+def test_a_retention_change_alone_demands_a_reload():
+    """The exact live case, kept as its own assertion so the reason string is pinned too."""
+    assert cpr.needs_reload(LOADED, DISK, ["winter_agent_v2/retention.py"]) is True
+    text = cpr.reload_reason(LOADED, DISK, ["winter_agent_v2/retention.py"])
+    assert cpr.CONTROL_PLANE_KIND in text
+    assert "retention.py" in text, (
+        "the operator has to be told which file, or the notice is not actionable"
+    )
 
 
 def test_paths_are_matched_regardless_of_separator_or_leading_dot_slash():
