@@ -115,6 +115,41 @@ def test_an_event_route_goal_on_the_event_page_is_left_to_its_own_branches():
     )
 
 
+def test_the_two_busiest_pages_stop_reaching_the_gather_fallback():
+    """MARCH 12 and RESOURCE_DETAIL 8 were the two largest groups in the measured 38.
+
+    Neither can act on an activity, and neither has a measured route to the city, so the
+    honest move is to leave -- and to leave without naming a destination, because the exit
+    from these two pages has not been measured (BACK from MARCH: 1 episode, from
+    RESOURCE_DETAIL: 0).  The next step is then decided from a fresh frame.
+    """
+    for page in (Page.MARCH, Page.RESOURCE_DETAIL, Page.INTEL, Page.EXPLORATION):
+        brain = _brain("EVENT", goal_id="SCHEDULED_BROTHERS_IN_ARMS")
+        decision = brain.decide(
+            _world(page, march_used=1, march_max=6), registry=_registry()
+        )
+        assert decision.skill == "BACK", (
+            f"{page} fell through to {decision.skill!r}; that is the gather fallback this "
+            "branch exists to stop"
+        )
+        assert decision.reason == "event_route_goal_leaves_a_page_it_cannot_act_on"
+
+
+def test_the_exit_does_not_name_a_destination():
+    """A remembered destination is a guess wearing a skill's name.
+
+    ``OPEN_HOME`` is emitted only from MAP, where the map-to-city route is measured 643
+    times.  From a formation page nothing measured says where BACK lands, so the branch
+    says only "leave" and lets the next frame decide.
+    """
+    brain = _brain("EVENT", goal_id="SCHEDULED_BROTHERS_IN_ARMS")
+    decision = brain.decide(_world(Page.MARCH, march_used=1, march_max=6), registry=_registry())
+    assert decision.skill not in {"OPEN_HOME", "NAVIGATE_TO", "RECOVER_HOME"}, (
+        "naming a destination from an unmeasured page is exactly the hardcoded-navigation "
+        "the constitution forbids"
+    )
+
+
 def test_a_gather_goal_is_unaffected_by_the_new_navigation():
     """The control group.  This change is about the EVENT route and nothing else.
 

@@ -715,6 +715,26 @@ class RuleBrain:
                     "SAFE_STOP", "event_route_goal_in_city_but_no_activity_entry_observed",
                     1.0, "switch_task",
                 )
+            if registry.get("BACK") is not None:
+                # Any other page, and the only move is to leave it.  MARCH 12 and
+                # RESOURCE_DETAIL 8 were the two largest groups in the measured 38, and both
+                # were reaching the gather fallback instead.  ``BACK`` is the project's own
+                # generic exit -- it is already in ``GENERIC_READY_SKILLS`` beside
+                # ``NAVIGATE_TO`` and ``RECOVER_HOME`` -- and it is the most exercised skill
+                # in the ledger: 843 episodes, 828 SUCCESS, 190 of those leaving INTEL for
+                # MAP with no failure.  What this deliberately does **not** do is name a
+                # destination.  The pages it leaves are exactly the ones whose exit has not
+                # been measured from here (MARCH once, RESOURCE_DETAIL never), so the next
+                # step is decided from a fresh frame by whichever goal is current then --
+                # a remembered destination would be a guess wearing a skill's name.
+                return Decision(
+                    "BACK", "event_route_goal_leaves_a_page_it_cannot_act_on",
+                    world.confidence, "page_left",
+                )
+            return Decision(
+                "SAFE_STOP", "event_route_goal_cannot_navigate_from_this_page",
+                1.0, "switch_task",
+            )
         if not world.known:
             # A screen the page model cannot name used to end the task here: ``SAFE_STOP
             # unknown_page``, nothing clicked, and -- because the runtime then backed out --
