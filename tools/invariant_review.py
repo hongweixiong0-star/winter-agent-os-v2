@@ -170,6 +170,33 @@ def no_single_goal_blocks_auto() -> tuple[str, str]:
     return FAIL, f"one stuck goal emptied the board: {ranked}"
 
 
+def never_observed_unknown_is_still_on_the_board() -> tuple[str, str]:
+    """§5/§11: the shape the project really emits for prepared-but-never-observed work.
+
+    ``goal_library._append_prepared_workflows`` creates ``USE_FREE_ARENA_ATTEMPTS`` and
+    ``LABYRINTH_DAILY`` as UNKNOWN with a declared observation and **every value term at 0.0** --
+    a goal nobody has observed cannot have a measured value.  Measured 2026-10-02 on the live
+    board: the ticket's ``raw > 0`` precondition could therefore never be satisfied by the very
+    goals the ticket exists for, so they were priced ``-inf`` and dropped, and this review still
+    reported PASS because every fixture here carried a value.  The fixture was the defect's hiding
+    place, which is why the check lives here.
+
+    Kept as its own check rather than a member of ``role_a`` because §17 fixes that world's
+    composition (2 Known / 2 Unknown / 1 Blocked / 1 Deadline) and this review should not quietly
+    redraw the operator's specification to cover a new case.
+    """
+    never = _unknown("NEVER_OBSERVED", value=0.0)
+    routine = _known("ROUTINE", value=250, skill="S")
+    board = [never, routine]
+    ranked = [g.goal_id for g, _ in goal_utility.rank(board, world=WorldState(page=Page.HOME))]
+    if "NEVER_OBSERVED" not in ranked:
+        return FAIL, ("a never-observed UNKNOWN that declares what it waits for is absent from the "
+                      f"board: {ranked}")
+    if ranked[0] != "ROUTINE":
+        return FAIL, f"the observation floor displaced work that pays: {ranked}"
+    return PASS, f"on the board and below the work that pays: {ranked}"
+
+
 def observation_ticket_does_not_starve_routine_work() -> tuple[str, str]:
     """§9: a ticketed UNKNOWN must not hold the top of the board forever.
 
@@ -292,6 +319,7 @@ CHECKS = (
     ("FAILED_GOAL_EVENTUALLY_RETRYABLE", failed_goal_eventually_retryable),
     ("GLOBAL_WAIT_ONLY_WHEN_TRULY_IDLE", global_wait_only_when_truly_idle),
     ("HIGH_VALUE_UNKNOWN_NOT_STARVED", high_value_unknown_not_starved),
+    ("NEVER_OBSERVED_UNKNOWN_STILL_ON_BOARD", never_observed_unknown_is_still_on_the_board),
     ("OBSERVATION_TICKET_ROTATES", observation_ticket_does_not_starve_routine_work),
     ("MODEL_FAILURE_DOES_NOT_STOP_AUTO", model_failure_does_not_stop_auto),
     ("VERIFIER_REMAINS_SUCCESS_AUTHORITY", verifier_is_success_authority),

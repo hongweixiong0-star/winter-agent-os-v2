@@ -89,3 +89,35 @@ def test_a_ticked_goal_does_not_hold_the_head_of_the_board_forever() -> None:
         "a ticketed UNKNOWN outranked work that has been waiting for hours; the board would "
         "starve routine work on a constant"
     )
+
+
+def test_an_unknown_that_has_measured_nothing_yet_is_still_offered() -> None:
+    """A goal nobody has ever observed has no measured value -- that is *why* it is unobserved.
+
+    Measured 2026-10-02 on the live board: ``USE_FREE_ARENA_ATTEMPTS`` and ``LABYRINTH_DAILY``
+    are UNKNOWN, carry ``evidence['required_observation']``, and have every value term at 0.0
+    (reward_value, daily_loss, event_synergy, development_value, resource_cost, risk).  The
+    ticket's ``raw > 0`` precondition therefore could never be satisfied by the goals the ticket
+    exists for, ``utility`` answered ``-inf``, and ``rank()`` dropped them -- so the mechanism was
+    inert for exactly its own target, and its own note claiming those goals "can now enter the
+    board" was wrong.  ``tools/invariant_review.py`` passed because every fixture it simulates
+    carries a value, which is the fixture blind spot this test closes.
+    """
+    board = [_unknown("NEVER_OBSERVED", 0.0), _known("ROUTINE", 250)]
+
+    assert "NEVER_OBSERVED" in [g.goal_id for g, _ in rank(board, world=HOME)]
+
+
+def test_a_never_observed_goal_cannot_displace_work_that_pays() -> None:
+    """The floor sits below the routine band: finding out is worth less than doing."""
+    board = [_unknown("NEVER_OBSERVED", 0.0), _known("ROUTINE", 250)]
+
+    ranked = [g.goal_id for g, _ in rank(board, world=HOME)]
+
+    assert ranked[0] == "ROUTINE"
+
+
+def test_a_never_observed_goal_still_has_to_declare_what_it_waits_for() -> None:
+    """Turning the floor on must not turn the silence gate off."""
+    assert rank([_unknown("SILENT", 0.0, observe=False)], world=HOME) == ()
+    assert observation_ticket(_unknown("SILENT", 0.0, observe=False)) == 0.0

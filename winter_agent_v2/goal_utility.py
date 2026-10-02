@@ -421,6 +421,11 @@ def red_dot_bonus(world: Any, goal_id: str) -> tuple[float, tuple[str, ...]]:
 #: unknowns outrank the work that actually advances the account.
 OBSERVATION_TICKET_CEILING = 300.0
 OBSERVATION_TICKET_SHARE = 0.5
+#: The price of a goal that has declared what it is waiting for but has **never been observed**, so
+#: nothing about its value is known yet.  Below the routine band (routine prices at 70-250) on
+#: purpose: finding out is worth less than doing, so this can never displace work that pays, while
+#: the fairness ledger is what eventually gives such a goal its turn.
+OBSERVATION_TICKET_FLOOR = 50.0
 
 
 def observation_ticket(goal: Any) -> float:
@@ -456,9 +461,24 @@ def observation_ticket(goal: Any) -> float:
            + number("reward_value") + number("daily_loss")
            + number("event_synergy") + number("development_value")
            - number("resource_cost") - number("risk"))
-    if raw <= 0:
-        return 0.0
-    return min(OBSERVATION_TICKET_CEILING, raw * OBSERVATION_TICKET_SHARE)
+    # A goal nobody has ever observed has no measured value, and that is *why* it is unobserved:
+    # every value term on the live board's UNKNOWN entries is 0.0.  Requiring ``raw > 0`` therefore
+    # gated the ticket on the very information the ticket exists to obtain.
+    #
+    # Measured 2026-10-02 on the live board: ``USE_FREE_ARENA_ATTEMPTS`` and ``LABYRINTH_DAILY``
+    # are UNKNOWN and declare ``evidence["required_observation"]``, but their reward_value,
+    # daily_loss, event_synergy, development_value, resource_cost and risk are all 0.0 -- so the
+    # ticket answered 0.0, ``utility`` answered ``-inf``, and ``rank()`` dropped them.  The
+    # mechanism was inert for exactly the goals it was written for, and ``tools/invariant_review.py``
+    # still reported PASS because every fixture it simulates carries a value.
+    #
+    # The two gates above remain the licence -- status UNKNOWN *and* a declared observation -- and
+    # the value only sets the price.  A goal that has measured nothing yet is priced at the floor,
+    # which is below routine work, so it is on the board and observable without being able to
+    # displace anything; the fairness ledger rotates it in, exactly as it does for the valuable
+    # tickets that reach the ceiling.
+    return min(OBSERVATION_TICKET_CEILING,
+               max(OBSERVATION_TICKET_FLOOR, raw * OBSERVATION_TICKET_SHARE))
 
 
 @dataclass(frozen=True)
