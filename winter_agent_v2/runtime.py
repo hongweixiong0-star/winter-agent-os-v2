@@ -195,6 +195,26 @@ def _executor_label(execution: ExecutionResult | None) -> str:
     return execution.backend
 
 
+def _recognition_error(router_error: Any, resolver_error: Any) -> str:
+    """Which reason an episode should carry for a control that could not be found.
+
+    Two layers can explain a miss and they answer different questions:
+
+    * the **executor router** knows which recognition strategy it tried and why that failed --
+      ``MAA_OCR:NO_TEXT`` / ``STRUCTURE:NO_ANCHOR`` / ``LIST_DYNAMIC:NO_ROWS``.  When it has an
+      answer it is the more specific fact, because it names the attempt, not just the refusal.
+    * the **runtime's resolver** knows which of its own guards refused to even look --
+      ``UNKNOWN_NAV:PANEL_DEPENDENT_TARGET_PANEL_CLOSED`` says the control is not drawn until its
+      panel is open, which is a fact about the client; ``UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING``
+      says every guard permitted the question and the advisor still had no answer, which is a fact
+      about the reader.
+
+    The router wins when both speak.  Empty means nothing was refused -- a step that resolved, or
+    one that never asked anything.
+    """
+    return str(router_error or "") or str(resolver_error or "")
+
+
 #: Where the client's own names for its controls are written down.
 #:
 #: This is the one resolver input that is *knowledge* rather than a measurement of this device:
@@ -2637,6 +2657,20 @@ class LiveRuntime:
             # steps), and the session engine's five-way verdict is the finer fact that a
             # reader -- or a replay -- actually needs.
             session_outcome=session_outcome,
+            # Why no control was found, when none was.  ``failure_type`` says only *that* the step
+            # failed; measured 2026-10-02, 47 of the day's 92 failures were
+            # ``SEMANTIC_TARGET_NOT_VERIFIED`` with an empty ``after_screenshot`` and no reason
+            # anywhere, so the ledger could not distinguish "the registered locator missed" from
+            # "the advisor was never allowed to be asked, because its panel was closed".
+            #
+            # The router's own reason wins when it has one: it knows which recognition strategy it
+            # tried (``MAA_OCR:*`` / ``STRUCTURE:*`` / ``LIST_DYNAMIC:*``).  Otherwise the resolver's
+            # refusal stands, which is the layer that answers for the ADB path.  Empty means nothing
+            # was refused.
+            recognition_error=_recognition_error(
+                getattr(self, "_router_recognition_error", ""),
+                getattr(self, "_resolution_error", ""),
+            ),
         )
         try:
             self.episode_store.append(episode)
@@ -5982,26 +6016,39 @@ class LiveRuntime:
     def _unknown_navigation_target(
         self, semantic: str, frame: WorldState, frame_path: Path, *, skill_id: str,
     ) -> tuple[float, float] | None:
-        """Use the existing planner only after a registered navigation locator misses."""
+        """Use the existing planner only after a registered navigation locator misses.
+
+        Every refusal below also *names itself* through ``_refuse``.  The return value is unchanged
+        -- this is a recorder, not a new decision -- and the name is what the episode finally carries
+        as ``recognition_error``.  Measured 2026-10-02: 47 of the day's 92 failures were
+        ``SEMANTIC_TARGET_NOT_VERIFIED`` with an empty ``after_screenshot`` and no stated reason, so
+        "which guard refused this target" could only be answered by reading this function by hand.
+        """
+
+        def _refuse(code: str):
+            self._unknown_navigation_refusal = code
+            return None
+
+        self._unknown_navigation_refusal = ""
         navigation = (skill_id.startswith("OPEN_")
                       or skill_id.startswith("TAP_FOCUSED_TRAINING_CAMP_"))
         if not navigation or frame.page in {Page.LOADING, Page.MAINTENANCE}:
-            return None
+            return _refuse("UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION_OR_TRANSIENT_PAGE")
         if (semantic in PANEL_DEPENDENT_NAVIGATION_TARGETS
                 and not getattr(frame, "resource_search_open", False)):
             # The locator did not miss for lack of looking: this control is not drawn until its
             # panel is open, so no answer can name it.  Return without filing the question -- see
             # PANEL_DEPENDENT_NAVIGATION_TARGETS for the three measured occurrences.
-            return None
+            return _refuse("UNKNOWN_NAV:PANEL_DEPENDENT_TARGET_PANEL_CLOSED")
         if not getattr(self, "_committed_goal", "") or not self._calendar_role_id():
-            return None
+            return _refuse("UNKNOWN_NAV:NO_COMMITTED_GOAL_OR_ROLE")
         lease = getattr(self, "device_lease", None)
         held = lease.holder() if lease is not None else None
         if held is not None and held.owner != OWNER_GAMEPLAY and not self._owns_the_lease(held):
-            return None
+            return _refuse("UNKNOWN_NAV:LEASE_HELD_BY_SOMEONE_ELSE")
         if (getattr(self, "execution_mode", "") == OWNER_DEVELOPMENT_VALIDATION
                 and (held is None or not self._owns_the_lease(held))):
-            return None
+            return _refuse("UNKNOWN_NAV:DEVELOPMENT_VALIDATION_WITHOUT_LEASE")
         # This is a missing control on a known page, not a missing page identity.
         # Keep the selected Goal/Skill and its real verifier; no alternative Goal
         # or model-declared COMPLETE can satisfy this navigation step.
@@ -6010,15 +6057,23 @@ class LiveRuntime:
         self._advised_learn_context = {}
         self._advised_request_id = ""
         try:
-            return self._advised_control(frame.page.value, "", frame_path, frame,
-                                         unnamed=not frame.known, confidence=frame.confidence)
+            point = self._advised_control(frame.page.value, "", frame_path, frame,
+                                          unnamed=not frame.known, confidence=frame.confidence)
         except Exception as exc:  # noqa: BLE001 - one optional provider cannot stop AUTO
             print(f"[advisor] {skill_id}/{semantic} deferred: {type(exc).__name__}: {exc}", flush=True)
             self._advised_learn_context = {}
-            return None
+            return _refuse("UNKNOWN_NAV:PROVIDER_RAISED")
         finally:
             self._unknown_semantic_target = ""
             self._unknown_skill_id = ""
+        if point is None:
+            # Every guard above permitted the question and the provider still answered nothing.
+            # That is the one outcome where "the advisor had its chance" is a fact, and it must not
+            # be confused with a guard refusing -- the distinction is what tells the next reader
+            # whether to fix a guard, a provider, or the frame.
+            return _refuse("UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING")
+        self._unknown_navigation_refusal = ""
+        return point
 
     def _take_failed_navigation_retry(self, goal_id: str, frame: WorldState, allowed):
         """One model-backed navigation recovery after the Scheduler selects that same Goal."""
@@ -7792,13 +7847,19 @@ class LiveRuntime:
         world = before
 
         def resolve(semantic: str):
+            self._resolution_error = ""
             point = self._resolve_semantic_target(
                 semantic, world, frame_path=before_path,
                 resource=planned_resource, rally_target=rally_target,
             )
             if point is not None:
                 return point
-            return self._unknown_navigation_target(semantic, world, before_path, skill_id=skill_id)
+            self._resolution_error = "RESOLVER:LOCATOR_MISSED"
+            point = self._unknown_navigation_target(semantic, world, before_path, skill_id=skill_id)
+            if point is None:
+                self._resolution_error = (
+                    self._unknown_navigation_refusal or "RESOLVER:LOCATOR_MISSED")
+            return point
 
         adb_executor = Executor(
             production=True, dry_run=False, device=self.adb_device,
@@ -8848,10 +8909,21 @@ class LiveRuntime:
 
             # Bind the current frame and Goal target so the ADB fallback and MAA
             # LIST_DYNAMIC resolver apply one target identity to this observation.
+            #
+            # Every refusal is also *named*, into ``self._resolution_error``, which the episode row
+            # carries as ``recognition_error``.  Nothing about the returned point changes: the field
+            # is a recorder.  Measured 2026-10-02: 47 of the day's 92 failures were
+            # ``SEMANTIC_TARGET_NOT_VERIFIED`` with an empty ``after_screenshot`` and no stated
+            # reason, so this was the largest single block of failures the ledger could not explain.
             def resolve(semantic: str):
+                self._resolution_error = ""
                 if semantic == getattr(self, "_force_unknown_navigation_target", ""):
-                    return self._unknown_navigation_target(semantic, before, before_path,
-                                                           skill_id=decision.skill)
+                    point = self._unknown_navigation_target(semantic, before, before_path,
+                                                            skill_id=decision.skill)
+                    if point is None:
+                        self._resolution_error = (
+                            self._unknown_navigation_refusal or "RESOLVER:LOCATOR_MISSED")
+                    return point
                 point = self._resolve_semantic_target(
                     semantic,
                     before,
@@ -8862,8 +8934,16 @@ class LiveRuntime:
                 )
                 if point is not None:
                     return point
-                return self._unknown_navigation_target(semantic, before, before_path,
+                # The registered locator -- the project's own, first-choice reader -- answered
+                # nothing.  Whether the advisor is even allowed to be asked, and if so whether it
+                # answered, is the next fact; both are more specific than "not verified".
+                self._resolution_error = "RESOLVER:LOCATOR_MISSED"
+                point = self._unknown_navigation_target(semantic, before, before_path,
                                                        skill_id=decision.skill)
+                if point is None:
+                    self._resolution_error = (
+                        self._unknown_navigation_refusal or "RESOLVER:LOCATOR_MISSED")
+                return point
 
             def verify_current_step(before_state: WorldState, after_state: WorldState):
                 if decision.skill in {"START_RALLY", "JOIN_RALLY"}:
@@ -9114,6 +9194,10 @@ class LiveRuntime:
                 rally_target=rally_target,
             )
             started_at = time.monotonic()
+            # Fresh per step, so a later successful step can never inherit the previous step's
+            # refusal.  Both are recorders: they change no verdict and no returned point.
+            self._resolution_error = ""
+            self._router_recognition_error = ""
             # ``decision`` was already made above and the backend router below
             # was built from it, so it is handed to the scheduler rather than
             # recomputed.  ``RuleBrain.decide`` mutates run-scoped state (the
@@ -9133,6 +9217,12 @@ class LiveRuntime:
             if decision.skill == "SCROLL_REGULAR_EVENT_TABS":
                 self._calendar_tab_swipe_count = getattr(self, "_calendar_tab_swipe_count", 0) + 1
             tick = self._scheduler.tick(before, decision)
+            # The executor router computes a rich reason for every recognition it refused
+            # (``MAA_OCR:NO_TEXT`` / ``STRUCTURE:NO_ANCHOR`` / ``LIST_DYNAMIC:NO_ROWS`` ...) and until
+            # now its only readers were four manual ``tools/device_*.py`` diagnostics, so the reason
+            # was computed on every miss and then thrown away.  Kept here so the episode can carry it.
+            self._router_recognition_error = str(
+                getattr(executor, "last_recognition_error", "") or "")
             latency["scheduler_tick_ms"] = (time.monotonic() - phase_started) * 1000
             page_audit["attempted_skill"] = tick.decision.skill
             page_audit["attempted_reason"] = tick.decision.reason

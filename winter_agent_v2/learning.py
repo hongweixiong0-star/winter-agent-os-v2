@@ -62,6 +62,25 @@ class Episode:
     # an episode claiming MAA happened because MAA ran.
     capture_backend: str = ""
     recognition_backend: str = ""
+    #: Why no control was found, in the vocabulary of whichever layer refused.
+    #:
+    #: ``failure_type`` says *that* the step failed (``SEMANTIC_TARGET_NOT_VERIFIED``) and nothing more.
+    #: Measured 2026-10-02 over the day's 1586 steps: 92 failures, of which 47 were exactly that
+    #: failure type, every one with an empty ``after_screenshot`` (so the step never reached the
+    #: device) and **not one** carrying any stated reason -- "which of the resolver's guards refused
+    #: this target" could only be answered by reading the source by hand, which is what the code
+    #: comments in ``runtime._unknown_navigation_target`` had been doing instead of the data.
+    #:
+    #: The vocabulary is a prefix plus a detail, matching ``executor_router``'s existing style
+    #: (``MAA_OCR:NO_TEXT`` / ``STRUCTURE:NO_ANCHOR`` / ``LIST_DYNAMIC:NO_ROWS``), so both layers'
+    #: reasons can sit in one field without colliding:
+    #:
+    #:     UNKNOWN_NAV:...   the navigation advisor's own guards
+    #:     RESOLVER:LOCATOR_MISSED   the registered locator answered nothing and no advisor applies
+    #:     <router codes>    forwarded verbatim when the executor router set one
+    #:
+    #: Empty means "nothing was refused" -- a step that resolved, or one that never asked.
+    recognition_error: str = ""
     action_backend: str = ""
     executor_latency_ms: float | None = None
     # Which tree revision this run imported its code from.  Stamped per run, because
