@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-02T09:47:02+00:00",
+  "updated_at": "2026-10-02T10:22:06+00:00",
   "queue_generated_at": "2026-10-02T03:36:20+08:00",
   "current_task": null,
   "tasks": {
@@ -447,6 +447,14 @@
       "result_file": "results/WB-1002-15-MAA-NODE-ATTRIBUTION.json",
       "verdict": "MERGED_AND_DEPLOYED: 61adba735677864958eb2460bf8bf6f9802c188c, repinned (RESULT: CLEAN_OUTSIDE_DATA, 1152 status rows, 0 outside data dirs), pushed to origin/main (1260e68..61adba7). Pin tree verified byte-identical for executor_router.py after line-ending normalisation, and carrying _template_refusal / MAA_FRAME:NONE / LIST_DYNAMIC:FALLBACK_ABSENT plus the test file. executor_router.py is NOT in CONTROL_PLANE_PATHS, so the new vocabulary arrives with the next process restart, which the repin triggers.",
       "summary": "{'new_vocabulary': ['MAA_TEMPLATE:<error>:score=<s>:gate=<g>  e.g. MAA_TEMPLATE:NO_MATCH:score=0.6150:gate=0.7/0.75, or score=na when MaaFramework returned no candidate', 'MAA_FRAME:NONE  (the adapter answered without a frame: nothing was ever searched)', 'LIST_DYNAMIC:FALLBACK_ABSENT  (a LIST_DYNAM"
+    },
+    "WB-1002-16-GATHER-FORMATION-ROLE-SCOPE": {
+      "status": "DONE",
+      "started_at": "2026-10-02T09:49:59+00:00",
+      "finished_at": "2026-10-02T10:22:06+00:00",
+      "result_file": "results/WB-1002-16-GATHER-FORMATION-ROLE-SCOPE.json",
+      "verdict": "MERGED_AND_DEPLOYED: 76a5e90456bc5039c6caaf03b04c6a0ef87459f2, repinned (RESULT: CLEAN_OUTSIDE_DATA, 1156 status rows, 0 outside data dirs), pushed to origin/main (89d4c64..76a5e90). Pin tree verified byte-identical for all three changed modules after line-ending normalisation, carrying the new clause field and the new stamping method, with the new test file present.",
+      "summary": "{'readers_no_longer_invent': 'the MARCH and RESOURCE_DETAIL synthesized states claim only what their templates evidence; measured on the same four archived frames, the production observation now returns resource_target None', 'the_record_names_its_source': 'gather_formation gains resource_observed ("
     }
   },
   "history": [

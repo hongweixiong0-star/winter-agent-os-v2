@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `76a5e90 2026-10-02T18:12:02+08:00 fix(gather): the dispatch verifier refused a march that had already gone out`
+- `89d4c64 2026-10-02T17:49:07+08:00 docs(memory): WB-1002-15 -- check the layer below before inventing a vocabulary`
+- `512a84a 2026-10-02T17:47:39+08:00 docs(commander): WB-1002-15 closed -- the MAA path names its refusals; the live values are not in yet`
 - `61adba7 2026-10-02T17:36:41+08:00 feat(router): the MAA node path names its refusals, score included`
 - `1260e68 2026-10-02T17:27:20+08:00 docs(memory): WB-1002-14 -- enumerate the family from the decision, not from the guards`
 - `2740cce 2026-10-02T17:26:07+08:00 docs(commander): WB-1002-14 closed -- the guard fired live, four minutes after the repin`
@@ -15,11 +18,8 @@ Last 12 commits (newest first):
 - `731c125 2026-10-02T16:52:47+08:00 fix(resource): let the strip-scroll recovery run when the offset is missing`
 - `e201c7f 2026-10-02T16:42:03+08:00 docs(memory): WB-1002-12 -- pair a failure with the next success before calling it a defect`
 - `b1c4c80 2026-10-02T16:40:52+08:00 docs(commander): WB-1002-12 closed with three falsifications and no fix, which is the result`
-- `a71a9c6 2026-10-02T16:37:57+08:00 docs(camp): the ring IS the returned point, and the first tap is meant to be absorbed`
-- `dd9387e 2026-10-02T15:58:13+08:00 docs(memory): WB-1002-11 -- and the two lessons that outlive the fix`
-- `1200898 2026-10-02T15:57:02+08:00 docs(commander): WB-1002-11 closed -- the largest failure block can now name itself`
 
-Uncommitted changes: 1466
+Uncommitted changes: 1468
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
