@@ -82,6 +82,47 @@ BOARD_ONLY_NO_SKILL = "BOARD_ONLY_NO_SKILL"
 BOARD_ONLY_STATUS = "BOARD_ONLY_STATUS"
 ORDER = (CANDIDATE, BOARD_ONLY_STATUS, BOARD_ONLY_NO_SKILL)
 
+#: The reason vocabulary.  Taken from the chooser's own terms, not from the status.
+#:
+#: A goal's ``priority`` is a *property* that answers ``-inf`` for every non-actionable status, so
+#: on 2026-10-02 it read ``-inf`` for 26 of the 33 live rows and could not tell any two of them
+#: apart -- including the three the chooser really does carry, priced as observation work at
+#: ``goal_utility.OBSERVATION_TICKET_FLOOR``.  Operator §二十八 asks that an unknown goal not be
+#: dressed up and that a stated one say why; one number for 26 different facts is the opposite of
+#: that, and the number was not measured -- ``goal_utility.utility``'s own docstring says the static
+#: priority "is the base and is never recomputed here".
+CHOOSER_REASONS = frozenset({
+    "ON_BOARD_SKILL_REGISTERED",
+    "ON_BOARD_OBSERVATION_ONLY_NO_SKILL",
+    "ON_BOARD_NO_REGISTERED_SKILL",
+    "OFF_BOARD_DECLARED_OBSERVATION_BUT_UNPRICED",
+    "OFF_BOARD_NOTHING_DECLARED",
+    "OFF_BOARD_NO_REGISTERED_SKILL",
+})
+
+
+def chooser_reason(*, kept: bool, skills, registered, observation: float) -> str:
+    """Why the chooser carries this goal, or does not -- in the chooser's own terms.
+
+    ``kept`` is the answer from ``goal_utility.rank``, and ``observation`` is the ticket that
+    ``goal_utility.utility`` used when the catalogue price was ``-inf``.  Nothing here restates the
+    status: a goal can be ``UNKNOWN`` and on the board, which is the whole point of the ticket.
+    """
+    has_registered = any(str(skill) in registered for skill in skills)
+    if kept:
+        if has_registered:
+            return "ON_BOARD_SKILL_REGISTERED"
+        if observation > 0:
+            return "ON_BOARD_OBSERVATION_ONLY_NO_SKILL"
+        return "ON_BOARD_NO_REGISTERED_SKILL"
+    if observation > 0:
+        # A goal that declared what it waits for is priced by the ticket, so these two cannot both
+        # hold.  If they ever do, the ticket stopped reaching rank() and that is the finding.
+        return "OFF_BOARD_DECLARED_OBSERVATION_BUT_UNPRICED"
+    if not skills:
+        return "OFF_BOARD_NOTHING_DECLARED"
+    return "OFF_BOARD_NO_REGISTERED_SKILL"
+
 
 def _status_name(goal) -> str:
     status = getattr(goal, "status", "")
@@ -137,23 +178,35 @@ def survey() -> tuple[dict[str, dict], Counter]:
 
         for goal in projected:
             goal_id = str(goal.goal_id)
+            skills = tuple(str(s) for s in (getattr(goal, "available_skills", ()) or ()))
+            # What the chooser really did with it, and the number it used.  ``rank`` filters, so a
+            # dropped goal has to be priced through ``utility`` to be reportable at all -- and the
+            # filtered verdict alone is what left 26 rows sharing one indistinguishable value.
+            ranked = goal_utility.rank([goal], world=world)
+            kept = bool(ranked)
+            breakdown = ranked[0][1] if kept else goal_utility.utility(goal, world=world)
+            reason = chooser_reason(kept=kept, skills=skills, registered=registered,
+                                    observation=float(breakdown.observation))
             row = seen.setdefault(goal_id, {
                 "goal_id": goal_id,
                 "probes": [],
                 "status": _status_name(goal),
                 "priority": float(goal.priority),
-                "skills": list(getattr(goal, "available_skills", ()) or ()),
+                "chooser_base": float(breakdown.base),
+                "chooser_total": float(breakdown.total),
+                "observation": float(breakdown.observation),
+                "reason": reason,
+                "skills": list(skills),
                 "bootstrap_stage": str((getattr(goal, "evidence", None) or {}).get("bootstrap_stage") or ""),
                 "verdict": "",
             })
             row["probes"].append(label)
             # The verdict is the measured one: what does the real chooser do with it?
-            kept = bool(goal_utility.rank([goal], world=world))
             if kept:
                 verdict = CANDIDATE
             elif getattr(goal, "status", None) in NOT_ACTIONABLE:
                 verdict = BOARD_ONLY_STATUS
-            elif not getattr(goal, "available_skills", ()):
+            elif not skills:
                 verdict = BOARD_ONLY_NO_SKILL
             else:
                 verdict = BOARD_ONLY_STATUS
@@ -163,7 +216,11 @@ def survey() -> tuple[dict[str, dict], Counter]:
                 row["verdict"] = verdict
                 row["status"] = _status_name(goal)
                 row["priority"] = float(goal.priority)
-                row["skills"] = list(getattr(goal, "available_skills", ()) or ())
+                row["chooser_base"] = float(breakdown.base)
+                row["chooser_total"] = float(breakdown.total)
+                row["observation"] = float(breakdown.observation)
+                row["reason"] = reason
+                row["skills"] = list(skills)
                 row["bootstrap_stage"] = str(
                     (getattr(goal, "evidence", None) or {}).get("bootstrap_stage") or "")
     return seen, diagnostics
@@ -198,6 +255,12 @@ def main(argv: list[str] | None = None) -> int:
     by_verdict: dict[str, list[str]] = {name: [] for name in ORDER}
     for goal_id, row in sorted(rows.items()):
         by_verdict.setdefault(row["verdict"], []).append(goal_id)
+    # Per-goal reasons, so "why is this one out" is answerable for each goal rather than
+    # answered once for a whole status.  Crash rows carry no reason and are excluded.
+    reason_counts: Counter = Counter(
+        row["reason"] for goal_id, row in rows.items()
+        if not goal_id.startswith("<probe") and "reason" in row
+    )
 
     reachable = set(by_verdict[CANDIDATE])
     auto_discoverable = {g for g in rows if not g.startswith("<probe")}
@@ -218,8 +281,13 @@ def main(argv: list[str] | None = None) -> int:
         "board_only_no_skill": sorted(by_verdict[BOARD_ONLY_NO_SKILL]),
         "board_only_status": sorted(by_verdict[BOARD_ONLY_STATUS]),
         "rows": {k: {"status": v["status"], "priority": round(v["priority"], 1),
+                     "chooser_base": round(v["chooser_base"], 1),
+                     "chooser_total": round(v["chooser_total"], 1),
+                     "observation": round(v["observation"], 1),
+                     "reason": v["reason"],
                      "skills": v["skills"], "verdict": v["verdict"], "probes": v["probes"]}
                  for k, v in sorted(rows.items())},
+        "reasons": dict(reason_counts),
         "never_selected_in_ledger": sorted(never),
         "selected_before": sorted(tried),
         "bootstrap_diagnostics": dict(diagnostics),
@@ -255,7 +323,13 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  -- SCHEDULER_CANDIDATE ({len(by_verdict[CANDIDATE])}) --")
     for goal_id in sorted(by_verdict[CANDIDATE]):
         row = rows[goal_id]
-        print(f"     {goal_id:38s} priority={row['priority']:8.1f} skills={len(row['skills'])}")
+        print(f"     {goal_id:38s} chooser={row['chooser_total']:8.1f} "
+              f"(catalogue {row['priority']:7.1f}) skills={len(row['skills'])} "
+              f"{row['reason']}")
+    print()
+    print("  -- why each goal is where it is (the chooser's own terms) --")
+    for reason, count in sorted(reason_counts.items(), key=lambda item: (-item[1], item[0])):
+        print(f"     {reason:42s} {count}")
     return 0
 
 
