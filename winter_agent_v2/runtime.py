@@ -2150,6 +2150,29 @@ class LiveRuntime:
                 "role_id": role_id,
                 "observed_at": str(world.timestamp or datetime.now(timezone.utc).isoformat()),
             }
+        # The activity strip above the grid is a second, independent source of "this activity
+        # is advertised right now".  Measured 2026-10-02 on the pinned frame it carried
+        # ``联盟总动员`` at confidence 0.999 while the grid held six unrelated rows, so three
+        # registered activities could never obtain a ``calendar_observation`` and stayed
+        # ``AWAITING_LIVE_CLIENT_READING`` forever.  Merged into the same snapshot rather than
+        # stored beside it, so the goal library keeps one calendar truth: its existing
+        # ``event_id`` match then binds the row with no change to that module.  Grid rows win
+        # on conflict -- they carry dates, and a strip row deliberately does not.
+        live_strip = event_rows.get("activity_strip")
+        if isinstance(live_strip, Mapping) and live_strip.get("recognized") is True:
+            strip_rows = [r for r in (live_strip.get("entries") or ()) if isinstance(r, Mapping)]
+            if strip_rows:
+                base = dict(calendar_snapshot or {})
+                merged: dict[str, dict] = {}
+                for row in list(base.get("entries") or ()) + strip_rows:
+                    event_id = str(row.get("event_id") or "")
+                    if event_id and event_id not in merged:
+                        merged[event_id] = dict(row)
+                base["entries"] = list(merged.values())
+                base["activity_strip_observed_at"] = str(
+                    world.timestamp or datetime.now(timezone.utc).isoformat()
+                )
+                calendar_snapshot = base
         discover = self.goal_library.discover
         discover_kwargs = {
             "observations": self._observations_for_engine(),

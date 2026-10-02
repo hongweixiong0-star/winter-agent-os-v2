@@ -254,6 +254,122 @@ def read_calendar_entry(tokens: Iterable[Any], *, frame_size: tuple[int, int] | 
     }
 
 
+#: The activity strip sits between the page heading and the page clock.  Measured on the
+#: pinned 2026-10-02 frame (role 1061663148): the heading's box ends at y=0.047 and the
+#: clock begins at y=0.202, so every strip label falls inside this band with room to spare.
+#: The band is a measured window, not a tuned constant: it exists because the strip is
+#: structurally *above* the calendar's own first date row (y=0.267) and *below* the heading.
+ACTIVITY_STRIP_BAND = (0.06, 0.20)
+
+
+def read_regular_event_activity_strip(
+    tokens: Iterable[Any], *, frame_size: tuple[int, int] | None,
+) -> dict[str, Any]:
+    """Read the activity strip the client draws **above** the calendar grid.
+
+    Why this exists, measured 2026-10-02 on the pinned production frame
+    ``20261002_135741_630328_step_005_after_20261002T055825254675.png``:
+
+    The ``常规活动`` screen carries two regions, and only one of them was ever read.  The
+    calendar grid below the clock was read at confidence 0.995 and every one of its six
+    rows carries a real detail reading.  The strip above the clock was read too --
+    ``联盟总动员`` at confidence **0.999** -- and then dropped, because
+    ``read_regular_event_hub`` recognizes an event *detail* page (a title plus body markers
+    such as 积分/奖励) and this frame is the *grid*, so it answers ``recognized=False`` and
+    the label reaches no consumer.
+
+    The cost was concrete.  ``ALLIANCE_MOBILIZATION``, ``CANYON_CLASH`` and
+    ``ARMAMENT_FACTORY_EVENT`` are registered activities that appear **only** on this
+    strip, never as a grid row, so ``_append_scheduled_activities`` bound them
+    ``calendar_observation=None`` permanently and ``observation_ticket`` priced them on
+    evidence that did not exist: 6 of 20 ``SCHEDULED_*`` goals had a calendar row, and the
+    14 without one were exactly the 14 registered activities absent from the grid.  The
+    mapping was never missing -- ``event_goal.event_id_for_label`` resolves all of these
+    labels -- so this is a reader that was absent, not a resolver that was wrong.
+
+    What a strip row is allowed to say, and what it may not:
+
+    * it proves an activity is **advertised right now, on this screen** -- that is a
+      genuine observation, and it is what ``required_observation`` asks for;
+    * it carries **no window**.  ``start``/``end`` stay ``None`` because the strip prints no
+      dates; a preview must never become a battle clock, which is the rule
+      ``read_event_calendar`` already follows for grid previews;
+    * a label is reported **only** if the registry already knows it.  An unmapped label is
+      skipped rather than given an invented id -- otherwise this reader would manufacture
+      exactly the placeholder ids the project has been removing.
+
+    Every ``tap_norm`` is the current frame's own geometry and expires with these tokens.
+    """
+    result: dict[str, Any] = {
+        "kind": "ACTIVITY_STRIP", "recognized": False, "entries": [],
+        "source": "CURRENT_FRAME_OCR",
+    }
+    width, height = frame_size or (0, 0)
+    if width <= 0 or height <= 0:
+        return {**result, "reason": "NO_FRAME_GEOMETRY"}
+    materialized = [t for t in tokens if str(getattr(t, "text", "") or "").strip()]
+    if not materialized:
+        return {**result, "reason": "NO_TOKENS"}
+
+    rows: list[dict[str, Any]] = []
+    for token in materialized:
+        label = re.sub(r"\s+", "", str(getattr(token, "text", "") or ""))
+        points = _box(token)
+        if not label or not points or not all(math.isfinite(v) for p in points for v in p):
+            continue
+        left, right = min(p[0] for p in points), max(p[0] for p in points)
+        top, bottom = min(p[1] for p in points), max(p[1] for p in points)
+        if not (0 <= left < right <= width and 0 <= top < bottom <= height):
+            continue
+        confidence = float(getattr(token, "confidence", 0.0) or 0.0)
+        if not math.isfinite(confidence) or confidence < 0.9:
+            # The strip is a dense row of small labels next to a large page clock; a low
+            # score here is far more likely to be a fragment of the clock than an activity.
+            continue
+        rows.append({"label": label, "left": left, "right": right, "top": top,
+                     "bottom": bottom, "x": (left + right) / 2, "y": (top + bottom) / 2,
+                     "height": bottom - top, "confidence": confidence})
+
+    headings = [r for r in rows if r["label"] == "常规活动"
+                and r["height"] >= height * 0.02 and r["y"] <= height * 0.12]
+    if len(headings) != 1:
+        return {**result, "reason": "NO_UNAMBIGUOUS_LARGE_TOP_HEADING"}
+    heading = headings[0]
+
+    band_top, band_bottom = ACTIVITY_STRIP_BAND
+    entries: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for row in sorted(rows, key=lambda r: r["x"]):
+        if row["label"] == "常规活动" or not (heading["bottom"] < row["y"] < height * band_bottom):
+            continue
+        if row["y"] < height * band_top:
+            continue
+        # A strip label is a title, not body text.  The resolver is the filter: a label the
+        # registry has never heard of is skipped, so this reader cannot invent an id.
+        event_id = event_goal.event_id_for_label(row["label"])
+        if not event_id or event_id in seen:
+            continue
+        seen.add(event_id)
+        entries.append({
+            "event_id": event_id,
+            "display_name": row["label"],
+            "title_confidence": round(row["confidence"], 6),
+            "title_registered": True,
+            "tap_norm": [round(row["x"] / width, 5), round(row["y"] / height, 5)],
+            # A strip row advertises; it does not schedule.
+            "start": None,
+            "end": None,
+            "preview_only": True,
+            "source": "CURRENT_FRAME_OCR",
+        })
+    if not entries:
+        return {**result, "reason": "NO_REGISTERED_ACTIVITY_ON_STRIP"}
+    return {
+        **result, "recognized": True, "reason": "LABELLED_ACTIVITY_ABOVE_CALENDAR_GRID",
+        "entries": entries,
+    }
+
+
 def read_regular_event_hub(
     tokens: Iterable[Any], *, frame_size: tuple[int, int] | None,
 ) -> dict[str, Any]:

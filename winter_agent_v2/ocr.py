@@ -1070,6 +1070,17 @@ class OCRPageClassifier:
             eligible, frame_size=frame_size
         )
         regular_event_hub = event_calendar.read_regular_event_hub(eligible, frame_size=frame_size)
+        # The strip above the calendar grid is a third region of this screen, and it was the
+        # only one with no reader: measured 2026-10-02 on the pinned production frame, the
+        # grid was read at 0.995 and every row carried a detail reading, while the strip's
+        # ``联盟总动员`` was read at 0.999 and dropped -- ``read_regular_event_hub`` names an
+        # event *detail* page, which the grid is not.  Three registered activities live only
+        # on that strip, so they could never acquire a ``calendar_observation`` and were
+        # priced on evidence that did not exist.  Read here so the value has a consumer;
+        # it advertises an activity, and deliberately carries no window.
+        activity_strip = event_calendar.read_regular_event_activity_strip(
+            eligible, frame_size=frame_size
+        )
         if regular_event_hub.get("recognized") is True:
             found.append(Page.EVENT)
         if calendar_reading.get("recognized") is True:
@@ -1330,6 +1341,8 @@ class OCRPageClassifier:
             events["calendar"] = calendar_reading
         if regular_event_hub.get("recognized") is True:
             events["regular_events_hub"] = regular_event_hub
+        if activity_strip.get("recognized") is True:
+            events["activity_strip"] = activity_strip
         if page is Page.ALLIANCE:
             texts = [token.text for token in eligible]
             if bear_trap_detail:
