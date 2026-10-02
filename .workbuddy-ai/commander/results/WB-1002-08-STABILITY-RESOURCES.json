@@ -21,7 +21,7 @@
     "watchdog_restarts": 24,
     "snapshot_last_tick_before_root_recovery": "2026-10-01T17:13:24.856138Z",
     "gpu_used_mib_at_window_open": 7838,
-    "observation_window": "2026-10-02T06:19:56.835855+00:00 -> 2026-10-02T06:27:32.065267+00:00 (16 samples, 30 s apart)"
+    "observation_window": "2026-10-02T06:19:56.835855+00:00 -> 2026-10-02T06:31:03.203086+00:00 (20 samples, 30 s apart). Two watcher runs merged: the first held 16 samples to 06:27:32Z and was reaped with the shell that spawned it, the second covers 06:29:29Z onward. Both anchored on a byte offset in panel.log taken when the run started, because panel.log has no dates."
   },
   "AFTER": {
     "new_unexplained_worker_exits": 0,
@@ -42,7 +42,7 @@
     "gpu_used_mib_min_max_last": [
       7794,
       7852,
-      7821
+      7815
     ],
     "gpu_total_mib": 8188,
     "gpu_spread_mib": 58,
@@ -52,8 +52,8 @@
     ],
     "ram_pct_min_max_last": [
       77.0,
-      81.2,
-      77.6
+      82.4,
+      80.6
     ],
     "serving_context_measured_from_the_server": 32768,
     "serving_context_evidence": "http://127.0.0.1:18080/props -> default_generation_settings.n_ctx = 32768, total_slots = 1, model_path E:\\winter_models\\ui-venus-2-9b\\UI-Venus-2-9B-Q4_K_M.gguf",
@@ -61,7 +61,8 @@
     "sole_server_flags": "-m UI-Venus-2-9B-Q4_K_M.gguf --mmproj mmproj-UI-Venus-2-9B-f16.gguf -ngl 30 -c 32768 -np 1 -b 512 -ub 512 -ctk f16 -ctv f16 -fa on --image-min-tokens 1024 --image-max-tokens 1024 --host 127.0.0.1 --port 18080 --jinja",
     "control_plane_paths_after": 10,
     "needs_reload_for_the_live_window_after_the_fix": true,
-    "note_on_that_true": "True is the honest answer from the fixed predicate, but the LIVE WINDOW still cannot report it, because the window holds the old module in memory. See REMAINING_ISSUE."
+    "note_on_that_true": "True is the honest answer from the fixed predicate, but the LIVE WINDOW still cannot report it, because the window holds the old module in memory. See REMAINING_ISSUE.",
+    "observation_window_samples": 20
   },
   "VERIFIER_RESULT": "runtime_thread_alive / scheduler_loop_alive agree with the processes: panel pid 11356 alive throughout, and the worker is the launcher/child pair (pid 24976 ppid=11356, pid 23848 ppid=24976) both resolving into the pinned worktree -- so panel_restart.py's 'workers: 1' and this probe's '2 run_live.py processes' describe the same single process tree, not a second worker. Loaded revision is attributable end to end and re-proven after this round's repin: commit 012eaab at 14:29 local, first episode stamped 012eaab38864 at 2026-10-02T06:27:41Z. No natural crash occurred, so NEW_CRASH=0 is recorded as an honest zero and NOT as a live recovery test. Resource figures have an explicit window (06:19:56Z-06:27:32Z, 16 samples at 30 s). The one abort is a named, handled refusal with retry and backoff, not an unhandled exit.",
   "EVIDENCE": {
@@ -85,8 +86,10 @@
     "evidence_frames_do_land_in_the_protected_data_root": "role_identity.json cites C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\...\\dataset\\raw\\role_switch\\*.png. That path is a junction: os.path.samefile() against E:\\无尽冬日智能体\\dataset\\raw\\role_switch\\... is True, dataset is listed in PRODUCTION_PIN.json mounts, and E: is data_root. So the pin tree's paths for data are the real data root and nothing is being written into the code worktree.",
     "what_i_deliberately_checked_and_found_clean": [
       "DEVICE_LEASE.json has no current holder (owner DEVELOPMENT_VALIDATION, result PIN_UPDATED, released_at 2026-10-01T20:04:35Z). The '⚠ 本轮结束：device leased for development' lines that appear earlier in panel.log are from that period; panel.log carries no dates, so a clock-time filter over it silently mixes days -- the first read this round did exactly that and I re-anchored to a byte offset captured at the start of the window.",
-      "no second panel and no second model server: one listener on 18080 (pid 18012), one panel pid."
-    ]
+      "no second panel and no second model server: one listener on 18080 (pid 18012), one panel pid.",
+      "I checked whether the marker is rewritten on every UI tick, which would imply ~86k writes a day while the window is stale, and dropped the concern rather than reporting it: _check_control_plane_reload() is called from _narrate_pump(), not from the one-second refresh, and _start_control_plane_reload() is guarded by _reload_started. I am recording the check because the first version of this note asserted the per-tick write as a finding before I read the caller."
+    ],
+    "the_windows_own_marker_shows_when_it_last_noticed": "<pin>/learning/CONTROL_PLANE_RELOAD_REQUIRED.json exists and its requested_at is 2026-10-01T16:50:08.645724+00:00, for a901dafa02ff -> d7a86c47b4e8 involving tools/control_panel.py and winter_agent_v2/escalation_queue.py -- an earlier window. The window that is running now (launched 2026-10-02T07:38:20+08:00 on 951abbd) has written none, across eight subsequent commits. That is the same fact as needs_reload() returning False, read from the other side. Note the file's inner kind is RUNTIME_RELOAD_REQUIRED while its path is CONTROL_PLANE_RELOAD_REQUIRED.json: that is by design, not a mismatch -- ReloadSignal always stamps REQUEST_KIND and the two signals are told apart by path, which test_the_marker_is_its_own_file_not_the_workers pins."
   },
   "PATCH_STATUS": "MERGED_AND_DEPLOYED: ec258bd (retention + learning_funnel listed) -> 012eaab (the detector itself listed). Repinned twice; PRODUCTION_PIN.json expected_commit 90e73f621039 -> 012eaab388643; pin working tree checked CLEAN_OUTSIDE_DATA at both steps; the deployed file verified in the pin tree.",
   "REMAINING_ISSUE": "The fix's own live effect CANNOT be observed in the current window, and I will not claim it: the running panel holds the old control_plane_reload.py in memory, so its next _check_control_plane_reload still returns False. The fix becomes observable only when the window is replaced -- which the operator's standing rule reserves for a manual restart at a safe point (Start-Winter-Agent-V2.cmd). What IS verified now is the predicate, evaluated from the pinned tree against the revision the window really loaded, and that is why AFTER.needs_reload_for_the_live_window_after_the_fix = true rather than 'confirmed in production'.\n\nSecond, un-done half of the same root cause, recorded rather than implemented because it is a design change rather than a minimal fix: a destructive once-per-round call should arguably not run in the long-lived process at all. _maybe_run_nightly_learning already spawns its offline pass detached through winproc, and the sweep could follow that shape, which would remove the staleness dependency entirely instead of merely announcing it.\n\nThird, and untouched by this round: the two red guards in tests/test_evidence_integrity.py still name six production frames lost on 2026-09-21/22, and the corpus stream's frames are protected only from the next sweep onward.",
@@ -101,5 +104,5 @@
   "recommended_codex_review": [
     "The finding rests on one predicate evaluated in the pinned tree and one log count, not on a live reproduction of harm: the corpus is the same 80/136 it was earlier the same day, so the consequence is 'a fix that is not active and a detector that cannot say so', which is latent rather than currently destructive. Please weigh it as a fence added to a silent failure mode rather than as an incident. If Codex would rather the sweep simply not run in the window, that is the stronger fix and I have recorded it as the follow-up instead of doing it inside a P0 observation order."
   ],
-  "recorded_at": "2026-10-02T06:31:00+00:00"
+  "recorded_at": "2026-10-02T06:31:45+00:00"
 }

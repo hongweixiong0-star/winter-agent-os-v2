@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-10-02T06:19:21+00:00",
+  "updated_at": "2026-10-02T06:31:45+00:00",
   "queue_generated_at": "2026-10-02T03:36:20+08:00",
-  "current_task": "WB-1002-08-STABILITY-RESOURCES",
+  "current_task": null,
   "tasks": {
     "WB-0BA-PIN-EXHAUSTION": {
       "status": "DONE",
@@ -377,11 +377,14 @@
       "result_file": null
     },
     "WB-1002-08-STABILITY-RESOURCES": {
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "priority": "P0",
       "queue_status": "READY",
-      "result_file": null,
-      "started_at": "2026-10-02T06:19:21+00:00"
+      "result_file": "results/WB-1002-08-STABILITY-RESOURCES.json",
+      "started_at": "2026-10-02T06:19:21+00:00",
+      "finished_at": "2026-10-02T06:31:45+00:00",
+      "verdict": "MERGED_AND_DEPLOYED: ec258bd (retention + learning_funnel listed) -> 012eaab (the detector itself listed). Repinned twice; PRODUCTION_PIN.json expected_commit 90e73f621039 -> 012eaab388643; pin working tree checked CLEAN_OUTSIDE_DATA at both steps; the deployed file verified in the pin tree.",
+      "summary": "{'new_unexplained_worker_exits': 0, 'unexpected_worker_exits_distinct_values_over_window': [18], 'cuda_oom': 0, 'workbuddy_runtime_enabled': False, 'workbuddy_runtime_enabled_evidence': 'config/v2.json workbuddy_channel.enabled=false by operator directive 2026-09-25; answer_production LOCAL_GUI_MODE"
     },
     "WB-1002-09-VENUS-SERVICE-LIVENESS": {
       "status": "PENDING",
