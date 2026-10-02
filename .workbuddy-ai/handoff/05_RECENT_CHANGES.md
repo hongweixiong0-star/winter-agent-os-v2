@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `3ce3ef3 2026-10-02T17:16:35+08:00 fix(brain): the ninth and tenth city-HUD branches were missing the panel guard`
+- `1410915 2026-10-02T17:03:19+08:00 docs(memory): WB-1002-13 -- the two cluster judgments, and the recovery gated on the missing quantity`
+- `1234757 2026-10-02T17:02:08+08:00 docs(commander): WB-1002-13 closed -- the recovery was gated on the thing that was missing`
 - `731c125 2026-10-02T16:52:47+08:00 fix(resource): let the strip-scroll recovery run when the offset is missing`
 - `e201c7f 2026-10-02T16:42:03+08:00 docs(memory): WB-1002-12 -- pair a failure with the next success before calling it a defect`
 - `b1c4c80 2026-10-02T16:40:52+08:00 docs(commander): WB-1002-12 closed with three falsifications and no fix, which is the result`
@@ -15,11 +18,8 @@ Last 12 commits (newest first):
 - `84e15e5 2026-10-02T15:47:10+08:00 fix(ledger): the reason's first live reading conflated two different facts`
 - `7b489b6 2026-10-02T15:41:43+08:00 feat(ledger): a failed step now says why the control was not found`
 - `b499668 2026-10-02T15:23:56+08:00 docs(commander): WB-1002-10 closed -- the bracket lock was vetoing its own true pair`
-- `70b093f 2026-10-02T15:19:26+08:00 fix(vision): the bracket lock was loose enough to veto its own true pair`
-- `5ee4e79 2026-10-02T14:58:12+08:00 docs(commander): WB-1002-04 blocked -- arena stays unknown, and my own fix does not reach the board`
-- `dff2b1b 2026-10-02T14:55:09+08:00 fix(audit): report the chooser's number and a reason, and record a regression I caused`
 
-Uncommitted changes: 1461
+Uncommitted changes: 1463
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`

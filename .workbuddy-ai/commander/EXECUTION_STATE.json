@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-02T09:01:31+00:00",
+  "updated_at": "2026-10-02T09:25:28+00:00",
   "queue_generated_at": "2026-10-02T03:36:20+08:00",
   "current_task": null,
   "tasks": {
@@ -431,6 +431,14 @@
       "result_file": "results/WB-1002-13-LOCATOR-ATTRIBUTION.json",
       "verdict": "MERGED_AND_DEPLOYED: 731c1253579418efbd757209e6b0a8a800b7d574, repinned, RESULT: CLEAN_OUTSIDE_DATA, pushed to origin/main (e201c7f..731c125). The deployed revision was confirmed running by its own episodes within about two minutes.",
       "summary": "{'new_method': 'SemanticROIVision.resource_tab_swipe_without_offset(resource, visible_kinds) -> one pitch, or None when the answer would be a guess', 'branch_shape': 'the existing scroll branch now computes its delta from either source and acts only if non-zero, which reproduces the old gate (offset"
+    },
+    "WB-1002-14-CITY-HUD-ENTRY-GUARD": {
+      "status": "DONE",
+      "started_at": "2026-10-02T09:16:07+00:00",
+      "finished_at": "2026-10-02T09:25:28+00:00",
+      "result_file": "results/WB-1002-14-CITY-HUD-ENTRY-GUARD.json",
+      "verdict": "MERGED_AND_DEPLOYED: 3ce3ef35e1351bc1c841be0b02a6095d0ba6c85b, repinned (RESULT: CLEAN_OUTSIDE_DATA, 1152 status rows, 0 outside data dirs), pushed to origin/main (1410915..3ce3ef3). Pin tree verified byte-identical for brain.py after line-ending normalisation, and carrying both new reason strings.",
+      "summary": "{'new_guards': ['FISHING -> BACK / close_resource_search_for_fishing_goal / resource_search_closed', 'BUILDING -> BACK / close_resource_search_for_building_goal / resource_search_closed'], 'shape': 'identical to the nine existing siblings (BACK + close_resource_search_* reason family), placed inside"
     }
   },
   "history": [
