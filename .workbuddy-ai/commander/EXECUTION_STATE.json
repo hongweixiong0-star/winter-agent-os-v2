@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-10-02T05:40:13+00:00",
+  "updated_at": "2026-10-02T06:19:21+00:00",
   "queue_generated_at": "2026-10-02T03:36:20+08:00",
-  "current_task": null,
+  "current_task": "WB-1002-08-STABILITY-RESOURCES",
   "tasks": {
     "WB-0BA-PIN-EXHAUSTION": {
       "status": "DONE",
@@ -377,10 +377,11 @@
       "result_file": null
     },
     "WB-1002-08-STABILITY-RESOURCES": {
-      "status": "PENDING",
+      "status": "IN_PROGRESS",
       "priority": "P0",
       "queue_status": "READY",
-      "result_file": null
+      "result_file": null,
+      "started_at": "2026-10-02T06:19:21+00:00"
     },
     "WB-1002-09-VENUS-SERVICE-LIVENESS": {
       "status": "PENDING",

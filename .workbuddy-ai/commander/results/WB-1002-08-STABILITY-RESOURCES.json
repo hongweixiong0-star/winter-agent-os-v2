@@ -1,0 +1,105 @@
+{
+  "TASK_ID": "WB-1002-08-STABILITY-RESOURCES",
+  "VERDICT": "CLOSED__NO_NEW_CRASH__ONE_DEPLOYED_BUT_INACTIVE_FIX_FOUND_AND_FENCED",
+  "ROOT_CAUSE": "The P0 that the order was written against -- a stale snapshot plus 18 historical unexpected exits -- is already resolved and was NOT re-implemented by me: the worker/badge crash was fixed in c74f0bb, Root brought production back, and this round confirms the counter is frozen at 18 with zero new exits and zero CUDA OOM. What this round did find, by following the order's own 'loaded revision must be attributable' requirement instead of trusting the panel's self-report, is a real and separate root cause: the window (pid 11356) executes two modules in its own long-lived process whose staleness produces no symptom, and the staleness detector's list was built from a visible symptom, so it cannot see either of them.\n\nThe two are winter_agent_v2/retention.py, which _enforce_retention() calls once per round with retention.auto_prune = true and which DELETES files, and winter_agent_v2/learning_funnel.py, which _refresh_learning_funnel() folds once per round and whose fold is the number the console shows. CONTROL_PLANE_PATHS held seven entries, all chosen because their staleness was visible on 2026-09-18 (the gateway cell kept showing WorkBuddy 异常 after the fix landed). Neither of these two fails visibly; the sweep fails by deleting evidence, which is the worst possible thing to be silently stale about.\n\nMeasured with the module's own predicate, run from the pinned tree against the revision the window really loaded: loaded 951abbd, disk 90e73f6, changed_paths_since() returned 50 paths INCLUDING winter_agent_v2/retention.py, touched_control_plane() returned (), needs_reload() returned False. So the window reports 已同步（无需重载）while running the pre-fix sweep every round -- and panel.log holds 1,546 磁盘保护 lines, the last at 14:20:49, with 6c1abb6 (which teaches the sweep to keep the calibration corpus's frames) in the pinned tree, loaded by every worker, and bypassed by the one process that calls it. A fix in a silent module is not deployed, and this notice is the only thing that can say so.",
+  "CHANGED_FILES": [
+    "winter_agent_v2/control_plane_reload.py",
+    "tests/test_control_plane_reload.py"
+  ],
+  "TEST_RESULT": "tests/test_control_plane_reload.py 22 passed (was 21 before the third name was added). A/B against 90e73f6 with an explicit SHA and a byte-identical restore (md5 f213fbd6843039a276700a86e6192a8a): A arm 4 failed / 18 passed, B arm 22 passed, failures only in B 0, failures only in A exactly the four new assertions. check_wiring problems=0. Nothing else in the repo reads CONTROL_PLANE_PATHS except this module and this test file.",
+  "LIVE_ATTEMPTS": 3,
+  "LIVE_SUCCESS": 2,
+  "LIVE_FAILURE": 1,
+  "BEFORE": {
+    "loaded_revision_window": "951abbdd039c (desktop_startup.log 2026-10-02T07:38:20+08:00, WORKTREE_CLEAN=true)",
+    "disk_revision": "90e73f621039",
+    "control_plane_paths": 7,
+    "needs_reload_for_the_live_window": false,
+    "changed_paths_since_loaded": 50,
+    "retention_among_changed": true,
+    "unexpected_worker_exits": 18,
+    "watchdog_restarts": 24,
+    "snapshot_last_tick_before_root_recovery": "2026-10-01T17:13:24.856138Z",
+    "gpu_used_mib_at_window_open": 7838,
+    "observation_window": "2026-10-02T06:19:56.835855+00:00 -> 2026-10-02T06:27:32.065267+00:00 (16 samples, 30 s apart)"
+  },
+  "AFTER": {
+    "new_unexplained_worker_exits": 0,
+    "unexpected_worker_exits_distinct_values_over_window": [
+      18
+    ],
+    "cuda_oom": 0,
+    "workbuddy_runtime_enabled": false,
+    "workbuddy_runtime_enabled_evidence": "config/v2.json workbuddy_channel.enabled=false by operator directive 2026-09-25; answer_production LOCAL_GUI_MODEL",
+    "run_boundaries_classified": 3,
+    "run_boundaries_inside_the_observation_window": 2,
+    "boundary_kinds_seen": [
+      "MAX ACTIONS REACHED (14:12:01, just before the window opened -- the plain budget end)",
+      "role switch succeeded (14:20:14 -> role 1061663148, then 连续运行已启用 at 14:20:55)",
+      "role switch ABORTED and recovered (14:26:20 TARGET_PROFILE_IDENTITY_NOT_VERIFIED -> 15 s backoff 14:26:42 -> 自动运行已启动 14:27:05)"
+    ],
+    "crashes_or_tracebacks_in_captured_lines": 0,
+    "gpu_used_mib_min_max_last": [
+      7794,
+      7852,
+      7821
+    ],
+    "gpu_total_mib": 8188,
+    "gpu_spread_mib": 58,
+    "gpu_util_pct_range": [
+      7,
+      43
+    ],
+    "ram_pct_min_max_last": [
+      77.0,
+      81.2,
+      77.6
+    ],
+    "serving_context_measured_from_the_server": 32768,
+    "serving_context_evidence": "http://127.0.0.1:18080/props -> default_generation_settings.n_ctx = 32768, total_slots = 1, model_path E:\\winter_models\\ui-venus-2-9b\\UI-Venus-2-9B-Q4_K_M.gguf",
+    "sole_model_server": "pid 18012 llama-server.exe, one LISTENING socket on 127.0.0.1:18080, started 2026-10-02T12:04:39 local, rss 5.89 GiB",
+    "sole_server_flags": "-m UI-Venus-2-9B-Q4_K_M.gguf --mmproj mmproj-UI-Venus-2-9B-f16.gguf -ngl 30 -c 32768 -np 1 -b 512 -ub 512 -ctk f16 -ctv f16 -fa on --image-min-tokens 1024 --image-max-tokens 1024 --host 127.0.0.1 --port 18080 --jinja",
+    "control_plane_paths_after": 10,
+    "needs_reload_for_the_live_window_after_the_fix": true,
+    "note_on_that_true": "True is the honest answer from the fixed predicate, but the LIVE WINDOW still cannot report it, because the window holds the old module in memory. See REMAINING_ISSUE."
+  },
+  "VERIFIER_RESULT": "runtime_thread_alive / scheduler_loop_alive agree with the processes: panel pid 11356 alive throughout, and the worker is the launcher/child pair (pid 24976 ppid=11356, pid 23848 ppid=24976) both resolving into the pinned worktree -- so panel_restart.py's 'workers: 1' and this probe's '2 run_live.py processes' describe the same single process tree, not a second worker. Loaded revision is attributable end to end and re-proven after this round's repin: commit 012eaab at 14:29 local, first episode stamped 012eaab38864 at 2026-10-02T06:27:41Z. No natural crash occurred, so NEW_CRASH=0 is recorded as an honest zero and NOT as a live recovery test. Resource figures have an explicit window (06:19:56Z-06:27:32Z, 16 samples at 30 s). The one abort is a named, handled refusal with retry and backoff, not an unhandled exit.",
+  "EVIDENCE": {
+    "revision_timeline_from_the_episode_stream": {
+      "951abbd": "03:57:06Z -> 05:01:57Z",
+      "41b5678": "05:05:07Z -> 05:05:30Z",
+      "ff9a8dc": "05:08:03Z -> 05:13:14Z",
+      "a8bee39": "05:15:45Z -> 05:30:12Z",
+      "3989c52": "05:32:12Z -> 05:56:30Z",
+      "f80093b": "05:58:02Z -> 06:00:02Z",
+      "6c1abb6": "06:02:58Z -> 06:11:16Z",
+      "c146e61": "06:12:54Z -> 06:14:09Z",
+      "90e73f6": "06:17:56Z -> 06:19:03Z",
+      "012eaab": "from 06:27:41Z",
+      "why_this_matters": "the stamp is monotone and every commit appears in order, and 90e73f6 was committed 14:17:13 local and first stamped 14:17:56 -- 43 seconds later. tools/run_live.py sets ROOT = Path(__file__).resolve().parents[1] and inserts it on sys.path, so the worker loads winter_agent_v2 from the pinned tree, and freeze_process_revision() records it before the runtime imports."
+    },
+    "why_the_window_is_stale_and_cannot_say_so": "tools/control_panel.py:172-173 states it: there is no in-process hot swap, and _start_control_plane_reload is deliberately disabled because panel_restart.py --restart ends in taskkill /PID <panel> /T /F, which follows parentage and kills the helper that is about to run cmd_start. The log carries five control-plane notices, the last at 20:56:29 on 2026-09-20. The honest behaviour is 待重载 plus a request for a manual restart at a safe point, and that is exactly what cannot happen while the detector's list excludes the module that changed.",
+    "the_sweep_is_running_now": "panel.log 磁盘保护 lines: 1,546; last 14:20:49 '已清理 10 张过期或超额运行截图'. config/v2.json retention = {max_screenshots: 500, screenshot_ttl_days: 14, auto_prune: true}.",
+    "honest_limit_on_the_consequence": "The corpus is 80 of 136 positive frames on disk now (登录好礼 22/37, 超值活动 22/37, 明月的盛典 21/36, 常规活动 15/26), and it was 80 of 136 when measured earlier the same day, because the survivors are all newer than the sweep's frontier (newest surviving 09-24). So nothing is being lost at this moment. What was broken is the ability to notice, and the fence that keeps the next loss from being silent. I am NOT claiming the sweep is currently eating the corpus.",
+    "role_switch_abort_is_a_handled_path": "winter_agent_v2/role_switch_controller.py:257 returns TARGET_PROFILE_IDENTITY_NOT_VERIFIED from _abort when _capture_until_identity('target_profile', ...) returns None inside 8 s -- i.e. the target role's home loaded and its own profile was opened, but the printed account id could not be read. tools/control_panel.py:1284 renders it. The panel stopped old-page operations and re-entered with a 15 s backoff, and the next round started at 14:27:05. The successful switch two boundaries earlier is recorded by state_truth.record_role as verification LIVE_ROLE_SWITCH_PROFILE_AND_HOME_VERIFIED with two evidence frames.",
+    "evidence_frames_do_land_in_the_protected_data_root": "role_identity.json cites C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\...\\dataset\\raw\\role_switch\\*.png. That path is a junction: os.path.samefile() against E:\\无尽冬日智能体\\dataset\\raw\\role_switch\\... is True, dataset is listed in PRODUCTION_PIN.json mounts, and E: is data_root. So the pin tree's paths for data are the real data root and nothing is being written into the code worktree.",
+    "what_i_deliberately_checked_and_found_clean": [
+      "DEVICE_LEASE.json has no current holder (owner DEVELOPMENT_VALIDATION, result PIN_UPDATED, released_at 2026-10-01T20:04:35Z). The '⚠ 本轮结束：device leased for development' lines that appear earlier in panel.log are from that period; panel.log carries no dates, so a clock-time filter over it silently mixes days -- the first read this round did exactly that and I re-anchored to a byte offset captured at the start of the window.",
+      "no second panel and no second model server: one listener on 18080 (pid 18012), one panel pid."
+    ]
+  },
+  "PATCH_STATUS": "MERGED_AND_DEPLOYED: ec258bd (retention + learning_funnel listed) -> 012eaab (the detector itself listed). Repinned twice; PRODUCTION_PIN.json expected_commit 90e73f621039 -> 012eaab388643; pin working tree checked CLEAN_OUTSIDE_DATA at both steps; the deployed file verified in the pin tree.",
+  "REMAINING_ISSUE": "The fix's own live effect CANNOT be observed in the current window, and I will not claim it: the running panel holds the old control_plane_reload.py in memory, so its next _check_control_plane_reload still returns False. The fix becomes observable only when the window is replaced -- which the operator's standing rule reserves for a manual restart at a safe point (Start-Winter-Agent-V2.cmd). What IS verified now is the predicate, evaluated from the pinned tree against the revision the window really loaded, and that is why AFTER.needs_reload_for_the_live_window_after_the_fix = true rather than 'confirmed in production'.\n\nSecond, un-done half of the same root cause, recorded rather than implemented because it is a design change rather than a minimal fix: a destructive once-per-round call should arguably not run in the long-lived process at all. _maybe_run_nightly_learning already spawns its offline pass detached through winproc, and the sweep could follow that shape, which would remove the staleness dependency entirely instead of merely announcing it.\n\nThird, and untouched by this round: the two red guards in tests/test_evidence_integrity.py still name six production frames lost on 2026-09-21/22, and the corpus stream's frames are protected only from the next sweep onward.",
+  "NEXT_RECOMMENDATION": [
+    "At the next safe point, restart the window (Start-Winter-Agent-V2.cmd). Two things become true at once: the sweep runs the corrected retention code, and _check_control_plane_reload starts reporting 待重载 for retention.py / learning_funnel.py / control_plane_reload.py. Verify by reading the control_plane cell and by checking that the log's next 控制面已变更 line names one of those three.",
+    "Consider moving _enforce_retention to a detached one-shot the way _maybe_run_nightly_learning does, so the destructive half of the round-boundary housekeeping stops depending on the window's own revision.",
+    "Keep treating panel.log as undated: any time-window analysis of it must anchor on a byte offset or on a marker line, never on HH:MM. This round's first boundary read silently mixed 2026-10-01 into 2026-10-02 because of that.",
+    "The nav guard from bf26ddd still has no live acceptance: the last BEAST_SEARCH_TAB trace is 06:08:21Z, before the guard was repinned at 90e73f6, so the path has simply not been walked since. Do not read 'zero traces' as 'the guard works'.",
+    "28 elements and 0 executables is still the shape behind the largest failure family; §9.2/§9.4 of docs/LOCAL_PLANNER_ACCEPTANCE.md remain the right next target."
+  ],
+  "root_cause_found": true,
+  "recommended_codex_review": [
+    "The finding rests on one predicate evaluated in the pinned tree and one log count, not on a live reproduction of harm: the corpus is the same 80/136 it was earlier the same day, so the consequence is 'a fix that is not active and a detector that cannot say so', which is latent rather than currently destructive. Please weigh it as a fence added to a silent failure mode rather than as an incident. If Codex would rather the sweep simply not run in the window, that is the stronger fix and I have recorded it as the follow-up instead of doing it inside a P0 observation order."
+  ],
+  "recorded_at": "2026-10-02T06:31:00+00:00"
+}

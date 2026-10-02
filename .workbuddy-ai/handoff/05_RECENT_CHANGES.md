@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `012eaab 2026-10-02T14:25:18+08:00 fix(reload): the detector is itself a control-plane module`
+- `ec258bd 2026-10-02T14:24:45+08:00 fix(reload): list the two modules the window runs itself but whose staleness is silent`
+- `bf26ddd 2026-10-02T14:18:07+08:00 docs(memory): the question fix is delivered but not sufficient, and the loop it exposed`
 - `90e73f6 2026-10-02T14:17:13+08:00 fix(navigation): stop asking the model for a control its own panel has not drawn yet`
 - `c146e61 2026-10-02T14:10:24+08:00 docs(planner): 43 rows to 6, and what is left is re-capture rather than copying`
 - `7fea47a 2026-10-02T14:09:36+08:00 test(evidence): the guard reported 43 things of which 6 were real, so it was unreadable`
@@ -15,12 +18,10 @@ Last 12 commits (newest first):
 - `f80093b 2026-10-02T13:52:37+08:00 fix(collection): the manifest record keeps the printed label it was filed under`
 - `137f881 2026-10-02T13:33:42+08:00 docs(planner): the acceptance doc's §3 breakpoint is fixed; what is still open is composite-control coverage`
 - `1d58c76 2026-10-02T13:31:12+08:00 docs(commander): record the funnel wall, the two defects before it, and WB-1002-03 as blocked`
-- `3989c52 2026-10-02T13:26:31+08:00 fix(planner): ask the model the question the caller wrote, and read the id it named`
-- `ba90bc9 2026-10-02T13:17:30+08:00 docs(memory): record the observation-ticket fix, its negative control and two self-corrections`
-- `a8bee39 2026-10-02T13:14:31+08:00 fix(scheduler): an unobserved goal's declaration is the licence, not its unmeasured value`
 
-Uncommitted changes: 1436
+Uncommitted changes: 1445
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
+- ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
 - ` M .workbuddy-ai/commander/WORK_QUEUE.json`
@@ -39,7 +40,6 @@ Uncommitted changes: 1436
 - ` M knowledge/execution/backend_routing.json`
 - ` M knowledge/goals/capability_skill_map.json`
 - ` M knowledge/perception/candidates/INDEX.json`
-- ` M knowledge/perception/pages/INDEX.json`
 <!-- /AUTO:recent_commits -->
 
 ---

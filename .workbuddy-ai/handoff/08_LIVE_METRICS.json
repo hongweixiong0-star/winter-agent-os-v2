@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-10-02T06:17:58+00:00",
+  "generated_at": "2026-10-02T06:30:24+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "90e73f6",
+  "commit": "012eaab",
   "last_good_commit": "e4fd245",
-  "dirty_count": 1436,
+  "dirty_count": 1445,
   "episodes": {
-    "total": 10126,
-    "production": 10126,
-    "success": 9149,
-    "failure": 727,
-    "success_rate_over_decided": 0.9264,
+    "total": 10168,
+    "production": 10168,
+    "success": 9186,
+    "failure": 732,
+    "success_rate_over_decided": 0.9262,
     "modes": {
-      "PRODUCTION": 10126
+      "PRODUCTION": 10168
     },
     "mixed_case_rows": 0
   },
@@ -34,15 +34,15 @@
   "top_failures": [
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 299,
-      "recent": 246,
-      "last_seen": "2026-10-02T06:09:47.945269+00:00",
+      "count": 301,
+      "recent": 243,
+      "last_seen": "2026-10-02T06:30:04.937963+00:00",
       "dates": {
         "2026-09-28": 38,
         "2026-09-29": 2,
         "2026-09-30": 155,
         "2026-10-01": 67,
-        "2026-10-02": 37
+        "2026-10-02": 39
       },
       "undated": 0,
       "top_skills": [
@@ -56,14 +56,14 @@
         ],
         [
           "SELECT_BEAST_TARGET_MAMMOTH",
-          26
+          27
         ]
       ]
     },
     {
       "failure_type": "NO_EXECUTION",
       "count": 122,
-      "recent": 120,
+      "recent": 114,
       "last_seen": "2026-10-02T04:45:41.351803+00:00",
       "dates": {
         "2026-09-30": 107,
@@ -88,37 +88,37 @@
     },
     {
       "failure_type": "GIANT_BEAST_SEARCH_NOT_PROVEN",
-      "count": 53,
-      "recent": 53,
-      "last_seen": "2026-10-02T06:07:24.613077+00:00",
+      "count": 55,
+      "recent": 55,
+      "last_seen": "2026-10-02T06:29:08.553190+00:00",
       "dates": {
         "2026-09-30": 19,
         "2026-10-01": 19,
-        "2026-10-02": 15
+        "2026-10-02": 17
       },
       "undated": 0,
       "top_skills": [
         [
           "SUBMIT_GIANT_BEAST_SEARCH",
-          53
+          55
         ]
       ]
     },
     {
       "failure_type": "BEAST_SEARCH_TAB_NOT_PROVEN",
-      "count": 52,
-      "recent": 45,
-      "last_seen": "2026-10-02T06:08:04.520727+00:00",
+      "count": 53,
+      "recent": 46,
+      "last_seen": "2026-10-02T06:29:48.069089+00:00",
       "dates": {
         "2026-09-30": 30,
         "2026-10-01": 12,
-        "2026-10-02": 10
+        "2026-10-02": 11
       },
       "undated": 0,
       "top_skills": [
         [
           "OPEN_BEAST_SEARCH_TAB",
-          52
+          53
         ]
       ]
     },
@@ -282,9 +282,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 19245,
-    "present_on_disk": 19245,
-    "traceable_episodes": 9836,
+    "referenced_screenshots": 19327,
+    "present_on_disk": 19327,
+    "traceable_episodes": 9877,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -295,13 +295,13 @@
   },
   "git_sync": {
     "branch": "main",
-    "local_head": "90e73f621039a652ec1178d9e482bb9dd8be3863",
-    "remote_head": "c146e6136a8011a74d727b3cd2e19367c1b3a0f1",
-    "unpushed_commits": 1,
+    "local_head": "012eaab388643ad5a20993099af4bc858f0d8e42",
+    "remote_head": "bf26ddd0f5ebb762242e47c0491ad77526d70524",
+    "unpushed_commits": 2,
     "behind": 0,
     "in_sync": false,
     "remote_url": "https://github.com/hongweixiong0-star/winter-agent-os-v2.git",
-    "last_push_at": "2026-10-02T06:10:36.038741+00:00",
+    "last_push_at": "2026-10-02T06:18:17.972774+00:00",
     "last_push_status": "PUSHED"
   },
   "runtime": {
@@ -309,6 +309,6 @@
     "unexpected_worker_exits": 18,
     "watchdog_restart_count": 24,
     "last_fatal_error": null,
-    "stop_reason": null
+    "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED"
   }
 }
