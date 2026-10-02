@@ -68,7 +68,18 @@ class RouteGoalFromMapTest(unittest.TestCase):
         page_before=MAP, 37 of them `SEMANTIC_TARGET_NOT_VERIFIED` -- and on the runtime's own frames
         the failing one draws the panel (`BTN_RESOURCE_SEARCH_SUBMIT` d=0) with the door absent, while
         a successful one draws no panel and the door at d=2.  Three goals had this guard and four did
-        not, which is what this list now pins: all seven, each with its own named reason.
+        not, which is what this list pins.
+
+        Completed 2026-10-02, and the way it had been wrong is the point.  The list was written from
+        the *seven branches that had the guard*, not from the branches that emit ``OPEN_HOME`` -- so
+        the two added later (BUILDING and FISHING) were never in it and stayed unguarded.  Measured
+        that day: ``OPEN_HOME`` answered from the map 69 times and failed 10, and the split is total
+        rather than statistical -- 59/59 successes had ``resource_search_open=False``, 10/10 failures
+        had it ``True``, and every one of the 10 belongs to these two routes (FISHING 8,
+        ``fishing_entry_requires_city_hud``; BUILDING 2, ``building_goal_requires_home``).  Eight of
+        the ten were recovered by exactly one Back on the next step, which is what this guard emits
+        directly.  ``test_the_family_is_discovered_from_the_brain`` below is the durable half: it
+        finds the family by asking the brain instead of trusting this tuple.
         """
         for goal, reason in (("MAIL", "close_resource_search_for_mail_goal"),
                              ("TRAIN", "close_resource_search_for_training_goal"),
@@ -76,7 +87,9 @@ class RouteGoalFromMapTest(unittest.TestCase):
                              ("EXPLORATION", "close_resource_search_for_exploration_goal"),
                              ("DAILY", "close_resource_search_for_daily_goal"),
                              ("ALLIANCE", "close_resource_search_for_alliance_goal"),
-                             ("HOME", "close_resource_search_to_go_home")):
+                             ("HOME", "close_resource_search_to_go_home"),
+                             ("FISHING", "close_resource_search_for_fishing_goal"),
+                             ("BUILDING", "close_resource_search_for_building_goal")):
             with self.subTest(goal=goal):
                 world = WorldState(page=Page.MAP, resource_search_open=True, confidence=0.99)
                 decision = decide(goal, world)
@@ -87,6 +100,34 @@ class RouteGoalFromMapTest(unittest.TestCase):
                 cleared = decide(goal, WorldState(page=Page.MAP, confidence=0.99))
                 self.assertEqual(cleared.skill, "OPEN_HOME", goal)
 
+    def test_the_family_is_discovered_from_the_brain(self):
+        """The same invariant, with the membership found rather than typed.
+
+        The tuple above is a hand-written list, and a hand-written list is exactly how FISHING and
+        BUILDING stayed unguarded: it was copied from the branches that already had the guard.  This
+        test asks the brain which routes come home from the map and then requires *each of them* to
+        close the panel first, so a twelfth branch cannot be added without one -- the failure it
+        produces is about a route nobody remembered to add here.
+
+        ``OPEN_HOME``'s control is the 回城 door on the HUD and the search panel is drawn over it, so
+        "comes home from the map" is the whole membership condition; there is nothing else to decide.
+        """
+        routes = ("MAIL", "TRAIN", "RESEARCH", "EXPLORATION", "DAILY", "ALLIANCE", "HOME",
+                  "FISHING", "BUILDING", "INTEL", "GATHER_RESOURCE", "BEAST_HUNT", "TRAIN_TROOPS")
+        comers = [route for route in routes
+                  if decide(route, WorldState(page=Page.MAP, confidence=0.99)).skill == "OPEN_HOME"]
+        # A scan that found nobody would pass the loop below vacuously -- the failure mode this
+        # repository keeps hitting when it tests a set it built itself.
+        self.assertIn("FISHING", comers)
+        self.assertIn("BUILDING", comers)
+        for route in comers:
+            with self.subTest(route=route):
+                decision = decide(route, WorldState(page=Page.MAP, resource_search_open=True,
+                                                    confidence=0.99))
+                self.assertEqual(decision.skill, "BACK", route)
+                self.assertTrue(str(decision.reason or "").startswith("close_resource_search"),
+                                f"{route} closed the panel for the wrong reason: {decision.reason}")
+
 
 class UnrelatedPageStillStopsTest(unittest.TestCase):
     """The hop must not become a licence to act on any page.
@@ -95,8 +136,22 @@ class UnrelatedPageStillStopsTest(unittest.TestCase):
     straight SAFE_STOP, and that is what the research goal did on the ALLIANCE page -- except the
     page-driven branch then ran ``OPEN_ALLIANCE_GIFTS`` *under a research goal*, twelve runs in a
     row, without the research page ever being read.  So the first step is now one Back off the
-    foreign page, and the goal still stops instead of doing that page's work.  The intent of the
-    guard is unchanged; only its first step moved, and both are asserted.
+    foreign page, and the goal still stops instead of doing that page's work.
+
+    Updated again 2026-10-02, and here the tests were the stale half.  They asserted a *second*
+    foreign-page step (``LEAVE_FOREIGN_LAYER``) on MAIL/INTEL/DAILY/EXPLORATION as well, which is
+    what the code did when they were written.  ``cc5894d`` (2026-09-27 00:29) then narrowed that
+    second step to the one layer it was measured on -- ALLIANCE, where a Back demonstrably moved
+    nothing (``SAFE_BACK_NOT_PROVEN``, page ALLIANCE -> ALLIANCE) and whose declared exit is the
+    client's own X rather than a back arrow.  The tests were written 2026-09-25 and never updated,
+    so they kept failing for two reasons that have nothing to do with the behaviour they name:
+    they asserted the pre-narrowing answer, and they asserted it on the pages the narrowing
+    deliberately excluded.  A/B against HEAD (brain.py md5 ``da0f3ba7635aefe4fa3160671584dcbe``)
+    reproduces both, so nothing here is a regression -- the assertion simply outlived the decision.
+
+    The sequence asserted below is the measured one, four steps deep: one Back, then (on ALLIANCE
+    only) the close, then the goal's own named stop, repeated.  ``test_only_the_measured_layer_gets
+    _the_second_step`` pins the narrowing itself rather than leaving it as a comment.
     """
 
     def test_train_on_an_unrelated_page_leaves_it_once_then_stops_named(self):
@@ -106,10 +161,8 @@ class UnrelatedPageStillStopsTest(unittest.TestCase):
             self.assertEqual(first.skill, "BACK", page)
             self.assertIn("panel_it_does_not_own", first.reason, page)
             second = brain.decide(WorldState(page=page, confidence=0.99), v2_registry())
-            self.assertEqual(second.skill, "LEAVE_FOREIGN_LAYER", page)
-            third = brain.decide(WorldState(page=page, confidence=0.99), v2_registry())
-            self.assertEqual(third.skill, "SAFE_STOP", page)
-            self.assertEqual(third.reason, "training_entry_not_verified", page)
+            self.assertEqual(second.skill, "SAFE_STOP", page)
+            self.assertEqual(second.reason, "training_entry_not_verified", page)
 
     def test_research_on_an_unrelated_page_leaves_it_once_then_stops_named(self):
         for page in (Page.MAIL, Page.INTEL, Page.DAILY, Page.EXPLORATION):
@@ -118,10 +171,32 @@ class UnrelatedPageStillStopsTest(unittest.TestCase):
             self.assertEqual(first.skill, "BACK", page)
             self.assertIn("panel_it_does_not_own", first.reason, page)
             second = brain.decide(WorldState(page=page, confidence=0.99), v2_registry())
-            self.assertEqual(second.skill, "LEAVE_FOREIGN_LAYER", page)
-            third = brain.decide(WorldState(page=page, confidence=0.99), v2_registry())
-            self.assertEqual(third.skill, "SAFE_STOP", page)
-            self.assertEqual(third.reason, "research_entry_not_verified", page)
+            self.assertEqual(second.skill, "SAFE_STOP", page)
+            self.assertEqual(second.reason, "research_entry_not_verified", page)
+
+    def test_only_the_measured_layer_gets_the_second_step(self):
+        """The narrowing ``cc5894d`` made, asserted rather than commented.
+
+        ALLIANCE is the layer the second step was measured on; every other foreign page answers the
+        Back and then stops honestly.  Offering the close everywhere would create a registered
+        action the runtime cannot execute on pages where that X is not drawn -- which is the exact
+        defect the narrowing was made to stop.
+        """
+        for goal, stop in (("TRAIN", "training_entry_not_verified"),
+                           ("RESEARCH", "research_entry_not_verified")):
+            for page in (Page.MAIL, Page.INTEL, Page.DAILY, Page.EXPLORATION):
+                with self.subTest(goal=goal, page=page, second_step="absent"):
+                    brain = RuleBrain(current_goal=goal)
+                    brain.decide(WorldState(page=page, confidence=0.99), v2_registry())
+                    second = brain.decide(WorldState(page=page, confidence=0.99), v2_registry())
+                    self.assertNotEqual(second.skill, "LEAVE_FOREIGN_LAYER", page)
+                    self.assertEqual(second.reason, stop, page)
+            with self.subTest(goal=goal, page=Page.ALLIANCE, second_step="present"):
+                brain = RuleBrain(current_goal=goal)
+                brain.decide(WorldState(page=Page.ALLIANCE, confidence=0.99), v2_registry())
+                second = brain.decide(WorldState(page=Page.ALLIANCE, confidence=0.99), v2_registry())
+                self.assertEqual(second.skill, "LEAVE_FOREIGN_LAYER", goal)
+                self.assertIn("a_back_did_not_move", second.reason, goal)
 
 
 class HomeBehaviourUnchangedTest(unittest.TestCase):

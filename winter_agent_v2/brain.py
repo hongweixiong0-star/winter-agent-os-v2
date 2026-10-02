@@ -851,6 +851,14 @@ class RuleBrain:
             return Decision("DISMISS_REAL_MONEY_OFFER", "real_money_action_permanently_blocked", world.confidence, "offer_closed_without_purchase")
         if self._goal_route() == "FISHING":
             if world.page is Page.MAP:
+                # Same door, same panel, and the ninth guard -- measured 2026-10-02: this branch
+                # answered OPEN_HOME 8 times and failed 8, every one of them on a frame whose
+                # `resource_search_open` was True, because the beast search sheet is drawn over the
+                # map HUD the 回城 door lives on.  Eight of the eight were recovered by exactly one
+                # Back on the next step.  The other seven route goals already did this; this branch
+                # predates the guard and was never added to it.
+                if world.resource_search_open:
+                    return Decision("BACK", "close_resource_search_for_fishing_goal", world.confidence, "resource_search_closed")
                 return Decision('OPEN_HOME', 'fishing_entry_requires_city_hud', world.confidence, 'home_opened')
             if world.page in {Page.INTEL, Page.ALLIANCE, Page.RESEARCH, Page.TRAINING,
                               Page.BUILDING, Page.MARCH, Page.MAIL, Page.DAILY, Page.HERO}:
@@ -1735,6 +1743,13 @@ class RuleBrain:
                     "switch_task",
                 )
             if world.page is Page.MAP:
+                # See the FISHING branch above: same door, same covering sheet, and this is the tenth
+                # and last of the "goal needs the city HUD" branches.  Measured 2026-10-02: 2 failures
+                # against 2 successes, the failures on `resource_search_open=True` frames, both
+                # recovered by one Back.  ``test_route_goal_requires_home`` discovers this family from
+                # the brain's own answer rather than from a list, so a later branch cannot miss it.
+                if world.resource_search_open:
+                    return Decision("BACK", "close_resource_search_for_building_goal", world.confidence, "resource_search_closed")
                 return Decision("OPEN_HOME", "building_goal_requires_home", world.confidence, "home_opened")
             if world.page is Page.HOME:
                 point = (world.building or {}).get("upgrade_tap_norm")

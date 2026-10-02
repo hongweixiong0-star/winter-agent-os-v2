@@ -1222,6 +1222,163 @@
       "evidence_context": "Original evidence/hints describe their capture window. Re-read current code/Episodes before development; old metrics and order position do not determine next work.",
       "appended_by": "WorkBuddy autonomous development, 2026-10-02",
       "appended_reason": "WB-1002-11 明确留下的下一层，且已量化到条数与技能。"
+    },
+    {
+      "required_tool": [
+        ".venv/Scripts/python.exe",
+        "git",
+        "tools/cq.py",
+        "现有 Runtime / MAA / DeviceLease / pytest"
+      ],
+      "recommended_tool": "优先现有 Runtime、MAA、Verifier、UI-Venus 与 Learning Funnel；仅对明确根因做小改动。",
+      "preferred_backend": "MAA current-frame semantic execution；唯一 UI-Venus 仅 ONLINE_UNKNOWN；32K context",
+      "fallback_backend": "现有 deterministic / L1 learned step / bounded local reobserve；ADB 仅既有 fallback，不绕过租约",
+      "do_not_touch": [
+        "第二 Scheduler / Executor / WorldState / Session Engine / 本地模型",
+        "MAI runtime；WorkBuddy retired runtime channel 或自动模型派发",
+        "Codex 仍拥有的共享 dirty 代码与未确认归属文件",
+        "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
+        "其他角色实时状态、探索授权、资源预算",
+        "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
+        "No release without valid exclusive claim; no concurrent push/repin/reload.",
+        "Preserve original work orders and results; append new autonomous root-cause orders to the same queue after claim; no second queue.",
+        "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
+      ],
+      "status": "READY",
+      "task_id": "WB-1002-14-CITY-HUD-ENTRY-GUARD",
+      "priority": "P1",
+      "objective": "修掉 11 条「某目标需要城镇 HUD」分支里缺守卫的两条（FISHING / BUILDING），并把这条路线的家族判据从手写清单改成从 brain 自身发现",
+      "timebox_minutes": 75,
+      "why_now": "当日 OPEN_HOME 从地图被发 69 次、失败 10 次，且这 10 次是「目标根本没画在帧上」却仍被点击的唯一成簇原因；同族 11 条分支里另外 9 条早就有守卫，缺的正是后加的两条。",
+      "current_evidence": "2026-10-02 账本：OPEN_HOME 成功 59/59 的 state_before 都是 resource_search_open=False，失败 10/10 都是 True（完全分离，无重叠）；10 条分属 FISHING 8（fishing_entry_requires_city_hud，0 成功）与 BUILDING 2（building_goal_requires_home）；其中 8 条的下一步就是一次 BACK/SUCCESS，再下一步 OPEN_HOME/SUCCESS。",
+      "root_cause_or_hypothesis": "BTN_OPEN_HOME 是模板节点（source_template=dataset/candidate/templates/btn_open_home__live_attempt8_idle__3.png），而野兽搜索面板画在地图 HUD 之上并盖住回城门，所以目标确实不在帧上。缺的不是识别而是决策守卫。",
+      "files_to_inspect": [
+        "winter_agent_v2/brain.py 852-856（FISHING）",
+        "winter_agent_v2/brain.py 1737-1738（BUILDING）",
+        "winter_agent_v2/brain.py 1102-1105（已有的守卫形状）",
+        "tests/test_route_goal_requires_home.py"
+      ],
+      "files_allowed_to_modify": [
+        "winter_agent_v2/brain.py",
+        "tests/test_route_goal_requires_home.py"
+      ],
+      "implementation_hint": "不发明新机制：照抄同文件里已有的 9 条守卫（BACK + close_resource_search_* 命名族）。并顺手修正该测试文件里两条已滞后于 cc5894d（2026-09-27）收窄的断言，把收窄本身钉住。",
+      "test_plan": "先红后绿；并新增一条从 brain 自身发现家族的不变式测试，使第 12 条分支无法漏掉守卫。",
+      "replay_plan": "_wb1002_14_real_steps.py：把 10 条失败步骤各自的 state_before 重建后问新 brain。",
+      "live_plan": "部署后读新 episode：fishing_entry_requires_city_hud 不再出现在失败里，而 close_resource_search_for_fishing_goal / _building_goal 开始出现。",
+      "verifier": "同上；且判定/坐标来源未变（只换决策，不换取点）。",
+      "before_metric": {
+        "open_home_failures": 10,
+        "open_home_successes": 59,
+        "guarded_branches": 9,
+        "unguarded_branches": 2,
+        "stale_assertions_in_the_guard_test": 2
+      },
+      "target_metric": {
+        "replayed_steps_now_answering_BACK": "10/10",
+        "unguarded_branches": 0,
+        "family_discovered_by_test": 1
+      },
+      "acceptance": [
+        "10 条真实步骤在各自的帧上不再返回 OPEN_HOME。",
+        "A/B 反向证明：HEAD 字节上仍 10/10 是 OPEN_HOME。",
+        "家族不变式由测试发现而非人工枚举。"
+      ],
+      "stop_condition": "75 分钟；或发现 BACK 不是正确恢复（那要先解释为何 8 条真机就是这样恢复的）。",
+      "fallback_action": "若某条 route 的 BACK 语义不同，只为有证据的那条加守卫并写清差异。",
+      "dependencies": [
+        "WB-1002-01-HANDOFF-FACTS"
+      ],
+      "files_scope": [
+        "winter_agent_v2/runtime.py",
+        "winter_agent_v2/learning.py",
+        "tests/test_recognition_error_attribution.py"
+      ],
+      "activation_rule": "Seed backlog only. Actual valid exclusive WorkBuddy claim and current file/device ownership required. cq.py eligibility is not authorization; choose highest-value current root cause under autonomous_development.",
+      "prior_dependencies": [
+        "WB-1002-01-HANDOFF-FACTS",
+        "WB-1002-02-CALENDAR-STARVATION"
+      ],
+      "prior_activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。",
+      "evidence_context": "Original evidence/hints describe their capture window. Re-read current code/Episodes before development; old metrics and order position do not determine next work.",
+      "appended_by": "WorkBuddy autonomous development, 2026-10-02",
+      "appended_reason": "当日第四大成簇（SEMANTIC_TARGET_NOT_VERIFIED 里 OPEN_HOME 10 条），且根因是守卫家族漏了两条而非缺能力。"
+    },
+    {
+      "required_tool": [
+        ".venv/Scripts/python.exe",
+        "git",
+        "tools/cq.py",
+        "现有 Runtime / MAA / DeviceLease / pytest"
+      ],
+      "recommended_tool": "优先现有 Runtime、MAA、Verifier、UI-Venus 与 Learning Funnel；仅对明确根因做小改动。",
+      "preferred_backend": "MAA current-frame semantic execution；唯一 UI-Venus 仅 ONLINE_UNKNOWN；32K context",
+      "fallback_backend": "现有 deterministic / L1 learned step / bounded local reobserve；ADB 仅既有 fallback，不绕过租约",
+      "do_not_touch": [
+        "第二 Scheduler / Executor / WorldState / Session Engine / 本地模型",
+        "MAI runtime；WorkBuddy retired runtime channel 或自动模型派发",
+        "Codex 仍拥有的共享 dirty 代码与未确认归属文件",
+        "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
+        "其他角色实时状态、探索授权、资源预算",
+        "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
+        "No release without valid exclusive claim; no concurrent push/repin/reload.",
+        "Preserve original work orders and results; append new autonomous root-cause orders to the same queue after claim; no second queue.",
+        "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
+      ],
+      "status": "READY",
+      "task_id": "WB-1002-15-MAA-NODE-ATTRIBUTION",
+      "priority": "P0",
+      "objective": "把 MAA 节点路径的拒绝也具名：让「有识别节点却没命中」的导航 miss 不再返回空原因",
+      "timebox_minutes": 90,
+      "why_now": "WB-1002-11/13 给 ADB 路径做了归因，但 MAA 路径从来没做。当日带该字段的版本上，28 条 SEMANTIC_TARGET_NOT_VERIFIED 里 11 条原因为空，且恰好全是「有 MAA 节点」的技能——没有节点的技能会退回 adb_resolver，所以它们确实记录了。空与不空的分界就是这一处。",
+      "current_evidence": "episodes 2026-10-02：空原因的 11 条 = OPEN_HOME 6 / OPEN_BUILDING_UPGRADE 3 / OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT 2，三条全部 pref=MAA 且带 recognition 节点（backend_routing.json）；对照 SELECT_RESOURCE（declared=LEGACY、无节点）的 13 条全部带 UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION。",
+      "root_cause_or_hypothesis": "executor_router.maa_resolver 有多条 return None 不写 last_recognition_error：① 模板路径 607-618 的 return outcome.center_norm()（默认路径，最常走）；② frame is None；③ LIST_DYNAMIC 的 fallback 分支 580 行。而 MAA 执行器的 resolver 是 build_router:257 的 lambda，从不经过 runtime 的 resolve，所以 ADB 侧的记录器在这条路径上完全不生效。",
+      "files_to_inspect": [
+        "winter_agent_v2/executor_router.py 227-260（build_router 的 resolver 绑定）",
+        "winter_agent_v2/executor_router.py 378-618（maa_resolver 全部分支）",
+        "winter_agent_v2/maa_executor.py RecognitionOutcome 的 score/error 字段",
+        "learning/episodes.jsonl 上述 11 条"
+      ],
+      "files_allowed_to_modify": [
+        "winter_agent_v2/executor_router.py",
+        "tests/ 本单 targeted"
+      ],
+      "implementation_hint": "沿用已验证的 recorder 模式：只记录、不改判定。MAA_TEMPLATE:<score> 这类码要把分数带上——「离门限多近」是下一步该调阈值还是该换模板的唯一判据。",
+      "test_plan": "先红后绿；每条静默分支一个码，并断言返回值与判定不变。",
+      "replay_plan": "对 11 条各取一帧过生产入口，确认码随原因而不同，且模板路径带出真实分数。",
+      "live_plan": "部署后读新 episode：同一 failure_type 下不再有「导航类却空原因」的行。",
+      "verifier": "导航类 miss 的 recognition_error 不再为空；判定与返回值未变（A/B 证明）。",
+      "before_metric": {
+        "empty_reason_navigation_misses": 11,
+        "silent_return_none_sites": 3
+      },
+      "target_metric": {
+        "empty_reason_navigation_misses": 0,
+        "verdicts_changed": 0
+      },
+      "acceptance": [
+        "纯新增；A/B 证明判定未变。",
+        "模板路径的码带真实分数。"
+      ],
+      "stop_condition": "90 分钟；或发现必须先改判定才能归因。",
+      "fallback_action": "只覆盖能确定的静默分支，其余明确标注未覆盖。",
+      "dependencies": [
+        "WB-1002-01-HANDOFF-FACTS"
+      ],
+      "files_scope": [
+        "winter_agent_v2/runtime.py",
+        "winter_agent_v2/learning.py",
+        "tests/test_recognition_error_attribution.py"
+      ],
+      "activation_rule": "Seed backlog only. Actual valid exclusive WorkBuddy claim and current file/device ownership required. cq.py eligibility is not authorization; choose highest-value current root cause under autonomous_development.",
+      "prior_dependencies": [
+        "WB-1002-01-HANDOFF-FACTS",
+        "WB-1002-02-CALENDAR-STARVATION"
+      ],
+      "prior_activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。",
+      "evidence_context": "Original evidence/hints describe their capture window. Re-read current code/Episodes before development; old metrics and order position do not determine next work.",
+      "appended_by": "WorkBuddy autonomous development, 2026-10-02",
+      "appended_reason": "本单顺手量出的同一家族下一层，已精确到文件行号与条数。"
     }
   ],
   "base_facts": {
@@ -1344,8 +1501,8 @@
     "design_not_runtime_claim": "This document/queue delivery does not prove Scheduler fairness, runtime cooldown or learning share implemented. WorkBuddy must trace/test/verify actual production before claiming it.",
     "codex_scope_for_this_delivery": "Governance documents and this queue only; not reclaiming source/release/device ownership. Codex heartbeats stay read-only."
   },
-  "updated_at": "2026-10-02T08:30:00+00:00",
-  "update_reason": "WorkBuddy autonomous round: closed the third-largest cluster as a designed interaction (WB-1002-12) and appended the layer WB-1002-11 exposed as next (WB-1002-13).",
+  "updated_at": "2026-10-02T09:20:00+00:00",
+  "update_reason": "WorkBuddy autonomous round: closed the OPEN_HOME entry-guard family (WB-1002-14) and appended the MAA-node attribution layer it exposed (WB-1002-15).",
   "current_verified_facts": {
     "captured_at": "2026-10-02T10:18:26+08:00",
     "head": "77d5b4b09bbe21193cfe467d6363dc66726b3ce6",
