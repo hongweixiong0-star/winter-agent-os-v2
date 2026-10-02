@@ -29,14 +29,24 @@ TESTS = ROOT / "tests"
 IMAGE_SUFFIX = re.compile(r"\.(?:png|jpg|jpeg)$", re.IGNORECASE)
 
 
-def _referenced_images() -> dict[str, list[Path]]:
-    """Image literals as the *interpreter* sees them, not as the text reads.
+def _path_operand_images() -> dict[str, list[Path]]:
+    """Image literals the suite uses as a *path*, not as a string.
 
-    原先用正则扫源码，因此会把跨行隐式拼接的字面量只截到后半段——
-    ``ROOT / "dataset/truth_audit/run1" "/frame_a.png"`` 在 Python 里是
-    ``dataset/truth_audit/run1/frame_a.png``，正则却只看到 ``/frame_a.png``，
-    于是报一个不存在的"仓库路径"。改用 AST：隐式拼接在 AST 里本就是**一个**
-    ``Constant``，注释里的示意路径也不会再被当成引用（`ast` 不含注释）。
+    This is the discriminator the existence guard needs, and it is why the earlier rule was not
+    sound.  ``"before_screenshot": "dataset/raw/a.png"`` inside a fake episode payload is data --
+    nothing opens it -- while ``ROOT / ("dataset/raw/control_panel/" "...png")`` is a path the test
+    really resolves.  To a text scan both are just a string.  A previous version scanned for image-shaped strings and
+tried to exclude the fixtures with "no separator in it", which missed every one of them -- they
+all contain one.)
+
+    The AST can: a literal is a path when it is the right-hand operand of ``/``, or the single
+    argument of ``Path(...)``.  Implicit concatenation is already one ``Constant`` by the time the
+    AST sees it, so ``ROOT / ("a/" "b.png")`` arrives as one literal and the text-level regex
+    that once cut it in half is not needed here.
+
+    Measured 2026-10-02: 43 literals by the old rule, of which 5 were real lost evidence; by this
+    rule the report is the real ones plus a handful of temporary-directory fixtures that happen to
+    be built with ``/`` too.
     """
     references: dict[str, list[Path]] = {}
     for source in sorted(TESTS.glob("test_*.py")):
@@ -44,23 +54,66 @@ def _referenced_images() -> dict[str, list[Path]]:
             tree = ast.parse(source.read_text(encoding="utf-8"))
         except SyntaxError:  # pragma: no cover - a broken test file fails elsewhere
             continue
+        literals: list[ast.Constant] = []
         for node in ast.walk(tree):
-            if isinstance(node, ast.Constant) and isinstance(node.value, str):
-                if IMAGE_SUFFIX.search(node.value):
-                    references.setdefault(node.value, []).append(source)
+            if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+                operand = node.right
+                if isinstance(operand, ast.Constant) and isinstance(operand.value, str):
+                    literals.append(operand)
+            elif isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                if node.func.id == "Path" and len(node.args) == 1:
+                    argument = node.args[0]
+                    if isinstance(argument, ast.Constant) and isinstance(argument.value, str):
+                        literals.append(argument)
+        for constant in literals:
+            if IMAGE_SUFFIX.search(constant.value):
+                references.setdefault(constant.value, []).append(source)
     return references
+
+
+def repo_path(literal: str) -> Path | None:
+    """The repo path a literal denotes, or ``None`` when it cannot denote one.
+
+    An image-shaped *string* is not yet an evidence reference, and most of them are not paths at
+    all.  A test that builds its fixtures under ``TemporaryDirectory`` writes
+    ``screens/medoid.png`` or ``hero_a/sample.png`` relative to *that* root; another puts
+    ``"before_screenshot": "dataset/raw/a.png"`` inside a fake episode payload, where it is data
+    rather than a path; one names ``avatar_templates/missing.png`` because the case under test is a
+    missing template, and one asserts against ``/nonexistent/frame.png`` on purpose.  The helper's
+    own comment already recognised the family ("允许测试内部构造的绝对路径片段") but the test it
+    applied -- "no separator" -- misses every one of them, because they all contain one.
+
+    Measured 2026-10-02: the guard reported 43 literals, of which 5 were real lost evidence.  A
+    guard that is 88 percent noise is a guard that stays red, so the rule is made *sound* rather
+    than the net being narrowed, and each clause says what it rules out:
+
+    * absolute, and outside the repo  -> ``/tmp/frame.png``, ``/nonexistent/frame.png``
+    * first segment is not a directory in this repo -> ``screens/``, ``hero_a/``,
+      ``stamina_verify2/``, ``20260923_000206_train/`` -- these are relative to a capture root or
+      to a temporary one, so the literal was never a repo path whether or not a file survives
+    * the parent chain is not in the repo -> ``run_stub/frame.png``, ``autogen/...``
+
+    What survives is still reported whether it exists or not, so nothing is hidden: the path is
+    the evidence, and a missing file is the finding rather than a reason to skip the row.
+    """
+    candidate = Path(literal)
+    if candidate.is_absolute():
+        return candidate if candidate.is_relative_to(ROOT) else None
+    parts = [part for part in literal.replace("\\", "/").split("/") if part not in ("", ".")]
+    if not parts:
+        return None
+    if not (ROOT / parts[0]).exists():
+        return None
+    if len(parts) > 1 and not (ROOT / Path(*parts[:-1])).is_dir():
+        return None
+    return ROOT / Path(*parts)
 
 
 def test_every_image_literal_in_the_suite_resolves_to_a_file() -> None:
     missing: list[str] = []
-    for literal, sources in _referenced_images().items():
-        # 允许测试内部构造的绝对路径片段（如 Path(folder)/"x.png"）——
-        # 这些片段本身不是完整路径，只有当它能在仓库内解析为真实文件时才算证据。
-        candidate = (ROOT / literal).resolve()
-        if candidate.is_file():
-            continue
-        # 不含目录分隔符的裸文件名通常来自 TemporaryDirectory，不算仓库证据。
-        if "/" not in literal and "\\" not in literal:
+    for literal, sources in _path_operand_images().items():
+        path = repo_path(literal)
+        if path is None or path.is_file():
             continue
         missing.append(f"{literal}  (被 {', '.join(p.name for p in sources)} 引用)")
     assert not missing, "测试引用的证据文件缺失:\n" + "\n".join(missing)
@@ -68,9 +121,9 @@ def test_every_image_literal_in_the_suite_resolves_to_a_file() -> None:
 
 def test_referenced_evidence_sits_outside_the_prunable_area() -> None:
     prunable: list[str] = []
-    for literal, sources in _referenced_images().items():
-        candidate = (ROOT / literal).resolve()
-        if not candidate.is_file():
+    for literal, sources in _path_operand_images().items():
+        candidate = repo_path(literal)
+        if candidate is None:
             continue
         if _is_protected(candidate):
             continue
@@ -82,6 +135,32 @@ def test_referenced_evidence_sits_outside_the_prunable_area() -> None:
         "以下测试直接引用了会被 retention 剪除的文件，应改为受保护目录下的证据副本:\n"
         + "\n".join(prunable)
     )
+
+
+@pytest.mark.parametrize(
+    "literal, is_repo_path",
+    [
+        # A real repo path, whether or not the file still exists: the path is the evidence.
+        ("dataset/truth_audit/icon_label_controls/samples.json", True),
+        ("dataset/raw/control_panel/runtime_auto/20260921_213506_694242/x.png", True),
+        # Relative to a TemporaryDirectory or to a capture root, so never a repo path.
+        ("screens/medoid.png", False),
+        ("hero_a/sample.png", False),
+        ("stamina_verify2/stamina_verify2_step_003_after_20260919T144435621168.png", False),
+        ("20260923_000206_train/x.png", False),
+        # Deliberately absent, by design.
+        ("/nonexistent/frame.png", False),
+        # A repo segment whose parent chain is not in the repo.
+        ("dataset/raw/control_panel/runtime_auto/run_stub/frame.png", False),
+    ],
+)
+def test_the_repo_path_rule_only_claims_what_it_can_support(literal: str, is_repo_path: bool) -> None:
+    """The rule has to be sound in both directions or the report it feeds is not usable.
+
+    A false *positive* buries the real rows (that is the 38-of-43 problem); a false *negative*
+    would hide the very references this file exists to protect, which is worse.
+    """
+    assert (repo_path(literal) is not None) is is_repo_path
 
 
 @pytest.mark.parametrize(
