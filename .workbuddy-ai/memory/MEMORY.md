@@ -3198,3 +3198,51 @@ one Scheduler" —— 但 `eligible()` 要求 `skill.state is SkillState.CANDIDA
 
 **另一条**：**不要为了让效果"早点可见"去缩短一个正确的 TTL。** 网格 9.4h / TTL 24h
 ⇒ 首次观测在 14.6h 后；日历本就不需要每小时重读，缩短它是用真实生产行为换好看的测量数字。
+
+## 通则：同一个 route 的所有分支必须检查「页面」，否则它等于没有分支（2026-10-02）
+
+`RuleBrain` 对 `EVENT` route 有两处分支（`brain.py:753`/`:782`），**两处都写
+`world.page is Page.EVENT`**。实测（新版本 222 episode）：`SCHEDULED_*` 被带票选中
+**66 次**、产生 **38 条 episode**（MARCH 12 / MAP 9 / RESOURCE_DETAIL 8 / HOME 8），
+执行 `INTEL_HERO_DISPATCH` 12 / `START_GATHER` 8 / `OPEN_MAP` 8，
+**SUCCESS 26 而 `goal_progress==True` 零次**——"兄弟手臂"活动在派采集英雄。
+
+> **规则：给一个 route 写分支时，先问「这个 route 会被调度在哪些页面上」。**
+> 答案通常是**全部页面**（Scheduler 不看页面就选目标），而只写 `page is X` 的分支
+> 等于**只在那一页存在**，其余页面全部落到 `registry.ready` 兜底。
+> **兜底分支会安静地接受任何页面提供的技能，并把无关动作记成 SUCCESS。**
+> **自检：`grep -n "current_goal == \"X\"" brain.py` 之后，对每个分支问"目标在别的页时怎么办"。**
+
+## 通则：verifier 与 goal 是两个问题，账本里已经同时记着（2026-10-02）
+
+同一批 38 条 episode 的字段组合，就是这个通则的全部证据：
+
+```
+skill SUBMIT_RESOURCE_SEARCH | verifier_ok True | goal_progress False
+verifier_evidence {"configured_wood": true, "resource_page": "RESOURCE_DETAIL", ...}
+goal_progress_by_id {"SCHEDULED_STATE_VS_STATE": false}
+```
+
+`verifier_ok` 回答"资源页接受这次搜索吗"——**为真，且与目标无关**。
+`goal_progress` 才是知道差别的字段，38 次全 False。
+
+> **规则：读 episode 时永远同时读 `verifier_ok` 和 `goal_progress`。**
+> `SUCCESS + goal_progress=False` 意思是"**动作成功，目标没动**"，
+> 它比 FAILURE 更危险——FAILURE 至少有记录。
+> **统计"目标推进率"必须用 `goal_progress`，用 `result==SUCCESS` 会被这个形态完全骗过。**
+
+**同族的五个层次（一处缺陷连修五轮，每层都靠上一层的绿通过）**：
+① 值算出来没消费者 → ② 消费者接上但从不被调用 → ③ 门不认新数据源
+→ ④ **门依赖它自己要触发的动作** → ⑤ **route 有分支但分支只在某一页存在**。
+**只有真机 episode 能把五层分开，单测和不变式都做不到。**
+
+## 操作纪律：A/B 必须验证「跑基线时文件真是 HEAD 版」（2026-10-02，第二次栽）
+
+我跑"HEAD 基线"得到 **0 failed**，据此以为**自己引入了 50 个回归**；
+实际是 A/B 脚本里后台子 shell 与父 shell 交错，`cp` 回填早于 `git show >` 落盘，
+**基线跑的是我的版本**。
+
+> **A/B 铁律：在自己的改动里放一个唯一标记（这里是 `grep -c 'event_route_goal_needs'`），
+> 落盘后先 `grep` 确认 =0，跑完 `cp` 回填后再 `grep` 确认 =1。**
+> **只看"failed 数量"不够——数字可能是自己那份跑出来的。**
+> 结论要落到 **NET NEW = 空**（逐测试 `comm` 比对），不是"总数一样"。
