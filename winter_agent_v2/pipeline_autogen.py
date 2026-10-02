@@ -575,7 +575,15 @@ class PipelineAutoGen:
         entry["recognition"] = recognition
         entry.setdefault("preferred", "MAA")
         entry.setdefault("fallback", "ADB")
-        entry["recognition_backend"] = "MAA"
+        # The declaration follows the route, and it is the route that decides.  ``preferred`` is
+        # setdefault-preserved two lines up precisely so a hand-made decision survives a generated
+        # write; forcing this one to MAA while leaving that one alone let the file claim a
+        # recognition path the router cannot reach -- measured 2026-10-02, ``OPEN_BUILDING_UPGRADE``
+        # was demoted to ADB because its node answered 0 times in 10 attempts, and with
+        # ``preferred: ADB`` the MAA resolver that "MAA" names is never asked.  When the route is
+        # not MAA the declaration belongs to whoever set it and is not touched here.
+        if entry.get("preferred") == "MAA":
+            entry["recognition_backend"] = "MAA"
         # A generated node is wired but NOT promoted: promotion means the corpus
         # gate (>=3 independent live positives, clean negatives) was met, and a
         # harvest-validated node has not earned that. The explicit flag keeps the

@@ -1855,26 +1855,9 @@
       }
     },
     "OPEN_BUILDING_UPGRADE": {
-      "recognition": {
-        "BTN_SELECTED_BUILDING_UPGRADE": {
-          "kind": "TEMPLATE",
-          "template": "BTN_SELECTED_BUILDING_UPGRADE",
-          "threshold": [
-            0.7,
-            0.75
-          ],
-          "source_template": "dataset/candidate/autogen/btn_selected_building_upgrade__rect_300f6cc7.png",
-          "roi": [
-            335,
-            288,
-            148,
-            144
-          ]
-        }
-      },
-      "preferred": "MAA",
-      "fallback": "ADB",
-      "recognition_backend": "MAA",
+      "preferred": "ADB",
+      "fallback": "MAA",
+      "recognition_backend": "LEGACY",
       "promoted": false,
       "migration_priority": "P3",
       "evidence": {
@@ -1890,7 +1873,29 @@
         "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_selected_building_upgrade__5963d61279.json",
         "pipeline_node_sha1": "5963d61279",
         "autogen_node_count": 1,
-        "autogen_note": "harvest rect template"
+        "autogen_note": "harvest rect template",
+        "demotion_reason": "Retired 2026-10-02 by applying the operator's own rule from executor_router's module docstring -- 'if MAA did not improve it, keep ADB', enforced by this file rather than by good intentions. A node may be preferred only after it is drawn on a real frame for visual check and an A/B shows it is not worse than the legacy matcher; this one recorded validation PENDING_RECORD from its harvest (dataset/raw/autogen/r2_home.png, roi x 335..483 y 288..432) and has since answered exactly zero times. Measured 2026-10-02, role 1061663148, goal KEEP_BUILDING_PRODUCTIVE: 10 attempts, 0 successes, every one SEMANTIC_TARGET_NOT_VERIFIED carrying MAA_TEMPLATE:NO_MATCH:score=0.5146:gate=0.7/0.75, duration 0.171 s, empty after_screenshot. The frame's own OCR reads the 升级 label at (0.4993, 0.7188) = px (359, 920) on the very frame the step failed on, so the miss is geometric rather than a threshold question: this control is drawn wherever the selected building happens to sit, and a rect harvested from one camera geometry cannot cover it. The harvested template image is still the right icon (blue hexagon, white curved arrow) at dataset/candidate/autogen/btn_selected_building_upgrade__rect_300f6cc7.png; the ROI is what needs re-measuring. With ADB preferred, LiveRuntime._resolve_semantic_target('BTN_SELECTED_BUILDING_UPGRADE') reads that same token off the current frame and answers (0.4993, 0.7188), verified read-only on the archived frame through the production chain.",
+        "demoted_at": "2026-10-02T11:15:00Z",
+        "measured_record": {
+          "attempts": 10,
+          "successes": 0,
+          "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+          "recognition_error": "MAA_TEMPLATE:NO_MATCH:score=0.5146:gate=0.7/0.75",
+          "measured_at": "2026-10-02T10:46:09Z",
+          "frame_declared_control_norm": [
+            0.4993,
+            0.7188
+          ],
+          "node_roi": [
+            335,
+            288,
+            148,
+            144
+          ],
+          "role_id": "1061663148",
+          "goal_id": "KEEP_BUILDING_PRODUCTIVE",
+          "template_kept_at": "dataset/candidate/autogen/btn_selected_building_upgrade__rect_300f6cc7.png"
+        }
       }
     },
     "BEAR_AUTO_JOIN": {
@@ -2432,6 +2437,11 @@
       "semantic": "BTN_OPEN_RESOURCE_SEARCH",
       "reason": "REVERTED after a live regression that cost every SEARCH_RESOURCE tap. The skill declares recognition_backend LEGACY (its own evidence note: 'Its recognition is V2 semantic... which MAA template matching does not improve on its own'), but node_20260927 was nonetheless consulted, because nothing read the declaration. Its template is the legacy-wilderness crop, where the search button still wore a filled blue disc; the 2026-09-30 client draws the same glyph as a transparent button over the live map, so the node scored TM_CCOEFF_NORMED 0.609 against its own 0.78 gate on dataset/raw/control_panel/runtime_auto/20260930_002432_782721/20260930_002432_782721_step_005_before_20260929T162544495247.png, while the declared V2 recogniser locates the same control on that frame at pHash distance 10 <= its 12 tolerance. A miss in that tier is terminal, so the step ended as SEMANTIC_TARGET_NOT_VERIFIED -- the wrong sentence for a control the frame plainly draws. Same class as OPEN_INTEL_RECOGNITION: a background that animates under the ROI, tolerated by the legacy semantic and not by a fixed threshold. Needs a glyph-only crop (no map background) measured against the current client before it can be re-promoted.",
       "measured_at": "2026-09-30T16:56:00Z"
+    },
+    "OPEN_BUILDING_UPGRADE_RECOGNITION": {
+      "semantic": "BTN_SELECTED_BUILDING_UPGRADE",
+      "reason": "The autogen node for BTN_SELECTED_BUILDING_UPGRADE was harvested from a fixed rect on dataset/raw/autogen/r2_home.png (roi x 335..483, y 288..432) and recorded validation=PENDING_RECORD. It never answered: 10 attempts on 2026-10-02, 0 successes, all SEMANTIC_TARGET_NOT_VERIFIED with MAA_TEMPLATE:NO_MATCH:score=0.5146:gate=0.7/0.75. The frame's own OCR reads the 升级 label at (0.4993, 0.7188) = px (359, 920) on the very frame the step failed on, so the window is looking at scenery and the recall failure is geometric, not a threshold: a fixed rect cannot cover a control that is drawn wherever the selected building sits. This semantic is therefore NOT migrated -- ADB is preferred and the recognition is the V2 semantic vision, which reads the label off the current frame rather than from a stored offset. The template image is kept (dataset/candidate/autogen/btn_selected_building_upgrade__rect_300f6cc7.png); to migrate this, re-measure the way the battle button was -- locate the control by colour blob on the current client instead of cropping one frame -- then draw it on real frames and A/B it against the V2 reader. Recorded here rather than left as an unexplained 0.",
+      "measured_at": "2026-10-02T10:46:09Z"
     }
   }
 }
