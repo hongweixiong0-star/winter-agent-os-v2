@@ -410,3 +410,98 @@ semantic 索引，两个存储连 join 的键都没有。本轮把 `ocr_text` �
 **产品会删掉的东西不能当夹具。** 本轮新增的那一项因此自带合成帧，不依赖 `FRAME`。
 这条也解释了为什么本会话的 A/B 纪律如此重要：**环境性变红会随运行时间增长**，
 只看「红了多少」会把既有失败误判成自己改坏的。
+
+### 9.4 自动采集的裁片**没有**通过 §7.2(b) 的标定（2026-10-02 实测）—— 并撤回 §9.2 的建议
+
+§9.2 结尾我写了一句建议：把注册表「按同一批 VERIFIED 记录生成出来」。**本轮把这个建议先拿去
+标定，结果是它不成立。** 过程与数字如下。
+
+**仪器先被验证。** 用 §7.2(b) 的同一个函数、同一份语料、同一个阈值重跑人工确认过的裁片：
+
+```
+REGISTRY 登录好礼   template 56x55   RECALL 21/22 = 95.5%
+                    scores min/median/max = 0.955/0.992/1.000
+                    whole-frame top match x=0.731 y=0.097 (label x=0.722 y=0.141) -> ON THE ROW
+```
+
+与 §7 记录的 97.3% 一致 ⇒ **这套量法是可复现的**，下面的话可以拿它当尺子。
+
+**自动裁片在同一把尺子上失败。** 31 条自动记录里，语料**只有一条**能提供正样本
+（`REGULAR_EVENT_ENTRY` / 常规活动，26 帧）：
+
+```
+AUTO REGULAR_EVENT_ENTRY   template 69x23   RECALL 0/15 = 0.0%
+                           whole-frame top match score=0.725 at x=0.042 y=0.000
+                           (label at x=0.879 y=0.140) -> ELSEWHERE
+```
+
+**原因不需要猜，它是可核对的**：该记录的 `roi_norm` 与语料里 `常规活动` 的 `label_box`
+**逐字节相同** ——
+
+```
+AUTO record roi_norm : {x 0.8778, y 0.1398, w 0.0958, h 0.018}  -> 69x23 px  aspect 2.99
+corpus label_box     : {x 0.8778, y 0.1398, w 0.0958, h 0.018}  -> 69x23 px  aspect 2.99
+REVIEWED 登录好礼 裁片: 56x55 px  aspect 1.02   <- 整个按钮（§7.2(b)：蓝顶+挂环+米色主体）
+```
+
+⇒ **这条自动裁片就是那行印字本身。** `registered_icon_region` 在标签框**上方**的窗口里找它，
+当然找不到：`0/15`。所以它不能当注册裁片。
+
+**于是 §9.2 的那句建议撤回**：按 VERIFIED 记录生成注册表，**会把至少一条「标签的图片」写成
+控件模板**，而 31 条里剩下的**没有语料可以判定**（正样本只有那 4 个标签）。**在能判定之前不应接入。**
+
+**同时必须说清这条证据的强度，不许放大：**
+
+- **只有 2/31 从形状上就是标签状**（按高度 ≤32 px 且 aspect ≥2.2 判：`REGULAR_EVENT_ENTRY`
+  与 `QUICK_PANEL_ROW_RESEARCH`），其余 **29/31 尺寸更像真正的控件**（25–86 px 高，aspect 0.9–5.6；
+  例如 `BTN_GEAR_FORGE_RULES` 40×42、`BTN_HERO_STORYBOOK` 55×51，与 56×55 的人工裁片同形）。
+  **所以「采集管线裁的是标签」这句话对 1 条成立，不能推广到 31 条。**
+- **10/31 连源帧都没了**（保留策略清掉），它们的证据不可复现；另外 11 条连 `roi` 自洽性都无法测。
+- 本轮还试过用一个不依赖语料的普查（在自己的源帧上全帧搜索，看最高匹配是否落回自己的 roi）。
+  **那个探针的 `own` 一列误用了 `match_ccoeff` 的签名**（把 `roi` 当搜索窗用），给出的
+  0.42–0.999 **不是可信证据，不作为结论**；只有「全帧最高匹配落回自身 roi」这一项可读，
+  而它单独无法区分「有辨识度」与「匹配面平坦」。**先记在这里，免得下一轮把它当成已测结论。**
+
+**语料本身在被侵蚀**（与 §9.3 同一个因）：136 个正样本帧现存 **80** 个 ——
+登录好礼 22/37、超值活动 22/37、明月的盛典 21/36、常规活动 15/26。
+⇒ **要标定一条新裁片，先得有它标签的正样本；而正样本正在减少。**
+
+**所以下一步的落点不是「生成注册表」，而是**（按证据强度排序）：
+
+1. **先把语料的保留保护做掉**（或在别处冻结一份不可删的副本）——否则每一条新裁片的可标定窗口都在缩小；
+2. 需要提升的控件，**新采一个象样的裁片并让它通过 §7.2(b) 的三项**（recall / 分数 / 特异性落回本行），
+   再写进注册表；§3（4）的四条硬禁止不变；
+3. 无字控件那条路仍以 MAA 引擎侧 `ColorMatch`/`FeatureMatch` 为下一步（§三 早已点名），
+   而不是再写一个像素启发式 —— §7.2(a) 已经把启发式这条路量掉了。
+
+### 9.5 第 1 步已做：语料的帧纳入保留保护（2026-10-02）
+
+`retention.py` 的 `PROTECTED_DIRECTORY_NAMES` **已经含 `truth_audit`**，但那保护的是**语料文件本身**；
+每一行 `frame` 指的却都在可剪除的 `dataset/raw/control_panel/runtime_auto/…` 里，
+只有在**恰好有 episode 通过 `episodes.jsonl` 引用到同一个文件**时才幸存 —— 而多数没有。
+
+修法与既有的那条证据流同样处理（`referenced_evidence` 保护 episode 指到的帧）：
+新增 `retention.corpus_evidence()` 读语料、返回它引用的帧路径，
+并在 `prune_runtime_screenshots()` 里与 episode 流**取并集**后交给选择器。
+头注释里已经写下的理由是同一个：「destroyed the only frames that could prove a live run ever
+happened」。**标定集每个周期缩小一次，就不是标定集。**
+
+测试：`tests/test_retention.py::CalibrationCorpusEvidenceTests` 4 项（先红后绿，含一条走
+`prune_runtime_screenshots` 生产入口的端到端断言）。A/B：`tests/test_evidence_integrity.py`
+**两臂同为 2 failed / 5 passed**（先做的那一版 A 臂是**无效的** —— 测试文件 import
+`corpus_evidence`，而 A 臂的 `retention.py` 里没有它 ⇒ ImportError ⇒ 一条结果都没有；
+按本项目的纪律重做成只比该文件）。
+
+**顺带确认：这个缺陷项目自己早就写了守卫，而且守卫是红的。**
+`tests/test_evidence_integrity.py` 的两条既有失败正是这件事：
+
+- `test_every_image_literal_in_the_suite_resolves_to_a_file` —— 报出
+  `test_beast_label_recognition` / `test_entry_badges` / `test_red_dot_priority` /
+  `test_goal_attention` / `test_unknown_ai_channel` 等**引用的帧文件已不存在**；
+- `test_referenced_evidence_sits_outside_the_prunable_area` —— 报出仍有测试**直接引用
+  `control_panel` 下的文件**，它自己的注释写着「应改为受保护目录下的证据副本」。
+
+**这两条与 §9.5 的修复不是同一条流**，所以本修复不会让它们变绿：
+它们检查的是**测试**引用的帧（且检查**存在性**，已删的文件无法恢复），
+本修复保护的是**语料**引用的帧（面向未来）。**测试流按守卫自己的建议应把帧复制到受保护目录**，
+那是下一件独立的事，本轮不顺手改它。

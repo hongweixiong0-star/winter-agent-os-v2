@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-10-02T05:52:59+00:00",
+  "generated_at": "2026-10-02T06:01:41+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "f80093b",
+  "commit": "6c1abb6",
   "last_good_commit": "e4fd245",
-  "dirty_count": 1429,
+  "dirty_count": 1431,
   "episodes": {
-    "total": 10060,
-    "production": 10060,
-    "success": 9092,
-    "failure": 718,
+    "total": 10089,
+    "production": 10089,
+    "success": 9119,
+    "failure": 720,
     "success_rate_over_decided": 0.9268,
     "modes": {
-      "PRODUCTION": 10060
+      "PRODUCTION": 10089
     },
     "mixed_case_rows": 0
   },
@@ -34,15 +34,15 @@
   "top_failures": [
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 293,
+      "count": 294,
       "recent": 246,
-      "last_seen": "2026-10-02T05:51:29.233008+00:00",
+      "last_seen": "2026-10-02T05:53:14.111894+00:00",
       "dates": {
         "2026-09-28": 38,
         "2026-09-29": 2,
         "2026-09-30": 155,
         "2026-10-01": 67,
-        "2026-10-02": 31
+        "2026-10-02": 32
       },
       "undated": 0,
       "top_skills": [
@@ -56,7 +56,7 @@
         ],
         [
           "SELECT_BEAST_TARGET_MAMMOTH",
-          25
+          26
         ]
       ]
     },
@@ -168,6 +168,24 @@
       ]
     },
     {
+      "failure_type": "SAFE_BACK_NOT_PROVEN",
+      "count": 18,
+      "recent": 14,
+      "last_seen": "2026-10-02T05:58:35.244014+00:00",
+      "dates": {
+        "2026-09-28": 4,
+        "2026-10-01": 12,
+        "2026-10-02": 2
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "BACK",
+          18
+        ]
+      ]
+    },
+    {
       "failure_type": "DAILY_REWARD_ADVANCE_NOT_PROVEN",
       "count": 17,
       "recent": 14,
@@ -181,24 +199,6 @@
       "top_skills": [
         [
           "DISMISS_DAILY_GENERIC_REWARD",
-          17
-        ]
-      ]
-    },
-    {
-      "failure_type": "SAFE_BACK_NOT_PROVEN",
-      "count": 17,
-      "recent": 13,
-      "last_seen": "2026-10-02T04:00:08.585009+00:00",
-      "dates": {
-        "2026-09-28": 4,
-        "2026-10-01": 12,
-        "2026-10-02": 1
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "BACK",
           17
         ]
       ]
@@ -280,9 +280,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 19117,
-    "present_on_disk": 19117,
-    "traceable_episodes": 9768,
+    "referenced_screenshots": 19174,
+    "present_on_disk": 19174,
+    "traceable_episodes": 9797,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -293,20 +293,20 @@
   },
   "git_sync": {
     "branch": "main",
-    "local_head": "f80093be5214f140b2d63d651bc35a1173a42480",
-    "remote_head": "137f881eccf788867020f6e17fb80517c0851a6a",
+    "local_head": "6c1abb6eb52f200c005bc7726a0827f12e594a64",
+    "remote_head": "858993582635ba4d6fa0ac69adf15d723c57b966",
     "unpushed_commits": 1,
     "behind": 0,
     "in_sync": false,
     "remote_url": "https://github.com/hongweixiong0-star/winter-agent-os-v2.git",
-    "last_push_at": "2026-10-02T05:33:53.402581+00:00",
+    "last_push_at": "2026-10-02T05:53:20.389849+00:00",
     "last_push_status": "PUSHED"
   },
   "runtime": {
-    "agent_state": "GOAL_RUNNING",
+    "agent_state": "IDLE",
     "unexpected_worker_exits": 18,
     "watchdog_restart_count": 24,
     "last_fatal_error": null,
-    "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED"
+    "stop_reason": "ROLE_SWITCHED_TO:1063040265"
   }
 }

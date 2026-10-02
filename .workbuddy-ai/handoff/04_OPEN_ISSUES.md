@@ -6,7 +6,7 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x293 all-time; recent=246 (last 2d), last seen 2026-10-02T05:51:29.233008+00:00 — TRY_ORDINARY_CONTROL(103), SELECT_RESOURCE(54), SELECT_BEAST_TARGET_MAMMOTH(25)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x294 all-time; recent=246 (last 2d), last seen 2026-10-02T05:53:14.111894+00:00 — TRY_ORDINARY_CONTROL(103), SELECT_RESOURCE(54), SELECT_BEAST_TARGET_MAMMOTH(26)
 - **NO_EXECUTION** x122 all-time; recent=122 (last 2d), last seen 2026-10-02T04:45:41.351803+00:00 — OBSERVE_ONLY(65), PRINTED_TAP(37), TAP_FOCUSED_TRAINING_CAMP_SHIELD(6)
 - **GIANT_BEAST_SEARCH_NOT_PROVEN** x52 all-time; recent=52 (last 2d), last seen 2026-10-02T05:52:54.541306+00:00 — SUBMIT_GIANT_BEAST_SEARCH(52)
 - **BEAST_SEARCH_TAB_NOT_PROVEN** x51 all-time; recent=44 (last 2d), last seen 2026-10-02T05:46:29.040883+00:00 — OPEN_BEAST_SEARCH_TAB(51)
@@ -15,8 +15,8 @@ Machine-detected issues (recomputed every run):
 - `OPEN_BUILDING_UPGRADE` never succeeded (attempts=4, failure=4)
 - `READ_FISHING_STATE` never succeeded (attempts=2, failure=2)
 - `REALTIME` never succeeded (attempts=27, failure=8)
-- `SELECT_BEAST_TARGET_MAMMOTH` never succeeded (attempts=25, failure=25)
-- 1429 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json']
+- `SELECT_BEAST_TARGET_MAMMOTH` never succeeded (attempts=26, failure=26)
+- 1431 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json', ' M .workbuddy-ai/memory/2026-09-30.md']
 <!-- /AUTO:open_issues -->
 
 ---

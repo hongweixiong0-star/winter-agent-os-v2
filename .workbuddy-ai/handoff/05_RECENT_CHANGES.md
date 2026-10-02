@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `6c1abb6 2026-10-02T14:01:10+08:00 fix(retention): the calibration corpus's frames are evidence too, and have to survive the sweep`
+- `8589935 2026-10-02T13:53:09+08:00 docs(planner): two control stores with two reachabilities, and a retention sweep that deletes fixtures`
 - `f80093b 2026-10-02T13:52:37+08:00 fix(collection): the manifest record keeps the printed label it was filed under`
 - `137f881 2026-10-02T13:33:42+08:00 docs(planner): the acceptance doc's §3 breakpoint is fixed; what is still open is composite-control coverage`
 - `1d58c76 2026-10-02T13:31:12+08:00 docs(commander): record the funnel wall, the two defects before it, and WB-1002-03 as blocked`
@@ -16,16 +18,12 @@ Last 12 commits (newest first):
 - `ff9a8dc 2026-10-02T13:07:18+08:00 test(calendar): the bad-key record now credits at record time, so assert the correction`
 - `68547a6 2026-10-02T13:04:41+08:00 fix(calendar): bind detail observations to the current occurrence`
 - `41b5678 2026-10-02T12:58:36+08:00 fix(calendar): credit the row a detail belongs to by its dates, not its key string`
-- `77d5b4b 2026-10-02T07:50:12+08:00 docs(memory): record the backend axis and the unexplained ledger count for the pinned window`
-- `e49879f 2026-10-02T07:49:25+08:00 docs(commander): record the exclusive claim, the AUTO outage root cause and the guard baseline`
 
-Uncommitted changes: 1429
+Uncommitted changes: 1431
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
-- ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
 - ` M .workbuddy-ai/commander/WORK_QUEUE.json`
-- ` M .workbuddy-ai/commander/results/WB-1002-02-CALENDAR-STARVATION.json`
 - ` M .workbuddy-ai/memory/2026-09-30.md`
 - ` M .workbuddy-ai/memory/2026-10-02.md`
 - ` M .workbuddy/memory/2026-10-02.md`
@@ -40,6 +38,8 @@ Uncommitted changes: 1429
 - ` M evidence/INDEX.json`
 - ` M knowledge/analysis/top_failures.json`
 - ` M knowledge/execution/backend_routing.json`
+- ` M knowledge/goals/capability_skill_map.json`
+- ` M knowledge/perception/candidates/INDEX.json`
 <!-- /AUTO:recent_commits -->
 
 ---
