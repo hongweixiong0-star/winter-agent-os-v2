@@ -3566,3 +3566,29 @@ streak 喂给 fairness bonus ⇒ **结构上无法报告推进的目标，因它
 
 **A/B 补充（上两轮的三次教训已固化）**：多文件一次跑出的 NET NEW/FIXED 都不可信；
 **唯一有效形式是逐文件 HEAD vs MINE 各跑一次**。本轮逐文件 `1/1/9/0/0/0` 与 HEAD 基线完全一致。
+
+## 通则：区分「run 级拒绝」与「step 级拒绝」（2026-10-03）
+
+普查 `executed == 0` 的 run 全类（`auto_uptime.jsonl` 681 行）发现：
+`SAFE_STOP` 是**唯一一个"run 什么都没做、且三本账都不记"**的类别
+（`MAX_ACTIONS_REACHED` 有 episode；`ROLE_SWITCHED_TO:*` 234 次与
+`ROLE_IDENTITY_UNCONFIRMED` 65 次都已在 `auto_uptime` 有 run 级一行；
+`SEMANTIC_TARGET_NOT_VERIFIED` 66 次有 363 条 episode）。
+
+`ROLE_IDENTITY_UNCONFIRMED`（`runtime.py:8007`）**比 `SAFE_STOP` 更早**：
+身份未确认 ⇒ 观测无法归属角色 ⇒ 整个 run 不做事，
+**没有 `steps`、没有 `page_audit`** ⇒ 结构上不可能进 run 后半段的 `append_fruitless_audit`。
+
+> **规则：做"补洞"修复的正确性验证，要逐类列出所有受影响类别，证明它既不漏也不宽。**
+> 每个类别问三句：① 最后一步有 execution 吗？② 已被别的账本记了吗？③ 两者都否 ⇒ 才该被新通道记。
+> **只验证"该记的记上了"不够**，还要证明"不该记的没被记上"和"别处已记的没被重复"。
+>
+> **同时区分粒度**：run 级拒绝（切换、身份未确认）**没有 step 可记** ⇒ 属 run 级账本；
+> step 级拒绝（`SAFE_STOP`）**有 step** ⇒ 属 step 级通道。
+> **把它们塞进同一个账本会破坏两边各自的语义**（`auto_uptime` 是一 run 一行）。
+
+**顺带修正一处读法**：契约 `test_a_safe_stop_never_becomes_an_episode` 保护的是
+**`result=FAILURE` 的行**（"试了没成" vs "没试"要能分开），
+**不是 `executor_backend=""` 本身**——363 条 `SEMANTIC_TARGET_NOT_VERIFIED`
+`executor_backend` 为空但 `verifier_ok=None`，它们是"尝试了但什么都没到后端"，
+与"没试"仍然是不同的东西。
