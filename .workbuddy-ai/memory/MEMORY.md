@@ -2999,3 +2999,88 @@ one Scheduler" —— 但 `eligible()` 要求 `skill.state is SkillState.CANDIDA
 **两张表描述同一件事时必须同名。** `hints` 表键是 `TRAINING` 而 route 域是 `TRAIN` ⇒
 `hints.get("TRAIN")` 返回 `()`，**每个训练目标拿到空标签集**，没有任何地方报错。已提为模块常量并加测试。
 **并且不要为了让表好看而发明标签**：`EXPLORATION` 写"探索"看起来很对，但实测客户端底部导航印的是**探险**。
+
+---
+
+## 环境铁律：成功计数必须能回答"对谁成功"（2026-10-02，P0 全链路审计）
+
+一个目标被调度、被执行、verifier 判 PASS —— 这三件事都成立，**仍然可以是零推进**。
+实测：`SCHEDULED_*` / `ALLIANCE_TIMED_EVENTS` / `LABYRINTH_DAILY` / `USE_FREE_ARENA_ATTEMPTS`
+这一族被 Scheduler 选中 **141 次**、产出 **129 条 episode**、其中 **89 条 SUCCESS**；
+而执行的技能是 `OPEN_MAP`(43) / `SELECT_RESOURCE`(38) / `START_GATHER`(12) —— **采集动作，
+与目标零关系**。`OPEN_MAP` 的 verifier 问"是否到了 MAP 页"，到了就 PASS，**它无法回答
+"这次点击是否推进了 SCHEDULED_BROTHERS_IN_ARMS"**。
+
+⇒ **通用形态：`verifier` 绑定的是"动作的语义"，不是"目标是否被推进"。**
+当 Scheduler 可以把一个目标交给一个与它无关的技能时，
+**episode 的 SUCCESS 会在账本上伪造出"链路已通"的假象**，比 0 attempt 更危险。
+**通用判据：任何用 `result==SUCCESS` 或 `attempt_count>0` 驱动的验收，
+必须先证明该 SUCCESS 与 goal_id 存在因果绑定**，否则验收会为一个不推进任何东西的循环放行。
+
+**面板文案陷阱（同一族）**：`control_panel.py` 的"下一动作"列 = `available_skills[0]`，
+不是后端的 `next_action` 字段——`goal_state.json` **根本没有这个键**。
+面板显示"待规划"是**如实反映后端**，不是 UI 漏显。
+**先确认列的数据源，再决定改 UI 还是改后端**，否则会在后端为 None 时去粉饰 UI。
+
+**票 ≠ 动作。**`observation_ticket` 有生产者（`goal_utility.utility`）和消费者（`rank` 的过滤），
+看起来是闭环；全仓搜它的**执行侧**消费者为 0——只有 4 处读 `required_observation`，
+全是诊断与报告（`capability_bootstrap:181`、`task_completion:193/199`）和 1 处生产者。
+**判据：一个"许可证"型字段，必须找到它变成一条 Decision 的那一行；找不到就是有票无兑现。**
+此处表现为：`observation_state.json` 停在 2026-09-30，而决策账本已跑到 10-02 —— **观察三天没发生**。
+
+## 环境铁律：测试夹具的字面量出现在生产账本里 = 该账本的数字不可用（2026-10-02）
+
+`learning/goal_fairness.json` 里 20 个 SCHEDULED 目标的 `last_block_reason` 是
+`"the test defers every path: nothing is selectable anywhere"` —— 逐字来自
+`tests/test_no_repeated_look_around.py:163`。`conftest.py` 的 `WINTER_TEST_RUNTIME_ROOT`
+重定向 + `GUARDED_TREES` 守卫**没有拦住这条路径**。
+⇒ 该账本的 `offered=0` / "38 个 NEVER_TRIED" **全是假的**，而它未被 git 跟踪，
+**无法 diff 发现、无法回滚**。
+
+**通用形态：判断"某目标是否被尝试过"，第一件事是确认你读的那个账本本身可信。**
+本项目里同一个问题有**两个答案**——fairness 账本说"从未被提供"，
+`decisions.jsonl` 说"被选了 141 次"。**以带时间戳的逐条事件账本为准，
+不以聚合状态文件为准**；聚合文件的 `written_at` 与事件账本的 `at` 范围对不上就是污染信号。
+
+**通用形态：一个"没有失败"的现象，要先问"它是不是成功得太容易了"。**
+本案的 89 次 SUCCESS 全部来自一个只检查页面是否切换的 verifier。
+**0 attempt 不可接受是对的，但 0 progress 且 100% SUCCESS 同样不可接受，而且更坏。**
+
+## 环境铁律：读本项目的时间戳前先确认时区（2026-10-02，我因此写错了一次根因）
+
+`learning/episodes.jsonl` / `decisions.jsonl` / `auto_uptime.jsonl` 的 `recorded_at`
+是 **UTC**（`2026-10-02T13:35:42+00:00`），而 `goal_state.json` 的 `written_at` 也是 UTC。
+**本地是 UTC+8** ⇒ `13:35Z` 是**本地 21:35**，不是"8 小时前"。
+
+我在 21:20 做审计时把 `13:35Z` 读成"13:35 本地"，据此写下
+"日历 episode 为 0、观察停在 09-30"——**而实际有 3035 条日历 episode、3016 SUCCESS**。
+据此我又差点把整个修复做在"日历没被读"这个**不存在的断点**上。
+
+> **规则：任何 `age_min` / "距今多久" 的结论，先把账本时间戳换算成本地时区再比 `mtime`。**
+> 交叉判据：`os.path.getmtime(账本)` 与最后一条记录的时区间**必须一致**；
+> 不一致就是时区错，不是"AUTO 停了"。本项目里这条错一次就足以把根因写反。
+
+## 通用形态：同一页面的多个区域，只有两个有读取器（2026-10-02，`常规活动` 屏）
+
+真机帧 `20261002_135741_630328_step_005_after_20261002T055825254675.png` 目视可见
+`常规活动` 有**三个区域**：顶部横向活动条、页面时钟、日历网格。
+
+- 网格有 `read_event_calendar`（conf 0.995，每行带详情读数）
+- 顶部活动条**没有**读取器：`read_regular_event_hub` 认的是"活动**详情**页"
+  （title + `积分/奖励` body marker），网格页不满足 ⇒ `recognized=False`
+  ⇒ **`联盟总动员` 这个 conf 0.999 的 token 被读到后丢弃**
+
+代价可量化且可对齐：`ALLIANCE_MOBILIZATION` / `CANYON_CLASH` / `ARMAMENT_FACTORY_EVENT`
+只活在活动条上 ⇒ 20 个 `SCHEDULED_*` 里只有 6 个有 `calendar_observation`，
+**缺的 14 个恰好等于"注册表有、日历网格没有"的 14 个**——数字精确吻合才是根因判据。
+
+> **规则一：一个"值被读出来却没有消费者"的缺陷，先数它的缺失集合是否与另一个集合精确重合。**
+> 重合 ⇒ 找到根因；不重合 ⇒ 那是另一条线，不要硬套。
+> **规则二：区分"同类页面的两个形态"。**详情页与网格页共用一个 URL 和一个标题，
+> 但可读的元素完全不同；用"页"当读取单位会必然漏掉其中一个形态。
+> 判据：一个读取器要求 body marker 才成立 ⇒ 它**只**覆盖详情页，网格页对它恒 `False`。
+> **规则三：`confidence 0.999` 仍然可能是"没用上"**——置信度说明读得准，不说明有人听。
+
+**遗留（同批像素可证）**：`峡谷会战` 全帧 OCR 未返回，但 2x 裁剪后 conf 0.968 读到
+⇒ 密集小字上的**召回不足**，修法是 **ROI 二次 OCR**，不是调阈值。
+**"同像素换个尺度就能读到"是召回问题的判据，"同像素同尺度读不到"才是阈值问题。**
