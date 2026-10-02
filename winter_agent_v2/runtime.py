@@ -2189,6 +2189,16 @@ class LiveRuntime:
         events = world.events or {}
         stamp = world.timestamp or datetime.now(timezone.utc)
         calendar, detail = events.get("calendar"), events.get("calendar_detail")
+        # The strip is recorded beside the grid, in the same scope and with the same
+        # ``kind`` dispatch, because ``advertised_but_unread_activities`` has to be able to
+        # ask "what did this screen draw that nobody opened" across *both* regions.  A strip
+        # reading that is not persisted is a reading the scan gate cannot see, which is how
+        # the reader in 9f468b3/2ee4908 stayed inert: it was correct, persisted nowhere, and
+        # the gate that decides whether to go and look had already closed for the day.
+        strip = events.get("activity_strip")
+        if isinstance(strip, Mapping) and strip.get("recognized") is True:
+            event_schedule.record_calendar_snapshot(role_id=role, observation=strip,
+                observed_at=stamp, evidence_ref=str(frame or ""))
         if isinstance(detail, Mapping) and detail.get("recognized") is True:
             event_schedule.record_calendar_detail(role_id=role, observation=detail,
                 observed_at=stamp, evidence_ref=str(frame or ""))

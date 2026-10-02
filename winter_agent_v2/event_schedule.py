@@ -370,17 +370,90 @@ def calendar_scan_pending(role_id: str, path: Path | str | None = None) -> bool:
     ))
 
 
+def advertised_but_unread_activities(
+    role_id: str, path: Path | str | None = None,
+) -> tuple[str, ...]:
+    """Activities this role's last observation **advertised** and never had opened.
+
+    This is the second half of the scan rule, and the shape matters more than the size.
+
+    The first version of this asked a different question -- "which *registered* activities
+    has this role never read?" -- and it was wrong in a way four existing tests caught
+    immediately (``test_the_scan_converges_after_one_read_per_row`` among them).  Being in
+    the registry is not evidence that the client is showing the activity: on 2026-10-02 the
+    registry held 17 and the grid read 6, so "unread registered" was a permanent 11 and the
+    scan could never converge, which is the one thing ``calendar_scan_pending`` exists to
+    guarantee it eventually does.  Converting that into a 23-hour regression is worse than
+    the original silence.
+
+    The predicate is deliberately about **what the client drew and can actually open**,
+    never about what the registry contains, and it uses the same "has a tap point" test
+    ``calendar_scan_pending`` already uses.  Both halves were forced by evidence:
+
+    * registry-based ("which registered activity is unread") was written first and rejected
+      by four existing tests -- the registry holds 17 and the grid shows 6, so it is
+      permanently true and the scan can never converge;
+    * "listed but no tap point" was rejected by
+      ``test_calendar_storage_is_role_scoped_due_after_a_day_and_does_not_set_reserved_time``,
+      whose row carries neither ``tap_norm`` nor ``details_observed``: a row the client drew
+      without a clickable position is not something this run *could* have opened, so calling
+      it an unpaid debt would re-open the calendar forever over a row that cannot be read.
+
+    That matches the live state exactly: all six real grid rows carry ``tap_norm=True`` and
+    ``details_observed=True``, so the strip is the only thing left owing anything.
+    """
+    grid = latest_calendar_snapshot(role_id, path)
+    if not grid:
+        return ()
+    read: set[str] = set()
+    advertised: dict[str, None] = {}
+    for row in grid.get("entries") or ():
+        if not isinstance(row, Mapping):
+            continue
+        event_id = str(row.get("event_id") or "")
+        if not event_id or row.get("tap_norm") is None:
+            continue
+        advertised.setdefault(event_id, None)
+        if row.get("details_observed") is True:
+            read.add(event_id)
+    strip = latest_calendar_snapshot(role_id, path, kind="ACTIVITY_STRIP") or {}
+    for row in strip.get("entries") or ():
+        if isinstance(row, Mapping) and str(row.get("event_id") or ""):
+            advertised.setdefault(str(row["event_id"]), None)
+    for row in strip.get("read_entries") or ():
+        if isinstance(row, Mapping) and str(row.get("event_id") or ""):
+            read.add(str(row["event_id"]))
+    return tuple(sorted(set(advertised) - read))
+
+
 def calendar_scan_due(
     role_id: str, *, now: datetime | None = None, path: Path | str | None = None,
     interval_seconds: float = CALENDAR_SCAN_INTERVAL_SECONDS,
 ) -> bool:
-    """A completed read stays fresh for a day; an interrupted scan can continue."""
+    """A completed read stays fresh for a day; an interrupted scan can continue.
+
+    And an activity the last screen **advertised but nobody opened** keeps it due, however
+    complete the rows it did open are.  Measured 2026-10-02: with six grid rows all opened
+    at 05:35-05:58Z, both roles answered ``False`` for the rest of the day,
+    ``DISCOVER_EVENT_CALENDAR`` was never selected again, and no episode on the new
+    revisions ever stood on ``Page.EVENT`` -- so the strip reader, correct as it was, was
+    never called once.
+
+    The predicate is deliberately about **what the client drew**, never about what the
+    registry contains.  A registry-based version was written first and rejected by four
+    existing tests: the registry holds 17 activities and the grid shows 6, so "registered
+    and unread" is permanently true and the scan could never converge.
+    """
     grid = latest_calendar_snapshot(role_id, path)
     observed = _calendar_moment((grid or {}).get("observed_at"))
     moment = _calendar_moment(now) or datetime.now(timezone.utc)
     if observed is None or observed > moment + timedelta(seconds=5):
         return True
-    return calendar_scan_pending(role_id, path) or (moment - observed).total_seconds() >= interval_seconds
+    if calendar_scan_pending(role_id, path):
+        return True
+    if advertised_but_unread_activities(role_id, path):
+        return True
+    return (moment - observed).total_seconds() >= interval_seconds
 
 
 def _calendar_row_days(row: Mapping[str, Any]) -> tuple[str, ...]:
