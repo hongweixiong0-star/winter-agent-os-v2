@@ -260,6 +260,34 @@ def build_router(
     return router
 
 
+def _template_refusal(outcome: Any, node: Any) -> str:
+    """Name a template node's miss, carrying the number that decides what to do about it.
+
+    ``MaaExecutorAdapter.match_template`` already computes everything this needs on the way out --
+    the error, and the measured ``score`` of its best candidate *even when it did not hit* -- and
+    ``maa_resolver`` held the whole object in ``last_outcome`` while reading only ``center_norm()``.
+
+    The score is not decoration.  "The template reached 0.615 against a 0.70 gate" and "the
+    template was never loaded" send a reader to two different fixes, and the first also says whether
+    the answer is to move the gate or to replace the crop; a reason without the number cannot tell
+    them apart.  A miss that carries no score at all says ``score=na`` rather than looking like a
+    zero, because ``match_template`` reports ``None`` when MaaFramework returned no candidate.
+    """
+    error = str(getattr(outcome, "error", "") or "").strip() or "NO_MATCH"
+    score = getattr(outcome, "score", None)
+    parts = ["MAA_TEMPLATE", error]
+    if error == "NO_MATCH":
+        parts.append("score=na" if score is None else "score=%.4f" % float(score))
+        gate = (node or {}).get("threshold") if isinstance(node, dict) else None
+        if isinstance(gate, (int, float)):
+            parts.append("gate=%g" % float(gate))
+        elif isinstance(gate, (list, tuple)) and gate:
+            parts.append("gate=" + "/".join("%g" % float(value) for value in gate))
+    elif score is not None:
+        parts.append("score=%.4f" % float(score))
+    return ":".join(parts)
+
+
 def _rapid_ocr_results(frame: Any, roi: tuple[int, int, int, int] | None,
                        expected: list[str]) -> list[dict[str, Any]]:
     """Text recognition through the project's own RapidOCR engine.
@@ -422,6 +450,12 @@ class ExecutorRouter:
             node = None
         if node is None:
             point = self.adb_resolver(semantic) if self.adb_resolver else None
+            if point is None and not suppressed:
+                # Nothing was decided here: no node, so the tier below owns both the answer and its
+                # reason.  Cleared rather than left alone, because this resolver is called more than
+                # once inside a step (a retry re-resolves) and a stale code would then be written
+                # against a later miss it does not describe.
+                self.last_recognition_error = None
             if suppressed:
                 # Only a *failed* delegation names the reason: the diagnostic harnesses read this
                 # field as "NONE:<reason>", so a set value next to a resolved point would read as a
@@ -433,6 +467,11 @@ class ExecutorRouter:
             return point
         frame = adapter.frame() if frame is None else frame
         if frame is None:
+            # Nothing was searched: the adapter answered without a frame.  Named rather than
+            # silently refused, because "there was no picture" and "the control was not in the
+            # picture" are the two ends of the MAA capture path and only one of them is fixable
+            # in the template.
+            self.last_recognition_error = "MAA_FRAME:NONE"
             return None
 
         # A node may recognise text rather than pixels. Dispatched here instead of
@@ -576,7 +615,20 @@ class ExecutorRouter:
                             return None
                         fallback = node.get("fallback_semantic")
                         if fallback and str(fallback) != semantic:
-                            return self.maa_resolver(str(fallback), skill_id, frame=frame)
+                            declined = self.last_recognition_error
+                            point = self.maa_resolver(str(fallback), skill_id, frame=frame)
+                            if point is not None and declined:
+                                # The fallback answered, and the reason the primary declined is
+                                # still the fact worth keeping: a template that answers on a frame
+                                # its own reader rejects is a node quietly drifting apart from the
+                                # screen, and a bare success hides that.  Pinned by
+                                # test_rally_list_dynamic_node, and preserved rather than
+                                # "tidied" -- but note it is the one place this field survives a
+                                # resolved point, so a success row carrying LIST_DYNAMIC:NO_ROWS
+                                # means exactly this and not a live failure.
+                                self.last_recognition_error = declined
+                            return point
+                        self.last_recognition_error = "LIST_DYNAMIC:FALLBACK_ABSENT"
                         return None
                     # Rows were read and none is joinable (every one is full, expired, or
                     # this role is already in one).  That is an answer, not a miss: falling
@@ -615,7 +667,12 @@ class ExecutorRouter:
         # A miss stays a miss.  Falling through to the legacy resolver here would
         # hide a drifting MAA node behind a position-blind match, so the skill
         # fails instead and the drift shows up in the ledger.
-        return outcome.center_norm()
+        centre = outcome.center_norm()
+        # The reason travels with the refusal, and is cleared by a resolution -- a code sitting
+        # beside a returned point would be written into the episode of a step that worked.  See
+        # ``_template_refusal`` for why the score is the field's most important half.
+        self.last_recognition_error = None if centre is not None else _template_refusal(outcome, node)
+        return centre
 
     # -------------------------------------------------------------- dispatch
     def _bear_auto_join_guard(self, action: Action, skill_id: str | None) -> ExecutionResult | None:
