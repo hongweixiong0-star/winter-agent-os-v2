@@ -8243,7 +8243,30 @@ class LiveRuntime:
                 return None
 
         def append_fruitless_audit(reason: str) -> None:
-            if self.fruitless_audit_path is None or reason != self.NOTHING_LEFT_TO_LOOK_AT:
+            # Which runs get an audit row.  The original gate admitted exactly one reason and
+            # was measured dead on the device: ``NOTHING_LEFT_TO_LOOK_AT`` appears in 681
+            # ``auto_uptime`` rows zero times and ``learning/fruitless_run_audit.jsonl`` did not
+            # exist at all.  So the name of the channel describes the *intent* -- a run that
+            # produced nothing a person can act on -- and the honest reading of that intent
+            # includes a run whose last step was a **refusal**: the Scheduler chose a goal, the
+            # brain declined to act on it, and both ledgers then disagree (``decisions.jsonl``
+            # says it won, ``episodes.jsonl`` has no row, and ``episodes.jsonl`` may not have one
+            # because ``test_a_safe_stop_never_becomes_an_episode`` pins that a SAFE_STOP step
+            # is not an execution).
+            #
+            # Every fact needed is already in memory by the time ``finish`` runs -- read
+            # ``runtime.py`` in order: ``:8964`` appends the page, ``:8969`` sets
+            # ``attempted_skill``, ``:8970`` sets ``attempted_reason``, ``:8974`` branches on
+            # SAFE_STOP, ``:9101`` sets ``verifier_result`` to NOT_ATTEMPTED with the reason.
+            # So this widens a gate; it does not add a field, a ledger, or a vocabulary.
+            if self.fruitless_audit_path is None:
+                return
+            refused = bool(
+                steps
+                and getattr(steps[-1].decision, "skill", "") == "SAFE_STOP"
+                and steps[-1].execution is None
+            )
+            if reason != self.NOTHING_LEFT_TO_LOOK_AT and not refused:
                 return
             try:
                 last_page = audit_pages[-1] if audit_pages else {}
