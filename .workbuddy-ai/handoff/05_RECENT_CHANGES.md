@@ -6,6 +6,10 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `a8bee39 2026-10-02T13:14:31+08:00 fix(scheduler): an unobserved goal's declaration is the licence, not its unmeasured value`
+- `b430609 2026-10-02T13:07:57+08:00 docs(commander): record the integrated calendar fix, the 4.37h window and the Codex handoff state`
+- `ff9a8dc 2026-10-02T13:07:18+08:00 test(calendar): the bad-key record now credits at record time, so assert the correction`
+- `68547a6 2026-10-02T13:04:41+08:00 fix(calendar): bind detail observations to the current occurrence`
 - `41b5678 2026-10-02T12:58:36+08:00 fix(calendar): credit the row a detail belongs to by its dates, not its key string`
 - `77d5b4b 2026-10-02T07:50:12+08:00 docs(memory): record the backend axis and the unexplained ledger count for the pinned window`
 - `e49879f 2026-10-02T07:49:25+08:00 docs(commander): record the exclusive claim, the AUTO outage root cause and the guard baseline`
@@ -14,21 +18,14 @@ Last 12 commits (newest first):
 - `c2d02ae 2026-10-02T04:09:35+08:00 docs(commander): record live calendar detail closure and remaining role work`
 - `b186903 2026-10-02T04:07:40+08:00 docs(commander): queue eight bounded production closure orders`
 - `951abbd 2026-10-02T04:04:31+08:00 fix(vision): use grounded calendar bars for detail verifier identity`
-- `fe78e9c 2026-10-02T03:59:41+08:00 test(vision): isolate the calendar navigation budget regression`
-- `5a0aeb2 2026-10-02T03:58:37+08:00 fix(vision): exclude ticking body text from activity tab navigation`
-- `9341eee 2026-10-02T03:51:35+08:00 fix(wiring): continue calendar discovery through the current activity tab strip`
-- `5c818ed 2026-10-02T03:49:35+08:00 fix(wiring): discover registered activity entries by current localized names`
 
-Uncommitted changes: 1391
-- `M .workbuddy-ai/commander/BLOCKED_QUEUE.json`
-- ` M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
-- ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
+Uncommitted changes: 1403
+- `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
 - ` M .workbuddy-ai/commander/WORK_QUEUE.json`
 - ` M .workbuddy-ai/memory/2026-09-30.md`
 - ` M .workbuddy-ai/memory/2026-10-02.md`
-- ` M .workbuddy/memory/2026-10-02.md`
 - ` M .workbuddy/memory/MEMORY.md`
 - ` M START_HERE.md`
 - ` M dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png`
@@ -40,6 +37,9 @@ Uncommitted changes: 1391
 - ` M knowledge/analysis/top_failures.json`
 - ` M knowledge/execution/backend_routing.json`
 - ` M knowledge/goals/capability_skill_map.json`
+- ` M knowledge/perception/candidates/INDEX.json`
+- ` M knowledge/perception/pages/INDEX.json`
+- ` M knowledge/preload/INDEX.json`
 <!-- /AUTO:recent_commits -->
 
 ---
