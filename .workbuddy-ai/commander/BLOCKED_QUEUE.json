@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-02T05:03:44+00:00",
+  "updated_at": "2026-10-02T05:30:18+00:00",
   "items": [
     {
       "task_id": "WB-0AZ-BEAST-BACK-VERIFY",
@@ -111,6 +111,39 @@
         "core.autocrlf=true with no .gitattributes means any git operation that touches a file rewrites the working copy as CRLF; md5 changes while git diff --numstat stays small (67/2 here). Worth an .gitattributes if byte-stable working files are ever needed for evidence hashing.",
         "Pre-existing and unrelated, left alone: tests/test_global_dual_role_scheduler.py::test_runtime_persists_shared_action_outcome_and_episode_progress_by_goal fails on the parent revision too (AttributeError: 'LiveRuntime' object has no attribute '_advised_request_id', runtime.py:2704) - the UNKNOWN-advice settlement path, which is the chain handoff 2026-09-24 left open. Also pre-existing: the two TRAIN subtests in tests/test_event_panel_observation.py.",
         "The episodes.jsonl row-count observation from the previous session is downgraded, not closed: bytes grew monotonically (129 -> 134.6 -> 145.9 MB) while rows moved 10439 -> 10006 -> 10371. That is not truncation, but who rewrites this file and why the row count is non-monotonic is still unknown."
+      ]
+    },
+    {
+      "task_id": "WB-1002-03-BOOTSTRAP-FIRST-SECOND",
+      "root_cause_found": true,
+      "attempts": [
+        "Read learning/learning_funnel.json and joined_funnel: found the wall numerically (venus_proposed=7 -> grounding_valid=0, grounding_rejected=0).",
+        "Joined all 16 traces from learning/ui_venus_online.jsonl to their outcomes to classify the 16: 7 proposed / 6 call-failed / 3 parser-refused.",
+        "Acknowledged a correction to my own earlier reading: the planner ledger DOES record the model's reason (learning/local_planner_steps.jsonl, 101 rows). My first pass said the reply was unreviewable; it was not, and the reasons are where the evidence came from.",
+        "Read parse_plan / build_packet / SYSTEM_PROMPT / response_schema / elements_from_request / _quick_panel_advice_regions to separate a wiring defect from a model-quality defect. _quick_panel_advice_regions does emit INTERACTIVE_CONTROL with executable=True, and the packet does carry kind/executable, so the control IS offered and the contract IS right to refuse a TEXT_LABEL.",
+        "Diffed the two E21/E24 refusals and the E11 refusal against the model's raw replies (stored in the planner ledger for refusals): all three were decision=EXECUTE.",
+        "Wrote 5 regressions red first, implemented both fixes, then ran a 17-file targeted family A/B against HEAD's ui_planner.py with an explicit SHA and a byte-identical restore."
+      ],
+      "changes_made": {
+        "winter_agent_v2/ui_planner.py": "build_packet gains a bounded `question` field, carried only when non-empty; take_request passes the request's own question; SYSTEM_PROMPT documents the field the way it documents the rest of the packet. parse_plan reads the leading ELEMENT_ID_PREFIX (^E\\d+\\b) from target_element_id before the membership check, then runs every existing guard unchanged, with the refusal still quoting the model's own string.",
+        "tests/test_local_planner.py": "5 tests: the packet carries the question; a caller with no question adds no field; the question reaches the prompt the model actually sees; the prompt documents it; a decorated id is read as the id, while an unoffered decorated id, a decorated id naming a TEXT_LABEL, and an id running into other letters (E1X) are all still refused.",
+        "commit": "3989c52, repinned (manifest a8bee39 -> 3989c52, CLEAN_OUTSIDE_DATA) and pushed (ba90bc9..3989c52, secret scan PASS)"
+      },
+      "evidence": {
+        "unit_red_then_green": "5 failed / 3 passed before the fix (the 3 that passed are the guard rails); 75 passed after.",
+        "ab_17_file_family": "A arm (HEAD ui_planner.py) 43 failed / 404 passed; B arm 38 failed / 409 passed. Failures only in B: 0. Failures only in A: exactly the 5 new tests. md5 of the working file restored byte-identically (86dfe4706adb97236898395ef6067955).",
+        "execution_guard": "tools/check_wiring.py problems=0",
+        "invariant_review": "tools/invariant_review.py 10 PASS / 0 FAIL / 4 UNMEASURED; the operator's §17 simulated world is unchanged.",
+        "pinned_tree": "winter_agent_v2/ui_planner.py in the pinned worktree contains QUESTION_MAX_CHARS, ELEMENT_ID_PREFIX and the prompt line; pin HEAD 3989c52; PRODUCTION_PIN.json expected_commit 3989c520ac7e.",
+        "live_runtime": "panel pid 11356 alive, worker inside the pinned tree, 0 new worker exits (18 historical) across the whole session.",
+        "service_restored_before_this_round": "port 18080 answers /health 200 -- the 6 VENUS_CALL_FAILED rows are one resolved cause (refused/timed out 00:00-04:04Z) and are not re-diagnosed here."
+      },
+      "blocker": "The FIRST->Candidate transition cannot be closed by a unit test: it needs a real UNKNOWN filed against the pinned revision 3989c52, and the acceptance is the funnel's own numbers moving -- venus_proposed -> grounding_valid above 0, then maa_executed, verifier_progress, candidate_step_created. As of 2026-10-02T05:29Z the last Venus rows are 05:00Z (pre-deploy) and the worker restarts its interpreter each run, so the first post-deploy UNKNOWN has not happened yet. Do not read this result as the loop working.",
+      "recommended_codex_review": [
+        "The question is delivered but the packet does not record that it was: if the model still declines, the only way to tell 'asked and refused' from 'not asked' is the packet, which is not persisted. Consider recording the delivered question on the trace.",
+        "One historical reply (2026-09-30) put an action name in the decision slot: PLAN_DECISION_UNKNOWN: 'CLOSE_POPUP'. The schema enum should make that impossible and the three recent EXECUTE replies carry exactly the four required keys, so it may already be contained -- but it is unverified either way and would silently discard a step if it recurs.",
+        "My previous round's observation-ticket fix holds at the utility layer (observation_ticket 50.0, rank() keeps USE_FREE_ARENA_ATTEMPTS and LABYRINTH_DAILY; previously 0.0 and dropped). They are still absent from board_runnable_goal_ids, and that is correct rather than a second defect: board_runnable_ids is filtered purely by status in RUNNABLE_STATUSES, and both goals are UNKNOWN. The ticket governs selection, not status. What neither goal has is available_skills ([]), which is WB-1002-04's subject.",
+        "The same-window 2 PLAN_TARGET_IS_NOT_A_CONTROL refusals on the same target 14 hours apart (E21, E24, both TEXT_LABEL, both reason '点击城墙下方的升级按钮') are the shipped behaviour of two guards agreeing; the fix above changes what the model is told, so a repeat after deploy would be evidence the model ignored the named target rather than that it never saw it."
       ]
     }
   ],

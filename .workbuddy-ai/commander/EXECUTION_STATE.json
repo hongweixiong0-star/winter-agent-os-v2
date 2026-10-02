@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-02T05:03:44+00:00",
+  "updated_at": "2026-10-02T05:30:18+00:00",
   "queue_generated_at": "2026-10-02T03:36:20+08:00",
   "current_task": null,
   "tasks": {
@@ -342,10 +342,14 @@
       "blocker": "LIVE verification cannot be taken yet: the loop is role 1061663148's and its persisted grid is still 6/6 uninspected, but the active role is 1063040265, whose scan is already complete, so no calendar goal is generated at all. The fix is deployed and replay-proven; what is missing is a window in which role A is active. Acceptance criterion, written down so it cannot drift: once role A is active, learning/timed_event_schedule.json scope 1061663148 must show details_observed=True on its grid entries, calendar_scan_pending must go False, and the calendar share of new episodes must fall from 83.8%. Nothing needs to be built for this - only observed."
     },
     "WB-1002-03-BOOTSTRAP-FIRST-SECOND": {
-      "status": "PENDING",
+      "status": "BLOCKED",
       "priority": "P0",
       "queue_status": "READY",
-      "result_file": null
+      "result_file": null,
+      "started_at": "2026-10-02T05:30:17+00:00",
+      "finished_at": "2026-10-02T05:30:18+00:00",
+      "verdict": "BLOCKED",
+      "blocker": "The FIRST->Candidate transition cannot be closed by a unit test: it needs a real UNKNOWN filed against the pinned revision 3989c52, and the acceptance is the funnel's own numbers moving -- venus_proposed -> grounding_valid above 0, then maa_executed, verifier_progress, candidate_step_created. As of 2026-10-02T05:29Z the last Venus rows are 05:00Z (pre-deploy) and the worker restarts its interpreter each run, so the first post-deploy UNKNOWN has not happened yet. Do not read this result as the loop working."
     },
     "WB-1002-04-UNKNOWN-COVERAGE-ARENA": {
       "status": "PENDING",
@@ -374,6 +378,12 @@
     "WB-1002-08-STABILITY-RESOURCES": {
       "status": "PENDING",
       "priority": "P0",
+      "queue_status": "READY",
+      "result_file": null
+    },
+    "WB-1002-09-VENUS-SERVICE-LIVENESS": {
+      "status": "PENDING",
+      "priority": "P1",
       "queue_status": "READY",
       "result_file": null
     }

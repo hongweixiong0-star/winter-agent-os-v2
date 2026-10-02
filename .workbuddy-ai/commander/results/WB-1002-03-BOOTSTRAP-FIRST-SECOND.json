@@ -1,0 +1,69 @@
+{
+  "TASK_ID": "WB-1002-03-BOOTSTRAP-FIRST-SECOND",
+  "VERDICT": "TWO_MEASURED_BLOCKERS_FIXED_AND_DEPLOYED__FIRST_TO_CANDIDATE_LOOP_STILL_NOT_CLOSED",
+  "OBJECTIVE_AS_WRITTEN": "在已接生产的安全Bootstrap/学习窗口取得真实FIRST→Candidate→SECOND无模型复用闭环",
+  "NOT_ACHIEVED": "The objective is a closed loop. It is not closed, and this result does not claim any part of it. What it establishes is the exact gate the loop dies at, from the project's own funnel, and that two measured defects stood between the model's answer and that gate.",
+  "BEFORE_METRIC": {
+    "source": "learning/learning_funnel.json, generated_at 2026-10-02T05:19:20Z, window_days 1",
+    "unknown_observed": 16,
+    "venus_called": 16,
+    "venus_proposed": 7,
+    "grounding_valid": 0,
+    "grounding_rejected": 0,
+    "risk_gate_allowed": 0,
+    "maa_executed": 0,
+    "candidate_step_created": 0,
+    "candidate_skill_created": 0,
+    "second_encounter": 0,
+    "repeat_unknown_call_rate": 0.8125,
+    "venus_call_failed": 6,
+    "venus_proposal_rejected_by_parser": 3,
+    "proposals_by_decision": {
+      "REPLAN": 5,
+      "OBSERVE": 2
+    },
+    "parser_refusals": [
+      "PLAN_TARGET_IS_NOT_A_CONTROL: E21 is TEXT_LABEL (2026-10-01T14:47:53Z)",
+      "PLAN_TARGET_IS_NOT_A_CONTROL: E24 is TEXT_LABEL (2026-10-02T04:40:04Z)",
+      "PLAN_TARGET_NOT_ON_THIS_SCREEN: 'E11 (1倍钓鱼)' (2026-10-01T15:04:16Z)"
+    ],
+    "candidate_attempt_pool": {
+      "threshold": 5,
+      "RESEARCH": 566,
+      "every_other_entry": 0
+    },
+    "service_health_at_1012_CST": "CONNECTION_REFUSED",
+    "service_health_at_1318_CST": "/health 200, /v1/models 200 (UI-Venus-2-9B)"
+  },
+  "root_cause_found": true,
+  "ROOT_CAUSE": "The funnel's first real gate is venus_proposed -> grounding_valid, and it reads 7 -> 0 with grounding_rejected also 0: none of the 7 proposals ever became an action, because all 7 were non-executing decisions. Two independent, measured causes stood between the model's answer and that gate. (1) The caller's question was never delivered. unknown_advisor.UnknownRequest.question carries the runtime's own instruction naming the control that could not be located ('当前无法定位的语义目标为 X。只推进这个目标'), and nothing read it -- grep '\\.question\\b' over winter_agent_v2 finds only unrelated fields, and build_packet carried goal / current_page / available_elements / history but not it. The model's recorded reasons show the consequence in its own words: asked to locate the BUILDING quick-panel row it answered about 城墙升级, and on MAP it answered about the goal ('The goal AVOID_STAMINA_WASTE cannot be advanced on this screen'). (2) A correct id was refused for its punctuation. The only live EXECUTE refused for its id was 'E11 (1倍钓鱼)' -- the model had identified the right element and appended the words it read on it, and the exact string match threw the answer away.",
+  "attempts": [
+    "Read learning/learning_funnel.json and joined_funnel: found the wall numerically (venus_proposed=7 -> grounding_valid=0, grounding_rejected=0).",
+    "Joined all 16 traces from learning/ui_venus_online.jsonl to their outcomes to classify the 16: 7 proposed / 6 call-failed / 3 parser-refused.",
+    "Acknowledged a correction to my own earlier reading: the planner ledger DOES record the model's reason (learning/local_planner_steps.jsonl, 101 rows). My first pass said the reply was unreviewable; it was not, and the reasons are where the evidence came from.",
+    "Read parse_plan / build_packet / SYSTEM_PROMPT / response_schema / elements_from_request / _quick_panel_advice_regions to separate a wiring defect from a model-quality defect. _quick_panel_advice_regions does emit INTERACTIVE_CONTROL with executable=True, and the packet does carry kind/executable, so the control IS offered and the contract IS right to refuse a TEXT_LABEL.",
+    "Diffed the two E21/E24 refusals and the E11 refusal against the model's raw replies (stored in the planner ledger for refusals): all three were decision=EXECUTE.",
+    "Wrote 5 regressions red first, implemented both fixes, then ran a 17-file targeted family A/B against HEAD's ui_planner.py with an explicit SHA and a byte-identical restore."
+  ],
+  "changes_made": {
+    "winter_agent_v2/ui_planner.py": "build_packet gains a bounded `question` field, carried only when non-empty; take_request passes the request's own question; SYSTEM_PROMPT documents the field the way it documents the rest of the packet. parse_plan reads the leading ELEMENT_ID_PREFIX (^E\\d+\\b) from target_element_id before the membership check, then runs every existing guard unchanged, with the refusal still quoting the model's own string.",
+    "tests/test_local_planner.py": "5 tests: the packet carries the question; a caller with no question adds no field; the question reaches the prompt the model actually sees; the prompt documents it; a decorated id is read as the id, while an unoffered decorated id, a decorated id naming a TEXT_LABEL, and an id running into other letters (E1X) are all still refused.",
+    "commit": "3989c52, repinned (manifest a8bee39 -> 3989c52, CLEAN_OUTSIDE_DATA) and pushed (ba90bc9..3989c52, secret scan PASS)"
+  },
+  "evidence": {
+    "unit_red_then_green": "5 failed / 3 passed before the fix (the 3 that passed are the guard rails); 75 passed after.",
+    "ab_17_file_family": "A arm (HEAD ui_planner.py) 43 failed / 404 passed; B arm 38 failed / 409 passed. Failures only in B: 0. Failures only in A: exactly the 5 new tests. md5 of the working file restored byte-identically (86dfe4706adb97236898395ef6067955).",
+    "execution_guard": "tools/check_wiring.py problems=0",
+    "invariant_review": "tools/invariant_review.py 10 PASS / 0 FAIL / 4 UNMEASURED; the operator's §17 simulated world is unchanged.",
+    "pinned_tree": "winter_agent_v2/ui_planner.py in the pinned worktree contains QUESTION_MAX_CHARS, ELEMENT_ID_PREFIX and the prompt line; pin HEAD 3989c52; PRODUCTION_PIN.json expected_commit 3989c520ac7e.",
+    "live_runtime": "panel pid 11356 alive, worker inside the pinned tree, 0 new worker exits (18 historical) across the whole session.",
+    "service_restored_before_this_round": "port 18080 answers /health 200 -- the 6 VENUS_CALL_FAILED rows are one resolved cause (refused/timed out 00:00-04:04Z) and are not re-diagnosed here."
+  },
+  "blocker": "The FIRST->Candidate transition cannot be closed by a unit test: it needs a real UNKNOWN filed against the pinned revision 3989c52, and the acceptance is the funnel's own numbers moving -- venus_proposed -> grounding_valid above 0, then maa_executed, verifier_progress, candidate_step_created. As of 2026-10-02T05:29Z the last Venus rows are 05:00Z (pre-deploy) and the worker restarts its interpreter each run, so the first post-deploy UNKNOWN has not happened yet. Do not read this result as the loop working.",
+  "recommended_codex_review": [
+    "The question is delivered but the packet does not record that it was: if the model still declines, the only way to tell 'asked and refused' from 'not asked' is the packet, which is not persisted. Consider recording the delivered question on the trace.",
+    "One historical reply (2026-09-30) put an action name in the decision slot: PLAN_DECISION_UNKNOWN: 'CLOSE_POPUP'. The schema enum should make that impossible and the three recent EXECUTE replies carry exactly the four required keys, so it may already be contained -- but it is unverified either way and would silently discard a step if it recurs.",
+    "My previous round's observation-ticket fix holds at the utility layer (observation_ticket 50.0, rank() keeps USE_FREE_ARENA_ATTEMPTS and LABYRINTH_DAILY; previously 0.0 and dropped). They are still absent from board_runnable_goal_ids, and that is correct rather than a second defect: board_runnable_ids is filtered purely by status in RUNNABLE_STATUSES, and both goals are UNKNOWN. The ticket governs selection, not status. What neither goal has is available_skills ([]), which is WB-1002-04's subject.",
+    "The same-window 2 PLAN_TARGET_IS_NOT_A_CONTROL refusals on the same target 14 hours apart (E21, E24, both TEXT_LABEL, both reason '点击城墙下方的升级按钮') are the shipped behaviour of two guards agreeing; the fix above changes what the model is told, so a repeat after deploy would be evidence the model ignored the named target rather than that it never saw it."
+  ]
+}

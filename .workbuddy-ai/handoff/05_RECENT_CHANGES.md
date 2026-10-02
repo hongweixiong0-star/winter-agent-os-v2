@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `3989c52 2026-10-02T13:26:31+08:00 fix(planner): ask the model the question the caller wrote, and read the id it named`
+- `ba90bc9 2026-10-02T13:17:30+08:00 docs(memory): record the observation-ticket fix, its negative control and two self-corrections`
 - `a8bee39 2026-10-02T13:14:31+08:00 fix(scheduler): an unobserved goal's declaration is the licence, not its unmeasured value`
 - `b430609 2026-10-02T13:07:57+08:00 docs(commander): record the integrated calendar fix, the 4.37h window and the Codex handoff state`
 - `ff9a8dc 2026-10-02T13:07:18+08:00 test(calendar): the bad-key record now credits at record time, so assert the correction`
@@ -16,16 +18,17 @@ Last 12 commits (newest first):
 - `060d75b 2026-10-02T07:49:16+08:00 fix(wiring): restore the stale guards to the current single truth`
 - `8d6990e 2026-10-02T04:11:48+08:00 docs(commander): authorize exclusive WorkBuddy handoff as quota runs low`
 - `c2d02ae 2026-10-02T04:09:35+08:00 docs(commander): record live calendar detail closure and remaining role work`
-- `b186903 2026-10-02T04:07:40+08:00 docs(commander): queue eight bounded production closure orders`
-- `951abbd 2026-10-02T04:04:31+08:00 fix(vision): use grounded calendar bars for detail verifier identity`
 
-Uncommitted changes: 1403
-- `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
+Uncommitted changes: 1415
+- `M .workbuddy-ai/commander/BLOCKED_QUEUE.json`
+- ` M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
+- ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
 - ` M .workbuddy-ai/commander/WORK_QUEUE.json`
 - ` M .workbuddy-ai/memory/2026-09-30.md`
 - ` M .workbuddy-ai/memory/2026-10-02.md`
+- ` M .workbuddy/memory/2026-10-02.md`
 - ` M .workbuddy/memory/MEMORY.md`
 - ` M START_HERE.md`
 - ` M dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png`
@@ -37,9 +40,6 @@ Uncommitted changes: 1403
 - ` M knowledge/analysis/top_failures.json`
 - ` M knowledge/execution/backend_routing.json`
 - ` M knowledge/goals/capability_skill_map.json`
-- ` M knowledge/perception/candidates/INDEX.json`
-- ` M knowledge/perception/pages/INDEX.json`
-- ` M knowledge/preload/INDEX.json`
 <!-- /AUTO:recent_commits -->
 
 ---
