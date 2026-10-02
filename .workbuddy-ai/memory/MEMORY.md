@@ -3281,3 +3281,36 @@ goal_progress_by_id {"SCHEDULED_STATE_VS_STATE": false}
 > ② repin 后回读生产树 `git rev-parse --short HEAD` + 一个代码标记 `grep -c`，
 > 两者都对才算落地。** 只看 manifest 那行打印会漏掉"值没变"这种情况——
 > 它和真正的成功在输出里长得一模一样。
+
+## 通则：一个度量在某族目标上恒为常数时，先问「谁能动它」（2026-10-03）
+
+全量实测"哪些目标真出现过 `goal_progress == True`"：`DISCOVER_EVENT_CALENDAR` 1366、
+`CLAIM_EXPLORATION_IDLE` 54、`AVOID_STAMINA_WASTE` 53……**每一个 `SCHEDULED_*` 是 0**。
+
+`progress_moved` 只比 `now.distance < previous`，而 `_append_scheduled_activities`
+两个分支都写死 `distance=1.0`（`goal_library.py:2017`/`:2053`）⇒ **`1.0 < 1.0` 恒 False**。
+
+**为什么这比"数字不好看"严重**：`False` 会 `no_progress_streak += 1`（`runtime.py:9734`），
+streak 喂给 fairness bonus ⇒ **结构上无法报告推进的目标，因它没做过的事被逐步降权。**
+
+> **规则一：常数不是测量。** 即使那个常数是诚实的（"尚不可观测"），
+> 它也让 `no_progress_streak` 单向累加 = **因为相机没在看而惩罚目标**。
+> **判据：`grep` 某字段的 meter 定义，若它是字面量 ⇒ 这一族结构上无法推进。**
+> **规则二：修法是接一个"当前帧读取器已经产出的真实读数"，不是编一个分数。**
+> 本轮用的是 `calendar_observation` 出现 / `availability_state` 离开
+> `AWAITING_LIVE_CLIENT_READING`——两者都来自一帧真实画面，未观测时仍返回 `None`。
+> **绝不为了让它动而给 `distance` 填 0.0 或倒计时**（那等于伪造测量，
+> 和日历读取器拒绝把预览当战斗时钟是同一条纪律）。
+
+**配套两个只有跑两个状态才能发现的错**：
+1. **两个 meter 方向可能相反**：`distance` 是剩余代价（越小越近，`<` 是推进）；
+   阅读深度是越大越多（`>` 是推进）。**共用一个比较符必错其一**，
+   且错的那一支恰好会报成"无推进"——正是要修的那个失败。
+2. **"值在集合里"不能区分尺度**：导航距离 `1.0` **也在** `{0.0,0.5,1.0}` 里
+   ⇒ 用旧 writer 读过这些目标的 run，**第一步就会把它们全报成推进**。
+   **必须让 writer 在数字旁记一个 kind，比较前先核对 kind**；
+   异种尺度一律返回 `None`（未测量 ≠ 无推进，调用方本来就区分这两个）。
+
+**通用检查法**：`collections.Counter` 统计"历史上哪些目标出现过 `<指标> == True`"。
+**恒为空的族不是数据缺失，是这一族喂不进这个度量**——这个查询 5 行代码，
+能直接指出一整个"结构上无法被承认"的家族。
