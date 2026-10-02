@@ -78,6 +78,11 @@ CONTROL_PLANE_PATHS: tuple[str, ...] = (
     # Executed by the window itself, once per round (see the criterion above).
     "winter_agent_v2/retention.py",
     "winter_agent_v2/learning_funnel.py",
+    # This module, for the same reason and one more: the window calls needs_reload() /
+    # changed_paths_since() / safe_to_reload() in its own process, and a stale detector is the
+    # one staleness nothing else here can report -- measured 2026-10-02, the fix above could not
+    # announce itself, because the module that would announce it was the module that changed.
+    "winter_agent_v2/control_plane_reload.py",
 )
 
 

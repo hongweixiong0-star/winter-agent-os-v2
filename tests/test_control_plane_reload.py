@@ -74,6 +74,10 @@ def test_every_named_control_plane_file_is_recognised():
     ("winter_agent_v2/learning_funnel.py",
      "the window folds the funnel in its own process at every round boundary in "
      "_refresh_learning_funnel, and that fold is the number the console shows"),
+    ("winter_agent_v2/control_plane_reload.py",
+     "the window calls needs_reload / changed_paths_since / safe_to_reload in its own process, "
+     "and a stale detector is the one staleness nothing else can report: the commit that added "
+     "the two names above could not announce itself, because this is the module that announces"),
 ])
 def test_a_module_the_window_executes_itself_is_on_the_list(path, why):
     """The criterion is the one the constant already documents: does *this window* run it?
