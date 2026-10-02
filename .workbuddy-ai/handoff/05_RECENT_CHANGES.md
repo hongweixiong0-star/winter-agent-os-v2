@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `f80093b 2026-10-02T13:52:37+08:00 fix(collection): the manifest record keeps the printed label it was filed under`
+- `137f881 2026-10-02T13:33:42+08:00 docs(planner): the acceptance doc's §3 breakpoint is fixed; what is still open is composite-control coverage`
+- `1d58c76 2026-10-02T13:31:12+08:00 docs(commander): record the funnel wall, the two defects before it, and WB-1002-03 as blocked`
 - `3989c52 2026-10-02T13:26:31+08:00 fix(planner): ask the model the question the caller wrote, and read the id it named`
 - `ba90bc9 2026-10-02T13:17:30+08:00 docs(memory): record the observation-ticket fix, its negative control and two self-corrections`
 - `a8bee39 2026-10-02T13:14:31+08:00 fix(scheduler): an unobserved goal's declaration is the licence, not its unmeasured value`
@@ -15,17 +18,14 @@ Last 12 commits (newest first):
 - `41b5678 2026-10-02T12:58:36+08:00 fix(calendar): credit the row a detail belongs to by its dates, not its key string`
 - `77d5b4b 2026-10-02T07:50:12+08:00 docs(memory): record the backend axis and the unexplained ledger count for the pinned window`
 - `e49879f 2026-10-02T07:49:25+08:00 docs(commander): record the exclusive claim, the AUTO outage root cause and the guard baseline`
-- `060d75b 2026-10-02T07:49:16+08:00 fix(wiring): restore the stale guards to the current single truth`
-- `8d6990e 2026-10-02T04:11:48+08:00 docs(commander): authorize exclusive WorkBuddy handoff as quota runs low`
-- `c2d02ae 2026-10-02T04:09:35+08:00 docs(commander): record live calendar detail closure and remaining role work`
 
-Uncommitted changes: 1415
-- `M .workbuddy-ai/commander/BLOCKED_QUEUE.json`
-- ` M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
+Uncommitted changes: 1429
+- `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
 - ` M .workbuddy-ai/commander/WORK_QUEUE.json`
+- ` M .workbuddy-ai/commander/results/WB-1002-02-CALENDAR-STARVATION.json`
 - ` M .workbuddy-ai/memory/2026-09-30.md`
 - ` M .workbuddy-ai/memory/2026-10-02.md`
 - ` M .workbuddy/memory/2026-10-02.md`
@@ -35,11 +35,11 @@ Uncommitted changes: 1415
 - ` M dataset/candidate/template_manifest.json`
 - ` M docs/CAPABILITY_COVERAGE.md`
 - ` M docs/CURRENT_TRUTH.md`
+- ` M docs/LOCAL_PLANNER_ACCEPTANCE.md`
 - ` M docs/TOP_FAILURES.md`
 - ` M evidence/INDEX.json`
 - ` M knowledge/analysis/top_failures.json`
 - ` M knowledge/execution/backend_routing.json`
-- ` M knowledge/goals/capability_skill_map.json`
 <!-- /AUTO:recent_commits -->
 
 ---

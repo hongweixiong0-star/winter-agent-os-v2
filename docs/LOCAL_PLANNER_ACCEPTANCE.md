@@ -362,3 +362,51 @@ E10 TEXT_LABEL '未驻防'   E11 TEXT_LABEL '冰封的宝藏'   E12 TEXT_LABEL '
 **所以下一次的落点是这一步，不是别处**：按 §3（3）的证据要求，以
 `before_frame.png` 为 Positive、以上下相邻的纯标签（如地图上的城镇名）为 Negative，
 先给出命中/误报数，再决定接入；§3（4）的四条硬禁止不变。
+
+### 9.2 两个控件存储，两种可达性（2026-10-02 实测）
+
+上面 §9.1 说的「覆盖面只有 1/29」有一个更精确的说法。本机有**两个**控件存储，
+**由两个不同的消费者读取**：
+
+| 存储 | 谁读它 | 内容（2026-10-02） |
+| --- | --- | --- |
+| `knowledge/ui/icon_label_controls.json` | **只有** `composite_controls`（= 规划器的元素表）+ 两个只读工具 | **3** 个标签：登录好礼 / 免费 / 天数 |
+| `dataset/candidate/template_manifest.json` | `SemanticROIVision`（= TAP_SEMANTIC 的解析器）、`SemanticWorldVision`、`capability_bootstrap` | **474** 条记录，其中 **31** 条 VERIFIED 且是 `auto__` 自动采集 |
+
+`UiCandidateStore.ingest()` 会把 VERIFIED 候选自动写进**第二个**存储（31 条），
+**没有任何代码把它接到第一个**（`load_control_registry` 的调用者只有 `composite_controls`）。
+
+**这不是推断，是在真实帧上两边各跑一次**（`_two_stores_probe.py`，只读、不点击）：
+
+| 语义 | 解析器 `find()` | 同一帧上规划器的元素表 |
+| --- | --- | --- |
+| `TAB_EVENT_CALENDAR` | **找到** `(…, 0, roi)` | 16 个元素，**0 个可执行** |
+| `QUICK_PANEL_ROW_MARKSMAN_CAMP_ENTRY` | **找到** `(…, 0, roi)` | 28 个元素，**2 个可执行**（都是「登录好礼」，不是它） |
+| `REGULAR_EVENT_ENTRY` | **找到** `(0.8778, 0.1398)` | 22 个元素，**0 个可执行** |
+
+⇒ **确定性解析器能在真实帧上定位这三个控件，而规划器的元素表在同一帧上给模型的可执行元素是 0（或无关）。**
+模型只能去点标签，`parse_plan` 按 §2 拒掉 —— 这正是真机上 `E21`/`E24` 被
+`PLAN_TARGET_IS_NOT_A_CONTROL: … is TEXT_LABEL` 拒掉的形状。
+
+**注意这意味着要修的是「对齐」，不是「新能力」**：那些裁片已经存在，并且**已经被解析器信任**。
+所以候选修法是把注册表按同一批 VERIFIED 记录（配上候选元数据里的 `ocr_text`）**生成**出来，
+而不是让运行时去猜；并且按 §3（3）先给出命中/误报数再接入。
+
+`ingest()` 本来**收得到**那个印字（动态文本检查要用它）却没写进记录，导致清单记录只按
+semantic 索引，两个存储连 join 的键都没有。本轮把 `ocr_text` 写进记录（**纯增量，零行为变化**，
+`tests/test_ui_collection.py::IngestionTests::test_the_manifest_record_carries_the_printed_label_it_was_filed_under`
+先红后绿，同文件 A/B 15 failed → 14 failed、**只在 B 失败 0**）。
+
+### 9.3 顺带发现：保留策略会删掉测试夹具
+
+`IngestionTests` 整个类（6 项）在本轮之前就已经是红的，原因**不是代码**：
+它的夹具帧
+`dataset/raw/control_panel/runtime_auto/20260922_123407_610951/…_step_011_….png`
+**已被保留策略清掉**（`panel.log`：`磁盘保护：已清理 10 张过期或超额运行截图`）。
+`runtime_auto` 下现存的 **4458** 个 run 目录里，早期目录**文件数为 0**。
+`store.stage()` 遇到读不出的帧返回 `None`，于是 6 项全部
+`AttributeError: 'NoneType' object has no attribute 'verification_status'`。
+
+**产品会删掉的东西不能当夹具。** 本轮新增的那一项因此自带合成帧，不依赖 `FRAME`。
+这条也解释了为什么本会话的 A/B 纪律如此重要：**环境性变红会随运行时间增长**，
+只看「红了多少」会把既有失败误判成自己改坏的。

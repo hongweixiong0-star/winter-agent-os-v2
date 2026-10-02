@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-02T05:30:18+00:00",
+  "updated_at": "2026-10-02T05:40:13+00:00",
   "queue_generated_at": "2026-10-02T03:36:20+08:00",
   "current_task": null,
   "tasks": {
@@ -333,13 +333,14 @@
       "summary": "本单结束时的可追溯事实（全部现场实测，非沿用旧值）：\n\n[所有权] Codex 在 2026-10-01T20:11:47.141043+00:00 明确让出开发与发布权（WORK_QUEUE.handoff_gate.explicit_codex_yield_at / release_owner_transfer_authorized=true / next_release_owner='WorkBuddy after exclusive task01 claim'；LAST_CODEX_REVIEW 同刻写明授权 WorkBuddy 做小提交、正常 push 与安全 pin/reload，"
     },
     "WB-1002-02-CALENDAR-STARVATION": {
-      "status": "BLOCKED",
+      "status": "DONE",
       "priority": "P0",
       "queue_status": "READY",
-      "result_file": null,
-      "finished_at": "2026-10-02T05:03:44+00:00",
-      "verdict": "BLOCKED",
-      "blocker": "LIVE verification cannot be taken yet: the loop is role 1061663148's and its persisted grid is still 6/6 uninspected, but the active role is 1063040265, whose scan is already complete, so no calendar goal is generated at all. The fix is deployed and replay-proven; what is missing is a window in which role A is active. Acceptance criterion, written down so it cannot drift: once role A is active, learning/timed_event_schedule.json scope 1061663148 must show details_observed=True on its grid entries, calendar_scan_pending must go False, and the calendar share of new episodes must fall from 83.8%. Nothing needs to be built for this - only observed."
+      "result_file": "results/WB-1002-02-CALENDAR-STARVATION.json",
+      "finished_at": "2026-10-02T05:40:13+00:00",
+      "verdict": "MERGED_AND_DEPLOYED: 41b5678 -> 68547a6 -> ff9a8dc, repinned each time (manifest synced), pushed, pin tree verified to contain the fix.",
+      "blocker": "LIVE verification cannot be taken yet: the loop is role 1061663148's and its persisted grid is still 6/6 uninspected, but the active role is 1063040265, whose scan is already complete, so no calendar goal is generated at all. The fix is deployed and replay-proven; what is missing is a window in which role A is active. Acceptance criterion, written down so it cannot drift: once role A is active, learning/timed_event_schedule.json scope 1061663148 must show details_observed=True on its grid entries, calendar_scan_pending must go False, and the calendar share of new episodes must fall from 83.8%. Nothing needs to be built for this - only observed.",
+      "summary": "{'window': '2026-10-02T05:34:12Z .. 05:38:5xZ on the sanctioned pinned panel, revision 3989c52', 'role_a_grid_details_observed': '5 of 6', 'detail_reads_used': 7, 'rows_advanced': 5, 'all_detail_reads_result': 'SUCCESS', 'last_credit': 'the detail for DISCOVERED_EVENT_BB2077C97D (狮舞盛会; preview 2026-"
     },
     "WB-1002-03-BOOTSTRAP-FIRST-SECOND": {
       "status": "BLOCKED",
