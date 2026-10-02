@@ -505,3 +505,49 @@ happened」。**标定集每个周期缩小一次，就不是标定集。**
 它们检查的是**测试**引用的帧（且检查**存在性**，已删的文件无法恢复），
 本修复保护的是**语料**引用的帧（面向未来）。**测试流按守卫自己的建议应把帧复制到受保护目录**，
 那是下一件独立的事，本轮不顺手改它。
+
+### 9.6 那条守卫报 43 项、其中 6 项是真的 —— 所以它一直没人看（2026-10-02）
+
+§9.5 结尾说「测试流是下一件独立的事」。本轮把它做了前一半：**先把守卫的信号修好**。
+`test_every_image_literal_in_the_suite_resolves_to_a_file` 一直是红的，而它把**四类互不相干的行**
+混在一份报告里。分类结果：
+
+| 类别 | 条数 | 例子 |
+|---|---|---|
+| **真的丢了** | **6** | `dataset/raw/control_panel/runtime_auto/` 下的生产截图 |
+| 临时目录夹具 | 23 | `screens/medoid.png`、`hero_a/sample.png`、`stamina_verify2/…`、`20260923_000206_train/…` |
+| 是数据不是路径 | ~10 | 假 episode 载荷里的 `"before_screenshot": "dataset/raw/a.png"`，没有任何代码去打开它 |
+| **故意不存在** | 2 | `/nonexistent/frame.png`、`avatar_templates/missing.png` |
+
+**一份 88% 是噪声的报告，就是一份没人看的报告** —— 而这两条已经红了很久。
+
+**修法是让判据变得「可靠」，而不是把网撒得更宽。** 一个字符串算不算证据引用，
+取决于**测试是否把它当路径用**，这是 AST 看得见、文本扫描看不见的：
+新增 `_path_operand_images()` 只收集 `/` 的右操作数、或 `Path(...)` 唯一实参形式的图片字面量
+（旧的 `_referenced_images()` 收集所有图片形状的字符串，它靠「不含分隔符」排除夹具——
+而上面那 23 条**全都含分隔符**，所以一条都没排除掉，已删除）。
+再由 `repo_path()` 排除不可能成为仓库路径的：绝对且在仓库外、首段不是本仓库目录、父链不在本仓库。
+
+**两个后果：**
+
+1. 报告从 **43 行变成 6 行**，而这 6 行正是
+   `test_goal_attention` / `test_semantic_dictionary_upgrade` / `test_unknown_ai_channel` /
+   `test_unknown_advisor` / `test_unknown_page_exploration` /
+   `test_goal_camp_choice_and_ordinary_control` / `test_interactive_unknown_element` /
+   `test_ui_collection` 引用的帧 —— 2026-09-21/22 的**实测证据**，其中一条还写在注释里
+   （「Measured live 2026-09-22T04:39:04Z, run 20260922_123407_610951: tapping 射手营's tab opened…」）。
+   **六条全部不可恢复**：run 目录只剩空壳，仓库内（含 `out/`）没有任何副本。
+2. `test_referenced_evidence_sits_outside_the_prunable_area` 原本会 **跳过** 文件已不存在的字面量
+   （`if not candidate.is_file(): continue`）—— **恰好把它存在的理由（已经删掉的那些）藏了起来**。
+   现在按**路径**判定，第 6 条就是这么做才浮出来的。
+
+**两条守卫仍然红，而且是对的：证据确实没了。** 变的是它们现在说的是 6 件真事，而不是 43 件。
+
+判据由一条双向参数化测试钉住（假阴性会藏起这个文件要保护的东西，比假阳性更糟）。
+A/B：A 臂 **2 failed / 5 passed**，B 臂 **2 failed / 13 passed** —— 同样两条守卫失败 + 新增的判据测试，
+文件按 md5 逐字节还原。
+
+**下一步（这是现在唯一剩下的）**：那 6 个帧需要**重新实机采集**再放进受保护目录，
+测试改指向副本 —— 不能拿别的帧顶替，因为它们承载的是特定画面的断言。
+「复制到受保护目录」这句话对**还活着**的引用成立（如
+`20260925_003829_467215`，它现在被第二条守卫按路径正确点名）；对这 6 条不成立。

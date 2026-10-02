@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `7fea47a 2026-10-02T14:09:36+08:00 test(evidence): the guard reported 43 things of which 6 were real, so it was unreadable`
+- `5620547 2026-10-02T14:01:51+08:00 docs(planner): the auto-collected crops fail the calibration my own last round recommended they be wired on`
 - `6c1abb6 2026-10-02T14:01:10+08:00 fix(retention): the calibration corpus's frames are evidence too, and have to survive the sweep`
 - `8589935 2026-10-02T13:53:09+08:00 docs(planner): two control stores with two reachabilities, and a retention sweep that deletes fixtures`
 - `f80093b 2026-10-02T13:52:37+08:00 fix(collection): the manifest record keeps the printed label it was filed under`
@@ -16,10 +18,8 @@ Last 12 commits (newest first):
 - `a8bee39 2026-10-02T13:14:31+08:00 fix(scheduler): an unobserved goal's declaration is the licence, not its unmeasured value`
 - `b430609 2026-10-02T13:07:57+08:00 docs(commander): record the integrated calendar fix, the 4.37h window and the Codex handoff state`
 - `ff9a8dc 2026-10-02T13:07:18+08:00 test(calendar): the bad-key record now credits at record time, so assert the correction`
-- `68547a6 2026-10-02T13:04:41+08:00 fix(calendar): bind detail observations to the current occurrence`
-- `41b5678 2026-10-02T12:58:36+08:00 fix(calendar): credit the row a detail belongs to by its dates, not its key string`
 
-Uncommitted changes: 1431
+Uncommitted changes: 1435
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
