@@ -140,6 +140,19 @@ CAPABILITY_GAP_STOPS = frozenset({
     "live_event_fallback_budget_exhausted", "selected_daily_task_row_not_currently_actionable",
     "daily_quick_panel_row_has_no_registered_skill", "daily_panel_already_read_not_actionable",
     "daily_tab_not_confirmed_after_task_board", "skill_not_ready", "no_ready_skill",
+    # A step that issued no action at all.  The third reason in this module to be missing from
+    # a table and fall through to SYSTEM_FAILURE, which the panel reads as ``healthy=False``
+    # and which therefore stops the cycle: measured 2026-10-02T18:29:15Z, after 206
+    # consecutive healthy rounds, one round ending ``NO_EXECUTION`` left the device idle for
+    # five hours (``tools/measure_auto_uptime.py`` reported
+    # ``last_halt_reason="本轮被判定为系统故障：NO_EXECUTION"``, ``current_consecutive_continues`` 0).
+    #
+    # It belongs here rather than in EXPECTED_NO_ACTION because it is not "nothing needed
+    # doing" -- a skill was named at the decision level and could not run, which is the same
+    # statement as ``skill_not_ready`` and ``no_ready_skill`` beside it.  And it is the reason
+    # ``_failure_type_from`` already gives a step that did not execute, so the category now
+    # agrees with the failure_type the episode was recorded under.
+    "NO_EXECUTION",
     "GLOBAL_REFRESH_REQUIRED_NO_SAFE_CANDIDATE",
     "GLOBAL_CAPABILITY_GAP_NO_EXECUTABLE_CANDIDATE",
     "GLOBAL_CANDIDATE_GENERATION_GAP", "ROLE_IDENTITY_UNCONFIRMED",
