@@ -3803,3 +3803,31 @@ longest_consecutive_continues 206 · current_consecutive_continues 0
 >
 > **配套测试应断言「这三个已知肇事者的并集都不会被分类成 SYSTEM_FAILURE」**，
 > 这样第四个靠类比加进来的 reason 有东西可失败。
+
+## 通则：恢复生产走计划任务/启动脚本，绝不手工拉进程（2026-10-03）
+
+生产停摆（`NO_EXECUTION` → `SYSTEM_FAILURE` → 5 小时空转）后的恢复流程：
+
+```
+tools/preflight.py                                  # VERDICT: PASS 才继续
+Stop-ScheduledTask  -TaskName WinterAgentV2Panel    # 停掉持有旧代码的进程
+Start-ScheduledTask  -TaskName WinterAgentV2Panel
+Get-ScheduledTaskInfo -TaskName WinterAgentV2Panel  # LastTaskResult 必须查
+```
+
+**第一次 `Start` 失败（`LastTaskResult: 1`）**：生产树有未跟踪文件
+`tests/test_refused_step_is_recorded.py`（我 `revert` 后的残留）⇒
+`launch_pinned_production.py:129 verify_pin` 抛
+`production code worktree has unreviewed changes`。
+
+> **这次失败是 pin 校验在正确工作**：它拦住了一个"我以为清理干净了"的未审阅文件。
+> **若我图省事绕过 `launch_pinned_production.py` 直接 `pythonw` 拉进程，
+> 就会把未审阅代码注入生产。**
+> **纪律：生产入口只有一个；`LastTaskResult` 非 0 时先查它，不要重试、不要绕路。**
+>
+> **为什么必须重启进程**：每个 cycle 是全新子进程（磁盘代码下一轮生效），
+> **但控制平面持有旧 import** —— `control_plane_reload.py` 的 docstring 写明
+> *"the stale code was in the window, not in a live cycle"*。
+> **改 runtime 类代码 ⇒ 下一轮生效；改被面板 import 的代码 ⇒ 必须重启窗口。**
+> 判断依据：`runtime_reload.py`（worker，`RUNTIME_RELOAD_REQUIRED`）
+> vs `control_plane_reload.py`（窗口，`CONTROL_PLANE_RELOAD_REQUIRED`）。
