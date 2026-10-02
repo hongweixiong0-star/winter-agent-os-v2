@@ -41,6 +41,14 @@ PROTECTED_SUFFIXES = {".json", ".jsonl", ".md", ".py"}
 EPISODE_STREAM = "learning/episodes.jsonl"
 REFERENCE_KEYS = ("before_screenshot", "after_screenshot", "screenshot")
 
+#: The same problem, second stream.  ``truth_audit`` protects the calibration corpus *file*, but
+#: every ``frame`` its rows name lives under the prunable runtime capture tree, so a row survived
+#: only while some episode happened to cite the same file.  Measured 2026-10-02: 80 of the 136
+#: positive frames were already gone, and the sweep had taken the source frame of 10 of the 31
+#: auto-collected templates.  A calibration set that shrinks every cycle cannot calibrate.
+CORPUS_REL = Path("dataset/truth_audit/icon_label_controls/samples.json")
+CORPUS_FRAME_KEYS = ("frame",)
+
 
 def _normalized(parts: tuple[str, ...]) -> set[str]:
     return {part.lower() for part in parts}
@@ -82,6 +90,38 @@ def referenced_evidence(root: Path, stream: Path | None = None) -> set[Path]:
             if isinstance(value, str) and value:
                 referenced.add(Path(value))
     return referenced
+
+
+def corpus_evidence(root: Path, corpus: Path | None = None) -> set[Path]:
+    """Absolute paths of every screenshot the calibration corpus cites.
+
+    The second of the two evidence streams.  ``referenced_evidence`` covers frames a production
+    episode points at; this covers frames a calibration row points at, and they are different sets
+    -- measured 2026-10-02, 80 of the corpus's 136 positive frames had been pruned while nothing
+    in the episode stream referred to them.
+
+    Tolerant on purpose, for the same reason ``referenced_evidence`` is: this runs inside the
+    pruning pass, and a crash here would leave the disk unbounded and take AUTO down with it.
+    """
+    target = corpus or (root / CORPUS_REL)
+    cited: set[Path] = set()
+    if not target.is_file():
+        return cited
+    try:
+        payload = json.loads(target.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, json.JSONDecodeError):
+        return cited
+    rows = payload.get("hits") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return cited
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        for key in CORPUS_FRAME_KEYS:
+            value = row.get(key)
+            if isinstance(value, str) and value:
+                cited.add(Path(value))
+    return cited
 
 
 def select_prunable_screenshots(
@@ -167,7 +207,10 @@ def prune_runtime_screenshots(
     resolved_root = root.resolve()
     if not resolved_root.is_dir():
         return []
-    referenced = referenced_evidence(find_repo_root(resolved_root), episodes_path)
+    repo = find_repo_root(resolved_root)
+    # Both evidence streams, not just the episode one: a frame the calibration corpus cites is as
+    # load-bearing as a frame an episode cites, and it lives in the same prunable tree.
+    referenced = referenced_evidence(repo, episodes_path) | corpus_evidence(repo)
     images = [
         path
         for path in resolved_root.rglob("*")
