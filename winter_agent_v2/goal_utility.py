@@ -462,6 +462,30 @@ def observation_ticket(goal: Any) -> float:
     evidence = getattr(goal, "evidence", None)
     if not isinstance(evidence, Mapping) or not evidence.get("required_observation"):
         return 0.0
+    # A projection is not an observer.  Some rows are records *about* work rather than work:
+    # ``_append_alliance_timed_provider`` builds ``ALLIANCE_TIMED_EVENTS`` with
+    # ``available_skills=()`` and ``execution_owner="EXISTING_EVENT_GOALS"``, and its own
+    # docstring says it is "a provider record, never a second execution instance".  Such a
+    # row may be priced and refused, but it may not hold a ticket, because a ticket is a
+    # promise that somebody will go and read what it is waiting for.
+    #
+    # Measured 2026-10-03 on the live board: that row answered 50.0 while carrying no route
+    # and, with ``linked_goal_ids == []``, no owner either -- so it was ranked by a ticket
+    # and then refused at the selection boundary with "priced as observable but has no
+    # route".  A ticket nobody can act on is the operator's forbidden state reached from a
+    # new direction: not "no skill" but "no skill **and no owner**".
+    #
+    # The test is the row's own ``execution_owner`` rather than a list of goal ids, so a
+    # future projection is recognised by declaring itself one instead of by being added to
+    # a table here.  ``linked_goal_ids`` is the second half and is deliberately *not* the
+    # test: a projection whose owner happens to be on the board is still not the thing that
+    # will read anything -- the owner is -- and the observation belongs to the owner's own
+    # row.  The row stays visible either way, which is what keeps this from becoming the
+    # "unpriced and invisible" black hole the same function's docstring warns about.
+    if str(evidence.get("execution_owner") or "").strip().upper() in {
+            "EXISTING_EVENT_GOALS", "EXTERNAL_OWNER",
+    }:
+        return 0.0
     from .goal_library import deadline_pressure  # local: goal_library imports this module
 
     def number(name: str) -> float:
