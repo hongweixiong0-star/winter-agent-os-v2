@@ -10,10 +10,31 @@
     "role": "developer-only queue; never game runtime model fallback"
   },
   "handoff_gate": {
-    "activation_state": "AUTHORIZED_AFTER_CODEX_TURN_END",
-    "currently_active_release_owner": "Codex current thread",
+    "activation_state": "EXCLUSIVE_WORKBUDDY_CLAIM_RECORDED",
+    "currently_active_release_owner": "WorkBuddy developer (claim recorded; current activity requires fresh evidence)",
     "codex_continues_now": false,
-    "trigger_any": [
+    "trigger_is_not_proof_of_transfer": true,
+    "require_before_writes": [
+      "Re-read actual exclusive task01 claim, current files/processes and no conflicting source/release writer; DONE or cq.py plan alone does not authorize",
+      "Inspect latest HEAD/PIN/loaded revision and preserve unrelated dirty/untracked work",
+      "Device input only via existing exclusive DeviceLease and safe atomic handoff",
+      "Only claimed WorkBuddy publishes/reloads; Codex governance delivery does not revoke claim"
+    ],
+    "release_operations_require": "Existing exclusive WorkBuddy claim remains valid, no concurrent release/input, targeted checks and safe boundary; normal push only.",
+    "user_action": "WorkBuddy reads START_HERE and the local FINAL/Commander contract; no manual copying or repeated approvals.",
+    "no_device_takeover_while_codex_source_release_or_device_active": true,
+    "quota_status_at_capture": {
+      "remaining_percent": 16,
+      "captured_at": "2026-10-01T20:11:47.141043+00:00",
+      "codex_continues_now": false
+    },
+    "historical_conditional_release_authorization": "When Codex explicitly yields due quota/offline and no Codex write/device/release is active, WorkBuddy task01 may record exclusive release-owner claim and proceed with the queued developer tasks. This user-authorized conditional handoff does not permit concurrent releases.",
+    "conditional_release_authorization": "Verified WorkBuddy task01 exclusive claim authorizes developer work and safe release while no concurrent Codex source/release/device operation exists. Passive Codex reads or authorized governance-document delivery do not revoke the claim. Concurrent releases or input remain forbidden.",
+    "explicit_codex_yield_at": "2026-10-01T20:11:47.141043+00:00",
+    "release_owner_transfer_authorized": true,
+    "next_release_owner": "Existing WorkBuddy claim remains; no transfer back to Codex in this delivery",
+    "actual_workbuddy_execution_started": true,
+    "historical_trigger_any": [
       {
         "type": "codex_quota_remaining_percent_lte",
         "value": 15
@@ -22,37 +43,35 @@
         "type": "codex_paused_or_offline"
       }
     ],
-    "trigger_is_not_proof_of_transfer": true,
-    "require_before_writes": [
-      "确认本Codex turn已经结束、无其他release writer",
-      "核对最新code951abbd/pin/loaded worker、Git/当前AUTO、现有DeviceLease",
-      "保存并结算旧执行态，不重写原WorkOrder；通过task01记录WorkBuddy独占claim",
-      "Claim后才执行开发push/安全pin/reload，不与Codex heartbeat并发"
-    ],
-    "release_operations_require": "Root has explicitly authorized transfer after this turn; WorkBuddy must record exclusive task01 claim and recheck no concurrent input/release before publishing.",
-    "until_release_owner_transferred": {
+    "actual_execution_evidence": {
+      "claim_result": ".workbuddy-ai/commander/results/WB-1002-01-HANDOFF-FACTS.json",
+      "claim_result_sha256": "53B01F61802F6B6AF32B612AD9FF1C2FD2EAADE7AEF4F7E348ADDC097F2E1CAF",
+      "recorded_at": "2026-10-01T23:32:27+00:00",
+      "subsequent_development_commit": "060d75b",
+      "fresh_execution_not_assumed": true
+    },
+    "release_operations_allowed_for_claimed_owner": {
+      "push_main": true,
+      "repin_production": true,
+      "reload_auto": true
+    },
+    "codex_delivery_permissions": {
+      "governance_documents_and_queue": true,
+      "source_development": false,
       "push_main": false,
       "repin_production": false,
-      "reload_auto": false
-    },
-    "user_action": "用户只需启动WorkBuddy，它读取正式WORK_QUEUE；不得要求用户手工复制任务。",
-    "no_device_takeover_while_codex_active": true,
-    "quota_status_at_capture": {
-      "remaining_percent": 16,
-      "captured_at": "2026-10-01T20:11:47.141043+00:00",
-      "codex_continues_now": false
-    },
-    "conditional_release_authorization": "When Codex explicitly yields due quota/offline and no Codex write/device/release is active, WorkBuddy task01 may record exclusive release-owner claim and proceed with the queued developer tasks. This user-authorized conditional handoff does not permit concurrent releases.",
-    "explicit_codex_yield_at": "2026-10-01T20:11:47.141043+00:00",
-    "release_owner_transfer_authorized": true,
-    "next_release_owner": "WorkBuddy after exclusive task01 claim",
-    "actual_workbuddy_execution_started": false
+      "reload_auto": false,
+      "device_input": false
+    }
   },
   "execution_budget": {
-    "total_timebox_minutes": 525,
-    "maximum_active_work_hours": 8.75,
+    "total_timebox_minutes": 570,
+    "maximum_active_work_hours": 9.5,
     "target_observation_window_hours": "12–24仅作为条件允许的普通AUTO背景观察，不承诺12小时有效开发",
-    "note": "8单30–90分钟，最大主动timebox合计525分钟；缺窗口/条件明确记录后转下一单，不空等。"
+    "note": "每个根因有界timebox；缺条件后继续其他工作。每轮依据fresh evidence重选；原525min不是长期负责人停止上限。",
+    "original_eight_order_timebox_minutes": 525,
+    "scope": "Sum of initial nine backlog timeboxes, not a total limit or fixed route for continuous development",
+    "stop_after_seed_backlog": false
   },
   "architecture_constraints": [
     "一个Global Scheduler",
@@ -85,7 +104,9 @@
       "SKILL_REUSABLE",
       "LIVE_VERIFIED",
       "STABLE"
-    ]
+    ],
+    "queue_writer_after_claim": "WorkBuddy may append unique orders and record evidence-based reprioritization in the same queue; preserve originals/history.",
+    "completion_note": "cq.py DONE is result bookkeeping, not L5; --require-live checks evidence presence, not truth. Actual Verifier/Episodes remain authority."
   },
   "orders": [
     {
@@ -105,13 +126,13 @@
         "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
         "其他角色实时状态、探索授权、资源预算",
         "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
-        "未移交 Release Owner 时的 main push / production repin / reload",
-        "WORK_QUEUE.json / CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md 原 Work Order",
+        "No release without valid exclusive claim; no concurrent push/repin/reload.",
+        "Preserve original work orders and results; append new autonomous root-cause orders to the same queue after claim; no second queue.",
         "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop",
-        "Codex仍活跃时并发输入/共享代码写入；陈旧snapshot alive字段不得当进程实证"
+        "No concurrent source/device/release writers. Codex governance-only delivery and passive heartbeats do not reclaim the WorkBuddy claim."
       ],
       "status": "READY",
-      "activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。",
+      "activation_rule": "Seed backlog only. Actual valid exclusive WorkBuddy claim and current file/device ownership required. cq.py eligibility is not authorization; choose highest-value current root cause under autonomous_development.",
       "task_id": "WB-1002-01-HANDOFF-FACTS",
       "priority": "P0",
       "objective": "恢复接手时真实事实并确认唯一Release Owner、文件所有权与安全继续条件",
@@ -170,7 +191,10 @@
         ".workbuddy-ai/commander/results/WB-1002-01-HANDOFF-FACTS.json",
         ".workbuddy-ai/commander/BLOCKED_QUEUE.json",
         ".workbuddy-ai/commander/REVIEW_REQUESTS.md"
-      ]
+      ],
+      "prior_dependencies": [],
+      "prior_activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。",
+      "evidence_context": "Original evidence/hints describe their capture window. Re-read current code/Episodes before development; old metrics and order position do not determine next work."
     },
     {
       "required_tool": [
@@ -189,8 +213,8 @@
         "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
         "其他角色实时状态、探索授权、资源预算",
         "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
-        "未移交 Release Owner 时的 main push / production repin / reload",
-        "WORK_QUEUE.json / CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md 原 Work Order",
+        "No release without valid exclusive claim; no concurrent push/repin/reload.",
+        "Preserve original work orders and results; append new autonomous root-cause orders to the same queue after claim; no second queue.",
         "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
       ],
       "status": "READY",
@@ -258,7 +282,36 @@
         "tests/test_event_schedule.py",
         "本单focused calendar starvation regression"
       ],
-      "activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。"
+      "activation_rule": "Seed backlog only. Actual valid exclusive WorkBuddy claim and current file/device ownership required. cq.py eligibility is not authorization; choose highest-value current root cause under autonomous_development.",
+      "prior_dependencies": [
+        "WB-1002-01-HANDOFF-FACTS"
+      ],
+      "prior_activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。",
+      "evidence_context": "Original evidence/hints describe their capture window. Re-read current code/Episodes before development; old metrics and order position do not determine next work.",
+      "prepared_codex_patch": {
+        "commit": "aab14bb5f240815ab5a86a41d85ead3a60ab99ce",
+        "branch": "codex/calendar-detail-liveness",
+        "worktree": "C:\\Users\\xhw\\.codex\\worktrees\\calendar-detail-liveness\\无尽冬日智能体",
+        "base_commit": "77d5b4b09bbe21193cfe467d6363dc66726b3ce6",
+        "scope": [
+          "winter_agent_v2/runtime.py",
+          "tests/test_event_calendar.py",
+          "tests/test_calendar_detail_attribution.py"
+        ],
+        "root_cause": "Same event name inherited an old calendar occurrence key; current grid rejected it and remained pending. Reuse only an unreturned detail with a key still present for the same event/role in the current grid; otherwise attribute the currently pending row. Preserve strict store rejection and role isolation.",
+        "tests": "36 passed: attribution plus existing calendar/reader regressions; five new cases",
+        "maturity": [
+          "CODE_EXISTS",
+          "TEST_PASS",
+          "INDEPENDENT_READ_REVIEW"
+        ],
+        "production_loaded": false,
+        "main_merged": false,
+        "remote_pushed": false,
+        "release_owner": "Existing WorkBuddy exclusive claim remains",
+        "integration_action": "Owner may inspect/cherry-pick this local commit, then targeted checks and safe owner repin/reload. Real calendar completion remains to verify.",
+        "separate_next_root_cause": "Navigation distance changes still count as calendar progress; address separately, not mixed into this commit."
+      }
     },
     {
       "required_tool": [
@@ -277,8 +330,8 @@
         "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
         "其他角色实时状态、探索授权、资源预算",
         "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
-        "未移交 Release Owner 时的 main push / production repin / reload",
-        "WORK_QUEUE.json / CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md 原 Work Order",
+        "No release without valid exclusive claim; no concurrent push/repin/reload.",
+        "Preserve original work orders and results; append new autonomous root-cause orders to the same queue after claim; no second queue.",
         "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
       ],
       "status": "READY",
@@ -331,8 +384,7 @@
       "stop_condition": "90分钟或局部预算耗尽；无可靠低风险当前帧目标；设备/模型不可用；已有能力可直接完成而无真实UNKNOWN。",
       "fallback_action": "记录具体阻塞、成功前置步骤和当前trace；写 WorkBuddy BLOCKED_QUEUE/results，不伪造完整成功，自动下一单。",
       "dependencies": [
-        "WB-1002-01-HANDOFF-FACTS",
-        "WB-1002-02-CALENDAR-STARVATION"
+        "WB-1002-01-HANDOFF-FACTS"
       ],
       "files_scope": [
         "winter_agent_v2/capability_bootstrap.py",
@@ -341,7 +393,13 @@
         "tests/test_runtime_capability_discovery_lane.py",
         "本单 targeted regression tests"
       ],
-      "activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。"
+      "activation_rule": "Seed backlog only. Actual valid exclusive WorkBuddy claim and current file/device ownership required. cq.py eligibility is not authorization; choose highest-value current root cause under autonomous_development.",
+      "prior_dependencies": [
+        "WB-1002-01-HANDOFF-FACTS",
+        "WB-1002-02-CALENDAR-STARVATION"
+      ],
+      "prior_activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。",
+      "evidence_context": "Original evidence/hints describe their capture window. Re-read current code/Episodes before development; old metrics and order position do not determine next work."
     },
     {
       "required_tool": [
@@ -360,8 +418,8 @@
         "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
         "其他角色实时状态、探索授权、资源预算",
         "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
-        "未移交 Release Owner 时的 main push / production repin / reload",
-        "WORK_QUEUE.json / CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md 原 Work Order",
+        "No release without valid exclusive claim; no concurrent push/repin/reload.",
+        "Preserve original work orders and results; append new autonomous root-cause orders to the same queue after claim; no second queue.",
         "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
       ],
       "status": "READY",
@@ -417,8 +475,7 @@
       "stop_condition": "60分钟，现有live帧不存在/无安全目标/同文件Root正在改；不能为coverage转未经授权战斗。",
       "fallback_action": "给每Goal唯一为什么没做的reason，保存具体missing observation/entry/root cause并下一单，旧pending不占生产任务槽。",
       "dependencies": [
-        "WB-1002-01-HANDOFF-FACTS",
-        "WB-1002-02-CALENDAR-STARVATION"
+        "WB-1002-01-HANDOFF-FACTS"
       ],
       "files_scope": [
         "已有Capability Coverage/Goal metadata最小真实映射修正",
@@ -427,7 +484,13 @@
         "对应focused candidate/entry/role isolation tests",
         "既有知识/模板CANDIDATE登记（真实来源，坐标不持久化）"
       ],
-      "activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。"
+      "activation_rule": "Seed backlog only. Actual valid exclusive WorkBuddy claim and current file/device ownership required. cq.py eligibility is not authorization; choose highest-value current root cause under autonomous_development.",
+      "prior_dependencies": [
+        "WB-1002-01-HANDOFF-FACTS",
+        "WB-1002-02-CALENDAR-STARVATION"
+      ],
+      "prior_activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。",
+      "evidence_context": "Original evidence/hints describe their capture window. Re-read current code/Episodes before development; old metrics and order position do not determine next work."
     },
     {
       "required_tool": [
@@ -446,8 +509,8 @@
         "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
         "其他角色实时状态、探索授权、资源预算",
         "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
-        "未移交 Release Owner 时的 main push / production repin / reload",
-        "WORK_QUEUE.json / CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md 原 Work Order",
+        "No release without valid exclusive claim; no concurrent push/repin/reload.",
+        "Preserve original work orders and results; append new autonomous root-cause orders to the same queue after claim; no second queue.",
         "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
       ],
       "status": "READY",
@@ -491,15 +554,20 @@
       "stop_condition": "60分钟无真实适用页面；连续局部恢复预算耗尽；代码根因需公共大重构。",
       "fallback_action": "保存观察/成功导航与具体缺口，defer研究局部流程，继续其他Goal。",
       "dependencies": [
-        "WB-1002-01-HANDOFF-FACTS",
-        "WB-1002-02-CALENDAR-STARVATION"
+        "WB-1002-01-HANDOFF-FACTS"
       ],
       "files_scope": [
         "具体科研返回/页面归属最小修复",
         "现有Verifier的必要层级识别修复",
         "科研返回相关targeted tests"
       ],
-      "activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。"
+      "activation_rule": "Seed backlog only. Actual valid exclusive WorkBuddy claim and current file/device ownership required. cq.py eligibility is not authorization; choose highest-value current root cause under autonomous_development.",
+      "prior_dependencies": [
+        "WB-1002-01-HANDOFF-FACTS",
+        "WB-1002-02-CALENDAR-STARVATION"
+      ],
+      "prior_activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。",
+      "evidence_context": "Original evidence/hints describe their capture window. Re-read current code/Episodes before development; old metrics and order position do not determine next work."
     },
     {
       "required_tool": [
@@ -518,8 +586,8 @@
         "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
         "其他角色实时状态、探索授权、资源预算",
         "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
-        "未移交 Release Owner 时的 main push / production repin / reload",
-        "WORK_QUEUE.json / CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md 原 Work Order",
+        "No release without valid exclusive claim; no concurrent push/repin/reload.",
+        "Preserve original work orders and results; append new autonomous root-cause orders to the same queue after claim; no second queue.",
         "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
       ],
       "status": "READY",
@@ -562,15 +630,20 @@
       "stop_condition": "75分钟无可用队列/体力/明确目标；ownership未知且没有合法观测；存在活动hard deadline。",
       "fallback_action": "记录 AWAITING_LIVE 与缺slot/target/ownership具体条件；普通野怪/其他Goal仍可继续。",
       "dependencies": [
-        "WB-1002-01-HANDOFF-FACTS",
-        "WB-1002-02-CALENDAR-STARVATION"
+        "WB-1002-01-HANDOFF-FACTS"
       ],
       "files_scope": [
         "真实当前帧巨兽/own-rally reader的最小修复",
         "既有rally_created Verifier证据绑定",
         "对应polar/session focused tests"
       ],
-      "activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。"
+      "activation_rule": "Seed backlog only. Actual valid exclusive WorkBuddy claim and current file/device ownership required. cq.py eligibility is not authorization; choose highest-value current root cause under autonomous_development.",
+      "prior_dependencies": [
+        "WB-1002-01-HANDOFF-FACTS",
+        "WB-1002-02-CALENDAR-STARVATION"
+      ],
+      "prior_activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。",
+      "evidence_context": "Original evidence/hints describe their capture window. Re-read current code/Episodes before development; old metrics and order position do not determine next work."
     },
     {
       "required_tool": [
@@ -589,8 +662,8 @@
         "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
         "其他角色实时状态、探索授权、资源预算",
         "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
-        "未移交 Release Owner 时的 main push / production repin / reload",
-        "WORK_QUEUE.json / CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md 原 Work Order",
+        "No release without valid exclusive claim; no concurrent push/repin/reload.",
+        "Preserve original work orders and results; append new autonomous root-cause orders to the same queue after claim; no second queue.",
         "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
       ],
       "status": "READY",
@@ -633,8 +706,7 @@
       "stop_condition": "60分钟真实queue不空闲/前置资源不满足/当前目标未知；本单预算或高优先deadline到达。",
       "fallback_action": "保存安全导航Candidate与具体precondition，AWAITING_LIVE/WAITING，继续Scheduler。",
       "dependencies": [
-        "WB-1002-01-HANDOFF-FACTS",
-        "WB-1002-02-CALENDAR-STARVATION"
+        "WB-1002-01-HANDOFF-FACTS"
       ],
       "files_scope": [
         "真实建筑入口/identity最小修复",
@@ -642,7 +714,13 @@
         "对应building targeted tests",
         "必要当前UI语义/候选模板"
       ],
-      "activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。"
+      "activation_rule": "Seed backlog only. Actual valid exclusive WorkBuddy claim and current file/device ownership required. cq.py eligibility is not authorization; choose highest-value current root cause under autonomous_development.",
+      "prior_dependencies": [
+        "WB-1002-01-HANDOFF-FACTS",
+        "WB-1002-02-CALENDAR-STARVATION"
+      ],
+      "prior_activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。",
+      "evidence_context": "Original evidence/hints describe their capture window. Re-read current code/Episodes before development; old metrics and order position do not determine next work."
     },
     {
       "required_tool": [
@@ -661,8 +739,8 @@
         "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
         "其他角色实时状态、探索授权、资源预算",
         "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
-        "未移交 Release Owner 时的 main push / production repin / reload",
-        "WORK_QUEUE.json / CODEX_DIRECTIVES.md / LAST_CODEX_REVIEW.md 原 Work Order",
+        "No release without valid exclusive claim; no concurrent push/repin/reload.",
+        "Preserve original work orders and results; append new autonomous root-cause orders to the same queue after claim; no second queue.",
         "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
       ],
       "status": "READY",
@@ -715,6 +793,15 @@
       "stop_condition": "45分钟或新P0需Root/ReleaseOwner优先处理；没有发布权不得repin/reload/push，活动硬deadline停止开发输入。",
       "fallback_action": "通过现有Supervisor保持AUTO；新异常根因不清则保存BLOCKED/REVIEW_REQUESTS并转其他无设备任务。",
       "dependencies": [
+        "WB-1002-01-HANDOFF-FACTS"
+      ],
+      "files_scope": [
+        "唯一已复现新crash/环境恢复最小根因模块",
+        "对应focused regression test",
+        "既有telemetry缺失字段的最小补齐"
+      ],
+      "activation_rule": "Seed backlog only. Actual valid exclusive WorkBuddy claim and current file/device ownership required. cq.py eligibility is not authorization; choose highest-value current root cause under autonomous_development.",
+      "prior_dependencies": [
         "WB-1002-01-HANDOFF-FACTS",
         "WB-1002-02-CALENDAR-STARVATION",
         "WB-1002-03-BOOTSTRAP-FIRST-SECOND",
@@ -723,12 +810,180 @@
         "WB-1002-06-GIANT-RALLY-VERIFIER",
         "WB-1002-07-BUILD-STARTED"
       ],
-      "files_scope": [
-        "唯一已复现新crash/环境恢复最小根因模块",
-        "对应focused regression test",
-        "既有telemetry缺失字段的最小补齐"
+      "prior_activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。",
+      "evidence_context": "Original evidence/hints describe their capture window. Re-read current code/Episodes before development; old metrics and order position do not determine next work."
+    },
+    {
+      "required_tool": [
+        ".venv/Scripts/python.exe",
+        "git",
+        "tools/cq.py",
+        "现有 Runtime / MAA / DeviceLease / pytest"
       ],
-      "activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。"
+      "recommended_tool": "优先现有 Runtime、MAA、Verifier、UI-Venus 与 Learning Funnel；仅对明确根因做小改动。",
+      "preferred_backend": "MAA current-frame semantic execution；唯一 UI-Venus 仅 ONLINE_UNKNOWN；32K context",
+      "fallback_backend": "现有 deterministic / L1 learned step / bounded local reobserve；ADB 仅既有 fallback，不绕过租约",
+      "do_not_touch": [
+        "第二 Scheduler / Executor / WorldState / Session Engine / 本地模型",
+        "MAI runtime；WorkBuddy retired runtime channel 或自动模型派发",
+        "Codex 仍拥有的共享 dirty 代码与未确认归属文件",
+        "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
+        "其他角色实时状态、探索授权、资源预算",
+        "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
+        "No release without valid exclusive claim; no concurrent push/repin/reload.",
+        "Preserve original work orders and results; append new autonomous root-cause orders to the same queue after claim; no second queue.",
+        "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop",
+        "No concurrent source/device/release writers. Codex governance-only delivery and passive heartbeats do not reclaim the WorkBuddy claim."
+      ],
+      "status": "READY",
+      "activation_rule": "Seed backlog only. Actual valid exclusive WorkBuddy claim and current file/device ownership required. cq.py eligibility is not authorization; choose highest-value current root cause under autonomous_development.",
+      "task_id": "WB-1002-09-VENUS-SERVICE-LIVENESS",
+      "priority": "P1",
+      "objective": "恢复唯一既有UI-Venus服务的可用性与跨开发轮次存活，让真实UNKNOWN能继续学习",
+      "why_now": "2026-10-02 10:12 CST健康端口18080拒绝连接；08:19真实AUTO ledger VENUS_CALL_FAILED。Known AUTO仍运行，但学习能力缺少模型服务。先重读现状再与其它共享根因比较价值。",
+      "current_evidence": "learning/ui_venus_online.jsonl trace unknown_b56bf17bccf542f39b71d9dce435b33a / AVOID_STAMINA_WASTE / LOCAL_GUI_MODEL_UNAVAILABLE；10:12只读health拒绝连接。服务恢复不等于FIRST/SECOND成功。",
+      "root_cause_or_hypothesis": "服务进程不可用已确认；退出原因尚待启动/退出日志与父进程证据，不能直接归因OOM或宿主回收。",
+      "files_to_inspect": [
+        "tools/launch_gui_model_server.py",
+        "config/v2.json",
+        "docs/LOCAL_PLANNER_ACCEPTANCE.md",
+        "已有服务启动/退出日志与进程父子关系",
+        "learning/ui_venus_online.jsonl",
+        "当前UI-Venus 32K配置及单服务监听"
+      ],
+      "files_allowed_to_modify": [
+        "已有模型服务启动/驻留脚本的已确认生命周期缺陷",
+        "对应targeted regression",
+        "现有服务监控/handoff；不增加模型或Planner"
+      ],
+      "implementation_hint": "先TOOL CHECK和完整现有服务生命周期追踪。只恢复当前UI-Venus-2-9B Q4_K_M/32768配置；先健康检查和进程核实，避免重复server。不未经测量改context/offload，不为证明模型而制造UNKNOWN。",
+      "test_plan": "针对已确认服务/宿主根因验证；模型不可用时Known路径不调用模型且AUTO继续；服务ready不重复启动；不跑全suite。",
+      "replay_plan": "对照实际服务退出日志、父进程和请求失败时间；区分timeout、连接拒绝、OOM和正常退出。",
+      "live_plan": "在有效WorkBuddy claim下复用既有服务启动机制；只读health确认ready，跨至少两个正常AUTO run boundary确认服务与AUTO存活。真正UNKNOWN自然出现后沿现有预算观察调用，不额外消耗游戏资源。",
+      "verifier": "实际sole server/health ready/32K配置与正常AUTO存活可追溯；真实UNKNOWN结果另按Grounding/MAA/Verifier记录。",
+      "before_metric": {
+        "service_health_at_1012": "CONNECTION_REFUSED",
+        "runtime_model_call_last_failure": "2026-10-02T08:19:57+08:00",
+        "learning_loop_proven": false
+      },
+      "target_metric": {
+        "sole_existing_service_available": true,
+        "model_context": 32768,
+        "known_path_model_calls": 0,
+        "auto_continued": true,
+        "service_survives_two_run_boundaries": true
+      },
+      "acceptance": [
+        "只复用当前一个模型/服务与现有Planner，不创建runtime WorkBuddy通道。",
+        "服务恢复和真实学习闭环分开验收；没有模型grounding/MAA/Verifier证据不宣称FIRST/SECOND。",
+        "根因未明或当前已恢复时按真实事实记录并重新选题；Known AUTO继续。"
+      ],
+      "timebox_minutes": 45,
+      "stop_condition": "45min仍无法恢复/归因，或发现已由当前owner恢复；记录具体环境条件与retry/wake触发，转其他高价值工作。",
+      "fallback_action": "当前UNKNOWN暂cooldown，继续Known与无需模型的Discovery；保存服务阻塞和再次检查时间，不永久过滤Goal、不重启第二模型。",
+      "dependencies": [
+        "WB-1002-01-HANDOFF-FACTS"
+      ],
+      "files_scope": [
+        "已有模型服务启动/驻留脚本的已确认生命周期缺陷",
+        "对应targeted regression",
+        "现有服务监控/handoff；不增加模型或Planner"
+      ],
+      "prior_dependencies": [],
+      "prior_activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。",
+      "evidence_context": "Original evidence/hints describe their capture window. Re-read current code/Episodes before development; old metrics and order position do not determine next work.",
+      "external_service_recovery_evidence": {
+        "record": ".workbuddy-ai/handoff/CODEX_ASSISTANCE_20261002_1204.json",
+        "recorded_at": "2026-10-02T04:19:57.742791+00:00",
+        "health": "OK_32768_VISION",
+        "auto_continued": true,
+        "final_task_result_not_written": true,
+        "remaining": "Owner checks sustained availability; old exit root cause unproven. Service readiness is not a learned step."
+      }
+    },
+    {
+      "required_tool": [
+        ".venv/Scripts/python.exe",
+        "git",
+        "tools/cq.py",
+        "现有 Runtime / MAA / DeviceLease / pytest"
+      ],
+      "recommended_tool": "优先现有 Runtime、MAA、Verifier、UI-Venus 与 Learning Funnel；仅对明确根因做小改动。",
+      "preferred_backend": "MAA current-frame semantic execution；唯一 UI-Venus 仅 ONLINE_UNKNOWN；32K context",
+      "fallback_backend": "现有 deterministic / L1 learned step / bounded local reobserve；ADB 仅既有 fallback，不绕过租约",
+      "do_not_touch": [
+        "第二 Scheduler / Executor / WorldState / Session Engine / 本地模型",
+        "MAI runtime；WorkBuddy retired runtime channel 或自动模型派发",
+        "Codex 仍拥有的共享 dirty 代码与未确认归属文件",
+        "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
+        "其他角色实时状态、探索授权、资源预算",
+        "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
+        "No release without valid exclusive claim; no concurrent push/repin/reload.",
+        "Preserve original work orders and results; append new autonomous root-cause orders to the same queue after claim; no second queue.",
+        "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
+      ],
+      "status": "READY",
+      "task_id": "WB-1002-10-BEAST-TAB-BRACKET-LOCK",
+      "priority": "P1",
+      "objective": "让「选择框标的是哪个页签」的读取不再因自身的宽松容差而返回 None，使普通野兽搜索的切页签动作能被真实识别与验证",
+      "timebox_minutes": 75,
+      "why_now": "2026-10-02 全天 80 条 FAILURE 中 AVOID_STAMINA_WASTE 占 43 条、位居第一；其中 OPEN_BEAST_SEARCH_TAB 失败 16 条（BEAST_SEARCH_TAB_NOT_PROVEN 8 + SEMANTIC_TARGET_NOT_VERIFIED 8），并且每次失败后都会走 ONLINE_UNKNOWN_NAVIGATION 去问 UI-Venus，而该画面唯一诚实的答案是 REPLAN —— 同一身份在 7 小时内被重复问了 9 次，4 次纯超时。不是点击错，是读取错。",
+      "current_evidence": "episode 20261002_123127_711948 step_004：点击后客户端的选择框已明显从 冰原巨兽 移到 野兽（after_refresh_2 帧），state_after.resource_selected_tab 却是 null，verifier_evidence.after_selected = null ⇒ BEAST_SEARCH_TAB_NOT_PROVEN。同批 40 帧（ledger 记 resource_search_open=true）实测：真括号对中心到自身标签 0.0000/0.0003/0.0010；最接近的伪括号对到任意标签 0.0212（15.3 px），分离 15.3 倍。旧容差 0.03 两者都收，函数在两种 kind 同时命中时拒绝猜，于是回答 None。",
+      "root_cause_or_hypothesis": "winter_agent_v2/ocr.py:3780 selected_tab_from_live_labels 的标签容差 0.03 宽于真实几何：括号画在页签正中，真对中心距标签约 1 px，而页签带滚动/多图标帧会产生间距 134.5 px 的伪描边对，其中心恰好落在 15 px 外的相邻标签上。两 kind 同时命中 ⇒ 唯一性判据失败 ⇒ None。",
+      "files_to_inspect": [
+        "winter_agent_v2/ocr.py selected_tab_from_live_labels / read_resource_tab_labels",
+        "winter_agent_v2/vision.py _bracket_strokes / anchored_tab_kind / selected_resource",
+        "winter_agent_v2/verifier.py verify_beast_search_tab_selected",
+        "winter_agent_v2/brain.py 的 beast 搜索分支",
+        "learning/episodes.jsonl 中 OPEN_BEAST_SEARCH_TAB / SUBMIT_GIANT_BEAST_SEARCH 行",
+        "learning/ui_venus_online.jsonl 的 AVOID_STAMINA_WASTE|MAP|BEAST_SEARCH_TAB|MAP 记录"
+      ],
+      "files_allowed_to_modify": [
+        "winter_agent_v2/ocr.py 的页签读取容差与其注释",
+        "tests/test_resource_tab_bracket_lock.py",
+        "本单 targeted regression tests"
+      ],
+      "implementation_hint": "只收紧容差，不改变唯一性判据：容差收紧后接受的集合是原集合的子集，于是函数只可能把某个答案变成 None、或把 None 变成同一个答案，永远不可能把一个页签改判成另一个。0.005 取在实测间隙的几何中点（高于最差真值 4.8 倍、低于最优伪值 4.2 倍）。",
+      "test_plan": "tests/test_resource_tab_bracket_lock.py：先红（4 中 2 红，第 2 条红时旧代码把 15 px 外的伪对判成 SNOW_MONSTER）后绿；相邻 test_stamina_sink_routing / test_resource_tab_anchor / test_semantic_roi_vision 不回归。",
+      "replay_plan": "对失败的那一集归档帧跑生产入口 HybridVision.observe：after 帧由 None 变 BEAST，before 帧仍 GIANT_BEAST；再用真实 verifier verify_beast_search_tab_selected 判定同一对 before/after。",
+      "live_plan": "部署后由 AUTO 自己在下一个 AVOID_STAMINA_WASTE 野兽搜索步上验收；判据是 OPEN_BEAST_SEARCH_TAB 的 BEAST_SEARCH_TAB_NOT_PROVEN 不再出现（SUCCESS 或该步消失均可），不需要为它单独占设备。",
+      "verifier": "verify_beast_search_tab_selected 在真实归档帧上由 ok=False/BEAST_SEARCH_TAB_NOT_PROVEN 变为 ok=True/OK。",
+      "before_metric": {
+        "open_beast_search_tab_failures_2026_10_02": 16,
+        "beast_search_tab_not_proven": 8,
+        "semantic_target_not_verified_on_that_skill": 8,
+        "frames_reading_None_against_a_real_bracket_of_40": 17,
+        "venus_calls_on_the_same_unknown_identity_in_7h": 9,
+        "venus_call_timeouts_on_that_identity": 4
+      },
+      "target_metric": {
+        "open_beast_search_tab_failures_dropping_to": 0,
+        "verifier_ok_on_the_archived_failing_frame": 1,
+        "frames_losing_a_verdict": 0
+      },
+      "acceptance": [
+        "同一批真实帧上没有任何一帧从「已有页签」变成 None（只允许 None → 页签）。",
+        "生产入口而不是我重写的辅助函数给出结论。",
+        "check_wiring problems=0；既有红测试的归属用显式 SHA 的 A/B 说明。"
+      ],
+      "stop_condition": "75 分钟；或发现收紧容差会拿走任何一帧的真实判定（即单调性假设被证伪）。",
+      "fallback_action": "若无法在真实帧上证明单调性，则不改常量，只记录证据并把该缺口写回队列。",
+      "dependencies": [
+        "WB-1002-01-HANDOFF-FACTS"
+      ],
+      "files_scope": [
+        "winter_agent_v2/ocr.py",
+        "tests/test_resource_tab_bracket_lock.py"
+      ],
+      "activation_rule": "Seed backlog only. Actual valid exclusive WorkBuddy claim and current file/device ownership required. cq.py eligibility is not authorization; choose highest-value current root cause under autonomous_development.",
+      "prior_dependencies": [
+        "WB-1002-01-HANDOFF-FACTS",
+        "WB-1002-02-CALENDAR-STARVATION"
+      ],
+      "prior_activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。",
+      "evidence_context": "Original evidence/hints describe their capture window. Re-read current code/Episodes before development; old metrics and order position do not determine next work.",
+      "appended_by": "WorkBuddy autonomous development, 2026-10-02",
+      "appended_reason": "AVOID_STAMINA_WASTE 是当日第一失败目标，而该簇的根因不在任何既有工单的射程内：既有工单分别覆盖日历/竞技场/科研/建筑/稳定性/Venus 服务，没有一条覆盖「页签选择框读取」。按工单契约「新增自主根因工单追加到同一队列」追加，不建第二队列。"
     }
   ],
   "base_facts": {
@@ -798,5 +1053,98 @@
       "prod_pin": "951abbdd039c4955f2cd99fd442ae2aea56ffae3",
       "actual_progress": "Calendar grid real3-stepPASS;detail identity minimum fix951abbd with replay;FULL scan andVenusCandidateSECOND pending"
     }
-  ]
+  ],
+  "autonomous_development": {
+    "mode": "CONTINUOUS_AUTONOMOUS_DEVELOPMENT",
+    "phase": "CAPABILITY_EXPANSION",
+    "responsible_developer": "WorkBuddy after existing exclusive claim",
+    "user_directive": ".workbuddy-ai/commander/WORKBUDDY_AUTONOMOUS_DEVELOPMENT_FINAL.md",
+    "user_directive_sha256": "FB1AF8B85F43A9C26FABB801CC4334618B42371B28FA2614AD5BA8807B7958D7",
+    "source_sections": "0..72 (73 sections, copied byte-for-byte)",
+    "authority": "Latest user FINAL governs conflicting historical queue/gateway rules. Fixed safety and architecture constraints remain.",
+    "cycle": [
+      "FRESH_FACTS",
+      "SELECT_HIGHEST_VALUE_GAP",
+      "ARCHITECTURE_REVIEW",
+      "MINIMUM_IMPLEMENTATION",
+      "TARGETED_TESTS",
+      "SAFE_OWNER_RELEASE",
+      "PRODUCTION_AUTO",
+      "VERIFIER_AND_LEARNING",
+      "REASSESS_NEXT_WORK"
+    ],
+    "selection": "cq.py plan is eligibility plus static advice. Reassess all enabled goals and current blockers after every cycle; pick one highest-value root cause. No fixed task order.",
+    "seed_orders_are_backlog_not_a_route": true,
+    "new_work": "Claimed WorkBuddy may append uniquely identified root-cause orders to this same WORK_QUEUE, with reason, scope, evidence, timebox, acceptance and retry trigger; preserve original orders/results. No second developer queue.",
+    "file_scope": "Old file hints are seed scope. When a shared root cause needs another existing module, declare exact files and ownership in the new order/design review before editing; preserve unrelated dirty work.",
+    "stop_after_seed_orders": false,
+    "blocked_order_retry": "A blocked developer attempt remains immutable history. On relevant evidence/condition change, append a uniquely identified linked retry order in this same queue, referencing the original result; do not reset a historical terminal record. Runtime Goal retry remains the existing Scheduler/cooldown mechanism.",
+    "target_learning_share": 0.5,
+    "learning_measurement": {
+      "selection_window": 20,
+      "effective_work_window_minutes": 30,
+      "unknown_when_unmeasured": true,
+      "exclude_no_progress_repeated_observation": true,
+      "hard_deadline_and_real_high_loss_override": true
+    },
+    "cooldown_design_baseline_seconds": {
+      "first_failure": 60,
+      "three_consecutive": 600,
+      "five_or_more": 3600,
+      "ordinary_maximum": 3600
+    },
+    "cooldown_note": "Implementation suggestion under FINAL section0: reuse one current mechanism; relevant new evidence/progress may reopen. Real game timers may exceed 1h. All work temporarily cooling down permits bounded WAIT with next wake; no permanent UNKNOWN filtering.",
+    "coverage_levels": {
+      "L0": "DISCOVERED",
+      "L1": "AUTO_REACHABLE",
+      "L2": "PRODUCTION_TRIED",
+      "L3": "STEP_VERIFIED",
+      "L4": "GOAL_PROGRESS_VERIFIED",
+      "L5": "PRODUCTION_VERIFIED"
+    },
+    "coverage_note": "These are Goal coverage levels, not relabeling existing Pipeline/Skill levels. Only evidence-supported L5 can mean COVERAGE_COMPLETE. Queue DONE is not L5.",
+    "design_not_runtime_claim": "This document/queue delivery does not prove Scheduler fairness, runtime cooldown or learning share implemented. WorkBuddy must trace/test/verify actual production before claiming it.",
+    "codex_scope_for_this_delivery": "Governance documents and this queue only; not reclaiming source/release/device ownership. Codex heartbeats stay read-only."
+  },
+  "updated_at": "2026-10-02T07:15:00+00:00",
+  "update_reason": "WorkBuddy autonomous round appended WB-1002-10 (beast tab bracket lock): the day's top failure cluster's real root cause was outside every existing order's scope.",
+  "current_verified_facts": {
+    "captured_at": "2026-10-02T10:18:26+08:00",
+    "head": "77d5b4b09bbe21193cfe467d6363dc66726b3ce6",
+    "origin_main": "77d5b4b09bbe21193cfe467d6363dc66726b3ce6",
+    "prod_pin": "951abbdd039c4955f2cd99fd442ae2aea56ffae3",
+    "loaded_revision_latest_episode": "951abbdd039c4955f2cd99fd442ae2aea56ffae3+45c8432910c33dca",
+    "episode_id": "20261002_101338_544824",
+    "episode_recorded_at": "2026-10-02T02:17:06.548991+00:00",
+    "snapshot": {
+      "updated_at": "2026-10-02T02:18:10.560195+00:00",
+      "agent_state": "AUTO_RUNNING",
+      "runtime_thread_alive": true,
+      "scheduler_loop_alive": true,
+      "current_goal": null,
+      "current_skill": null,
+      "unexpected_worker_exits": 18,
+      "watchdog_restart_count": 24,
+      "last_fatal_error": null
+    },
+    "workbuddy_claim_result": ".workbuddy-ai/commander/results/WB-1002-01-HANDOFF-FACTS.json",
+    "model_service_last_passive_check": {
+      "captured_at": "2026-10-02T10:12:18.7421243+08:00",
+      "health": "CONNECTION_REFUSED"
+    },
+    "learning_loop_completed": false,
+    "scope": "governance delivery only; no code/runtime/coverage completion claim"
+  },
+  "latest_nonconflicting_codex_assistance": {
+    "record": ".workbuddy-ai/handoff/CODEX_ASSISTANCE_20261002_1204.json",
+    "recorded_at": "2026-10-02T04:19:57.742791+00:00",
+    "release_owner_unchanged": true
+  },
+  "latest_readonly_directive_reconfirmation": {
+    "record": ".workbuddy-ai/handoff/WORKBUDDY_FINAL_RECONFIRM_20261002T123143.json",
+    "recorded_at": "2026-10-02T12:31:43.590247+08:00",
+    "identical_attachment": true,
+    "release_owner_unchanged": true,
+    "no_task_execution_claimed": true
+  }
 }

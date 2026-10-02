@@ -3777,6 +3777,30 @@ def read_resource_tab_labels(
     return found
 
 
+#: How close a bracket pair's centre must sit to a tab's printed label for that tab to be named.
+#:
+#: The bracket is drawn *centred on the tab*, so the true pair lands within about a pixel of the
+#: label.  Measured 2026-10-02 over 40 archived production frames whose ledger row says the
+#: resource search panel was open (720x1280, ``dataset/raw/control_panel/runtime_auto``):
+#:
+#:     true pair  -> its own label : 0.0000 / 0.0003 / 0.0010   (worst 0.0010 = 0.75 px)
+#:     spurious   -> any label     : 0.0212 .. 0.0799           (best  0.0212 = 15.3 px)
+#:
+#: The previous ``0.03`` accepted both.  That did not make the reader *say* the wrong tab --
+#: ``selected_tab_from_live_labels`` refuses to guess when two kinds match -- it made it say
+#: ``None``, which ``verify_beast_search_tab_selected`` reports as ``BEAST_SEARCH_TAB_NOT_PROVEN``
+#: and which then triggered the ``ONLINE_UNKNOWN_NAVIGATION`` model call whose only honest answer
+#: on that screen is REPLAN.  17 of those 40 frames read ``None`` against a bracket that was
+#: visibly on 野兽; all 17 resolve to BEAST under this lock and no frame loses a verdict.
+#:
+#: ``0.005`` is 4.8x above the worst true distance and 4.2x below the best spurious one -- placed
+#: on the geometric centre of the measured gap rather than at either edge, so a client that draws
+#: its bracket a pixel off still reads.  This is a *tightening*, so the accepted set can only
+#: shrink: the function can turn an answer into ``None`` or resolve ``None`` into that same
+#: answer, and can never relabel one tab as another.
+BRACKET_LABEL_LOCK = 0.005
+
+
 def selected_tab_from_live_labels(image_path, labels, semantic):
     """Bind the current bracket to OCR identity without assuming client tab order."""
     if not labels:
@@ -3791,7 +3815,8 @@ def selected_tab_from_live_labels(image_path, labels, semantic):
             if not 130 * width / 720 <= right - left <= 175 * width / 720:
                 continue
             center = (left + right) / 2 / width
-            candidates = [kind for kind, point in labels.items() if abs(point[0] - center) < 0.03]
+            candidates = [kind for kind, point in labels.items()
+                          if abs(point[0] - center) < BRACKET_LABEL_LOCK]
             if len(candidates) == 1:
                 matches.add(candidates[0])
     return next(iter(matches)) if len(matches) == 1 else None
