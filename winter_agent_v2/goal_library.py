@@ -2394,6 +2394,86 @@ def _optional_int(value: object) -> int | None:
         return None
 
 
+#: The values ``_observation_meter`` can return.  A rank, not a score: it says *how far
+#: along* an activity is towards having been read, and it deliberately cannot be mistaken
+#: for a magnitude.
+_OBSERVATION_METER_RANKS = frozenset({0.0, 0.5, 1.0})
+
+#: Which meter each goal was last measured by, written by ``runtime._remember_goal_meters``
+#: next to the number itself.  Value membership cannot do this job -- a navigation distance
+#: of 1.0 is inside the rank set -- so the scale is recorded as a kind and compared as one.
+_METER_KINDS: dict[str, str] = {}
+
+
+def meter_kind(goal: GoalState) -> str:
+    """``"observation"`` or ``"distance"``: which number this goal is measured by."""
+    return "observation" if _observation_meter(goal) is not None else "distance"
+
+
+def _observation_meter(goal: GoalState) -> float | None:
+    """A second, evidence-derived meter for goals whose ``distance`` is a constant.
+
+    ``distance`` is a navigation cost, and for a goal the system cannot act on yet the
+    honest value is a constant -- ``_append_scheduled_activities`` writes a literal
+    ``distance=1.0`` (``goal_library.py:2017`` and ``:2053``).  A constant cannot report
+    progress: ``1.0 < 1.0`` is False on every step, forever.
+
+    Measured 2026-10-02 over the whole production ledger: eight goal families have ever
+    reported ``goal_progress == True`` (``DISCOVER_EVENT_CALENDAR`` 1366 times among them)
+    and every ``SCHEDULED_*`` goal has reported False or None, 50 out of 50 on the new
+    revisions.  The metric is not broken; this one family cannot feed it.  That matters
+    beyond the number, because ``False`` increments ``no_progress_streak``
+    (``runtime.py:9734``) and the streak feeds the fairness bonus -- so a goal that is
+    structurally unable to report progress is demoted for something it did not do.
+
+    What it *can* be compared on is whether the client has been asked and answered.  Both
+    halves of that are facts the goal layer already carries, and both are produced by the
+    current-frame readers rather than by anything stored:
+
+    * ``evidence["calendar_observation"]`` -- the activity appeared on a calendar the client
+      actually drew.  ``None`` until then, which is the honest "not seen yet";
+    * ``evidence["availability_state"]`` -- ``AWAITING_LIVE_CLIENT_READING`` until a live
+      reading supplies live conditions.
+
+    Either one appearing is real progress, and neither can appear without a frame that
+    proves it.  The value returned is a **rank**, not a score: 0.0 for "advertised but not
+    read", 0.5 for "read on the calendar", 1.0 for "a live reading supplied its
+    conditions".  A rank is enough for ``<`` to mean something and cannot be mistaken for a
+    magnitude the system invented.
+
+    ``None`` for every other goal, which leaves the ``distance`` comparison exactly as it
+    was -- this adds a measurement where there was none, and changes nothing where one
+    already worked.
+    """
+    evidence = getattr(goal, "evidence", None)
+    if not isinstance(evidence, Mapping):
+        return None
+    if not str(goal.goal_id).startswith("SCHEDULED_"):
+        return None
+    if str(evidence.get("availability_state") or "") not in {
+            "", "AWAITING_LIVE_CLIENT_READING", "CALENDAR_PREVIEW_ONLY",
+    }:
+        # A live reading has already supplied this activity's own conditions, which is the
+        # furthest of the three states.  Named explicitly rather than by "not the waiting
+        # value" so that a future state has to be classified instead of inherited.
+        return 1.0
+    if evidence.get("calendar_observation") is not None:
+        return 0.5
+    return 0.0
+
+
+def _meter_for(goal: GoalState) -> float | None:
+    """The one number this goal is measured by, or ``None`` for a goal with no meter.
+
+    Both the writer (``runtime._remember_goal_meters``) and the comparator
+    (``progress_moved``) go through here.  They have to: storing ``goal.distance`` while
+    comparing ``_observation_meter`` would make "progress" mean "the scale changed", which
+    is worse than having no measurement at all.
+    """
+    reading = _observation_meter(goal)
+    return reading if reading is not None else float(getattr(goal, "distance", 1.0))
+
+
 def progress_moved(
     observed: Mapping[str, float],
     after: Iterable[GoalState],
@@ -2419,6 +2499,12 @@ def progress_moved(
     read in this run).  That is not "no progress": a queue goal does not exist while
     its page is off screen, and calling unobserved work stalled would defer goals for
     being unwatched.
+
+    **The meter is chosen per goal, and a constant ``distance`` is not a measurement.**
+    ``_observation_meter`` supplies a second reading for the one family whose ``distance``
+    is a hard-coded constant; see its docstring for the measured reason.  A goal with a
+    working ``distance`` keeps using it unchanged, and a goal with neither is still
+    ``None`` -- unobserved, not stalled.
     """
     now = next((goal for goal in after if goal.goal_id == goal_id), None)
     if now is None:
@@ -2426,7 +2512,34 @@ def progress_moved(
     previous = observed.get(goal_id)
     if previous is None:
         return None
+    reading = _observation_meter(now)
+    if reading is not None:
+        # Compare like with like.  The remembered value has to be the same kind of number,
+        # or "progress" would be an artefact of switching scales mid-run.
+        #
+        # The first attempt at this guard was to keep the ranks in a set and test
+        # membership, and that does not work: a navigation distance of 1.0 is *also* in the
+        # rank set, so a run that read these goals before this meter existed remembered a
+        # literal 1.0 and ``0.5 < 1.0`` called every one of them progress on its first step.
+        # Verified by running it, not by reading it -- the guard has to distinguish the two
+        # scales by **kind**, not by value, and the writer is the only thing that knows.
+        #
+        # So the writer records the scale alongside the number.  A remembered value with no
+        # matching kind was written by the other meter and the honest answer is ``None`` --
+        # not measured, which the caller already documents as distinct from "no progress".
+        kind = _METER_KINDS.get(goal_id)
+        if kind != "observation":
+            return None
+        # The two meters run in opposite directions, which is why one shared comparison
+        # operator cannot serve both.  ``distance`` is a remaining cost -- smaller is closer,
+        # so ``<`` is progress.  The observation rank is a depth of reading -- larger means
+        # more has been read, so ``>`` is progress.  Getting this backwards is not a subtle
+        # slip: it reports a goal being read for the first time as "no progress", which is
+        # the exact failure this meter exists to remove, and it was caught by running the
+        # two states rather than by reading the comparison.
+        return reading > previous
     return now.distance < previous
+
 
 
 def newly_completed_goal_ids(

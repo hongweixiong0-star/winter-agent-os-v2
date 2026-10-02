@@ -1318,9 +1318,20 @@ class LiveRuntime:
         Run-scoped on purpose: several goals are only observable on one page, and the
         step that satisfies them ends somewhere else (``DISPATCH_MARCH`` reads the
         march counter only after it lands back on MAP).
+
+        The meter is the same one ``progress_moved`` will compare, chosen the same way.
+        Storing ``goal.distance`` unconditionally would put a constant in the dictionary
+        for goals whose real reading is the evidence-derived one, and the comparison would
+        then be between two different kinds of number -- "progress" as an artefact of
+        switching scales mid-run.  ``_meter_for`` is shared for exactly that reason.
         """
+        from .goal_library import _METER_KINDS, _meter_for, meter_kind
+
         for goal in goals or ():
-            self._goal_meters[goal.goal_id] = goal.distance
+            meter = _meter_for(goal)
+            if meter is not None:
+                self._goal_meters[goal.goal_id] = meter
+                _METER_KINDS[goal.goal_id] = meter_kind(goal)
 
     def _event_readiness_for_goals(self, goals, *, now=None) -> dict[str, float]:
         """Apply live countdown priority only to this runtime's observed role.
