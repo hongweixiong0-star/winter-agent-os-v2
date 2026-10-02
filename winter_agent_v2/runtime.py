@@ -4685,6 +4685,40 @@ class LiveRuntime:
             except (TypeError, ValueError):
                 return None
             return (x_norm, y_norm) if 0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0 else None
+        if semantic == "BTN_SELECTED_BUILDING_UPGRADE":
+            # The selected building's own 升级 control -- the hop from the city frame to its
+            # upgrade sheet.  Navigation only: the sheet spends nothing, and the separate
+            # BUILDING_UPGRADE skill carries the queue-start proof, so this target must never be
+            # pressed into service as evidence that an upgrade began.
+            #
+            # Read off this frame and never from a stored offset, for the same reason
+            # BTN_LAB_RESEARCH is: the action bar is drawn wherever the selected building happens
+            # to sit.  ``ocr._read_building_identity`` writes ``upgrade_tap_norm`` only when the
+            # frame's own tokens contain a 升级 label beside the name and level, and only on
+            # ``Page.HOME``, so the field's presence *is* the measurement.
+            #
+            # Measured 2026-10-02, sanctioned pinned panel, role 1061663148, goal
+            # KEEP_BUILDING_PRODUCTIVE: the step ran twice, 05:11:45 and 05:51:29, and failed
+            # identically both times with ``SEMANTIC_TARGET_NOT_VERIFIED``, duration 0.171 s and
+            # an empty ``after_screenshot`` -- so it never reached the device.  The episode's own
+            # ``state_before`` meanwhile recorded
+            #   {"name": "城墙", "level": 8, "target_level": 9,
+            #    "upgrade_tap_norm": [0.5, 0.7195]}
+            # and the brain had picked this hop *because* that field was there.  This semantic was
+            # named in exactly one place in the runtime -- the skill's own Action -- so the
+            # resolver fell through, and the answer sat unread in the frame that produced the
+            # question.  Reproduced read-only from the archived frame through the production
+            # chain; see tests/test_building_upgrade_entry_target.py.
+            if frame.page is not Page.HOME:
+                return None
+            point = (frame.building or {}).get("upgrade_tap_norm")
+            if not (isinstance(point, (tuple, list)) and len(point) == 2):
+                return None
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            return (x_norm, y_norm) if 0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0 else None
         if semantic == "OPEN_GATHER_HERO_PICKER":
             if frame.page is not Page.MARCH or frame_path is None:
                 return None

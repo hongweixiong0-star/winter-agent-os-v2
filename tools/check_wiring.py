@@ -774,16 +774,24 @@ def main() -> int:
     # stays useful in both directions: a new offender turns it red, and repairing one turns the
     # stale entry red until somebody removes it -- which is what happened to the issue #71 entry
     # on 2026-10-02 (``RESEARCH->BTN_START_RESEARCH`` grew a real resolver branch at
-    # runtime.py:4802, so it was removed from this set).
+    # runtime.py:4802, so it was removed from this set), and again to
+    # ``OPEN_BUILDING_UPGRADE->BTN_SELECTED_BUILDING_UPGRADE`` later the same day.
     #
-    # What remains is two genuinely dead targets, recorded rather than quietly filtered:
-    # ``COLLECT_TRAINING_BATCH`` and ``OPEN_BUILDING_UPGRADE`` name a semantic that appears in no
-    # resolver branch and in no manifest record -- only in their own skill definition, so no
-    # code path can produce a point for them.  Both skills are in the never-executed list, which
-    # is the corroboration, and they are the queue's building/collect work orders.
+    # That second one is worth keeping the reasoning for, because the entry had been correct when
+    # it was written and the *reason* it was dead was the defect: the frame already carried the
+    # selected building's ``upgrade_tap_norm`` -- the brain only asked for this hop when that field
+    # was present -- and no resolver branch read it, so the answer sat unread in the frame that
+    # produced the question.  Measured live 05:11:45 and 05:51:29, ``SEMANTIC_TARGET_NOT_VERIFIED``
+    # in 0.171 s with an empty ``after_screenshot``.  A resolver branch now returns that field, so
+    # the target resolves and the entry was removed rather than re-justified.
+    #
+    # What remains is one genuinely dead target, recorded rather than quietly filtered:
+    # ``COLLECT_TRAINING_BATCH`` names a semantic that appears in no resolver branch and in no
+    # manifest record -- only in its own skill definition, so no code path can produce a point for
+    # it.  It is listed under "Never executed skills" in docs/CURRENT_TRUTH.md §G (generated), which
+    # is the corroboration, and it is the queue's remaining collect work order.
     _known_unresolvable = {
         "COLLECT_TRAINING_BATCH->BTN_CLAIM_TRAINING_BATCH",
-        "OPEN_BUILDING_UPGRADE->BTN_SELECTED_BUILDING_UPGRADE",
     }
     check("skills: the only unresolvable scheduler target is the recorded one (#71)",
           set(_unresolvable) == _known_unresolvable,
