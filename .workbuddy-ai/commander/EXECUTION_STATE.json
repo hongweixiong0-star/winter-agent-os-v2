@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-02T09:25:28+00:00",
+  "updated_at": "2026-10-02T09:47:02+00:00",
   "queue_generated_at": "2026-10-02T03:36:20+08:00",
   "current_task": null,
   "tasks": {
@@ -439,6 +439,14 @@
       "result_file": "results/WB-1002-14-CITY-HUD-ENTRY-GUARD.json",
       "verdict": "MERGED_AND_DEPLOYED: 3ce3ef35e1351bc1c841be0b02a6095d0ba6c85b, repinned (RESULT: CLEAN_OUTSIDE_DATA, 1152 status rows, 0 outside data dirs), pushed to origin/main (1410915..3ce3ef3). Pin tree verified byte-identical for brain.py after line-ending normalisation, and carrying both new reason strings.",
       "summary": "{'new_guards': ['FISHING -> BACK / close_resource_search_for_fishing_goal / resource_search_closed', 'BUILDING -> BACK / close_resource_search_for_building_goal / resource_search_closed'], 'shape': 'identical to the nine existing siblings (BACK + close_resource_search_* reason family), placed inside"
+    },
+    "WB-1002-15-MAA-NODE-ATTRIBUTION": {
+      "status": "DONE",
+      "started_at": "2026-10-02T09:28:57+00:00",
+      "finished_at": "2026-10-02T09:47:02+00:00",
+      "result_file": "results/WB-1002-15-MAA-NODE-ATTRIBUTION.json",
+      "verdict": "MERGED_AND_DEPLOYED: 61adba735677864958eb2460bf8bf6f9802c188c, repinned (RESULT: CLEAN_OUTSIDE_DATA, 1152 status rows, 0 outside data dirs), pushed to origin/main (1260e68..61adba7). Pin tree verified byte-identical for executor_router.py after line-ending normalisation, and carrying _template_refusal / MAA_FRAME:NONE / LIST_DYNAMIC:FALLBACK_ABSENT plus the test file. executor_router.py is NOT in CONTROL_PLANE_PATHS, so the new vocabulary arrives with the next process restart, which the repin triggers.",
+      "summary": "{'new_vocabulary': ['MAA_TEMPLATE:<error>:score=<s>:gate=<g>  e.g. MAA_TEMPLATE:NO_MATCH:score=0.6150:gate=0.7/0.75, or score=na when MaaFramework returned no candidate', 'MAA_FRAME:NONE  (the adapter answered without a frame: nothing was ever searched)', 'LIST_DYNAMIC:FALLBACK_ABSENT  (a LIST_DYNAM"
     }
   },
   "history": [

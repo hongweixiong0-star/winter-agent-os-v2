@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `61adba7 2026-10-02T17:36:41+08:00 feat(router): the MAA node path names its refusals, score included`
+- `1260e68 2026-10-02T17:27:20+08:00 docs(memory): WB-1002-14 -- enumerate the family from the decision, not from the guards`
+- `2740cce 2026-10-02T17:26:07+08:00 docs(commander): WB-1002-14 closed -- the guard fired live, four minutes after the repin`
 - `3ce3ef3 2026-10-02T17:16:35+08:00 fix(brain): the ninth and tenth city-HUD branches were missing the panel guard`
 - `1410915 2026-10-02T17:03:19+08:00 docs(memory): WB-1002-13 -- the two cluster judgments, and the recovery gated on the missing quantity`
 - `1234757 2026-10-02T17:02:08+08:00 docs(commander): WB-1002-13 closed -- the recovery was gated on the thing that was missing`
@@ -15,15 +18,13 @@ Last 12 commits (newest first):
 - `a71a9c6 2026-10-02T16:37:57+08:00 docs(camp): the ring IS the returned point, and the first tap is meant to be absorbed`
 - `dd9387e 2026-10-02T15:58:13+08:00 docs(memory): WB-1002-11 -- and the two lessons that outlive the fix`
 - `1200898 2026-10-02T15:57:02+08:00 docs(commander): WB-1002-11 closed -- the largest failure block can now name itself`
-- `84e15e5 2026-10-02T15:47:10+08:00 fix(ledger): the reason's first live reading conflated two different facts`
-- `7b489b6 2026-10-02T15:41:43+08:00 feat(ledger): a failed step now says why the control was not found`
-- `b499668 2026-10-02T15:23:56+08:00 docs(commander): WB-1002-10 closed -- the bracket lock was vetoing its own true pair`
 
-Uncommitted changes: 1463
+Uncommitted changes: 1466
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
+- ` M .workbuddy-ai/commander/WORK_QUEUE.json`
 - ` M .workbuddy-ai/memory/2026-09-30.md`
 - ` M START_HERE.md`
 - ` M dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png`
@@ -39,7 +40,6 @@ Uncommitted changes: 1463
 - ` M knowledge/preload/INDEX.json`
 - ` M knowledge/preload/TROOP_SELECT.json`
 - ` M knowledge/ui/page_transitions.json`
-- ` M learning/current_truth.json`
 <!-- /AUTO:recent_commits -->
 
 ---

@@ -1,0 +1,68 @@
+{
+  "TASK_ID": "WB-1002-15-MAA-NODE-ATTRIBUTION",
+  "VERDICT": "DONE__ROOT_CAUSE_FOUND_AND_FIXED_AND_DEPLOYED__LIVE_VALUES_NOT_YET_OBSERVED",
+  "ROOT_CAUSE": "The attribution recorders of WB-1002-11 and WB-1002-13 only ever fire on the ADB path. `build_router` (executor_router.py:257) binds the MAA executor's resolver to `lambda semantic: router.maa_resolver(semantic, skill_id)`, which never passes through the runtime's `resolve`, so every miss decided inside `maa_resolver` was computed and then thrown away.\n\nThe day's ledger divides on that one fact rather than statistically. Of the 31 SEMANTIC_TARGET_NOT_VERIFIED rows whose revision carried the field:\n\n    reason EMPTY (12) : OPEN_HOME 6, OPEN_BUILDING_UPGRADE 4, OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT 2\n                        -- all three carry an MAA recognition node\n    reason NAMED (19) : SELECT_RESOURCE 15, SELECT_BEAST_TARGET_MAMMOTH 3, TRY_ORDINARY_CONTROL 1\n                        -- all three are node-less and fall through to adb_resolver\n\nAll four node-bearing skills measured dispatch as TEMPLATE (`dispatch_hint`), with gate [0.7, 0.75], which is exactly the branch that returned None in silence.\n\nThe vocabulary was already being computed one layer down: `MaaExecutorAdapter.match_template` returns a `RecognitionOutcome` on a miss carrying `error` (NO_MATCH / TEMPLATE_NOT_REGISTERED:<name> / MAA_NO_RECOGNITION_NODE / NO_FRAME / MAA_RECO_FAILED:<Exc>), `algorithm`, and the measured `score` of its best candidate *even when it did not hit*. `maa_resolver` held that object in `last_outcome` and read only `center_norm()`.",
+  "CHANGED_FILES": [
+    "winter_agent_v2/executor_router.py (new module-level _template_refusal; four recording sites)",
+    "tests/test_maa_node_attribution.py",
+    "_wb1002_15_watch.py",
+    "_wb1002_15_append.py"
+  ],
+  "TEST_RESULT": "tests/test_maa_node_attribution.py -- 10 tests, red first: with executor_router.py restored byte-identically from HEAD (md5 abb18679dff6a068423cc1317b1add64) 5 fail and 5 pass, and the 5 that fail are precisely the five silent-refusal assertions (template miss with score, miss without score, unregistered template, adapter failure, no frame). After the change 10 pass. Neighbouring set named file by file (10 files: executor_router, rally_list_dynamic_node, executor_semantic_swipe, recognition_backend_declaration, recognition_error_attribution, pipeline_autogen_hook, beast_label_recognition, intel_entry_recognition, rally_list_reader, maa_node_attribution): 131 passed, 19 subtests passed, 1 failed -- and that one is pre-existing, attributed by the same explicit-SHA A/B (test_executor_router::test_autogen_nodes_are_wired_but_never_promoted). tools/check_wiring.py problems=0. tools/invariant_review.py 10 PASS / 0 FAIL / 4 UNMEASURED.",
+  "LIVE_ATTEMPTS": 20,
+  "LIVE_SUCCESS": 20,
+  "LIVE_FAILURE": 0,
+  "BEFORE": {
+    "semantic_target_not_verified_rows_with_the_field": 31,
+    "empty_reason": 12,
+    "empty_reason_by_skill": {
+      "OPEN_HOME": 6,
+      "OPEN_BUILDING_UPGRADE": 4,
+      "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT": 2
+    },
+    "all_of_them_have_an_maa_node": true,
+    "named_reason_by_skill": {
+      "SELECT_RESOURCE": 15,
+      "SELECT_BEAST_TARGET_MAMMOTH": 3,
+      "TRY_ORDINARY_CONTROL": 1
+    },
+    "all_of_them_are_node_less": true,
+    "silent_return_none_sites_in_maa_resolver": 3,
+    "the_default_branch_for_every_template_node_is_one_of_them": true
+  },
+  "AFTER": {
+    "new_vocabulary": [
+      "MAA_TEMPLATE:<error>:score=<s>:gate=<g>  e.g. MAA_TEMPLATE:NO_MATCH:score=0.6150:gate=0.7/0.75, or score=na when MaaFramework returned no candidate",
+      "MAA_FRAME:NONE  (the adapter answered without a frame: nothing was ever searched)",
+      "LIST_DYNAMIC:FALLBACK_ABSENT  (a LIST_DYNAMIC node with nothing to fall back to)",
+      "a delegated miss with no node now CLEARS the field, so the tier below owns the reason"
+    ],
+    "why_the_score_and_not_only_a_name": "'reached 0.615 against a 0.70 gate' and 'the template was never loaded' send the next reader to two different fixes, and the first also says whether the answer is to move the gate or to replace the crop. A reason without the number cannot tell them apart.",
+    "deliberately_preserved": "One reason still survives a resolved point: the LIST_DYNAMIC fallback keeps LIST_DYNAMIC:NO_ROWS when the template then answers. That is pinned by test_rally_list_dynamic_node, and it means something worth keeping -- a template answering on a frame its own reader rejects is a node drifting apart from the screen -- so a success row carrying that code is not a live failure. Everywhere else a resolution clears the field, because runtime writes it into every episode row including successful ones."
+  },
+  "VERIFIER_RESULT": "Wiring proven; live values NOT observed, and stated as such.\n\nProven: 10 tests red-first (5 of them failing on HEAD bytes); a byte-exact A/B both ways; the neighbouring set; check_wiring problems=0; invariant_review 10 PASS / 0 FAIL. The deployed revision 61adba7 went live about one minute after the repin and was confirmed running by its own episodes.\n\nNot proven: that a real node-bearing miss now writes the new codes. The 8-minute observation window produced 20 episodes on 61adba7 and every single one was SUCCESS -- 0 failures, 0 SEMANTIC_TARGET_NOT_VERIFIED, the whole window being INTEL work (OPEN_INTEL / SELECT_INTEL_PIN / INTEL_*_START_MARCH / INTEL_HERO_DISPATCH). No node-bearing skill was reached, so there was nothing to judge. The three judgeable signals for the next reading: a FAILURE under one of the three node-bearing skills whose recognition_error starts with MAA_TEMPLATE: / MAA_FRAME:; a SEMANTIC_TARGET_NOT_VERIFIED under those skills with an empty reason (which would mean the hole is still open somewhere not covered); and the disappearance of empty reasons from the day's distribution.",
+  "EVIDENCE": {
+    "the_division": "The 31 rows split by one fact -- whether the skill has an MAA recognition node -- with no overlap: every empty reason belongs to a node-bearing skill and every named one to a node-less skill. That is what makes this a binding problem rather than a missing-feature problem.",
+    "the_binding": "executor_router.py:253-259 shows the MAA executor built with `target_resolver=lambda semantic: router.maa_resolver(semantic, skill_id)`, and 378 `def maa_resolver` is a separate method from the runtime's `resolve`. The runtime's two recorders (runtime._resolution_error and runtime._router_recognition_error) therefore only ever see work the MAA resolver did.",
+    "the_three_silent_sites": "maa_resolver returned None with nothing written at (a) `if frame is None`, (b) the LIST_DYNAMIC fallback with nothing usable to fall back to, and (c) the template path -- `self.last_outcome = outcome; return outcome.center_norm()` -- which is the default branch for every TEMPLATE node and therefore the one the measured skills take.",
+    "the_vocabulary_already_existed": "maa_executor.match_template builds RecognitionOutcome(..., score=..., error=...) on the miss path too (lines 664-680), reading `best_result.score` regardless of `hit`; and 638 shows TEMPLATE_NOT_REGISTERED:<name> as its own error, distinct from NO_MATCH.",
+    "deliberately_not_measured": "The real scores would require a second MaaFramework tasker against the emulator while AUTO is running. This project has already measured ADB/MAA contention on this machine, so the device was left alone and the values are left to the ledger."
+  },
+  "PATCH_STATUS": "MERGED_AND_DEPLOYED: 61adba735677864958eb2460bf8bf6f9802c188c, repinned (RESULT: CLEAN_OUTSIDE_DATA, 1152 status rows, 0 outside data dirs), pushed to origin/main (1260e68..61adba7). Pin tree verified byte-identical for executor_router.py after line-ending normalisation, and carrying _template_refusal / MAA_FRAME:NONE / LIST_DYNAMIC:FALLBACK_ABSENT plus the test file. executor_router.py is NOT in CONTROL_PLANE_PATHS, so the new vocabulary arrives with the next process restart, which the repin triggers.",
+  "REMAINING_ISSUE": "Four.\n\n(a) The live values are unobserved (see VERIFIER_RESULT). The wiring is proven, the numbers are not yet read from a real frame.\n\n(b) `MAA_TEMPLATE:` is now the only place that carries a score. The OCR path (`MAA_OCR:*`) still reports only the failure kind, not the OCR confidence it saw, so the same 'how close was it' question stays unanswered there. Measured worth: MAA_OCR:NO_TEXT on a real frame cannot be told apart from a near-miss on a mis-cropped ROI.\n\n(c) A reason survives a resolved point in exactly one place (the LIST_DYNAMIC fallback). That is pinned and deliberate, but it means a SUCCESS row can carry a non-empty recognition_error, so any consumer that reads the column as 'did this step fail' is wrong. Worth writing down where consumers live.\n\n(d) Found while attributing the pre-existing red, handed on as two orders rather than fixed here: DISPATCH_MARCH is the only autogen node sitting at migration_priority P0 (the other 26 are P1-P3) while its own validation_report says corpus_sufficient: false with 1 positive and 4 negatives against the doctrine's >=3 and >=3 (WB-1002-17); and its verifier is what failed on the newest revision, for a different reason -- gather_formation_policy STALE_OR_ROLE_UNSCOPED_FORMATION after two CLEAR_GATHER_HEROES steps that did not fix it (WB-1002-16).",
+  "NEXT_RECOMMENDATION": [
+    "WB-1002-16-GATHER-FORMATION-ROLE-SCOPE (P0): the gather flow now completes SEARCH -> SELECT -> SUBMIT -> START_GATHER and dies on the last hop. Draw the two CLEAR_GATHER_HEROES before/after frames and the DISPATCH before frame side by side and check whether the clearing actually reached the screen -- the project's own rule is that a click target and a state change both get looked at.",
+    "WB-1002-17-ROUTING-PROMOTION-INTEGRITY (P1): the standing red is about a knowledge asset's declaration disagreeing with its own recorded evidence. Do not make it green by editing the assertion.",
+    "Then read the ledger for the three node-bearing skills and confirm the new vocabulary appears with real scores; that is this order's outstanding acceptance and it is a one-query check.",
+    "Then consider (b) above: give MAA_OCR the same treatment, because a node's OCR threshold has the same question -- near-miss, or mis-cropped ROI -- and currently no number answers it."
+  ],
+  "root_cause_found": true,
+  "recommended_codex_review": [
+    "One judgement worth yours: this is the third round in a row where the fix was 'record what was already computed and thrown away', and each time the producer existed, was correct, and had no reader. WB-1002-11 (the router's reason, read only by four manual scripts), WB-1002-13 (the resolver's branches, recorded nothing at all), WB-1002-15 (the MAA resolver -- and here even the *binding* was wrong, so the reader I had just built could not see it). If that pattern is worth a standing rule, the rule is: after adding a recorder, prove it fires on the path production actually takes, not on the path the source suggests.",
+    "Second: I left the device alone rather than standing up a second MaaFramework tasker to measure the real scores, on the grounds that this project has measured ADB/MAA contention as harmful to the live run. If you would rather have the numbers pre-deploy than post-deploy, say so and I will take the contention."
+  ],
+  "recorded_at": "2026-10-02T09:47:02+00:00",
+  "attempts": "Zero device attempts of my own. The 12 empty-reason rows are the day's own, read from the ledger. After the repin, 20 episodes were produced on 61adba7 and all were SUCCESS, so no miss existed to report -- the LIVE_* fields record the window, not a verdict.",
+  "changes_made": "winter_agent_v2/executor_router.py: a new module-level `_template_refusal(outcome, node)` formats MAA_TEMPLATE:<error>:score=<s>:gate=<g> from the RecognitionOutcome the adapter already returned; `maa_resolver` now writes it on the template path (clearing on a resolution), writes MAA_FRAME:NONE where the adapter had no frame, writes LIST_DYNAMIC:FALLBACK_ABSENT where a LIST_DYNAMIC node has nothing usable to fall back to, clears the field on a delegated miss so the tier below owns the reason, and restores the primary strategy's reason when the LIST_DYNAMIC fallback answers. 59 lines added, 2 removed; no returned point and no verdict changed. tests/test_maa_node_attribution.py added: 10 tests covering every refusal site, the clearing rule, the delegation rule and the unchanged verdict.",
+  "evidence": "Ledger 2026-10-02 (1413 steps, 129 failures): the 31 SEMANTIC_TARGET_NOT_VERIFIED rows carrying the field split 12-empty / 19-named and the split is exactly 'has an MAA recognition node'. Routing table: the four node-bearing skills all dispatch TEMPLATE with gate [0.7, 0.75]. Source: build_router:253-259 binds the MAA resolver to a lambda that never reaches runtime.resolve, and maa_resolver had three return-None-without-writing sites, the default one being the template path. The vocabulary was already being computed by match_template on the miss path (score read regardless of hit). Then: 10 tests red-first and byte-exact A/B on HEAD (5 fail), neighbouring set 131 passed with 1 pre-existing red, check_wiring 0 problems, invariant_review 10/0/4, pin tree byte-verified, and a live window of 20 all-SUCCESS episodes in which no node-bearing miss occurred."
+}

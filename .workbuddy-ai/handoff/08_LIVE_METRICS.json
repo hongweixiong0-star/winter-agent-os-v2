@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-10-02T09:25:32+00:00",
+  "generated_at": "2026-10-02T09:47:06+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "3ce3ef3",
+  "commit": "61adba7",
   "last_good_commit": "e4fd245",
-  "dirty_count": 1463,
+  "dirty_count": 1466,
   "episodes": {
-    "total": 10242,
-    "production": 10242,
-    "success": 9220,
-    "failure": 772,
-    "success_rate_over_decided": 0.9227,
+    "total": 10313,
+    "production": 10313,
+    "success": 9288,
+    "failure": 775,
+    "success_rate_over_decided": 0.923,
     "modes": {
-      "PRODUCTION": 10242
+      "PRODUCTION": 10313
     },
     "mixed_case_rows": 0
   },
@@ -34,15 +34,15 @@
   "top_failures": [
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 329,
-      "recent": 262,
-      "last_seen": "2026-10-02T09:10:58.789342+00:00",
+      "count": 332,
+      "recent": 261,
+      "last_seen": "2026-10-02T09:37:23.607057+00:00",
       "dates": {
         "2026-09-28": 18,
         "2026-09-29": 2,
         "2026-09-30": 155,
         "2026-10-01": 67,
-        "2026-10-02": 87
+        "2026-10-02": 90
       },
       "undated": 0,
       "top_skills": [
@@ -52,7 +52,7 @@
         ],
         [
           "SELECT_RESOURCE",
-          78
+          80
         ],
         [
           "OPEN_HOME",
@@ -81,7 +81,7 @@
     {
       "failure_type": "NO_EXECUTION",
       "count": 124,
-      "recent": 58,
+      "recent": 57,
       "last_seen": "2026-10-02T08:53:47.206349+00:00",
       "dates": {
         "2026-09-30": 107,
@@ -107,7 +107,7 @@
     {
       "failure_type": "BEAST_SEARCH_TAB_NOT_PROVEN",
       "count": 54,
-      "recent": 40,
+      "recent": 39,
       "last_seen": "2026-10-02T06:48:32.057019+00:00",
       "dates": {
         "2026-09-30": 30,
@@ -229,7 +229,7 @@
     {
       "failure_type": "OPEN_DAILY_NOT_PROVEN",
       "count": 14,
-      "recent": 10,
+      "recent": 9,
       "last_seen": "2026-10-02T09:02:28.348054+00:00",
       "dates": {
         "2026-09-29": 1,
@@ -283,9 +283,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 19443,
-    "present_on_disk": 19443,
-    "traceable_episodes": 9950,
+    "referenced_screenshots": 19584,
+    "present_on_disk": 19584,
+    "traceable_episodes": 10022,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -296,8 +296,8 @@
   },
   "git_sync": {
     "branch": "main",
-    "local_head": "3ce3ef35e1351bc1c841be0b02a6095d0ba6c85b",
-    "remote_head": "3ce3ef35e1351bc1c841be0b02a6095d0ba6c85b",
+    "local_head": "61adba735677864958eb2460bf8bf6f9802c188c",
+    "remote_head": "61adba735677864958eb2460bf8bf6f9802c188c",
     "unpushed_commits": 0,
     "behind": 0,
     "in_sync": true,
@@ -306,7 +306,7 @@
     "last_push_status": "PUSHED"
   },
   "runtime": {
-    "agent_state": "AUTO_RUNNING",
+    "agent_state": "GOAL_RUNNING",
     "unexpected_worker_exits": 18,
     "watchdog_restart_count": 24,
     "last_fatal_error": null,
