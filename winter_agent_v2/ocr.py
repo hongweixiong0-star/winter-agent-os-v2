@@ -5717,6 +5717,13 @@ class HybridVision:
                     resource_tab_kinds=tuple(sorted(tab_labels)),
                     resource_beast_tab_norm=tab_labels.get("BEAST"),
                     resource_giant_beast_tab_norm=tab_labels.get("GIANT_BEAST"),
+                    # Every centre this read produced, not only the two above.  Those two earned
+                    # their own fields when the beast route was the one being fixed; the gatherable
+                    # tabs were left with nothing but their names, and the measured cost is four
+                    # SELECT_RESOURCE refusals in 0.11-0.14 s on frames where the wanted tab was
+                    # drawn, named in ``resource_tab_kinds``, and had no point the resolver could
+                    # return (2026-10-02).  Same read, same confidence, same frame -- kept.
+                    resource_tab_label_norm=dict(tab_labels),
                     # Which tab the bracket anchors, monsters included.  Distinct from
                     # ``resource_selected`` (gatherable cells only, so a monster tab reads
                     # ``None``) and from ``resource_beast_tab_norm`` (where the label is

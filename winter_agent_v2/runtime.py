@@ -4504,6 +4504,41 @@ class LiveRuntime:
         tail = f"_{suffix}" if suffix else ""
         return self.capture_dir / f"{episode_id}_step_{index:03d}_{stage}{tail}_{stamp}.png"
 
+    def _tab_label_centre(self, frame: "WorldState", kind: str) -> tuple[float, float] | None:
+        """Where this frame's own OCR read the named tab, or ``None``.
+
+        One place, because three resolvers need it and one of them already carried its own copy of
+        the same bounds check.  The guards are the ones the beast tab documented, and they hold for
+        every tab: the point belongs to the MAP frame it was read from, and only an open search
+        panel draws the strip at all -- a stale fragment reused on another page would tap whatever
+        happens to be there.  The label box is the *fallback*; a resolver tries the strip geometry
+        first and only asks this when the geometry could not be located.
+        """
+        if frame.page is not Page.MAP or not frame.resource_search_open:
+            return None
+        wanted = str(kind or "").upper()
+        point = None
+        labels = getattr(frame, "resource_tab_label_norm", None)
+        if isinstance(labels, Mapping):
+            point = labels.get(wanted)
+        if point is None:
+            # The two beast tabs predate the mapping and keep their own fields, so a frame built
+            # without it still resolves them.
+            legacy = {"BEAST": "resource_beast_tab_norm",
+                      "GIANT_BEAST": "resource_giant_beast_tab_norm"}
+            field_name = legacy.get(wanted, "")
+            if field_name:
+                point = getattr(frame, field_name, None)
+        if not (isinstance(point, (tuple, list)) and len(point) == 2):
+            return None
+        try:
+            x_norm, y_norm = float(point[0]), float(point[1])
+        except (TypeError, ValueError):
+            return None
+        if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
+            return None
+        return (x_norm, y_norm)
+
     def _resolve_semantic_target(
         self,
         semantic: str,
@@ -4908,7 +4943,22 @@ class LiveRuntime:
             # selected the wrong tab on live frames.  ``None`` means the
             # cell is off-screen: the loop scrolls the strip instead of
             # guessing a coordinate.
-            return self._semantic.resource_cell_center_norm(resource)
+            centre = self._semantic.resource_cell_center_norm(resource)
+            if centre is not None:
+                return centre
+            # Geometry could not locate the strip at all -- but the wanted tab was read off this
+            # frame by its own printed label, and for two of the five tabs that label *is* the
+            # tap point (see BEAST_SEARCH_TAB / GIANT_BEAST_SEARCH_TAB below, unchanged since
+            # 2026-09-21).  The gatherable tabs are the ones whose centres were discarded, and
+            # the measured cost is four SELECT_RESOURCE refusals in 0.11-0.14 s with no
+            # after-frame, on frames whose own state read the wanted tab in
+            # ``resource_tab_kinds`` while every geometry reading was ``None`` (2026-10-02).
+            #
+            # This does not hand over a clipped point: the client's label is drawn inside the tab,
+            # and a tab the label reader could not see is simply absent from the mapping.  A tab
+            # that IS on the strip but not fully in view is the case the scroll branch above
+            # handles, and it does so before the executor ever reaches this resolver.
+            return self._tab_label_centre(frame, str(resource or ""))
         if semantic == "RESEARCH_NODE_NEXT":
             # Inspect one unfinished technology node at the location OCR read from
             # this exact research frame.  The guard makes the operation navigation
@@ -4982,7 +5032,7 @@ class LiveRuntime:
                 return None
             return point
         if semantic == 'GIANT_BEAST_SEARCH_TAB':
-            return frame.resource_giant_beast_tab_norm if frame.page is Page.MAP and frame.resource_search_open else None
+            return self._tab_label_centre(frame, "GIANT_BEAST")
         if semantic == "BEAST_SEARCH_TAB":
             # The 野兽 tab, tapped where this frame's own OCR read its printed label
             # (see ``ocr.read_resource_tab_labels``).
@@ -5027,18 +5077,7 @@ class LiveRuntime:
                 geometry = self._semantic.resource_cell_center_norm("BEAST")
             if geometry is not None:
                 return geometry
-            if frame.page is not Page.MAP or not frame.resource_search_open:
-                return None
-            point = frame.resource_beast_tab_norm
-            if not (isinstance(point, (tuple, list)) and len(point) == 2):
-                return None
-            try:
-                x_norm, y_norm = float(point[0]), float(point[1])
-            except (TypeError, ValueError):
-                return None
-            if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
-                return None
-            return (x_norm, y_norm)
+            return self._tab_label_centre(frame, "BEAST")
         if semantic == "BTN_BEAST_CARD_ATTACK":
             # The 攻击 control on the card the client's own beast search drew.  Its
             # coordinate comes from that card's reading (see

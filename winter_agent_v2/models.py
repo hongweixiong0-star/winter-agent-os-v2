@@ -140,6 +140,20 @@ class WorldState:
     #: the measured level-5 mammoth offered only 集结 -- so a solo-kill route must not treat
     #: it as equivalent to ``BEAST``, which is what the user-facing rule requires.
     resource_giant_beast_tab_norm: tuple[float, float] | None = None
+    #: Every tab centre this frame's own OCR read, ``kind -> centre``, not just the two the beast
+    #: route needed first.  ``resource_beast_tab_norm`` and ``resource_giant_beast_tab_norm`` above
+    #: are the two of these that earned their own fields; the gatherable ones (``MEAT`` / ``WOOD`` /
+    #: ``COAL`` / ``IRON``) had their centres thrown away, keeping only their names in
+    #: ``resource_tab_kinds``.
+    #:
+    #: Measured 2026-10-02: four ``SELECT_RESOURCE`` steps were refused in 0.11-0.14 s with no
+    #: after-frame, on frames whose own state read ``resource_tab_kinds=('BEAST','GIANT_BEAST',
+    #: 'MEAT','WOOD')`` -- the wanted tab drawn and named -- while ``resource_tab_offset``,
+    #: ``anchored_tab_kind`` and ``resource_selected_tab`` were all ``None``.  The identity layer
+    #: knew where the tab was and the geometry layer resolved nothing, so the resolver had an
+    #: identity and no point to tap.  Keeping the centres is what lets the label be the tap point
+    #: for every tab, exactly as it already is for the two beast tabs.
+    resource_tab_label_norm: dict[str, tuple[float, float]] = field(default_factory=dict)
     #: Which tab of the strip the selection bracket currently anchors, monster tabs included,
     #: e.g. ``"BEAST"`` / ``"GIANT_BEAST"`` / ``"MEAT"``, or ``None`` when the strip could not
     #: be located or no tab is marked.
