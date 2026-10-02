@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-02T07:56:40+00:00",
+  "updated_at": "2026-10-02T08:40:03+00:00",
   "queue_generated_at": "2026-10-02T03:36:20+08:00",
   "current_task": null,
   "tasks": {
@@ -415,6 +415,14 @@
       "result_file": "results/WB-1002-11-FAILURE-ATTRIBUTION.json",
       "verdict": "MERGED_AND_DEPLOYED: 7b489b6 (field + recorder) then 84e15e5 (the split), repinned twice (PRODUCTION_PIN.json expected_commit 70b093f856abdcd53f1d6be9011f694073db6713 -> 7b489b6d2d631d9789a67b04038880b811a08f95 -> 84e15e54754f84c72daf4cc7dbe05b1951405cad), RESULT: CLEAN_OUTSIDE_DATA at each step, pushed to origin/main twice. One repin attempt failed with a stale .git index.lock -- checked for a real git process first (none) rather than deleting the lock blind, and the lock was already gone on retry.",
       "summary": "{'new_episode_field': \"recognition_error, default '' so older rows and other producers keep their meaning\", 'vocabulary': \"UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION | UNKNOWN_NAV:TRANSIENT_PAGE | UNKNOWN_NAV:PANEL_DEPENDENT_TARGET_PANEL_CLOSED | UNKNOWN_NAV:NO_COMMITTED_GOAL_OR_ROLE | UNKNOWN_NAV:LEASE_HE"
+    },
+    "WB-1002-12-CAMP-FIRST-TAP": {
+      "status": "DONE",
+      "started_at": "2026-10-02T08:38:51+00:00",
+      "finished_at": "2026-10-02T08:40:03+00:00",
+      "result_file": "results/WB-1002-12-CAMP-FIRST-TAP.json",
+      "verdict": "MERGED_AND_DEPLOYED: a71a9c6b0b4dc55dfc1bef3c1e98ab9f429ebfcd, repinned (PRODUCTION_PIN.json expected_commit 84e15e54754f84c72daf4cc7dbe05b1951405cad -> a71a9c6b0b4dc55dfc1bef3c1e98ab9f429ebfcd), RESULT: CLEAN_OUTSIDE_DATA, pushed to origin/main (dd9387e..a71a9c6). The deployed change is documentation inside a shipped module -- the module's contract now states what the code does and carries the 12-step measurement, so the next attempt at that coordinate has to argue with data.",
+      "summary": "{'defects_confirmed': 0, 'defects_falsified_with_reproducible_evidence': 3, 'documented_contract_now_matches_the_implementation': 1, 'next_layer_sized': \"WB-1002-13: 22 of the day's 53 non-navigation resolver misses still carry only NOT_A_NAVIGATION_ACTION (SELECT_RESOURCE 10, SELECT_BEAST_TARGET_MA"
     }
   },
   "history": [

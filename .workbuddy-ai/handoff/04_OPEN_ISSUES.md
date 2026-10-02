@@ -6,17 +6,17 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x321 all-time; recent=240 (last 2d), last seen 2026-10-02T07:50:17.437220+00:00 — TRY_ORDINARY_CONTROL(103), SELECT_RESOURCE(64), SELECT_BEAST_TARGET_MAMMOTH(31)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x321 all-time; recent=257 (last 2d), last seen 2026-10-02T08:39:58.102991+00:00 — TRY_ORDINARY_CONTROL(103), SELECT_RESOURCE(74), OPEN_HOME(32)
 - **NO_EXECUTION** x123 all-time; recent=65 (last 2d), last seen 2026-10-02T07:41:38.666654+00:00 — OBSERVE_ONLY(65), PRINTED_TAP(37), TAP_FOCUSED_TRAINING_CAMP_SHIELD(6)
-- **GIANT_BEAST_SEARCH_NOT_PROVEN** x61 all-time; recent=61 (last 2d), last seen 2026-10-02T07:49:53.221709+00:00 — SUBMIT_GIANT_BEAST_SEARCH(61)
-- **BEAST_SEARCH_TAB_NOT_PROVEN** x54 all-time; recent=46 (last 2d), last seen 2026-10-02T06:48:32.057019+00:00 — OPEN_BEAST_SEARCH_TAB(54)
+- **GIANT_BEAST_SEARCH_NOT_PROVEN** x64 all-time; recent=64 (last 2d), last seen 2026-10-02T08:32:12.901195+00:00 — SUBMIT_GIANT_BEAST_SEARCH(64)
+- **BEAST_SEARCH_TAB_NOT_PROVEN** x54 all-time; recent=43 (last 2d), last seen 2026-10-02T06:48:32.057019+00:00 — OPEN_BEAST_SEARCH_TAB(54)
 - **PANEL_BUILDING_QUEUE_NOT_PROVEN** x25 all-time; recent=25 (last 2d), last seen 2026-10-02T04:39:54.729414+00:00 — OPEN_TASK_FROM_QUICK_PANEL_BUILDING(25)
 - **FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN** x28 all-time; recent=24 (last 2d), last seen 2026-10-02T04:13:21.744721+00:00 — TAP_FOCUSED_TRAINING_CAMP_LANCER(10), TAP_FOCUSED_TRAINING_CAMP_SHIELD(9), TAP_FOCUSED_TRAINING_CAMP_MARKSMAN(9)
-- `OPEN_BUILDING_UPGRADE` never succeeded (attempts=6, failure=6)
+- `OPEN_BUILDING_UPGRADE` never succeeded (attempts=9, failure=9)
 - `READ_FISHING_STATE` never succeeded (attempts=2, failure=2)
 - `REALTIME` never succeeded (attempts=27, failure=8)
-- `SELECT_BEAST_TARGET_MAMMOTH` never succeeded (attempts=31, failure=31)
-- 1459 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md', ' M .workbuddy-ai/memory/2026-09-30.md']
+- `SELECT_BEAST_TARGET_MAMMOTH` never succeeded (attempts=32, failure=32)
+- 1460 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json']
 <!-- /AUTO:open_issues -->
 
 ---

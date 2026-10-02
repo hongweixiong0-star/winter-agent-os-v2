@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `a71a9c6 2026-10-02T16:37:57+08:00 docs(camp): the ring IS the returned point, and the first tap is meant to be absorbed`
+- `dd9387e 2026-10-02T15:58:13+08:00 docs(memory): WB-1002-11 -- and the two lessons that outlive the fix`
+- `1200898 2026-10-02T15:57:02+08:00 docs(commander): WB-1002-11 closed -- the largest failure block can now name itself`
 - `84e15e5 2026-10-02T15:47:10+08:00 fix(ledger): the reason's first live reading conflated two different facts`
 - `7b489b6 2026-10-02T15:41:43+08:00 feat(ledger): a failed step now says why the control was not found`
 - `b499668 2026-10-02T15:23:56+08:00 docs(commander): WB-1002-10 closed -- the bracket lock was vetoing its own true pair`
@@ -15,19 +18,14 @@ Last 12 commits (newest first):
 - `cc7cf87 2026-10-02T14:46:18+08:00 docs(commander): WB-1002-07 blocked -- entry fixed, but the proof cannot be satisfied`
 - `9a227da 2026-10-02T14:44:10+08:00 fix(building): the selected building's 升级 control was in the frame and nothing read it`
 - `d1856df 2026-10-02T14:31:53+08:00 docs(commander): WB-1002-08 closed, with the merged observation window and two self-checks`
-- `b92ca76 2026-10-02T14:30:44+08:00 docs(commander): WB-1002-08 -- no new crash, and a deployed fix the window cannot run`
-- `012eaab 2026-10-02T14:25:18+08:00 fix(reload): the detector is itself a control-plane module`
-- `ec258bd 2026-10-02T14:24:45+08:00 fix(reload): list the two modules the window runs itself but whose staleness is silent`
 
-Uncommitted changes: 1459
+Uncommitted changes: 1460
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
+- ` M .workbuddy-ai/commander/WORK_QUEUE.json`
 - ` M .workbuddy-ai/memory/2026-09-30.md`
-- ` M .workbuddy-ai/memory/2026-10-02.md`
-- ` M .workbuddy/memory/2026-10-02.md`
-- ` M .workbuddy/memory/MEMORY.md`
 - ` M START_HERE.md`
 - ` M dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png`
 - ` M dataset/candidate/template_manifest.json`
@@ -40,6 +38,8 @@ Uncommitted changes: 1459
 - ` M knowledge/perception/candidates/INDEX.json`
 - ` M knowledge/perception/pages/INDEX.json`
 - ` M knowledge/preload/INDEX.json`
+- ` M knowledge/preload/TROOP_SELECT.json`
+- ` M knowledge/ui/page_transitions.json`
 <!-- /AUTO:recent_commits -->
 
 ---

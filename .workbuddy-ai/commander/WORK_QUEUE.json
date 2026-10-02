@@ -1067,6 +1067,161 @@
       "evidence_context": "Original evidence/hints describe their capture window. Re-read current code/Episodes before development; old metrics and order position do not determine next work.",
       "appended_by": "WorkBuddy autonomous development, 2026-10-02",
       "appended_reason": "这是 2026-10-02 凌晨 SEMANTIC_TARGET_DIAGNOSIS 文档 §E 排在第一位的待办（「让失败可归因」），至今未做；且它覆盖当日 51% 的失败，没有任何既有工单的射程包含它。按工单契约追加到同一队列，不建第二队列。"
+    },
+    {
+      "required_tool": [
+        ".venv/Scripts/python.exe",
+        "git",
+        "tools/cq.py",
+        "现有 Runtime / MAA / DeviceLease / pytest"
+      ],
+      "recommended_tool": "优先现有 Runtime、MAA、Verifier、UI-Venus 与 Learning Funnel；仅对明确根因做小改动。",
+      "preferred_backend": "MAA current-frame semantic execution；唯一 UI-Venus 仅 ONLINE_UNKNOWN；32K context",
+      "fallback_backend": "现有 deterministic / L1 learned step / bounded local reobserve；ADB 仅既有 fallback，不绕过租约",
+      "do_not_touch": [
+        "第二 Scheduler / Executor / WorldState / Session Engine / 本地模型",
+        "MAI runtime；WorkBuddy retired runtime channel 或自动模型派发",
+        "Codex 仍拥有的共享 dirty 代码与未确认归属文件",
+        "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
+        "其他角色实时状态、探索授权、资源预算",
+        "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
+        "No release without valid exclusive claim; no concurrent push/repin/reload.",
+        "Preserve original work orders and results; append new autonomous root-cause orders to the same queue after claim; no second queue.",
+        "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
+      ],
+      "status": "READY",
+      "task_id": "WB-1002-12-CAMP-FIRST-TAP",
+      "priority": "P1",
+      "objective": "判定当日第三高失败簇（训练营动作栏 6 条）是不是缺陷，并给出可复用的判据而不是再挪一次坐标",
+      "timebox_minutes": 75,
+      "why_now": "FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN 6 条是当日 AVOID_STAMINA_WASTE/巨兽搜索之后最大的成簇失败；camp_ring 自己的历史显示该坐标已被两轮改动并回退过，需要数据而不是单帧来定论。",
+      "current_evidence": "12 条 TAP_FOCUSED_TRAINING_CAMP_*（6F/6S）；camp_ring 的 docstring 声称「按当前帧环测量身体目标」，而代码最后是 tap_x=ring_x / tap_y=ring_y。",
+      "root_cause_or_hypothesis": "假设是坐标缺陷；需用失败/成功两组的真实坐标与后续结果检验。",
+      "files_to_inspect": [
+        "winter_agent_v2/camp_ring.py",
+        "winter_agent_v2/verifier.py 1719/1724",
+        "winter_agent_v2/runtime.py 9686-9717",
+        "winter_agent_v2/escalation_queue.py 1180-1244",
+        "learning/episodes.jsonl 当日训练营行"
+      ],
+      "files_allowed_to_modify": [
+        "winter_agent_v2/camp_ring.py 的文档契约",
+        "tests/ 本单 targeted"
+      ],
+      "implementation_hint": "先证伪再动手：三组假设（未跟踪模块是否影响发布树、6 条失败是否缺陷、升级是否误报）都必须用真实数据判。",
+      "test_plan": "营地取点相关 8 个测试文件点名运行；既有红用显式 SHA 的 A/B 归属。",
+      "replay_plan": "把生产取点器画在失败帧上目视复核（本项目自己的规矩），并逐候选打印它的门限判定。",
+      "live_plan": "无需真机：本单结论来自归档帧与账本。",
+      "verifier": "三组假设各自的证伪证据可复现；文档契约与实现一致。",
+      "before_metric": {
+        "camp_action_bar_failures": 6,
+        "camp_steps_total": 12,
+        "documented_vs_implemented_mismatch": 1,
+        "untracked_module_in_package": 1
+      },
+      "target_metric": {
+        "defects_confirmed": 0,
+        "defects_falsified_with_evidence": 3,
+        "docstring_matches_behaviour": 1
+      },
+      "acceptance": [
+        "结论必须有可复现证据，不接受「看起来像」。",
+        "不得在单帧证据上移动坐标（该模块已因两次如此改动回退）。"
+      ],
+      "stop_condition": "75 分钟；或任一假设被证实为真缺陷（那就要另开修复）。",
+      "fallback_action": "若无法判定，写清还缺哪一条测量并保持现状。",
+      "dependencies": [
+        "WB-1002-01-HANDOFF-FACTS"
+      ],
+      "files_scope": [
+        "winter_agent_v2/runtime.py",
+        "winter_agent_v2/learning.py",
+        "tests/test_recognition_error_attribution.py"
+      ],
+      "activation_rule": "Seed backlog only. Actual valid exclusive WorkBuddy claim and current file/device ownership required. cq.py eligibility is not authorization; choose highest-value current root cause under autonomous_development.",
+      "prior_dependencies": [
+        "WB-1002-01-HANDOFF-FACTS",
+        "WB-1002-02-CALENDAR-STARVATION"
+      ],
+      "prior_activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。",
+      "evidence_context": "Original evidence/hints describe their capture window. Re-read current code/Episodes before development; old metrics and order position do not determine next work.",
+      "appended_by": "WorkBuddy autonomous development, 2026-10-02",
+      "appended_reason": "第三大成簇需要定论，且上一单新加的 recognition_error 正好把「非导航类 miss」框了出来。"
+    },
+    {
+      "required_tool": [
+        ".venv/Scripts/python.exe",
+        "git",
+        "tools/cq.py",
+        "现有 Runtime / MAA / DeviceLease / pytest"
+      ],
+      "recommended_tool": "优先现有 Runtime、MAA、Verifier、UI-Venus 与 Learning Funnel；仅对明确根因做小改动。",
+      "preferred_backend": "MAA current-frame semantic execution；唯一 UI-Venus 仅 ONLINE_UNKNOWN；32K context",
+      "fallback_backend": "现有 deterministic / L1 learned step / bounded local reobserve；ADB 仅既有 fallback，不绕过租约",
+      "do_not_touch": [
+        "第二 Scheduler / Executor / WorldState / Session Engine / 本地模型",
+        "MAI runtime；WorkBuddy retired runtime channel 或自动模型派发",
+        "Codex 仍拥有的共享 dirty 代码与未确认归属文件",
+        "历史 Episode / Executor Ledger / model ledger；不得篡改或虚构成功",
+        "其他角色实时状态、探索授权、资源预算",
+        "真钱支付、特殊鱼饵、未经当前 Policy 授权的资源与不可逆操作",
+        "No release without valid exclusive claim; no concurrent push/repin/reload.",
+        "Preserve original work orders and results; append new autonomous root-cause orders to the same queue after claim; no second queue.",
+        "git add . / reset --hard / clean -fd / checkout . / restore . / blind stash pop"
+      ],
+      "status": "READY",
+      "task_id": "WB-1002-13-LOCATOR-ATTRIBUTION",
+      "priority": "P0",
+      "objective": "把「注册定位器为什么没命中」也写成账本事实：让非导航类 miss（当日 18 条）可分类",
+      "timebox_minutes": 90,
+      "why_now": "WB-1002-11 落地后，非导航类 miss 只得到 NOT_A_NAVIGATION_ACTION：真实但浅一层。当日 53 条 SEMANTIC_TARGET_NOT_VERIFIED 中 31 条是导航类（已有具体码）、22 条是SELECT_RESOURCE 10 / SELECT_BEAST_TARGET_MAMMOTH 8 / TRY_ORDINARY_CONTROL 3 / SEARCH_RESOURCE 1，后者正是「决策层说目标可见、解析层却在同一帧找不到」的老分裂。",
+      "current_evidence": "episodes 2026-10-02：SELECT_BEAST_TARGET_MAMMOTH 的 decision_reason 是 verified_visible_mammoth_target 却 SEMANTIC_TARGET_NOT_VERIFIED；SELECT_RESOURCE 10 条同理。",
+      "root_cause_or_hypothesis": "runtime._resolve_semantic_target（4437 起）的每个分支都不记录「哪个分支返回了 None」，所以「定位器没命中」无法再往下分。",
+      "files_to_inspect": [
+        "winter_agent_v2/runtime.py _resolve_semantic_target 全部分支",
+        "winter_agent_v2/vision.py 各 reader",
+        "learning/episodes.jsonl 上述 22 条"
+      ],
+      "files_allowed_to_modify": [
+        "winter_agent_v2/runtime.py",
+        "tests/ 本单 targeted"
+      ],
+      "implementation_hint": "沿用 WB-1002-11 已验证的 recorder 模式：只记录、不改判定；码沿用 DOMAIN:DETAIL。",
+      "test_plan": "先红后绿；每个分支一条拒绝码，并断言返回值不变。",
+      "replay_plan": "对 22 条失败各取一帧过生产入口，确认码随原因而不同且非常量。",
+      "live_plan": "部署后读新 episode：同一 failure_type 下出现多个不同码。",
+      "verifier": "非导航类 miss 的 recognition_error 不再是单一常量，且判定/返回值未变。",
+      "before_metric": {
+        "non_navigation_misses": 22,
+        "distinct_codes_for_them": 1
+      },
+      "target_metric": {
+        "distinct_codes_for_them": ">1",
+        "verdicts_changed": 0
+      },
+      "acceptance": [
+        "纯新增；用 A/B 证明判定未变。",
+        "码非常量。"
+      ],
+      "stop_condition": "90 分钟；或发现必须先改判定才能归因。",
+      "fallback_action": "只写能确定的层，空白处明确标注。",
+      "dependencies": [
+        "WB-1002-01-HANDOFF-FACTS"
+      ],
+      "files_scope": [
+        "winter_agent_v2/runtime.py",
+        "winter_agent_v2/learning.py",
+        "tests/test_recognition_error_attribution.py"
+      ],
+      "activation_rule": "Seed backlog only. Actual valid exclusive WorkBuddy claim and current file/device ownership required. cq.py eligibility is not authorization; choose highest-value current root cause under autonomous_development.",
+      "prior_dependencies": [
+        "WB-1002-01-HANDOFF-FACTS",
+        "WB-1002-02-CALENDAR-STARVATION"
+      ],
+      "prior_activation_rule": "READY只表示Codex已备好工作单，不表示当前允许接手；必须先满足handoff_gate，确认任务/文件所有权。设备操作需独占租约；push main/repin/reload必须另有明确Release Owner移交。",
+      "evidence_context": "Original evidence/hints describe their capture window. Re-read current code/Episodes before development; old metrics and order position do not determine next work.",
+      "appended_by": "WorkBuddy autonomous development, 2026-10-02",
+      "appended_reason": "WB-1002-11 明确留下的下一层，且已量化到条数与技能。"
     }
   ],
   "base_facts": {
@@ -1189,8 +1344,8 @@
     "design_not_runtime_claim": "This document/queue delivery does not prove Scheduler fairness, runtime cooldown or learning share implemented. WorkBuddy must trace/test/verify actual production before claiming it.",
     "codex_scope_for_this_delivery": "Governance documents and this queue only; not reclaiming source/release/device ownership. Codex heartbeats stay read-only."
   },
-  "updated_at": "2026-10-02T07:45:00+00:00",
-  "update_reason": "WorkBuddy autonomous round appended WB-1002-11 (failure attribution): 47 of the day's 92 failures were unclassifiable, and both layers that knew the answer already existed.",
+  "updated_at": "2026-10-02T08:30:00+00:00",
+  "update_reason": "WorkBuddy autonomous round: closed the third-largest cluster as a designed interaction (WB-1002-12) and appended the layer WB-1002-11 exposed as next (WB-1002-13).",
   "current_verified_facts": {
     "captured_at": "2026-10-02T10:18:26+08:00",
     "head": "77d5b4b09bbe21193cfe467d6363dc66726b3ce6",

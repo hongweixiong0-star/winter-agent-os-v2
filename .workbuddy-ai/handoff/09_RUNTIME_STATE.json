@@ -1,26 +1,26 @@
 {
-  "generated_at": "2026-10-02T07:56:44+00:00",
+  "generated_at": "2026-10-02T08:40:07+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "84e15e5",
+  "commit": "a71a9c6",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
     "agent_state": "GOAL_RUNNING",
     "runtime_thread_alive": true,
     "scheduler_loop_alive": true,
-    "last_tick_time": "2026-10-02T07:56:32.053127+00:00",
-    "last_action_time": "2026-10-02T07:56:41.507961+00:00",
-    "last_success_time": "2026-10-02T07:56:47.397141+00:00",
+    "last_tick_time": "2026-10-02T08:40:10.312986+00:00",
+    "last_action_time": "2026-10-02T08:40:10.889989+00:00",
+    "last_success_time": "2026-10-02T08:39:44.782993+00:00",
     "last_fatal_error": null,
     "watchdog_restart_count": 24,
     "unexpected_worker_exits": 18,
     "page": "MAP",
     "role_id": "1061663148",
-    "current_goal": "AVOID_STAMINA_WASTE",
-    "current_skill": "BACK",
-    "reason": "return_to_giant_search_context",
+    "current_goal": "OBSERVE_FISHING_STATE",
+    "current_skill": "OPEN_HOME",
+    "reason": "fishing_entry_requires_city_hud",
     "preconditions": [],
     "verifier": "PASS",
-    "next_action": "map_opened",
+    "next_action": "home_opened",
     "risk": "UNKNOWN",
     "confidence": 0.99,
     "device": "UNKNOWN",
@@ -28,7 +28,7 @@
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_155419_821689\\20261002_155419_821689_step_017_after_20261002T075641662063.png",
+    "screenshot_path": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_163833_049060\\20261002_163833_049060_step_010_before_20261002T084004319048.png",
     "march_used": 0,
     "march_max": null,
     "queues": {
@@ -39,7 +39,7 @@
       "alliance": {},
       "events": {}
     },
-    "stop_reason": null,
+    "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED",
     "stop_category": null,
     "deferred_goals": [
       {
@@ -54,6 +54,28 @@
         "last_skill": "OPEN_HOME"
       },
       {
+        "goal_id": "CLEAR_INTEL",
+        "capability": "READ_INTEL_LIST",
+        "state": "DEFERRED",
+        "reason": "3 consecutive production episodes advanced no part of this goal (2 passed their verifier, 1 were rejected by it, 0 issued no action)",
+        "source": "NO_GOAL_PROGRESS",
+        "failure_signature": "READ_INTEL_LIST|NO_GOAL_PROGRESS|DISPATCH_INTEL_BEAST",
+        "streak": 3,
+        "until": "",
+        "last_skill": "DISPATCH_INTEL_BEAST"
+      },
+      {
+        "goal_id": "MAIL_ROUTINE",
+        "capability": "READ_MAIL_TABS",
+        "state": "BLOCKED",
+        "reason": "repair budget exhausted (2/2) after CODE_CHANGED",
+        "source": "ESCALATION_QUEUE",
+        "failure_signature": "",
+        "streak": 0,
+        "until": "2026-09-28T14:20:26.922513+00:00",
+        "last_skill": ""
+      },
+      {
         "goal_id": "DAILY_ACTIVITY_TARGET",
         "capability": "READ_DAILY_PROGRESS",
         "state": "BLOCKED",
@@ -63,26 +85,37 @@
         "streak": 0,
         "until": "2026-09-23T14:42:13.806048+00:00",
         "last_skill": ""
+      },
+      {
+        "goal_id": "SCROLL_QUICK_PANEL_TASKS",
+        "capability": "",
+        "state": "DEFERRED",
+        "reason": "3 consecutive production episodes passed their verifier and advanced no part of this goal",
+        "source": "NO_GOAL_PROGRESS",
+        "failure_signature": "|NO_GOAL_PROGRESS|SCROLL_QUICK_PANEL_TASKS",
+        "streak": 3,
+        "until": "",
+        "last_skill": "SCROLL_QUICK_PANEL_TASKS"
       }
     ],
     "capability_discovery": [
       {
         "goal_id": "AVOID_STAMINA_WASTE",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
-        "reason": "READY_EXECUTABLE",
+        "frame_id": "frame_bd1f88e14063",
+        "reason": "COMPLETE",
         "gap_type": "CAPABILITY_GAP",
         "provider_emits": true,
         "route_exists": true,
         "skill_exists": true,
         "verifier_exists": true,
-        "scheduler_selectable": true,
+        "scheduler_selectable": false,
         "safe_entry_exists": false
       },
       {
         "goal_id": "KEEP_TRAINING_PRODUCTIVE",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "READY_EXECUTABLE",
         "gap_type": "CAPABILITY_GAP",
         "provider_emits": true,
@@ -95,7 +128,7 @@
       {
         "goal_id": "CLEAR_INTEL",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "READY_EXECUTABLE",
         "gap_type": "CAPABILITY_GAP",
         "provider_emits": true,
@@ -108,7 +141,7 @@
       {
         "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "COMPLETE",
         "gap_type": "CAPABILITY_GAP",
         "provider_emits": true,
@@ -121,7 +154,7 @@
       {
         "goal_id": "KEEP_BUILDING_PRODUCTIVE",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "READY_EXECUTABLE",
         "gap_type": "CAPABILITY_GAP",
         "provider_emits": true,
@@ -134,7 +167,7 @@
       {
         "goal_id": "DAILY_ACTIVITY_TARGET",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "READY_EXECUTABLE",
         "gap_type": "CAPABILITY_GAP",
         "provider_emits": true,
@@ -147,7 +180,7 @@
       {
         "goal_id": "CLAIM_EXPLORATION_IDLE",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_SKILL",
         "gap_type": "CAPABILITY_GAP",
         "provider_emits": true,
@@ -160,7 +193,7 @@
       {
         "goal_id": "SCHEDULED_BEAR_HUNT",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -173,7 +206,7 @@
       {
         "goal_id": "SCHEDULED_STATE_VS_STATE",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -186,7 +219,7 @@
       {
         "goal_id": "SCHEDULED_ARMAMENT_COMPETITION",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -199,7 +232,7 @@
       {
         "goal_id": "SCHEDULED_ALLIANCE_MOBILIZATION",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -212,7 +245,7 @@
       {
         "goal_id": "SCHEDULED_OFFICER_PROJECT",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -225,7 +258,7 @@
       {
         "goal_id": "SCHEDULED_DEFEAT_NEARBY_BEASTS",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -238,7 +271,7 @@
       {
         "goal_id": "SCHEDULED_BROTHERS_IN_ARMS",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -251,7 +284,7 @@
       {
         "goal_id": "SCHEDULED_CANYON_CLASH",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -264,7 +297,7 @@
       {
         "goal_id": "SCHEDULED_FORTRESS_CONTEST",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -277,7 +310,7 @@
       {
         "goal_id": "SCHEDULED_ARMAMENT_FACTORY_EVENT",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -290,7 +323,7 @@
       {
         "goal_id": "SCHEDULED_UNDERGROUND_EXPLORATION",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -303,7 +336,7 @@
       {
         "goal_id": "SCHEDULED_FISHING_TOURNAMENT",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -316,7 +349,7 @@
       {
         "goal_id": "SCHEDULED_ICEBOUND_TREASURE",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -329,7 +362,7 @@
       {
         "goal_id": "SCHEDULED_MOONLIGHT_FESTIVAL_SHOP",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -342,7 +375,7 @@
       {
         "goal_id": "SCHEDULED_EXCLUSIVE_GEAR_FORGE",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -355,7 +388,7 @@
       {
         "goal_id": "SCHEDULED_ICEBOUND_TREASURE_TRAINING",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -368,7 +401,7 @@
       {
         "goal_id": "SCHEDULED_ICEBOUND_TREASURE_MYSTERY_SHOP",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -381,7 +414,7 @@
       {
         "goal_id": "SCHEDULED_DISCOVERED_EVENT_4178AC2F00",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -394,7 +427,7 @@
       {
         "goal_id": "SCHEDULED_DISCOVERED_EVENT_BB2077C97D",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -407,7 +440,7 @@
       {
         "goal_id": "SCHEDULED_DISCOVERED_EVENT_E1FB4AC23A",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_NAVIGATION",
         "gap_type": "NAVIGATION_GAP",
         "provider_emits": true,
@@ -420,7 +453,7 @@
       {
         "goal_id": "OBSERVE_FISHING_STATE",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_OBSERVATION",
         "gap_type": "OBSERVATION_GAP",
         "provider_emits": true,
@@ -433,7 +466,7 @@
       {
         "goal_id": "ALLIANCE_TIMED_EVENTS",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_OBSERVATION",
         "gap_type": "OBSERVATION_GAP",
         "provider_emits": true,
@@ -446,7 +479,7 @@
       {
         "goal_id": "USE_FREE_ARENA_ATTEMPTS",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_OBSERVATION",
         "gap_type": "OBSERVATION_GAP",
         "provider_emits": true,
@@ -459,7 +492,7 @@
       {
         "goal_id": "LABYRINTH_DAILY",
         "role_id": "1061663148",
-        "frame_id": "frame_bb5cdf34f2c4",
+        "frame_id": "frame_bd1f88e14063",
         "reason": "MISSING_OBSERVATION",
         "gap_type": "OBSERVATION_GAP",
         "provider_emits": true,
@@ -470,12 +503,12 @@
         "safe_entry_exists": false
       }
     ],
-    "updated_at": "2026-10-02T07:56:47.397747+00:00"
+    "updated_at": "2026-10-02T08:40:10.889989+00:00"
   },
   "latest_log": {
     "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",
-    "modified_at": "2026-10-02T07:53:24+00:00",
-    "size_bytes": 271745,
+    "modified_at": "2026-10-02T08:38:01+00:00",
+    "size_bytes": 107609,
     "last_stop_reason": null
   },
   "recent_crash_reports": [
