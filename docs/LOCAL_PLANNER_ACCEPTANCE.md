@@ -315,3 +315,50 @@ after_frame.png : label_x=0.7236 label_y=0.1391
 
 `STRUCTURED_OUTPUT_PASS` ✅ / `MAA_EXECUTION_PASS` ✅ / `GOAL_VERIFIED` ❌ / `SKILL_REUSABLE` ❌
 **无候选 Skill 被保存**（§五：未验证的流程不得写成可用经验）。
+
+---
+
+## 9. 2026-10-02 复核：§3 的那个断点已经修好，但覆盖面只有 1/29
+
+§3 记录的是 `SEMANTIC_TARGET_IS_A_LABEL_NOT_A_CONTROL`：模型选了 `登录好礼`，点击落在
+图标**下方的文字标签**上（y=190，图标在 y≈95–140），页面 `MAP → MAP`。
+`build_element_table` 的 docstring 现在写着「composite controls come first ... That ordering
+is the fix for `SEMANTIC_TARGET_IS_A_LABEL_NOT_A_CONTROL`」。**这个说法在 §3 自己的失败帧上
+成立**——用当前代码重跑那张帧（`_table_coverage_probe.py`，只读、不点击）：
+
+```
+ACCEPTANCE_POSITIVE: dataset/truth_audit/local_planner_live/before_frame.png  page=MAP
+  elements=29  executable=2
+  kinds: {'COMPOSITE_CONTROL': 1, 'TEXT_LABEL': 28}
+  E1  exec=True   kind=COMPOSITE_CONTROL  sem=CONTROL[登录好礼]  text='登录好礼'   ← 排在最前
+  E13 exec=True   kind=TEXT_LABEL         sem=TEXT[登录好礼]      text='登录好礼'
+```
+
+⇒ §3 的原始断点**已不再是断点**：`登录好礼` 现在是 **E1、COMPOSITE_CONTROL、可执行、排在最前**。
+§3 的「下一步（1）触发条件 / （2）落点」已经落地在 `composite_controls` 里。
+**§3 的正文因此是过时的**，保留作为失败记录，不要照着它重新实现。
+
+### 9.1 仍然开着的口子：复合控件覆盖面
+
+同一帧只有 **1 个** 复合控件，其余 28 个是 `TEXT_LABEL`。最新一张真机帧
+（`20261002_133144_248443_step_004_before_…png`，13:32）给出**同样的形状**：
+
+```
+elements=29  executable=2  kinds={'COMPOSITE_CONTROL': 1, 'TEXT_LABEL': 28}
+E1 COMPOSITE_CONTROL CONTROL[登录好礼]
+E10 TEXT_LABEL '未驻防'   E11 TEXT_LABEL '冰封的宝藏'   E12 TEXT_LABEL '常规活动'
+```
+
+`冰封的宝藏`、`常规活动` 这类 **HUD 活动入口只有标签、没有复合控件**。这正是 §3「下一步（2）」
+写的那件事：`interactive_controls` 的覆盖面要按真实帧扩大。而它正是**当前最大失败族**
+`SEMANTIC_TARGET_NOT_VERIFIED` 的机制：目标需要一个入口，元素表只给得出标签，
+`parse_plan` 就按 §2 拒掉（`PLAN_TARGET_IS_NOT_A_CONTROL: … is TEXT_LABEL`）。
+
+**2026-10-02 真机实测确实出现了这个拒绝，而且不止一次**：
+`learning/local_planner_steps.jsonl` 里 `E21`（10-01T14:47Z）与 `E24`（10-02T04:40Z）
+两次同一目标、同一 reason（「点击城墙下方的"升级"按钮」），两次都是 `TEXT_LABEL` 被拒。
+间隔 14 小时、元素编号不同 ⇒ **这不是偶发**，是复合控件没覆盖到那一对图标+标签。
+
+**所以下一次的落点是这一步，不是别处**：按 §3（3）的证据要求，以
+`before_frame.png` 为 Positive、以上下相邻的纯标签（如地图上的城镇名）为 Negative，
+先给出命中/误报数，再决定接入；§3（4）的四条硬禁止不变。
