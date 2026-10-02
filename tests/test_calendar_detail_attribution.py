@@ -88,7 +88,14 @@ def test_pending_bad_record_is_rebound_to_current_calendar_window(observe_detail
     grid([current], stamp)
     detail(stamp + timedelta(seconds=1), f"{EVENT}|10/04|10/04")
     assert event_schedule.calendar_detail_return_pending(ROLE)
-    assert event_schedule.calendar_scan_pending(ROLE)
+    # Corrected 2026-10-02, after the store learned to read the dates the detail carries: a key
+    # that matches no row no longer means "credit nothing".  The detail's own 10/04 falls inside
+    # exactly one uninspected row, so that row is credited when the detail is recorded and the
+    # scan stops being pending at that moment.  Measured live over 4.4 unattended hours: while
+    # this assertion held the other way, the credit never landed and AUTO re-opened the same six
+    # entries 668 times (84% of every run).  What the rebind below still has to prove is that the
+    # stored attribution names the *current* window, which is the thing this file exists for.
+    assert not event_schedule.calendar_scan_pending(ROLE)
 
     observed = observe_detail()
     assert observed["matched_occurrence_key"] == current["occurrence_key"]
