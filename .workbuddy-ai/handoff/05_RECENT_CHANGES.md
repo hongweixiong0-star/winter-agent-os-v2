@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `130d8bb 2026-10-02T18:38:35+08:00 fix(select): the material tabs' tap point was read off the frame and thrown away`
+- `9766283 2026-10-02T18:24:21+08:00 docs(memory): WB-1002-16 -- read a failure's own two frames before trusting the guard's verdict`
+- `45aad62 2026-10-02T18:22:44+08:00 docs(commander): WB-1002-16 closed -- the refused march had already gone out`
 - `76a5e90 2026-10-02T18:12:02+08:00 fix(gather): the dispatch verifier refused a march that had already gone out`
 - `89d4c64 2026-10-02T17:49:07+08:00 docs(memory): WB-1002-15 -- check the layer below before inventing a vocabulary`
 - `512a84a 2026-10-02T17:47:39+08:00 docs(commander): WB-1002-15 closed -- the MAA path names its refusals; the live values are not in yet`
@@ -15,16 +18,12 @@ Last 12 commits (newest first):
 - `3ce3ef3 2026-10-02T17:16:35+08:00 fix(brain): the ninth and tenth city-HUD branches were missing the panel guard`
 - `1410915 2026-10-02T17:03:19+08:00 docs(memory): WB-1002-13 -- the two cluster judgments, and the recovery gated on the missing quantity`
 - `1234757 2026-10-02T17:02:08+08:00 docs(commander): WB-1002-13 closed -- the recovery was gated on the thing that was missing`
-- `731c125 2026-10-02T16:52:47+08:00 fix(resource): let the strip-scroll recovery run when the offset is missing`
-- `e201c7f 2026-10-02T16:42:03+08:00 docs(memory): WB-1002-12 -- pair a failure with the next success before calling it a defect`
-- `b1c4c80 2026-10-02T16:40:52+08:00 docs(commander): WB-1002-12 closed with three falsifications and no fix, which is the result`
 
-Uncommitted changes: 1468
+Uncommitted changes: 1467
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
-- ` M .workbuddy-ai/commander/WORK_QUEUE.json`
 - ` M .workbuddy-ai/memory/2026-09-30.md`
 - ` M START_HERE.md`
 - ` M dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png`
@@ -40,6 +39,7 @@ Uncommitted changes: 1468
 - ` M knowledge/preload/INDEX.json`
 - ` M knowledge/preload/TROOP_SELECT.json`
 - ` M knowledge/ui/page_transitions.json`
+- ` M learning/current_truth.json`
 <!-- /AUTO:recent_commits -->
 
 ---

@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-02T10:22:06+00:00",
+  "updated_at": "2026-10-02T10:43:39+00:00",
   "queue_generated_at": "2026-10-02T03:36:20+08:00",
   "current_task": null,
   "tasks": {
@@ -455,6 +455,14 @@
       "result_file": "results/WB-1002-16-GATHER-FORMATION-ROLE-SCOPE.json",
       "verdict": "MERGED_AND_DEPLOYED: 76a5e90456bc5039c6caaf03b04c6a0ef87459f2, repinned (RESULT: CLEAN_OUTSIDE_DATA, 1156 status rows, 0 outside data dirs), pushed to origin/main (89d4c64..76a5e90). Pin tree verified byte-identical for all three changed modules after line-ending normalisation, carrying the new clause field and the new stamping method, with the new test file present.",
       "summary": "{'readers_no_longer_invent': 'the MARCH and RESOURCE_DETAIL synthesized states claim only what their templates evidence; measured on the same four archived frames, the production observation now returns resource_target None', 'the_record_names_its_source': 'gather_formation gains resource_observed ("
+    },
+    "WB-1002-20-RESOURCE-TAB-LABEL-FALLBACK": {
+      "status": "DONE",
+      "started_at": "2026-10-02T10:38:06+00:00",
+      "finished_at": "2026-10-02T10:43:39+00:00",
+      "result_file": "results/WB-1002-20-RESOURCE-TAB-LABEL-FALLBACK.json",
+      "verdict": "MERGED_AND_DEPLOYED: 130d8bb17b950ef2e80964be066680a1010109a5, repinned (RESULT: CLEAN_OUTSIDE_DATA, 1156 status rows, 0 outside data dirs), pushed to origin/main (9766283..130d8bb). Pin tree byte-identical for all three modules after line-ending normalisation, carrying the new field, the fill and the helper, with the new test file present.",
+      "summary": "{'new_field': 'WorldState.resource_tab_label_norm: dict[kind, (x_norm, y_norm)]', 'one_helper': 'runtime._tab_label_centre(frame, kind) holds the guards three resolvers need -- MAP page, panel open, a 2-tuple in range -- and falls back to the two legacy fields so a frame built without the mapping st"
     }
   },
   "history": [
