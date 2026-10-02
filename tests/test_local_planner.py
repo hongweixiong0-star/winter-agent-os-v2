@@ -994,5 +994,87 @@ class ThePlannerAsksForTheContractItCanUseTest(unittest.TestCase):
             self.assertIn(ui_planner.VISION_BOX_KEY, advisor.client.schemas[-1]["properties"])
 
 
+class TheModelIsToldWhatItIsBeingAskedTest(unittest.TestCase):
+    """The caller writes a question naming the control it could not locate.  It must arrive.
+
+    Measured 2026-10-02 on the sanctioned pinned panel: of 16 real UNKNOWN calls, 7 proposals
+    came back and **every one** was a non-executing decision (5 REPLAN, 2 OBSERVE), so nothing
+    ever reached grounding and the project's own funnel read
+    ``venus_proposed=7 -> grounding_valid=0, grounding_rejected=0``.  The planner ledger's
+    ``reason`` field says why, in the model's own words: asked to locate one named control, it
+    answered about the *goal* instead -- "The goal AVOID_STAMINA_WASTE cannot be advanced on
+    this screen".  The request already carries a question that names the target
+    ("当前无法定位的语义目标为 X。只推进这个目标"), and nothing read it.
+    """
+
+    QUESTION = "当前无法定位的语义目标为 QUICK_PANEL_ROW_BUILDING。只推进这个目标，不打开无关功能。"
+
+    def test_the_packet_carries_the_question_the_caller_asked(self):
+        packet = ui_planner.build_packet(
+            goal="KEEP_BUILDING_PRODUCTIVE", current_page="HOME",
+            elements=ELEMENTS, question=self.QUESTION,
+        )
+        self.assertEqual(packet["question"], self.QUESTION)
+
+    def test_a_caller_with_no_question_adds_no_empty_field(self):
+        packet = ui_planner.build_packet(goal="G", current_page="HOME", elements=ELEMENTS)
+        self.assertNotIn("question", packet)
+
+    def test_the_question_reaches_the_prompt_the_model_actually_sees(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            client = _StubClient(execute())
+            advisor = ui_planner.ManagedAdvisor(
+                client=client, ledger=ui_planner.PlannerLedger(Path(tmp) / "steps.jsonl"),
+                root=Path(tmp),
+            )
+            request = _request()
+            request.question = self.QUESTION
+            advisor.take_request(request)
+            self.assertTrue(client.prompts, "the model was never asked anything")
+            self.assertIn("QUICK_PANEL_ROW_BUILDING", client.prompts[0])
+
+    def test_the_prompt_says_what_to_do_with_it(self):
+        # The packet section is only usable if the prompt documents it, the way it documents
+        # goal / current_page / available_elements.  Pinned as a phrase rather than the word
+        # "question", which already appears in the prompt's prose -- and compared with the
+        # prompt's own hand-wrapping flattened out, because the line breaks are formatting.
+        prompt = " ".join(ui_planner.SYSTEM_PROMPT.split())
+        self.assertIn("that named control is the one to find", prompt)
+
+
+class AnElementNamedWithItsOwnLabelIsStillThatElementTest(unittest.TestCase):
+    """The model writes ``E11 (1倍钓鱼)``: the id is right, the decoration broke it.
+
+    Measured 2026-10-02: the only live EXECUTE refused for its *id* was
+    ``PLAN_TARGET_NOT_ON_THIS_SCREEN: 'E11 (1倍钓鱼)'`` -- the model had identified the correct
+    element and appended the text it read on it.  Reading the leading id is not the
+    hallucination guard's business: every check after it is unchanged, so an id this screen did
+    not produce is still refused, and a label is still not a control.
+    """
+
+    def test_an_id_followed_by_its_printed_label_is_read_as_the_id(self):
+        parsed = ui_planner.parse_plan(execute(target="E1 (领取)"), elements=ELEMENTS)
+        self.assertTrue(parsed.ok, parsed.error)
+        self.assertEqual(parsed.plan.target_element_id, "E1")
+        self.assertEqual(parsed.plan.target_text, "领取")
+
+    def test_a_decorated_id_this_screen_does_not_have_is_still_refused(self):
+        parsed = ui_planner.parse_plan(execute(target="E9 (领取)"), elements=ELEMENTS)
+        self.assertFalse(parsed.ok)
+        self.assertIn("PLAN_TARGET_NOT_ON_THIS_SCREEN", parsed.error)
+
+    def test_a_decorated_id_naming_a_label_is_still_not_a_control(self):
+        elements = [{"id": "E1", "text": "城墙", "area": "top",
+                     "kind": "TEXT_LABEL", "semantic": "", "executable": False}]
+        parsed = ui_planner.parse_plan(execute(target="E1 (城墙)"), elements=elements)
+        self.assertFalse(parsed.ok)
+        self.assertIn("PLAN_TARGET_IS_NOT_A_CONTROL", parsed.error)
+
+    def test_an_id_not_separated_from_other_letters_is_not_guessed_at(self):
+        parsed = ui_planner.parse_plan(execute(target="E1X"), elements=ELEMENTS)
+        self.assertFalse(parsed.ok)
+        self.assertIn("PLAN_TARGET_NOT_ON_THIS_SCREEN", parsed.error)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -55,6 +55,7 @@ rule this mirrors.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -165,6 +166,20 @@ REASON_MAX_CHARS = 120
 EXPECTED_PAGE_MAX_CHARS = 40
 EXPECTED_RESULT_MAX_CHARS = 60
 SEMANTIC_TARGET_MAX_CHARS = 60
+#: How much of the caller's question travels in the packet.  The runtime's own wording is
+#: about 120 characters; the cap is the contract's habit of bounding every field the model can
+#: be shown, not a measured limit on this particular string.
+QUESTION_MAX_CHARS = 240
+
+#: The leading element id in whatever the model put in ``target_element_id``.
+#:
+#: The guard this serves is "only what was offered", and the model honours it: on 2026-10-02 the
+#: only live ``EXECUTE`` refused for its *id* was ``PLAN_TARGET_NOT_ON_THIS_SCREEN: 'E11 (1倍钓鱼)'``
+#: -- it had identified the correct element and appended the words it read on it.  Requiring the
+#: string to be the bare id refuses a right answer for its punctuation, which is not what the
+#: guard is for.  ``\b`` is load-bearing: ``E1X`` has no boundary after the digits and stays
+#: unmatched, so an id that runs into other letters is still not guessed at.
+ELEMENT_ID_PREFIX = re.compile(r"^E\d+\b")
 
 
 def response_schema(*, needs_box: bool) -> dict[str, Any]:
@@ -233,6 +248,10 @@ You will also be given, for the same screen:
 - goal: the task the Global Scheduler has ALREADY decided to pursue. You do NOT choose goals,
   you do NOT switch to another task, and you do NOT reconsider priorities. Your only question
   is: for this goal, what is the next thing to do on this screen?
+- question: the caller's own words, when it is asking about one control it could not locate.  Its
+  "unlocatable semantic target" names the control this step exists for, so that named control is
+  the one to find -- not another control that also relates to the goal, and not an argument that
+  the goal cannot be advanced here.
 - current_page: what the page model read this screen as.
 - available_elements: the UI elements that were ACTUALLY measured on this screen right now.
   Each has an id, the text the client itself printed on it, a semantic name and a coarse area.
@@ -452,6 +471,11 @@ def build_packet(
     last_failure: str = "",
     remaining_steps: int = 0,
     step_index: int = 0,
+    #: The caller's own question, when it has one.  It is the only place the *named control this
+    #: question is about* appears: ``available_elements`` says what is on the screen and ``goal``
+    #: says why, but neither says which control the runtime could not locate, and the model was
+    #: measured answering about the goal because of it (see ``take_request``).
+    question: str = "",
     #: The packet-level element cap.  Read from ``context_budget`` so there is one number for
     #: "how many elements a packet carries": the builder bounds it here and the budget manager
     #: trims below it only when the window demands.  A second literal in this signature is how
@@ -492,6 +516,8 @@ def build_packet(
         "last_result": None if last_result is None else str(last_result)[:200],
         "remaining_steps": int(remaining_steps),
     }
+    if question:
+        packet["question"] = str(question)[:QUESTION_MAX_CHARS]
     if session:
         packet["session"] = dict(session)
     if recent_steps:
@@ -662,11 +688,25 @@ def parse_plan(raw: str, *, elements: list[dict[str, Any]],
                     or payload.get("target_element_id") or "").strip().upper()
     by_id = {str(e.get("id", "")).upper(): e for e in elements}
     if target_id and target_id not in by_id:
-        # Naming an id this frame did not produce is still an outright refusal: the element
-        # path's whole guarantee is "only what was offered", and a hallucinated id must not
-        # silently fall through to the screenshot channel either.
-        return PlanParse(error=f"PLAN_TARGET_NOT_ON_THIS_SCREEN: {target_id[:40]!r}",
-                         raw=text[:400])
+        # The model sometimes writes the id together with the words it read on the element
+        # (``E11 (1倍钓鱼)``).  The id is the part that has to match and the decoration is not
+        # evidence of anything, so refusing it discards a correct identification.  Measured
+        # 2026-10-02: that was the only live ``EXECUTE`` refused for its id.
+        #
+        # Nothing about the guard relaxes.  The id read here still has to be one this frame
+        # produced, and every check below it -- ``executable is False``, the printed-text
+        # requirement -- is untouched.  ``as_written`` keeps the refusal quoting the model's own
+        # string, so a refusal still shows what was actually said.
+        as_written = target_id
+        leading = ELEMENT_ID_PREFIX.match(as_written)
+        if leading:
+            target_id = leading.group(0)
+        if target_id not in by_id:
+            # Naming an id this frame did not produce is still an outright refusal: the element
+            # path's whole guarantee is "only what was offered", and a hallucinated id must not
+            # silently fall through to the screenshot channel either.
+            return PlanParse(error=f"PLAN_TARGET_NOT_ON_THIS_SCREEN: {as_written[:40]!r}",
+                             raw=text[:400])
     if target_id:
         element = by_id[target_id]
         if element.get("executable") is False:
@@ -842,6 +882,13 @@ class ManagedAdvisor:
             last_failure=self._last_failure(),
             remaining_steps=max(0, self.max_steps_per_screen - self._per_screen.get(page_key, 0)),
             step_index=self.steps,
+            # The caller wrote this question for the model -- it names the control that could
+            # not be located and says to advance only that one.  Handing it over is the whole
+            # fix: measured 2026-10-02, with the question withheld the model answered about the
+            # *goal* instead ("The goal AVOID_STAMINA_WASTE cannot be advanced on this screen")
+            # in every one of 7 live proposals, so the funnel read venus_proposed=7 ->
+            # grounding_valid=0 and no step was ever executed.
+            question=str(getattr(question, "question", "") or ""),
         )
         # What the model is shown is decided here rather than by the caps inside ``build_packet``:
         # the caps bound one section and the manager bounds the whole prompt against the window
