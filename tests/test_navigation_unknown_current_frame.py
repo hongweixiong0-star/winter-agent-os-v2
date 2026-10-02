@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from winter_agent_v2.models import Page, WorldState
-from winter_agent_v2.runtime import LiveRuntime
+from winter_agent_v2.runtime import PANEL_DEPENDENT_NAVIGATION_TARGETS, LiveRuntime
 
 
 def runtime(tmp_path):
@@ -57,6 +57,47 @@ def test_provider_failure_only_defers_current_navigation(tmp_path):
     assert live._unknown_navigation_target("CAMP", WorldState(page=Page.HOME),
         tmp_path / "before.png", skill_id="OPEN_MARKSMAN_TRAINING") is None
     assert live._advised_learn_context == {}
+
+
+def test_a_control_that_needs_the_search_panel_is_not_asked_for_while_it_is_closed(tmp_path):
+    """Asking the model here is asking a question the runtime has already answered.
+
+    Measured 2026-10-02, three times in thirty minutes (05:39:48, 05:46:46, 06:08:21): the runtime
+    pressed BACK -- the next BACK in that same run is labelled ``close_resource_search_for_daily_goal``
+    -- and then ran OPEN_BEAST_SEARCH_TAB, whose target BEAST_SEARCH_TAB exists only while the
+    resource search panel is drawn.  The registered locator refused for exactly that reason
+    (``if frame.page is not Page.MAP or not frame.resource_search_open: return None``), and the
+    runtime then spent a model call and an UNKNOWN trace asking where the tab was.
+
+    The model's own replies name the target and say it is not on the screen -- that is what the
+    question fix bought (the three reasons are target-level; the three before it were goal-level).
+    So the ~14 s of the only escalation channel bought back an answer the frame already carried.
+    The recovery is to re-establish the precondition: SEARCH_RESOURCE opens the panel and the same
+    chain already runs it successfully two steps earlier.
+    """
+    live = runtime(tmp_path)
+    frame = WorldState(page=Page.MAP)
+    assert getattr(frame, "resource_search_open", False) is False
+    assert live._unknown_navigation_target(
+        "BEAST_SEARCH_TAB", frame, tmp_path / "before.png",
+        skill_id="OPEN_BEAST_SEARCH_TAB") is None
+    live._advised_control.assert_not_called()
+
+
+def test_the_panel_guard_and_the_resolver_agree_on_the_precondition(tmp_path):
+    """The condition lives in two places, so their agreement is pinned rather than assumed.
+
+    A target is skipped by the guard *because* the resolver would refuse it for a reason the model
+    cannot see.  If the resolver's condition ever changes, this is what notices -- and a guard that
+    outlived its condition would silently stop offering the model a question it could answer.
+    """
+    live = runtime(tmp_path)
+    frame = WorldState(page=Page.MAP)
+    assert PANEL_DEPENDENT_NAVIGATION_TARGETS, "the guard would be vacuous"
+    for semantic in sorted(PANEL_DEPENDENT_NAVIGATION_TARGETS):
+        assert live._resolve_semantic_target(semantic, frame, frame_path=None) is None, (
+            f"{semantic} is guarded as panel-dependent but the resolver answers without the panel"
+        )
 
 
 def measured():

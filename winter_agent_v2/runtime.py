@@ -276,6 +276,28 @@ def _verify_rally_action(skill_id: str, before: WorldState, after: WorldState, t
     raise ValueError(f"not a rally action: {skill_id}")
 
 
+#: Navigation targets that exist only while another screen state is open.  Asking the model for one
+#: on a frame that lacks that state is asking a question the runtime has already answered.
+#:
+#: Measured 2026-10-02, three times in thirty minutes (05:39:48, 05:46:46, 06:08:21).  Each time the
+#: runtime pressed BACK -- which closes the resource search panel; the next BACK in that same run
+#: is labelled ``close_resource_search_for_daily_goal`` -- and then ran ``OPEN_BEAST_SEARCH_TAB``,
+#: whose target only exists while that panel is drawn.  The registered locator refused for exactly
+#: that reason (its own line is ``if frame.page is not Page.MAP or not frame.resource_search_open:
+#: return None``), and the runtime then spent a model call and an UNKNOWN trace asking where the tab
+#: was.  The model's three replies name the target and say it is not on the screen -- which is what
+#: the question fix bought -- so the cost was about 14 s of the only escalation channel for an
+#: answer the frame already carried.  The recovery is to re-establish the precondition, and
+#: ``SEARCH_RESOURCE`` opens that panel and already runs successfully two steps earlier in the same
+#: chain.
+#:
+#: The condition therefore lives in two places, which is worth naming: the resolver's branch and
+#: this set.  ``tests/test_navigation_unknown_current_frame.py`` pins that they agree, so a resolver
+#: whose precondition changes cannot leave this guard silently refusing a question that the model
+#: could have answered.
+PANEL_DEPENDENT_NAVIGATION_TARGETS = frozenset({"BEAST_SEARCH_TAB", "GIANT_BEAST_SEARCH_TAB"})
+
+
 class LiveRuntime:
     """Bounded production loop built around the one V2 Scheduler.
 
@@ -5930,6 +5952,12 @@ class LiveRuntime:
         navigation = (skill_id.startswith("OPEN_")
                       or skill_id.startswith("TAP_FOCUSED_TRAINING_CAMP_"))
         if not navigation or frame.page in {Page.LOADING, Page.MAINTENANCE}:
+            return None
+        if (semantic in PANEL_DEPENDENT_NAVIGATION_TARGETS
+                and not getattr(frame, "resource_search_open", False)):
+            # The locator did not miss for lack of looking: this control is not drawn until its
+            # panel is open, so no answer can name it.  Return without filing the question -- see
+            # PANEL_DEPENDENT_NAVIGATION_TARGETS for the three measured occurrences.
             return None
         if not getattr(self, "_committed_goal", "") or not self._calendar_role_id():
             return None
