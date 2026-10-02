@@ -1928,7 +1928,7 @@
       "time_minutes": 120,
       "timebox_minutes": 120,
       "why_now": "它损坏的是开发环本身：任何'看文件确认改动生效'的验证都不可信，未提交的工作会被静默丢弃。本轮因此改为从内存 blob 构造提交（hash-object + 临时索引 + commit-tree），并把这作为纪律写下来；但机制未查明。",
-      "current_evidence": "① 19:0x 与 19:1x 两次：`git diff --stat` 刚显示改动存在，几十秒后同一路径已是 HEAD 字节（md5 cf316ba5d8c68e250940f4510a7c7471 / d9f9ffc3480cbb80dfb93d9947bb723a），且两文件同时发生，其中一个（winter_agent_v2/）不在 junction 之下；② tests/test_unvalidated_node_keeps_adb.py 在一次读取中缺失、下一次存在；③ 生产自己写入的 autogen 条目 OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN 在我一次按 HEAD 字节回写后被抹掉，此后未再出现。已排除：pin 工作树与 dev 在 knowledge/config/learning/dataset 上是 junction（同 inode，已用 samefile 证实），但 winter_agent_v2/tests/tools 不是；launch_pinned_production.py 只校验不回写；repin_production.py 的 checkout 排除四个数据目录；runtime 的 RoutingTable.save() 与 PipelineAutoGen.wire() 都是新鲜加载后写回，不会丢键。\n\n④ 已解释的一项（良性）：本轮出现两对同消息、同 tree、相差 2 秒的提交（081d48b→3a6ea9f，756631c→9b76e15），作者一律是仓库配置的 `Winter Agent OS V2 <agent@winter-agent-os.local>`（不是第三方身份）。拓扑显示每对是'先一个同内容提交，紧接着我的提交'，即**同一条命令被执行了两次**、第二次因工作区未变而生成同 tree 提交 —— 两次都带沙箱升级提示。⇒ 教训是流程性的：**提交脚本必须能容忍被执行两次**（或本身幂等）。⇒ 这一项**削弱**但不否定 ①—③：'工作区把已跟踪文件还原成 HEAD'仍未归因，所以本单的正确做法是**起只读监视器留证据**，而不是继续从行为反推。",
+      "current_evidence": "① 19:0x 与 19:1x 两次：`git diff --stat` 刚显示改动存在，几十秒后同一路径已是 HEAD 字节（md5 cf316ba5d8c68e250940f4510a7c7471 / d9f9ffc3480cbb80dfb93d9947bb723a），且两文件同时发生，其中一个（winter_agent_v2/）不在 junction 之下；② tests/test_unvalidated_node_keeps_adb.py 在一次读取中缺失、下一次存在；③ 生产自己写入的 autogen 条目 OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN 在我一次按 HEAD 字节回写后被抹掉，此后未再出现。已排除：pin 工作树与 dev 在 knowledge/config/learning/dataset 上是 junction（同 inode，已用 samefile 证实），但 winter_agent_v2/tests/tools 不是；launch_pinned_production.py 只校验不回写；repin_production.py 的 checkout 排除四个数据目录；runtime 的 RoutingTable.save() 与 PipelineAutoGen.wire() 都是新鲜加载后写回，不会丢键。\n\n④ 已解释的一项（良性）：本轮出现两对同消息、同 tree、相差 2 秒的提交（081d48b→3a6ea9f，756631c→9b76e15），作者一律是仓库配置的 `Winter Agent OS V2 <agent@winter-agent-os.local>`（不是第三方身份）。拓扑显示每对是'先一个同内容提交，紧接着我的提交'，即**同一条命令被执行了两次**、第二次因工作区未变而生成同 tree 提交 —— 两次都带沙箱升级提示。⇒ 教训是流程性的：**提交脚本必须能容忍被执行两次**（或本身幂等）。⇒ 这一项**削弱**但不否定 ①—③：'工作区把已跟踪文件还原成 HEAD'仍未归因，所以本单的正确做法是**起只读监视器留证据**，而不是继续从行为反推。\n\n④ 已解释的一项（良性）：本轮出现两对同消息、同 tree、相差 2 秒的提交（081d48b→3a6ea9f，756631c→9b76e15），作者一律是仓库配置的 `Winter Agent OS V2 <agent@winter-agent-os.local>`（不是第三方身份）。拓扑显示每对是'先一个同内容提交，紧接着我的提交'，即**同一条命令被执行了两次**、第二次因工作区未变而生成同 tree 提交 —— 两次都带沙箱升级提示。⇒ 教训是流程性的：**提交脚本必须能容忍被执行两次**（或本身幂等）。⇒ 这一项**削弱**但不否定 ①—③：'工作区把已跟踪文件还原成 HEAD'仍未归因，所以本单的正确做法是**起只读监视器留证据**，而不是继续从行为反推。",
       "root_cause_or_hypothesis": "未确定。候选：某个周期性进程对 dev 树做 checkout/clean；或宿主沙箱对工作区做快照回滚。",
       "files_to_inspect": [
         "tools/launch_pinned_production.py",
@@ -2075,7 +2075,7 @@
     "codex_scope_for_this_delivery": "Governance documents and this queue only; not reclaiming source/release/device ownership. Codex heartbeats stay read-only."
   },
   "updated_at": "2026-10-02T11:40:00Z",
-  "update_reason": "WB-1002-22: OPEN_BUILDING_UPGRADE 的节点 0 成 10 且从未验证，路由却首选它；已按文件自身先例退休并让帧内解析器可达。WB-1002-23: 本轮两次观察到工作树被静默还原成 HEAD，损坏开发环，列为 P0。 另：两对重复提交已归因为同一命令被执行两次（良性），WB-1002-23 的证据与做法据此修正为'先起监视器留证据'。",
+  "update_reason": "WB-1002-22: OPEN_BUILDING_UPGRADE 的节点 0 成 10 且从未验证，路由却首选它；已按文件自身先例退休并让帧内解析器可达。WB-1002-23: 本轮两次观察到工作树被静默还原成 HEAD，损坏开发环，列为 P0。 另：两对重复提交已归因为同一命令被执行两次（良性），WB-1002-23 的证据与做法据此修正为'先起监视器留证据'。 另：两对重复提交已归因为同一命令被执行两次（良性），WB-1002-23 的证据与做法据此修正为'先起监视器留证据'。",
   "current_verified_facts": {
     "captured_at": "2026-10-02T10:18:26+08:00",
     "head": "77d5b4b09bbe21193cfe467d6363dc66726b3ce6",
