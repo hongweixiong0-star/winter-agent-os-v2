@@ -208,3 +208,35 @@ class ARefusedRunIsAuditedTests(unittest.TestCase):
                 "a refusal issued nothing, and an episode claiming otherwise would corrupt "
                 "every failure rate computed from the stream",
             )
+
+    def test_a_refusal_mid_run_is_recorded_even_when_the_run_carries_on(self):
+        """The shape the device actually produces, and the one the first gate missed.
+
+        Measured 2026-10-02 16:20-16:44 on production, after the first version of the gate
+        shipped: five runs, **none ending on a refusal** -- MAX_ACTIONS_REACHED twice (23 and
+        22 steps), ROLE_SWITCHED_TO three times -- while ten Scheduler choices in the same
+        window went to an episode for a different goal.  ``_yield_to_next_goal`` holds a
+        refused goal back and the cycle continues, so a gate that asks "did the run *end* on a
+        refusal" never fires: ``append_fruitless_audit`` is only called from ``finish``, and
+        that run's finish reason was MAX_ACTIONS_REACHED.
+
+        So the row is written for a run that refused *anything*, and the refusals are named
+        at the top level -- a run that ends on MAX_ACTIONS_REACHED would otherwise report
+        only its ending, and "what did it decline, and why" needs one hop rather than a scan
+        through every page.  One row per run is the contract; the refusals are a list inside it.
+        """
+        result, rows = self._run()
+        self.assertEqual(len(rows), 1, "still one row per run, whatever the run refused")
+        refusals = rows[0]["refusals"]
+        self.assertTrue(refusals, "a run that refused must name the refusal")
+        for entry in refusals:
+            self.assertTrue(entry["reason"], "each refusal carries its own reason")
+            self.assertIn("page", entry)
+            self.assertIn("goal_id", entry)
+        # The refusals came out of per_page, so the two cannot disagree.
+        from_page = [
+            page for page in rows[0]["per_page"]
+            if str(page.get("attempted_skill") or "") == "SAFE_STOP"
+        ]
+        self.assertEqual(len(refusals), len(from_page))
+

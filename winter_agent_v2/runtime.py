@@ -8261,11 +8261,26 @@ class LiveRuntime:
             # So this widens a gate; it does not add a field, a ledger, or a vocabulary.
             if self.fruitless_audit_path is None:
                 return
-            refused = bool(
-                steps
-                and getattr(steps[-1].decision, "skill", "") == "SAFE_STOP"
-                and steps[-1].execution is None
-            )
+            # Which runs get a row.  Measured on the device 2026-10-02 16:20-16:44, after the
+            # previous version of this gate shipped: five runs, **none of them ending on a
+            # refusal** -- MAX_ACTIONS_REACHED twice (23 and 22 steps), ROLE_SWITCHED_TO three
+            # times -- while ten Scheduler choices in the same window went straight to an episode
+            # for a different goal.  So a refusal does **not** end the run: ``_yield_to_next_goal``
+            # holds the goal back and the cycle carries on, and the row was never written because
+            # this function only runs at ``finish``.
+            #
+            # The predicate is therefore "did this run refuse anything", not "did it end on a
+            # refusal".  ``audit_pages`` is the record of that already: ``:8986`` appends the
+            # page, ``:8991`` sets ``attempted_skill``, ``:8992`` sets ``attempted_reason``, and
+            # the branch below is what decides.  One row per run, as the contract test requires
+            # (``assertEqual(len(client.audit_rows), 1)``) -- the refusals are listed inside
+            # ``per_page`` rather than as extra rows, so a run that refused nine times is still
+            # one row and its per_page carries nine ``attempted_skill == "SAFE_STOP"`` entries.
+            refused = [
+                page for page in audit_pages
+                if str(page.get("attempted_skill") or "") == "SAFE_STOP"
+                and str((page.get("verifier_result") or {}).get("status") or "") == "NOT_ATTEMPTED"
+            ]
             if reason != self.NOTHING_LEFT_TO_LOOK_AT and not refused:
                 return
             try:
@@ -8315,6 +8330,20 @@ class LiveRuntime:
                     },
                     "final_reason": reason,
                     "stop_category": category.value,
+                    # The refusals this run made, named at the top level.  They are already
+                    # in ``per_page`` -- that is where they came from -- but a run that ends on
+                    # MAX_ACTIONS_REACHED would otherwise report only its ending, and the
+                    # question "what did it decline and why" needs one hop rather than a scan
+                    # through every page.  Empty on a run that refused nothing, which is the
+                    # common case and must stay distinguishable from "did not look".
+                    "refusals": [
+                        {
+                            "page": str(page.get("page") or "UNKNOWN"),
+                            "goal_id": page.get("goal_id"),
+                            "reason": page.get("attempted_reason"),
+                        }
+                        for page in refused
+                    ],
                 }
                 target = self.fruitless_audit_path
                 target.parent.mkdir(parents=True, exist_ok=True)
