@@ -3369,3 +3369,32 @@ streak 喂给 fairness bonus ⇒ **结构上无法报告推进的目标，因它
 
 > **规则三：改任何 `*_at` / `*_count` 的写入时机前，先 `grep` 它的全部消费者。**
 > 推断很容易、查证才算数；**写进记忆的必须是查证后的版本，不是推断版。**
+
+## 通则：正确地拒绝，如果没有留痕，等于没有做（2026-10-03）
+
+`brain` 返回 `SAFE_STOP` → `runtime.py:8975` → `self._runtime(...); return finish(reason)`。
+**`_runtime` 不是 `_record_episode`** ⇒ 全量 10,343 条 episode 里
+**`SAFE_STOP` 出现 0 次、`WAIT` 0 次**。
+
+实测后果：连续 3 次 Scheduler 选中 SCHEDULED 目标、3 次 `SAFE_STOP`、**账本零记录**；
+600 次决策里 **11.5% 是"孤儿"**（有选择、无 episode），孤儿**集中在最需要观察的那一族**。
+`runtime.py:9040` 的注释说"拒绝不是结束，它结束的是 TASK 不是 CYCLE"——
+**早年的缺陷（结束整个 cycle）已修，但"拒绝不留行"从未处理，两本账因此无法对账。**
+
+> **规则一：凡是用 `SAFE_STOP` / `WAIT` / `no_action` 表达"我不做"的路径，
+> 都要问：这一步在账本里看得见吗？看不见 ⇒ 它对账本不存在。**
+> **判据（5 秒）：`grep` 该决策名在 `episodes.jsonl` 的 skill 集合里出现几次。0 次 ⇒ 静默路径。**
+> **一个分支的"正常路径"如果落在静默路径上，这个分支在生产上等于不存在**
+> ——本轮 `bb2dbb4` 的 EVENT 分支在城市场景返回 `SAFE_STOP`，三次修复因此全都观测不到。
+
+> **规则二：两本账之间没有第三本账 ⇒ 差额是静默的。**
+> `decisions.jsonl` 说"它赢了"，`episodes.jsonl` 什么都没说，
+> **没有任何字段写着"这次拒绝了"**。而公平性账本把每次选中都记成 `selected`，
+> 看起来很公平。**孤儿率是一个此前不存在的健康指标**：
+> 对每条 decision 取其后 6 条 episode 的 `goal_id`，`chosen` 不在其中 ⇒ 孤儿。
+
+**排查时省时间的排除清单（本轮全部试过并证伪）**：
+- run 间隙 ⇒ 用 `auto_uptime.jsonl` 的 `stop_reason` 划 run 边界，别用 `_logged_goal`（run-scoped 但不写时间）
+- `trace_id` ⇒ **生产 episode 里是空串**，不能用
+- bootstrap / replan / stop-instead-of-looking ⇒ **离线重放**（`RuleBrain().decide(WorldState(...))` + 真 registry）
+  才能证明它们没生效，读代码不够
