@@ -240,3 +240,70 @@ class ARefusedRunIsAuditedTests(unittest.TestCase):
         ]
         self.assertEqual(len(refusals), len(from_page))
 
+
+
+class ARefusalWithoutVerifierResultTests(unittest.TestCase):
+    """The predicate asks for two things; this checks the second one can actually be true.
+
+    ``refused`` requires ``attempted_skill == "SAFE_STOP"`` **and**
+    ``verifier_result.status == "NOT_ATTEMPTED"``.  That second half is the risk: the
+    page_audit is constructed *without* a ``verifier_result`` key and gains one only where a
+    branch sets it, and there are seven such assignments in the runtime.  If a refusal path
+    yields and continues without setting it, the row is silently never written -- which is
+    the same failure this whole series has been fighting, one level down.
+
+    So this is asserted against a real run rather than argued: the refusal this produces
+    must satisfy both halves, or the gate is too narrow and the honest fix is to drop the
+    second half rather than to add more places that set the first.
+    """
+
+    def test_both_halves_of_the_predicate_hold_on_a_real_refusal(self):
+        from tests.test_refused_run_writes_the_audit_row import ARefusedRunIsAuditedTests
+
+        result, rows = ARefusedRunIsAuditedTests()._run()
+        self.assertEqual(len(rows), 1)
+        pages = [p for p in rows[0]["per_page"]
+                 if str(p.get("attempted_skill") or "") == "SAFE_STOP"]
+        self.assertTrue(pages, "the run must have refused for this test to mean anything")
+        for page in pages:
+            self.assertEqual(
+                str((page.get("verifier_result") or {}).get("status") or ""),
+                "NOT_ATTEMPTED",
+                "a refused page carries no verdict, and the predicate depends on that; if a "
+                "refusal path can reach here without it, the predicate is too narrow",
+            )
+
+
+class AYieldedRefusalIsStillARefusalTests(unittest.TestCase):
+    """The shape the device actually produces, which the predicate missed for six rounds.
+
+    Reading runtime.py in order settles it: inside the ``SAFE_STOP`` branch the yield check
+    is at :9141 and ``continue`` at :9151, while ``verifier_result`` is not set until :9153
+    -- two lines later, on the path that ends the run.  So a refusal that *yields* leaves a
+    page_audit with ``attempted_skill == "SAFE_STOP"`` and **no** ``verifier_result`` at all.
+
+    The predicate required both, so on that path it was always false and the row was never
+    written.  That is why six rounds of "waiting for the scene" found nothing: the scene was
+    arriving constantly, and the second half of the test was unreachable in it.
+
+    The fix is to drop the second half rather than to set ``verifier_result`` in more places.
+    It was never what identified a refusal -- ``attempted_skill`` is -- and it is only present
+    when the run happens to stop, which is the minority case by construction.
+    """
+
+    def test_a_refusal_is_identified_by_the_skill_alone(self):
+        from winter_agent_v2 import runtime as runtime_mod
+        import inspect
+
+        source = inspect.getsource(runtime_mod.LiveRuntime.run)
+        # The yield continue must come before the verifier_result assignment, or a yielded
+        # refusal never carries one.  Asserted on the source because that ordering is the
+        # whole reason the second half of the predicate was wrong.
+        yield_at = source.index("self._yield_to_next_goal(")
+        continue_at = source.index("continue", yield_at)
+        verifier_at = source.index('page_audit["verifier_result"]', yield_at)
+        self.assertLess(
+            continue_at, verifier_at,
+            "a yielded refusal leaves no verifier_result, so the predicate must not depend "
+            "on one; if this ever becomes false, re-check whether the second half is needed",
+        )

@@ -8276,10 +8276,20 @@ class LiveRuntime:
             # (``assertEqual(len(client.audit_rows), 1)``) -- the refusals are listed inside
             # ``per_page`` rather than as extra rows, so a run that refused nine times is still
             # one row and its per_page carries nine ``attempted_skill == "SAFE_STOP"`` entries.
+            #
+            # ``attempted_skill`` alone identifies the refusal.  An earlier version also
+            # required ``verifier_result.status == "NOT_ATTEMPTED"`` and that was wrong: inside
+            # the SAFE_STOP branch the yield check is at :9141 and its ``continue`` at :9151,
+            # while ``verifier_result`` is not set until :9153 -- on the path that *ends* the
+            # run.  A refusal that yields therefore leaves a page with no ``verifier_result``
+            # at all, which is the common shape on the device (measured 2026-10-02 16:20-16:44:
+            # five runs, none of them ending on a refusal), so the second half was quietly
+            # false in every one of them.  It was never what named a refusal --
+            # ``attempted_skill`` is -- and adding more places that set it would have been
+            # treating the symptom.
             refused = [
                 page for page in audit_pages
                 if str(page.get("attempted_skill") or "") == "SAFE_STOP"
-                and str((page.get("verifier_result") or {}).get("status") or "") == "NOT_ATTEMPTED"
             ]
             if reason != self.NOTHING_LEFT_TO_LOOK_AT and not refused:
                 return
