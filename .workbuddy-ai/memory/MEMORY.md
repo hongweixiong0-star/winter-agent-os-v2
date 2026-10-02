@@ -3398,3 +3398,34 @@ streak 喂给 fairness bonus ⇒ **结构上无法报告推进的目标，因它
 - `trace_id` ⇒ **生产 episode 里是空串**，不能用
 - bootstrap / replan / stop-instead-of-looking ⇒ **离线重放**（`RuleBrain().decide(WorldState(...))` + 真 registry）
   才能证明它们没生效，读代码不够
+
+## 通则：先查项目自己的语义，再发明（2026-10-03）
+
+要修"拒绝不留痕"时，我先问了修法该不该自己造。查完发现**项目早就有**：
+`session_adapters.STEP_OBSERVE_ONLY`（只读不点的一步），
+其 `StepOutcome.STILL_PENDING` 落账为 `result="INCOMPLETE"` / `action={}` /
+`verifier_ok=None`（实测 164 行）。**"空动作的 episode"本就是合法的一等公民。**
+缺的只是 runtime 的 `SAFE_STOP` 路径没用它。
+
+> **规则：实现任何"记录 X"之前，先 `grep` 项目里有没有 X 的既有载体。**
+> 既有载体 = 字段名已定、枚举已用、面板已读 ⇒ 只需接线，不需契约讨论。
+> **本项目的 `result` 枚举（SUCCESS/FAILURE/PROGRESS/INCOMPLETE）与
+> `session_outcome`（含 STILL_PENDING）已经是完整词汇表**，
+> 新造一个 "DECLINED" 只会让第三套词汇开始存在。
+
+**实施时的关键克制**：`goal_progress` 刻意留 `None`。
+**拒绝不是推进**；记成推进会重置 `no_progress_streak`，
+而那个 streak 恰恰是"这个目标卡住了"的唯一信号。
+
+## 操作纪律：多文件一次跑出的 FIXED 列表不可信（2026-10-03，A/B 第三次栽）
+
+同一次 A/B 报 `FIXED 9`，我差点当成绩写进结论。
+**单独跑 `test_capability_gate.py`，我的版本仍是 9 failed，与 HEAD 完全相同**
+⇒ 那 9 个"修复"是**同一进程内测试顺序**造成的假象。
+
+> **规则：`NET NEW`（多跑出来的回归）比 `FIXED`（多跑出来的修复）可信，但两者都要复核。**
+> **说"我修好了 X"之前，必须单独跑那个文件/那个测试。**
+> **A/B 的数字必须能独立复现；不能复现就先怀疑测量本身，而不是先怀疑代码。**
+
+（与本项目已记录的前两次 A/B 教训同族：`cp`/`mv` 顺序、repin 用 `HEAD`。
+**三次都是"测量手段错了"，不是"代码错了"** ⇒ 测量手段本身需要版本化与标记校验。）
