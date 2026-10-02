@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-16T02:30:35+00:00",
+  "updated_at": "2026-10-02T05:03:44+00:00",
   "items": [
     {
       "task_id": "WB-0AZ-BEAST-BACK-VERIFY",
@@ -79,6 +79,39 @@
       "evidence": null,
       "blocker": null,
       "recommended_codex_review": null
+    },
+    {
+      "task_id": "WB-1002-02-CALENDAR-STARVATION",
+      "root_cause_found": true,
+      "attempts": [
+        "1. Measured the unattended window from the shared ledger (1749 episodes) and corrected an earlier 6-minute sample that had read 7% calendar share; the true figure is 83.8%.",
+        "2. Read the durable store and found both sides of the disagreement in the same file (grid rows with details_observed=None vs the detail's matched_occurrence_key), which located the defect without guessing.",
+        "3. Read event_schedule.record_calendar_snapshot and confirmed the exact-match-only lookup and the 'not occurrence' guard.",
+        "4. Wrote the regression from the live values and ran it red first (2 failed: the mismatch credit and the convergence), so the test is known to capture the defect.",
+        "5. First fix attempt credited 'the only uninspected row of that event' and broke an existing test that pins legitimate sequential progress when the frame carries no key at all -- withdrawn and replaced with a date-containment match, which keeps that test green unmodified.",
+        "6. Verified at unit, regression, guard and replay level; repinned production; live verification still blocked on role A."
+      ],
+      "changes_made": {
+        "winter_agent_v2/event_schedule.py": "added _calendar_day_key() and _row_carrying_the_details_dates(); the EVENT_DETAIL match now also credits the single uninspected row of that event whose calendar_dates_raw carries every date the detail named. Ambiguous (two fitting rows) credits nothing; a key with no parseable date still credits nothing; the no-key path is unchanged.",
+        "tests/test_event_schedule.py": "new; six cases built from the live store, two of which were red before the fix.",
+        "deployment": "commit 41b5678 pushed to origin/main, then tools/repin_production.py --to 41b5678 (manifest updated). The worker spawns a fresh interpreter per run, so no panel restart was needed."
+      },
+      "evidence": {
+        "ledger": "learning/episodes.jsonl, window 2026-10-02T00:27:27Z..04:49:45Z",
+        "store": "learning/timed_event_schedule.json -> calendar_observations.1061663148 / .1063040265",
+        "code": "winter_agent_v2/event_schedule.py:494-511 before, record_calendar_snapshot's EVENT_DETAIL branch",
+        "tests": "tests/test_event_schedule.py, tests/test_event_calendar.py, tests/test_event_countdown_ocr.py, tests/test_event_readiness_wake.py, tests/test_global_dual_role_scheduler.py, tests/test_live_runtime.py, tests/test_runtime_current_task_targets.py, tests/test_runtime_state_manifest.py, tests/test_session_engine_boundary.py, tests/test_suite_isolation.py",
+        "commit": "41b5678",
+        "pin": "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/PRODUCTION_PIN.json expected_commit=41b5678acf4a1e6e4397fb9b2c091799c29348d5",
+        "replay": "run against a copy of the live scope; the live store's updated_at was identical before and after"
+      },
+      "blocker": "LIVE verification cannot be taken yet: the loop is role 1061663148's and its persisted grid is still 6/6 uninspected, but the active role is 1063040265, whose scan is already complete, so no calendar goal is generated at all. The fix is deployed and replay-proven; what is missing is a window in which role A is active. Acceptance criterion, written down so it cannot drift: once role A is active, learning/timed_event_schedule.json scope 1061663148 must show details_observed=True on its grid entries, calendar_scan_pending must go False, and the calendar share of new episodes must fall from 83.8%. Nothing needs to be built for this - only observed.",
+      "recommended_codex_review": [
+        "Two invalid A/B attempts are worth recording as method, not detail: git stash push -- <path> silently no-ops on an already-committed file (prints 'No local changes to save'), and cmd.exe eats the ^ in 'git show <sha>^:path' under shell=True, so the comparison was against the same revision. Both produced a 'same failures on both sides' reading that proved nothing. Use explicit SHAs on this host.",
+        "core.autocrlf=true with no .gitattributes means any git operation that touches a file rewrites the working copy as CRLF; md5 changes while git diff --numstat stays small (67/2 here). Worth an .gitattributes if byte-stable working files are ever needed for evidence hashing.",
+        "Pre-existing and unrelated, left alone: tests/test_global_dual_role_scheduler.py::test_runtime_persists_shared_action_outcome_and_episode_progress_by_goal fails on the parent revision too (AttributeError: 'LiveRuntime' object has no attribute '_advised_request_id', runtime.py:2704) - the UNKNOWN-advice settlement path, which is the chain handoff 2026-09-24 left open. Also pre-existing: the two TRAIN subtests in tests/test_event_panel_observation.py.",
+        "The episodes.jsonl row-count observation from the previous session is downgraded, not closed: bytes grew monotonically (129 -> 134.6 -> 145.9 MB) while rows moved 10439 -> 10006 -> 10371. That is not truncation, but who rewrites this file and why the row count is non-monotonic is still unknown."
+      ]
     }
   ],
   "rule": "A waiting natural-state task never blocks READY work and never authorizes resource spending to manufacture evidence."

@@ -6,6 +6,10 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `41b5678 2026-10-02T12:58:36+08:00 fix(calendar): credit the row a detail belongs to by its dates, not its key string`
+- `77d5b4b 2026-10-02T07:50:12+08:00 docs(memory): record the backend axis and the unexplained ledger count for the pinned window`
+- `e49879f 2026-10-02T07:49:25+08:00 docs(commander): record the exclusive claim, the AUTO outage root cause and the guard baseline`
+- `060d75b 2026-10-02T07:49:16+08:00 fix(wiring): restore the stale guards to the current single truth`
 - `8d6990e 2026-10-02T04:11:48+08:00 docs(commander): authorize exclusive WorkBuddy handoff as quota runs low`
 - `c2d02ae 2026-10-02T04:09:35+08:00 docs(commander): record live calendar detail closure and remaining role work`
 - `b186903 2026-10-02T04:07:40+08:00 docs(commander): queue eight bounded production closure orders`
@@ -14,32 +18,28 @@ Last 12 commits (newest first):
 - `5a0aeb2 2026-10-02T03:58:37+08:00 fix(vision): exclude ticking body text from activity tab navigation`
 - `9341eee 2026-10-02T03:51:35+08:00 fix(wiring): continue calendar discovery through the current activity tab strip`
 - `5c818ed 2026-10-02T03:49:35+08:00 fix(wiring): discover registered activity entries by current localized names`
-- `d3e6e5e 2026-10-02T03:38:22+08:00 test(learning): cover safe discovery in global production arbitration`
-- `4598da3 2026-10-02T03:32:36+08:00 fix(learning): bind bootstrap exploration to the selected safe goal entry`
-- `e9f68da 2026-10-02T03:30:29+08:00 fix(runtime): connect due calendar reads and persist verified detail observations`
-- `413bd4c 2026-10-02T03:29:55+08:00 fix(wiring): persist role calendar observations and read due client entries`
 
-Uncommitted changes: 1367
-- `M .workbuddy-ai/commander/EXECUTION_STATE.json`
-- ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+Uncommitted changes: 1391
+- `M .workbuddy-ai/commander/BLOCKED_QUEUE.json`
+- ` M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
+- ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
+- ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
+- ` M .workbuddy-ai/commander/README.md`
+- ` M .workbuddy-ai/commander/WORK_QUEUE.json`
 - ` M .workbuddy-ai/memory/2026-09-30.md`
 - ` M .workbuddy-ai/memory/2026-10-02.md`
+- ` M .workbuddy/memory/2026-10-02.md`
 - ` M .workbuddy/memory/MEMORY.md`
+- ` M START_HERE.md`
+- ` M dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png`
 - ` M dataset/candidate/template_manifest.json`
 - ` M docs/CAPABILITY_COVERAGE.md`
 - ` M docs/CURRENT_TRUTH.md`
 - ` M docs/TOP_FAILURES.md`
 - ` M evidence/INDEX.json`
 - ` M knowledge/analysis/top_failures.json`
+- ` M knowledge/execution/backend_routing.json`
 - ` M knowledge/goals/capability_skill_map.json`
-- ` M knowledge/perception/candidates/INDEX.json`
 <!-- /AUTO:recent_commits -->
 
 ---

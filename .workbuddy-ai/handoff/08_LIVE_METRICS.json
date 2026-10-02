@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-10-01T23:48:29+00:00",
+  "generated_at": "2026-10-02T05:03:48+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "8d6990e",
+  "commit": "41b5678",
   "last_good_commit": "e4fd245",
-  "dirty_count": 1367,
+  "dirty_count": 1391,
   "episodes": {
-    "total": 10004,
-    "production": 10004,
-    "success": 8955,
-    "failure": 799,
-    "success_rate_over_decided": 0.9181,
+    "total": 10408,
+    "production": 10408,
+    "success": 9407,
+    "failure": 751,
+    "success_rate_over_decided": 0.9261,
     "modes": {
-      "PRODUCTION": 10004
+      "PRODUCTION": 10408
     },
     "mixed_case_rows": 0
   },
@@ -24,32 +24,32 @@
     },
     "dispatchable": 140,
     "counts": {
-      "live_verified": 13,
-      "stable": 59,
+      "live_verified": 18,
+      "stable": 54,
       "degraded": 12,
-      "only_failed": 7,
-      "never_executed": 64
+      "only_failed": 5,
+      "never_executed": 66
     }
   },
   "top_failures": [
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 331,
-      "recent": 221,
-      "last_seen": "2026-10-01T23:46:27.628789+00:00",
+      "count": 308,
+      "recent": 240,
+      "last_seen": "2026-10-02T05:00:04.605810+00:00",
       "dates": {
-        "2026-09-26": 24,
-        "2026-09-27": 46,
+        "2026-09-27": 25,
         "2026-09-28": 38,
         "2026-09-29": 2,
         "2026-09-30": 155,
-        "2026-10-01": 66
+        "2026-10-01": 67,
+        "2026-10-02": 21
       },
       "undated": 0,
       "top_skills": [
         [
           "TRY_ORDINARY_CONTROL",
-          129
+          118
         ],
         [
           "SELECT_RESOURCE",
@@ -63,12 +63,13 @@
     },
     {
       "failure_type": "NO_EXECUTION",
-      "count": 119,
-      "recent": 119,
-      "last_seen": "2026-10-01T17:13:06.859072+00:00",
+      "count": 122,
+      "recent": 122,
+      "last_seen": "2026-10-02T04:45:41.351803+00:00",
       "dates": {
         "2026-09-30": 107,
-        "2026-10-01": 12
+        "2026-10-01": 12,
+        "2026-10-02": 3
       },
       "undated": 0,
       "top_skills": [
@@ -78,7 +79,7 @@
         ],
         [
           "PRINTED_TAP",
-          36
+          37
         ],
         [
           "TAP_FOCUSED_TRAINING_CAMP_SHIELD",
@@ -87,118 +88,150 @@
       ]
     },
     {
-      "failure_type": "BEAST_SEARCH_TAB_NOT_PROVEN",
-      "count": 42,
-      "recent": 42,
-      "last_seen": "2026-10-01T14:26:25.615786+00:00",
-      "dates": {
-        "2026-09-30": 30,
-        "2026-10-01": 12
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "OPEN_BEAST_SEARCH_TAB",
-          42
-        ]
-      ]
-    },
-    {
       "failure_type": "GIANT_BEAST_SEARCH_NOT_PROVEN",
-      "count": 37,
-      "recent": 37,
-      "last_seen": "2026-10-01T23:43:26.106266+00:00",
+      "count": 46,
+      "recent": 46,
+      "last_seen": "2026-10-02T04:58:58.458608+00:00",
       "dates": {
         "2026-09-30": 19,
-        "2026-10-01": 18
+        "2026-10-01": 19,
+        "2026-10-02": 8
       },
       "undated": 0,
       "top_skills": [
         [
           "SUBMIT_GIANT_BEAST_SEARCH",
-          37
+          46
+        ]
+      ]
+    },
+    {
+      "failure_type": "BEAST_SEARCH_TAB_NOT_PROVEN",
+      "count": 49,
+      "recent": 42,
+      "last_seen": "2026-10-02T04:59:46.879075+00:00",
+      "dates": {
+        "2026-09-30": 30,
+        "2026-10-01": 12,
+        "2026-10-02": 7
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "OPEN_BEAST_SEARCH_TAB",
+          49
         ]
       ]
     },
     {
       "failure_type": "PANEL_BUILDING_QUEUE_NOT_PROVEN",
-      "count": 26,
-      "recent": 24,
-      "last_seen": "2026-10-01T14:47:42.510571+00:00",
+      "count": 27,
+      "recent": 25,
+      "last_seen": "2026-10-02T04:39:54.729414+00:00",
       "dates": {
         "2026-09-27": 2,
         "2026-09-30": 13,
-        "2026-10-01": 11
+        "2026-10-01": 11,
+        "2026-10-02": 1
       },
       "undated": 0,
       "top_skills": [
         [
           "OPEN_TASK_FROM_QUICK_PANEL_BUILDING",
-          26
+          27
         ]
       ]
     },
     {
       "failure_type": "FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN",
-      "count": 33,
-      "recent": 18,
-      "last_seen": "2026-10-01T15:53:18.494813+00:00",
+      "count": 32,
+      "recent": 24,
+      "last_seen": "2026-10-02T04:13:21.744721+00:00",
       "dates": {
-        "2026-09-26": 5,
-        "2026-09-27": 6,
+        "2026-09-27": 4,
         "2026-09-29": 4,
         "2026-09-30": 6,
-        "2026-10-01": 12
+        "2026-10-01": 12,
+        "2026-10-02": 6
       },
       "undated": 0,
       "top_skills": [
         [
           "TAP_FOCUSED_TRAINING_CAMP_SHIELD",
-          12
-        ],
-        [
-          "TAP_FOCUSED_TRAINING_CAMP_MARKSMAN",
           11
         ],
         [
           "TAP_FOCUSED_TRAINING_CAMP_LANCER",
+          11
+        ],
+        [
+          "TAP_FOCUSED_TRAINING_CAMP_MARKSMAN",
           10
         ]
       ]
     },
     {
       "failure_type": "DAILY_REWARD_ADVANCE_NOT_PROVEN",
-      "count": 15,
+      "count": 17,
       "recent": 15,
-      "last_seen": "2026-10-01T20:07:16.580394+00:00",
+      "last_seen": "2026-10-02T04:00:44.828878+00:00",
       "dates": {
         "2026-09-30": 11,
-        "2026-10-01": 4
+        "2026-10-01": 4,
+        "2026-10-02": 2
       },
       "undated": 0,
       "top_skills": [
         [
           "DISMISS_DAILY_GENERIC_REWARD",
-          15
+          17
         ]
       ]
     },
     {
       "failure_type": "SAFE_BACK_NOT_PROVEN",
-      "count": 21,
-      "recent": 12,
-      "last_seen": "2026-10-01T23:35:23.945186+00:00",
+      "count": 20,
+      "recent": 13,
+      "last_seen": "2026-10-02T04:00:08.585009+00:00",
       "dates": {
-        "2026-09-26": 2,
         "2026-09-27": 2,
         "2026-09-28": 5,
-        "2026-10-01": 12
+        "2026-10-01": 12,
+        "2026-10-02": 1
       },
       "undated": 0,
       "top_skills": [
         [
           "BACK",
-          21
+          20
+        ]
+      ]
+    },
+    {
+      "failure_type": "COMPLETED_CAMP_INSPECTION_NOT_PROVEN",
+      "count": 13,
+      "recent": 11,
+      "last_seen": "2026-10-02T02:04:32.602649+00:00",
+      "dates": {
+        "2026-09-27": 1,
+        "2026-09-29": 1,
+        "2026-09-30": 6,
+        "2026-10-01": 4,
+        "2026-10-02": 1
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "OPEN_COMPLETED_TRAINING_CAMP_LANCER",
+          10
+        ],
+        [
+          "OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN",
+          2
+        ],
+        [
+          "OPEN_COMPLETED_TRAINING_CAMP_SHIELD",
+          1
         ]
       ]
     },
@@ -217,54 +250,27 @@
           11
         ]
       ]
-    },
-    {
-      "failure_type": "COMPLETED_CAMP_INSPECTION_NOT_PROVEN",
-      "count": 12,
-      "recent": 10,
-      "last_seen": "2026-10-01T13:19:11.460982+00:00",
-      "dates": {
-        "2026-09-27": 1,
-        "2026-09-29": 1,
-        "2026-09-30": 6,
-        "2026-10-01": 4
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "OPEN_COMPLETED_TRAINING_CAMP_LANCER",
-          10
-        ],
-        [
-          "OPEN_COMPLETED_TRAINING_CAMP_SHIELD",
-          1
-        ],
-        [
-          "OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN",
-          1
-        ]
-      ]
     }
   ],
   "goals": {
     "total": 20,
     "fully_live_verified": 3,
     "partial": 9,
-    "never_tried": 3,
+    "never_tried": 4,
     "blocked": 4,
-    "degraded": 1,
+    "degraded": 0,
     "missing": 0,
     "fully_live_verified_percent": 15.0,
-    "never_tried_percent": 15.0,
+    "never_tried_percent": 20.0,
     "automation_coverage_mean": 0.7083,
-    "live_coverage_mean": 0.4637
+    "live_coverage_mean": 0.4137
   },
   "goal_status": {
     "CLEAR_INTEL": "PARTIAL",
     "AVOID_STAMINA_WASTE": "PARTIAL",
     "KEEP_MARCHES_PRODUCTIVE": "PARTIAL",
     "KEEP_BUILDING_PRODUCTIVE": "PARTIAL",
-    "KEEP_RESEARCH_PRODUCTIVE": "DEGRADED",
+    "KEEP_RESEARCH_PRODUCTIVE": "NEVER_TRIED",
     "KEEP_TRAINING_PRODUCTIVE": "FULLY_LIVE_VERIFIED",
     "MAIL_ROUTINE": "PARTIAL",
     "DAILY_ACTIVITY_TARGET": "PARTIAL",
@@ -283,9 +289,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 18972,
-    "present_on_disk": 18972,
-    "traceable_episodes": 9713,
+    "referenced_screenshots": 19798,
+    "present_on_disk": 19798,
+    "traceable_episodes": 10116,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -296,20 +302,20 @@
   },
   "git_sync": {
     "branch": "main",
-    "local_head": "8d6990e9a388fc7560f2d397b1225ab6d4bbc284",
-    "remote_head": "8d6990e9a388fc7560f2d397b1225ab6d4bbc284",
+    "local_head": "41b5678acf4a1e6e4397fb9b2c091799c29348d5",
+    "remote_head": "41b5678acf4a1e6e4397fb9b2c091799c29348d5",
     "unpushed_commits": 0,
     "behind": 0,
     "in_sync": true,
     "remote_url": "https://github.com/hongweixiong0-star/winter-agent-os-v2.git",
-    "last_push_at": "2026-10-01T20:11:59.109334+00:00",
+    "last_push_at": "2026-10-02T05:01:50.350129+00:00",
     "last_push_status": "PUSHED"
   },
   "runtime": {
-    "agent_state": "GOAL_RUNNING",
+    "agent_state": "IDLE",
     "unexpected_worker_exits": 18,
     "watchdog_restart_count": 24,
     "last_fatal_error": null,
-    "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED"
+    "stop_reason": "ROLE_SWITCHED_TO:1061663148"
   }
 }
