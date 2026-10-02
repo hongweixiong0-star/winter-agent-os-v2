@@ -2916,3 +2916,50 @@ one Scheduler" —— 但 `eligible()` 要求 `skill.state is SkillState.CANDIDA
 **判定「这红是我改的吗」的坑**：`git stash push -- <文件>` 回退重跑是正确手法，但
 **`stash pop` 会按 `core.autocrlf` 重写行尾 ⇒ md5 必变**。此时**不要**把 md5 不同当成"改动丢了"，
 要用**功能断言**（`'observation_ticket' in src`）确认内容回来了。我本轮误判过一次。
+
+---
+
+## 环境铁律：pin 树的 junction、以及"工作区不可信"（2026-10-02 实测，WB-1002-22）
+
+**① pin 工作树把四个数据目录以 junction 挂到 dev。**
+`C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\{config,knowledge,learning,dataset}`
+**解析回 `E:\无尽冬日智能体\...`，同一 inode**（`os.path.samefile` 为 True；`winter_agent_v2/tests/tools` 则不是）。
+⇒ **生产进程写 `knowledge/` 就是写 dev 工作树**。这解释了长期困惑：AUTO 的 autogen 写入会作为未提交改动
+出现在 dev 树里（本轮实例：`OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN`）。
+⇒ 推论：**dev 树里 `knowledge/` 下的改动会立刻被生产看到**（无需 repin）；反之生产也会覆盖你正在写的东西。
+
+**② 工作树会在数秒内把已跟踪文件还原成 HEAD。机制未查明（已开 WB-1002-23，P0）。**
+本轮两次观察到（两个文件同时回到 HEAD 字节，其中一个在 `winter_agent_v2/` 下、**不在** junction 之后），
+一个未跟踪测试文件还出现过"这一次读取不存在、下一次存在"。已排除：`launch_pinned_production.py` 只校验；
+`repin_production.py` 的 checkout 明确排除四个数据目录；`RoutingTable.save()` 与 `PipelineAutoGen.wire()`
+都是新鲜加载后写回、不丢键；dev 树 reflog 里没有 checkout/reset。
+**代价**：两处编辑 + 生产自己写入的一个 autogen 条目被静默丢弃。
+
+**③ 因此的硬纪律**：
+- **验证任何一个"我刚改的文件"要读 `git show HEAD:<path>`，不是工作区**；
+- **交付物从内存 blob 构造提交**：`git hash-object -w --stdin` → 临时索引（`GIT_INDEX_FILE`）`read-tree HEAD`
+  + `update-index --cacheinfo` → `write-tree` → `commit-tree -p HEAD` → `update-ref HEAD`。
+  这样与工作区是否有第三方在改**完全无关**（`_wb1002_commit_paths.py` 是通用小工具）。
+- A/B 的"备份"必须**先校验备份的 md5 等于源**再覆盖源（本轮第一次 A/B 的备份本身就是 HEAD 内容，白做一轮）。
+
+## 环境铁律：一个复现不出生产数字的仪器不能用来做决定（2026-10-02，WB-1002-22）
+
+想给 `BTN_SELECTED_BUILDING_UPGRADE` 的 autogen 模板调 ROI，用 cv2 `TM_CCOEFF_NORMED` 复算声明 ROI 得
+**0.6199**，而账本（MAA 自己的匹配器）记的是 **0.5146** ⇒ **不等价**。既然不等价，就**不能用**它去选阈值或 ROI
+—— 否则改的是自己造出来的那个数。改用**证据本身能定的那条路**（路由：让手上已有答案的帧内解析器可达）。
+**规则：任何复算/替代仪器，先复现一个已知的生产数字，再拿它做决定。** 项目里同样的教训：MAA 的真实分数需要
+第二个 tasker，会与 AUTO 争 ADB ⇒ 宁可留给部署后的账本，并把"我故意没测"写进结果。
+
+## 路由表规则：节点可以首选，但必须先被证明（2026-10-02）
+
+`executor_router` 的模块 docstring 就是规则，且由**路由文件**强制而不是靠善意：
+一个语义迁移到 MAA **只能在"节点已写好且在真实帧上画出来目视检查过、并有 A/B 证明不比旧匹配器差"之后**；
+**"若 MAA 没有改进，就保留 ADB"**。
+判定用**记录**而不是 `promoted`：全表 31 个节点 `promoted=True` 计数为 **0** ⇒ 晋升状态无区分度；
+有效判别量是**"从未作答（≥3 次尝试 0 成功）+ validation 未记录"**，本轮全表只筛出 1 个。
+**退休一个节点要照该文件自己的先例（`SEARCH_RESOURCE`）**：清空 `recognition`、`recognition_backend: LEGACY`、
+并在 `not_migrated["<SKILL>_RECOGNITION"]` 写 `semantic` + 含**测量数字**的 `reason`。
+**节点留在 LEGACY 声明旁边被既有测试明令禁止**（"节点会静默覆盖声明"）。
+同层一致性：`pipeline_autogen.wire` 曾无条件写 `recognition_backend="MAA"`，而相邻两行用 `setdefault`
+保护手工路由 ⇒ 能造出"`preferred: ADB` 却声明 MAA"的矛盾（声明了一个路由永远调不到的解析器）。
+**通用形态：一个声明必须与它旁边的路由一致，否则它是在描述一个不存在的世界。**

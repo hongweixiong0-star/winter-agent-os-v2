@@ -253,3 +253,25 @@ evidence**（`SUBMIT_GIANT_BEAST_SEARCH`、训练营一族 9 个、`VERIFY_GATHE
 不是行为证据，**结果里必须写明**，不能计进行为证明。
 
 **例行检查应加的那一条**：对观测算出的每个值，问**"谁消费它、以及要什么条件才会没人注意到"**。
+
+---
+
+## 环境（2026-10-02 实测，WB-1002-22）
+
+**pin 工作树把 `config/knowledge/learning/dataset` 以 junction 挂到 dev**（`os.path.samefile` 为 True，同一 inode；
+`winter_agent_v2/tests/tools` 则不是）⇒ **生产进程写 `knowledge/` 即写 dev 工作树**，AUTO 的 autogen 写入会以
+未提交改动出现在 dev 树里；dev 里 `knowledge/` 的改动也会立刻被生产看到（无需 repin）。
+
+**工作树会在数秒内把已跟踪文件还原成 HEAD（机制未查明，WB-1002-23 P0）**：本轮两次、两个文件同时回到 HEAD，
+其中一个不在 junction 之下；未跟踪文件也出现过时有时无。**代价**：两处编辑 + 生产写入的一个 autogen 条目被丢弃。
+⇒ **硬纪律：验证"我刚改的文件"要读 `git show HEAD:<path>`；交付物从内存 blob 构造提交**
+（`hash-object` + 临时索引 + `commit-tree` + `update-ref`），与第三方是否在改工作区无关；
+A/B 的备份必须**先校验备份等于源**再覆盖源（本轮第一次 A/B 的备份本身就是 HEAD，白做一轮）。
+
+**一个复现不出生产数字的仪器不能用来做决定**：cv2 `TM_CCOEFF_NORMED` 复算得 0.6199，账本 0.5146 ⇒ 不等价，
+**因此没有用它去调阈值/ROI**，改走证据本身能定的路。
+
+**路由表规则**（`executor_router` docstring 即规则，由文件强制）：语义迁移到 MAA 需"节点已在真实帧上目视检查 +
+A/B 不比旧匹配器差"；**"若 MAA 没有改进就保留 ADB"**。判别量是**记录**不是 `promoted`（全表 `promoted=True` 为 0）。
+退休节点照 `SEARCH_RESOURCE` 先例：清空 `recognition` + `LEGACY` + `not_migrated["<SKILL>_RECOGNITION"]` 写语义与测量；
+**声明必须与旁边的路由一致**（`preferred: ADB` 旁边写 `MAA` 等于声明了一个调不到的解析器）。
