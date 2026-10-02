@@ -3768,3 +3768,38 @@ refusals: [{'page':'HOME','goal_id':'SCHEDULED_BEAR_HUNT','reason':'…'}]
 
 **顺带**：`OPEN_HOME` 真机 688 次 / 655 SUCCESS / MAP→HOME 655 次 ⇒ 下游技能本身极可靠，
 那 2 次成功不是侥幸。
+
+## 通则：长时间"看起来停了"先跑项目的测量工具（2026-10-03，代价 5 小时空转）
+
+我在 01:30 收工时账本是活的，07:22 回来发现**停摆 297 分钟**。
+`tools/measure_auto_uptime.py` **1 秒**给出全部答案：
+
+```
+[panel] 02:28:11  本轮结束：NO EXECUTION
+[panel] 02:29:15  未进入下一轮：本轮被判定为系统故障：NO_EXECUTION
+longest_consecutive_continues 206 · current_consecutive_continues 0
+```
+
+> **规则：任何"信号为 0 / 看起来停了 / 等了很久"的判断，
+> 先跑本项目的测量工具，再决定下一步。**
+> **绝不用"再等一轮生产"来回答一个工具 1 秒就能回答的问题。**
+> 候选：`tools/measure_auto_uptime.py`（run 健康/停机原因）、
+> `tools/measure_auto_uptime` 的 `[panel]` 行（人话原因）。
+
+## 通则：未声明的 stop_reason 会停机，而本项目已被它停过三次（2026-10-03）
+
+`classify_stop_reason` 对**不在三张表里**的 reason 落到 `SYSTEM_FAILURE`
+⇒ 面板 `healthy=False` ⇒ `control_panel.py:7065` 走 `else` 分支、**不安排下一轮** ⇒ 设备空转。
+
+已被它停过：`GLOBAL_WAIT`（定时唤醒永不执行）、`ACTIVE_ROLE_NO_CANDIDATE_REOBSERVE`（09-30）、
+**`NO_EXECUTION`（07-03，停 5 小时）**。**后两个的注释里已经写明了前两次的教训。**
+
+> **规则：给 `classify_stop_reason` 加 reason 时，
+> 问「它属于三张表里的哪一张」，而不是「它是不是故障」。**
+> `CAPABILITY_GAP_STOPS` = 决策层想做事但没做成；
+> `EXPECTED_NO_ACTION_STOPS` = 确实不需要做事；`COMPLETED_STOPS` = 做完了。
+> **`NO_EXECUTION` 属第一类**（决策层点名了技能但没执行），
+> 放进第二类会掩盖问题，放进第三类是撒谎。
+>
+> **配套测试应断言「这三个已知肇事者的并集都不会被分类成 SYSTEM_FAILURE」**，
+> 这样第四个靠类比加进来的 reason 有东西可失败。
