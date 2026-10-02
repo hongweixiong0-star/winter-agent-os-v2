@@ -9073,14 +9073,32 @@ class LiveRuntime:
                     f"{decision.skill} runs as an ordinary step"
                 )
 
-            if (
-                decision.skill in ("SELECT_RESOURCE", "OPEN_BEAST_SEARCH_TAB")
-                and self._semantic.resource_tab_offset is not None
-                and self._semantic.resource_cell_center_norm(
-                    "BEAST" if decision.skill == "OPEN_BEAST_SEARCH_TAB" else planned_resource
-                ) is None
-                and self._scroll_attempts < self.max_scroll_attempts
-            ):
+            # The strip's scroll offset is what says where every cell is, and the branch below used
+            # to require it.  Measured 2026-10-02 that made one failure shape unrecoverable: 20 of
+            # the day's 92 failures were SELECT_RESOURCE, their own frames read
+            # ``resource_tab_offset = None`` (the white bracket's offset could not be resolved), and
+            # with the offset missing the loop could neither tap (no cell centre) NOR scroll (the
+            # scroll amount needs the same offset) -- so nothing was attempted and the step was
+            # refused in ~0.12 s, twice in a row, with no after-frame at all.
+            #
+            # Direction is still knowable without the offset, so the recovery is now reachable:
+            # the client's tab order is fixed and this frame's own label reading says which tabs
+            # are on screen, so a target outside that range lies to one side of it.  One pitch per
+            # attempt, same ``max_scroll_attempts`` bound, same re-observe.  When the client ever
+            # reorders the strip the swipe goes the wrong way -- bounded, re-observed, and still
+            # strictly better than the guaranteed refusal it replaces.
+            strip_delta = 0.0
+            target_tab = ""
+            if (decision.skill in ("SELECT_RESOURCE", "OPEN_BEAST_SEARCH_TAB")
+                    and self._scroll_attempts < self.max_scroll_attempts):
+                target_tab = "BEAST" if decision.skill == "OPEN_BEAST_SEARCH_TAB" else planned_resource
+                if self._semantic.resource_tab_offset is not None:
+                    if self._semantic.resource_cell_center_norm(target_tab) is None:
+                        strip_delta = self._semantic.resource_tab_swipe_for(target_tab) or 0.0
+                else:
+                    strip_delta = self._semantic.resource_tab_swipe_without_offset(
+                        target_tab, before.resource_tab_kinds) or 0.0
+            if strip_delta:
                 # The requested resource tab is outside the visible strip (WOOD,
                 # COAL and IRON sit past the right edge at the default offset).
                 # Scroll it into view and re-observe on the next iteration; no
@@ -9097,31 +9115,28 @@ class LiveRuntime:
                 # swipe of +34 px then moved the strip to offset 237.5, put 野兽's cell
                 # left on a stroke at 10.5 -- an exact match with its nominal position --
                 # and the same frame read ``anchored_tab_kind == "BEAST"``.
-                target_tab = "BEAST" if decision.skill == "OPEN_BEAST_SEARCH_TAB" else planned_resource
-                delta = self._semantic.resource_tab_swipe_for(target_tab)
-                if delta:
-                    self._scroll_attempts += 1
-                    band_y = (self._semantic.resource_tab_band[0]
-                              + self._semantic.resource_tab_band[1]) / 2
-                    status = self.device.status()
-                    if status.connected and status.resolution is not None:
-                        width, height = status.resolution
-                        # Dragging towards the negative delta moves content the
-                        # opposite way, which reveals the tabs that are off-screen.
-                        self.device.swipe(
-                            round(0.60 * width), round(band_y * height),
-                            round(0.60 * width + delta), round(band_y * height),
-                            300,
-                        )
-                        self.sleeper(self.settle_seconds)
-                        steps.append(LiveStep(index, decision, None, before, None, None))
-                        self._runtime(
-                            agent_state=AgentState.AUTO_RUNNING.value,
-                            reason=f"scroll_resource_strip_to_{target_tab}",
-                            next_action="reevaluate_after_scroll",
-                            verifier="PENDING",
-                        )
-                        continue
+                self._scroll_attempts += 1
+                band_y = (self._semantic.resource_tab_band[0]
+                          + self._semantic.resource_tab_band[1]) / 2
+                status = self.device.status()
+                if status.connected and status.resolution is not None:
+                    width, height = status.resolution
+                    # Dragging towards the negative delta moves content the
+                    # opposite way, which reveals the tabs that are off-screen.
+                    self.device.swipe(
+                        round(0.60 * width), round(band_y * height),
+                        round(0.60 * width + strip_delta), round(band_y * height),
+                        300,
+                    )
+                    self.sleeper(self.settle_seconds)
+                    steps.append(LiveStep(index, decision, None, before, None, None))
+                    self._runtime(
+                        agent_state=AgentState.AUTO_RUNNING.value,
+                        reason=f"scroll_resource_strip_to_{target_tab}",
+                        next_action="reevaluate_after_scroll",
+                        verifier="PENDING",
+                    )
+                    continue
             # Operator §七.3, and the guard has to be HERE rather than after the
             # verifier: "a control that already failed in this run is not tapped again
             # at the same position".  The first version of this check ran after the tap

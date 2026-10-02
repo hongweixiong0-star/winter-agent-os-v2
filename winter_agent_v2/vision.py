@@ -695,6 +695,56 @@ class SemanticROIVision:
             return 716 - (left + cell_px)
         return 0.0
 
+    def resource_tab_swipe_without_offset(self, resource: str, visible_kinds) -> float | None:
+        """Which way to scroll the strip when its offset could not be resolved.
+
+        :meth:`resource_tab_swipe_for` needs ``resource_tab_offset``, and that is exactly the
+        quantity a frame can fail to yield: the offset comes from the white selection bracket
+        plus reviewed cell-template support, and on the 2026-10-02 ``SELECT_RESOURCE`` failures
+        it did not resolve at all.  Measured over four of those steps' own before-frames:
+        ``selected_resource`` -> None, ``resource_tab_offset`` -> None,
+        ``anchored_tab_kind`` -> None.
+
+        So the loop could neither tap (no cell centre) nor scroll (the scroll amount needs the
+        same offset), which is the one way to fail that has no recovery at all -- 20 of that
+        day's 92 failures, the largest block of non-navigation misses.
+
+        Direction is still knowable without the offset.  The client's tab order is fixed
+        (``SNOW_MONSTER, BEAST, GIANT_BEAST, MEAT, WOOD, COAL, IRON``) and this frame's own label
+        reading says which tabs are on screen, so a target outside that visible range lies to one
+        side of it.  One pitch is returned per attempt, which is the distance between adjacent
+        tabs, and the caller keeps its own ``max_scroll_attempts`` bound and re-observes.
+
+        Sign convention is :meth:`resource_tab_swipe_for`'s: the value is a *drag delta*, so a
+        negative delta drags leftward and reveals tabs clipped on the **right**.
+
+        Returns ``None`` when the answer would be a guess: a resource this module is not allowed
+        to decide about, no visible tab to orient by, or a target already inside the visible range
+        (where scrolling is not the answer and the caller should let the ordinary path decide).
+
+        The set it will answer for is :attr:`resource_tab_cell_templates`' own keys -- the four
+        gatherable cells that carry reviewed templates -- rather than a second hand-written list,
+        for the reason ``anchored_tab_kind`` gives: a monster tab must not become a resource
+        decision by appearing in a new table.
+        """
+        if resource not in self.resource_tab_cell_templates:
+            return None
+        if not visible_kinds:
+            # ``None`` as well as an empty reading: the contract is "refuse rather than guess", and
+            # a caller that hands over a missing reading must get the refusal, not a TypeError.
+            return None
+        order = self.resource_tab_order
+        visible = [order.index(kind) for kind in visible_kinds if kind in order]
+        if not visible:
+            return None
+        target = order.index(resource)
+        pitch_px = self.resource_tab_pitch * 720.0
+        if target > max(visible):
+            return -pitch_px
+        if target < min(visible):
+            return pitch_px
+        return None
+
     def anchored_tab_kind(self, image_path: Path) -> str | None:
         """Which tab of the strip the selection bracket currently marks.
 
