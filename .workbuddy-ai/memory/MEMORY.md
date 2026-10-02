@@ -3831,3 +3831,28 @@ Get-ScheduledTaskInfo -TaskName WinterAgentV2Panel  # LastTaskResult 必须查
 > **改 runtime 类代码 ⇒ 下一轮生效；改被面板 import 的代码 ⇒ 必须重启窗口。**
 > 判断依据：`runtime_reload.py`（worker，`RUNTIME_RELOAD_REQUIRED`）
 > vs `control_plane_reload.py`（窗口，`CONTROL_PLANE_RELOAD_REQUIRED`）。
+
+## 通则：MAA 匹配器不可离线复现 ⇒ 不用 cv2 复算的分数改门限（2026-10-03）
+
+`maa_executor.match_template` 走 **MaaFramework 内部匹配器**
+（`post_recognition(JTemplateMatch, ..., method=5)`）。我用
+`cv2.TM_CCOEFF_NORMED` 离线复算得到的分数**与它不等价**。
+
+真实案例：`OPEN_EVENT_CALENDAR_FROM_HOME` 在真机上
+`MAA_TEMPLATE:NO_MATCH:score=0.5491:gate=0.7/0.75`，
+该 skill 历史 144 次 / 129 SUCCESS、**`NO_MATCH` 0 次**。
+我复算出 0.5491 附近、"证实"了失败原因——**但这个"证实"没有任何价值**，
+因为我测的不是同一个东西。
+
+> **规则：MaaFramework 的 `JTemplateMatch` 分数没有离线等价物。**
+> **cv2 复算只能回答"这个模板在这张图上有没有相似物"（相对问题），
+> 不能回答"生产会不会命中"（绝对问题）。**
+> **⇒ 复算结果可以用来"排除"（全帧最佳落点明显不是目标 ⇒ 不是找不到东西），
+> 绝不能用来"决定"（改门限 / 改 ROI / 判定必然失败）。**
+> **本项目已有同族铁律**：*"任何复算/替代仪器，先复现一个已知的生产数字，
+> 再拿它做决定"* —— 这次正是它挡住了我。
+
+**"不要降门限"的量化依据**（本案例）：
+全量 39 条 `NO_MATCH` 里分数落在 **0.45–0.65 的有 7 条**，它们**也都没过 0.7**
+⇒ 降门限会同时放进一批不匹配的。**门限是共享的，个案不能单独调。**
+**正确方向是重新采集模板**（走 `ui-asset-pipeline`），不是改一个数字。
