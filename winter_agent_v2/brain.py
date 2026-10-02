@@ -671,6 +671,50 @@ class RuleBrain:
                 "SAFE_STOP", "calendar_entry_or_calendar_structure_not_observed", 1.0,
                 "switch_task",
             )
+        if self._goal_route() == "EVENT" and world.page is not Page.EVENT:
+            # The EVENT route on any other page.  Measured 2026-10-02 across revisions
+            # 9f468b3..f3e5d8d (222 episodes): ``SCHEDULED_*`` goals were selected 66 times
+            # through their observation ticket and produced 38 episodes --
+            # MARCH 12, MAP 9, RESOURCE_DETAIL 8, HOME 8 -- running INTEL_HERO_DISPATCH 12,
+            # START_GATHER 8, OPEN_MAP 8, SUBMIT_RESOURCE_SEARCH 7.  Twenty-six of them
+            # verified SUCCESS and **goal_progress was true zero times**.  The cause is
+            # structural: the two EVENT branches below both require ``world.page is
+            # Page.EVENT``, so on every other page an EVENT-route goal walked the whole
+            # ``if`` chain to the generic ``registry.ready`` fallback and took whatever the
+            # page happened to offer.
+            #
+            # The ledger says the same thing without any interpretation needed --
+            #   skill SUBMIT_RESOURCE_SEARCH | verifier_ok True | goal_progress False
+            #   goal_progress_by_id {"SCHEDULED_STATE_VS_STATE": false}
+            # ``verifier_ok`` answered a question about the resource page, which was true and
+            # irrelevant.  ``goal_progress`` is the field that knows the difference.
+            #
+            # The actions are exactly the ones the calendar goal above already emits for the
+            # same situation, deliberately: the client draws the 常规活动 entry only in the
+            # city, so from the field the city is the only way in.  That is measured too --
+            # across 148 live MAP/HOME frames on these revisions, frames carrying a visible
+            # 常规活动 entry: **0**.  There is no map shortcut to take, and inventing a tap
+            # point for it is the one thing the production constitution forbids outright, so
+            # this navigates instead of guessing.
+            events = world.events if isinstance(world.events, dict) else {}
+            entry = events.get("calendar_entry") if isinstance(events.get("calendar_entry"), dict) else {}
+            if world.page in {Page.HOME, Page.MAP} and entry.get("visible") is True:
+                skill = ("OPEN_EVENT_CALENDAR_FROM_HOME" if world.page is Page.HOME
+                         else "OPEN_EVENT_CALENDAR_FROM_MAP")
+                return Decision(
+                    skill, "event_route_goal_and_entry_seen_on_current_frame",
+                    world.confidence, "event_calendar_open",
+                )
+            if world.page is Page.MAP:
+                return Decision(
+                    "OPEN_HOME", "event_route_goal_needs_the_city_hud_for_an_activity_entry",
+                    world.confidence, "home_opened",
+                )
+            if world.page is Page.HOME:
+                return Decision(
+                    "SAFE_STOP", "event_route_goal_in_city_but_no_activity_entry_observed",
+                    1.0, "switch_task",
+                )
         if not world.known:
             # A screen the page model cannot name used to end the task here: ``SAFE_STOP
             # unknown_page``, nothing clicked, and -- because the runtime then backed out --
