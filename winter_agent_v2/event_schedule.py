@@ -370,6 +370,47 @@ def calendar_scan_pending(role_id: str, path: Path | str | None = None) -> bool:
     ))
 
 
+def strip_read_stale_against_grid(
+    role_id: str, path: Path | str | None = None,
+) -> bool:
+    """True when the grid has been read **more recently** than the strip beside it.
+
+    The strip is a second region of the same screen, and ``_record_calendar_observation``
+    writes both from **one** call with **one** ``stamp``, so equal timestamps mean "this
+    frame produced both".  A strictly newer grid therefore means the last look at that screen
+    did not include the strip, which is the state measured on the live device 2026-10-02
+    23:15: both roles had a grid from 05:58Z, no ``ACTIVITY_STRIP`` at all, and
+    ``calendar_scan_due`` answering False -- so the strip reader had never run.
+
+    Two shapes this must **not** become, both of which a previous version of this predicate
+    was rejected for:
+
+    * "``ACTIVITY_STRIP`` is absent" -- a role whose only reading is a grid would then be due
+      forever, and four existing tests that assert convergence would turn red.  A missing
+      record is not evidence of staleness; it is evidence of a code path older than the
+      strip, and those fixtures are exactly that.  **A reader cannot discover that it has
+      never been called by asking whether it has been called.**
+    * "the registry has an unread activity" -- 17 registered, 6 read, permanently true, and
+      a 23-hour convergence becomes an infinite one.
+
+    So the test is strictly comparative and needs both readings to exist.  Where the strip
+    has never been recorded this answers False, and what opens the gate in that case is the
+    ordinary interval plus ``advertised_but_unread_activities`` -- a role that has genuinely
+    never read its strip still has to reach this screen through the same path every other
+    first observation does, and forcing it here would have been the third version of a
+    predicate that two rounds of existing tests had already rejected.
+    """
+    grid = latest_calendar_snapshot(role_id, path)
+    strip = latest_calendar_snapshot(role_id, path, kind="ACTIVITY_STRIP")
+    if not grid or not strip:
+        return False
+    grid_at = _calendar_moment(grid.get("observed_at"))
+    strip_at = _calendar_moment(strip.get("observed_at"))
+    if grid_at is None or strip_at is None:
+        return False
+    return grid_at > strip_at
+
+
 def advertised_but_unread_activities(
     role_id: str, path: Path | str | None = None,
 ) -> tuple[str, ...]:
@@ -450,6 +491,8 @@ def calendar_scan_due(
     if observed is None or observed > moment + timedelta(seconds=5):
         return True
     if calendar_scan_pending(role_id, path):
+        return True
+    if strip_read_stale_against_grid(role_id, path):
         return True
     if advertised_but_unread_activities(role_id, path):
         return True
