@@ -6,17 +6,17 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x303 all-time; recent=244 (last 2d), last seen 2026-10-02T06:41:37.469953+00:00 — TRY_ORDINARY_CONTROL(103), SELECT_RESOURCE(56), SELECT_BEAST_TARGET_MAMMOTH(28)
-- **NO_EXECUTION** x122 all-time; recent=110 (last 2d), last seen 2026-10-02T04:45:41.351803+00:00 — OBSERVE_ONLY(65), PRINTED_TAP(37), TAP_FOCUSED_TRAINING_CAMP_SHIELD(6)
-- **GIANT_BEAST_SEARCH_NOT_PROVEN** x56 all-time; recent=56 (last 2d), last seen 2026-10-02T06:41:15.902018+00:00 — SUBMIT_GIANT_BEAST_SEARCH(56)
-- **BEAST_SEARCH_TAB_NOT_PROVEN** x53 all-time; recent=46 (last 2d), last seen 2026-10-02T06:29:48.069089+00:00 — OPEN_BEAST_SEARCH_TAB(53)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x304 all-time; recent=242 (last 2d), last seen 2026-10-02T06:48:47.836023+00:00 — TRY_ORDINARY_CONTROL(103), SELECT_RESOURCE(56), SELECT_BEAST_TARGET_MAMMOTH(28)
+- **NO_EXECUTION** x122 all-time; recent=95 (last 2d), last seen 2026-10-02T04:45:41.351803+00:00 — OBSERVE_ONLY(65), PRINTED_TAP(37), TAP_FOCUSED_TRAINING_CAMP_SHIELD(6)
+- **GIANT_BEAST_SEARCH_NOT_PROVEN** x57 all-time; recent=57 (last 2d), last seen 2026-10-02T06:47:53.053246+00:00 — SUBMIT_GIANT_BEAST_SEARCH(57)
+- **BEAST_SEARCH_TAB_NOT_PROVEN** x54 all-time; recent=47 (last 2d), last seen 2026-10-02T06:48:32.057019+00:00 — OPEN_BEAST_SEARCH_TAB(54)
 - **PANEL_BUILDING_QUEUE_NOT_PROVEN** x25 all-time; recent=25 (last 2d), last seen 2026-10-02T04:39:54.729414+00:00 — OPEN_TASK_FROM_QUICK_PANEL_BUILDING(25)
 - **FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN** x28 all-time; recent=24 (last 2d), last seen 2026-10-02T04:13:21.744721+00:00 — TAP_FOCUSED_TRAINING_CAMP_LANCER(10), TAP_FOCUSED_TRAINING_CAMP_SHIELD(9), TAP_FOCUSED_TRAINING_CAMP_MARKSMAN(9)
 - `OPEN_BUILDING_UPGRADE` never succeeded (attempts=5, failure=5)
 - `READ_FISHING_STATE` never succeeded (attempts=2, failure=2)
 - `REALTIME` never succeeded (attempts=27, failure=8)
 - `SELECT_BEAST_TARGET_MAMMOTH` never succeeded (attempts=28, failure=28)
-- 1455 uncommitted file(s): ['M .workbuddy-ai/commander/BLOCKED_QUEUE.json', ' M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md']
+- 1459 uncommitted file(s): ['M .workbuddy-ai/commander/BLOCKED_QUEUE.json', ' M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md']
 <!-- /AUTO:open_issues -->
 
 ---

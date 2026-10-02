@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `dff2b1b 2026-10-02T14:55:09+08:00 fix(audit): report the chooser's number and a reason, and record a regression I caused`
+- `cc7cf87 2026-10-02T14:46:18+08:00 docs(commander): WB-1002-07 blocked -- entry fixed, but the proof cannot be satisfied`
 - `9a227da 2026-10-02T14:44:10+08:00 fix(building): the selected building's 升级 control was in the frame and nothing read it`
 - `d1856df 2026-10-02T14:31:53+08:00 docs(commander): WB-1002-08 closed, with the merged observation window and two self-checks`
 - `b92ca76 2026-10-02T14:30:44+08:00 docs(commander): WB-1002-08 -- no new crash, and a deployed fix the window cannot run`
@@ -16,10 +18,8 @@ Last 12 commits (newest first):
 - `c146e61 2026-10-02T14:10:24+08:00 docs(planner): 43 rows to 6, and what is left is re-capture rather than copying`
 - `7fea47a 2026-10-02T14:09:36+08:00 test(evidence): the guard reported 43 things of which 6 were real, so it was unreadable`
 - `5620547 2026-10-02T14:01:51+08:00 docs(planner): the auto-collected crops fail the calibration my own last round recommended they be wired on`
-- `6c1abb6 2026-10-02T14:01:10+08:00 fix(retention): the calibration corpus's frames are evidence too, and have to survive the sweep`
-- `8589935 2026-10-02T13:53:09+08:00 docs(planner): two control stores with two reachabilities, and a retention sweep that deletes fixtures`
 
-Uncommitted changes: 1455
+Uncommitted changes: 1459
 - `M .workbuddy-ai/commander/BLOCKED_QUEUE.json`
 - ` M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`

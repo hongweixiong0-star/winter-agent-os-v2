@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-02T06:45:14+00:00",
+  "updated_at": "2026-10-02T06:56:41+00:00",
   "queue_generated_at": "2026-10-02T03:36:20+08:00",
   "current_task": null,
   "tasks": {
@@ -353,10 +353,14 @@
       "blocker": "The FIRST->Candidate transition cannot be closed by a unit test: it needs a real UNKNOWN filed against the pinned revision 3989c52, and the acceptance is the funnel's own numbers moving -- venus_proposed -> grounding_valid above 0, then maa_executed, verifier_progress, candidate_step_created. As of 2026-10-02T05:29Z the last Venus rows are 05:00Z (pre-deploy) and the worker restarts its interpreter each run, so the first post-deploy UNKNOWN has not happened yet. Do not read this result as the loop working."
     },
     "WB-1002-04-UNKNOWN-COVERAGE-ARENA": {
-      "status": "PENDING",
+      "status": "BLOCKED",
       "priority": "P1",
       "queue_status": "READY",
-      "result_file": null
+      "result_file": null,
+      "started_at": "2026-10-02T06:47:29+00:00",
+      "finished_at": "2026-10-02T06:56:41+00:00",
+      "verdict": "BLOCKED",
+      "blocker": "No previously-unreached safe goal could be observed, and arena specifically cannot be: it needs a page identity, five registered skills, a resolver branch for at least BTN_OPEN_ARENA, and a production reader for world.attempts -- and the order forbids inventing the UI or the coordinates to get them. The honest next step is a real arena frame from the client, which is a device-owning task, not a coding one."
     },
     "WB-1002-05-RESEARCH-RETURN": {
       "status": "PENDING",

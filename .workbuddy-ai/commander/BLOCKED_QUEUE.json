@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-02T06:45:14+00:00",
+  "updated_at": "2026-10-02T06:56:41+00:00",
   "items": [
     {
       "task_id": "WB-0AZ-BEAST-BACK-VERIFY",
@@ -155,6 +155,17 @@
       "blocker": "BUILD_STARTED cannot be proven: verify_building_upgrade (verifier.py:1631) requires after.building['queue_building'] and an AST scan of winter_agent_v2 finds no writer of that key -- only the two reads at verifier.py:1634/1636 and a comment at vision.py:2093. Its producer was deleted on 2026-09-17 (CAP-B01, the fabricated STOREHOUSE/queue_building constants in vision.py), so target_ok is always False. The remaining input 城墙 also has no id: BUILDING_IDS omits it and knowledge/game/buildings.json has no wall record. Closing either needs evidence this machine does not have -- what the client prints for a running upgrade of the selected building -- and guessing it would buy a BUILD_STARTED that does not mean an upgrade began.",
       "recommended_codex_review": [
         "The order's objective is not met and I am not claiming partial credit for it: the entry hop is fixed, but 建筑空闲Goal cannot reach BUILD_STARTED evidence while verify_building_upgrade requires a field nothing writes. If Codex prefers the verifier to be repaired this round rather than decided next round, say which vocabulary is authoritative (printed label vs internal id) and I will wire it in one change; I did not choose on your behalf because the choice is exactly what decides whether a later 'BUILD_STARTED' means an upgrade really began."
+      ]
+    },
+    {
+      "task_id": "WB-1002-04-UNKNOWN-COVERAGE-ARENA",
+      "root_cause_found": true,
+      "attempts": "1 round. 0 device attempts. The arena's state was read three ways: the runtime's task_completion_matrix, the live goal_board through the real ranker, and the goal definition's own recorded evidence.",
+      "changes_made": "tools/full_auto_coverage_audit.py: rows now carry chooser_base / chooser_total / observation taken from the real rank() call (and from utility() for rows rank() filtered), plus a `reason` from a declared six-value vocabulary; printed and included in --json; a per-reason summary section added. tests/test_full_auto_coverage_audit.py: three assertions pinning that the chooser's number is reported beside the catalogue price, that every row's reason is in the vocabulary, and that the -inf rows separate into at least two reasons with no overlap between the on-board and off-board sets; plus the corrected candidate assertion from the regression.",
+      "evidence": "See EVIDENCE above.",
+      "blocker": "No previously-unreached safe goal could be observed, and arena specifically cannot be: it needs a page identity, five registered skills, a resolver branch for at least BTN_OPEN_ARENA, and a production reader for world.attempts -- and the order forbids inventing the UI or the coordinates to get them. The honest next step is a real arena frame from the client, which is a device-owning task, not a coding one.",
+      "recommended_codex_review": [
+        "Two things need adjudication. (1) I relaxed one assertion in tests/test_full_auto_coverage_audit.py from `row[\"skills\"]` to `row[\"skills\"] or row[\"observation\"] > 0`. I believe the old form is stale because rank()'s §5 comment and utility()'s ticket fallback are deliberate and documented, and I have recorded the relaxation as VERIFIER_SHAPE_MISMATCH's Lesson 3 requires -- but it is a criterion I weakened to make a red go green, and that is exactly the move this project's discipline tells me not to make unwatched. If you disagree with the reading, the alternative is that a8bee39 was wrong and should be reverted, which would return the three goals to -inf and off the board. (2) The order's first acceptance line is unmet and I filed the task BLOCKED rather than finished; if a device-owning round is available, arena is the thing to spend it on."
       ]
     }
   ],
