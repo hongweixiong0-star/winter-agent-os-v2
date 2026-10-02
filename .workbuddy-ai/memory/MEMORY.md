@@ -2963,3 +2963,39 @@ one Scheduler" —— 但 `eligible()` 要求 `skill.state is SkillState.CANDIDA
 同层一致性：`pipeline_autogen.wire` 曾无条件写 `recognition_backend="MAA"`，而相邻两行用 `setdefault`
 保护手工路由 ⇒ 能造出"`preferred: ADB` 却声明 MAA"的矛盾（声明了一个路由永远调不到的解析器）。
 **通用形态：一个声明必须与它旁边的路由一致，否则它是在描述一个不存在的世界。**
+
+---
+
+## 环境铁律：UNKNOWN 目标有**两个**半缺口，缺任一半都不动（2026-10-02，WB-1002-24）
+
+面板上 23 个"未知（引擎未判定）/进度 0%/待规划/待发现"的成因不是"没有技能"，而是两个互补的半缺口：
+
+**① 目标必须有 route，否则它"已定价但不可执行"。**
+`runtime.py::_sync_brain_goal` 用 `brain.current_goal = route_for(goal_id)`；**`route_for` 返回 None ⇒
+`RuleBrain` 落到它的默认分支（gather）**。所以 `route_for` 必须覆盖**每一个库能产出的家族**，
+包括按事件生成的动态 id —— 本案 `SCHEDULED_{event_id}`（id 装不进任何表）在函数里用**前缀规则**回答，
+与它已有的 `CLAIM_FREE_` 前缀同一写法。**判断该给哪个 route 要看目标自己的证据**：
+活动行的 `registered_goal_ids` 全是 `EVENT` ⇒ route 就是 `EVENT`，不是猜的。
+`tests/test_every_goal_has_a_route.py` 早就存在，但它的页面集**不含日历** ⇒ 产出 `SCHEDULED_*` 的分支
+从未被枚举，20 个无 route 目标藏在一个绿的测试后面。**测试的枚举面就是缺陷的藏身处。**
+
+**② 目标必须声明 `required_observation`，否则它"有 route 也没人去读"。**
+`goal_utility.observation_ticket` 只读这一个字段来决定"值不值得去读"。活动行写着
+`availability_state: AWAITING_LIVE_CLIENT_READING` —— **用散文说了自己在等一次读取，却没有写进那个字段**。
+**通用形态：事实写在散文里、而消费者只读字段 ⇒ 对系统等于不存在。**
+
+**票价上的门是错的位置（我的第一版修法被当场否证）。**
+我曾在 `observation_ticket` 里要求 route，`tools/invariant_review.py` 立刻 **10 PASS/0 FAIL → 7 PASS/3 FAIL**：
+`NO_PERMANENT_UNKNOWN_BLACKHOLE`、`HIGH_VALUE_UNKNOWN_NOT_STARVED`、`NEVER_OBSERVED_UNKNOWN_STILL_ON_BOARD`
+三条不变式**全部以票的答案定义"在板上"**，而第三条 docstring 明说"声明了在等什么的 UNKNOWN 必须留在板上，
+哪怕暂时没人能动它"，并自陈"fixture 正是缺陷的藏身处"。
+⇒ **正确位置是选择边界**（`runtime._selectable`：具名记录 + 一次叙述 + `continue`，与日历预算耗尽同形）。
+**"已定价但不可选"是诚实状态；"未定价且不可见"是 §5 禁止的黑洞。**
+⇒ **一条把项目自身不变式改红的修法，是错的机制，不是需要放宽的不变式。**
+
+**能力门不检查"有没有技能"。** `capability_gate.blocks` 只看 capability 与无进展记录，
+所以"有票 + 无 route + 无技能"的目标能通过 `_selectable` —— 这正是上面 B 半的危险之处。
+
+**两张表描述同一件事时必须同名。** `hints` 表键是 `TRAINING` 而 route 域是 `TRAIN` ⇒
+`hints.get("TRAIN")` 返回 `()`，**每个训练目标拿到空标签集**，没有任何地方报错。已提为模块常量并加测试。
+**并且不要为了让表好看而发明标签**：`EXPLORATION` 写"探索"看起来很对，但实测客户端底部导航印的是**探险**。
