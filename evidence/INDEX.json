@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-24T14:12:45+00:00",
-  "count": 1919,
+  "generated_at": "2026-10-02T07:23:41+00:00",
+  "count": 2204,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -177,16 +177,22 @@
       "mtime": "2026-09-14T05:30:41+00:00"
     },
     {
+      "path": "evidence/gui_workbuddy_loop/archive/production_soak_20260928T191905.json",
+      "kind": "evidence",
+      "bytes": 26210,
+      "mtime": "2026-09-28T11:19:05+00:00"
+    },
+    {
       "path": "evidence/gui_workbuddy_loop/latest.json",
       "kind": "evidence",
-      "bytes": 29975,
-      "mtime": "2026-09-24T10:19:11+00:00"
+      "bytes": 4571,
+      "mtime": "2026-10-01T23:57:40+00:00"
     },
     {
       "path": "evidence/INDEX.json",
       "kind": "evidence",
-      "bytes": 416694,
-      "mtime": "2026-09-24T10:03:37+00:00"
+      "bytes": 488804,
+      "mtime": "2026-10-02T06:58:03+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -657,6 +663,84 @@
       "mtime": "2026-09-14T11:49:28+00:00"
     },
     {
+      "path": "dataset/truth_audit/_pasted/img0.png",
+      "kind": "fixture",
+      "bytes": 313545,
+      "mtime": "2026-09-30T17:32:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/_pasted/img1.png",
+      "kind": "fixture",
+      "bytes": 7536,
+      "mtime": "2026-09-30T17:32:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/_pasted/img2.png",
+      "kind": "fixture",
+      "bytes": 155036,
+      "mtime": "2026-09-30T17:32:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/_pasted/img3.png",
+      "kind": "fixture",
+      "bytes": 29026,
+      "mtime": "2026-09-30T17:32:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/_pasted/img4.png",
+      "kind": "fixture",
+      "bytes": 27532,
+      "mtime": "2026-09-30T17:32:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/_pasted/img5.png",
+      "kind": "fixture",
+      "bytes": 27532,
+      "mtime": "2026-09-30T17:32:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/_pasted2/img0_f6a123b842.png",
+      "kind": "fixture",
+      "bytes": 313545,
+      "mtime": "2026-09-30T17:34:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/_pasted2/img1_ad17c63c2d.png",
+      "kind": "fixture",
+      "bytes": 7536,
+      "mtime": "2026-09-30T17:34:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/_pasted2/img2_66153b517a.png",
+      "kind": "fixture",
+      "bytes": 155036,
+      "mtime": "2026-09-30T17:34:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/_pasted2/img3_560587ce30.png",
+      "kind": "fixture",
+      "bytes": 29026,
+      "mtime": "2026-09-30T17:34:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/_pasted2/img4_dc9c208c94.png",
+      "kind": "fixture",
+      "bytes": 27532,
+      "mtime": "2026-09-30T17:34:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/_pasted2/img5_dc9c208c94.png",
+      "kind": "fixture",
+      "bytes": 27532,
+      "mtime": "2026-09-30T17:34:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/_pasted_image.png",
+      "kind": "fixture",
+      "bytes": 27532,
+      "mtime": "2026-09-30T17:32:25+00:00"
+    },
+    {
       "path": "dataset/truth_audit/_pill_truth.png",
       "kind": "fixture",
       "bytes": 53408,
@@ -828,7 +912,7 @@
       "path": "dataset/truth_audit/advice_execution_20260923/replay.json",
       "kind": "fixture",
       "bytes": 1735,
-      "mtime": "2026-09-23T12:09:44+00:00"
+      "mtime": "2026-09-29T16:09:21+00:00"
     },
     {
       "path": "dataset/truth_audit/after_confirm.png",
@@ -853,6 +937,96 @@
       "kind": "fixture",
       "bytes": 917,
       "mtime": "2026-09-23T12:22:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/alliance_daily_closure_20260928/donation_detail_after.png",
+      "kind": "fixture",
+      "bytes": 230875,
+      "mtime": "2026-09-28T07:11:53+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/daily_alliance_donation_live_closure_step_002_after_20260928T071151777098.png",
+      "kind": "fixture",
+      "bytes": 230875,
+      "mtime": "2026-09-28T07:11:53+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_551_ALLIANCE_TECH_FINAL_NODE.png",
+      "kind": "fixture",
+      "bytes": 215010,
+      "mtime": "2026-09-27T23:34:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_552_ALLIANCE_TECH_MEAT_DONATED.png",
+      "kind": "fixture",
+      "bytes": 256058,
+      "mtime": "2026-09-27T23:35:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_635_DAILY_HERO_RECRUIT_GO_BEFORE.png",
+      "kind": "fixture",
+      "bytes": 567690,
+      "mtime": "2026-09-28T01:59:17+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_636_DAILY_HERO_RECRUIT_GO_RESULT.png",
+      "kind": "fixture",
+      "bytes": 567629,
+      "mtime": "2026-09-28T01:59:25+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_637_DAILY_ALLIANCE_GO_BEFORE.png",
+      "kind": "fixture",
+      "bytes": 807448,
+      "mtime": "2026-09-28T02:00:07+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_825_BEFORE_TASK_BOARD.png",
+      "kind": "fixture",
+      "bytes": 1135485,
+      "mtime": "2026-09-28T05:43:05+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_826_AFTER_TASK_BOARD.png",
+      "kind": "fixture",
+      "bytes": 402446,
+      "mtime": "2026-09-28T05:43:07+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_827_AFTER_DAILY_TAB_RESELECT.png",
+      "kind": "fixture",
+      "bytes": 565345,
+      "mtime": "2026-09-28T05:44:34+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_828_LIVE_DAILY_RECHECK.png",
+      "kind": "fixture",
+      "bytes": 566793,
+      "mtime": "2026-09-28T06:01:45+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/live_alliance_tech_page.png",
+      "kind": "fixture",
+      "bytes": 293739,
+      "mtime": "2026-09-03T23:23:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/live_cycle2_alliance_tech.png",
+      "kind": "fixture",
+      "bytes": 317657,
+      "mtime": "2026-09-04T13:32:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/alliance_daily_closure_20260928/live_evidence.json",
+      "kind": "fixture",
+      "bytes": 4598,
+      "mtime": "2026-09-28T08:46:40+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/alliance_daily_closure_20260928/recommended_node_before.png",
+      "kind": "fixture",
+      "bytes": 265747,
+      "mtime": "2026-09-28T06:50:37+00:00"
     },
     {
       "path": "dataset/truth_audit/alliance_gifts_chain_20260915/01_alliance_home_live_20260915.png",
@@ -1801,6 +1975,150 @@
       "kind": "fixture",
       "bytes": 2936,
       "mtime": "2026-09-14T03:52:39+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/global_scheduler_runtime_20260929/role_popup_after.png",
+      "kind": "fixture",
+      "bytes": 984291,
+      "mtime": "2026-09-29T01:46:50+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/global_scheduler_runtime_20260929/role_popup_after_confirm.png",
+      "kind": "fixture",
+      "bytes": 991477,
+      "mtime": "2026-09-29T01:47:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/global_scheduler_runtime_20260929/role_popup_before.png",
+      "kind": "fixture",
+      "bytes": 370516,
+      "mtime": "2026-09-29T01:46:46+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/global_scheduler_runtime_20260929/role_popup_recovery.json",
+      "kind": "fixture",
+      "bytes": 351,
+      "mtime": "2026-09-29T01:47:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/global_scheduler_runtime_20260929/role_switch_A_to_B_after_fix.json",
+      "kind": "fixture",
+      "bytes": 1134,
+      "mtime": "2026-09-29T02:07:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/global_scheduler_runtime_20260929/role_switch_recovery.json",
+      "kind": "fixture",
+      "bytes": 853,
+      "mtime": "2026-09-29T01:58:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/global_scheduler_runtime_20260929/switch_recovery_after.png",
+      "kind": "fixture",
+      "bytes": 971918,
+      "mtime": "2026-09-29T01:58:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/global_scheduler_runtime_20260929/switch_recovery_before.png",
+      "kind": "fixture",
+      "bytes": 705923,
+      "mtime": "2026-09-29T01:58:09+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/ACCEPTANCE_32K_20261001.md",
+      "kind": "fixture",
+      "bytes": 6462,
+      "mtime": "2026-09-30T18:00:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/device_impact.json",
+      "kind": "fixture",
+      "bytes": 8339,
+      "mtime": "2026-09-30T16:44:50+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/device_impact.log",
+      "kind": "fixture",
+      "bytes": 3031,
+      "mtime": "2026-09-30T16:44:50+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/device_impact_tiebreak.json",
+      "kind": "fixture",
+      "bytes": 6431,
+      "mtime": "2026-09-30T16:59:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/device_impact_tiebreak.log",
+      "kind": "fixture",
+      "bytes": 3625,
+      "mtime": "2026-09-30T16:59:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/ladder_32k.json",
+      "kind": "fixture",
+      "bytes": 3710,
+      "mtime": "2026-09-30T17:30:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/ladder_32k.log",
+      "kind": "fixture",
+      "bytes": 2377,
+      "mtime": "2026-09-30T17:30:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/profile.json",
+      "kind": "fixture",
+      "bytes": 9478,
+      "mtime": "2026-09-30T16:16:25+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/profile_32k.json",
+      "kind": "fixture",
+      "bytes": 7845,
+      "mtime": "2026-09-30T16:29:11+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/sweep_cliff.json",
+      "kind": "fixture",
+      "bytes": 6663,
+      "mtime": "2026-09-30T17:20:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/sweep_cliff.log",
+      "kind": "fixture",
+      "bytes": 4291,
+      "mtime": "2026-09-30T17:20:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/sweep_edge.json",
+      "kind": "fixture",
+      "bytes": 4578,
+      "mtime": "2026-09-30T17:25:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/sweep_edge.log",
+      "kind": "fixture",
+      "bytes": 2902,
+      "mtime": "2026-09-30T17:25:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/sweep_full_offload.json",
+      "kind": "fixture",
+      "bytes": 4577,
+      "mtime": "2026-09-30T17:13:07+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/sweep_full_offload.log",
+      "kind": "fixture",
+      "bytes": 2911,
+      "mtime": "2026-09-30T17:13:07+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/gui_unknown_benchmark/benchmark.json",
+      "kind": "fixture",
+      "bytes": 2240,
+      "mtime": "2026-10-01T02:13:18+00:00"
     },
     {
       "path": "dataset/truth_audit/hard_block_evidence/battle_victory_banner__RECONSTRUCTED__from_pruned_parent_be9b5de2.png",
@@ -3765,6 +4083,42 @@
       "mtime": "2026-09-24T03:27:50+00:00"
     },
     {
+      "path": "dataset/truth_audit/local_planner_live_prod/after_frame.png",
+      "kind": "fixture",
+      "bytes": 1141545,
+      "mtime": "2026-09-30T15:22:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/local_planner_live_prod/after_frame_late_login_gift_open.png",
+      "kind": "fixture",
+      "bytes": 510770,
+      "mtime": "2026-09-30T15:23:04+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/local_planner_live_prod/before_frame.png",
+      "kind": "fixture",
+      "bytes": 1134410,
+      "mtime": "2026-09-30T15:21:48+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/local_planner_live_prod/console_panel_auto_running_20260930_2346.png",
+      "kind": "fixture",
+      "bytes": 1836313,
+      "mtime": "2026-09-30T15:47:34+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/local_planner_live_prod/console_statusbar_local_model_ok_20260930_2346.png",
+      "kind": "fixture",
+      "bytes": 143780,
+      "mtime": "2026-09-30T15:47:34+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/local_planner_live_prod/live.json",
+      "kind": "fixture",
+      "bytes": 2589,
+      "mtime": "2026-09-30T15:22:26+00:00"
+    },
+    {
       "path": "dataset/truth_audit/login_gift_claim_20260924/claim.json",
       "kind": "fixture",
       "bytes": 12613,
@@ -3925,6 +4279,66 @@
       "kind": "fixture",
       "bytes": 458747,
       "mtime": "2026-09-24T05:57:55+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/audit_outcome_persistence.py",
+      "kind": "fixture",
+      "bytes": 13953,
+      "mtime": "2026-09-30T07:56:39+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/measure_still_pending_runs.py",
+      "kind": "fixture",
+      "bytes": 13187,
+      "mtime": "2026-09-30T08:02:41+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/outcome_persistence_audit.json",
+      "kind": "fixture",
+      "bytes": 15052,
+      "mtime": "2026-09-30T08:04:47+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/replay_episodes.py",
+      "kind": "fixture",
+      "bytes": 21464,
+      "mtime": "2026-09-30T07:44:26+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/replay_report.json",
+      "kind": "fixture",
+      "bytes": 1981468,
+      "mtime": "2026-09-30T07:46:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/replay_sessions.py",
+      "kind": "fixture",
+      "bytes": 29812,
+      "mtime": "2026-09-30T07:45:52+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/replay_sessions_report.json",
+      "kind": "fixture",
+      "bytes": 498877,
+      "mtime": "2026-09-30T07:46:16+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/REPORT.md",
+      "kind": "fixture",
+      "bytes": 24200,
+      "mtime": "2026-09-30T08:04:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/STILL_PENDING_AUDIT.md",
+      "kind": "fixture",
+      "bytes": 12270,
+      "mtime": "2026-09-30T08:03:26+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/loop_detector_20260930/still_pending_runs.json",
+      "kind": "fixture",
+      "bytes": 14954,
+      "mtime": "2026-09-30T08:04:50+00:00"
     },
     {
       "path": "dataset/truth_audit/lower_panel.png",
@@ -4441,6 +4855,24 @@
       "kind": "fixture",
       "bytes": 950577,
       "mtime": "2026-09-22T19:10:55+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/codex-current-read_20260925_043625_page.png",
+      "kind": "fixture",
+      "bytes": 953586,
+      "mtime": "2026-09-25T04:36:26+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/codex-training-current_20260925_045357_page.png",
+      "kind": "fixture",
+      "bytes": 713756,
+      "mtime": "2026-09-25T04:53:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/codex-training-quick-panel_20260925_045007_page.png",
+      "kind": "fixture",
+      "bytes": 723527,
+      "mtime": "2026-09-25T04:50:08+00:00"
     },
     {
       "path": "dataset/truth_audit/nav_to_map_20260918/cur00.png",
@@ -9945,6 +10377,1254 @@
       "mtime": "2026-09-17T12:29:49+00:00"
     },
     {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/20260925_130311_initial.png",
+      "kind": "fixture",
+      "bytes": 1004081,
+      "mtime": "2026-09-25T05:03:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/20260925_130311_quick_panel_open.png",
+      "kind": "fixture",
+      "bytes": 923546,
+      "mtime": "2026-09-25T05:03:25+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/20260925_130628_lancer_after.png",
+      "kind": "fixture",
+      "bytes": 983657,
+      "mtime": "2026-09-25T05:06:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/20260925_130628_lancer_before.png",
+      "kind": "fixture",
+      "bytes": 921512,
+      "mtime": "2026-09-25T05:06:30+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/20260925_130749_shield_after.png",
+      "kind": "fixture",
+      "bytes": 1019897,
+      "mtime": "2026-09-25T05:08:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/20260925_130749_shield_before.png",
+      "kind": "fixture",
+      "bytes": 973544,
+      "mtime": "2026-09-25T05:07:52+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/20260925_130749_shield_panel.png",
+      "kind": "fixture",
+      "bytes": 850153,
+      "mtime": "2026-09-25T05:08:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/20260925_130749_shield_result.json",
+      "kind": "fixture",
+      "bytes": 2551,
+      "mtime": "2026-09-25T05:08:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/before_training_start.json",
+      "kind": "fixture",
+      "bytes": 1320,
+      "mtime": "2026-09-25T05:27:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/before_training_start.png",
+      "kind": "fixture",
+      "bytes": 629197,
+      "mtime": "2026-09-25T05:27:26+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_001_after_20260925T061914905871.png",
+      "kind": "fixture",
+      "bytes": 687567,
+      "mtime": "2026-09-25T06:19:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_001_after_refresh_1_20260925T061923711015.png",
+      "kind": "fixture",
+      "bytes": 651847,
+      "mtime": "2026-09-25T06:19:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_001_after_refresh_2_20260925T061930977782.png",
+      "kind": "fixture",
+      "bytes": 643215,
+      "mtime": "2026-09-25T06:19:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_001_before_20260925T061911822113.png",
+      "kind": "fixture",
+      "bytes": 250579,
+      "mtime": "2026-09-25T06:19:11+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_002_after_20260925T061945028260.png",
+      "kind": "fixture",
+      "bytes": 1025610,
+      "mtime": "2026-09-25T06:19:45+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_002_before_20260925T061937501515.png",
+      "kind": "fixture",
+      "bytes": 638570,
+      "mtime": "2026-09-25T06:19:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_003_after_20260925T062002590175.png",
+      "kind": "fixture",
+      "bytes": 195858,
+      "mtime": "2026-09-25T06:20:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_003_after_refresh_1_20260925T062011021709.png",
+      "kind": "fixture",
+      "bytes": 788071,
+      "mtime": "2026-09-25T06:20:11+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_003_before_20260925T061953537048.png",
+      "kind": "fixture",
+      "bytes": 1028531,
+      "mtime": "2026-09-25T06:19:53+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_004_after_20260925T062032445695.png",
+      "kind": "fixture",
+      "bytes": 651681,
+      "mtime": "2026-09-25T06:20:32+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_004_before_20260925T062021779210.png",
+      "kind": "fixture",
+      "bytes": 792002,
+      "mtime": "2026-09-25T06:20:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_005_after_20260925T062053937737.png",
+      "kind": "fixture",
+      "bytes": 787515,
+      "mtime": "2026-09-25T06:20:53+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_005_before_20260925T062042500308.png",
+      "kind": "fixture",
+      "bytes": 647259,
+      "mtime": "2026-09-25T06:20:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_006_after_20260925T062113975266.png",
+      "kind": "fixture",
+      "bytes": 650366,
+      "mtime": "2026-09-25T06:21:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_006_before_20260925T062103298634.png",
+      "kind": "fixture",
+      "bytes": 790488,
+      "mtime": "2026-09-25T06:21:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_007_before_20260925T062123716684.png",
+      "kind": "fixture",
+      "bytes": 643428,
+      "mtime": "2026-09-25T06:21:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_008_after_20260925T062144275794.png",
+      "kind": "fixture",
+      "bytes": 776969,
+      "mtime": "2026-09-25T06:21:44+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_008_before_20260925T062132917318.png",
+      "kind": "fixture",
+      "bytes": 640904,
+      "mtime": "2026-09-25T06:21:32+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_009_after_20260925T062206428315.png",
+      "kind": "fixture",
+      "bytes": 863700,
+      "mtime": "2026-09-25T06:22:06+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_009_before_20260925T062154653832.png",
+      "kind": "fixture",
+      "bytes": 775821,
+      "mtime": "2026-09-25T06:21:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_010_after_20260925T062223439736.png",
+      "kind": "fixture",
+      "bytes": 275463,
+      "mtime": "2026-09-25T06:22:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_010_before_20260925T062214143730.png",
+      "kind": "fixture",
+      "bytes": 864173,
+      "mtime": "2026-09-25T06:22:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_011_after_20260925T062226969891.png",
+      "kind": "fixture",
+      "bytes": 859539,
+      "mtime": "2026-09-25T06:22:27+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_011_before_20260925T062224973257.png",
+      "kind": "fixture",
+      "bytes": 275463,
+      "mtime": "2026-09-25T06:22:25+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_012_after_20260925T062243534782.png",
+      "kind": "fixture",
+      "bytes": 796573,
+      "mtime": "2026-09-25T06:22:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_012_before_20260925T062234307069.png",
+      "kind": "fixture",
+      "bytes": 862969,
+      "mtime": "2026-09-25T06:22:34+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_013_after_20260925T062304892097.png",
+      "kind": "fixture",
+      "bytes": 655370,
+      "mtime": "2026-09-25T06:23:04+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_013_before_20260925T062253499623.png",
+      "kind": "fixture",
+      "bytes": 792161,
+      "mtime": "2026-09-25T06:22:53+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_014_after_20260925T062325075683.png",
+      "kind": "fixture",
+      "bytes": 892789,
+      "mtime": "2026-09-25T06:23:25+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/completed_camp_auto_route_after_focus_fix_step_014_before_20260925T062314204162.png",
+      "kind": "fixture",
+      "bytes": 1004129,
+      "mtime": "2026-09-25T06:23:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/live_run.json",
+      "kind": "fixture",
+      "bytes": 13202,
+      "mtime": "2026-09-25T06:23:35+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/stderr.txt",
+      "kind": "fixture",
+      "bytes": 490,
+      "mtime": "2026-09-25T06:23:35+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/stdout.txt",
+      "kind": "fixture",
+      "bytes": 144856,
+      "mtime": "2026-09-25T06:23:35+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/completed_camp_auto_route_capture_step_001_after_20260925T054801611366.png",
+      "kind": "fixture",
+      "bytes": 983471,
+      "mtime": "2026-09-25T05:48:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/completed_camp_auto_route_capture_step_001_before_20260925T054750927055.png",
+      "kind": "fixture",
+      "bytes": 370420,
+      "mtime": "2026-09-25T05:47:50+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/completed_camp_auto_route_capture_step_002_after_20260925T054819962601.png",
+      "kind": "fixture",
+      "bytes": 895837,
+      "mtime": "2026-09-25T05:48:20+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/completed_camp_auto_route_capture_step_002_before_20260925T054810445073.png",
+      "kind": "fixture",
+      "bytes": 975518,
+      "mtime": "2026-09-25T05:48:10+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/completed_camp_auto_route_capture_step_003_after_20260925T054838057696.png",
+      "kind": "fixture",
+      "bytes": 1010393,
+      "mtime": "2026-09-25T05:48:38+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/completed_camp_auto_route_capture_step_003_after_refresh_1_20260925T054846737029.png",
+      "kind": "fixture",
+      "bytes": 1016007,
+      "mtime": "2026-09-25T05:48:46+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/completed_camp_auto_route_capture_step_003_after_refresh_2_20260925T054855337266.png",
+      "kind": "fixture",
+      "bytes": 1012758,
+      "mtime": "2026-09-25T05:48:55+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/completed_camp_auto_route_capture_step_003_before_20260925T054828770044.png",
+      "kind": "fixture",
+      "bytes": 893284,
+      "mtime": "2026-09-25T05:48:28+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/completed_camp_auto_route_capture_step_004_before_20260925T054903695001.png",
+      "kind": "fixture",
+      "bytes": 1024084,
+      "mtime": "2026-09-25T05:49:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/completed_camp_auto_route_capture_step_005_before_20260925T054912038777.png",
+      "kind": "fixture",
+      "bytes": 1025581,
+      "mtime": "2026-09-25T05:49:12+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/completed_camp_auto_route_capture_step_006_after_20260925T054929192550.png",
+      "kind": "fixture",
+      "bytes": 659152,
+      "mtime": "2026-09-25T05:49:29+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/completed_camp_auto_route_capture_step_006_before_20260925T054920267283.png",
+      "kind": "fixture",
+      "bytes": 1025743,
+      "mtime": "2026-09-25T05:49:20+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/completed_camp_auto_route_capture_step_007_after_20260925T054942813911.png",
+      "kind": "fixture",
+      "bytes": 259839,
+      "mtime": "2026-09-25T05:49:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/completed_camp_auto_route_capture_step_007_before_20260925T054935532832.png",
+      "kind": "fixture",
+      "bytes": 657528,
+      "mtime": "2026-09-25T05:49:35+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/completed_camp_auto_route_capture_step_008_after_20260925T054958722465.png",
+      "kind": "fixture",
+      "bytes": 251256,
+      "mtime": "2026-09-25T05:49:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/completed_camp_auto_route_capture_step_008_before_20260925T054950305307.png",
+      "kind": "fixture",
+      "bytes": 259839,
+      "mtime": "2026-09-25T05:49:50+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/stderr.txt",
+      "kind": "fixture",
+      "bytes": 0,
+      "mtime": "2026-09-25T05:50:00+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/stdout.txt",
+      "kind": "fixture",
+      "bytes": 83832,
+      "mtime": "2026-09-25T05:50:00+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_live.json",
+      "kind": "fixture",
+      "bytes": 14787,
+      "mtime": "2026-09-25T05:50:00+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/completed_camp_focus_crop.png",
+      "kind": "fixture",
+      "bytes": 486135,
+      "mtime": "2026-09-25T05:56:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/entry_chain_01_current.png",
+      "kind": "fixture",
+      "bytes": 947943,
+      "mtime": "2026-09-25T05:24:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/entry_chain_03_panel.png",
+      "kind": "fixture",
+      "bytes": 822010,
+      "mtime": "2026-09-25T05:24:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/entry_chain_04_shield_action_bar.png",
+      "kind": "fixture",
+      "bytes": 1035176,
+      "mtime": "2026-09-25T05:24:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/entry_chain_05_training_page.png",
+      "kind": "fixture",
+      "bytes": 656925,
+      "mtime": "2026-09-25T05:24:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/entry_chain_live_test.json",
+      "kind": "fixture",
+      "bytes": 3659,
+      "mtime": "2026-09-25T05:24:39+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/fresh_before_tile_test.json",
+      "kind": "fixture",
+      "bytes": 1073,
+      "mtime": "2026-09-25T05:15:16+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/fresh_before_tile_test.png",
+      "kind": "fixture",
+      "bytes": 1019519,
+      "mtime": "2026-09-25T05:15:05+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/next_camp_training_capture/next_camp_training_capture_step_001_after_20260925T053335545517.png",
+      "kind": "fixture",
+      "bytes": 980773,
+      "mtime": "2026-09-25T05:33:35+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/next_camp_training_capture/next_camp_training_capture_step_001_before_20260925T053322861826.png",
+      "kind": "fixture",
+      "bytes": 574964,
+      "mtime": "2026-09-25T05:33:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/next_camp_training_capture/next_camp_training_capture_step_002_after_20260925T053353270799.png",
+      "kind": "fixture",
+      "bytes": 371353,
+      "mtime": "2026-09-25T05:33:53+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/next_camp_training_capture/next_camp_training_capture_step_002_before_20260925T053343968126.png",
+      "kind": "fixture",
+      "bytes": 974067,
+      "mtime": "2026-09-25T05:33:44+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/next_camp_training_capture/next_camp_training_capture_step_003_after_20260925T053408538616.png",
+      "kind": "fixture",
+      "bytes": 370420,
+      "mtime": "2026-09-25T05:34:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/next_camp_training_capture/next_camp_training_capture_step_003_before_20260925T053400995937.png",
+      "kind": "fixture",
+      "bytes": 371353,
+      "mtime": "2026-09-25T05:34:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/next_camp_training_capture/stderr.txt",
+      "kind": "fixture",
+      "bytes": 0,
+      "mtime": "2026-09-25T05:34:15+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/next_camp_training_capture/stdout.txt",
+      "kind": "fixture",
+      "bytes": 32124,
+      "mtime": "2026-09-25T05:34:15+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/next_camp_training_live.json",
+      "kind": "fixture",
+      "bytes": 10252,
+      "mtime": "2026-09-25T05:34:15+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/run_completed_camp_route_validation.py",
+      "kind": "fixture",
+      "bytes": 2398,
+      "mtime": "2026-09-25T05:47:40+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/run_next_camp_validation.py",
+      "kind": "fixture",
+      "bytes": 2415,
+      "mtime": "2026-09-25T05:33:12+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/run_shield_training_validation.py",
+      "kind": "fixture",
+      "bytes": 2494,
+      "mtime": "2026-09-25T05:31:07+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/shield_training_start_capture/shield_training_start_capture_step_001_after_20260925T053130002097.png",
+      "kind": "fixture",
+      "bytes": 577455,
+      "mtime": "2026-09-25T05:31:30+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/shield_training_start_capture/shield_training_start_capture_step_001_before_20260925T053117465165.png",
+      "kind": "fixture",
+      "bytes": 633381,
+      "mtime": "2026-09-25T05:31:17+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/shield_training_start_capture/stderr.txt",
+      "kind": "fixture",
+      "bytes": 0,
+      "mtime": "2026-09-25T05:31:38+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/shield_training_start_capture/stdout.txt",
+      "kind": "fixture",
+      "bytes": 11673,
+      "mtime": "2026-09-25T05:31:38+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/shield_training_start_live.json",
+      "kind": "fixture",
+      "bytes": 10310,
+      "mtime": "2026-09-25T05:31:38+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/live_run.json",
+      "kind": "fixture",
+      "bytes": 15334,
+      "mtime": "2026-09-25T06:46:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/stderr.txt",
+      "kind": "fixture",
+      "bytes": 490,
+      "mtime": "2026-09-25T06:46:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/stdout.txt",
+      "kind": "fixture",
+      "bytes": 205276,
+      "mtime": "2026-09-25T06:46:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_001_after_20260925T064110394312.png",
+      "kind": "fixture",
+      "bytes": 1031332,
+      "mtime": "2026-09-25T06:41:10+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_001_before_20260925T064100972636.png",
+      "kind": "fixture",
+      "bytes": 483142,
+      "mtime": "2026-09-25T06:41:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_002_after_20260925T064129032782.png",
+      "kind": "fixture",
+      "bytes": 488991,
+      "mtime": "2026-09-25T06:41:29+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_002_before_20260925T064120086742.png",
+      "kind": "fixture",
+      "bytes": 1037031,
+      "mtime": "2026-09-25T06:41:20+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_003_after_20260925T064148669669.png",
+      "kind": "fixture",
+      "bytes": 656830,
+      "mtime": "2026-09-25T06:41:48+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_003_before_20260925T064138172670.png",
+      "kind": "fixture",
+      "bytes": 799986,
+      "mtime": "2026-09-25T06:41:38+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_004_after_20260925T064209300001.png",
+      "kind": "fixture",
+      "bytes": 793409,
+      "mtime": "2026-09-25T06:42:09+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_004_before_20260925T064158435722.png",
+      "kind": "fixture",
+      "bytes": 654955,
+      "mtime": "2026-09-25T06:41:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_005_after_20260925T064228725355.png",
+      "kind": "fixture",
+      "bytes": 664584,
+      "mtime": "2026-09-25T06:42:28+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_005_before_20260925T064218456957.png",
+      "kind": "fixture",
+      "bytes": 797118,
+      "mtime": "2026-09-25T06:42:18+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_006_before_20260925T064238028156.png",
+      "kind": "fixture",
+      "bytes": 662122,
+      "mtime": "2026-09-25T06:42:38+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_007_after_20260925T064258401408.png",
+      "kind": "fixture",
+      "bytes": 795884,
+      "mtime": "2026-09-25T06:42:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_007_before_20260925T064247587856.png",
+      "kind": "fixture",
+      "bytes": 658862,
+      "mtime": "2026-09-25T06:42:47+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_008_after_20260925T064317963038.png",
+      "kind": "fixture",
+      "bytes": 861082,
+      "mtime": "2026-09-25T06:43:18+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_008_before_20260925T064307533849.png",
+      "kind": "fixture",
+      "bytes": 798519,
+      "mtime": "2026-09-25T06:43:07+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_009_after_20260925T064333412978.png",
+      "kind": "fixture",
+      "bytes": 276326,
+      "mtime": "2026-09-25T06:43:33+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_009_before_20260925T064324761110.png",
+      "kind": "fixture",
+      "bytes": 863268,
+      "mtime": "2026-09-25T06:43:24+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_010_after_20260925T064336941547.png",
+      "kind": "fixture",
+      "bytes": 863048,
+      "mtime": "2026-09-25T06:43:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_010_before_20260925T064335018794.png",
+      "kind": "fixture",
+      "bytes": 276326,
+      "mtime": "2026-09-25T06:43:35+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_011_after_20260925T064352572076.png",
+      "kind": "fixture",
+      "bytes": 806038,
+      "mtime": "2026-09-25T06:43:52+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_011_before_20260925T064343936842.png",
+      "kind": "fixture",
+      "bytes": 865101,
+      "mtime": "2026-09-25T06:43:44+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_012_after_20260925T064413050447.png",
+      "kind": "fixture",
+      "bytes": 684417,
+      "mtime": "2026-09-25T06:44:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_012_before_20260925T064402055577.png",
+      "kind": "fixture",
+      "bytes": 813993,
+      "mtime": "2026-09-25T06:44:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_013_after_20260925T064431833482.png",
+      "kind": "fixture",
+      "bytes": 917245,
+      "mtime": "2026-09-25T06:44:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_013_before_20260925T064421966439.png",
+      "kind": "fixture",
+      "bytes": 1022671,
+      "mtime": "2026-09-25T06:44:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_014_after_20260925T064450954087.png",
+      "kind": "fixture",
+      "bytes": 973250,
+      "mtime": "2026-09-25T06:44:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_014_before_20260925T064441031340.png",
+      "kind": "fixture",
+      "bytes": 917173,
+      "mtime": "2026-09-25T06:44:41+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_015_before_20260925T064459584756.png",
+      "kind": "fixture",
+      "bytes": 977568,
+      "mtime": "2026-09-25T06:44:59+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_016_before_20260925T064507151355.png",
+      "kind": "fixture",
+      "bytes": 968816,
+      "mtime": "2026-09-25T06:45:07+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_017_after_20260925T064525055457.png",
+      "kind": "fixture",
+      "bytes": 673778,
+      "mtime": "2026-09-25T06:45:25+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_017_before_20260925T064515790690.png",
+      "kind": "fixture",
+      "bytes": 963910,
+      "mtime": "2026-09-25T06:45:15+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_018_before_20260925T064531554652.png",
+      "kind": "fixture",
+      "bytes": 644389,
+      "mtime": "2026-09-25T06:45:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_019_after_20260925T064546202267.png",
+      "kind": "fixture",
+      "bytes": 943623,
+      "mtime": "2026-09-25T06:45:46+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_019_before_20260925T064538333682.png",
+      "kind": "fixture",
+      "bytes": 652850,
+      "mtime": "2026-09-25T06:45:38+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_020_before_20260925T064555056751.png",
+      "kind": "fixture",
+      "bytes": 944508,
+      "mtime": "2026-09-25T06:45:55+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_021_after_20260925T064613220086.png",
+      "kind": "fixture",
+      "bytes": 537338,
+      "mtime": "2026-09-25T06:46:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_021_before_20260925T064603514659.png",
+      "kind": "fixture",
+      "bytes": 942931,
+      "mtime": "2026-09-25T06:46:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/training_claim_retrain_after_continuation_step_022_before_20260925T064621868682.png",
+      "kind": "fixture",
+      "bytes": 773491,
+      "mtime": "2026-09-25T06:46:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/stderr.txt",
+      "kind": "fixture",
+      "bytes": 488,
+      "mtime": "2026-09-25T07:00:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/stdout.txt",
+      "kind": "fixture",
+      "bytes": 752,
+      "mtime": "2026-09-25T06:59:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_001_after_20260925T065834760736.png",
+      "kind": "fixture",
+      "bytes": 640948,
+      "mtime": "2026-09-25T06:58:34+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_001_before_20260925T065821249192.png",
+      "kind": "fixture",
+      "bytes": 782497,
+      "mtime": "2026-09-25T06:58:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_002_after_20260925T065854996757.png",
+      "kind": "fixture",
+      "bytes": 773586,
+      "mtime": "2026-09-25T06:58:55+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_002_before_20260925T065844501080.png",
+      "kind": "fixture",
+      "bytes": 640376,
+      "mtime": "2026-09-25T06:58:44+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_003_after_20260925T065914922296.png",
+      "kind": "fixture",
+      "bytes": 639147,
+      "mtime": "2026-09-25T06:59:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_003_before_20260925T065904504053.png",
+      "kind": "fixture",
+      "bytes": 773093,
+      "mtime": "2026-09-25T06:59:04+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_004_before_20260925T065924254759.png",
+      "kind": "fixture",
+      "bytes": 639568,
+      "mtime": "2026-09-25T06:59:24+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_005_after_20260925T065943844225.png",
+      "kind": "fixture",
+      "bytes": 797790,
+      "mtime": "2026-09-25T06:59:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_005_before_20260925T065932980951.png",
+      "kind": "fixture",
+      "bytes": 640428,
+      "mtime": "2026-09-25T06:59:33+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_006_after_20260925T070003058316.png",
+      "kind": "fixture",
+      "bytes": 863877,
+      "mtime": "2026-09-25T07:00:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_006_before_20260925T065953027859.png",
+      "kind": "fixture",
+      "bytes": 807314,
+      "mtime": "2026-09-25T06:59:53+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_007_after_20260925T070018083828.png",
+      "kind": "fixture",
+      "bytes": 275379,
+      "mtime": "2026-09-25T07:00:18+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_007_before_20260925T070009575687.png",
+      "kind": "fixture",
+      "bytes": 863977,
+      "mtime": "2026-09-25T07:00:09+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_008_after_20260925T070022535785.png",
+      "kind": "fixture",
+      "bytes": 733556,
+      "mtime": "2026-09-25T07:00:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_008_before_20260925T070019725612.png",
+      "kind": "fixture",
+      "bytes": 442089,
+      "mtime": "2026-09-25T07:00:19+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_009_after_20260925T070027286489.png",
+      "kind": "fixture",
+      "bytes": 450430,
+      "mtime": "2026-09-25T07:00:27+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_009_before_20260925T070024683626.png",
+      "kind": "fixture",
+      "bytes": 732729,
+      "mtime": "2026-09-25T07:00:24+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_010_after_20260925T070032380608.png",
+      "kind": "fixture",
+      "bytes": 758307,
+      "mtime": "2026-09-25T07:00:32+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_010_before_20260925T070029641882.png",
+      "kind": "fixture",
+      "bytes": 450430,
+      "mtime": "2026-09-25T07:00:29+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_011_after_20260925T070052728196.png",
+      "kind": "fixture",
+      "bytes": 855857,
+      "mtime": "2026-09-25T07:00:52+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_011_before_20260925T070041573327.png",
+      "kind": "fixture",
+      "bytes": 747089,
+      "mtime": "2026-09-25T07:00:41+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_012_after_20260925T070058829117.png",
+      "kind": "fixture",
+      "bytes": 256639,
+      "mtime": "2026-09-25T07:00:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_012_before_20260925T070054816559.png",
+      "kind": "fixture",
+      "bytes": 859336,
+      "mtime": "2026-09-25T07:00:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_013_after_20260925T070103134039.png",
+      "kind": "fixture",
+      "bytes": 864750,
+      "mtime": "2026-09-25T07:01:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_013_before_20260925T070100428562.png",
+      "kind": "fixture",
+      "bytes": 253450,
+      "mtime": "2026-09-25T07:01:00+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/training_claim_retrain_focus_rank_fix_step_014_before_20260925T070109831710.png",
+      "kind": "fixture",
+      "bytes": 865697,
+      "mtime": "2026-09-25T07:01:09+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/live_run.json",
+      "kind": "fixture",
+      "bytes": 15242,
+      "mtime": "2026-09-25T06:31:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/stderr.txt",
+      "kind": "fixture",
+      "bytes": 490,
+      "mtime": "2026-09-25T06:31:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/stdout.txt",
+      "kind": "fixture",
+      "bytes": 232615,
+      "mtime": "2026-09-25T06:31:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_001_after_20260925T062523427179.png",
+      "kind": "fixture",
+      "bytes": 976000,
+      "mtime": "2026-09-25T06:25:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_001_before_20260925T062510364116.png",
+      "kind": "fixture",
+      "bytes": 902183,
+      "mtime": "2026-09-25T06:25:10+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_002_after_20260925T062542139010.png",
+      "kind": "fixture",
+      "bytes": 195858,
+      "mtime": "2026-09-25T06:25:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_002_after_refresh_1_20260925T062551562567.png",
+      "kind": "fixture",
+      "bytes": 804670,
+      "mtime": "2026-09-25T06:25:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_002_before_20260925T062532490663.png",
+      "kind": "fixture",
+      "bytes": 985153,
+      "mtime": "2026-09-25T06:25:32+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_003_after_20260925T062612262425.png",
+      "kind": "fixture",
+      "bytes": 659240,
+      "mtime": "2026-09-25T06:26:12+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_003_before_20260925T062601303342.png",
+      "kind": "fixture",
+      "bytes": 803934,
+      "mtime": "2026-09-25T06:26:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_004_after_20260925T062634032099.png",
+      "kind": "fixture",
+      "bytes": 805669,
+      "mtime": "2026-09-25T06:26:34+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_004_before_20260925T062622614080.png",
+      "kind": "fixture",
+      "bytes": 659694,
+      "mtime": "2026-09-25T06:26:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_005_after_20260925T062654703478.png",
+      "kind": "fixture",
+      "bytes": 661694,
+      "mtime": "2026-09-25T06:26:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_005_before_20260925T062643524694.png",
+      "kind": "fixture",
+      "bytes": 809883,
+      "mtime": "2026-09-25T06:26:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_006_before_20260925T062704609144.png",
+      "kind": "fixture",
+      "bytes": 656119,
+      "mtime": "2026-09-25T06:27:04+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_007_after_20260925T062725533296.png",
+      "kind": "fixture",
+      "bytes": 794191,
+      "mtime": "2026-09-25T06:27:25+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_007_before_20260925T062714428853.png",
+      "kind": "fixture",
+      "bytes": 654837,
+      "mtime": "2026-09-25T06:27:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_008_after_20260925T062745897037.png",
+      "kind": "fixture",
+      "bytes": 861061,
+      "mtime": "2026-09-25T06:27:46+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_008_before_20260925T062734901908.png",
+      "kind": "fixture",
+      "bytes": 794889,
+      "mtime": "2026-09-25T06:27:34+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_009_after_20260925T062801834733.png",
+      "kind": "fixture",
+      "bytes": 278731,
+      "mtime": "2026-09-25T06:28:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_009_before_20260925T062752967890.png",
+      "kind": "fixture",
+      "bytes": 864330,
+      "mtime": "2026-09-25T06:27:53+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_010_after_20260925T062805428234.png",
+      "kind": "fixture",
+      "bytes": 859504,
+      "mtime": "2026-09-25T06:28:05+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_010_before_20260925T062803522700.png",
+      "kind": "fixture",
+      "bytes": 278731,
+      "mtime": "2026-09-25T06:28:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_011_after_20260925T062821367194.png",
+      "kind": "fixture",
+      "bytes": 852697,
+      "mtime": "2026-09-25T06:28:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_011_before_20260925T062812656002.png",
+      "kind": "fixture",
+      "bytes": 859615,
+      "mtime": "2026-09-25T06:28:12+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_012_after_20260925T062840968522.png",
+      "kind": "fixture",
+      "bytes": 629798,
+      "mtime": "2026-09-25T06:28:41+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_012_before_20260925T062830242511.png",
+      "kind": "fixture",
+      "bytes": 818729,
+      "mtime": "2026-09-25T06:28:30+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_013_after_20260925T062859904786.png",
+      "kind": "fixture",
+      "bytes": 863879,
+      "mtime": "2026-09-25T06:28:59+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_013_before_20260925T062849586877.png",
+      "kind": "fixture",
+      "bytes": 983211,
+      "mtime": "2026-09-25T06:28:49+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_014_after_20260925T062918958113.png",
+      "kind": "fixture",
+      "bytes": 1047769,
+      "mtime": "2026-09-25T06:29:19+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_014_before_20260925T062908853351.png",
+      "kind": "fixture",
+      "bytes": 864398,
+      "mtime": "2026-09-25T06:29:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_015_before_20260925T062927620515.png",
+      "kind": "fixture",
+      "bytes": 1051348,
+      "mtime": "2026-09-25T06:29:27+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_016_before_20260925T062936116403.png",
+      "kind": "fixture",
+      "bytes": 1046417,
+      "mtime": "2026-09-25T06:29:36+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_017_before_20260925T062943788638.png",
+      "kind": "fixture",
+      "bytes": 1048546,
+      "mtime": "2026-09-25T06:29:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_018_after_20260925T063001914335.png",
+      "kind": "fixture",
+      "bytes": 652969,
+      "mtime": "2026-09-25T06:30:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_018_before_20260925T062952422554.png",
+      "kind": "fixture",
+      "bytes": 1048036,
+      "mtime": "2026-09-25T06:29:52+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_019_before_20260925T063008184742.png",
+      "kind": "fixture",
+      "bytes": 639665,
+      "mtime": "2026-09-25T06:30:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_020_after_20260925T063022573983.png",
+      "kind": "fixture",
+      "bytes": 1037936,
+      "mtime": "2026-09-25T06:30:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_020_before_20260925T063014745965.png",
+      "kind": "fixture",
+      "bytes": 662627,
+      "mtime": "2026-09-25T06:30:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_021_after_20260925T063039847227.png",
+      "kind": "fixture",
+      "bytes": 477548,
+      "mtime": "2026-09-25T06:30:39+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_021_before_20260925T063030729695.png",
+      "kind": "fixture",
+      "bytes": 1037352,
+      "mtime": "2026-09-25T06:30:30+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_022_after_20260925T063053855178.png",
+      "kind": "fixture",
+      "bytes": 246946,
+      "mtime": "2026-09-25T06:30:53+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_022_before_20260925T063046340609.png",
+      "kind": "fixture",
+      "bytes": 477493,
+      "mtime": "2026-09-25T06:30:46+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_023_after_20260925T063057953015.png",
+      "kind": "fixture",
+      "bytes": 329492,
+      "mtime": "2026-09-25T06:30:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_023_before_20260925T063055347692.png",
+      "kind": "fixture",
+      "bytes": 246406,
+      "mtime": "2026-09-25T06:30:55+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_024_after_20260925T063102121987.png",
+      "kind": "fixture",
+      "bytes": 502710,
+      "mtime": "2026-09-25T06:31:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/training_claim_retrain_live_step_024_before_20260925T063059467825.png",
+      "kind": "fixture",
+      "bytes": 309730,
+      "mtime": "2026-09-25T06:30:59+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/whole_tile_01_before.png",
+      "kind": "fixture",
+      "bytes": 1021460,
+      "mtime": "2026-09-25T05:16:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/whole_tile_02_after_safe_back.png",
+      "kind": "fixture",
+      "bytes": 999251,
+      "mtime": "2026-09-25T05:17:06+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/whole_tile_03_panel_open.png",
+      "kind": "fixture",
+      "bytes": 924576,
+      "mtime": "2026-09-25T05:17:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/whole_tile_04_after_lancer_tile.png",
+      "kind": "fixture",
+      "bytes": 1001824,
+      "mtime": "2026-09-25T05:17:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_quick_panel_20260925/whole_tile_live_test.json",
+      "kind": "fixture",
+      "bytes": 9552,
+      "mtime": "2026-09-25T05:17:30+00:00"
+    },
+    {
       "path": "dataset/truth_audit/training_stage_a_20260921/key/01_stage_a_ring_and_finger_20260921T163802.png",
       "kind": "fixture",
       "bytes": 1030072,
@@ -11485,6 +13165,36 @@
       "kind": "fixture",
       "bytes": 629071,
       "mtime": "2026-09-20T14:35:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/venus_learning_night_20261001/initial_marksman.log",
+      "kind": "fixture",
+      "bytes": 53970,
+      "mtime": "2026-10-01T13:53:04+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/venus_learning_night_20261001/prepare_training_panel.log",
+      "kind": "fixture",
+      "bytes": 919,
+      "mtime": "2026-10-01T13:33:12+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/venus_learning_night_20261001/shield_current_retry.log",
+      "kind": "fixture",
+      "bytes": 15953,
+      "mtime": "2026-10-01T14:46:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/venus_learning_night_20261001/stamina_unknown_nav.log",
+      "kind": "fixture",
+      "bytes": 446,
+      "mtime": "2026-10-01T14:40:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/venus_takeover_20261001/building_validation.log",
+      "kind": "fixture",
+      "bytes": 446,
+      "mtime": "2026-10-01T02:23:32+00:00"
     },
     {
       "path": "dataset/truth_audit/vip_entry_20260917/01_before_20260916_172230.png",

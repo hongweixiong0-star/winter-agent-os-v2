@@ -1,0 +1,61 @@
+{
+  "TASK_ID": "WB-1002-10-BEAST-TAB-BRACKET-LOCK",
+  "VERDICT": "DONE__ROOT_CAUSE_MEASURED__FIXED__DEPLOYED__LIVE_PASS_ON_THE_DEPLOYED_REVISION",
+  "ROOT_CAUSE": "The order did not exist before this round: it was appended because the day's top failure cluster had no order covering it. Read from the real ledger, 2026-10-02 had 1586 steps, 80 FAILURE; AVOID_STAMINA_WASTE is the top failing goal at 43/80, and the cluster inside it is the beast-search tab: OPEN_BEAST_SEARCH_TAB 16 failures (BEAST_SEARCH_TAB_NOT_PROVEN 8 + SEMANTIC_TARGET_NOT_VERIFIED 8), plus 9 repeated UI-Venus calls on the identity AVOID_STAMINA_WASTE|MAP|BEAST_SEARCH_TAB|MAP of which 4 were pure timeouts.\n\nThe tap is not wrong. The reading is. Episode 20261002_123127_711948 step 004 tapped BEAST_SEARCH_TAB, and the archived after frame shows the client's selection bracket visibly moved from 冰原巨兽 onto 野兽 -- but state_after.resource_selected_tab was null and verifier_evidence.after_selected was null, so the verifier honestly reported BEAST_SEARCH_TAB_NOT_PROVEN. The run then asked the model (ONLINE_UNKNOWN_NAVIGATION), whose only honest answer on that screen is REPLAN, and the same identity was re-asked for 7 hours.\n\nwinter_agent_v2/ocr.py:3780 selected_tab_from_live_labels accepted a stroke pair as the bracket when its centre sat within 0.03 of a tab label. The bracket is drawn centred on the tab, so the TRUE pair lands ~1 px from its own label; a frame whose strip draws more icons produces spurious 134.5 px stroke pairs whose centre happens to sit 15 px from the neighbouring 失控的雪怪 label. With two kinds matching, the function refuses to guess and returns None.\n\nMeasured over 40 archived frames whose ledger row says resource_search_open=true (720x1280): true pair -> its own label 0.0000 / 0.0003 / 0.0010 (worst 1.0 px); spurious pair -> any label 0.0212 .. 0.0799 (best 15.3 px). Separation 15.3x; the old lock sat above the best spurious distance, so it could not tell them apart.",
+  "CHANGED_FILES": [
+    "winter_agent_v2/ocr.py",
+    "tests/test_resource_tab_bracket_lock.py",
+    "_wb1002_lock_ab.py",
+    "_wb1002_fix_acceptance.py",
+    "_wb1002_today_failures.py"
+  ],
+  "TEST_RESULT": "tests/test_resource_tab_bracket_lock.py written red first: 2 of 4 failed against the old lock, and the second failure printed the defect verbatim -- a pair 15 px from 失控的雪怪 was named SNOW_MONSTER. After the change 4 passed. Adjacent files ran explicitly (no -k, because -k already bit this project once): test_resource_tab_bracket_lock, test_resource_tab_anchor, test_resource_tab_calibration, test_semantic_roi_vision, test_ocr, test_beast_verifier, test_beast_map_scan, test_stamina_sink_routing, test_map_beast_reads_its_label, test_p0_live_vision -> 135 passed, 6 skipped, 2 failed. Both failures are PRE-EXISTING and were attributed by an explicit-SHA A/B with a byte-identical restore: ocr.py replaced by `git show HEAD:winter_agent_v2/ocr.py` (md5 5450aa914a24b2c1b7e37e747a2edd49), the same two tests run, both failed identically; the fix bytes were then restored and verified by md5 1704678319f1006fbb1f1748806bd18c. tools/check_wiring.py -> problems: 0.",
+  "LIVE_ATTEMPTS": 16,
+  "LIVE_SUCCESS": 1,
+  "LIVE_FAILURE": 0,
+  "BEFORE": {
+    "episodes_2026_10_02": 1586,
+    "failed_2026_10_02": 80,
+    "top_failing_goal": "AVOID_STAMINA_WASTE 43/80",
+    "open_beast_search_tab_failures": 16,
+    "beast_search_tab_not_proven": 8,
+    "semantic_target_not_verified_on_that_skill": 8,
+    "archived_frames_reading_None_against_a_real_bracket": "17 of 40",
+    "venus_calls_on_the_same_unknown_identity_in_7h": 9,
+    "venus_call_timeouts_on_that_identity": 4,
+    "recognition_error_field_on_failed_rows": "0 of 80 -- the failure still cannot be attributed mechanically"
+  },
+  "AFTER": {
+    "lock": "0.005, 4.8x above the worst measured true distance and 4.2x below the best measured spurious one",
+    "archived_frames_resolving_from_None": 17,
+    "archived_frames_losing_a_verdict": 0,
+    "monotonicity": "structural, not empirical: a tighter lock accepts a subset of pairs, and the function returns a value only for a singleton set, so it can only turn an answer into None or resolve None into that same answer -- it can never relabel one tab as another",
+    "verifier_on_the_archived_failing_frame": "verify_beast_search_tab_selected ok=True reason=OK (the episode recorded ok=False BEAST_SEARCH_TAB_NOT_PROVEN)",
+    "live_revision": "70b093f"
+  },
+  "VERIFIER_RESULT": "Two verifications, both through production code paths and neither through a helper I re-implemented:\n\n(1) Archived replay of the failing episode: HybridVision.observe -- the entry point the runtime calls -- reads BEAST on the step-004 after frame where the episode recorded resource_selected_tab=null, while the before frame that already read GIANT_BEAST still reads GIANT_BEAST. verify_beast_search_tab_selected(before, after) then returns ok=True reason=OK against the episode's recorded ok=False BEAST_SEARCH_TAB_NOT_PROVEN.\n\n(2) LIVE, on the deployed revision: the AUTO process restarted onto 70b093f within one minute of the repin, and its third step on that revision was SELECT_GIANT_BEAST_TAB result=SUCCESS with state_before.resource_selected_tab=BEAST and state_after=GIANT_BEAST (recorded 07:21:26Z). Reading that same live frame back: the deployed reader says BEAST, and the old 0.03 lock emulated in-process on the same frame says None -- with the after frame reading GIANT_BEAST under both locks, so the fix is not merely trading one label for another.",
+  "EVIDENCE": {
+    "failure_distribution": "_wb1002_today_failures.py over the tail of learning/episodes.jsonl; the first version of it counted 0 failures because I assumed a `verification` field, and the real schema is result/verifier_ok/session_outcome/observed_change -- the zero was my probe, not the system, so the script was corrected and the schema is now written into its docstring",
+    "pair_separation": "_wb1002_lock_ab.py, 40 frames, per-pair gap / centre / nearest label / distance, plus a per-frame best and runner-up; worst true 0.00104, best spurious 0.02118",
+    "archived_replay": "_wb1002_fix_acceptance.py, episode 20261002_123127_711948 step 004 before/after, production entry point plus the real verifier",
+    "live_frame_ab": "_wb1002_live_frame_ab.py, episode 20261002_152022_241791 step 002, deployed reader vs the old lock emulated in-process (the deployed file is not touched)",
+    "deployed_bytes": "pin tree C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\winter_agent_v2\\ocr.py carries 'BRACKET_LABEL_LOCK = 0.005' and no longer carries the 0.03 comparison; LF-normalised md5 identical to the dev tree",
+    "venus_loop": "learning/ui_venus_online.jsonl -- 63 records, of which the identity AVOID_STAMINA_WASTE|MAP|BEAST_SEARCH_TAB|MAP accounts for 9 UNKNOWN_OBSERVED and 4 LOCAL_GUI_MODEL_UNAVAILABLE timeouts on port 18080"
+  },
+  "PATCH_STATUS": "MERGED_AND_DEPLOYED: 70b093f856abdcd53f1d6be9011f694073db6713, repinned (PRODUCTION_PIN.json expected_commit 9a227da6e64e651f564d3d6b97e64eb5338d8e1a -> 70b093f856abdcd53f1d6be9011f694073db6713), RESULT: CLEAN_OUTSIDE_DATA both before and after, pin tree verified to carry the fix, pushed to origin/main (5ee4e79..70b093f). The AUTO process restarted onto 70b093f within a minute and passed the live step.",
+  "REMAINING_ISSUE": "Three things this change does NOT settle, stated so nobody reads the green as wider than it is.\n\n(a) The same reader defect has a second instance worth checking: `semantic.selected_resource` and `semantic.anchored_tab_kind` both returned None on every archived frame I measured, because `resource_tab_offset` never resolved -- so the templates/geometry branch that is supposed to be the first choice is dead on these frames and the OCR-label branch is doing all the work. That did not matter for this fix and I did not touch it, but it is why the fallback chain is one branch shorter than its own comments claim.\n\n(b) 15 of the day's failures are GIANT_BEAST_SEARCH_NOT_PROVEN on SUBMIT_GIANT_BEAST_SEARCH -- the same cluster, a different hop, untouched here. WB-1002-06 owns it.\n\n(c) 0 of 80 failed rows carries a recognition_error, so 'why did this step fail' is still only answerable by hand. That was written down as the first next step in .workbuddy-ai/handoff/SEMANTIC_TARGET_DIAGNOSIS_20261002.md section E and is still not done.\n\nAlso recorded, not fixed: two pre-existing red tests. test_beast_map_scan.py::OnlyTheOrdinaryBeastTabIsSearchedTests::test_unreadable_beast_tabs_close_the_panel_and_handoff_instead_of_looping is stale since 6863b77 replaced the intel hand-off with SAFE_STOP / beast_search_tabs_unreadable_without_stamina_handoff (verified by running the scenario: brain now answers SAFE_STOP, not BACK) -- the behaviour moved deliberately and the test was left behind, and deciding whether the behaviour or the expectation is right is a judgement I did not want to make silently. test_map_beast_reads_its_label.py::TheMapBeastIsAlsoReadByItsLabelTests::test_the_templates_still_win_when_they_hit asserts the source text 'primary.resource_beast_tab and beacon_beast', which the source no longer contains.",
+  "NEXT_RECOMMENDATION": [
+    "Take the GIANT_BEAST_SEARCH_NOT_PROVEN half next (15 of the day's 80): SUBMIT_GIANT_BEAST_SEARCH, read its episodes the way this order read OPEN_BEAST_SEARCH_TAB's, and check whether it is the same reading-versus-tapping split before writing any code.",
+    "Then do the attribution gap (0 of 80 failed rows carry recognition_error). It is the item the early-morning diagnosis already ranked first, it is purely additive to the episode schema, and it makes every later round's failure ranking mechanical instead of hand-read.",
+    "Re-baseline or repair the two stale tests as one explicitly-reasoned change, since a test that asserts removed behaviour hides the next real regression.",
+    "Watch the next AVOID_STAMINA_WASTE beast-search round for OPEN_BEAST_SEARCH_TAB: acceptance is the failure not recurring (either the step succeeds or the goal stops choosing it), not a green test."
+  ],
+  "root_cause_found": true,
+  "recommended_codex_review": [
+    "One question worth your judgement, because it is a policy decision rather than a defect: selection-tab reading is the anchor for two different judgements -- `world.resource_selected_tab == 'BEAST'` in brain.py:2686 decides whether to SUBMIT the search, and verify_beast_search_tab_selected requires the same value to call the tab switch proven. I tightened the lock inside the reader, so both consumers got stricter at once. If the anchor for either of them should instead be allowed to fall back to the strip geometry (semantic.anchored_tab_kind, currently dead on these frames for the reason in REMAINING_ISSUE (a)), that is a different repair from mine and I did not take it unilaterally."
+  ],
+  "recorded_at": "2026-10-02T07:23:21+00:00",
+  "attempts": "0 device attempts of my own this round. The 16 LIVE_ATTEMPTS above are the production failures this change is measured against, read from the episode stream; LIVE_SUCCESS 1 is the deployed revision's own SELECT_GIANT_BEAST_TAB SUCCESS at 07:21:26Z, which the runtime produced by itself. Nothing was tapped or scrolled by hand.",
+  "changes_made": "winter_agent_v2/ocr.py: added module constant BRACKET_LABEL_LOCK = 0.005 with the measurement written into its comment, and the one comparison in selected_tab_from_live_labels now reads it instead of the literal 0.03. tests/test_resource_tab_bracket_lock.py: 4 tests, written red first, including the monotonicity property the deployment safety rests on. Three read-only evidence scripts. WORK_QUEUE.json: appended this order (the queue is the only queue).",
+  "evidence": "1586 steps / 80 failures read from learning/episodes.jsonl for 2026-10-02; 40 archived frames measured pair by pair; the failing episode replayed through HybridVision and its own verifier; the deployed frame read back with both locks; pin tree bytes compared LF-normalised; check_wiring problems=0; two pre-existing reds attributed by an explicit-SHA A/B with a byte-identical restore."
+}

@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-02T06:56:41+00:00",
+  "updated_at": "2026-10-02T07:23:21+00:00",
   "queue_generated_at": "2026-10-02T03:36:20+08:00",
   "current_task": null,
   "tasks": {
@@ -399,6 +399,14 @@
       "priority": "P1",
       "queue_status": "READY",
       "result_file": null
+    },
+    "WB-1002-10-BEAST-TAB-BRACKET-LOCK": {
+      "status": "DONE",
+      "started_at": "2026-10-02T07:19:13+00:00",
+      "finished_at": "2026-10-02T07:23:21+00:00",
+      "result_file": "results/WB-1002-10-BEAST-TAB-BRACKET-LOCK.json",
+      "verdict": "MERGED_AND_DEPLOYED: 70b093f856abdcd53f1d6be9011f694073db6713, repinned (PRODUCTION_PIN.json expected_commit 9a227da6e64e651f564d3d6b97e64eb5338d8e1a -> 70b093f856abdcd53f1d6be9011f694073db6713), RESULT: CLEAN_OUTSIDE_DATA both before and after, pin tree verified to carry the fix, pushed to origin/main (5ee4e79..70b093f). The AUTO process restarted onto 70b093f within a minute and passed the live step.",
+      "summary": "{'lock': '0.005, 4.8x above the worst measured true distance and 4.2x below the best measured spurious one', 'archived_frames_resolving_from_None': 17, 'archived_frames_losing_a_verdict': 0, 'monotonicity': 'structural, not empirical: a tighter lock accepts a subset of pairs, and the function return"
     }
   },
   "history": [

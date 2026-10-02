@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `70b093f 2026-10-02T15:19:26+08:00 fix(vision): the bracket lock was loose enough to veto its own true pair`
+- `5ee4e79 2026-10-02T14:58:12+08:00 docs(commander): WB-1002-04 blocked -- arena stays unknown, and my own fix does not reach the board`
 - `dff2b1b 2026-10-02T14:55:09+08:00 fix(audit): report the chooser's number and a reason, and record a regression I caused`
 - `cc7cf87 2026-10-02T14:46:18+08:00 docs(commander): WB-1002-07 blocked -- entry fixed, but the proof cannot be satisfied`
 - `9a227da 2026-10-02T14:44:10+08:00 fix(building): the selected building's 升级 control was in the frame and nothing read it`
@@ -16,19 +18,13 @@ Last 12 commits (newest first):
 - `bf26ddd 2026-10-02T14:18:07+08:00 docs(memory): the question fix is delivered but not sufficient, and the loop it exposed`
 - `90e73f6 2026-10-02T14:17:13+08:00 fix(navigation): stop asking the model for a control its own panel has not drawn yet`
 - `c146e61 2026-10-02T14:10:24+08:00 docs(planner): 43 rows to 6, and what is left is re-capture rather than copying`
-- `7fea47a 2026-10-02T14:09:36+08:00 test(evidence): the guard reported 43 things of which 6 were real, so it was unreadable`
-- `5620547 2026-10-02T14:01:51+08:00 docs(planner): the auto-collected crops fail the calibration my own last round recommended they be wired on`
 
 Uncommitted changes: 1459
-- `M .workbuddy-ai/commander/BLOCKED_QUEUE.json`
-- ` M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
+- `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
-- ` M .workbuddy-ai/commander/WORK_QUEUE.json`
 - ` M .workbuddy-ai/memory/2026-09-30.md`
-- ` M .workbuddy-ai/memory/2026-10-02.md`
-- ` M .workbuddy/memory/2026-10-02.md`
 - ` M .workbuddy/memory/MEMORY.md`
 - ` M START_HERE.md`
 - ` M dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png`
@@ -40,6 +36,10 @@ Uncommitted changes: 1459
 - ` M knowledge/analysis/top_failures.json`
 - ` M knowledge/execution/backend_routing.json`
 - ` M knowledge/goals/capability_skill_map.json`
+- ` M knowledge/perception/candidates/INDEX.json`
+- ` M knowledge/perception/pages/INDEX.json`
+- ` M knowledge/preload/INDEX.json`
+- ` M knowledge/preload/TROOP_SELECT.json`
 <!-- /AUTO:recent_commits -->
 
 ---
