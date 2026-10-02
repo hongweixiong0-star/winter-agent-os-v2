@@ -9098,37 +9098,6 @@ class LiveRuntime:
                 ):
                     continue
                 steps.append(LiveStep(index, decision, None, before, None, None))
-                # A refusal is a step the Scheduler took and the brain declined to act on,
-                # and until this line it left no row anywhere.  Measured 2026-10-03: over the
-                # last 600 decisions **11.5%** produced no episode, and the orphans were
-                # concentrated in ``SCHEDULED_*`` -- three of them in a row at 15:59:38/41/45,
-                # each a correct ``SAFE_STOP`` on a frame that drew no activity entry.  So
-                # ``decisions.jsonl`` said those goals won, ``episodes.jsonl`` said nothing,
-                # no field recorded that they were declined, and the fairness ledger counted
-                # every one of them as fairly selected.  Three separate fixes to that family
-                # were unobservable on the device for exactly this reason.
-                #
-                # The vocabulary is the project's own, not new: ``session_adapters`` already
-                # has ``STEP_OBSERVE_ONLY`` -- a step that reads and does not tap -- whose
-                # ``STILL_PENDING`` verdict lands in the ledger as ``result="INCOMPLETE"`` with
-                # an empty ``action`` (164 such rows, 99 ``INCOMPLETE`` overall).  This is that
-                # shape applied to a refusal, and the three fields that must stay empty do:
-                # ``execution``/``after``/``verification`` are None, so ``action`` is ``{}`` and
-                # ``verifier_ok`` is None.  ``goal_progress`` is deliberately left at its
-                # default rather than asserted -- declining is not advancing, and recording it
-                # as progress would reset the very streak that tells the Scheduler the goal is
-                # stuck.
-                self._record_episode(
-                    decision=decision, before=before, execution=None, after=None,
-                    verification=None, started_at=selection_started, step_id=index,
-                    goal_id=self._step_goal(best_goal),
-                    attached_goal_ids=attached_goal_ids,
-                    goal_progress_by_id={
-                        attached_id: None for attached_id in attached_goal_ids
-                    },
-                    before_screenshot=before_path,
-                    session_outcome="STILL_PENDING",
-                )
                 page_audit["verifier_result"] = {"status": "NOT_ATTEMPTED", "reason": decision.reason}
                 category, stop_state = state_for_stop_reason(
                     decision.reason, decision_skill=decision.skill, action_executed=False,
