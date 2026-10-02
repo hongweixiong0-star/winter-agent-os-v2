@@ -1991,12 +1991,19 @@ class LiveRuntime:
                 events["calendar_overlay_detected"] = True
                 saved = event_schedule.latest_calendar_snapshot(role, kind="EVENT_DETAIL") or {}
                 prior = saved.get("observation") or {}
-                if prior.get("event_id") == detail.get("event_id"):
+                grid = event_schedule.latest_calendar_snapshot(role) or {}
+                rows = [row for row in grid.get("entries") or [] if isinstance(row, Mapping)]
+                prior_key = saved.get("matched_occurrence_key") or prior.get("matched_occurrence_key")
+                # Only an unreturned overlay retains its attribution. A new grid
+                # or occurrence must not inherit the same event's historical key.
+                if (pending and prior.get("event_id") == detail.get("event_id") and prior_key
+                        and any(row.get("occurrence_key") == prior_key
+                                and row.get("event_id") == detail.get("event_id") for row in rows)):
                     detail = {**detail, **{key: prior[key] for key in (
-                        "matched_event_id", "matched_occurrence_key", "calendar_origin") if key in prior}}
+                        "matched_event_id", "calendar_origin") if key in prior},
+                        "matched_occurrence_key": prior_key}
                 if not detail.get("matched_occurrence_key"):
-                    grid = event_schedule.latest_calendar_snapshot(role) or {}
-                    candidates = [row for row in grid.get("entries") or []
+                    candidates = [row for row in rows
                                   if row.get("event_id") == detail.get("event_id")
                                   and row.get("details_observed") is not True]
                     if len(candidates) == 1:

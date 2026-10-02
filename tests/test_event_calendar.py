@@ -501,7 +501,8 @@ def test_runtime_does_not_replace_full_grid_with_detail_overlay(tmp_path, monkey
     monkeypatch.setattr(event_schedule, "STATE_PATH", schedule_path)
     frame = tmp_path / "detail.png"
     Image.new("RGB", (720, 1280), "white").save(frame)
-    stamp = datetime(2026, 9, 25, 12, tzinfo=timezone.utc)
+    # This is a re-observation of an unreturned detail, inside its pending lifetime.
+    stamp = datetime.now(timezone.utc) - timedelta(minutes=2)
     rows = [
         {"event_id": f"EVENT_{index}", "display_name": f"活动{index}",
          "occurrence_key": f"EVENT_{index}|09/25", "calendar_date_raw": "09/25",
