@@ -3592,3 +3592,27 @@ streak 喂给 fairness bonus ⇒ **结构上无法报告推进的目标，因它
 **不是 `executor_backend=""` 本身**——363 条 `SEMANTIC_TARGET_NOT_VERIFIED`
 `executor_backend` 为空但 `verifier_ok=None`，它们是"尝试了但什么都没到后端"，
 与"没试"仍然是不同的东西。
+
+## 通则：写「记录某个 step 事件」的代码前，先确认它是否终止循环（2026-10-03）
+
+我把 `append_fruitless_audit` 的门写成 `steps[-1].skill == "SAFE_STOP"`，
+**连续 5 轮在真机上等不到场景**。真机证据（`4851086` 已在生产）：
+5 个 run 全部以 `MAX_ACTIONS_REACHED` / `ROLE_SWITCHED_TO` 收尾，
+**没有一个以 `SAFE_STOP` 收尾**；同期 10 次 SCHEDULED 决策全部无 episode；
+那个 run 连续执行了 23 步（`OPEN_QUICK_PANEL → … → DISPATCH_INTEL_BEAST → …`）。
+
+**⇒ 拒绝是 step 级事件，run 会继续做别的目标。**
+`append_fruitless_audit` 只在 `finish()` 被调用 ⇒ 在 run 出口记录一个 step 级事件
+**就是错的时机**，无论判据写得多准。
+
+> **规则：判据里出现 `steps[-1]` / `last_page` 这类"最后一次"形态时，
+> 先问「这个循环会因为这个事件结束吗」。**
+> **不会 ⇒ 判据选错了位置，应该在事件发生处记录，而不是在出口。**
+> 判别法：`grep` 事件之后的控制流是 `return`/`break`（真终止）还是 `continue`/`yield`（可继续）。
+>
+> **推论（更重要的那一半）**：
+> **"信号连续 N 轮为 0"的第一诊断不该是"场景没出现"，而该是"我的判据选错了时机"。**
+> 我连做 5 轮"等场景"，每一轮都正确地排除了"场景没出现"，
+> **却从没质疑"我的判据指向的时机对不对"** ⇒ 5 轮都在等一个不会到来的信号。
+> **判据：同一信号连续 3 轮为 0 且每次都能证明"场景出现过"时，
+> 停止检查场景，改查判据本身。**
