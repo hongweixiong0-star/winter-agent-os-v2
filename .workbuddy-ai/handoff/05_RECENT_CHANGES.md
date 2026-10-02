@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `84e15e5 2026-10-02T15:47:10+08:00 fix(ledger): the reason's first live reading conflated two different facts`
+- `7b489b6 2026-10-02T15:41:43+08:00 feat(ledger): a failed step now says why the control was not found`
+- `b499668 2026-10-02T15:23:56+08:00 docs(commander): WB-1002-10 closed -- the bracket lock was vetoing its own true pair`
 - `70b093f 2026-10-02T15:19:26+08:00 fix(vision): the bracket lock was loose enough to veto its own true pair`
 - `5ee4e79 2026-10-02T14:58:12+08:00 docs(commander): WB-1002-04 blocked -- arena stays unknown, and my own fix does not reach the board`
 - `dff2b1b 2026-10-02T14:55:09+08:00 fix(audit): report the chooser's number and a reason, and record a regression I caused`
@@ -15,9 +18,6 @@ Last 12 commits (newest first):
 - `b92ca76 2026-10-02T14:30:44+08:00 docs(commander): WB-1002-08 -- no new crash, and a deployed fix the window cannot run`
 - `012eaab 2026-10-02T14:25:18+08:00 fix(reload): the detector is itself a control-plane module`
 - `ec258bd 2026-10-02T14:24:45+08:00 fix(reload): list the two modules the window runs itself but whose staleness is silent`
-- `bf26ddd 2026-10-02T14:18:07+08:00 docs(memory): the question fix is delivered but not sufficient, and the loop it exposed`
-- `90e73f6 2026-10-02T14:17:13+08:00 fix(navigation): stop asking the model for a control its own panel has not drawn yet`
-- `c146e61 2026-10-02T14:10:24+08:00 docs(planner): 43 rows to 6, and what is left is re-capture rather than copying`
 
 Uncommitted changes: 1459
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
@@ -25,6 +25,8 @@ Uncommitted changes: 1459
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
 - ` M .workbuddy-ai/memory/2026-09-30.md`
+- ` M .workbuddy-ai/memory/2026-10-02.md`
+- ` M .workbuddy/memory/2026-10-02.md`
 - ` M .workbuddy/memory/MEMORY.md`
 - ` M START_HERE.md`
 - ` M dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png`
@@ -32,14 +34,12 @@ Uncommitted changes: 1459
 - ` M docs/CAPABILITY_COVERAGE.md`
 - ` M docs/CURRENT_TRUTH.md`
 - ` M docs/TOP_FAILURES.md`
-- ` M evidence/INDEX.json`
 - ` M knowledge/analysis/top_failures.json`
 - ` M knowledge/execution/backend_routing.json`
 - ` M knowledge/goals/capability_skill_map.json`
 - ` M knowledge/perception/candidates/INDEX.json`
 - ` M knowledge/perception/pages/INDEX.json`
 - ` M knowledge/preload/INDEX.json`
-- ` M knowledge/preload/TROOP_SELECT.json`
 <!-- /AUTO:recent_commits -->
 
 ---
