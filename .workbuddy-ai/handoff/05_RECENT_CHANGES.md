@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `5a04821 2026-10-02T19:12:16+08:00 fix(routing): the node that answered 0 times in 10 is not the router's first choice`
+- `0434e07 2026-10-02T18:45:51+08:00 docs(memory): WB-1002-20 -- a value that was read and then thrown away`
+- `f1614f7 2026-10-02T18:44:17+08:00 docs(commander): WB-1002-20 closed -- the tap point was read off the frame and thrown away`
 - `130d8bb 2026-10-02T18:38:35+08:00 fix(select): the material tabs' tap point was read off the frame and thrown away`
 - `9766283 2026-10-02T18:24:21+08:00 docs(memory): WB-1002-16 -- read a failure's own two frames before trusting the guard's verdict`
 - `45aad62 2026-10-02T18:22:44+08:00 docs(commander): WB-1002-16 closed -- the refused march had already gone out`
@@ -15,15 +18,13 @@ Last 12 commits (newest first):
 - `61adba7 2026-10-02T17:36:41+08:00 feat(router): the MAA node path names its refusals, score included`
 - `1260e68 2026-10-02T17:27:20+08:00 docs(memory): WB-1002-14 -- enumerate the family from the decision, not from the guards`
 - `2740cce 2026-10-02T17:26:07+08:00 docs(commander): WB-1002-14 closed -- the guard fired live, four minutes after the repin`
-- `3ce3ef3 2026-10-02T17:16:35+08:00 fix(brain): the ninth and tenth city-HUD branches were missing the panel guard`
-- `1410915 2026-10-02T17:03:19+08:00 docs(memory): WB-1002-13 -- the two cluster judgments, and the recovery gated on the missing quantity`
-- `1234757 2026-10-02T17:02:08+08:00 docs(commander): WB-1002-13 closed -- the recovery was gated on the thing that was missing`
 
-Uncommitted changes: 1467
+Uncommitted changes: 1477
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
+- ` M .workbuddy-ai/commander/WORK_QUEUE.json`
 - ` M .workbuddy-ai/memory/2026-09-30.md`
 - ` M START_HERE.md`
 - ` M dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png`
@@ -32,7 +33,6 @@ Uncommitted changes: 1467
 - ` M docs/CURRENT_TRUTH.md`
 - ` M docs/TOP_FAILURES.md`
 - ` M knowledge/analysis/top_failures.json`
-- ` M knowledge/execution/backend_routing.json`
 - ` M knowledge/goals/capability_skill_map.json`
 - ` M knowledge/perception/candidates/INDEX.json`
 - ` M knowledge/perception/pages/INDEX.json`

@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-02T10:43:39+00:00",
+  "updated_at": "2026-10-02T11:25:00+00:00",
   "queue_generated_at": "2026-10-02T03:36:20+08:00",
   "current_task": null,
   "tasks": {
@@ -463,6 +463,14 @@
       "result_file": "results/WB-1002-20-RESOURCE-TAB-LABEL-FALLBACK.json",
       "verdict": "MERGED_AND_DEPLOYED: 130d8bb17b950ef2e80964be066680a1010109a5, repinned (RESULT: CLEAN_OUTSIDE_DATA, 1156 status rows, 0 outside data dirs), pushed to origin/main (9766283..130d8bb). Pin tree byte-identical for all three modules after line-ending normalisation, carrying the new field, the fill and the helper, with the new test file present.",
       "summary": "{'new_field': 'WorldState.resource_tab_label_norm: dict[kind, (x_norm, y_norm)]', 'one_helper': 'runtime._tab_label_centre(frame, kind) holds the guards three resolvers need -- MAP page, panel open, a 2-tuple in range -- and falls back to the two legacy fields so a frame built without the mapping st"
+    },
+    "WB-1002-22-BUILDING-UPGRADE-ROUTE": {
+      "status": "DONE",
+      "started_at": "2026-10-02T11:16:02+00:00",
+      "finished_at": "2026-10-02T11:25:00+00:00",
+      "result_file": "results/WB-1002-22-BUILDING-UPGRADE-ROUTE.json",
+      "verdict": "MERGED_AND_DEPLOYED: commit 5a04821a745dc0aaa073d59d3c7b16d75510b2ac on top of 0434e07; repin_production.py --to 5a04821 reports HEAD = 5a04821, status rows outside data dirs = 0, RESULT: CLEAN_OUTSIDE_DATA, manifest expected_commit 130d8bb -> 5a04821; pushed 0434e07..5a04821 to origin/main. Pin tree verified: routing preferred=ADB fallback=MAA recognition_backend=LEGACY recognition=None, not_migrated carries OPEN_BUILDING_UPGRADE_RECOGNITION, pipeline_autogen.py carries the guard, the new test file is present.",
+      "summary": "{'route': 'OPEN_BUILDING_UPGRADE preferred=ADB fallback=MAA recognition_backend=LEGACY', 'recognition': 'empty -- retired by removal, which is how this file already retires a node (SEARCH_RESOURCE is the precedent, and test_recognition_backend_declaration forbids a node beside a LEGACY declaration)'"
     }
   },
   "history": [
