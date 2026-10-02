@@ -1334,6 +1334,15 @@ class UiCandidateStore:
             "semantic": record.semantic_id,
             "template_path": template_path.as_posix(),
             "roi_norm": dict(record.bbox),
+            # The printed word this element was filed under.  It was already an argument (the
+            # dynamic-text check needs it) and was not written down, which left the record keyed
+            # by semantic only.  Identity has to travel with the picture: the other control store
+            # on this machine, ``knowledge/ui/icon_label_controls.json``, is keyed by the client's
+            # own printed word, so without this field the two cannot be joined at all.  Measured
+            # 2026-10-02: 31 verified auto-collected records with 31 distinct semantics against 3
+            # labels in that registry, and on three real frames the TAP_SEMANTIC resolver located
+            # a control that the planner's element table could not offer as executable.
+            "ocr_text": str(ocr_text or record.ocr_text or ""),
             "source": record.source_frame,
             "provenance": "LIVE_CLIENT",
             "reviewed_from": "AUTO_COLLECTION",

@@ -25,6 +25,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from PIL import Image  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -269,6 +271,42 @@ class IngestionTests(unittest.TestCase):
         ok, reason = self.store.ingest(record)
         self.assertFalse(ok)
         self.assertEqual(reason, "ALREADY_REGISTERED")
+
+    def test_the_manifest_record_carries_the_printed_label_it_was_filed_under(self):
+        """The identity the registry is keyed by must not be dropped on the way in.
+
+        Measured 2026-10-02: 31 verified, auto-collected manifest records with 31 distinct
+        semantics, against 3 labels in ``knowledge/ui/icon_label_controls.json`` -- the file
+        ``composite_controls`` reads to decide whether a printed word names a control.  The
+        registry is keyed by the client's printed word and the manifest is keyed by semantic, and
+        the label was the only thing that could join them; ``ingest`` received it (it needs it for
+        the dynamic-text check) and then did not write it down.  The consequence is measured on
+        real frames: the TAP_SEMANTIC resolver locates ``REGULAR_EVENT_ENTRY`` while the planner's
+        element table on that same frame offers the model no executable element at all.
+
+        Its own frame rather than ``FRAME``: the retention sweep empties old ``runtime_auto`` run
+        directories, and that fixture has already been collected (all six tests in
+        ``IngestionTests`` fail on it with ``'NoneType' object has no attribute
+        'verification_status'``).  A fixture that the product deletes cannot be a fixture.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            frame = base / "frame.png"
+            Image.new("RGB", (720, 1280), (20, 30, 40)).save(frame)
+            manifest = base / "manifest.json"
+            manifest.write_text(json.dumps({"records": [], "count": 0}), encoding="utf-8")
+            store = _store(base / "candidates", manifest)
+            record = store.stage(
+                frame_path=frame, page="HOME", semantic="REGULAR_EVENT_ENTRY",
+                box_norm={"x_norm": 0.5, "y_norm": 0.5, "w_norm": 0.06, "h_norm": 0.03},
+                ocr_text="常规活动",
+            )
+            self.assertIsNotNone(record, "the synthetic frame could not support a candidate")
+            store.record_attempt(page="HOME", semantic="REGULAR_EVENT_ENTRY", verified=True)
+            ok, reason = store.ingest(record, ocr_text="常规活动")
+            self.assertTrue(ok, reason)
+            row = json.loads(manifest.read_text(encoding="utf-8"))["records"][0]
+            self.assertEqual(row.get("ocr_text"), "常规活动")
 
 
 class RetentionTests(unittest.TestCase):
