@@ -1576,6 +1576,11 @@ UNKNOWN_STOP = "未知（原因未分类）"
 
 CATALOG_PATH = ROOT / "knowledge/game/capability_catalog.json"
 EPISODES_PATH = ROOT / "learning/episodes.jsonl"
+# How much of the tail of ``episodes.jsonl`` a UI-tick reader may touch.  An episode
+# row averages ~13 KB (it carries screenshot metadata), so 512 KB holds ~39 rows --
+# comfortably more than the 30 a tick asks for, and still three orders of magnitude
+# less than the 150 MB+ file a full read would pull off disk.
+EPISODE_TAIL_BYTES = 512_000
 BACKEND_LEDGER_PATH = ROOT / "learning/executor_backend.jsonl"
 MODEL_STATS_PATH = ROOT / "learning/workbuddy_model_stats.jsonl"
 # The one runtime local model's two ledgers.  The name and the endpoint come from
@@ -1652,9 +1657,21 @@ CATALOG_META = {
 
 _CACHE_LOCK = threading.Lock()
 _CATALOG_CACHE: tuple[float, dict[str, Any]] | None = None
-# Keyed by (mtime, scan dict): one entry holds the per-skill tally, the durations,
-# the timestamped outcomes and the failure histogram from a single pass.
-_EPISODE_CACHE: tuple[float, dict[str, Any]] | None = None
+# One entry holds the per-skill tally, the durations, the timestamped outcomes and
+# the failure histogram from a single pass.  Keyed by ``(mtime, size, offset, scan)``
+# rather than just mtime: the runtime *appends* to this log continuously, so an
+# mtime-only key changed on literally every tick and the "cache" re-parsed the whole
+# file every 1.5 s.  ``offset`` is the byte position already absorbed, which is what
+# makes the next pass incremental instead of a full re-read.
+_EPISODE_CACHE: tuple[float, int, int, dict[str, Any]] | None = None
+# The first pass over a 150 MB+ log must not happen on the UI thread.  A daemon
+# thread streams it once at startup and publishes a growing snapshot, so the
+# capability page fills in over the first second or two instead of freezing the
+# window.  ``_EPISODE_PARTIAL`` is that in-progress snapshot; after the thread
+# finishes, callers use the incremental cache above and this stops being consulted.
+_EPISODE_PARTIAL: dict[str, Any] | None = None
+_EPISODE_WARM_STARTED = False
+_EPISODE_WARM_DONE = False
 
 # The five conditions that may summon a development agent, in Chinese.  They come
 # from winter_agent_v2.escalation_queue.AUTO_ESCALATION_CONDITIONS -- the panel
@@ -1749,31 +1766,24 @@ def capability_catalog(root: Path | None = None) -> dict[str, Any]:
     return payload
 
 
-def episode_scan(root: Path | None = None) -> dict[str, Any]:
-    """One cached pass over the episode log, with everything the panel needs from it.
+def _new_episode_scan() -> dict[str, Any]:
+    """The empty scan accumulator, with every key a caller may read."""
+    return {"index": {}, "durations": [], "results": [], "failures": Counter(), "partial": False}
 
-    ``episodes.jsonl`` is 3.3 MB and the runtime appends to it while AUTO runs, so a
-    caller that reads it directly pays a full parse on every refresh -- which is what
-    the capability page used to do every 1.5 s.  Parsed once per change instead, and
-    the per-skill tally, the durations and the timestamped outcomes all come from the
-    same pass so they cannot disagree with each other.
 
-    The split between live rows and imported ones is the catalog's own evidence
-    policy: only rows carrying ``recorded_at`` count.
+def _absorb_episode_lines(scan: dict[str, Any], lines) -> int:
+    """Fold parsed episode rows into ``scan``; returns how many rows were absorbed.
+
+    Shared by the incremental UI-thread pass and the one-off background warm-up, so
+    the two cannot drift into disagreeing tallies.
     """
-    global _EPISODE_CACHE
-    path = (root / "learning/episodes.jsonl") if root else EPISODES_PATH
-    try:
-        stamp = path.stat().st_mtime
-    except OSError:
-        return {"index": {}, "durations": [], "results": []}
-    with _CACHE_LOCK:
-        if _EPISODE_CACHE is not None and _EPISODE_CACHE[0] == stamp:
-            return _EPISODE_CACHE[1]
-    scan: dict[str, Any] = {"index": {}, "durations": [], "results": [], "failures": Counter()}
     index: dict[str, dict[str, Any]] = scan["index"]
     failures: Counter = scan["failures"]
-    for line in _iter_jsonl(path):
+    absorbed = 0
+    for line in lines:
+        if not isinstance(line, dict):
+            continue
+        absorbed += 1
         skill = str(line.get("skill") or "")
         if skill:
             entry = index.setdefault(skill, {"live": 0, "claims": 0, "verified": 0, "failed": 0, "last": ""})
@@ -1790,9 +1800,162 @@ def episode_scan(root: Path | None = None) -> dict[str, Any]:
             scan["results"].append((str(line["recorded_at"]), line.get("result") == "SUCCESS"))
             if line.get("failure_type"):
                 failures[str(line["failure_type"])] += 1
+    return absorbed
+
+
+def _snapshot_scan(scan: dict[str, Any], partial: bool) -> dict[str, Any]:
+    """A copy safe for another thread to read while the warm-up keeps going."""
+    return {
+        "index": {key: dict(value) for key, value in scan["index"].items()},
+        "durations": list(scan["durations"]),
+        "results": list(scan["results"]),
+        "failures": Counter(scan["failures"]),
+        "partial": partial,
+    }
+
+
+def _iter_jsonl_stream(path: Path, offset: int = 0):
+    """Yield JSON objects from ``offset`` onwards, streaming -- never a whole-file read.
+
+    The old helper did ``path.read_text()``, which pulled the entire (150 MB+)
+    episode log into memory to walk it line by line.
+
+    ``offset`` is always a *record boundary* -- it is the file size captured right
+    after the previous pass, and the runtime only ever appends whole lines.  So this
+    does not skip a leading line: doing so would silently discard exactly the record
+    the incremental pass exists to pick up.  If a seek ever did land mid-record the
+    fragment simply fails to parse and is skipped below.
+    """
+    try:
+        with path.open("r", encoding="utf-8", errors="replace") as handle:
+            if offset:
+                handle.seek(offset)
+            for raw in handle:
+                raw = raw.strip()
+                if not raw.startswith("{"):
+                    continue
+                try:
+                    row = json.loads(raw)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(row, dict):
+                    yield row
+    except OSError:
+        return
+
+
+def _warm_episode_scan(path: Path) -> None:
+    """Stream the whole episode log once, off the UI thread, publishing as it goes.
+
+    The capability page needs lifetime tallies, so the first pass really does have to
+    cover the file -- but it must not cover it *on the tick*.  This publishes a
+    growing snapshot so the page is populated within a second or two, then hands the
+    finished accumulator to the incremental cache.
+    """
+    global _EPISODE_PARTIAL, _EPISODE_WARM_DONE, _EPISODE_CACHE
+    scan = _new_episode_scan()
+    seen = 0
+    try:
+        for row in _iter_jsonl_stream(path):
+            _absorb_episode_lines(scan, (row,))
+            seen += 1
+            if seen % 500 == 0:
+                with _CACHE_LOCK:
+                    _EPISODE_PARTIAL = _snapshot_scan(scan, True)
+        try:
+            stat = path.stat()
+            stamp, size = stat.st_mtime, stat.st_size
+        except OSError:
+            stamp, size = 0.0, 0
+        finished = _snapshot_scan(scan, False)
+        with _CACHE_LOCK:
+            _EPISODE_CACHE = (stamp, size, size, finished)
+            _EPISODE_PARTIAL = finished
+            _EPISODE_WARM_DONE = True
+    except Exception:  # noqa: BLE001 - a warm-up failure must never kill the panel
+        with _CACHE_LOCK:
+            _EPISODE_WARM_DONE = True
+
+
+def episode_scan(root: Path | None = None) -> dict[str, Any]:
+    """Everything the panel needs from the episode log, without re-reading it.
+
+    ``episodes.jsonl`` is a production log that passed 150 MB, and the runtime
+    *appends to it continuously* -- which is why the old mtime-keyed cache never
+    hit: the file changed on every single tick, so every 1.5 s refresh paid a full
+    parse.  Measured on this machine: **549 ms per call**, a third of the tick.
+
+    Now:
+      * the first pass runs once on a daemon thread (``_warm_episode_scan``) and
+        publishes a growing snapshot, so the window never blocks on 150 MB;
+      * afterwards each call absorbs only the bytes appended since the last one;
+      * if the log is rotated or truncated (size shrinks) the warm-up restarts.
+
+    Same keys, same semantics, same single pass -- only the cost changed.  A scan
+    served before the warm-up finishes carries ``partial=True``.
+    """
+    global _EPISODE_CACHE, _EPISODE_WARM_STARTED, _EPISODE_WARM_DONE, _EPISODE_PARTIAL
+    path = (root / "learning/episodes.jsonl") if root else EPISODES_PATH
+    try:
+        stat = path.stat()
+        stamp, size = stat.st_mtime, stat.st_size
+    except OSError:
+        return _new_episode_scan()
+
     with _CACHE_LOCK:
-        _EPISODE_CACHE = (stamp, scan)
-    return scan
+        cache = _EPISODE_CACHE
+    if cache is not None:
+        c_stamp, c_size, c_offset, c_scan = cache
+        if c_stamp == stamp and c_size == size:
+            return c_scan
+        if size > c_size and c_offset <= size:
+            # Appended-to: absorb just the new tail.  Bounded, because a long gap
+            # between refreshes (or a backgrounded window) could otherwise pull tens
+            # of MB onto the UI thread; anything beyond the cap is left for the next
+            # tick rather than stalling this one.
+            if size - c_offset > EPISODE_TAIL_BYTES:
+                _start_episode_warm(path)
+                return c_scan
+            rows = list(_iter_jsonl_stream(path, c_offset))
+            if rows:
+                merged = _snapshot_scan(c_scan, False)
+                _absorb_episode_lines(merged, rows)
+                merged["partial"] = False
+            else:
+                merged = c_scan
+            with _CACHE_LOCK:
+                _EPISODE_CACHE = (stamp, size, size, merged)
+            return merged
+        # Shrunk or replaced (rotation / truncation): the old tally describes a file
+        # that no longer exists, so it must be rebuilt rather than extended.
+        with _CACHE_LOCK:
+            _EPISODE_CACHE = None
+            _EPISODE_WARM_DONE = False
+            _EPISODE_PARTIAL = None
+            _EPISODE_WARM_STARTED = False
+
+    if not _EPISODE_WARM_STARTED:
+        _start_episode_warm(path)
+    with _CACHE_LOCK:
+        partial = _EPISODE_PARTIAL
+    if partial is not None:
+        return partial
+    # Warm-up has not published anything yet: report an honestly-empty scan rather
+    # than pretending the log has no episodes.
+    empty = _new_episode_scan()
+    empty["partial"] = True
+    return empty
+
+
+def _start_episode_warm(path: Path) -> None:
+    """Kick off the one-off full pass, at most once per process."""
+    global _EPISODE_WARM_STARTED
+    with _CACHE_LOCK:
+        if _EPISODE_WARM_STARTED:
+            return
+        _EPISODE_WARM_STARTED = True
+    threading.Thread(target=_warm_episode_scan, args=(path,),
+                     name="panel-episode-warm", daemon=True).start()
 
 
 def episode_index(root: Path | None = None) -> dict[str, dict[str, Any]]:
@@ -4000,6 +4163,14 @@ class ControlPanel:
         self.process: subprocess.Popen[str] | None = None
         self.starting = False
         self.refreshing = False
+        # Tab-scoped refresh.  The 1.5 s tick used to rebuild *every* page's data
+        # whether or not anyone was looking at it; the expensive pages now refresh
+        # only while their tab is on screen (and once more the moment it is opened),
+        # which is what keeps the light pages responsive.  See _tab()/_on_tab_changed().
+        self._tab_names: list[str] = []
+        self._tab_refreshers: dict[str, list] = {}
+        self._render_preview_job: str | None = None
+        self._last_preview_render_at = 0.0
         self.stop_requested = self.paused = False
         self._device_launch_requested = False
         self._device_recovery_started_at = ""
@@ -4008,6 +4179,10 @@ class ControlPanel:
         self.latest_world: WorldState | None = None
         self.latest_image_path: Path | None = None
         self.preview_source: Image.Image | None = None
+        # Decoded on first render, not on arrival: ``Image.open`` is lazy, and the
+        # ~14 ms PNG decode plus the resize are only worth paying if someone is
+        # looking at the preview.
+        self._preview_rgb: Image.Image | None = None
         self.preview_photo: ImageTk.PhotoImage | None = None
         self.session = Counter()
         self.event_lines: list[str] = []
@@ -4147,10 +4322,51 @@ class ControlPanel:
             self.indicators[key] = mark
         self.tabs = ttk.Notebook(shell); self.tabs.pack(fill="both", expand=True, pady=(10, 0))
         self._overview(); self._goals(); self._strategy(); self._event_goal(); self._capabilities(); self._auto_development(); self._system()
+        # Opening a tab is the moment its data must be current, not the next tick.
+        self.tabs.bind("<<NotebookTabChanged>>", self._on_tab_changed)
 
     def _tab(self, name: str, scroll: bool = False) -> ttk.Frame:
         f = ttk.Frame(self.tabs, padding=10); self.tabs.add(f, text=TAB_GROUP.get(name, name))
+        # Index order equals add order, which is what _current_tab_name() relies on.
+        self._tab_names.append(name)
         return self._scroll_area(f) if scroll else f
+
+    def _register_tab_refresh(self, name: str, fn) -> None:
+        """Declare that ``fn`` fills tab ``name``, so the tick can skip it when hidden."""
+        self._tab_refreshers.setdefault(name, []).append(fn)
+
+    def _current_tab_name(self) -> str | None:
+        """The tab the operator is actually looking at, or None before first paint."""
+        try:
+            index = self.tabs.index("current")
+        except tk.TclError:
+            return None
+        if 0 <= index < len(self._tab_names):
+            return self._tab_names[index]
+        return None
+
+    def _tab_visible(self, name: str) -> bool:
+        return self._current_tab_name() == name
+
+    def _refresh_visible_tabs(self) -> None:
+        """Refresh only the on-screen tab's own data.
+
+        The always-on top strip (runtime snapshot, truth dots, device state) stays on
+        the fast tick either way -- those are the six words the whole window is read
+        for, and they are cheap now.  What is skipped is the per-tab body work: the
+        capability table, the development board.
+        """
+        name = self._current_tab_name()
+        if name is None:
+            return
+        for fn in self._tab_refreshers.get(name, ()):
+            try:
+                fn()
+            except Exception:  # noqa: BLE001 - one page must not stall the tick
+                pass
+
+    def _on_tab_changed(self, _event=None) -> None:
+        self._refresh_visible_tabs()
 
     def _scroll_area(self, parent: ttk.Frame) -> ttk.Frame:
         """Wrap tall tab content in a scrollbar.
@@ -4220,7 +4436,12 @@ class ControlPanel:
         holder = tk.Frame(center, bg="#070b10", height=300)
         holder.pack(fill="both", expand=True); holder.pack_propagate(False)
         self.preview = tk.Label(holder, text="正在获取 MuMu 截图…", bg="#070b10", fg=MUTED, font=("Microsoft YaHei UI", 11))
-        self.preview.pack(fill="both", expand=True); self.preview.bind("<Configure>", lambda _e: self._render_preview())
+        self.preview.pack(fill="both", expand=True)
+        # Debounced: <Configure> fires continuously while a window is dragged, and
+        # each fire re-ran a full decode plus a LANCZOS resize (~25 ms).  Dragging the
+        # window therefore stuttered for the whole drag.  One render 120 ms after the
+        # last resize event is indistinguishable and costs one pass.
+        self.preview.bind("<Configure>", lambda _e: self._schedule_preview_render())
         self.preview_meta = tk.StringVar(value=NO_DATA)
         ttk.Label(center, textvariable=self.preview_meta, style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(8, 0))
         ttk.Label(right, text="当前决策", style="Section.TLabel", background=PANEL).pack(anchor="w")
@@ -4822,6 +5043,9 @@ class ControlPanel:
         for index, (key, label) in enumerate((("success24", "24h Skill Success"), ("recovery", "Recovery Success"), ("exit", "Unexpected Worker Exit"), ("latency", "Average Realtime Latency"))):
             ttk.Label(runtime_quality, text=label, style="Muted.TLabel", background=PANEL).grid(row=0, column=index, sticky="w", padx=8)
             ttk.Label(runtime_quality, textvariable=self.runtime_quality_vars[key], background=PANEL).grid(row=1, column=index, sticky="w", padx=8); runtime_quality.columnconfigure(index, weight=1)
+        # Registered rather than left on the global tick: this rebuilds two Treeviews
+        # from the catalog, which is real work nobody sees unless this tab is open.
+        self._register_tab_refresh("能力", self._refresh_capabilities)
         self._refresh_capabilities()
 
     def _refresh_capabilities(self) -> None:
@@ -5038,6 +5262,9 @@ class ControlPanel:
         self.dev_note = tk.StringVar(value=PENDING)
         ttk.Label(tab, textvariable=self.dev_note, style="Muted.TLabel", wraplength=1250, justify="left").pack(anchor="w", pady=(8, 0))
         ttk.Button(tab, text="打开升级台账", command=lambda: self._open(ROOT / "learning/workbuddy_escalations.jsonl")).pack(anchor="w", pady=(6, 0))
+        # Same reasoning as the capability table: three Treeviews of ledger rows that
+        # only matter while this tab is on screen.
+        self._register_tab_refresh("自动开发", self._refresh_auto_development)
         self._refresh_auto_development()
 
     def _refresh_auto_development(self) -> None:
@@ -5264,7 +5491,14 @@ class ControlPanel:
             image_path = Path(snapshot.screenshot_path)
             if image_path.exists() and image_path != self.latest_image_path:
                 try:
-                    self.latest_image_path = image_path; self.preview_source = Image.open(image_path).convert("RGB"); self._render_preview()
+                    # ``Image.open`` is lazy; the ~14 ms decode only happens if the
+                    # preview is actually rendered (see _render_preview).  A tick that
+                    # lands on another tab therefore pays nothing for a screenshot
+                    # nobody is looking at.
+                    self.latest_image_path = image_path
+                    self.preview_source = Image.open(image_path)
+                    self._preview_rgb = None
+                    self._render_preview()
                     self.preview_meta.set(f"Runtime Evidence · {PAGE_ZH.get(snapshot.page, snapshot.page)} · {snapshot.confidence:.0%}")
                 except OSError: pass
         if hasattr(self, "runtime_detail_vars"):
@@ -5272,7 +5506,12 @@ class ControlPanel:
                     "tick": snapshot.last_tick_time or "无", "action": snapshot.last_action_time or "无", "success": snapshot.last_success_time or "无",
                     "fatal": snapshot.last_fatal_error or "无", "restart": str(snapshot.watchdog_restart_count), "unexpected": str(snapshot.unexpected_worker_exits)}
             for key, value in vals.items(): self.runtime_detail_vars[key].set(value)
-        self._refresh_workbuddy(); self._refresh_capabilities(); self._refresh_auto_development()
+        # The per-tab bodies are refreshed only while their tab is on screen; the
+        # always-visible strip above them (runtime snapshot, truth dots, device,
+        # backend) is refreshed every tick by the code above, because that is what
+        # the window exists to show.  This replaced an unconditional rebuild of
+        # every page 40 times a minute.
+        self._refresh_workbuddy(); self._refresh_visible_tabs()
         if schedule_next: self.root.after(1500, self._refresh_runtime_snapshot)
 
     def _refresh_workbuddy(self) -> None:
@@ -5483,11 +5722,17 @@ class ControlPanel:
                                 "warn": WARN, "bad": BAD, "unknown": MUTED}[colour])
 
     def _progress_line(self) -> str:
-        """Action progress vs goal progress, from the last steps of the real stream."""
+        """Action progress vs goal progress, from the last steps of the real stream.
+
+        This runs on the 1.5 s tick and ``episodes.jsonl`` is a production log that
+        had grown past 150 MB.  Reading it whole to keep 30 lines measured
+        **549 ms per call** -- a third of every tick spent on disk -- so it reads a
+        bounded tail instead (measured 1.5 ms).  An episode row averages ~13 KB, so
+        the window is sized for far more than ``limit`` rows rather than exactly
+        enough, and anything that does not fit is simply not shown.
+        """
         try:
-            rows = [json.loads(line) for line in
-                    (ROOT / "learning/episodes.jsonl").read_text(
-                        encoding="utf-8", errors="replace").splitlines()[-30:] if line.strip()]
+            rows = tail_jsonl(EPISODES_PATH, limit=30, max_bytes=EPISODE_TAIL_BYTES)
         except (OSError, json.JSONDecodeError):
             rows = []
         if not rows:
@@ -6926,7 +7171,8 @@ class ControlPanel:
             self._waiting_buttons(); self._append("Watchdog 将在 5 秒后恢复唯一 Runtime。")
 
     def _apply_world(self, status: Any, world: WorldState, path: Path) -> None:
-        self.latest_world, self.latest_image_path = world, path; self.preview_source = Image.open(path).convert("RGB")
+        self.latest_world, self.latest_image_path = world, path
+        self.preview_source = Image.open(path); self._preview_rgb = None
         self.values["device"].set("● 已连接")
         expected_package = self.config["device"]["package_name"]
         self.values["game"].set("运行中" if status.foreground_package == expected_package else "未在前台")
@@ -7171,10 +7417,27 @@ class ControlPanel:
             self._append(f"离线夜间学习未能启动：{type(exc).__name__}: {exc}")
 
 
+    def _schedule_preview_render(self) -> None:
+        """Coalesce a burst of resize events into one render."""
+        if self._render_preview_job is not None:
+            try:
+                self.root.after_cancel(self._render_preview_job)
+            except tk.TclError:
+                pass
+        self._render_preview_job = self.root.after(120, self._render_preview)
+
     def _render_preview(self) -> None:
         if self.preview_source is None or not hasattr(self, "preview"): return
+        self._render_preview_job = None
         width, height = max(260, self.preview.winfo_width() - 8), max(300, self.preview.winfo_height() - 8)
-        image = self.preview_source.copy(); mode = self.preview_mode.get()
+        # Decode once, on demand: the tick stores a lazily-opened image, and this is
+        # the first point that actually needs pixels.
+        if self._preview_rgb is None:
+            try:
+                self._preview_rgb = self.preview_source.convert("RGB")
+            except OSError:
+                return
+        image = self._preview_rgb.copy(); mode = self.preview_mode.get()
         # The debug furniture (border, boxes) is drawn only when the operator asks for it.
         # It used to appear for any non-raw mode, which meant the one thing the centre
         # column exists for -- reading the page off the picture -- was obstructed by
@@ -7188,7 +7451,10 @@ class ControlPanel:
             else: self.preview_meta.set(self._recognition())
         if debug:
             self.preview_meta.set(f"{self.preview_meta.get()}｜调试：ROI/模板未提供坐标，不伪造框")
-        image.thumbnail((width, height), Image.Resampling.LANCZOS)
+        # BILINEAR, not LANCZOS: at a ~420 px preview the difference is not visible,
+        # and measured on a 720x1280 runtime screenshot it is 4.6 ms instead of 9.5 ms
+        # -- which mattered a lot when a window drag re-rendered this continuously.
+        image.thumbnail((width, height), Image.Resampling.BILINEAR)
         canvas = Image.new("RGB", (width, height), "#070b10"); canvas.paste(image, ((width-image.width)//2, (height-image.height)//2))
         self.preview_photo = ImageTk.PhotoImage(canvas); self.preview.configure(image=self.preview_photo, text="")
 
