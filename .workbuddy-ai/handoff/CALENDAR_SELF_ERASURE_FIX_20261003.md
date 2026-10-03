@@ -3,6 +3,21 @@
 > 上一轮修掉 `HOME↔MAP` 乒乓（`58dccc8b`）后，重新评估发现的下一个缺口。
 > 提交 `79cb572c`，已部署到生产。
 
+
+> ## 本文件的根因判断已被推翻（2026-10-03 第三轮）
+>
+> **"自我抹除"是错的。** 重放同一帧证明 COMPLETE 行确实在 board 上
+> （27 个目标中排第 7），`priority=-inf` 是**正确**行为（COMPLETE 属于 NOT_ACTIONABLE）。
+> 日历链本身跑得很好：227 次到达 EVENT 里 **210 次是它自己继续**，
+> 在 EVENT 上共 3108 步、其中 1239 步 `goal_progress=True`。
+>
+> 真正的根因是 `calendar_scan_due` 永不收敛：
+> `advertised_but_unread_activities` 返回 ('CANYON_CLASH','STATE_VS_STATE')，
+> 而这两个活动在**顶部横条**上、不在日历网格的 5 行里 => 打开网格永远碰不到它们。
+>
+> **正确结论见 `CALENDAR_DIAGNOSIS_CORRECTION_20261003.md`。**
+> 本文件保留作为"错误诊断长什么样"的记录；**不要照它施工**。
+
 ---
 
 ## 一句话
