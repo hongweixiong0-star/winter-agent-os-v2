@@ -3886,3 +3886,43 @@ Get-ScheduledTaskInfo -TaskName WinterAgentV2Panel  # LastTaskResult 必须查
 **本项目铁律再次生效**：*"任何复算/替代仪器，先复现一个已知的生产数字，
 再拿它做决定"* —— 我用 `cv2` 复算去解释一个本来就成功过 129 次的技能，
 若不是"先查它在同版本成功过几次"这条纪律，就会得出错误的修法。
+
+## 通则：MAA 加载的模板在**路由**里，不在 manifest 里（2026-10-03，3 轮分析错对象的教训）
+
+`maa_resolver` 走 `self.routing.recognition_node(skill_id, semantic)`，
+模板与 roi 来自 **`knowledge/execution/backend_routing.json` 的 recognition node**：
+
+```json
+"REGULAR_EVENT_ENTRY": {
+  "threshold": [0.7, 0.75],
+  "source_template": "dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png",
+  "roi": [611, 157, 109, 67]        ← 与模板尺寸完全吻合
+}
+```
+
+而 `dataset/candidate/template_manifest.json` 里同名 semantic 指向**另一个文件**
+（`auto_collected/…8eff95e0e6.png`，69×23）——**MAA 根本不加载它**。
+
+> **规则：排查 MAA 的识别问题，第一个要读的是 `backend_routing.json` 的
+> `recognition.<SEMANTIC>`，不是 `template_manifest.json`。**
+> **判据：node 的 `roi` 尺寸 == 模板图尺寸 ⇒ 那才是它加载的那张。**
+> **本项目里同一 semantic 在 manifest 与 routing 各有一条记录，且内容不同。**
+
+**另一个证据链陷阱**：
+```
+M  dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png  ← 工作树被改、无提交
+?? dataset/candidate/auto_collected/auto__map_regular_event_entry__8eff95e0e6.png  ← 未跟踪
+```
+**生产跑的是一个"没有任何提交描述"的模板** ⇒ **任何"从 git 状态推断生产实际行为"的做法都错。**
+**⇒ 排查识别问题前先 `git status` 看目标资产是不是 `M`/`??`。**
+
+## 操作纪律：改 JSON 配置用 Edit，不用 json.dump 重写（2026-10-03）
+
+我用 `json.dumps(d, ensure_ascii=False, indent=1)` 写回路由文件 ⇒ **2397 行全变**
+（原文件是 **2 空格**缩进，我用了 1 空格）。`git checkout --` 还原后改用逐字符 `Edit`，
+diff 缩到 **8 行**（只有那两处 roi）。
+
+> **规则：结构化配置文件的最小改动 = 字符串级替换。**
+> **重新序列化会改变缩进/键序/转义，产生无法 review 的巨大 diff，
+> 而且会淹没真正的改动。**
+> **判据：改完配置先 `git diff --stat`，行数不该是文件大小量级。**
