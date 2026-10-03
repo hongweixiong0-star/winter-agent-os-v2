@@ -4274,24 +4274,23 @@ class LiveRuntime:
     def _save_fairness(self) -> None:
         """Write the fairness ledger, and say so when it declines to.
 
-        Both failure shapes here used to be silent, and the silence is what made this
-        undiagnosable.  Measured 2026-10-03: ``learning/goal_fairness.json`` had not been
-        written since ``2026-10-02T17:08:04Z`` while production kept running and
-        ``episodes.jsonl`` kept growing, so every ``fairness_bonus`` was computed from a
-        day-old ledger and the ranking it decides had been quietly frozen.  Nothing anywhere
-        said "the ledger was not written" -- ``finish()`` called this and returned a
-        ``LiveRun`` that looked completely normal.
+        Both failure shapes here were silent, and the silence is the defect: this is the only
+        place the ledger is persisted, so a run that skipped it produced a ``LiveRun`` that
+        looked entirely normal while the ranking input went stale.
 
-        The two ways this can skip are therefore both recorded rather than just taken:
+        Note what this is **not** about.  It was written after the top-level
+        ``learning/goal_fairness.json`` was measured as unwritten for ten hours, and that
+        measurement turned out to be wrong -- under multi-role production the path is rebound to
+        ``learning/roles/<role_id>/goal_fairness.json`` by ``_activate_role_persistent_state``
+        (line 1644) and those files are written normally.  The two skips are still real and
+        still worth recording, so the change stands; the diagnosis it was written for does not.
 
-        * the multi-role identity gate, which exists so a run cannot attribute progress to a
-          role it has not confirmed -- a real reason, but it must be readable;
-        * a write error, which the "a ledger write must never fail a run" comment has always
-          swallowed.
-
-        Both go to the same place the rest of this class of answer goes: the runtime snapshot,
-        which is what the panel and the escalation hook read.  ``deferred_goals`` already
-        lives there, and this is the same kind of statement -- "why is this run not doing X".
+        Where the answer goes is the same place ``deferred_goals`` goes -- the runtime snapshot,
+        because that is what the panel and the escalation hook read, and a line printed to a
+        console nobody scrolls is the same silence with a different destination.  Two codes
+        rather than one flag: "maybe the identity gate, maybe the disk" cannot be acted on, and
+        this project's own rule about diagnostic values says a folded value cannot be split
+        later by whoever reads it.
         """
         skipped = ""
         if self._multi_role_enabled and not self._role_identity_confirmed:

@@ -1,37 +1,34 @@
-"""A ledger that stopped being written must say so, not return quietly.
+"""A ledger that declines to be written must say so, not return quietly.
 
-Measured 2026-10-03 on the production tree.  ``learning/goal_fairness.json`` had not been
-written since ``2026-10-02T17:08:04Z`` -- ten hours -- while production kept running and
-``episodes.jsonl`` kept growing past 10400 rows.  Every ``fairness_bonus`` in
-``goal_utility.rank`` was therefore being computed from a frozen ledger, and the ranking it
-decides had been quietly stale the whole time.
+Measured 2026-10-03 on the production tree, and the measurement was wrong twice before it was
+right.  What is actually true:
 
-Nothing reported it.  ``finish()`` called ``_save_fairness()`` and returned a ``LiveRun`` that
-looked entirely normal, because both ways this can skip were silent:
+* ``_save_fairness`` had two silent skips -- the multi-role identity gate, and
+  ``except Exception: pass`` under a comment that said a ledger write must never fail a run.
+  The comment is right about the goal and wrong about the means: a run can afford to survive a
+  failed write, but not to fail to record that the write failed.
+* The top-level ``learning/goal_fairness.json`` had not been written since
+  ``2026-10-02T17:08:04Z`` and looked like the smoking gun.  **It was not.**  Under multi-role
+  production the path is rebound to ``learning/roles/<role_id>/goal_fairness.json`` by
+  ``_activate_role_persistent_state`` (``runtime.py:1644``) once a frame proves the role, and
+  those two files are written normally -- 49 and 48 goals, with ``last_selected_at`` of the
+  same day.  The constant ``goal_utility.STATE_PATH`` is the pre-confirmation entry point, not
+  the file production settles on.  **So nothing had stopped being written, and this change is
+  not a repair for that.**
 
-    if self._multi_role_enabled and not self._role_identity_confirmed:
-        return# a real reason, but unreadable
-    try:
-        goal_utility.save(...)
-    except Exception:
-        pass                    # "a ledger write must never fail a run"
+The change therefore stands on the two silent skips, which are real, and not on a stall that
+was not.  It adds no behaviour: it records which of the two paths a run took.
 
-That second comment is right about the *goal* and wrong about the *means*: a run can afford to
-survive a failed write, but not to fail to record that the write failed.  This file pins the
-distinction -- the write must still be best-effort, and the skip must still be legible.
+Why the error is worth stating here and not only in the log: both times the mistake was reading
+a constant's definition and believing it described the running process -- ``STATE_PATH`` for the
+path, and a ten-hour-old mtime for the effect.  The rule that caught it is the one this file's
+sibling already uses: **before asking how long something has been quiet, grep who reads it.**
+``_fairness_store_path`` has two assignments (``runtime.py:773`` sets it to ``None``,
+``runtime.py:1644`` gives it the real value), and in production only the second one matters.
 
-The observation that made this worth fixing is the staleness itself, and it is visible without
-this change: every goal in that ledger carried ``no_progress_streak`` in the hundreds and a
-``last_selected_at`` of 2026-09-30, on a client that had run hundreds of steps since.  A
-ledger whose rows all predate the current day is a ledger nothing is writing.
-
-Note on scope
--------------
-This does not diagnose *why* the write was skipped on that run -- the multi-role gate was
-open (``role_identity.json`` was written 11:01 and confirmed) and the runs ended normally at
-19-24 steps, so neither candidate reason is established.  That is deliberate: the fix here is
-to make the next run say which reason applied, and guessing would have meant shipping a repair
-for a cause nobody had evidence for yet.
+The two codes stay distinct on purpose.  A single boolean here would mean "maybe the identity
+gate, maybe the disk", which is exactly what makes a stall undiagnosable; the project's own
+rule about diagnostic values says a code that folds two facts together cannot be acted on.
 """
 
 import pytest
