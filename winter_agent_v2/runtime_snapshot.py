@@ -66,12 +66,16 @@ class RuntimeSnapshot:
     # this field was silently dropped, so the one place an operator looks to ask "why
     # is AUTO not doing that" would have said nothing.
     deferred_goals: list[dict[str, Any]] = field(default_factory=list)
-    # When ``learning/goal_fairness.json`` was last written by this run, or why it was not.
-    # Declared for the same reason as ``deferred_goals`` above, after the same failure: the
-    # ledger silently stopped being written on 2026-10-02 (measured: unchanged since
-    # ``2026-10-02T17:08:04Z`` while ``episodes.jsonl`` kept growing), every
-    # ``fairness_bonus`` kept being computed from a day-old file, and nothing recorded that
-    # the ranking input had frozen.  A skipped write now says which of the two reasons it was.
+    # When the fairness ledger was last written by this run, or why it was not.  Declared for
+    # the same reason as ``deferred_goals`` above: ``update`` filters unknown keys, so a field
+    # that is written without being declared disappears without an error -- which is how a
+    # silent path stays silent.  Two codes rather than one flag, because "maybe the identity
+    # gate, maybe the disk" cannot be acted on by whoever reads it later.
+    #
+    # Measured 2026-10-03: the two skips in ``_save_fairness`` are real.  What is **not** real is
+    # the stall this was first written for -- the top-level ``learning/goal_fairness.json`` was
+    # measured unwritten for ten hours, but under multi-role production the path is rebound to
+    # ``learning/roles/<role_id>/`` (runtime.py:1644) and those files are written normally.
     fairness_written_at: str = ""
     fairness_write_skipped: str = ""
     capability_discovery: list[dict[str, Any]] = field(default_factory=list)
