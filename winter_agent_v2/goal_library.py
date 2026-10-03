@@ -15,6 +15,7 @@ from . import entry_badges
 from . import event_goal
 from . import fishing_pressure
 from . import goal_utility
+from . import ocr
 from .rally import BearPhase, bear_phase
 
 #: The operator's stamina floor: the spend goal is satisfied once stamina is BELOW it.
@@ -1034,7 +1035,33 @@ def _append_quick_panel_task_goals(goals: list[GoalState], world: WorldState) ->
         ))
 
     pet = by_key.get("PET_TREASURE", {})
-    if pet.get("badge") == entry_badges.PRESENT and pet.get("control") in {"ARROW", "DONE"}:
+    # The client's own state word gates this row.  Measured 2026-10-03 on the full ledger
+    # (10463 episodes): ``OPEN_TASK_FROM_QUICK_PANEL_PET_TREASURE`` ran 43 times, 43
+    # SUCCESS, 0 FAILURE -- and on 37 of those BEFORE frames the row itself already read
+    # ``status=COMPLETED`` / ``source_word=已完成``.  Perfect separation, no overlap, so the
+    # row was not occasionally stale: the gate below simply never read the field.
+    #
+    # The 6 ``UNKNOWN`` rows are only legible by pairing -- every one of them is followed
+    # 5-7 seconds later by a ``BACK``: the step opened the page and returned.  So **all 43
+    # produced no reward** while the episode ledger called every one SUCCESS, because the
+    # verifier answered "did the tap land", not "did the row have anything left".
+    #
+    # ``ocr.QUICK_PANEL_COMPLETED_WORDS`` is the reader's own vocabulary and is used as-is
+    # rather than a second list.  ``status`` is checked too because it is what the reader
+    # derived from that word: a frame carrying the word without the derived status must not
+    # silently resume the 37 wasted taps.
+    #
+    # This is a **tightening**, so it is provably monotonic in the useful direction: the
+    # accepted set only shrinks, and ``UNKNOWN`` (the state that means "we could not read
+    # it") is explicitly *not* refused -- opening the page is how that state gets read.
+    pet_word = str(pet.get("source_word") or "").strip()
+    pet_finished = (
+        str(pet.get("status") or "").strip().upper() == "COMPLETED"
+        or pet_word in ocr.QUICK_PANEL_COMPLETED_WORDS
+    )
+    if (not pet_finished
+            and pet.get("badge") == entry_badges.PRESENT
+            and pet.get("control") in {"ARROW", "DONE"}):
         skill = ("OPEN_TASK_FROM_QUICK_PANEL_PET_TREASURE"
                  if pet.get("control") == "ARROW" else "COLLECT_PET_TREASURE_ROW")
         goals.append(GoalState(
