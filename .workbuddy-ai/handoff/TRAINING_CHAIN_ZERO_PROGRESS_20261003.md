@@ -4,6 +4,19 @@
 > 与第 64 条（每轮自问"现在只能修一个问题，哪个最能让 KPI 上升"），
 > 本轮做全局审计并换目标。**本轮零代码改动。**
 
+> ## 本节结论已被推翻（2026-10-03 第十三轮）
+>
+> **"启动了错误的兵种"是错的。** 实测那一帧：`troop_type=INFANTRY`、
+> `camp_open_label=盾兵营`、目标 `SHIELD_CAMP_TRAINING` — 而 `INFANTRY` **就是**盾兵
+> （`LABEL_TO_TROOP["盾兵营"]="INFANTRY"`、`TROOP_TO_CAMP["INFANTRY"]="SHIELD_CAMP"`）。
+> 全 TRAINING 页 86 帧交叉验证：`troop_type` 与 `camp_open_label` **不一致 0 帧**。
+> 我当时没查 `TROOP_TO_CAMP` 就下了结论。
+>
+> **真正根因是验证早了一瞬**：训练**确实启动**（下一步 `IN_PROGRESS` + 计时器，
+> 5 次失败里 3 次如此），但 `verify_training_started` 在"点完立刻读"时
+> 读到 `status=AVAILABLE`、无计时器 ⇒ 记 `TRAINING_START_NOT_PROVEN`。
+>
+> **正确结论见 `TRAINING_VERIFY_TOO_EARLY_20261003.md`。**
 ---
 
 ## 一句话
