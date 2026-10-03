@@ -301,6 +301,14 @@ class FormationVerifierTests(unittest.TestCase):
         So the species-bound half stays exactly as it was -- ``verify_beast_march_open`` is the
         musk-ox verifier and must not accept another animal -- and the generic half is now pinned on
         the three things that must still refuse.
+
+        UPDATED 2026-10-03.  One of those three moved: the species-level refusal.  It was
+        ``not target.refused`` against a name-only lookup, which meant a record measured on
+        2026-09-06 about a *level-29* leopard (``SNOW_LEOPARD_29_LIVE``, 本次出征胜算较低) vetoed
+        every snow leopard afterwards -- including frames the client had just graded winnable,
+        which is the thing this test was written to allow.  The refusal that is actually about
+        the current frame is the client's own red words, and that still refuses below.  See
+        ``tests/test_a_month_old_refusal_must_not_veto_every_leopard.py`` for the measurement.
         """
         after = WorldState(page=Page.MARCH, beast={"name": "北极狼", "target_kind": "WILDERNESS", "victory_assured": True})
         self.assertFalse(verify_beast_march_open(self.BEAST_TARGET, after).ok,
@@ -316,9 +324,28 @@ class FormationVerifierTests(unittest.TestCase):
         self.assertFalse(verify_beast_dispatch(nameless, self.MAP_MARCHING).ok)
         no_verdict = WorldState(page=Page.MARCH, beast={"name": "北极狼"})
         self.assertFalse(verify_beast_dispatch(no_verdict, self.MAP_MARCHING).ok)
-        refused = WorldState(page=Page.MARCH, beast={"name": "雪豹", "victory_assured": True})
-        self.assertFalse(verify_beast_dispatch(refused, self.MAP_MARCHING).ok,
-                         "the leopard's row records a measured red assessment")
+
+        # REVISED 2026-10-03.  The third refusal used to be ``{name: 雪豹, victory_assured: True}``
+        # -> False, "the leopard's row records a measured red assessment".  That assertion
+        # contradicted the commit that introduced it (82cdf49b, "the formation verifier is bound
+        # by the client's verdict, not by a species list"): within this same function 北极狼 is
+        # accepted *because* the frame says 胜券在握, and 雪豹 was refused for a record while its
+        # frame said the same thing.  The record is also about a different animal -- level 29,
+        # measured 2026-09-06, "本次出征胜算较低" -- so it cannot speak for a leopard today.
+        # Measured: 3 BEAST_DISPATCH_NOT_PROVEN on 2026-10-03, all with ``victory_assured: true``
+        # and a march that landed.
+        #
+        # What this test still pins is the refusal that is actually about *this* frame: the
+        # client's own red words. That is the case the record was standing in for, and it still
+        # refuses -- now because the frame says so.
+        red = WorldState(page=Page.MARCH, beast={"name": "雪豹", "victory_assured": False})
+        self.assertFalse(verify_beast_dispatch(red, self.MAP_MARCHING).ok,
+                         "a frame carrying the client's own red verdict must still refuse")
+
+        green = WorldState(page=Page.MARCH, beast={"name": "雪豹", "victory_assured": True})
+        self.assertTrue(verify_beast_dispatch(green, self.MAP_MARCHING).ok,
+                        "a species-level record from 2026-09-06 must not veto a frame the client "
+                        "has just graded winnable")
 
     def test_the_measured_name_proves_the_dispatch(self) -> None:
         before = WorldState(page=Page.MARCH, beast={"name": "麝牛", "target_kind": "WILDERNESS", "victory_assured": True})

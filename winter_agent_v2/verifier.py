@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import asdict
 
 from .models import MarchState, Page, VerificationResult, WorldState
-from .beast_targets import is_dispatchable, lookup_by_name, refused_by_evidence
+from .beast_targets import (
+    BeastTarget,
+    is_dispatchable,
+    lookup_by_name,
+    refused_by_evidence,
+)
 from . import control_experience
 
 
@@ -1191,7 +1197,11 @@ def verify_beast_march_open(before: WorldState, after: WorldState) -> Verificati
     return VerificationResult(ok, "OK" if ok else "BEAST_MARCH_NOT_PROVEN", {"target_verified":before_ok,"victory_assured":after_ok})
 
 
-def verify_beast_dispatch(before: WorldState, after: WorldState) -> VerificationResult:
+def verify_beast_dispatch(
+    before: WorldState,
+    after: WorldState,
+    targets: Sequence[BeastTarget] | None = None,
+) -> VerificationResult:
     # CAP-Z01: the MARCH page prints 目标：<name> and no level, so the row is resolved by
     # name.  What the row must supply is "the client has not already refused this one" --
     # not a per-species pre-approval.  Measured 2026-09-20: the old `target.dispatchable`
@@ -1200,17 +1210,50 @@ def verify_beast_dispatch(before: WorldState, after: WorldState) -> Verification
     # was registered as UNVERIFIED.  The operator's rule is "as long as we can beat it, we
     # may hit it", and the client's own victory strip is the evidence for "we can beat it";
     # that strip is what `victory_assured` is, so it stays required here unchanged.
-    target = lookup_by_name(before.beast.get("name"))
+    #
+    # 2026-10-03: **this lookup was the wrong instrument, not a mistyped argument.**
+    # It resolved the row by name *only* -- ``lookup_by_name(before.beast.get("name"))``, no
+    # level -- and then required ``not target.refused``.  ``knowledge/game/beasts.json`` holds
+    # one 雪豹 row, recorded on 2026-09-06 at level 29 with 本次出征胜算较低 /
+    # BLOCKED_BEFORE_DISPATCH, so every snow leopard since has been refused by a measurement
+    # of a different animal a month ago.
+    #
+    # Measured 2026-10-03 on the ledger: 3 BEAST_DISPATCH_NOT_PROVEN under a1c091ed, all with
+    # identical evidence -- ``before.beast={"victory_assured": true, "name": "雪豹"}``,
+    # ``after.page=MAP`` with ``marches`` marching and ``march_used=1``.  The dispatch
+    # succeeded and this called it a failure.  None of the 9 in the whole corpus is caught by
+    # a later success of the same skill, so it is a real false negative, not a recovery.
+    #
+    # Passing the level was tried first and **does not fix it**, which is worth recording:
+    # ``refused_by_evidence`` deliberately refuses on the species alone ("the leopard's
+    # refusal is a fact about the animal, so it survives that animal turning up at another
+    # level"), so the level makes no difference there and must not be mistaken for the remedy.
+    # And the record itself is not wrong: a level-29 leopard that printed 胜算较低 really was
+    # refused.
+    #
+    # The fix is the sibling that already had it right -- ``verify_intel_beast_dispatch``,
+    # which reads **only** the frame's own verdict and never consults the table.  That is this
+    # module's stated rule ("the dialog's own words decide when they are on the frame"), and
+    # the operator's rule behind it: "as long as we can beat it, we may hit it".  A frame
+    # carrying 胜券在握 is exactly that sentence; a frame carrying 胜算较低 is still refused,
+    # and so is a frame that says nothing at all.
+    on_frame = before.beast.get("victory_assured") is True
+    # A frame that names nothing has not identified anything, whatever its verdict strip says.
+    # The strip answers "can we beat it", never "is this the thing we aimed at" -- that is the
+    # ``target is not None`` half that was here before 2026-10-03 and stays here.
+    named = bool(str(before.beast.get("name") or "").strip())
+    target = lookup_by_name(before.beast.get("name"), before.beast.get("level"), targets)
+    refused_here = bool(target is not None and target.refused and not on_frame)
     before_ok = (
-        before.page is Page.MARCH
-        and target is not None
-        and not target.refused
-        and before.beast.get("victory_assured") is True
+    before.page is Page.MARCH
+    and named
+    and on_frame
+    and not refused_here
     )
     active = after.page is Page.MAP and any(state in {MarchState.MARCHING, MarchState.RETURNING} for state in after.marches)
     queue_visible = after.march_used is not None and after.march_used >= 1
     ok = before_ok and active and queue_visible
-    return VerificationResult(ok, "OK" if ok else "BEAST_DISPATCH_NOT_PROVEN", {"victory_assured":before_ok,"active_march":active,"march_used":after.march_used})
+    return VerificationResult(ok, "OK" if ok else "BEAST_DISPATCH_NOT_PROVEN", {"victory_assured":before_ok,"active_march":active,"march_used":after.march_used,"refused_here":refused_here,"frame_verdict":on_frame,"named":named})
 
 
 def verify_resource_search_open(before: WorldState, after: WorldState) -> VerificationResult:

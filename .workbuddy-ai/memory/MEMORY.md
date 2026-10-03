@@ -4383,3 +4383,80 @@ closed n=200  max 0.1451  p95 0.1434
 ```
 **放宽型改动必须把这三个数字都写进测试**，且样本**从账本现场重建**，
 不要把路径列表 check in（树一清理就静默失效）。
+
+## 通则：一个月前对一只动物的拒绝，不该否决今天所有同名动物（2026-10-03）
+
+**症状**：某技能**每步都成功**，账本却记成失败。实测 `BEAST_DISPATCH_NOT_PROVEN`
+（`a1c091ed` 上 3 次，全量 9 次），三条证据完全相同：
+```
+before.page=MARCH  before.beast={"victory_assured": true, "name": "雪豹"}
+after.page=MAP     after.marches=[MARCHING]  after.march_used=1
+```
+**客户端自己印了绿字、队伍出发了、队列计数动了** —— 动作完全成功。
+
+**按铁律配对**：9 次里**0 次**被同技能同输入的成功接住 ⇒ 真缺陷，不是设计好的恢复。
+
+**根因是"用错了工具"，不是参数写错**：
+`verifier.py` 用 `lookup_by_name(name)` **不传 level**，然后要求 `not target.refused`。
+`knowledge/game/beasts.json` 里雪豹只有一行，2026-09-06 记录于**29 级**、
+`本次出征胜算较低` / `BLOCKED_BEFORE_DISPATCH` ⇒ **此后每一只雪豹都被那条记录否决**。
+
+> **我先试的修法是错的，必须记下来**：我以为补上 level 就够了（因为 `refused_by_evidence`
+> 看起来有 `(species, level)` 精确档）。实跑发现**它的物种兜底是有意的**，
+> docstring 明写"the leopard's refusal is a fact about the animal, so it survives that animal
+> turning up at another level"⇒ **有没有 level 都返回 True**。
+> **补 level 是死路，别当成解法。**
+
+**真正的兄弟是`verify_intel_beast_dispatch`**（同一文件，只信帧上的 `victory_assured`，
+根本不查表）—— 这才是「同一件事写两遍、较松那份在生产路径上」的实例。
+修法照抄兄弟，不发明第三种。
+
+**新规则（数据层的）**：`victory_assessment` / `action_result` 这类**逐帧证据**
+与**物种级历史记录**是两种东西。
+**帧上印了字，帧说了算；帧没印，才用历史记录兜底。**
+`refused_here = target.refused and not on_frame` 就是这一行的全部内容，
+并且把 `refused_here` / `frame_verdict` 写进 evidence，**让理由可从账本读出、不必重读代码**。
+
+> **规则：一条知识记录被 `load()` 派生成 `refused` 属性时，
+> 它是"物种级事实"而不是"当前帧事实"。**
+> **任何拿它去否决当前帧的代码，都要先问"这一帧自己说了什么"。**
+> 知识的 `last_verified` 越久远，这个问法越必要（本例记录距今 27 天）。
+
+**又一次"我的测试自己骗了我"**：我把 `refused=True` 当构造参数传给 `BeastTarget`，
+而它是 `load()` 从 JSON 记录的 `victory_assessment`/`action_result` **派生**的
+⇒ 构造出的行`refused=False`，**关于记录的三条断言全都因为错误的原因通过**。
+**修法照抄 `load()` 的形状，并在测试里写明这一点**——
+否则下一个读者会重复这个形状错误。
+
+## 判据：测试断言与「引入它的那次提交」自相矛盾时，是测试滞后（2026-10-03，又一次成立）
+
+**实例**：`test_beast_formation_identity.py` 有一条断言
+`{name: 雪豹, victory_assured: True}` ⇒ 必须拒绝，注释写"雪豹那行记录了一次实测的红色评估"。
+而引入它的提交 `82cdf49b` 主题就是 **"the formation verifier is bound by the client's verdict,
+not by a species list"** —— 它把 `target.dispatchable` 换成了 `victory_assured`，
+理由是"只要能打赢就可以打"，**却把 `not target.refused` 留在了原地**。
+
+**自相矛盾是可指认的**：同一个函数里，`北极狼` 因"帧上是绿字"放行，
+`雪豹` 因"物种级记录"被拒 —— **而两帧的 `victory_assured` 都是 `True`**。
+同一次提交既确立了原则，又留了一个违反原则的半句。
+
+> **判「测试滞后」还是「真回归」的最硬判据不是"有没有 commit 记录过"，而是**
+> **① 该断言的引入提交说了什么（逐字读它的 message 与 diff）；**
+> **② 它与同一提交确立的原则是否冲突。**
+> 两者都成立 ⇒ 测试滞后 ⇒ **改测试并写明"REVISED <日期>"与理由**，不要顺手删掉。
+
+**改法不是放宽断言，而是换到真正承载它意图的那个用例**：
+原来那条（物种级记录否决帧）改成
+**「帧上印了红字仍拒绝 / 帧上印了绿字放行」** —— 前者是真正与当前帧有关的拒绝，
+后者是本轮修掉的误判。**意图被保住了，错误的判别量被换掉。**
+
+**同一个修复里我漏了一个守卫，是既有测试抓到的**：
+第一版把 `target is not None` 一起丢掉了，于是"帧上没有名字"也不再拒绝
+（`verify_beast_dispatch(nameless).ok` 变True）。
+**绿字条回答的是"打得过吗"，不是"这是我们要打的那只吗"** —— 没有名字就没有识别。
+**这条是"放宽型改动必须双向验证"的又一例**：一条靠既有测试抓到，一条要我自己写进新文件。
+
+**操作教训（编辑大文件时）**：用 Edit 改一段带注释的长块，**很容易把后面几行的缩进吃掉**
+（本轮连续三次 `SyntaxError` / `IndentationError`），其中一次 `ast.parse` 已经报 ok、
+下一次 import 才炸。**改完必须 `ast.parse` + 实际 `import` + 跑测试三件都做**，
+只看 `ast.parse` 会漏。
