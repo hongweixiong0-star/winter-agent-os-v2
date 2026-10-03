@@ -45,6 +45,9 @@ from typing import Any, Mapping
 ROOT = Path(__file__).resolve().parents[1]
 STATE_PATH = ROOT / "learning/timed_event_schedule.json"
 DEFAULT_PATH = STATE_PATH
+#: The activity registry is knowledge, read here only for one field -- see
+#: ``_unreachable_today``.  event_goal.py owns the full reader; this is not a second one.
+ACTIVITY_REGISTRY_PATH = ROOT / "knowledge/events/event_registry.json"
 GLOBAL_CALENDAR_SCOPE = "UNSCOPED_CLIENT"
 CALENDAR_SCAN_INTERVAL_SECONDS = 24 * 60 * 60
 
@@ -411,6 +414,52 @@ def strip_read_stale_against_grid(
     return grid_at > strip_at
 
 
+def _unreachable_today(now: datetime | None = None) -> frozenset[str]:
+    """Activities the registry marks advertised-but-unreachable *for this day*.
+
+    Operator observed 2026-10-03: ``STATE_VS_STATE`` (最强王国) was full, so it could be seen on
+    the activity strip and never entered.  That is a real game state, not a defect, and it made
+    ``advertised_but_unread_activities`` an unsatisfiable debt: measured over the ledger,
+    STATE_VS_STATE appeared 1109 times in ``activity_strip.entries`` and 0 times in
+    ``read_entries``, and ``OPEN_EVENT_CALENDAR_DETAIL`` was aimed at that strip 10 times and
+    returned success every time while actually opening something else each time.  The debt could
+    never clear, so ``calendar_scan_due`` stayed True and ``DISCOVER_EVENT_CALENDAR`` was
+    re-selected every ~24 s in a HOME -> EVENT -> SCROLL -> TAB -> BACK cycle where every hop was
+    individually correct and no FAIL ever appeared.
+
+    Scoped to today on purpose.  Capacity is not a permanent property: the operator's own report
+    is about one occurrence, and a blanket exclusion would mean the activity is never entered
+    again even after it reopens -- a state with no exit, which operator §六 forbids.  Next day
+    the debt returns and is re-attempted; that is the honest cost of not being able to read
+    capacity from a page we cannot open.
+
+    Failure is safe: an unreadable or absent registry yields the empty set, which restores the
+    previous behaviour exactly.
+    """
+    try:
+        payload = json.loads(ACTIVITY_REGISTRY_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return frozenset()
+    today = (now or datetime.now(timezone.utc)).date().isoformat()
+    out = set()
+    for entry in payload.get("events") or ():
+        if not isinstance(entry, Mapping) or entry.get("advertised_but_unreachable") is not True:
+            continue
+        event_id = str(entry.get("event_id") or "")
+        if not event_id:
+            continue
+        blockers = entry.get("observed_blockers") or ()
+        seen_today = any(
+            isinstance(b, Mapping) and str(b.get("observed_at") or "").startswith(today)
+            for b in blockers
+        )
+        # A marker with no dated blocker is treated as current: the registry said so, and
+        # ignoring it would silently restore the loop.
+        if seen_today or not blockers:
+            out.add(event_id)
+    return frozenset(out)
+
+
 def advertised_but_unread_activities(
     role_id: str, path: Path | str | None = None,
 ) -> tuple[str, ...]:
@@ -464,7 +513,10 @@ def advertised_but_unread_activities(
     for row in strip.get("read_entries") or ():
         if isinstance(row, Mapping) and str(row.get("event_id") or ""):
             read.add(str(row["event_id"]))
-    return tuple(sorted(set(advertised) - read))
+    # An activity the operator observed to be unenterable today is not a read debt.  Without
+    # this the debt is unsatisfiable and the calendar loops forever -- see _unreachable_today.
+    unreachable = _unreachable_today()
+    return tuple(sorted(set(advertised) - read - unreachable))
 
 
 def calendar_scan_due(

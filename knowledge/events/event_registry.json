@@ -136,7 +136,8 @@
       },
       "participation_conditions": [
         "the event page must be reachable (entry HOME/常规活动 -> EVENT)",
-        "for the minimum-guarantee goal: points_missing > 0, or a completed tier that is not claimed"
+        "for the minimum-guarantee goal: points_missing > 0, or a completed tier that is not claimed",
+        "CAPACITY_FULL at 2026-10-03: the activity is advertised on the strip but cannot be entered (人数已满). Treat as advertised-but-unreachable, not as an unpaid read debt."
       ],
       "knowledge": [
         "knowledge/events/kingdom_of_power_live_2026-09-09.json",
@@ -162,7 +163,17 @@
         "note": "the 2026-09-09 occurrence was mid-stage when observed and its stage countdown has long elapsed",
         "reward_claimed": false,
         "evidence": "learning/event_goal_state.json"
-      }
+      },
+      "observed_blockers": [
+        {
+          "kind": "CAPACITY_FULL",
+          "observed_at": "2026-10-03",
+          "source": "OPERATOR_OBSERVED",
+          "effect": "advertised on the activity strip, not enterable",
+          "note": "OPERATOR_OBSERVED 2026-10-03: 该活动人数已满，因此进不去 —— 它在活动条上被广告，但点击无法进入详情页。项目实测 1109 次出现在 activity_strip.entries，0 次出现在 read_entries；OPEN_EVENT_CALENDAR_DETAIL 针对它尝试过 10 次且每次都返回成功，但每次实际打开的都是别的活动（冰封的宝藏/秘宝商行/庆典对对碰/狮舞盛会/盛会商铺）——即点击落在别的条目上，从未真正进入最强王国。后果：advertised_but_unread_activities 把它算作永久欠账，calendar_scan_due 永远为 True，DISCOVER_EVENT_CALENDAR 每 24 秒被重新选中，构成 HOME->EVENT->SCROLL->TAB->BACK 的死循环，四步全部 '成功' 而净位移为零（每个 hop 单独看都正确，因此账本里从不出现 FAIL）。"
+        }
+      ],
+      "advertised_but_unreachable": true
     },
     {
       "event_id": "ARMAMENT_COMPETITION",
