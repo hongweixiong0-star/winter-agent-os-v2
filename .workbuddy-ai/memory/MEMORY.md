@@ -3990,3 +3990,28 @@ diff 缩到 **8 行**（只有那两处 roi）。
 > **配套：发现"某目标被选 N 次却 0 成功"时，先找它的替代路径是否已存在且有效。**
 > 本例替代路径 100% 有效 ⇒ **不是能力缺失，是新旧并存**。
 > ⇒ **判据：`grep` 目标 id 在 `goal_library.py` 里的注释/分支，看它是不是"已移交"。**
+
+## 通则：「去看一眼」型票必须真的去那一页（2026-10-03，425 次空转的教训）
+
+`TRAINING_SWEEP` 是"训练页从未被读过"时的兜底票，实测 561 次被选、`OPEN_HOME` 425 次、
+**训练 0 次**、`goal_progress` 一次 `True` 都没有。
+**因为"回城"不产生 `camps` 读数 ⇒ 下一帧与上一帧相同 ⇒ 循环自我维持。**
+
+修法：**`entry_skill` 从 `TRY_ORDINARY_CONTROL` 改成 `OPEN_INFANTRY_TRAINING`**
+（1 行代码）。选后者是因为**实测**：57 次尝试 57 SUCCESS，
+**after 帧带回了缺的读数**（`{"MARKSMAN_CAMP": {"status":"AVAILABLE","queue_available":true}}`）。
+
+> **规则一：任何"去看一眼"（sweep / discovery / observation ticket）的第一步，
+> 必须是**读出那个字段**的那一页，否则它不是去看，是去看别的地方。**
+> **判据：`grep` 那个票的 `entry_skill`，再问「执行这一步之后，
+> 让这张票成立的那个字段会出现在帧里吗」。不会 ⇒ 票是空转。**
+>
+> **规则二：同族对照是最便宜的加强证据。** 改完我才去看兄弟 routine：
+> `CLEAR_INTEL→OPEN_INTEL`、`KEEP_RESEARCH→OPEN_RESEARCH` **都去对应页面**，
+> **训练是这一族里唯一的例外**。⇒ **"去看一眼就去那一页"本来就是这个家族的设计约定。**
+> **判据：改一个 routine 之前，先 `print` 同族所有 `entry_skill`，
+> 找那个不合群的。不合群的那个才是缺陷。**
+
+**规则三：只改有证据的那一个。** `KEEP_BUILDING_PRODUCTIVE` 也用 `TRY_ORDINARY_CONTROL`，
+但**它的后果没有实测**（没有"425 次无果回城"那样的量）⇒ **不动它**，
+否则就是把一个假设写成生产行为。
