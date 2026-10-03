@@ -628,15 +628,41 @@ class RuleBrain:
                     "bounded_back_then_resume_calendar_scan",
                 )
             if world.page is Page.EVENT and detail.get("recognized") is True:
-                skill = (
-                    "RETURN_EVENT_CALENDAR"
-                    if detail.get("calendar_origin") == "GRID_ENTRY"
-                    else "OPEN_EVENT_CALENDAR_TAB"
-                )
-                return Decision(
-                    skill, "regular_events_activity_detail_select_calendar_tab_or_return_to_grid",
-                    world.confidence, "event_calendar_tab_opened" if skill == "OPEN_EVENT_CALENDAR_TAB" else "event_calendar_returned",
-                )
+                # An activity detail is open, so the calendar tab is the way back to the grid --
+                # but "the way back exists" is a claim about the client's layout, and this frame
+                # has to be the one that shows it.
+                #
+                # Measured 2026-10-03, 18 failures of this hop against 508 successes: on every
+                # success ``regular_events_hub.calendar_tab_visible`` was True with a
+                # ``calendar_tab_tap_norm``; on every failure it was False with a null norm, and
+                # ``_resolve_semantic_target`` then answered None -- honestly, because the client
+                # had drawn no tab to tap.  The same decision branch already refuses this further
+                # down (the hub branch at line 646 sends SCROLL_REGULAR_EVENT_TABS or SAFE_STOP when
+                # the tab is not visible), so the detail branch was the only place issuing the hop
+                # without asking.
+                #
+                # The tab is a horizontally scrolling strip, so when it is off-screen there is a
+                # gesture that brings it back.  Prefer that, exactly as the hub branch does, and
+                # only stop when neither a tab nor a scroll is available.  Without this the step
+                # burned a tap on nothing and reported SEMANTIC_TARGET_NOT_VERIFIED, which reads as
+                # "the control is not on screen" when the truth is "we never looked".
+                hub = events.get("regular_events_hub") or {}
+                if detail.get("calendar_origin") == "GRID_ENTRY":
+                    return Decision(
+                        "RETURN_EVENT_CALENDAR",
+                        "regular_events_activity_detail_select_calendar_tab_or_return_to_grid",
+                        world.confidence, "event_calendar_returned",
+                    )
+                if hub.get("calendar_tab_visible") is True:
+                    return Decision("OPEN_EVENT_CALENDAR_TAB",
+                                    "regular_events_activity_detail_select_calendar_tab_or_return_to_grid",
+                                    world.confidence, "event_calendar_tab_opened")
+                if hub.get("scroll_to_start_norm"):
+                    return Decision("SCROLL_REGULAR_EVENT_TABS",
+                                    "calendar_tab_outside_current_activity_strip",
+                                    world.confidence, "regular_event_tabs_scrolled")
+                return Decision("SAFE_STOP", "regular_event_tab_container_not_grounded",
+                                world.confidence, "defer_calendar_continue_other_goals")
             if world.page is Page.EVENT and calendar.get("recognized") is True:
                 return Decision(
                     "OPEN_EVENT_CALENDAR_DETAIL", "open_next_uninspected_visible_calendar_entry",
