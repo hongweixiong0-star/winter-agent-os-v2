@@ -295,6 +295,7 @@ _WINDOW_STATUS: dict[event_goal.WindowState, GoalStatus] = {
     event_goal.WindowState.UNKNOWN: GoalStatus.UNKNOWN,
 }
 
+
 #: The one action an activity ticket may carry while it is still waiting to be read.
 #:
 #: Measured 2026-10-03 on the 24 hours ending then: all 20 SCHEDULED_* tickets were selected
@@ -1194,13 +1195,35 @@ class GoalLibrary:
         intel_status = str(world.intel.get("status", "UNKNOWN"))
         if intel_status != "UNKNOWN":
             complete = intel_status in {"NOT_AVAILABLE", "EXPIRED"}
+            # ``untried_pins`` is the client's own count of intel it has not had tried, and it
+            # is the only field on the board that moves when one is actually handled: measured
+            # over 323 live INTEL-page frames it fell 8 -> 7 at 10:23:01 (one intel done) while
+            # ``pins`` and ``detected_pins`` stayed at 8 throughout.
+            #
+            # It has to travel, because ``_observation_meter`` reads GoalState.evidence while
+            # this value lives in WorldState.intel, and without it this goal cannot report
+            # progress at all: its ``distance`` is the constant 1.0 above, so the comparison
+            # is 1.0 < 1.0, False on every step, forever. That is not a cosmetic gap -- False
+            # also increments ``no_progress_streak``, which feeds the fairness bonus, so the
+            # goal was being demoted for work it could not report. In the audited 24 hours
+            # CLEAR_INTEL was selected 500 times, opened 67 verified mission cards, and
+            # reported goal_progress twice.
+            #
+            # Carried as a raw observation with no interpretation: a reader that cannot see
+            # the intel board must not keep the last value alive, so this is only ever
+            # present on a frame that read it.
+            intel_untried = world.intel.get("untried_pins")
+            intel_evidence = {
+                "status": intel_status,
+                "untried_pins": intel_untried if isinstance(intel_untried, int) else None,
+            }
             goals.append(GoalState(
                 "CLEAR_INTEL", GoalStatus.COMPLETE if complete else GoalStatus.READY,
                 completion=1.0 if complete else 0.0,
                 remaining_seconds=_optional_int(world.intel.get("refresh_seconds")),
                 reward_value=300, daily_loss=500,
                 available_skills=("INTEL_CLAIM_REWARDS", "SELECT_INTEL_BEAST_MISSION", "SELECT_INTEL_RESCUE_SURVIVORS"),
-                evidence={"status": intel_status},
+                evidence=intel_evidence,
                 distance=0.0 if complete else 1.0,
             ))
         # Stamina is a HUD reading, not a page, so it is absent from every frame that is not the
@@ -2567,10 +2590,28 @@ def _observation_meter(goal: GoalState) -> float | None:
     ``None`` for every other goal, which leaves the ``distance`` comparison exactly as it
     was -- this adds a measurement where there was none, and changes nothing where one
     already worked.
+
+    **``CLEAR_INTEL`` is the same disease, and its meter is a real count rather than a rank.**
+    It also carries a constant ``distance`` (1.0) whenever the board still has intel, so
+    ``1.0 < 1.0`` is False on every step, and False also increments
+    ``no_progress_streak`` -- so the goal was demoted for work it could not report. What the
+    client provides is ``untried_pins``: how many intel pins it has not had tried. Measured
+    over 323 live INTEL-page frames it falls 8 -> 7 when one is handled, while ``pins`` and
+    ``detected_pins`` stay at 8, so it is the only field that registers the work.
+
+    Negated, because ``progress_moved`` compares with ``<`` and the raw count would read as
+    getting *worse* as the work is done. ``None`` when the field is absent or not an int, so
+    a board that was not read stays unobserved rather than being called stalled -- the same
+    distinction the SCHEDULED_ branch above is careful about.
     """
     evidence = getattr(goal, "evidence", None)
     if not isinstance(evidence, Mapping):
         return None
+    if str(goal.goal_id) == "CLEAR_INTEL":
+        untried = evidence.get("untried_pins")
+        if isinstance(untried, bool) or not isinstance(untried, int):
+            return None
+        return -float(untried)
     if not str(goal.goal_id).startswith("SCHEDULED_"):
         return None
     if str(evidence.get("availability_state") or "") not in {
