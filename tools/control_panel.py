@@ -2419,6 +2419,12 @@ def launch_context() -> tuple[str, str]:
 #: actually changed: the answer moves on the scale of a job, not of a repaint.
 _CLOSURE_CACHE: dict[str, Any] = {"key": None, "at": 0.0, "card": {}}
 CLOSURE_TTL_SECONDS = 60.0
+#: How much of the tail of ``episodes.jsonl`` the closure card may read.  The log passed
+#: 150 MB; a full ``read_text`` of it measured 549 ms and was the single hottest frame in
+#: a py-spy dump of the live panel.  The card joins a trace to *its own* episode, and the
+#: trace it shows is the newest one, so the rows it can possibly need are at the tail.
+CLOSURE_EPISODE_BYTES = 32_000_000
+CLOSURE_EPISODE_LIMIT = 5_000
 
 
 def closure_card(root: Path | None = None) -> dict[str, Any]:
@@ -2440,7 +2446,13 @@ def closure_card(root: Path | None = None) -> dict[str, Any]:
     except Exception:  # noqa: BLE001
         key = None
     cached = _CLOSURE_CACHE
-    if key is not None and cached["key"] == key and (now - float(cached["at"])) < CLOSURE_TTL_SECONDS:
+    # The TTL is the gate, not the key.  AUTO *appends* to the ledger continuously, so a
+    # (mtime, size) key changes on literally every tick and this cache never once hit --
+    # the card was rebuilt from a 150 MB episode log every 1.5 s, which a py-spy dump of
+    # the live window named as its hottest frame.  The comment above has always said
+    # "at most once a minute"; this is what that actually looks like.  The key is still
+    # recorded so an unchanged ledger is visible in the cache entry.
+    if cached["card"] and (now - float(cached["at"])) < CLOSURE_TTL_SECONDS:
         return dict(cached["card"])
 
     try:
@@ -2450,7 +2462,8 @@ def closure_card(root: Path | None = None) -> dict[str, Any]:
         import unattended_closure as closure
 
         ledger = closure.rows(closure.LEDGER)
-        episodes = closure.rows(closure.EPISODES)
+        episodes = tail_jsonl(closure.EPISODES, limit=CLOSURE_EPISODE_LIMIT,
+                              max_bytes=CLOSURE_EPISODE_BYTES)
         commits = [(line.split(" ", 1)[0], closure.moment(line.split(" ", 1)[1]))
                    for line in closure.heads()]
         commits = [(sha, when) for sha, when in commits if when is not None]
