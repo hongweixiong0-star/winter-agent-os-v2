@@ -251,26 +251,10 @@
       }
     },
     "OPEN_EVENT_CALENDAR_FROM_HOME": {
-      "recognition": {
-        "REGULAR_EVENT_ENTRY": {
-          "kind": "TEMPLATE",
-          "template": "REGULAR_EVENT_ENTRY",
-          "threshold": [
-            0.7,
-            0.75
-          ],
-          "source_template": "dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png",
-          "roi": [
-            632,
-            101,
-            67,
-            84
-          ]
-        }
-      },
-      "preferred": "MAA",
-      "fallback": "ADB",
-      "recognition_backend": "MAA",
+      "recognition": {},
+      "preferred": "ADB",
+      "fallback": "MAA",
+      "recognition_backend": "LEGACY",
       "migration_priority": "P3",
       "evidence": {
         "generated_at": "2026-09-25T18:27:49.269147+00:00",
@@ -310,31 +294,51 @@
           "corpus_sufficient": false
         },
         "autogen_node_count": 1,
-        "autogen_note": "harvested+validated"
-      },
-      "promoted": false
-    },
-    "OPEN_EVENT_CALENDAR_FROM_MAP": {
-      "recognition": {
-        "REGULAR_EVENT_ENTRY": {
-          "kind": "TEMPLATE",
-          "template": "REGULAR_EVENT_ENTRY",
-          "threshold": [
-            0.7,
-            0.75
-          ],
-          "source_template": "dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png",
-          "roi": [
+        "autogen_note": "harvested+validated",
+        "demotion_reason": "The autogen node for REGULAR_EVENT_ENTRY was harvested from a single 2026-09-25 frame (roi x 632..699, y 101..185, \"validation\": \"NONE\") and it is a moving navigation label, so a fixed rect is the wrong shape for it. Measured 2026-10-03 over every episode the ledger holds: 638 steps, ALL of them on the MAA backend -- ADB was never called once -- 612 succeeded and 26 failed, each of the 26 carrying MAA_TEMPLATE:NO_MATCH with scores spread across 0.4175..0.6909 against the 0.7 gate; not one attempt ever crossed it. The recall failure is geometric, not a threshold: on the frame that stopped production (720x1280) the frame's own OCR reads the 常规活动 label at (0.925, 0.14883) = px (666, 191) with confidence 0.9983, and the roi covers y 101..185, so the node was looking 6 px above the control it was supposed to match. This semantic is therefore NOT migrated: ADB is preferred and the recognition is the V2 semantic vision, which consumes the frame's own events.calendar_entry.tap_norm (guarded to visible + CURRENT_FRAME_OCR on HOME/MAP) rather than a stored offset. The template image is kept so a re-measurement starts from the picture.",
+        "measured_record": {
+          "measured_at": "2026-10-03",
+          "attempts": 638,
+          "successes": 612,
+          "failures": 26,
+          "backends_used": {
+            "MAA": 638,
+            "ADB": 0
+          },
+          "miss_scores": {
+            "min": 0.4175,
+            "max": 0.6909,
+            "gate": 0.7,
+            "attempts_passing_gate": 0
+          },
+          "node_roi": [
             632,
             101,
             67,
             84
-          ]
+          ],
+          "frame_declared_control_norm": [
+            0.925,
+            0.14883
+          ],
+          "frame_pixel": [
+            666,
+            191
+          ],
+          "frame_size": [
+            720,
+            1280
+          ],
+          "template_kept_at": "dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png"
         }
       },
-      "preferred": "MAA",
-      "fallback": "ADB",
-      "recognition_backend": "MAA",
+      "promoted": false
+    },
+    "OPEN_EVENT_CALENDAR_FROM_MAP": {
+      "recognition": {},
+      "preferred": "ADB",
+      "fallback": "MAA",
+      "recognition_backend": "LEGACY",
       "migration_priority": "P3",
       "evidence": {
         "generated_at": "2026-09-25T18:27:49.480478+00:00",
@@ -374,7 +378,43 @@
           "corpus_sufficient": false
         },
         "autogen_node_count": 1,
-        "autogen_note": "harvested+validated"
+        "autogen_note": "harvested+validated",
+        "demotion_reason": "The autogen node for REGULAR_EVENT_ENTRY was harvested from a single 2026-09-25 frame (roi x 632..699, y 101..185, \"validation\": \"NONE\") and it is a moving navigation label, so a fixed rect is the wrong shape for it. Measured 2026-10-03 over every episode the ledger holds: 638 steps, ALL of them on the MAA backend -- ADB was never called once -- 612 succeeded and 26 failed, each of the 26 carrying MAA_TEMPLATE:NO_MATCH with scores spread across 0.4175..0.6909 against the 0.7 gate; not one attempt ever crossed it. The recall failure is geometric, not a threshold: on the frame that stopped production (720x1280) the frame's own OCR reads the 常规活动 label at (0.925, 0.14883) = px (666, 191) with confidence 0.9983, and the roi covers y 101..185, so the node was looking 6 px above the control it was supposed to match. This semantic is therefore NOT migrated: ADB is preferred and the recognition is the V2 semantic vision, which consumes the frame's own events.calendar_entry.tap_norm (guarded to visible + CURRENT_FRAME_OCR on HOME/MAP) rather than a stored offset. The template image is kept so a re-measurement starts from the picture.",
+        "measured_record": {
+          "measured_at": "2026-10-03",
+          "attempts": 638,
+          "successes": 612,
+          "failures": 26,
+          "backends_used": {
+            "MAA": 638,
+            "ADB": 0
+          },
+          "miss_scores": {
+            "min": 0.4175,
+            "max": 0.6909,
+            "gate": 0.7,
+            "attempts_passing_gate": 0
+          },
+          "node_roi": [
+            632,
+            101,
+            67,
+            84
+          ],
+          "frame_declared_control_norm": [
+            0.925,
+            0.14883
+          ],
+          "frame_pixel": [
+            666,
+            191
+          ],
+          "frame_size": [
+            720,
+            1280
+          ],
+          "template_kept_at": "dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png"
+        }
       },
       "promoted": false
     },
@@ -2442,6 +2482,11 @@
       "semantic": "BTN_SELECTED_BUILDING_UPGRADE",
       "reason": "The autogen node for BTN_SELECTED_BUILDING_UPGRADE was harvested from a fixed rect on dataset/raw/autogen/r2_home.png (roi x 335..483, y 288..432) and recorded validation=PENDING_RECORD. It never answered: 10 attempts on 2026-10-02, 0 successes, all SEMANTIC_TARGET_NOT_VERIFIED with MAA_TEMPLATE:NO_MATCH:score=0.5146:gate=0.7/0.75. The frame's own OCR reads the 升级 label at (0.4993, 0.7188) = px (359, 920) on the very frame the step failed on, so the window is looking at scenery and the recall failure is geometric, not a threshold: a fixed rect cannot cover a control that is drawn wherever the selected building sits. This semantic is therefore NOT migrated -- ADB is preferred and the recognition is the V2 semantic vision, which reads the label off the current frame rather than from a stored offset. The template image is kept (dataset/candidate/autogen/btn_selected_building_upgrade__rect_300f6cc7.png); to migrate this, re-measure the way the battle button was -- locate the control by colour blob on the current client instead of cropping one frame -- then draw it on real frames and A/B it against the V2 reader. Recorded here rather than left as an unexplained 0.",
       "measured_at": "2026-10-02T10:46:09Z"
+    },
+    "OPEN_EVENT_CALENDAR_FROM_HOME_RECOGNITION": {
+      "semantic": "REGULAR_EVENT_ENTRY",
+      "measured_at": "2026-10-03",
+      "reason": "The autogen node for REGULAR_EVENT_ENTRY was harvested from a single 2026-09-25 frame (roi x 632..699, y 101..185, \"validation\": \"NONE\") and it is a moving navigation label, so a fixed rect is the wrong shape for it. Measured 2026-10-03 over every episode the ledger holds: 638 steps, ALL of them on the MAA backend -- ADB was never called once -- 612 succeeded and 26 failed, each of the 26 carrying MAA_TEMPLATE:NO_MATCH with scores spread across 0.4175..0.6909 against the 0.7 gate; not one attempt ever crossed it. The recall failure is geometric, not a threshold: on the frame that stopped production (720x1280) the frame's own OCR reads the 常规活动 label at (0.925, 0.14883) = px (666, 191) with confidence 0.9983, and the roi covers y 101..185, so the node was looking 6 px above the control it was supposed to match. This semantic is therefore NOT migrated: ADB is preferred and the recognition is the V2 semantic vision, which consumes the frame's own events.calendar_entry.tap_norm (guarded to visible + CURRENT_FRAME_OCR on HOME/MAP) rather than a stored offset. The template image is kept so a re-measurement starts from the picture."
     }
   }
 }
