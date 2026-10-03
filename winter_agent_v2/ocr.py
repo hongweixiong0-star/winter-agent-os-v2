@@ -2485,7 +2485,31 @@ QUICK_PANEL_PLATE_ROI: tuple[float, float, float, float] = (0.10, 0.26, 0.42, 0.
 #: How much of ``QUICK_PANEL_PLATE_ROI`` must carry the plate's fill before the panel is
 #: considered drawn.  Measured 0.674 with the panel open against 0.038 or less without,
 #: so the value sits in the middle of a wide gap rather than on a measured edge.
+#:
+#: Re-measured 2026-10-03 over 200 frames of each class rather than one frame of each:
+#: open frames run 0.4519 (min) to 0.6105, closed frames never exceed 0.1451.  The gap is
+#: 3.1x and this threshold misses 0/200, so it stays where it is -- what moved underneath it
+#: is the panel animating, not the separation.
 QUICK_PANEL_PLATE_MIN_FRACTION: float = 0.30
+
+#: The animating-panel gate.  It answers a question the area gate structurally cannot: "is a
+#: plate painted against the screen edge?", which is what an animating panel looks like and a
+#: settled one never does.  Measured on the same 200+200 frames, in plate columns at 720x1280:
+#:
+#:     settled open      left edge  x=11..11      right edge 347..359
+#:     mid-animation     left edge  x=0           right edge 85..196
+#:     closed            no plate
+#:
+#: So the edge column is 0 with margin, the column floor sits far below both measured right
+#: edges, and the minimum span is a third of the narrowest observed right edge -- a frame with
+#: one or two painted columns is noise, not a panel.
+QUICK_PANEL_SLIDE_EDGE_COLUMN: int = 4
+QUICK_PANEL_SLIDE_MIN_COLUMNS: int = 20
+QUICK_PANEL_SLIDE_MIN_COLUMN: float = 0.5
+#: How far right the scan looks.  The widest settled right edge measured 359 at 720 wide, and
+#: the gap to the narrowest mid-slide edge (196) is what leaves room for a wider frame; this
+#: stops the scan at half the image so a bright city region cannot be counted as plate.
+QUICK_PANEL_SLIDE_MAX_X: float = 0.55
 
 
 def _is_quick_panel_plate_pixel(pixel: tuple[int, int, int]) -> bool:
@@ -5021,6 +5045,65 @@ class HybridVision:
         plate = sum(1 for pixel in pixels if _is_quick_panel_plate_pixel(pixel))
         return plate / len(pixels) >= QUICK_PANEL_PLATE_MIN_FRACTION
 
+    def _quick_panel_is_sliding_out(self, image_path: Path) -> bool:
+        """True when the panel is leaving or entering, painted but too narrow for the gate.
+
+        A second gate, not a second opinion on the first one.  ``_quick_panel_is_drawn``
+        measures how much of a **fixed** box the plate covers, and that number collapses while
+        the panel animates: measured 2026-10-03 over 200 frames of each class, settled-open
+        frames score 0.4519-0.6105 while closed frames never exceed 0.1451 -- a 3.1x gap, so
+        the threshold is not the defect and must not move.  But six real frames from the
+        production ledger scored 0.1009-0.4210 and are visibly open, and they landed in the
+        gap because:
+
+            class                plate columns (720x1280)
+            open, settled        x=11..347 .. 11..359
+            open, mid-animation  x=0..196 .. 0..186 .. 0..85
+            closed               no plate at all
+
+        The animation pulls the plate against the screen edge while it is still painted, so it
+        measures "narrow" rather than "absent".  The right edge is what separates those two
+        cases (settled >= 347, mid-slide <= 196, closed no plate at all), so that is what this
+        reads.
+
+        **The cost is unchanged and that is the point.**  It is still pixels only and it still
+        only runs when the first gate already said no, so "a page the template layer resolves
+        costs no OCR" survives intact; a frame with no panel has no plate to find and pays one
+        column scan.
+
+        **It widens, so this is not the "prefer tightening" case.**  The set of frames that
+        reach the OCR is a superset of the previous one, and the only frames added are frames
+        that visibly draw the panel.  The reverse -- reading nothing when the panel is there --
+        is what cost six goal rows their completion on 2026-10-03.
+        """
+        rect = _roi_box(QUICK_PANEL_PLATE_ROI)
+        try:
+            with Image.open(image_path) as source:
+                image = source.convert("RGB")
+                width, height = image.size
+                top, bottom = int(rect[1] * height), int(rect[3] * height)
+                if bottom <= top or width <= 0:
+                    return False
+                # The plate is a wide fill, so a column through the middle of the ROI's band
+                # is inside it whenever the panel is there at all. Sampling every 4th pixel
+                # keeps this a cheap scan on the frames that reach it.
+                painted_x = []
+                for x in range(0, min(width // 2, max(4, width * QUICK_PANEL_SLIDE_MAX_X)), 2):
+                    hits = total = 0
+                    for y in range(top, bottom, 4):
+                        total += 1
+                        if _is_quick_panel_plate_pixel(image.getpixel((x, y))):
+                            hits += 1
+                    if total and hits / total > QUICK_PANEL_SLIDE_MIN_COLUMN:
+                        painted_x.append(x)
+        except (OSError, ValueError):
+            return False
+        if len(painted_x) < QUICK_PANEL_SLIDE_MIN_COLUMNS:
+            return False
+        # Only a plate at the screen edge can be an animating one: a settled panel is inset
+        # (measured x=11), so anchoring to column 0 is what keeps this disjoint from it.
+        return painted_x[0] <= QUICK_PANEL_SLIDE_EDGE_COLUMN
+
     def _read_selected_building(self, image_path: Path, primary: WorldState) -> WorldState | None:
         """Attach the selected building's action bar, or ``None`` when this is not that frame.
 
@@ -5336,7 +5419,7 @@ class HybridVision:
         # bitten by twice -- a lower layer passing does not mean the production entry point runs.
         #
         # Both probes are pixels only, so a page the template layer resolved still spends no OCR.
-        panel_drawn = self._quick_panel_is_drawn(image_path)
+        panel_drawn = self._quick_panel_is_drawn(image_path) or self._quick_panel_is_sliding_out(image_path)
         if not panel_drawn:
             collapsed_handle = find_quick_panel_handle(image_path, panel_open=False)
             if collapsed_handle is not None:
