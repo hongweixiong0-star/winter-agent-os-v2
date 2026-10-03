@@ -1,0 +1,243 @@
+{
+  "schema_version": "1.0",
+  "entity_class": "RESEARCH_CHARTER",
+  "purpose": "钉死「在做任何游戏智能体的任务 / 活动 / 目标 / 功能之前，必须先调研到什么程度」。本文件回答 BEFORE：该查什么、查到什么算够、怎么把结论变成可执行的决策、以及哪些结论足以阻断实现。",
+  "position": "本文件不重复已有真值，只做串联与门禁。它引用 sources.json 的 tier、conflicts.json 的冲突格式、worth_it_rubric.json 的 WHETHER/HOW FAR、coverage/commercial_bot_parity.json 的竞品对标。",
+  "single_source_of_truth_rule": "禁止为调研另建第二套来源库 / 优先级体系 / 生命周期。已有资产是唯一真值；本文件只规定「何时必须去读它们、读到什么程度」。",
+  "last_reviewed": "2026-10-03",
+
+  "triggers": {
+    "must_run_before": [
+      "新增或修改任何 Skill / Goal / 活动流程 / 定时任务",
+      "接入任何新的 UI 元素、识别器或点击路径",
+      "让某个目标进入 AUTO 的可执行集合",
+      "改变任何涉及资源消耗、体力、火晶、加速、抽卡的决策",
+      "把外部项目 / 竞品 / 社区做法搬进本项目"
+    ],
+    "may_skip_when": [
+      "纯缺陷修复且已有真机反例（此时反例本身就是最高级证据）",
+      "纯粹的重命名 / 注释 / 格式化",
+      "已被本会话验证过且未跨活动实例的重复动作"
+    ],
+    "skip_requires": "跳过必须在 episode 或 commit message 里写明依据（哪条反例、哪个已验证结论），不允许静默跳过。"
+  },
+
+  "coverage_a_information_scope": {
+    "note": "四类实体各自必查项不同，按实体选行，不要求全查。空项必须是显式 UNKNOWN，不得留白。",
+    "mechanism_principles": {
+      "question": "WHETHER / WHEN / HOW FAR —— 这机制本身是什么",
+      "must_answer": [
+        "触发与开放条件（什么前置才能做）",
+        "时间窗与刷新点（几点刷新、持续多久、多久冷却）",
+        "成本（体力 / 资源 / 道具 / 队列 / 次数上限）",
+        "收益与收益递减（做多少算够，边际在哪）",
+        "次数上限与个体冷却（是否跨实例共享、是否日重置）",
+        "失败与中止条件（什么情况做了反而亏）"
+      ],
+      "canonical_landing": "knowledge/game/ · knowledge/events/ · knowledge/strategy/"
+    },
+    "reference_material": {
+      "question": "别人怎么描述这件事",
+      "must_answer": [
+        "官方说明（游戏内文本 / 官方百科 / 商店页）",
+        "社区数据库与攻略（含中英双语，注意版本时效）",
+        "多来源是否相互印证"
+      ],
+      "canonical_landing": "knowledge/provenance/sources.json（登记 tier）· <domain>_research_sources.json"
+    },
+    "competitor_practice": {
+      "question": "成熟实现怎么做的，有没有更省的路",
+      "must_answer": [
+        "该功能在 commercial_bot_parity 里的现状（attempts / success / failure / lifecycle）",
+        "外部开源项目是否已有实现，其做法与本项目架构是否兼容",
+        "其 UI 依赖是否与当前客户端同版本（跨版本坐标一律不可当依据）"
+      ],
+      "canonical_landing": "knowledge/coverage/commercial_bot_parity.json · knowledge/external/"
+    },
+    "ui_ground_truth": {
+      "question": "当前客户端到底画了什么",
+      "must_answer": [
+        "至少一张当前客户端的真机截图路径（不是历史截图、不是别人的截图）",
+        "该元素的可区分特征（文字 / 图标 / 相对位置关系）",
+        "识别失败时帧上是什么样子（反例帧）"
+      ],
+      "canonical_landing": "dataset/raw/**（证据不入库代码，入 episode）"
+    },
+    "risk_surface": {
+      "question": "做错了会付出什么",
+      "must_answer": [
+        "是否不可逆（消耗稀有资源 / 出征 / 删号类）",
+        "误判后果（把 A 当成 B 会消耗什么）",
+        "失败是否可回滚，回滚代价",
+        "是否有账号风险（第三方接口 / 频率异常）"
+      ],
+      "canonical_landing": "本文件 risks_section · knowledge/failure_patterns/"
+    }
+  },
+
+  "b_filtering_and_priority": {
+    "authority_tiers": {
+      "note": "复用 provenance/sources.json 的 tier 命名，不新增一套。",
+      "order": [
+        "LIVE_CLIENT —— 当前客户端真机证据，永远最高",
+        "PRODUCTION_EVIDENCE —— 本项目生产 episode",
+        "VERIFIER_RESULT",
+        "OFFICIAL —— 官方百科 / 官方说明",
+        "MULTI_SOURCE_CONFIRMED",
+        "COMMUNITY_DB / MATURE_OPEN_SOURCE —— 社区库、成熟开源实现",
+        "PLAYER_GUIDE / VIDEO",
+        "LEGACY —— 历史结论，可能过期",
+        "UNKNOWN —— 未观测"
+      ],
+      "hard_rule": "任何冲突，LIVE_CLIENT 胜出。冲突不得由实现者私自裁决，必须登记到 conflicts.json。"
+    },
+    "admission_criteria": {
+      "accept_when": [
+        "能定位到具体来源（URL / 截图 / 官方条目）",
+        "能被一条可观测的游戏状态证真或证伪",
+        "与该实体的使用场景相关（不是泛泛的机制介绍）"
+      ],
+      "reject_when": [
+        "无来源或来源不可追溯",
+        "跨客户端版本且无法确认仍成立",
+        "只在单一非权威来源出现且与其它来源矛盾",
+        "属于推测 / 补全 / 印象"
+      ],
+      "on_reject": "写 UNKNOWN 并给出「缺什么才能确定」，禁止用相似机制补全。"
+    },
+    "expiry_first": {
+      "rule": "会因过期而损失的项目优先调查与实现。",
+      "reason": "有窗口的机制错过即永久损失，无窗口的可以后补。",
+      "examples": ["体力领取（新体力挤掉未领的、满格不回）", "限时活动开放窗口", "每日首次折扣", "日重置的任务/次数"]
+    },
+    "sufficiency_bar": {
+      "note": "「够了」不是主观判断，按下表判定。",
+      "enough_to_implement": [
+        "机制：WHETHER/WHEN/HOW FAR 三问都有来源支撑的回答",
+        "UI：有当前客户端真机帧且元素可区分",
+        "风险：不可逆项已识别并给出阻断或白名单策略",
+        "冲突：所有已知冲突已登记且标出 verification_required"
+      ],
+      "not_enough_but_may_probe": [
+        "low_risk_new_action —— 当前帧足以区分目标、任务仍有效、操作在授权内时，允许首次尝试（走 识别元素→定位控件→执行→观察后帧→验证）",
+        "禁止以「先试再说」代替对不可逆操作的调研"
+      ],
+      "must_stop": [
+        "涉及不可逆资源且无授权策略",
+        "目标身份无法与同页其它目标区分（例如把普通异兽当巨熊）",
+        "唯一依据是跨版本的固定坐标"
+      ]
+    }
+  },
+
+  "c_translation_to_decisions": {
+    "note": "调研结论不得停留在文档。每个结论必须落到四问之一，并指向落点。",
+    "mapping": [
+      {
+        "question": "WHETHER —— 值不值得做",
+        "derived_from": "机制收益 / 成本 / 优先级分类",
+        "decides": "该目标是否进入可执行集合、优先级类别",
+        "landing": "knowledge/strategy/worth_it_rubric.json · task_priority · event_priority"
+      },
+      {
+        "question": "WHEN —— 什么时候做",
+        "derived_from": "时间窗 / 刷新点 / 冷却 / 个体冷却",
+        "decides": "next_action_at、唤醒时机、是否抢占其它任务",
+        "landing": "knowledge/strategy/*_priority.json · knowledge/events/"
+      },
+      {
+        "question": "HOW FAR —— 做到什么程度",
+        "derived_from": "收益递减 / 次数上限 / 边际成本",
+        "decides": "停止条件、是否值得用加速、循环次数上限",
+        "landing": "knowledge/strategy/ · 目标完成判据"
+      },
+      {
+        "question": "HOW —— 怎么执行",
+        "derived_from": "当前客户端 UI 元素与状态",
+        "decides": "Skill 的 target、Verifier 判据、Recovery 路径",
+        "landing": "Skill Registry · knowledge/execution/backend_routing.json · 识别器"
+      }
+    ],
+    "hard_requirements": [
+      "挂 Skill 前必须确认 registry 中该 skill 的执行路径与 verifier 都真实存在，禁止未实现的 verifier",
+      "坐标只能由当前帧识别产生，用完即弃；调研结论不得产出固定坐标",
+      "每个调研结论都要能回答「这能让游戏多完成哪个真实任务」"
+    ]
+  },
+
+  "d_judgement_dimensions": {
+    "note": "决定「做不做、先做谁、做到什么程度」的七个维度。",
+    "dimensions": [
+      {"id": "REWARD", "question": "做完能拿到什么，对日产/战力/活动进度的贡献"},
+      {"id": "EXPIRY", "question": "错过是否会永久损失（有窗口的加权最高）"},
+      {"id": "COST", "question": "消耗多少体力/资源/队列/次数，是否稀缺"},
+      {"id": "IRREVERSIBILITY", "question": "做错了能不能回滚"},
+      {"id": "EVIDENCE_STRENGTH", "question": "依据处在哪一级权威，是否有真机帧"},
+      {"id": "IDENTITY_SAFETY", "question": "目标身份能否与同页其它目标稳定区分"},
+      {"id": "PARITY_GAP", "question": "竞品已做而本项目未做 -> 缺口优先级上升"}
+    ],
+    "resolution_order": "EXPIRY > IRREVERSIBILITY > IDENTITY_SAFETY > EVIDENCE_STRENGTH > REWARD > COST > PARITY_GAP",
+    "reason": "会过期的先救；不可逆的先确认安全；身份不能区分的一律不许动手；其余再比收益成本。"
+  },
+
+  "risks_section": {
+    "note": "风险不是备注，是阻断条件。分级决定是否允许实现。",
+    "classes": {
+      "IRREVERSIBLE_SPEND": {
+        "examples": ["花火晶", "大额加速", "抽卡", "真付费"],
+        "default": "BLOCKED —— 默认不做",
+        "unblock_requires": "明确的白名单策略（写进 knowledge，说明何时允许、上限多少），且用户知情"
+      },
+      "ACCOUNT_SAFETY": {
+        "examples": ["异常频率", "第三方接口", "非官方客户端交互"],
+        "default": "BLOCKED",
+        "unblock_requires": "确认不违反游戏条款，且有节流策略"
+      },
+      "MISIDENTIFICATION": {
+        "examples": ["把普通异兽当巨熊", "把别的活动入口当成目标", "把非动作条帧当成已选中建筑"],
+        "default": "BLOCKED until 有反例帧验证",
+        "unblock_requires": "至少一个正例帧 + 一个反例帧，且识别判据能区分"
+      },
+      "WRONG_TIMING": {
+        "examples": ["活动未开就导航", "冷却中重复发起", "体力满格未消耗导致不回"],
+        "default": "ALLOWED with guard —— 允许尝试，但必须有刷新/冷却读取",
+        "unblock_requires": "能读到时间或状态字段；读不到就保持 UNKNOWN 并等待"
+      },
+      "UNKNOWN_MECHANISM": {
+        "examples": ["机制只有单一非权威来源", "社区说法互相矛盾"],
+        "default": "ALLOWED to observe, BLOCKED to spend",
+        "unblock_requires": "按 NOT_ENOUGH_BUT_MAY_PROBE 观察取证，不得执行不可逆动作"
+      }
+    },
+    "pattern_from_this_project": "本项目反复出现的缺陷形状是『证据在帧上，但某个模板门 / 字段名 / 决策分支挡住了消费它的代码』。调研阶段就应专门回答：这个结论会不会被某个更弱的判据挡住？"
+  },
+
+  "execution_hook": {
+    "note": "本规范要能被执行，不是读过就算。",
+    "gate": "tools/research_gate.py",
+    "gate_checks": [
+      "该实体是否登记了来源（sources / <domain>_research_sources）",
+      "该实体的 WHETHER/WHEN/HOW FAR 是否都有非 UNKNOWN 结论",
+      "已知冲突是否全部登记到 conflicts.json 并标出 verification_required",
+      "风险类别是否已判定，IRREVERSIBLE_SPEND / MISIDENTIFICATION 是否给出阻断或白名单",
+      "是否存在跨版本固定坐标被当作依据"
+    ],
+    "gate_verdicts": ["READY", "NEEDS_RESEARCH", "BLOCKED_UNSAFE"],
+    "verdict_semantics": {
+      "READY": "可以进入实现",
+      "NEEDS_RESEARCH": "缺具体调研项，列出缺什么",
+      "BLOCKED_UNSAFE": "风险未处置，禁止实现"
+    },
+    "evidence_ladder": "UNIT_TEST_PASS < ARCHITECTURE_INVARIANT_PASS < SCHEDULER_SIMULATION_PASS < PRODUCTION_TRIED < MAA_EXECUTED < VERIFIER_PASS < GOAL_PROGRESS < AUTO_CONTINUED —— 调研完成只到「允许实现」，不等于功能完成。"
+  },
+
+  "anti_patterns": [
+    "把「磁盘上有图」当成「识别器会用」",
+    "把「下载成功」当成「已真机成功」",
+    "把「README 写了支持」当成「检查过代码」",
+    "把另一版本的固定点击坐标当作当前版本依据",
+    "用相似机制的结论补全未观测的机制",
+    "调研完成就宣布功能完成（完成 = 真状态变化 + Verifier + episode）",
+    "为调研新建第二套来源库或优先级体系"
+  ]
+}
