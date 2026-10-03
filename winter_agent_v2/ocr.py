@@ -6231,7 +6231,30 @@ class HybridVision:
                     if kind:
                         beast["target_kind"] = kind
                     return replace(primary, beast=beast)
-            if primary.page is Page.TRAINING and primary.training.get("status") == "IN_PROGRESS" and primary.training.get("timer") in {None, "VISIBLE"}:
+            # Two states need the OCR half, and the original condition covered only the one
+            # that does not need it.  Measured 2026-10-03 on episode 20261003_223009_533887:
+            # the route reached Page.TRAINING, SELECT_TRAINING_CAMP switched to 射手营, the
+            # reading said status=AVAILABLE / trainable=true -- and carried no
+            # ``train_button_norm``, because this branch was gated on status=="IN_PROGRESS".
+            # With no train point, the registry offered only BACK, the brain fell through to
+            # TRY_ORDINARY_CONTROL, and the run left the page having done nothing.  So the
+            # merge fired while a queue was busy (where a timer is all it was for) and stayed
+            # silent in the one state where the coordinate decides whether anything happens
+            # at all.  Both frames are the same page: re-running the classifier on the
+            # recorded after-frame yields train_button_norm=[0.7361, 0.8621] on AVAILABLE too.
+            #
+            # The merge order already does the right thing for both readers: primary carries
+            # the template layer's page identity (troop_type, camp_open_label) and has no
+            # train point to lose, while ``train_button_norm`` exists only in the OCR half.
+            needs_timer = (
+                primary.training.get("status") == "IN_PROGRESS"
+                and primary.training.get("timer") in {None, "VISIBLE"}
+            )
+            needs_train_point = (
+                primary.training.get("status") == "AVAILABLE"
+                and primary.training.get("train_button_norm") is None
+            )
+            if primary.page is Page.TRAINING and (needs_timer or needs_train_point):
                 secondary = self.classifier.classify(
                     self.ocr.recognize(image_path), frame_size=frame_size
                 )
