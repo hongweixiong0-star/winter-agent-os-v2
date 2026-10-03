@@ -82,6 +82,53 @@ def _known_title(label: str) -> bool:
     return event_goal.event_id_for_label(label) is not None
 
 
+#: The heading scale ``ocr.py`` uses to tell the active event from a tab that merely
+#: navigates to it.  Copied as a value and not re-derived, because two thresholds for one
+#: question is how a page starts disagreeing with itself.
+HEADING_SCALE = 0.03
+
+
+def _heading_scale_activity(
+    rows: list[tuple[Any, str]], frame_size: tuple[int, int] | None,
+) -> str:
+    """The registered activity this frame is *about*, or "" when it names no page.
+
+    A registered alias is page identity only when the client draws it at heading scale. The
+    real event hub can draw one activity as a small tab while another fills the screen, so a
+    label that is merely present proves navigation rather than identity -- which is why the
+    scale test is part of the question and not a detail.
+
+    Measured 2026-10-03 on the 峡谷会战 detail page: 最强王国 26px (0.0203) is a tab and
+    峡谷会战 47px (0.0367) is the page, so this returns 峡谷会战 and not the tab above it.
+    Across 6 real calendar-grid frames the same test matched none.
+
+    Requires a known frame height rather than assuming one, because a token height with no
+    frame to divide by cannot answer "is this large" -- a wrong scale would make every tab
+    look like a heading.
+    """
+    if not frame_size or frame_size[1] <= 0:
+        return ""
+    titles = [
+        text for _, text in rows
+        if _known_title(text) and _height_text(rows, text) / frame_size[1] >= HEADING_SCALE
+    ]
+    if not titles:
+        return ""
+    # One page names one activity. If the frame somehow carries two at heading scale, the
+    # larger one is the title and the other is a heading beside it; guessing between them
+    # would attribute the page to the wrong event.
+    best = max(titles, key=lambda text: _height_text(rows, text))
+    return best
+
+
+def _height_text(rows: list[tuple[Any, str]], text: str) -> float:
+    """The greatest token height among rows carrying exactly this text."""
+    return max(
+        (_height(token) for token, value in rows if value == text),
+        default=0.0,
+    )
+
+
 def _candidate_title(label: str) -> bool:
     value = re.sub(r"\s+", "", label)
     if not value or value in _NON_EVENT_LABELS or len(value) > 16:
@@ -810,6 +857,53 @@ def read_event_detail(
     A bare date range remains an activity/calendar preview. It is never promoted to a battle
     session or role reservation. Details are attached to a specific event only when its title is
     identified and the frame carries detail or timing language.
+
+    What a page *is* is a separate question from what time it prints, and this function used
+    to answer only the second one.  Measured 2026-10-03 on the live frame
+    ``20261003T060634_登录好礼/drift_00.png`` (the 峡谷会战 detail page, 720x1280): the 20
+    OCR tokens carry ``常规活动``, ``峡谷会战``, ``最强王国``, ``参赛人数：30/30`` three
+    times, ``[DIW]凌霄阁``, tabs ``1``/``2``, the right-hand column ``教学``/``奖励``/
+    ``商店``/``战绩``/``记录``, and ``战斗开始倒计时`` with ``07:53:19`` -- and **not one of
+    the seven labels the predicate required** (活动详情, 活动时间, 开始时间, 结束时间,
+    报名时间, 战斗时间, 开放时间), no 前往, and no date range.  So every branch answered
+    False and the reading was dropped, on a page the client was plainly showing.
+
+    The cost of that was measured too: ``ACTIVITY_STRIP`` advertises ``CANYON_CLASH`` and
+    ``STATE_VS_STATE`` on the strip above the grid, those two are never grid rows, and
+    ``advertised_but_unread_activities`` therefore never emptied, so
+    ``calendar_scan_due`` stayed True and ``DISCOVER_EVENT_CALENDAR`` was re-selected 213
+    times with a median gap of 0.4 minutes.
+
+    So the predicate now also accepts **page identity**: a registered activity alias drawn at
+    heading scale.  ``ocr.py`` has answered that question since it learned to separate the
+    real event hub from a small tab, and its comment states the rule -- a small event tab is
+    navigation, not the active event.  Replayed on the frame above it separates the two
+    strip activities with margin on both sides::
+
+        最强王国  box_h=26.0  26/1280 = 0.0203  -> navigation, not identity
+        峡谷会战  box_h=47.0  47/1280 = 0.0367  -> this is the page's activity
+
+    and across 6 real calendar-grid frames the same test matched 0 of 6, so it does not
+    mistake the grid for a detail page.
+
+    **This uses the scale half of that rule and deliberately not the label half.**
+    ``ocr.py`` also accepts any label listed in
+    ``OCRPageClassifier.EVENT_PAGE_TITLE_LABELS`` (``最强王国``, ``军备竞赛``, ``军备竞演``)
+    at any size, because that classifier only has to answer "is this page an event page".
+    Replayed on the frame above, that wider rule matches **both** 最强王国 (0.0203, in the
+    set) and 峡谷会战 (0.0367, by scale) -- and also ``自`` (0.0430), ``07:53:19`` (0.0312)
+    and ``编队`` (0.0352) by scale.  Naming the page needs exactly one activity, so a rule
+    that can return five answers cannot be used for naming, only for the page's existence.
+    Copying the whole predicate here would have attributed the canyon page to a mixture of
+    labels, so the scale test stands alone.  This was measured, not reasoned about: the
+    wider rule was replayed on the frame before the scale-only rule was written.
+
+    **What it does not do is read a time.**  The countdown on that page is preserved as
+    ``countdown_raw`` / ``unlabeled_timer_raw`` by the code below, which is the same
+    treatment a clock icon with no text label already gets; ``start``/``end`` stay ``None``
+    because the client printed no date range.  That is the line this module has always held
+    -- a preview must never become a battle clock -- and identity is on the safe side of it:
+    it says *which* activity the frame is, never *when* it runs.
     """
     rows = [(token, str(getattr(token, "text", "") or "").strip()) for token in tokens]
     all_text = " ".join(text for _, text in rows)
@@ -837,9 +931,17 @@ def read_event_detail(
             and any(_candidate_title(text) for _, text in rows)
         )
     )
-    if not calendar_score_panel and not explicit_calendar_detail:
+    # Page identity: a registered alias at heading scale. Same rule, same reason, and the
+    # same 0.03 threshold ``ocr.py`` uses for ``Page.EVENT`` -- one criterion, not two.
+    identified_activity = _heading_scale_activity(rows, frame_size)
+    if not calendar_score_panel and not explicit_calendar_detail and not identified_activity:
         return {"kind": "EVENT_DETAIL", "recognized": False, "source": source}
     label = ""
+    if identified_activity:
+        # Prefer the page's own heading over anything found near a date range: on this frame
+        # there is no range at all, and the grid row behind a detail card can be the larger
+        # text, which is the exact confusion the geometric search below exists to avoid.
+        label = identified_activity
     if frame_size and frame_size[1] > 0:
         # On a detail card the grid remains visible behind the modal. OCR may read a lower
         # calendar row more clearly than the title in the card, so the globally largest title
