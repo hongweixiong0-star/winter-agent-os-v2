@@ -1,0 +1,59 @@
+{
+  "task_id": "daily-training-collect-observation",
+  "generated_at": "2026-10-03T09:35:03.100562+00:00",
+  "production": {
+    "state": "IDLE",
+    "page": "MARCH",
+    "worker_exits": 19
+  },
+  "window_24h": {
+    "steps": 3488
+  },
+  "finding": {
+    "summary": "训练完成收取的整条执行链在代码里完整存在，但真机从未出现过可收状态，因此该能力 24h 内 0 次被使用",
+    "implemented_but_never_used": [
+      "COLLECT_TRAINING_BATCH",
+      "COLLECT_FINISHED_TRAINING_SHIELD",
+      "COLLECT_FINISHED_TRAINING_MARKSMAN",
+      "COLLECT_FINISHED_TRAINING_LANCER"
+    ],
+    "training_page_steps_24h": 40,
+    "frames_with_status_COMPLETED": 0,
+    "decision_reasons_mentioning_claim_or_completed": 0,
+    "root_cause": "观测层未读到训练完成态；不是能力缺失（verifier 与技能都已实现）",
+    "blocked_on": "真机设备被生产 AUTO 占用，未抢设备；需要一次训练完成窗口的定向观察"
+  },
+  "evidence": {
+    "episodes_24h": 3488,
+    "ocr_source": "winter_agent_v2/ocr.py:1519 设置 claim_button_norm -> status=COMPLETED/claimable=True",
+    "verifier_map": "winter_agent_v2/runtime.py 含 COLLECT_TRAINING_BATCH 与 COLLECT_FINISHED_TRAINING_* 的 verifier 实现"
+  },
+  "rejected_change": {
+    "what": "给 SCHEDULED_* 票挂 READ_TIMER 观测动作",
+    "why_rejected": "READ_TIMER 声明的 TIMER_READ verifier 与其执行路径在代码中不存在，挂了会从\"票不可见\"变成\"票可见但必失败\"",
+    "reverted": true
+  },
+  "still_losing_progress": [
+    {
+      "item": "20 张 SCHEDULED_* 活动票全部 UNKNOWN + 零技能",
+      "risk": "限时活动窗口错过",
+      "layer": "observation 路径缺失"
+    },
+    {
+      "item": "训练完成收取 24h 内 0 次",
+      "risk": "训练队列完成后空转、兵力不补充",
+      "layer": "观测层未读到 COMPLETED"
+    },
+    {
+      "item": "CLEAR_INTEL 被选 504 次仅 2 次真进展",
+      "risk": "情报链空跑",
+      "layer": "调度/页归属"
+    },
+    {
+      "item": "KEEP_TRAINING_PRODUCTIVE 与 KEEP_BUILDING_PRODUCTIVE 各 0 真进展",
+      "risk": "训练/建筑队列空转",
+      "layer": "遗留通用目标被死锁"
+    }
+  ],
+  "next": "训练完成收取的定向真机观察（在训练完成窗口内读一次 training.status）"
+}
