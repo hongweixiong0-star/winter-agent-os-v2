@@ -7123,7 +7123,16 @@ class ControlPanel:
         removed = prune_runtime_screenshots(
             CAPTURE_ROOT,
             max_count=int(policy.get("max_screenshots", 500)),
-            ttl_days=int(policy.get("screenshot_ttl_days", 14)),
+            ttl_days=int(policy.get("screenshot_ttl_days", 3)),
+            # Evidence gets a lifetime, not an exemption.  "Never prune a cited frame" reads
+            # safe and accumulates for ever, because the cited set only grows; measured
+            # 2026-10-03 that alone held 20,340 frames.  30 days matches the operator's rule
+            # for frames a Verifier or Candidate points at.  Absent from an older config, the
+            # old exclude-outright behaviour is kept rather than guessed at.
+            referenced_ttl_days=(
+                int(policy["referenced_ttl_days"])
+                if "referenced_ttl_days" in policy else None
+            ),
         )
         if removed:
             self._append(f"磁盘保护：已清理 {len(removed)} 张过期或超额运行截图。")

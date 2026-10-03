@@ -131,24 +131,44 @@ def select_prunable_screenshots(
     ttl_days: int,
     now: datetime | None = None,
     referenced: set[Path] | None = None,
+    referenced_ttl_days: int | None = None,
 ) -> list[Path]:
     """Return prune candidates without deleting them.
 
-    Only files that are neither location-protected nor referenced by the episode
-    stream participate in either the TTL or the count budget, so the ``max_count``
-    ceiling applies to the rotating runtime captures rather than to reviewed
-    templates or live proofs.
+    Two retention tiers, because a frame an episode cites and a frame that was only
+    glanced at are not the same object:
+
+    * an unreferenced capture is a working frame -- it was read once and its content is already
+      in the episode -- so it lives ``ttl_days``;
+    * a referenced frame is evidence for a finished step, so it lives ``referenced_ttl_days``.
+
+    ``referenced_ttl_days=None`` keeps the older behaviour of excluding cited frames from
+    pruning entirely.  That reading is wrong in the long run and was the second half of why the
+    trees reached 33 GB: "cited" is a growing set, so a rule that never prunes it accumulates
+    for ever, however good the rate.  Evidence needs a lifetime, not an exemption.
+
+    Only files that are neither location-protected nor (still) inside their reference window
+    participate in either the TTL or the count budget, so the ``max_count`` ceiling applies to
+    the rotating runtime captures rather than to reviewed templates or live proofs.
     """
     current = now or datetime.now(timezone.utc)
     cutoff = current - timedelta(days=ttl_days)
+    ref_cutoff = (current - timedelta(days=referenced_ttl_days)
+                  if referenced_ttl_days is not None else None)
     protected_refs = {path.resolve() for path in (referenced or set())}
     existing = []
     for path in paths:
         if not path.is_file() or _is_protected(path):
             continue
         try:
-            if path.resolve() in protected_refs:
-                continue
+            resolved = path.resolve()
+            if resolved in protected_refs:
+                if ref_cutoff is None:
+                    continue
+                # Referenced, but past its own reference window: eligible like any other
+                # capture, on the same TTL/count budget below.
+                if datetime.fromtimestamp(path.stat().st_mtime, timezone.utc) >= ref_cutoff:
+                    continue
         except OSError:
             continue
         existing.append(path)
@@ -205,11 +225,14 @@ def prune_runtime_screenshots(
     now: datetime | None = None,
     episodes_path: Path | None = None,
     limit: int = MAX_DELETIONS_PER_PASS,
+    referenced_ttl_days: int | None = None,
 ) -> list[Path]:
     """Delete only image files inside one explicitly scoped runtime root.
 
-    Referenced production frames inside that root are excluded, so pruning can
-    never destroy the evidence an episode points at.
+    Referenced production frames inside that root are excluded while they are inside their
+    reference window (``referenced_ttl_days``), so pruning cannot destroy the evidence an
+    episode still relies on -- and cannot keep it for ever either, which is what "excluded
+    outright" did.
 
     ``limit`` bounds one pass.  It is not a nicety: measured 2026-09-18, the panel
     ran unattended for 6h45m and then died because a single prune deleted 50 files
@@ -232,7 +255,8 @@ def prune_runtime_screenshots(
         if path.is_file() and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"}
     ]
     candidates = select_prunable_screenshots(
-        images, max_count=max_count, ttl_days=ttl_days, now=now, referenced=referenced
+        images, max_count=max_count, ttl_days=ttl_days, now=now, referenced=referenced,
+        referenced_ttl_days=referenced_ttl_days,
     )
     removed: list[Path] = []
     for path in candidates:
