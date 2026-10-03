@@ -1929,6 +1929,34 @@ class GoalLibrary:
                     "calendar_read_in_current_frame": True,
                     "calendar_details_are_separate_from_battle_time": True,
                     "activity_times_are_previews": True,
+                    # When this row is the COMPLETE one, the scan is finished and the goal
+                    # answers by leaving.  That answer was unrecordable, and the absence was
+                    # measured 2026-10-03 on live revision 58dccc8b over 174 steps:
+                    #
+                    #   EVENT frames split exactly 19/19.  The 19 carrying
+                    #   ``regular_events_hub`` keep the goal on the board and run
+                    #   OPEN_EVENT_CALENDAR_TAB.  The 19 without it all read entries=5 with
+                    #   details_observed=5 -- this branch, correctly saying the scan is done --
+                    #   after which the goal vanished, because COMPLETE carries no skills and
+                    #   COMPLETE is in NOT_ACTIONABLE, so ``priority`` is ``-inf`` and
+                    #   ``goal_utility.rank`` drops the row.
+                    #
+                    #   That produced a self-erasing cycle instead of a missing feature:
+                    #     HOME --(OPEN_EVENT_CALENDAR_FROM_HOME, gp=True)--> EVENT
+                    #          --(OPEN_EVENT_CALENDAR_TAB)--> CALENDAR_GRID: hub gone, goal gone
+                    #          --(BACK, "leaves_unrelated_event_session")--> HOME, again.
+                    #   19 transitions each way; every navigation step gp=True and every
+                    #   return step worthless.  Each hop was individually correct, which is
+                    #   why no FAIL ever appeared in the ledger and this ran unnoticed.
+                    #
+                    #   The row itself was always correct -- COMPLETE with no price and no
+                    #   skills is exactly right, and pricing it would reopen the panel AUTO
+                    #   just closed.  What was missing is a way to say "asked and answered",
+                    #   which is the same gap ``DISCOVER_QUICK_PANEL_TASKS`` had and the same
+                    #   fix: name the precondition that stopped holding, so "answered" is
+                    #   distinguishable from "never asked" without replaying the frame.
+                    "served_by": (None if status is GoalStatus.READY
+                                  else "every_visible_entry_already_observed"),
                 },
                 distance=0.0,
             ))
