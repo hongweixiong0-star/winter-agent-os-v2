@@ -65,6 +65,7 @@ What this module deliberately does NOT do
 
 from __future__ import annotations
 
+import collections
 import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -76,6 +77,10 @@ from . import entry_badges
 ROOT = Path(__file__).resolve().parents[1]
 ROUTES_PATH = ROOT / "knowledge/strategy/stamina_routes.json"
 STATE_PATH = ROOT / "learning/goal_fairness.json"
+#: Where :func:`_residency_table` learns which page a goal's work happens on.  The live
+#: ledger, which is the same file the operator reads and the only place that records which
+#: skill ran on which page.
+LEDGER_PATH = ROOT / "learning/episodes.jsonl"
 
 #: Ceilings, chosen against the existing price scale rather than picked for roundness.
 #: See the module docstring: each one sits strictly inside a gap that already exists on
@@ -85,6 +90,30 @@ FAIRNESS_OVERDUE_MINUTES = 30.0
 RESOURCE_FIT_BONUS = 40.0
 HISTORY_BONUS = 30.0
 REPEAT_FAILURE_PENALTY = 60.0
+#: What it costs to leave a page we are already standing on, measured 2026-10-03.
+#:
+#: The ping-pong this bounds is not a tie-break wobble; it is a step that buys nothing.
+#: Measured on the live ledger, most recent 400 steps (by ``recorded_at``): 101 of them were
+#: ``OPEN_HOME``/``OPEN_MAP``, and **99 of the 101 landed correctly** -- so navigation is not
+#: broken.  What the next step did is the whole defect:
+#:
+#:   29x  land on HOME from CLEAR_INTEL's ``OPEN_MAP``  -> KEEP_BUILDING_PRODUCTIVE -> ``OPEN_HOME``
+#:   29x  land on MAP  from KEEP_BUILDING's ``OPEN_HOME`` -> CLEAR_INTEL          -> ``OPEN_MAP``
+#:   14x  land on MAP  from KEEP_TRAINING's  ``OPEN_HOME`` -> KEEP_TRAINING      -> ``OPEN_HOME``
+#:
+#: 58 of the 99 (59%) were paid for and then refunded by the reverse hop, and every one of
+#: those steps recorded ``goal_progress=False``.  The agent was not failing to arrive; it was
+#: arriving correctly and then being re-ranked off the page it had just bought, because the
+#: board is re-ranked every step against the frame it stands on and nothing in the price says
+#: "this goal is the reason we are on this page".
+#:
+#: 40 is measured against the same gaps every other ceiling here is measured against.  The
+#: ordinary band runs 70-250 (routine 70-90, an unread visit 180, a measured claim 250), so 40
+#: lets a resident goal overtake another goal of its own class and can never reach a claim, the
+#: bear (1000) or the stamina goal (2450).  It is deliberately *below*
+#: :data:`REPEAT_FAILURE_PENALTY` (60): a goal that is on the right page but failing still
+#: loses to one that is on the wrong page and working, so this cannot reward standing still.
+PAGE_RESIDENCY_BONUS = 40.0
 #: What the client pointing at a goal is worth, and the measurement that fixes it.
 #:
 #: The board's own gaps: ordinary routine work at 70-90, a never-read visit at 180
@@ -383,6 +412,151 @@ def repeat_failure_penalty(row: GoalFairness | None) -> float:
     return -REPEAT_FAILURE_PENALTY * (streak / REPEAT_FAILURE_SATURATES_AT)
 
 
+def _page_name(world: Any) -> str:
+    """The current page as a plain upper-case name, whether it arrives as an enum or a string.
+
+    ``WorldState.page`` is a ``Page`` enum, but this layer is handed ``Any`` and the string form
+    is what a stored ``state_before`` carries (measured 2026-10-03: the ledger's rows hold
+    ``{'page': 'HOME'}``, not an enum).  Reading only ``.value`` would answer "" for every
+    ledger-shaped frame and the term would be silently inert -- the same failure
+    ``observation_ticket`` documents below.  Both forms are accepted; an unrecognised object
+    is "" rather than a guess.
+    """
+    page = getattr(world, "page", None)
+    if page is None:
+        return ""
+    return str(getattr(page, "value", page) or "").strip().upper()
+
+
+#: Skills that only ever change which page we stand on, and so can never make a goal
+#: "resident" anywhere.  Named from the registry's own two page hops rather than invented:
+#: ``runtime.PAGE_HOPS_THAT_ONLY_LOOK_FOR_GOALS`` already says these two exist for looking.
+#:
+#: Why they must be excluded, measured 2026-10-03 on the live ledger: ``Skill.required_page``
+#: is the page a skill may be *fired from*, not the page it makes progress on, and for these
+#: two it reads backwards -- ``OPEN_HOME`` declares ``MAP`` and ``OPEN_MAP`` declares ``HOME``,
+#: because each is the control you press on the *other* page.  Left in, they hand every
+#: goal a residency bonus for the page it is trying to leave.  Confirmed in the same window:
+#: ``OPEN_MAP`` ran 108 times from HOME and ``OPEN_HOME`` 96 times from MAP, so this is where
+#: the traffic actually is, not a corner case.
+NAVIGATION_SKILL_IDS = frozenset({"OPEN_HOME", "OPEN_MAP"})
+
+#: How much of a goal's own work has to happen on one page before that page counts as its home.
+#:
+#: Half, and half is measured rather than chosen.  On the last 2000 ledger steps:
+#:
+#:   DISCOVER_QUICK_PANEL_TASKS  HOME 231/231 = 100%
+#:   MAIL_ROUTINE                MAIL  32/42  =  76%
+#:   KEEP_BUILDING_PRODUCTIVE    HOME  45/98  =  46%
+#:   CLEAR_INTEL                 MAP   53/242 =  22%   (POPUP 30%, INTEL 28%)
+#:   AVOID_STAMINA_WASTE         MAP  104/337 =  31%   (EVENT 42%)
+#:
+#: The split that matters is not the percentage but the shape: a page-specific goal is nearly
+#: all on its page, while a goal that ping-pongs is spread thin across many.  A share-only rule
+#: would have to sit below 22% to exclude ``CLEAR_INTEL`` and would then also admit pages where
+#: a goal merely passes through, so the test is **both** a majority and a minimum count --
+#: a page must be where this goal usually is, and it must be a page this goal has actually
+#: done something on more than once.  One lucky step is not a home.
+RESIDENCY_PAGE_SHARE = 0.5
+RESIDENCY_PAGE_MIN_STEPS = 5
+
+#: The measured table, built once per process.  ``None`` means "not measured yet", which is
+#: deliberately distinct from ``{}`` ("measured, and nothing qualifies"): the first pays the
+#: ledger scan, the second short-circuits it.
+_RESIDENT_PAGES: dict[str, frozenset] | None = None
+
+
+def _residency_table(ledger_path: Path | None = None) -> dict[str, frozenset]:
+    """``{goal_id: {pages its work happens on}}``, measured from the production ledger.
+
+    A capability is *not* a property of a name: ``CLEAR_INTEL`` and ``KEEP_TRAINING_PRODUCTIVE``
+    both appear on both pages, and only which skill ran there separates them.  So this reads
+    the same rows the operator reads -- ``skill`` together with ``state_before.page`` -- and
+    drops the navigation hops, because a page you visited in order to leave it is not a page
+    you live on.  A page then has to be a *habitual* page (:data:`RESIDENCY_PAGE_SHARE` of this
+    goal's steps, at least :data:`RESIDENCY_PAGE_MIN_STEPS` of them) rather than anywhere the
+    goal has ever been seen once.
+
+    An empty result is not a failure to be papered over.  If the ledger cannot be read the
+    table is empty, every goal scores 0, and the board is ranked exactly as it was before
+    this term existed -- which is the correct direction for a term whose whole purpose is to
+    avoid inventing facts.
+    """
+    global _RESIDENT_PAGES
+    if _RESIDENT_PAGES is not None and ledger_path is None:
+        return _RESIDENT_PAGES
+
+    counts: dict[str, collections.Counter] = {}
+    source = LEDGER_PATH if ledger_path is None else Path(ledger_path)
+    try:
+        with source.open(encoding="utf-8") as handle:
+            for line in handle:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                goal_id = str(row.get("goal_id") or "")
+                skill = str(row.get("skill") or "")
+                before = row.get("state_before")
+                page = str(before.get("page") or "") if isinstance(before, dict) else ""
+                if (goal_id and page and skill
+                        and skill not in NAVIGATION_SKILL_IDS
+                        and page not in {"UNKNOWN", "LOADING", "MAINTENANCE"}):
+                    counts.setdefault(goal_id, collections.Counter())[page] += 1
+    except OSError:
+        counts = {}
+
+    table: dict[str, frozenset] = {}
+    for goal_id, pages in counts.items():
+        total = sum(pages.values())
+        if total < RESIDENCY_PAGE_MIN_STEPS:
+            continue
+        habitual = frozenset(
+            page for page, seen in pages.items()
+            if seen >= RESIDENCY_PAGE_MIN_STEPS and seen / total >= RESIDENCY_PAGE_SHARE
+        )
+        if habitual:
+            table[goal_id] = habitual
+    if ledger_path is None:
+        _RESIDENT_PAGES = table
+    return table
+
+
+def page_residency(world: Any, skills: Iterable[str], goal_id: str = "") -> float:
+    """What it is worth that the page this goal needs is the page we are already on.
+
+    The scheduler re-ranks the whole board on **every step**, against the frame the agent is
+    standing on (operator §四/§五).  That is the right design and it is also, by itself, a
+    ping-pong generator: nothing in the price records *why* the agent came to this page, so a
+    goal that just paid for a hop can be priced off it one step later by a goal of equal worth
+    that wants the other page.  Both then alternate forever, and every hop is individually
+    correct.
+
+    This is the term that says the page was not free.  It is bounded, it only ever *adds* to a
+    goal that is already selectable, and :data:`PAGE_RESIDENCY_BONUS` is held under
+    :data:`REPEAT_FAILURE_PENALTY` so a resident-but-failing goal still loses to a visitor
+    who can actually work -- this prices being here, never being stuck here.
+
+    Zero is the honest answer in every other case: an unnamed or transient page, no world, no
+    skills, a goal with no measured page of its own, or a goal whose only page here was a
+    navigation hop.  "We are not on its page" is never penalised; the reverse hop is priced by
+    the goal that is standing here, which is the side that already paid.
+    """
+    del skills  # the goal's own measured pages are the answer; see _residency_table
+    if world is None or not goal_id:
+        return 0.0
+    page = _page_name(world)
+    if not page or page in {"UNKNOWN", "LOADING", "MAINTENANCE"}:
+        return 0.0
+    if page in _residency_table().get(str(goal_id), ()):
+        return PAGE_RESIDENCY_BONUS
+    return 0.0
+
+
+
 def red_dot_bonus(world: Any, goal_id: str) -> tuple[float, tuple[str, ...]]:
     """The client is pointing at this goal: a bounded bonus, and which entries say so (§二②).
 
@@ -527,6 +701,11 @@ class UtilityBreakdown:
     repeat_failure: float = 0.0
     red_dot: float = 0.0
     event_readiness: float = 0.0
+    #: The page this goal needs is the page we are already standing on, so a hop is not paid
+    #: for a second time.  See :func:`page_residency` for the measurement that made it
+    #: necessary and :data:`PAGE_RESIDENCY_BONUS` for why it is bounded under the failure
+    #: penalty.
+    page_residency: float = 0.0
     #: Set when this goal could not run at all and was priced by an observation ticket instead.
     #: In that case it **equals** ``base`` -- recorded separately only so the decision log can say
     #: so, rather than leaving the reader to infer it from an empty ``available_skills`` list.
@@ -540,12 +719,13 @@ class UtilityBreakdown:
     @property
     def total(self) -> float:
         return (self.base + self.fairness + self.resource + self.history
-                + self.repeat_failure + self.red_dot + self.event_readiness)
+                + self.repeat_failure + self.red_dot + self.event_readiness
+                + self.page_residency)
 
     @property
     def dynamic(self) -> float:
         return (self.fairness + self.resource + self.history + self.repeat_failure
-                + self.red_dot + self.event_readiness)
+                + self.red_dot + self.event_readiness + self.page_residency)
 
     def as_row(self) -> dict[str, Any]:
         return {
@@ -558,6 +738,7 @@ class UtilityBreakdown:
             "red_dot": round(self.red_dot, 1),
             "red_dot_on": list(self.red_dot_on),
             "event_readiness": round(self.event_readiness, 1),
+            "page_residency": round(self.page_residency, 1),
             "observation": round(self.observation, 1),
             "dynamic": round(self.dynamic, 1),
             "total": round(self.total, 1),
@@ -578,6 +759,8 @@ class UtilityBreakdown:
             parts.append(f"red-dot {self.red_dot:+.1f} on {'/'.join(self.red_dot_on)}")
         if self.event_readiness:
             parts.append(f"event-readiness {self.event_readiness:+.1f}")
+        if self.page_residency:
+            parts.append(f"page-residency {self.page_residency:+.1f} (already standing on its page)")
         if self.observation:
             parts.append(f"observation-ticket {self.observation:.1f} (unrunnable, nothing learned "
                          f"yet -- the ticket is the base, not an extra term)")
@@ -620,6 +803,8 @@ def utility(
         red_dot=dot,
         red_dot_on=dot_entries,
         event_readiness=max(0.0, float(event_readiness)),
+        page_residency=(page_residency(world, skills, str(goal.goal_id))
+                        if world is not None else 0.0),
         observation=ticket,
     )
 
