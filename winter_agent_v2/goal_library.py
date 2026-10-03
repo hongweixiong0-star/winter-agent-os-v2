@@ -295,6 +295,31 @@ _WINDOW_STATUS: dict[event_goal.WindowState, GoalStatus] = {
     event_goal.WindowState.UNKNOWN: GoalStatus.UNKNOWN,
 }
 
+#: The one action an activity ticket may carry while it is still waiting to be read.
+#:
+#: Measured 2026-10-03 on the 24 hours ending then: all 20 SCHEDULED_* tickets were selected
+#: 121 times and 284 decisions named one as the winner, and the skills they actually ran were
+#: OPEN_MAP 38, INTEL_HERO_DISPATCH 26, START_GATHER 15, SUBMIT_RESOURCE_SEARCH 14 -- none of
+#: them about the activity.  The cause was not that the tickets were invisible: the
+#: observation ticket prices them (50.0 measured) and ``goal_utility.rank`` keeps any row that
+#: price reaches, so they were on the board.  It was that ``available_skills=()`` left the
+#: brain with nothing to issue, and the generic fallback then ran whatever the page offered.
+#: A ticket that names what it needs to read and carries no way to read it is how a scheduled
+#: observation becomes an unrelated action.
+#:
+#: ``READ_EVENT_CALENDAR`` is the project's own action for this -- ``Action("OBSERVE",
+#: "EVENT_CALENDAR")`` on ``Page.EVENT``, verified by the implemented
+#: ``verify_event_calendar_read``, which passes only on page EVENT plus a recognised calendar
+#: plus at least two distinct date anchors plus at least one entry.  It takes no input and
+#: claims nothing: reading is exactly what a ticket blocked on ``required_observation`` is
+#: allowed to do, and it cannot spend resources, so it cannot become a way to act on an
+#: activity whose live conditions were never read.
+#:
+#: Deliberately **not** ``READ_TIMER``: it looks like a closer fit, but its declared
+#: ``TIMER_READ`` verifier and its execution path do not exist anywhere in the package, so
+#: offering it would turn "no action" into "an action certain to fail".
+_ACTIVITY_OBSERVATION_SKILLS: tuple[str, ...] = ("READ_EVENT_CALENDAR",)
+
 
 def _registered_activity_flow(activity: event_goal.Activity) -> dict[str, Any]:
     """Resolve an activity definition to existing Goal/Skill IDs without making it runnable.
@@ -2091,7 +2116,7 @@ class GoalLibrary:
                 f"SCHEDULED_{activity.event_id}",
                 _WINDOW_STATUS[window],
                 completion=1.0 if window is event_goal.WindowState.EXPIRED else 0.0,
-                available_skills=(),
+                available_skills=_ACTIVITY_OBSERVATION_SKILLS,
                 evidence={
                     **activity.plan(),
                     **registered,
@@ -2123,7 +2148,7 @@ class GoalLibrary:
                 continue
             goals.append(GoalState(
                 f"SCHEDULED_{event_id}", GoalStatus.UNKNOWN,
-                available_skills=(),
+                available_skills=_ACTIVITY_OBSERVATION_SKILLS,
                 evidence={
                     "event_id": event_id,
                     "name": row.get("display_name"),
