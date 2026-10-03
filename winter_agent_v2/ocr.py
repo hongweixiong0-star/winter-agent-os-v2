@@ -5153,9 +5153,46 @@ class HybridVision:
             (primary.research or {}).get("building") == "RESEARCH_LAB"
             and (primary.research or {}).get("menu_open") is True
         )
+        reading = None
         if not is_camp_action_bar and not is_research_lab_action_bar:
-            return None
-        reading = read_selected_building_actions(image_path, self.ocr)
+            # The gate above is deliberately cheap, and it stays cheap -- but on its own it
+            # answers a weaker question than the one being asked.  It asks "does the camp
+            # action bar template match", while this function needs "did the client draw the
+            # bar".  Those differ, and the difference is measurable: on the 2026-10-03
+            # episode ``20261003_202133_286734`` two frames of the same route read almost
+            # identically by OCR -- both print 盾兵营 | 详情 | 训练 | 升级 -- yet the template
+            # matched one and missed the other.  ``read_selected_building_actions`` answers
+            # the second question correctly on BOTH: called directly on each, it returns
+            # 训练 at (0.6743, 0.7156) and (0.6736, 0.7156).  So the miss was never a missing
+            # control; it was the gate refusing to let the reader that can see it run.
+            #
+            # This is the same shape the reader's own docstring records one layer down: the
+            # three templates it replaced (BTN_UPGRADE / BTN_TRAINING_MENU_LABEL /
+            # BTN_OPEN_TRAINING_FROM_CAMP) "all miss this rendering", which is why the route
+            # could not reach a barracks for ten consecutive attempts.  That fix taught the
+            # reader to use the client's words instead of a template; leaving the template as
+            # the *entrance* to that reader re-imposed the same false negative one level up.
+            #
+            # The cost argument that justifies the gate still holds, and is why this does not
+            # simply delete it: OCRService caches by image digest (ocr.py, ``recognize``), and
+            # a HOME frame being classified has already been through ``recognize`` for that
+            # same path, so this second call is a cache hit rather than a second OCR pass.
+            # Only a frame the gate rejected AND that the cache has never seen pays for one,
+            # which is the honest price of asking the stronger question.
+            #
+            # The bar's own three labels are the guard, and all of them are required together:
+            # 训练 alone appears in unrelated task/quest copy, so the pair is what makes this
+            # the selected building's action bar rather than a sentence that happens to
+            # contain the word.  A frame that draws none of them still answers None here --
+            # this loosens which *evidence* can open the reader, not what counts as a bar.
+            loose = read_selected_building_actions(image_path, self.ocr)
+            loose_actions = loose.get("actions") or {}
+            if not ("训练" in loose_actions
+                    and ("详情" in loose_actions or "升级" in loose_actions)):
+                return None
+            reading = loose
+        if reading is None:
+            reading = read_selected_building_actions(image_path, self.ocr)
         actions = reading.get("actions") or {}
         camp = str(reading.get("camp") or "")
         train_norm = actions.get("训练")
