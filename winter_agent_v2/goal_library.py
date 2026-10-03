@@ -674,7 +674,23 @@ TRAINING_SWEEP = PanelRoutine(
     "KEEP_TRAINING_PRODUCTIVE", "training",
     work=("IDLE", "AVAILABLE"), done=("IN_PROGRESS", "QUEUE_FULL"),
     work_skills=("TRAIN_TROOPS",),
-    entry_skill="TRY_ORDINARY_CONTROL",
+    # The step goes to the training page, not to a generic control.  Measured 2026-10-03 on
+    # the live ledger: this ticket was selected 561 times and did ``OPEN_HOME`` 425 of them,
+    # never training once and never reporting ``goal_progress``; 60% of HOME frames carry no
+    # ``camps`` reading, and coming home does not produce one, so the loop sustained itself.
+    # Its whole purpose is "go and look at the page that answers this goal", and a generic
+    # control resolves to a page that cannot.
+    #
+    # ``OPEN_INFANTRY_TRAINING`` is the measured answer rather than an assumed one: 57 live
+    # attempts, 57 SUCCESS, and every after-frame carried the reading that was missing
+    # (``{"MARKSMAN_CAMP": {"status": "AVAILABLE", "queue_available": true, ...}}``), which is
+    # what promotes this family from the single coarse ticket to the per-camp goals.
+    #
+    # It stays a fallback: ``discovery_value=SWEEP_NEVER_VALUE`` is below
+    # ``TRAINING_CAMP_VALUE``, so a camp with live work still outranks the visit, and
+    # ``_append_camp_training_goals`` keeps the whole family off this ticket whenever a
+    # ``camps`` reading exists.
+    entry_skill="OPEN_INFANTRY_TRAINING",
     # Keep the unobserved-page visit in the sweep rotation. A live free/finished
     # camp still gets TRAINING_CAMP_VALUE in _append_camp_training_goals.
     discovery_value=SWEEP_NEVER_VALUE,
