@@ -4662,6 +4662,43 @@ class LiveRuntime:
             return True
         return False
 
+    def _retire_superseded(self, path, *, superseded_by: str) -> None:
+        """Drop a capture another observation has just replaced.
+
+        Measured 2026-10-03: the capture trees held 61,082 frames / 40 GB, of which
+        ``after_settle_retry`` (3,652) and ``after_refresh_N`` (4,455) are frames no episode can
+        cite.  The reason is structural rather than accidental -- each of them is written and
+        then immediately superseded:
+
+        * ``settle_retry`` fires only when the first post-action frame is *unchanged*
+          (``frame_changed`` is False), so that first frame and the retry are the same picture;
+        * ``refresh_N`` is superseded by ``refresh_{N+1}`` in the loop at the end of the step.
+
+        Only the last of each chain is adopted -- ``after_path`` is what the episode records --
+        so everything earlier is dead on arrival.  Deleting them here is the production-side
+        half of the disk fix: retention can only drain what is written, and these are written
+        purely to be replaced.
+
+        The count is what makes this safe against the host's bulk-delete guard: a round produces
+        about 5 of these (3,652 + 4,455 across 1,647 rounds), far under the threshold of 50 that
+        killed the panel on 2026-09-18.  This is not a sweep; it is refusing to keep a picture
+        that a newer one already replaced.
+
+        Never deletes the frame the step will record, and never deletes ``before_path``: the
+        caller passes only what it is about to stop using.
+        """
+        candidate = getattr(path, "name", None)
+        if not candidate or not str(superseded_by):
+            return
+        try:
+            target = Path(path)
+            if target.name and target.is_file():
+                target.unlink(missing_ok=True)
+        except OSError:
+            # Losing a discard never ends a step; the frame simply lives until retention
+            # reaches it, which is the state this method exists to shorten, not to require.
+            pass
+
     def _capture_path(self, index: int, stage: str, *, suffix: str = "") -> Path:
         """Build the canonical screenshot name for one step.
 
@@ -9750,6 +9787,11 @@ class LiveRuntime:
                 latency["capture_ms"] = (latency.get("capture_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
                 if self._device_lost(self.device.screenshot, retry_path):
                     return finish(self._device_stop_reason)
+                # The retry supersedes the frame it was taken to replace.  ``retry`` only fires
+                # when the first frame equalled ``before_path``, so dropping it loses nothing an
+                # episode could cite.
+                if str(after_path) != str(before_path):
+                    self._retire_superseded(after_path, superseded_by="settle_retry")
                 after_path = retry_path
             latency["settle_ms"] = latency["settle_first_wait_ms"] + latency["settle_retry_wait_ms"]
             phase_started = time.monotonic()
@@ -9774,6 +9816,10 @@ class LiveRuntime:
                 after = self._observe(recovery_path, latency=latency, phase="recovery")
                 if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                     after = replace(after, resource_target=planned_resource)
+                # The recovery frame supersedes whatever the step was holding; the episode
+                # records only this last one.
+                if str(after_path) != str(before_path):
+                    self._retire_superseded(after_path, superseded_by="payment_offer_closed")
                 after_path = recovery_path
             after = self._reject_a_dropped_digit(after)
             goals_after = self._record_goals(after, frame=after_path)
@@ -9799,6 +9845,10 @@ class LiveRuntime:
                 refresh_path = self._capture_path(index, "after", suffix=f"refresh_{refresh}")
                 if self._device_lost(self.device.screenshot, refresh_path):
                     return finish(self._device_stop_reason)
+                # Each refresh supersedes the previous refresh frame; only the last one becomes
+                # ``after_path`` and reaches the episode.  Without this the whole chain is kept.
+                if str(after_path) != str(before_path):
+                    self._retire_superseded(after_path, superseded_by=f"refresh_{refresh}")
                 after = self._observe(refresh_path, latency=latency, phase="refresh")
                 if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                     after = replace(after, resource_target=planned_resource)
