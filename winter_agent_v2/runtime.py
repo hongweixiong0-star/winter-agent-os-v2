@@ -4272,12 +4272,39 @@ class LiveRuntime:
             )
 
     def _save_fairness(self) -> None:
+        """Write the fairness ledger, and say so when it declines to.
+
+        Both failure shapes here used to be silent, and the silence is what made this
+        undiagnosable.  Measured 2026-10-03: ``learning/goal_fairness.json`` had not been
+        written since ``2026-10-02T17:08:04Z`` while production kept running and
+        ``episodes.jsonl`` kept growing, so every ``fairness_bonus`` was computed from a
+        day-old ledger and the ranking it decides had been quietly frozen.  Nothing anywhere
+        said "the ledger was not written" -- ``finish()`` called this and returned a
+        ``LiveRun`` that looked completely normal.
+
+        The two ways this can skip are therefore both recorded rather than just taken:
+
+        * the multi-role identity gate, which exists so a run cannot attribute progress to a
+          role it has not confirmed -- a real reason, but it must be readable;
+        * a write error, which the "a ledger write must never fail a run" comment has always
+          swallowed.
+
+        Both go to the same place the rest of this class of answer goes: the runtime snapshot,
+        which is what the panel and the escalation hook read.  ``deferred_goals`` already
+        lives there, and this is the same kind of statement -- "why is this run not doing X".
+        """
+        skipped = ""
         if self._multi_role_enabled and not self._role_identity_confirmed:
-            return
-        try:
-            goal_utility.save(self._fairness, self._fairness_store_path)
-        except Exception:  # noqa: BLE001 - a ledger write must never fail a run
-            pass
+            skipped = "ROLE_IDENTITY_UNCONFIRMED"
+        if not skipped:
+            try:
+                goal_utility.save(self._fairness, self._fairness_store_path)
+                self._runtime(fairness_written_at=datetime.now(timezone.utc).isoformat())
+                return
+            except Exception as exc:  # noqa: BLE001 - a ledger write must never fail a run
+                skipped = f"WRITE_FAILED:{type(exc).__name__}"
+        self._runtime(fairness_written_at="", fairness_write_skipped=skipped)
+        print(f"[fairness] ledger not written: {skipped}", flush=True)
 
     def _observe(self, frame_path: Path, *, latency: dict | None = None, phase: str = "before",
                  widen: bool = False) -> "WorldState":

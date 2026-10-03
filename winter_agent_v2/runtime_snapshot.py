@@ -66,6 +66,14 @@ class RuntimeSnapshot:
     # this field was silently dropped, so the one place an operator looks to ask "why
     # is AUTO not doing that" would have said nothing.
     deferred_goals: list[dict[str, Any]] = field(default_factory=list)
+    # When ``learning/goal_fairness.json`` was last written by this run, or why it was not.
+    # Declared for the same reason as ``deferred_goals`` above, after the same failure: the
+    # ledger silently stopped being written on 2026-10-02 (measured: unchanged since
+    # ``2026-10-02T17:08:04Z`` while ``episodes.jsonl`` kept growing), every
+    # ``fairness_bonus`` kept being computed from a day-old file, and nothing recorded that
+    # the ranking input had frozen.  A skipped write now says which of the two reasons it was.
+    fairness_written_at: str = ""
+    fairness_write_skipped: str = ""
     capability_discovery: list[dict[str, Any]] = field(default_factory=list)
     updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
