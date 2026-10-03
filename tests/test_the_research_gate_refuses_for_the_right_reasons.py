@@ -122,6 +122,104 @@ class TheGateReadsTheFieldTheRegistryActuallyUsesTests:
         assert state is not None and state["ok"] is False
 
 
+class TheRuleLandsWithoutASecondSystemTests:
+    """Every clause of the supplied rule must resolve to something already in the tree.
+
+    The rule names concepts the project had never used -- IRREVERSIBLE_ACTIONS,
+    EXTERNAL_FAST_TRACK_STEP, PERMANENTLY_BLOCKED, a three-step slowdown ladder.  Recording
+    them as prose would be a second source of truth for facts the tree already owns, so each
+    one is either pointed at its existing home or written down as genuinely new.
+    """
+
+    def _charter(self):
+        import json
+
+        return json.loads(
+            (Path(__file__).resolve().parents[1] / "knowledge/research/RESEARCH_CHARTER.json")
+            .read_text(encoding="utf-8"))
+
+    def test_the_two_reusable_fallbacks_point_at_existing_mechanisms(self):
+        """Money and slowdown already exist; the charter must say so rather than restate."""
+        fb = self._charter()["three_fallbacks"]
+        assert "ALREADY EXISTS" in fb["fallback_2_real_money"]["project_landing"]
+        assert "ALREADY EXISTS" in fb["fallback_3_failure_slowdown"]["project_landing"]
+        assert "repeat_failure_penalty" in fb["fallback_3_failure_slowdown"]["project_landing"]
+
+    def test_the_one_genuinely_new_fallback_is_marked_new(self):
+        """Reversibility had no home; saying so is what stops it being quietly assumed."""
+        fb = self._charter()["three_fallbacks"]
+        assert "NEW" in fb["fallback_1_reversibility"]["project_landing"]
+
+    def test_the_instruction_was_reviewed_before_being_adopted(self):
+        """§三·八 applies to operator directives too, and the review must be inspectable."""
+        review = self._charter()["instruction_review"]
+        assert review["verdict"].startswith("ACCEPTED")
+        assert len(review["alignments"]) == 3
+        # The failure-distrust clause is the one that needed narrowing; its alignment must
+        # state the narrowing rather than silently drop the clause.
+        points = " ".join(a["point"] for a in review["alignments"])
+        assert "资料不可信" in points
+
+    def test_the_two_ladders_are_declared_equivalent_not_competing(self):
+        """EXTERNAL_HYPOTHESIS/OBSERVED/CONFIRMED vs DISCOVERED/REVIEWED/VERIFIED."""
+        kp = self._charter()["knowledge_promotion"]
+        mapping = kp["knowledge_gate_mapping"]
+        assert mapping["EXTERNAL_HYPOTHESIS"] == "DISCOVERED"
+        assert mapping["OBSERVED"] == "REVIEWED"
+        assert mapping["CONFIRMED"] == "VERIFIED"
+
+
+class TheRuntimeStaysOfflineTests:
+    """The no-network rule is scanned, and a local model over loopback is not a violation."""
+
+    def test_a_loopback_endpoint_is_not_treated_as_reaching_outside(self):
+        from tools.research_gate import _endpoints_in, _LOOPBACK_MARKERS
+
+        eps = _endpoints_in('DEFAULT_ENDPOINT = "http://127.0.0.1:18080"')
+        assert eps == ["http://127.0.0.1:18080"]
+        assert all(any(m in ep for m in _LOOPBACK_MARKERS) for ep in eps), (
+            "the local UI-Venus service is what the rule requires for an unknown frame; "
+            "calling it a violation would make the gate a wall"
+        )
+
+    def test_the_real_runtime_is_reported_as_loopback_only(self):
+        """Live check, not a fixture: this is the state of winter_agent_v2/ right now."""
+        report = build_report("goal", "CLEAR_INTEL")
+        check = _check(report, "RUNTIME_HAS_NO_NETWORK")
+        assert check["ok"] is True, check["detail"]
+        assert "loopback only" in check["detail"], check["detail"]
+
+    def test_an_external_endpoint_would_be_reported(self):
+        """The permissive direction is the dangerous one here, so it is pinned."""
+        from tools.research_gate import _endpoints_in, _LOOPBACK_MARKERS
+
+        eps = _endpoints_in('ENDPOINT = "https://api.example.com/v1"')
+        external = [ep for ep in eps
+                    if not any(m in ep for m in _LOOPBACK_MARKERS)]
+        assert external == ["https://api.example.com/v1"], (
+            "a non-loopback address must not be absorbed by the loopback exemption"
+        )
+
+
+class TheSearchMustProduceSomethingTests:
+    def test_an_entity_with_no_output_anywhere_is_not_allowed_to_start(self):
+        report = build_report("goal", "NO_SUCH_GOAL_XYZ")
+        check = _check(report, "SEARCH_OUTPUTS_RECORDED")
+        assert check is not None and check["ok"] is False, check
+
+    def test_a_researched_entity_shows_which_outputs_it_produced(self):
+        report = build_report("goal", "CLEAR_INTEL")
+        check = _check(report, "SEARCH_OUTPUTS_RECORDED")
+        assert check["ok"] is True
+        assert "知识摘要" in check["detail"], check["detail"]
+
+    def test_an_unhandled_risk_does_not_count_as_an_output(self):
+        """Otherwise a round could pass by saying nothing about risk anywhere."""
+        report = build_report("goal", "NO_SUCH_GOAL_XYZ")
+        assert _check(report, "SEARCH_OUTPUTS_RECORDED")["ok"] is False
+        assert report.verdict == "BLOCKED_UNSAFE"
+
+
 class TheCharterIsMachineReadableTests:
     def test_the_charter_parses_and_declares_its_sections(self):
         import json

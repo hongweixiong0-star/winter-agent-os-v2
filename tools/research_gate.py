@@ -241,6 +241,128 @@ def check_risk(report: Report, *needles: str) -> None:
                    blocking=not handled)
 
 
+def check_search_outputs(report: Report, *needles: str) -> None:
+    """The rule's 'searched but produced nothing is not allowed'.
+
+    Five outputs count: a knowledge digest, a hypothesis list, a verification path, a risk
+    boundary, an unknown/GAP list.  They are not five separate files -- the tree already has a
+    home for each (provenance for the digest, conflicts.json for hypotheses that disagree,
+    events//game//strategy for the mechanism, the charter's risk classes, pipeline_gap_queue for
+    GAPs).  Requiring a *new* store for them would be the second-source-of-truth the charter
+    forbids, so this asks whether any of the existing homes has something to show.
+
+    Risk is deliberately excluded from the qualifying set: an unhandled risk class is a
+    refusal (see check_risk), not an output, and letting it count would let a round pass by
+    saying nothing anywhere.
+    """
+    produced = []
+    for check_id, label in (("SOURCE_RECORDED", "知识摘要"),
+                            ("MECHANISM_KNOWLEDGE", "验证路径")):
+        c = next((x for x in report.checks if x["check"] == check_id), None)
+        if c is not None and c["ok"]:
+            produced.append(label)
+    # The hypothesis list is a *recorded disagreement*, not the absence of one.
+    # ``CONFLICTS_TRIAGED`` is True when nothing disagrees -- correct for its own purpose, but
+    # counting it here let an entity nothing is known about satisfy "produced something".
+    if _conflict_named(*needles):
+        produced.append("假设清单")
+    if _gap_recorded(*needles):
+        produced.append("未知清单")
+    report.add(
+        "SEARCH_OUTPUTS_RECORDED", bool(produced),
+        "produced: " + ", ".join(produced) if produced else
+        "none of the five required outputs exists -- no digest, no hypothesis list, no "
+        "verification path, no GAP record; the rule forbids starting development from here",
+    )
+
+
+def _conflict_named(*needles: str) -> bool:
+    """Is there a recorded disagreement naming this entity?
+
+    A hypothesis list is evidence of having searched: it means two sources disagreed about
+    this specific thing.  The absence of conflict is not evidence of anything.
+    """
+    doc = _load(KNOWLEDGE / "provenance" / "conflicts.json") or {}
+    return any(_mentions(c, *needles) for c in (doc.get("conflicts") or []))
+
+
+def _gap_recorded(*needles: str) -> bool:
+    """Is there a GAP/debt entry naming this entity?"""
+    for path, doc in _iter_json(KNOWLEDGE / "execution"):
+        if path.name == "pipeline_gap_queue.json" and _mentions(doc, *needles):
+            return True
+    for path, doc in _iter_json(KNOWLEDGE / "strategy"):
+        if path.name == "capability_debt_queue.json" and _mentions(doc, *needles):
+            return True
+    return False
+
+
+#: Modules that can reach the network.  The rule forbids Runtime from reaching the *outside*.
+_NETWORK_MODULES = ("requests", "urllib", "httpx", "aiohttp", "socket", "http.client",
+                    "websocket", "webbrowser")
+
+#: An address that is this machine talking to itself.  Calling a local model over loopback is
+#: what the rule *requires* for an unknown frame ("走本地 UI-Venus"), so a file whose every
+#: endpoint is loopback is not a violation -- and a check that called it one would be a wall.
+#: Measured on winter_agent_v2/local_gui_model.py, which serves UI-Venus at 127.0.0.1:18080.
+_LOOPBACK_MARKERS = ("127.0.0.1", "localhost", "::1", "[::1]")
+
+
+def _endpoints_in(text: str) -> list[str]:
+    """Every URL/endpoint literal the file mentions."""
+    found = []
+    for token in text.replace('"', " ").replace("'", " ").split():
+        if "://" in token:
+            found.append(token.strip("(),"))
+    return found
+
+
+def check_runtime_has_no_network(report: Report) -> None:
+    """Runtime must not reach outside; a local model over loopback is required, not banned.
+
+    Scanned rather than declared, because 'we will not add networking' is exactly the kind of
+    statement that stops being true silently.  The scan covers ``winter_agent_v2/`` only: that
+    package is what runs unattended against the client, while a tool under ``tools/`` may
+    legitimately fetch.
+
+    A network import is only reported when the file also names a non-loopback endpoint, or
+    names none at all -- because a socket with no address literal cannot be shown to be local,
+    and the honest answer there is "cannot tell from this file" rather than "fine".
+    """
+    external, local, unproven = [], [], []
+    for path in sorted((ROOT / "winter_agent_v2").rglob("*.py")):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        imports = []
+        for line in text.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            for module in _NETWORK_MODULES:
+                if stripped.startswith("import " + module) or stripped.startswith("from " + module):
+                    imports.append(module)
+        if not imports:
+            continue
+        endpoints = _endpoints_in(text)
+        if not endpoints:
+            unproven.append("%s (%s)" % (path.name, ",".join(sorted(set(imports)))))
+        elif all(any(marker in ep for marker in _LOOPBACK_MARKERS) for ep in endpoints):
+            local.append("%s -> %s" % (path.name, endpoints[0]))
+        else:
+            outside = [ep for ep in endpoints
+                       if not any(marker in ep for marker in _LOOPBACK_MARKERS)]
+            external.append("%s -> %s" % (path.name, outside[0]))
+    ok = not external and not unproven
+    detail = "loopback only: " + ", ".join(local[:3]) if (ok and local) else (
+        "runtime package reaches outside itself: " + ", ".join(external[:3]) if external else
+        "network import with no address literal, so locality cannot be shown: "
+        + ", ".join(unproven[:3]) if unproven else
+        "runtime package imports no network module")
+    report.add("RUNTIME_HAS_NO_NETWORK", ok, detail)
+
+
 def check_no_cross_version_coordinates(report: Report, *needles: str) -> None:
     """A stored absolute point is not a plan; the charter forbids it as an implementation basis."""
     suspicious = []
@@ -313,6 +435,10 @@ def build_report(kind: str, name: str) -> Report:
     check_risk(report, *needles)
     if kind == "event":
         check_event_registry(report, name)
+    # Reads the checks above, so it must run after them.
+    check_search_outputs(report, *needles)
+    # Entity-independent: the rule is about the runtime package as a whole.
+    check_runtime_has_no_network(report)
     return report
 
 

@@ -1,11 +1,10 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "entity_class": "RESEARCH_CHARTER",
   "purpose": "钉死「在做任何游戏智能体的任务 / 活动 / 目标 / 功能之前，必须先调研到什么程度」。本文件回答 BEFORE：该查什么、查到什么算够、怎么把结论变成可执行的决策、以及哪些结论足以阻断实现。",
   "position": "本文件不重复已有真值，只做串联与门禁。它引用 sources.json 的 tier、conflicts.json 的冲突格式、worth_it_rubric.json 的 WHETHER/HOW FAR、coverage/commercial_bot_parity.json 的竞品对标。",
   "single_source_of_truth_rule": "禁止为调研另建第二套来源库 / 优先级体系 / 生命周期。已有资产是唯一真值；本文件只规定「何时必须去读它们、读到什么程度」。",
   "last_reviewed": "2026-10-03",
-
   "triggers": {
     "must_run_before": [
       "新增或修改任何 Skill / Goal / 活动流程 / 定时任务",
@@ -21,7 +20,6 @@
     ],
     "skip_requires": "跳过必须在 episode 或 commit message 里写明依据（哪条反例、哪个已验证结论），不允许静默跳过。"
   },
-
   "coverage_a_information_scope": {
     "note": "四类实体各自必查项不同，按实体选行，不要求全查。空项必须是显式 UNKNOWN，不得留白。",
     "mechanism_principles": {
@@ -74,7 +72,6 @@
       "canonical_landing": "本文件 risks_section · knowledge/failure_patterns/"
     }
   },
-
   "b_filtering_and_priority": {
     "authority_tiers": {
       "note": "复用 provenance/sources.json 的 tier 命名，不新增一套。",
@@ -108,7 +105,12 @@
     "expiry_first": {
       "rule": "会因过期而损失的项目优先调查与实现。",
       "reason": "有窗口的机制错过即永久损失，无窗口的可以后补。",
-      "examples": ["体力领取（新体力挤掉未领的、满格不回）", "限时活动开放窗口", "每日首次折扣", "日重置的任务/次数"]
+      "examples": [
+        "体力领取（新体力挤掉未领的、满格不回）",
+        "限时活动开放窗口",
+        "每日首次折扣",
+        "日重置的任务/次数"
+      ]
     },
     "sufficiency_bar": {
       "note": "「够了」不是主观判断，按下表判定。",
@@ -129,7 +131,6 @@
       ]
     }
   },
-
   "c_translation_to_decisions": {
     "note": "调研结论不得停留在文档。每个结论必须落到四问之一，并指向落点。",
     "mapping": [
@@ -164,54 +165,92 @@
       "每个调研结论都要能回答「这能让游戏多完成哪个真实任务」"
     ]
   },
-
   "d_judgement_dimensions": {
     "note": "决定「做不做、先做谁、做到什么程度」的七个维度。",
     "dimensions": [
-      {"id": "REWARD", "question": "做完能拿到什么，对日产/战力/活动进度的贡献"},
-      {"id": "EXPIRY", "question": "错过是否会永久损失（有窗口的加权最高）"},
-      {"id": "COST", "question": "消耗多少体力/资源/队列/次数，是否稀缺"},
-      {"id": "IRREVERSIBILITY", "question": "做错了能不能回滚"},
-      {"id": "EVIDENCE_STRENGTH", "question": "依据处在哪一级权威，是否有真机帧"},
-      {"id": "IDENTITY_SAFETY", "question": "目标身份能否与同页其它目标稳定区分"},
-      {"id": "PARITY_GAP", "question": "竞品已做而本项目未做 -> 缺口优先级上升"}
+      {
+        "id": "REWARD",
+        "question": "做完能拿到什么，对日产/战力/活动进度的贡献"
+      },
+      {
+        "id": "EXPIRY",
+        "question": "错过是否会永久损失（有窗口的加权最高）"
+      },
+      {
+        "id": "COST",
+        "question": "消耗多少体力/资源/队列/次数，是否稀缺"
+      },
+      {
+        "id": "IRREVERSIBILITY",
+        "question": "做错了能不能回滚"
+      },
+      {
+        "id": "EVIDENCE_STRENGTH",
+        "question": "依据处在哪一级权威，是否有真机帧"
+      },
+      {
+        "id": "IDENTITY_SAFETY",
+        "question": "目标身份能否与同页其它目标稳定区分"
+      },
+      {
+        "id": "PARITY_GAP",
+        "question": "竞品已做而本项目未做 -> 缺口优先级上升"
+      }
     ],
     "resolution_order": "EXPIRY > IRREVERSIBILITY > IDENTITY_SAFETY > EVIDENCE_STRENGTH > REWARD > COST > PARITY_GAP",
     "reason": "会过期的先救；不可逆的先确认安全；身份不能区分的一律不许动手；其余再比收益成本。"
   },
-
   "risks_section": {
     "note": "风险不是备注，是阻断条件。分级决定是否允许实现。",
     "classes": {
       "IRREVERSIBLE_SPEND": {
-        "examples": ["花火晶", "大额加速", "抽卡", "真付费"],
+        "examples": [
+          "花火晶",
+          "大额加速",
+          "抽卡",
+          "真付费"
+        ],
         "default": "BLOCKED —— 默认不做",
         "unblock_requires": "明确的白名单策略（写进 knowledge，说明何时允许、上限多少），且用户知情"
       },
       "ACCOUNT_SAFETY": {
-        "examples": ["异常频率", "第三方接口", "非官方客户端交互"],
+        "examples": [
+          "异常频率",
+          "第三方接口",
+          "非官方客户端交互"
+        ],
         "default": "BLOCKED",
         "unblock_requires": "确认不违反游戏条款，且有节流策略"
       },
       "MISIDENTIFICATION": {
-        "examples": ["把普通异兽当巨熊", "把别的活动入口当成目标", "把非动作条帧当成已选中建筑"],
+        "examples": [
+          "把普通异兽当巨熊",
+          "把别的活动入口当成目标",
+          "把非动作条帧当成已选中建筑"
+        ],
         "default": "BLOCKED until 有反例帧验证",
         "unblock_requires": "至少一个正例帧 + 一个反例帧，且识别判据能区分"
       },
       "WRONG_TIMING": {
-        "examples": ["活动未开就导航", "冷却中重复发起", "体力满格未消耗导致不回"],
+        "examples": [
+          "活动未开就导航",
+          "冷却中重复发起",
+          "体力满格未消耗导致不回"
+        ],
         "default": "ALLOWED with guard —— 允许尝试，但必须有刷新/冷却读取",
         "unblock_requires": "能读到时间或状态字段；读不到就保持 UNKNOWN 并等待"
       },
       "UNKNOWN_MECHANISM": {
-        "examples": ["机制只有单一非权威来源", "社区说法互相矛盾"],
+        "examples": [
+          "机制只有单一非权威来源",
+          "社区说法互相矛盾"
+        ],
         "default": "ALLOWED to observe, BLOCKED to spend",
         "unblock_requires": "按 NOT_ENOUGH_BUT_MAY_PROBE 观察取证，不得执行不可逆动作"
       }
     },
     "pattern_from_this_project": "本项目反复出现的缺陷形状是『证据在帧上，但某个模板门 / 字段名 / 决策分支挡住了消费它的代码』。调研阶段就应专门回答：这个结论会不会被某个更弱的判据挡住？"
   },
-
   "execution_hook": {
     "note": "本规范要能被执行，不是读过就算。",
     "gate": "tools/research_gate.py",
@@ -222,7 +261,11 @@
       "风险类别是否已判定，IRREVERSIBLE_SPEND / MISIDENTIFICATION 是否给出阻断或白名单",
       "是否存在跨版本固定坐标被当作依据"
     ],
-    "gate_verdicts": ["READY", "NEEDS_RESEARCH", "BLOCKED_UNSAFE"],
+    "gate_verdicts": [
+      "READY",
+      "NEEDS_RESEARCH",
+      "BLOCKED_UNSAFE"
+    ],
     "verdict_semantics": {
       "READY": "可以进入实现",
       "NEEDS_RESEARCH": "缺具体调研项，列出缺什么",
@@ -230,7 +273,6 @@
     },
     "evidence_ladder": "UNIT_TEST_PASS < ARCHITECTURE_INVARIANT_PASS < SCHEDULER_SIMULATION_PASS < PRODUCTION_TRIED < MAA_EXECUTED < VERIFIER_PASS < GOAL_PROGRESS < AUTO_CONTINUED —— 调研完成只到「允许实现」，不等于功能完成。"
   },
-
   "anti_patterns": [
     "把「磁盘上有图」当成「识别器会用」",
     "把「下载成功」当成「已真机成功」",
@@ -239,5 +281,253 @@
     "用相似机制的结论补全未观测的机制",
     "调研完成就宣布功能完成（完成 = 真状态变化 + Verifier + episode）",
     "为调研新建第二套来源库或优先级体系"
-  ]
+  ],
+  "sources_of_this_charter": [
+    "Operator-supplied Winter Agent OS V2 知识前置开发规则 (2026-10-03)",
+    "Existing project assets this charter defers to"
+  ],
+  "instruction_review": {
+    "reviewed_at": "2026-10-03",
+    "verdict": "ACCEPTED_WITH_THREE_ALIGNMENTS",
+    "why_not_new_system": "The rule overlaps this charter almost entirely and the rest already exists elsewhere in the tree. A second copy of either would be a second source of truth, which this charter's own single_source_of_truth_rule forbids.",
+    "alignments": [
+      {
+        "point": "单次失败立即降速（三次阶梯）",
+        "conflict": "The project already penalises repeated failure: winter_agent_v2/goal_utility.py repeat_failure_penalty, observed live as 'repeat-failure -60.0', plus cooldown in attempt_controller / capability_gate.",
+        "resolution": "Align, do not add. The three-step ladder is satisfied by the existing penalty + cooldown; a second ladder would double-count the same failure. Only the semantics (record -> cooldown -> verify-first) and the pointer are recorded here."
+      },
+      {
+        "point": "真钱永久禁止 / 钻石与高价值道具未经授权不尝试",
+        "conflict": "None. config/policy_state.json already carries real_money = PERMANENTLY_BLOCKED and a per-goal disabled_goals list.",
+        "resolution": "Point at it. The charter states the rule and names the existing field rather than restating a value that could drift."
+      },
+      {
+        "point": "失败后『标记资料不可信，立即回滚』",
+        "conflict": "Read literally, one failure would discredit a whole source, which can starve a domain of the only evidence it has.",
+        "resolution": "Scoped: distrust is recorded for that claim on that target, never as a blanket ban on the source. Re-verifiable via a fresh frame."
+      }
+    ],
+    "liveness_checks": {
+      "permanent_block_risk": "No step creates a state with no exit: NEEDS_RESEARCH and BLOCKED_UNSAFE both name what would clear them.",
+      "starvation_risk": "High-risk actions remain attemptable during CAPABILITY_EXPANSION, so the rule does not freeze capability growth.",
+      "runtime_safety": "The no-network rule keeps Runtime deterministic; it adds no runtime dependency."
+    }
+  },
+  "search_scope": {
+    "unlimited": true,
+    "note": "No cap on count, sites, duration or language. Search is real work, not idle time.",
+    "allowed": [
+      "官方资料（官网/公告/FAQ/客服文档）",
+      "官方论坛与版本说明",
+      "社区论坛/玩家攻略/Wiki",
+      "视频平台实机演示",
+      "GitHub 同类自动化项目",
+      "模型自身通用知识",
+      "项目内已有 Knowledge / Episode / Skill"
+    ]
+  },
+  "search_outputs_required": {
+    "rule": "搜完不能白搜：必须至少产出下列之一，否则禁止进入开发阶段。",
+    "outputs": [
+      "知识摘要 —— 外部资料整理成可读结论",
+      "假设清单 —— 哪些是猜测、哪些有来源",
+      "验证路径 —— 真机上如何确认",
+      "风险边界 —— 哪些动作花钱、哪些不可逆",
+      "未知清单 —— 搜不到的部分，标记 GAP"
+    ],
+    "on_empty": "若五者皆无 → 不得进入开发阶段（与 violation_rule 一致）。"
+  },
+  "adoption_priority_with_landability": {
+    "note": "外部资料只是假设，不是事实。tier 顺序与 b_filtering_and_priority.authority_tiers 一致，此表补一列能否直接落地。",
+    "rows": [
+      {
+        "rank": 1,
+        "source": "当前真机 fresh 观察",
+        "landable": "可直接落地"
+      },
+      {
+        "rank": 2,
+        "source": "近期真实 Episode + Verifier",
+        "landable": "可直接落地"
+      },
+      {
+        "rank": 3,
+        "source": "项目内 CONFIRMED Knowledge",
+        "landable": "可直接落地"
+      },
+      {
+        "rank": 4,
+        "source": "项目内 OBSERVED Knowledge",
+        "landable": "可直接落地"
+      },
+      {
+        "rank": 5,
+        "source": "官方文档 / 公告",
+        "landable": "需真机验证"
+      },
+      {
+        "rank": 6,
+        "source": "社区攻略 / 论坛",
+        "landable": "需真机验证"
+      },
+      {
+        "rank": 7,
+        "source": "视频演示 / 二手转述",
+        "landable": "只能作方向提示"
+      },
+      {
+        "rank": 8,
+        "source": "模型推测",
+        "landable": "只能作方向提示"
+      }
+    ]
+  },
+  "development_order": {
+    "correct": [
+      "搜索资料",
+      "形成假设",
+      "确定风险边界",
+      "设计最小验证路径",
+      "允许开始落地",
+      "真机尝试",
+      "遇到问题",
+      "更新知识",
+      "再尝试"
+    ],
+    "forbidden": [
+      "先写代码",
+      "上线",
+      "遇到问题",
+      "才去搜资料"
+    ],
+    "note_on_fix_after_ship": "先落地后修正 ≠ 先写代码后搜资料。它的意思是：搜索在前、落地在中（低风险直走/高风险有兜底）、修正在后（记录、更新知识、再尝试）。不是跳过搜索/假设/风险边界直接开写。"
+  },
+  "action_risk_classes": {
+    "low_risk_allow_direct": {
+      "actions": [
+        "OPEN_PAGE",
+        "CLOSE_POPUP",
+        "SCROLL",
+        "BACK",
+        "TAB_SWITCH",
+        "OBSERVE",
+        "FREE_ENTRY",
+        "LOW_RISK_UI_EXPLORATION",
+        "READ"
+      ],
+      "procedure": [
+        "已完成搜索阶段",
+        "AI 判断资料无矛盾",
+        "直接执行",
+        "Generic Verifier 兜底",
+        "成功 → 记录为 EXTERNAL_FAST_TRACK_STEP",
+        "失败 → 标记该资料对该目标不可信，回滚"
+      ],
+      "still_bound_by": "生产宪法第二条：坐标仍只能由当前帧识别产生；低风险不等于可以硬编码。"
+    },
+    "high_risk_attempt_with_fallbacks": {
+      "actions": [
+        "SPEND_DIAMOND",
+        "SPEND_ITEM",
+        "USE_SPEEDUP",
+        "START_MARCH",
+        "JOIN_RALLY",
+        "START_RALLY",
+        "RECALL_MARCH",
+        "IRREVERSIBLE_ACCOUNT_ACTION",
+        "EVENT_WINDOW_ACTION"
+      ],
+      "policy": "能力扩张阶段仍允许尝试，但三个兜底必须齐备。"
+    }
+  },
+  "three_fallbacks": {
+    "note": "三个兜底中两个已有实现，本 charter 只做指向与语义，禁止另建第二套。",
+    "fallback_1_reversibility": {
+      "rule": "执行前判断能否撤销。能撤销 → 直接走；不能撤销 → 记入 IRREVERSIBLE_ACTIONS。",
+      "irreversible_still_allowed": "不可逆动作仍允许尝试，但必须同时满足：单次限制（每天/每小时最多 N 次）、有明确目标、有 Verifier 兜底（哪怕只是视觉变化）。",
+      "project_landing": "NEW —— 项目此前没有 IRREVERSIBLE_ACTIONS 这一登记；这是本规则真正新增的部分。"
+    },
+    "fallback_2_real_money": {
+      "rule": "真钱 PERMANENTLY_BLOCKED；钻石/高价值道具未经授权不允许尝试；免费资源与低价值操作允许试错。",
+      "project_landing": "ALREADY EXISTS —— config/policy_state.json 的 real_money 字段与 disabled_goals 列表。指向它，不重述其值。"
+    },
+    "fallback_3_failure_slowdown": {
+      "ladder": [
+        "第一次失败 → 记录",
+        "第二次失败 → 进入 Cooldown",
+        "第三次失败 → 回退到先验证模式"
+      ],
+      "invariant": "不允许无限重复同一个错误。",
+      "project_landing": "ALREADY EXISTS —— winter_agent_v2/goal_utility.py repeat_failure_penalty（生产实测 repeat-failure -60.0）+ attempt_controller / capability_gate 的 cooldown。对齐它，不另建第二套阶梯。"
+    }
+  },
+  "knowledge_promotion": {
+    "rule": "外部资料不能直接写入 CONFIRMED Knowledge。",
+    "ladder": [
+      "EXTERNAL_HYPOTHESIS",
+      "→ OBSERVED（真机见过一次）",
+      "→ CONFIRMED（Verifier 验证过）",
+      "→ 才可进入可复用知识库"
+    ],
+    "forbidden": "把攻略结论直接写成 CONFIRMED。",
+    "relation_to_existing_gates": "与 knowledge/README.md 已声明的门（DISCOVERED/REVIEWED/VERIFIED/PRODUCTION/OUTDATED/CONFLICT）是同一件事的两套命名；映射见 knowledge_gate_mapping。",
+    "knowledge_gate_mapping": {
+      "EXTERNAL_HYPOTHESIS": "DISCOVERED",
+      "OBSERVED": "REVIEWED",
+      "CONFIRMED": "VERIFIED"
+    }
+  },
+  "network_boundary": {
+    "allowed_online": [
+      "WorkBuddy 开发阶段",
+      "知识收集阶段",
+      "Skill Repair 研究阶段",
+      "Offline Learning 分析阶段"
+    ],
+    "forbidden_online": [
+      "Runtime AUTO 执行期",
+      "UI-Venus 推理期",
+      "MAA 执行期",
+      "Fishing Realtime 路径",
+      "任何 L0 / L1 / L2 快速路径"
+    ],
+    "why": [
+      "Runtime 必须稳定、可预测、低延迟",
+      "联网引入不可控延迟、隐私与外部依赖",
+      "生产环境不允许依赖外部服务"
+    ],
+    "runtime_unknown_chain": [
+      "本地 UI-Venus",
+      "本地 Knowledge",
+      "本地 Verifier",
+      "绝不联网"
+    ]
+  },
+  "exemptions": {
+    "may_skip_full_search": [
+      "已存在 PRODUCTION_VERIFIED 的 Skill，仅做参数调整",
+      "修复已知 Bug",
+      "已在本项目内 CONFIRMED 的内容"
+    ],
+    "note": "除此之外，任何新功能开发必须先完成搜索阶段。豁免仍须在 commit 或 episode 里写明依据（与 triggers.skip_requires 一致）。"
+  },
+  "violation_rule": {
+    "missing_any_of": [
+      "搜索记录",
+      "知识摘要",
+      "假设清单",
+      "风险边界"
+    ],
+    "and_then": "直接开始写 Skill / 写流程 / 写脚本",
+    "verdict": "视为违反本规则，该轮开发结果无效，必须回退到搜索阶段。",
+    "enforceable_by": "tools/research_gate.py 的 SEARCH_OUTPUTS_RECORDED 与 RISK_* 两项检查。"
+  },
+  "rule_cross_references": {
+    "第67节 先收集知识再落地": "本节是其前置条件",
+    "第68节 允许联网但分级采信": "本节扩展了联网范围",
+    "持续开发不许停": "搜索本身算真实工作，不算空转",
+    "边做边学": "搜索是学习的第一步",
+    "低风险快速通道": "快速通道的前置条件仍是先搜索",
+    "UI-Venus 定位": "联网是开发期行为，不进入 Runtime"
+  }
 }
