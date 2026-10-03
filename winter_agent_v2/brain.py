@@ -2196,6 +2196,33 @@ class RuleBrain:
                     "LANCER_CAMP_TRAINING",
                     "MARKSMAN_CAMP_TRAINING",
                 }:
+                    # The guard's question -- "did the panel already settle this" -- is
+                    # answered correctly above and separates the two cases exactly:
+                    # open-without-camps is False, open-with-camps is True.  What was missing
+                    # is the case in between: the panel is open, the question is unanswered,
+                    # and the honest move is the one step that would answer it.  Measured
+                    # 2026-10-03 on the live ledger, ``OPEN_INFANTRY_TRAINING`` ran **57 times
+                    # with 57 successes**, and every after-frame carried the ``camps`` reading
+                    # the sweep exists to obtain -- so the step the guard was diverting around
+                    # is the step that answers it.  The sweep ticket names it too
+                    # (``TRAINING_SWEEP.entry_skill``, WB-1002-44); before that it named a
+                    # generic control that resolved to going home, which produces no reading,
+                    # so 561 selections taught the loop nothing and trained nothing.
+                    #
+                    # This is NOT the detour the guard measured.  That one is
+                    # ``OPEN_POWER_DETAILS`` via ``train_goal_power_overview`` -- a different
+                    # page (加成总览) -- which failed ``POWER_DETAILS_NOT_PROVEN`` 20 of 20 and
+                    # is still refused, below and unchanged.
+                    #
+                    # Reached only from HOME, because the training page is only drawn there;
+                    # the MAP branch above still answers ``OPEN_HOME`` and is untouched.
+                    if registry.get("OPEN_INFANTRY_TRAINING") is not None and world.page is Page.HOME:
+                        return Decision(
+                            "OPEN_INFANTRY_TRAINING",
+                            "panel_open_but_training_unread_so_the_page_that_answers_it_is_the_step",
+                            world.confidence,
+                            "training_page_opened",
+                        )
                     return Decision(
                         "SAFE_STOP",
                         "training_quick_panel_entry_not_observed_so_the_known_failing_power_detour_is_skipped",
