@@ -4015,3 +4015,32 @@ diff 缩到 **8 行**（只有那两处 roi）。
 **规则三：只改有证据的那一个。** `KEEP_BUILDING_PRODUCTIVE` 也用 `TRY_ORDINARY_CONTROL`，
 但**它的后果没有实测**（没有"425 次无果回城"那样的量）⇒ **不动它**，
 否则就是把一个假设写成生产行为。
+
+## 通则：改了「票给什么技能」，还要看 brain 是否让人走到那一步（2026-10-03）
+
+`TRAINING_SWEEP.entry_skill` 从泛化控制改成 `OPEN_INFANTRY_TRAINING` 之后，**真机上仍然什么都不发生**——
+因为 `RuleBrain.decide` 在**目标那一步被咨询之前**就返回了 `SAFE_STOP`：
+
+```
+HOME + 面板开 + 无 camps
+  -> SAFE_STOP / training_quick_panel_entry_not_observed_so_the_known_failing_power_detour_is_skipped
+```
+
+> **规则：改「目标层」时，必须把 `brain.decide` 的整条 `if` 链走一遍，
+> 确认它在自己的守卫里不会先返回。**
+> `goal_library` 说"这一步该做什么"与 `brain` 说"这一步允不允许做"是**两层**，
+> **只改上层，下层可以完全吃掉它，而且真机表现完全一样（什么都没发生）。**
+>
+> **判据：把目标层的输出填进 `RuleBrain.decide(world, registry)` 真跑一次，
+> 看返回的是不是那一步。** 这一步 2 秒钟，能省下一轮"为什么没生效"的诊断。
+
+**配套：守卫的注释要读，但要和真机数据对照。**
+那条守卫写着 *"100% failure, 20 of 20"*，指的是 `OPEN_POWER_DETAILS`（加成总览）——
+**与 `OPEN_INFANTRY_TRAINING` 是不同页面的不同技能，而后者实测 57/57 成功。**
+⇒ **"这条注释说的失败"与"我要放行的这条路"是不是同一条，必须逐字比对**，
+**不能因为"守卫说失败"就认为它挡的是我这条。**
+
+**第三件：写完测试预期后与 HEAD 对照（这一条本轮又救了我一次）。**
+我以为"已回答时"走 `SAFE_STOP`，实跑是 `OPEN_POWER_OVERVIEW`；A/B 跑 HEAD 确认是**既有行为**。
+**⇒ 断言要写"现在是什么样"，不是"应该是什么样"。**
+本轮三次对照各发现一件事：修复被守卫挡住 / 修复被守卫挡住（同一件事的两面）/ **我的预期本身错了**。
