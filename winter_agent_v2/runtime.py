@@ -4764,6 +4764,52 @@ class LiveRuntime:
             except (OSError, TypeError, ValueError):
                 return None
             return gesture if all(0.0 <= value <= 1.0 for value in gesture) and gesture[1] > gesture[3] else None
+        if semantic == "REGULAR_EVENT_ENTRY":
+            # The 常规活动 label, read from this frame's own OCR box.
+            #
+            # Why this branch exists, measured 2026-10-03: the routing table gives
+            # OPEN_EVENT_CALENDAR_FROM_HOME/MAP a *fixed* template -- roi [632,101,67,84],
+            # cropped from one 2026-09-25 frame and never re-measured (its own evidence block
+            # says "validation": "NONE").  That entry is a floating navigation label: it moves
+            # with the client's own layout, and across the recorded episodes its normalised y
+            # is 0.14883 while the template's roi covers 101..185 px of a taller frame.  So the
+            # template matched 567 times and missed 19, and a miss on this skill is terminal --
+            # the runtime reported SEMANTIC_TARGET_NOT_VERIFIED and went SAFE_STOP with
+            # stop_category=CAPABILITY_GAP, which is why production sat idle from 19:35.
+            #
+            # What was already correct is upstream: ``ocr.classify`` reads the label off the
+            # current frame and, only for Page.HOME/Page.MAP, publishes it as
+            # ``events["calendar_entry"]`` with a scale guard (a rail label under 3% of frame
+            # height is rejected, so a page tab can never become Page.EVENT identity).  Every
+            # consumer of that key was on the *should-we-go* side -- brain, goal_library -- and
+            # nothing read it for *where to tap*, which is the whole gap.
+            #
+            # So consume the measurement that already exists rather than re-deriving it or
+            # loosening the template threshold: no second recognition pass, no cached
+            # coordinate, and the page guard is inherited from the producer rather than
+            # re-implemented here.  ``visible`` must be True and the point must be a real
+            # normalised pair, so an unread frame still answers None and the step still fails
+            # honestly instead of tapping a stale ROI.
+            if frame.page not in {Page.HOME, Page.MAP}:
+                return None
+            entry = (frame.events or {}).get("calendar_entry")
+            if not isinstance(entry, Mapping) or entry.get("visible") is not True:
+                return None
+            if entry.get("source") != "CURRENT_FRAME_OCR":
+                return None
+            point = entry.get("tap_norm")
+            if not isinstance(point, (tuple, list)) or len(point) != 2:
+                return None
+            # Coerce inside the guard: a recogniser that ever hands back strings must answer
+            # "not verified" like every other malformed reading, not raise out of a resolver
+            # that every caller treats as total (``None`` means stop, anything else is a bug).
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
+                return None
+            return (x_norm, y_norm)
         if semantic in {"BTN_FREE_RECRUIT_ADVANCED", "BTN_FREE_RECRUIT_EPIC"}:
             # The HOME quick panel repeats these labels. Only the current hero
             # recruit cards' own explicit free counts and Free control authorize
