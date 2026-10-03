@@ -261,10 +261,10 @@
           ],
           "source_template": "dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png",
           "roi": [
-            611,
-            157,
-            109,
-            67
+            632,
+            101,
+            67,
+            84
           ]
         }
       },
@@ -325,10 +325,10 @@
           ],
           "source_template": "dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png",
           "roi": [
-            611,
-            157,
-            109,
-            67
+            632,
+            101,
+            67,
+            84
           ]
         }
       },
