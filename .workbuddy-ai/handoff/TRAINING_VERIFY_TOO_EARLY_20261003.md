@@ -189,8 +189,73 @@ thumb_row 86   y_norm=0.672  变化占比=0.33
 
 ---
 
-## 六、本轮状态
+## 七、第十五轮：把数字摊开后，"读太早"不值得现在修
+
+第十三轮与第十四轮把这个缺陷挖到了底，但**没有量它的规模**。本轮量了，结论是：
+
+### `TRAIN_TROOPS` 27 次里 22 次成功
+
+```
+2026-09-30T14:32  SUCCESS ver=True gp=True
+2026-10-01T00:45  SUCCESS ver=True gp=True
+2026-10-01T02:02  SUCCESS ver=True gp=True
+2026-10-01T03:03  FAILURE ver=False  TRAINING_START_NOT_PROVEN
+2026-10-01T13:45  SUCCESS ver=True gp=True
+2026-10-01T14:55  FAILURE ver=False  TRAINING_START_NOT_PROVEN
+2026-10-02T05:27  SUCCESS ver=True gp=True
+2026-10-02T15:54  FAILURE ver=False  TRAINING_START_NOT_PROVEN
+2026-10-03T07:13  FAILURE ver=False  TRAINING_START_NOT_PROVEN
+2026-10-03T07:16  FAILURE ver=False  TRAINING_START_NOT_PROVEN
+2026-10-03T07:21  SUCCESS ver=True gp=True
+（完整 27 步：22 成功 / 5 失败）
+```
+
+**成功率 81%。** 这个技能**大体是健康的**。
+
+### 而 `_NETWORK` 的其它技能没有这个问题
+
+```
+CLAIM_FREE_STAMINA  n=8   FAIL=0
+DISPATCH_MARCH      n=3   FAIL=1
+START_RALLY         n=1   FAIL=1
+TRAIN_TROOPS        n=27  FAIL=5   gp_true=22
+```
+
+⇒ **不能把 `NETWORK_ACTION` 的 0.7 秒整体调大**：那是 10 个技能共享的预算，
+而它们多数没有"状态异步刷新"的问题。放宽会拖慢所有技能而不解决任何别的。
+
+### 所以真正的大头在别处
+
+`KEEP_TRAINING_PRODUCTIVE` 被选 **492 次**、`goal_progress` **0 次**，
+而 `TRAIN_TROOPS` 全项目只被选 **27 次**（22 成功）。
+
+**问题不是"训练做不好"，是"训练链几乎不被调度"。**
+上一轮量到的闭环仍然成立：`CLEAR_INTEL` 从 HOME 出发 `OPEN_MAP` 332 次，
+每次只买到"站在 MAP 上"，因为 `KEEP_TRAINING_PRODUCTIVE` 用 `OPEN_HOME` 把它挤回去，
+而自己也只是发 `OPEN_HOME`。
+
+**这与 `page_residency` 修过的第一个乒乓同型**（`HOME↔MAP`），
+只是这次被抢的一方是训练链而不是日历目标。
+
+---
+
+## 八、由此得到的优先级判断（第十五轮的结论）
+
+| 缺陷 | 规模 | 是否值得现在修 |
+|---|---|---|
+| `TRAIN_TROOPS` 读太早 | 27 次里 5 次误判，且 3 次训练其实成功了 | **不急** —— 修好也只是把 81% 变 100% |
+| 训练链几乎不被调度 | 492 次被选、0 次进展 | **这才是大头** |
+
+⚠ 但**这两件事很可能是同一个根因的两端**：
+若训练链能在 HOME 上真正执行第二步，`TRAIN_TROOPS` 会被更频繁地调用，
+那 5 次误判的**绝对量**也会上升。
+⇒ **先修调度还是先修时序，取决于先修哪个能让另一个变得可观测。**
+本轮不决定，留给下一轮读完调度侧的控制流后再定。
+
+---
+
+## 九、本轮状态
 
 - **零代码改动。** 生产 pin `291ede58`，AUTO 正常运行。
-- 分支 `workbuddy/page-residency-20261003` = `7b7c7c4e`。
+- 分支 `workbuddy/page-residency-20261003` = `ce3052ee`。
 - 上一轮的 `TRAINING_CHAIN_ZERO_PROGRESS_20261003.md` 已被纠正横幅标注。
