@@ -686,6 +686,34 @@ def record_calendar_snapshot(
             matched.update({"details_observed": True, "details_observed_at": moment.isoformat(),
                             "detail_evidence_ref": evidence_ref, "detail_observation": reading})
             snapshot["matched_occurrence_key"] = matched.get("occurrence_key")
+        elif event_id and reading.get("calendar_origin") != "GRID_ENTRY":
+            # An activity that lives only on the strip above the grid has no row to credit,
+            # and that is what kept the calendar permanently due.  Measured 2026-10-03 on live
+            # revision aab0dbb8: both roles had EVENT_DETAIL readings of a strip activity --
+            # CANYON_CLASH with calendar_origin=None for 1061663148, STATE_VS_STATE likewise
+            # for 1063040265 -- while ``advertised_but_unread_activities`` still returned them
+            # plus ALLIANCE_MOBILIZATION, so ``calendar_scan_due`` stayed True and
+            # DISCOVER_EVENT_CALENDAR was re-selected every 24 seconds.  The credit has to
+            # land somewhere, and the strip's own ``read_entries`` is the place its reader
+            # already looks (see ``advertised_but_unread_activities``).
+            #
+            # What this records is "this activity's page was observed".  It is not a claim
+            # that anything was acted on: the page also carries 商店 and 编队, and a refused
+            # spend must not turn into a permanent debt, which is the operator's section 7 --
+            # safety and liveness are separate, and refusing here would re-create the loop
+            # this line exists to end.
+            strip = scope.get("ACTIVITY_STRIP") or {}
+            already = {
+                str(row.get("event_id") or "")
+                for row in strip.get("read_entries") or () if isinstance(row, Mapping)
+            }
+            if event_id not in already:
+                strip["read_entries"] = [
+                    *(strip.get("read_entries") or ()), {"event_id": event_id},
+                ]
+                strip["observed_at"] = moment.isoformat()
+                scope["ACTIVITY_STRIP"] = strip
+                snapshot["strip_activity_credited"] = event_id
         if matched is not None or reading.get("calendar_origin") == "GRID_ENTRY":
             scope["detail_return"] = {"pending": True, "observed_at": moment.isoformat(),
                                        "evidence_ref": evidence_ref}
