@@ -4460,3 +4460,42 @@ not by a species list"** —— 它把 `target.dispatchable` 换成了 `victory_
 （本轮连续三次 `SyntaxError` / `IndentationError`），其中一次 `ast.parse` 已经报 ok、
 下一次 import 才炸。**改完必须 `ast.parse` + 实际 `import` + 跑测试三件都做**，
 只看 `ast.parse` 会漏。
+
+## 事故与通则：生产正在用的共享数据文件上「试写一下」是高危动作（2026-10-03）
+
+**我做了什么**：为确认 `goal_utility.save()` 是否能正常落盘，我调用了一次
+`goal_utility.save({"TEST": GoalFairness(goal_id="TEST")}, None)` ——
+`None` 让它走默认 `STATE_PATH = learning/goal_fairness.json`，
+**而那正是生产进程每run 都在读的同一个文件**（`os.path.samefile(pin) == True`，junction 共享）。
+
+**后果**：这个调用把生产的公平账本**整份覆盖成只剩我那一个 TEST 键**。
+我随后想撤销，`git checkout` 无效—— **该文件从未被 git 跟踪**（`exists on disk, but not in 'HEAD'`）
+⇒ 没有备份可取。等我发现时，`goals` 已经是空对象，我第二次误操作把空对象写了回去。
+**最终状态：66 条历史行丢失，只恢复了本轮诊断实际读到过的 3 条**
+（`CLEAR_INTEL` / `KEEP_BUILDING_PRODUCTIVE` / `KEEP_TRAINING_PRODUCTIVE`，按 `GoalFairness.as_json()`
+的真实形状重建，其余 63 条本轮未读到，无法凭空造）。
+
+**功能影响**：账本为空不会崩 —— `load()` 返回 `{}`，`entry()` 为任意目标现建行，
+所有公平值从零重新累积。**不是数据损坏，是历史丢失。**
+
+> **规则一：`learning/`、`config/`、`knowledge/`、`dataset/` 下的文件是生产活的输入，
+> 而 dev 工作树与 pin 工作树是 junction 共享的（`os.path.samefile` 为 True）。
+> ⇒ 任何 `save()` / `write` / `dump` 到这些路径的动作，都是在改生产的状态。**
+> **规则二：想验证「写入能不能成功」，不要写生产文件。**
+> 要么写临时文件（`tempfile` / 显式传 `path` 指向 `/tmp`），要么只读+ 检查目录权限。
+> **规则三：动共享数据文件之前先确认它有没有备份。**
+> `git ls-files --error-unmatch <path>` 为假 ⇒ **没有 git 备份** ⇒ 一次覆盖就不可逆。
+> 覆盖前把原文读进内存（我本轮读了开头 200 字符就够用了——**教训是读全**）。
+> 规则四：**生产不读旧文件不等于我写坏它。** 我一度以为清空是根因，
+> 实际上该文件在我动手前就已经 10 小时没有 `mtime` 变化 ——
+> **把因果顺序查清再自责，否则会修一个不存在的 bug。**
+
+**这一轮真正的生产缺陷（与我无关，独立存在）**：
+`learning/goal_fairness.json` 从 `2026-10-02T17:08:04Z` 起就没再写过，
+而生产一直在跑（`episodes.jsonl` 每秒都在增长）。
+`_save_fairness()` 只在 `runtime.py:8378` 的 `finish()` 里被调用，
+且门是 `if self._multi_role_enabled and not self._role_identity_confirmed: return`。
+生产确实是双角色（`role_catalog` 2 个、`role_id` 在 `1061663148` / `1063040265` 间交替），
+而 `role_identity.json` **11:01 刚写过且confirmed**，⇒ **这个门不该拦。**
+**未确立**：为什么 run 结束了（步数 19–24 正常）却没落盘。
+下一步要给 `_save_fairness` 本身记一条"我跳过了，因为…"的理由——现在它只在自己想跳时静默返回。
