@@ -73,25 +73,50 @@ queue_busy:    False    ← 队列仍显示空闲
 **5 次里 3 次训练真的成功了**，只是没被记到。间隔都是 **4–10 秒** ——
 状态在下一步就绪，而验证已经在更早的那一瞬判完了。
 
-### 为什么重试没有救回来
+### 为什么"重试"没有救回来 —— 上一轮说反了方向
 
-`runtime.py:9696` 一带有这套机制：
+上一轮我写"`frame_changed=False` 所以重试被跳过"。**方向说反了。**
+`runtime.py:9696` 的条件确实是 `if not frame_changed and settle_retry_wait > 0.0`，
+但用**同一批 before/after 帧**直接跑 `FrameChangeProbe` 实测：
 
-```python
-self.sleeper(settle_first_wait)
-...
-if not frame_changed and settle_retry_wait > 0.0:
-    self.sleeper(settle_retry_wait)
-    retry_path = self._capture_path(index, "after", suffix="settle_retry")
+```
+TRAIN_TROOPS 失败步（5 次）
+  03:03:26  changed=True  fraction=0.1963
+  14:55:50  changed=True  fraction=0.1935
+  15:54:51  changed=True  fraction=0.1113
+  07:13:04  changed=True  fraction=0.2450
+  07:16:55  changed=True  fraction=0.1999
 ```
 
-**它靠 `frame_changed` 决定要不要重试。** 而训练启动时**页面不变**（还在 TRAINING，
-只是队列图标刷新）⇒ `frame_changed=False` ⇒ 会重试，但
-`settle_limit` 把总等待截到 `settle_seconds`（默认 1.5s）以内
-⇒ **远小于实测需要的 4–10 秒** ⇒ 重试读到的仍是旧状态。
+阈值是 `fraction >= 0.06`，实测 0.11–0.25 ⇒ **5/5 都被判为"画面已变"**
+⇒ **重试分支根本没进去**。
 
-**判据用错了信号**：训练启动不改变画面构成，只改变队列徽标；
-"画面没变"不等于"什么都没发生"。
+**真正的链条：**
+
+```
+TRAIN_TROOPS 点下按钮
+  → 训练启动，队列徽标刷新 ⇒ 画面变了 11–25%
+  → FrameChangeProbe 因此回答 changed=True
+  → 代码据此判定"不需要再等" ⇒ 只等 first_wait
+  → 但"徽标刷新"与"状态字段可读"是两件事，后者更慢
+  → 观察时 status 仍是 AVAILABLE、无 timer ⇒ 记 TRAINING_START_NOT_PROVEN
+```
+
+**settle 预算（`TRAIN_TROOPS` 已在 `settle_policy._NETWORK` 集合内）：**
+
+```
+SettlePolicy('NETWORK_ACTION', first_wait_s=0.2, retry_wait_s=0.5)
+名义总计 0.7 秒
+```
+
+而状态真正可读需要 **4–10 秒**（下一步的实测值）。**差 6–14 倍。**
+
+⇒ **"画面变了"被当成了"状态可读了"**。这两个信号在训练启动这一刻**恰好不同步**：
+徽标先变，状态字段后到。
+
+⚠ 账本**没有持久化** `latency` 里的 `settle_*_ms`（读出来全是 0/null），
+所以 0.2/0.5 秒来自 `settle_policy.choose('TRAIN_TROOPS')` 的代码值，
+0.11–0.25 来自**对账本现存帧的直接测量**。两者都不是推断。
 
 ---
 
@@ -109,23 +134,63 @@ if not frame_changed and settle_retry_wait > 0.0:
 
 ---
 
-## 四、边界：还有两件事没查
+## 四、第十三轮：两问都答完了
 
-1. **为什么每次都是"下一步"才看到 `IN_PROGRESS`，而不是同一步的 settle 重试？**
-   需要量 `settle_first_wait` / `settle_retry_wait` / `settle_limit` 的实际值，
-   以及 `FrameChangeProbe` 在训练页上到底看到了什么。
-2. **14:55:50 与 07:16:55 那两次是真的没启动**（下一步仍 `AVAILABLE`）
-   ⇒ 训练本身有**间歇性失败**，那是另一个问题（`BTN_START_TRAINING` 模板在手或动画下失配）。
-   **不要把这两个问题混成一个。**
+### 问一：Probe 的 ROI 覆盖得到队列徽标吗？—— 覆盖到，而且它就是变化源
 
-**这两条没量之前不写代码。** 本会话已有四次"改了三处方向都错"的记录，
-本轮已经纠正了一次自己的错误结论，不急在这一步。
+`FrameChangeProbe._thumbnail` = `resize((72,128))[13:109, 4:68]`
+⇒ 覆盖 **y_norm 0.102 – 0.852**。
+
+在 07:16:55 那对 before/after 上逐行测变化占比，峰值**精确落在徽标所在行**：
+
+```
+thumb_row 83   y_norm=0.648  变化占比=0.56
+thumb_row 84   y_norm=0.656  变化占比=0.89   ← 峰值
+thumb_row 85   y_norm=0.664  变化占比=0.91   ← 峰值
+thumb_row 86   y_norm=0.672  变化占比=0.33
+全图变化率 0.1391   vs   Probe ROI 变化率 0.1999
+```
+
+**整行 90% 都变了，那正是计时器/队列徽标刷新的位置。**
+
+⇒ **`changed=True` 是完全正确的判断** —— 徽标真的变了。
+上一轮我怀疑"ROI 覆盖不到所以测错了"，**这个怀疑是错的**。
+
+**真正的不对称因此更清楚了：**
+**徽标（图像）已经刷新，而 `status` / `timer`（结构化字段）还没刷新。**
+这两个信号在训练启动这一刻**不同步**，而代码拿前一个当后者的判据。
+
+### 问二：那两次"真的没启动"是什么？
+
+**仍然开着。** 10-01 14:55:50 与 10-03 07:16:55 两步之后
+`status` 仍是 `AVAILABLE`、`timer` 为 `null` ⇒ 训练**没有启动**。
+`BTN_START_TRAINING` 的模板在手/动画下失配是一个可能，
+但**没有量过就不写成结论**。
+
+**这是与上面完全独立的第二个缺陷。** 修好读取时序只会让 3 次成功被记上，
+**不会**让那 2 次开始。混在一起会两边都修不好。
 
 ---
 
-## 五、本轮状态
+## 五、现在的状态与下一轮的起点
+
+**两问的答案把修法方向完全确定了：**
+
+| | 做法 | 后果 |
+|---|---|---|
+| ❌ | 放松 `verify_training_started` 的五个条件 | 把"启动了别的兵种"也记成成功 |
+| ❌ | 改 `FrameChangeProbe` 的 ROI 或阈值 | 它**判断正确**，改了会引入误判 |
+| ✅ | **让"状态字段可读"成为独立的等待条件**，而不是用画面变化代理它 | 条件不变，成功照记、失败照失败 |
+
+⚠ 具体形态仍未定：是把 `frame_changed` 从"是否重试"的判据里拿掉、
+还是给 `TRAIN_TROOPS` 单独加一个"等状态字段刷新"的轮询，
+取决于下一轮读完 `runtime.py:9665-9710` 的完整控制流后才能定。
+**两者都会让"画面不变但状态已变"的情况误判，所以不能随手改。**
+
+---
+
+## 六、本轮状态
 
 - **零代码改动。** 生产 pin `291ede58`，AUTO 正常运行。
-- 分支 `workbuddy/page-residency-20261003` = `fa853d77`。
-- 上一轮的 `TRAINING_CHAIN_ZERO_PROGRESS_20261003.md` 里"启动了错误兵种"一节
-  **已被本文件纠正**。
+- 分支 `workbuddy/page-residency-20261003` = `7b7c7c4e`。
+- 上一轮的 `TRAINING_CHAIN_ZERO_PROGRESS_20261003.md` 已被纠正横幅标注。
