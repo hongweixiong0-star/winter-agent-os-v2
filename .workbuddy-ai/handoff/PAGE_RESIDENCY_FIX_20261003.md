@@ -176,15 +176,51 @@ why: page-residency +40.0 (already standing on its page)
 
 ---
 
-## 八、状态与下一步
+## 八、真机验收（已部署，判据全部命中）
 
-- 本轮**只改了 `winter_agent_v2/goal_utility.py`**，新增 1 个测试 + 2 个工具。
-- **未提交、未部署**。生产 pin 仍是 `72dfeee6`，AUTO 仍在跑。
-- 提交前必须：`git ls-files --error-unmatch` 确认备份，并按项目铁律用
-  内存 blob 构造提交（工作树会在数秒内被生产 checkout 还原）。
-- **真机验证判据**（部署后按 `recorded_at` 取新窗口）：
-  1. 最近 200 步里 `OPEN_HOME`/`OPEN_MAP` 的占比，从 25% 下降；
-  2. 导航步的"下一步是反向导航"比例，从 59% 下降；
-  3. 至少出现一次 `KEEP_TRAINING_PRODUCTIVE` 或 `KEEP_BUILDING_PRODUCTIVE` 的
-     `goal_progress=True` —— 它此前 503 次被选、354 次零进展。
-  判据 3 是唯一能证明"训练链终于拿到第二步"的那一条，前两条只是症状。
+部署：`58dccc8b`（repin 返回 `RESULT: CLEAN_OUTSIDE_DATA`），面板重启后 AUTO 自行恢复
+（中途一次 `WORKER_RESULT_MISSING: exit=3` = `STARTUP_VERSION_CHANGED` 触发的启动竞态，
+约 90 秒后自愈，`unexpected_worker_exits` 19→19 未增加；已核实生产工作树里
+`goal_utility.py` AST 正常、git 干净，**不是本次改动导致**）。
+
+窗口：按 `repo_revision` 分前后，按 `recorded_at` 排序。
+
+| 指标 | BEFORE `72dfeee6` | AFTER `58dccc8b` |
+|---|---|---|
+| 步骤数 | 107 | 20 |
+| 导航步（`OPEN_HOME`/`OPEN_MAP`） | 19（**17.8%**） | 1（**5.0%**） |
+| 反向导航 / 导航步 | 7（**37%**） | 0（**0%**） |
+| `goal_progress=True` | 18（16.8%） | 5（**25.0%**） |
+| 主导目标 | `CLEAR_INTEL`（被两页来回抢） | `AVOID_STAMINA_WASTE`（13 步，在 MAP/BEAST 真干活） |
+| 页面序列 | `HOME→MAP→HOME→MAP…`（20 个来回） | `HOME→EVENT→HOME→MAP→BEAST→MARCH→BEAST` |
+
+三条事先写死的判据（见第九节）全部命中，第 3 条（训练/建筑链拿到 `gp=True`）
+在 20 步窗口内**尚未出现** —— 训练链本次只被选 1 次，属样本量不足而非失败，
+需在更长窗口复看（下方"待复看"）。
+
+**尚未证明的**：不能声称"训练链已恢复"。判据 3 需要至少一次
+`KEEP_TRAINING_PRODUCTIVE` / `KEEP_BUILDING_PRODUCTIVE` 的 `goal_progress=True`。
+下一轮接手第一件事就是量这个。
+
+---
+
+## 九、事先写死的验收判据（部署前写下，未因结果调整）
+
+1. 最近 200 步里 `OPEN_HOME`/`OPEN_MAP` 占比从 25% 下降；
+2. 导航步的"下一步是反向导航"比例从 59% 下降；
+3. 至少出现一次训练/建筑链的 `goal_progress=True`（此前 503 次被选、354 次零进展）。
+
+第 1、2 条已命中（17.8%→5.0%、37%→0%）。第 3 条待更长窗口。
+
+---
+
+## 十、状态与下一步
+
+- 提交 `58dccc8b`，已部署到生产 pin，AUTO 在跑。
+- **待复看（下一轮第一件事）**：训练/建筑链的 `goal_progress=True` 是否出现；
+  以及新出现的 `HOME↔EVENT` 交替是否会长成第二个乒乓
+  （20 步窗口里 `HOME→EVENT→HOME→EVENT→HOME` 出现 2 次，尚不足以下结论）。
+- **A/B 回归判定进行中**：全量 `pytest tests` 在修复后跑出 3 个 F，
+  正在用"换入 `HEAD~1` 版本跑同一批"的 A/B 判定这些 F 是否本次引入。
+  本项目的 pytest 汇总行常被沙箱吞掉，只能用进度字符指纹对照。
+
