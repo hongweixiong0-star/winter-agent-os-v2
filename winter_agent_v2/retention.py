@@ -167,7 +167,22 @@ def select_prunable_screenshots(
 # had been running unattended for 6h45m -- died exactly there and took AUTO with it.
 # Ten is also the project's own batch size for deletions, because bulk deletion is
 # how evidence was lost before.
-MAX_DELETIONS_PER_PASS = 10
+#: One prune pass deletes at most this many files.
+#:
+#: Two measured numbers set this, and the old value (10) lost to the first of them:
+#:
+#: * a round *produces* about 28 frames (median 23, mean 28, max 86 across 1647 recorded
+#:   episodes).  A pass of 10 therefore left +18 frames per round, every round, and the trees
+#:   reached 50,051 files / 33 GB by 2026-10-03.  A drain below the production rate is not a
+#:   retention policy, it is a slower leak;
+#: * the host aborts a process that deletes 50 files inside one turn
+#:   (``CODEBUDDY_SAFE_DELETE_BULK_GUARD``), and 2026-09-18 that abort killed the panel with
+#:   AUTO attached -- see the note on the caller.
+#:
+#: 30 sits above the production rate and 40% under the guard.  The caller runs once per round,
+#: so the backlog now shrinks by roughly 2 frames per round and keeps shrinking; the pass size
+#: bounds one burst rather than the whole sweep.
+MAX_DELETIONS_PER_PASS = 30
 
 
 def find_repo_root(start: Path) -> Path:

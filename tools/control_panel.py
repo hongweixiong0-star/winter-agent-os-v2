@@ -7103,6 +7103,20 @@ class ControlPanel:
             self._append(f"运行时长台账写入失败（不影响 AUTO）：{type(exc).__name__}: {exc}")
 
     def _enforce_retention(self) -> None:
+        """Drain the capture trees toward the configured budget, a bounded burst at a time.
+
+        Called once per round, not only at start-up.  That change is the whole fix: the policy
+        was already correct (``max_screenshots`` 500, ``screenshot_ttl_days`` 14,
+        ``auto_prune`` true), but it ran exactly once per process, and one pass removes at most
+        ``MAX_DELETIONS_PER_PASS`` files.  A run that writes ~3100 frames a day therefore grew
+        a backlog no single start-up could ever repay -- measured 2026-10-03: 50,051 files in
+        ``dataset/raw/control_panel`` alone, 33 GB.
+
+        Still bounded per call, deliberately.  The host aborts a process that deletes 50 files
+        within one turn, and 2026-09-18 that abort killed the panel with AUTO attached.  A
+        steady per-round drain reaches the budget within a few rounds without ever approaching
+        that threshold in one go.
+        """
         policy = self.config.get("retention", {})
         if not policy.get("auto_prune", False):
             return
