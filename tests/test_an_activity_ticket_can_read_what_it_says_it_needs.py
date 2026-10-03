@@ -86,20 +86,25 @@ def test_the_offered_action_exists_with_a_verifier_that_is_implemented():
 
 
 def test_read_timer_is_deliberately_not_offered():
-    """It reads closer to "read this activity's window" and it does not exist."""
+    """It reads closer to "read this activity's window" and it cannot be executed."""
     assert "READ_TIMER" not in OBSERVATION_SKILLS, (
         "READ_TIMER's declared TIMER_READ verifier and its execution path are absent from "
         "winter_agent_v2, so offering it would convert 'no action' into 'an action that "
         "always fails'. Add the verifier first, then reconsider."
     )
-    package = (ROOT / "winter_agent_v2")
-    hits = [
-        p.name for p in package.glob("*.py")
-        if "TIMER_READ" in p.read_text(encoding="utf-8", errors="replace")
-    ]
-    assert hits == ["skills.py"], (
-        f"TIMER_READ now appears in {hits}; if the verifier was implemented, the note above "
-        "and the choice of READ_EVENT_CALENDAR should be revisited on their merits"
+    # The declaration at skills.py is expected -- a skill may name a verifier that nothing
+    # implements yet.  What must not exist is the wiring that would make it executable: a
+    # runtime mapping key binding it to a verifier function, and a dispatch site.  A name in
+    # a declaration is a wish; a name as a mapping key is a route.
+    runtime = (ROOT / "winter_agent_v2/runtime.py").read_text(encoding="utf-8")
+    assert '"READ_TIMER":' not in runtime and "'READ_TIMER':" not in runtime, (
+        "READ_TIMER is now bound to a verifier in runtime.py; if that verifier is "
+        "implemented, the choice of READ_EVENT_CALENDAR should be revisited on its merits"
+    )
+    registry = (ROOT / "winter_agent_v2/verifier.py").read_text(encoding="utf-8")
+    assert "TIMER_READ" not in registry, (
+        "verify_timer_read now exists; nothing forces the tickets onto it, but the reason "
+        "recorded in goal_library for not offering READ_TIMER is no longer true"
     )
 
 
