@@ -936,6 +936,33 @@ def _append_quick_panel_task_goals(goals: list[GoalState], world: WorldState) ->
                 distance=0.5,
             ))
         return
+    if world.page is Page.HOME and panel.get("open") is True:
+        # The sweep has been answered.  Without this row the goal *leaves the board* at
+        # exactly the frame that answers it, and both accounting channels miss it:
+        # ``progress_moved`` starts from ``next((g for g in after ...), None)`` and returns
+        # ``None`` for an absent row -- "unobserved", which neither rewards nor penalises --
+        # and ``newly_completed_goal_ids`` needs a COMPLETE row that cannot exist.  Measured
+        # 2026-10-03 on the live ledger: 1291 selections (the most-selected goal in the
+        # project), 54/54 recent steps succeeded, ``goal_progress`` None 54/54.  The goal
+        # was never failing and never idle; the ledger simply had no way to say
+        # "asked and answered" for a goal that answers by leaving.
+        #
+        # The shape is copied, not invented: ``ALLIANCE_DONATION`` below (CONTRIBUTED) and
+        # ``CLEAR_INTEL`` (expired window) already keep a finished goal on the board as
+        # COMPLETE with ``completion=1.0`` and ``distance=0.0``.
+        #
+        # No price and no skills, deliberately.  COMPLETE is in ``NOT_ACTIONABLE``, so
+        # ``priority`` is ``-inf`` and ``goal_utility.rank`` drops the row -- the Scheduler
+        # cannot re-select it.  Pricing it like the READY row would reopen the panel AUTO
+        # just opened, forever.  ``served_by`` names the precondition that stopped holding,
+        # so "answered" is distinguishable from "never asked" without replaying the frame.
+        goals.append(GoalState(
+            "DISCOVER_QUICK_PANEL_TASKS", GoalStatus.COMPLETE, completion=1.0,
+            evidence={"source": "LIVE_QUICK_PANEL_OPEN",
+                      "panel_open": True,
+                      "served_by": "OPEN_QUICK_PANEL"},
+            distance=0.0,
+        ))
     if world.page is not Page.HOME or panel.get("open") is not True:
         return
     rows = [dict(row) for row in (panel.get("rows") or ()) if isinstance(row, Mapping)]
