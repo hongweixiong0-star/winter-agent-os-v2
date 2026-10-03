@@ -655,6 +655,32 @@ def record_calendar_snapshot(
         snapshot["entries"] = rows
         scope["detail_return"] = {"pending": False, "observed_at": moment.isoformat(),
                                    "reason": "fresh_full_calendar_grid", "evidence_ref": evidence_ref}
+    elif kind == "ACTIVITY_STRIP":
+        # A fresh reading of the strip replaces the whole snapshot for this kind at the end of
+        # this function, and what the client draws is not the list of activities already read.
+        # Measured 2026-10-03, one hour after the credit shipped: role 1063040265's strip had
+        # no ``read_entries`` key at all while its EVENT_DETAIL carried
+        # ``strip_activity_credited='STATE_VS_STATE'``.  The credit had been written into the
+        # previous strip dict and the next strip reading on the following calendar visit
+        # discarded it -- so the debt came back, and the credit was the thing being lost.
+        #
+        # Carried forward here rather than re-derived, because the client cannot tell us which
+        # activities a previous run opened; only this ledger can.
+        previous = scope.get("ACTIVITY_STRIP") or {}
+        carried = [
+            row for row in previous.get("read_entries") or () if isinstance(row, Mapping)
+        ]
+        if carried:
+            merged = list(carried)
+            known = {str(row.get("event_id") or "") for row in merged}
+            for row in reading.get("read_entries") or ():
+                if isinstance(row, Mapping):
+                    event = str(row.get("event_id") or "")
+                    if event and event not in known:
+                        merged.append(dict(row))
+                        known.add(event)
+            snapshot["read_entries"] = merged
+            snapshot["read_entries_carried"] = len(carried)
     elif kind == "EVENT_DETAIL":
         occurrence = str(reading.get("matched_occurrence_key") or "")
         event_id = str(reading.get("matched_event_id") or reading.get("event_id") or "")
@@ -702,18 +728,32 @@ def record_calendar_snapshot(
             # spend must not turn into a permanent debt, which is the operator's section 7 --
             # safety and liveness are separate, and refusing here would re-create the loop
             # this line exists to end.
-            strip = scope.get("ACTIVITY_STRIP") or {}
-            already = {
+            #
+            # The credit is put on the snapshot itself, not only into ``scope`` in place.
+            # Measured 2026-10-03, one hour after this line shipped: role 1063040265's strip
+            # had **no** ``read_entries`` key while its EVENT_DETAIL carried
+            # ``strip_activity_credited='STATE_VS_STATE'`` -- the two contradicted each other.
+            # The cause is the line below that ends this function, ``scope[kind] = snapshot``:
+            # every observation replaces the whole snapshot for its kind, so a credit written
+            # into the previous strip dict is discarded the next time the strip is read
+            # again, which it is on every calendar visit.  Role 1061663148 still had its
+            # credit only because no strip read had happened since.
+            #
+            # So the credit is merged into the strip's own snapshot, because that is the dict
+            # ``advertised_but_unread_activities`` reads, and because writing it into ``scope``
+            # alone put it somewhere no reader looks.
+            strip = dict(scope.get("ACTIVITY_STRIP") or {})
+            known = {
                 str(row.get("event_id") or "")
                 for row in strip.get("read_entries") or () if isinstance(row, Mapping)
             }
-            if event_id not in already:
+            if event_id not in known:
                 strip["read_entries"] = [
                     *(strip.get("read_entries") or ()), {"event_id": event_id},
                 ]
-                strip["observed_at"] = moment.isoformat()
-                scope["ACTIVITY_STRIP"] = strip
-                snapshot["strip_activity_credited"] = event_id
+            strip["observed_at"] = moment.isoformat()
+            scope["ACTIVITY_STRIP"] = strip
+            snapshot["strip_activity_credited"] = event_id
         if matched is not None or reading.get("calendar_origin") == "GRID_ENTRY":
             scope["detail_return"] = {"pending": True, "observed_at": moment.isoformat(),
                                        "evidence_ref": evidence_ref}

@@ -129,6 +129,45 @@ def test_a_grid_activity_still_credits_its_row_and_never_the_strip(tmp_path):
     )
 
 
+def test_a_fresh_strip_reading_does_not_discard_the_credit(tmp_path):
+    """The bug this file exists to pin, found on the device an hour after the first version.
+
+    Role 1063040265's strip had **no** ``read_entries`` key while its EVENT_DETAIL carried
+    ``strip_activity_credited='STATE_VS_STATE'`` -- the two contradicted each other.  The
+    cause is that ``record_calendar_snapshot`` ends with ``scope[kind] = snapshot``, so every
+    observation replaces the whole snapshot for its kind.  The credit had been written into
+    the previous strip dict, and the next strip reading on the following calendar visit threw
+    it away, which is what brought the debt back.
+
+    What the client draws is not the list of activities a previous run opened, so a fresh
+    reading cannot re-derive it; only this ledger can carry it forward.
+    """
+    path = _state(tmp_path, strip_read=True)
+    _read_strip_detail(path, "CANYON_CLASH", "峡谷会战")
+    before = es.latest_calendar_snapshot(ROLE, path, kind="ACTIVITY_STRIP") or {}
+    assert [str(r.get("event_id")) for r in before.get("read_entries") or ()] == [
+        "STATE_VS_STATE", "CANYON_CLASH"]
+
+    es.record_calendar_snapshot(
+        role_id=ROLE, path=path, evidence_ref="probe2.png",
+        observation={
+            "kind": "ACTIVITY_STRIP", "recognized": True,
+            "entries": [
+                {"event_id": "CANYON_CLASH", "tap_norm": [0.74, 0.13]},
+                {"event_id": "STATE_VS_STATE", "tap_norm": [0.22, 0.13]},
+            ],
+        },
+    )
+    after = es.latest_calendar_snapshot(ROLE, path, kind="ACTIVITY_STRIP") or {}
+    survived = {str(r.get("event_id")) for r in after.get("read_entries") or ()}
+    assert "CANYON_CLASH" in survived, (
+        "a fresh strip reading discarded the credit; the debt will come back on the next "
+        f"calendar visit, which is the loop this work was to end. Survived: {survived}"
+    )
+    # And the debt stays discharged through the re-read, not merely recorded.
+    assert "CANYON_CLASH" not in es.advertised_but_unread_activities(ROLE, path)
+
+
 def test_the_live_convergence_check_still_passes():
     """Run the measurement itself rather than trusting the copy above it."""
     import subprocess

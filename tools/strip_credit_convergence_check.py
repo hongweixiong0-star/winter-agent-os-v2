@@ -119,14 +119,14 @@ def main() -> int:
             "re-reading does not append the same activity twice",
             len(rows) == len(read_ids), f"rows={rows}"))
 
-        # 5. And it must be a credit, not a payment.  STATE_VS_STATE was seeded as already
-        # read, so the honest assertion is that the strip is now fully discharged and that
-        # this happened because CANYON_CLASH was read, not because the strip was cleared.
-        other = es.advertised_but_unread_activities(ROLE, path)
-        checks.append((
-            "the strip is fully discharged, and it was CANYON_CLASH's own read that did it",
-            other == () and snapshot.get("strip_activity_credited") == "CANYON_CLASH",
-            f"still owed={other}, credited={snapshot.get('strip_activity_credited')!r}"))
+    # 5. And it must be a credit, not a payment.  STATE_VS_STATE was seeded as already
+    # read, so the honest assertion is that the strip is now fully discharged and that
+    # this happened because CANYON_CLASH was read, not because the strip was cleared.
+    other = es.advertised_but_unread_activities(ROLE, path)
+    checks.append((
+        "the strip is fully discharged, and it was CANYON_CLASH's own read that did it",
+        other == () and snapshot.get("strip_activity_credited") == "CANYON_CLASH",
+        f"still owed={other}, credited={snapshot.get('strip_activity_credited')!r}"))
 
     # 5b. A strip with nothing read must still show both activities as owed, which is what
     # makes the previous check a credit rather than a wipe.
@@ -140,6 +140,31 @@ def main() -> int:
             "reading one of two owed activities discharges only that one",
             before == ("CANYON_CLASH", "STATE_VS_STATE") and after == ("STATE_VS_STATE",),
             f"before={before} after={after}"))
+
+    # 5c. The bug this round found.  Reading the strip again replaces the whole snapshot for
+    # that kind, so a credit written into the previous dict was discarded on the next
+    # calendar visit.  Measured live: role 1063040265 had no read_entries key while its
+    # EVENT_DETAIL carried strip_activity_credited, and the debt came back.
+    with tempfile.TemporaryDirectory() as raw:
+        tmp = Path(raw)
+        path = _state(tmp, strip_read=True, detail_event="CANYON_CLASH")
+        _record_strip_detail(path, "CANYON_CLASH")
+        es.record_calendar_snapshot(
+            role_id=ROLE, path=path, evidence_ref="probe2.png",
+            observation={
+                "kind": "ACTIVITY_STRIP", "recognized": True,
+                "entries": [
+                    {"event_id": "CANYON_CLASH", "tap_norm": [0.74, 0.13]},
+                    {"event_id": "STATE_VS_STATE", "tap_norm": [0.22, 0.13]},
+                ],
+            },
+        )
+        strip = es.latest_calendar_snapshot(ROLE, path, kind="ACTIVITY_STRIP") or {}
+        survived = [str(r.get("event_id")) for r in (strip.get("read_entries") or [])]
+        checks.append((
+            "a fresh reading of the strip does not discard the credit",
+            "CANYON_CLASH" in survived,
+            f"read_entries after a new strip reading={survived}"))
 
     # 6. A grid detail must still go to the row, not to the strip.
     with tempfile.TemporaryDirectory() as raw:
