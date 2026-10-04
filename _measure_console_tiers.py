@@ -53,6 +53,36 @@ class _IdlePump:
         raise AssertionError("measuring must never revive a real pump")
 
 
+class _HeaderStrip:
+    """A stub panel that owns a **real** nine-cell strip, so the width is Tk's own measurement.
+
+    The stub exists because ``_set_health`` / ``_show_header_cell`` reach for ``self.values``,
+    ``self.indicators`` and ``self._indicator_cells``; everything else they touch is the real
+    methods, bound here rather than re-implemented, because a re-implementation would measure this
+    script instead of the window.
+    """
+
+    def __init__(self, panel, tk_root, strip) -> None:
+        self.values = {key: tk.StringVar(value=value)
+                       for key, value in panel.status_defaults().items()}
+        self.indicators: dict = {}
+        self._indicator_cells: dict = {}
+        for i, (label, key) in enumerate(panel.SYSTEM_INDICATORS):
+            cell = ttk.Frame(strip, style="Card.TFrame")
+            cell.grid(row=0, column=i, padx=6, sticky="w")
+            ttk.Label(cell, text=label, style="Muted.TLabel",
+                      background=panel.PANEL).pack(anchor="w")
+            mark = tk.Label(cell, textvariable=self.values[key], background=panel.PANEL,
+                            fg=panel.MUTED)
+            mark.pack(anchor="w")
+            self.indicators[key] = mark
+            self._indicator_cells[key] = cell
+            if key in panel.HEADER_FOLD_TO_L1:
+                cell.grid_remove()
+        for name in ("_set_health", "_show_header_cell"):
+            setattr(self, name, types.MethodType(getattr(panel.ControlPanel, name), self))
+
+
 def harness(panel, tk_root, tmp: Path):
     class _Harness:
         def __init__(self):
@@ -184,6 +214,51 @@ def main() -> int:
         fold.expanded = declared_state[key]
         fold.paint()
     assert page_height() == as_declared, "state was not restored before the next measurement"
+
+    # 总览 is a multi-column grid, so the page is as tall as its tallest column -- and a fold that
+    # shortens one column need not shorten the page.  Measured on the fold's *own container* and on
+    # its *immediate parent*, because "the page height did not move" on its own leaves the claim
+    # untestable: the honest sentence has to name which frame got shorter.
+    print(f"\n[2b] 实时画面 folds away whose height")
+    pv = h._folds["preview"]
+    owner = pv.outer.master
+    cell = pv.outer.grid_info() or pv.outer.pack_info()
+    where = (f"grid row={cell.get('row')} column={cell.get('column')}"
+             if pv.outer.winfo_manager() == "grid" else f"pack {cell.get('side')}")
+    readings = {}
+    for state in (True, False):
+        pv.expanded = state
+        pv.paint()
+        tk_root.update_idletasks()
+        readings[state] = (int(pv.outer.winfo_reqheight()), int(owner.winfo_reqheight()),
+                           page_height())
+    pv.expanded = declared_state["preview"]
+    pv.paint()
+    tk_root.update_idletasks()
+    assert page_height() == as_declared, "state was not restored before the next measurement"
+    open_self, open_owner, open_page = readings[True]
+    shut_self, shut_owner, shut_page = readings[False]
+    print(f"    the block sits at            : {where}")
+    print(f"    the block itself             : {open_self:>5} px open -> {shut_self:>5} px folded"
+          f"  ({shut_self - open_self:+d})")
+    print(f"    its parent (one column)      : {open_owner:>5} px open -> {shut_owner:>5} px folded"
+          f"  ({shut_owner - open_owner:+d})")
+    print(f"    the whole page               : {open_page:>5} px open -> {shut_page:>5} px folded"
+          f"  ({shut_page - open_page:+d})")
+    # Why the page loses 15 px and not 368: a grid row is as tall as its tallest cell, so shortening
+    # the centre column only pays back whatever the centre used to exceed its neighbours by.  Printed
+    # with its numbers so the sentence in the report is arithmetic the reader can redo, not a story.
+    if owner.winfo_manager() == "grid":
+        seat = owner.grid_info()
+        others = "  ".join(
+            f"col{child.grid_info().get('column')}={int(child.winfo_reqheight())}px"
+            for child in page.winfo_children()
+            if child.winfo_manager() == "grid" and child is not owner
+            and child.grid_info().get("row") == seat.get("row"))
+        print(f"    the column sits at           : grid row={seat.get('row')}"
+              f" column={seat.get('column')}")
+        print(f"    the other cells in that row  : {others or '(none)'}"
+              f"   <- the row is their max, so the tallest cell binds")
 
     # The claim that matters: an abnormal block surfaces with no click.
     print(f"\n[3] an abnormal block opens itself (no click, no restart)")
@@ -367,6 +442,145 @@ def main() -> int:
     h._sync_folds()
     print(f"    a real breakpoint                 -> dev_loop open={h._folds['dev_loop'].expanded}"
           f"  badge={h._folds['dev_loop'].badge.get()!r}")
+
+    # The three pages the rollout had not reached when this script was first written.  Measured as an
+    # A/B **inside one run** rather than against a "before" remembered from the previous run: a stale
+    # baseline is an instrument that lies in the flattering direction, which is exactly §59.  "Every
+    # fold on this page forced open" *is* the before-picture -- the page as it would be drawn if §六
+    # had never been applied -- and it is obtained from the same widgets, in the same process.
+    #
+    # Built on ``h`` rather than ``real``: the data files these three read are resolved through the
+    # module-level ROOT whatever harness is used, so the *content* is identical either way, while
+    # ``h``'s ``_save_panel_state`` raises -- which makes it a tripwire if any path on the way
+    # turns out to write.  That is the check §58 says to make rather than assume.
+    print(f"\n[11] 策略 / 目标 / 活动：同一运行内的 A/B（全开 = 没做过分层的那个页面）")
+
+    def body_of(tab_frame):
+        """The frame whose height is the page: a scroll tab's canvas child, else the tab itself."""
+        canvas = next((child for child in tab_frame.winfo_children()
+                       if child.winfo_class() == "Canvas"), None)
+        return canvas.winfo_children()[0] if canvas is not None else tab_frame
+
+    for name, builder in (("策略", "_strategy"), ("目标", "_goals"), ("活动", "_event_goal")):
+        known = set(h._folds)
+        getattr(h, builder)()
+        tk_root.update_idletasks()
+        tab_frame = h.tabs.winfo_children()[-1]
+        body = body_of(tab_frame)
+        # Which folds belong to this page, attributed by construction order rather than typed out:
+        # a hard-coded list would keep measuring the page it was written for.
+        own = sorted(set(h._folds) - known)
+        declared = {key: h._folds[key].expanded for key in own}
+        for key in own:
+            h._folds[key].expanded = True
+            h._folds[key].paint()
+        tk_root.update_idletasks()
+        opened = int(body.winfo_reqheight())
+        for key, state in declared.items():
+            h._folds[key].expanded = state
+            h._folds[key].paint()
+        tk_root.update_idletasks()
+        shut = int(body.winfo_reqheight())
+        if own:
+            note = (f"省 {opened - shut:>4} px（{100 * (opened - shut) / max(opened, 1):.0f}%）"
+                    f"  {len(own)} 个折叠 {own}")
+        else:
+            note = "没有折叠（§六: 靠列序，不靠折叠）"
+        print(f"    {name:<4} body {opened:>5} px 全开 -> {shut:>5} px 按声明   {note}")
+        # Where the height actually is, in the state the operator receives.  Only the tall pages get
+        # a breakdown: on 目标 the number is already small enough to act on, and the point there is
+        # that its height is not the problem.
+        if shut > 500:
+            for index, child in enumerate(body.winfo_children()):
+                height = child.winfo_reqheight()
+                label = ""
+                if child.winfo_class() == "TFrame":
+                    labels = [grand.cget("text") for grand in child.winfo_children()
+                              if grand.winfo_class() == "TLabel" and grand.cget("text")]
+                    label = (labels[0] if labels else "")[:26]
+                print(f"         [{index}] {child.winfo_class():<9} {height:>5} px  {label}")
+
+    # The 目标 table is the one page whose tiers are honoured by **column order** rather than by
+    # folds, and an order is exactly the kind of change that goes wrong silently: ``values=(...)``
+    # is matched to ``columns=(...)`` by index, so a column moved in one place and not the other
+    # relabels every cell while still looking like a working table.  Print a real row against its
+    # own headings, in order -- the pairing is the assertion.
+    print(f"\n[12] 目标: the headings and a real row, in the same order")
+    h._goals()
+    tk_root.update_idletasks()
+    board = h.goal_board
+    columns = list(board.cget("columns"))
+    headings = [board.heading(key)["text"] for key in columns]
+    tiers = [tier for key, _t, _w, tier in panel.GOAL_COLUMNS]
+    print(f"    widths  : {[board.column(key)['width'] for key in columns]}")
+    print(f"    tiers   : {tiers}")
+    print(f"    headings: {headings}")
+    rows = board.get_children()
+    if rows:
+        print(f"    row[0]  : {list(board.item(rows[0], 'values'))}")
+    else:
+        print(f"    row[0]  : (the board is empty on this data root)")
+    seen: list[str] = []
+    for tier in tiers:
+        if not seen or seen[-1] != tier:
+            seen.append(tier)
+    print(f"    -> L1 columns come first, tiers read {seen}, "
+          f"and no tier is split by a later one: {len(seen) == len(set(seen))}")
+
+    # §六's 「游戏实时画面 L2 → 卡住时 L1」.  The interesting state is the one that stays shut: a
+    # window that has not read the episode stream yet must not open a 300 px screenshot on the
+    # strength of not knowing anything.
+    print(f"\n[13] 实时画面的开启判据，四种输入")
+    for label, rows in (
+        ("no reading yet（没跑过 _progress_line）", None),
+        ("no rows at all（episode 里没有行）", []),
+        ("actions failing（verifier 未通过）", [{"verifier_ok": False, "goal_progress": False}]),
+        ("a clean pass（动作成功且目标前进）", [{"verifier_ok": True, "goal_progress": True}]),
+        ("actions ok, goal flat（§六 的「卡住」）", [{"verifier_ok": True, "goal_progress": False}]),
+    ):
+        if rows is None:
+            h.__dict__.pop("_progress_stalled", None)
+        else:
+            h._progress_stalled = panel.progress_is_stalled(rows)
+        h._sync_folds()
+        fold = h._folds["preview"]
+        print(f"    {label:<34} -> open={str(fold.expanded):<5} {panel.progress_is_stalled(rows) if rows is not None else 'no reading'}"
+              f"  badge={fold.badge.get()!r}")
+
+    # 顶栏: nine cells, three of them L3 by §六.  Measured on a *real* strip made of the panel's own
+    # SYSTEM_INDICATORS, so the width is Tk's own answer and not a sum of font estimates.  The real
+    # readings that decide which state is "today" come from _probe_header_cells.py (measured
+    # 2026-10-04: WorkBuddy 正常 / 预载 等待 / 本地模型 正常 -- all three healthy, so today is the
+    # 6-cell strip).
+    print(f"\n[14] 顶栏 9 格：§六 收起三格之后，条子有多宽")
+    from winter_agent_v2.state_truth import CONFLICT, LIVE_OBSERVED, TruthValue
+
+    strip = ttk.Frame(tk_root)
+    strip.pack(anchor="w")
+    stub = _HeaderStrip(panel, tk_root, strip)
+    healthy = TruthValue(name="gateway_health", value="正常", status=LIVE_OBSERVED)
+    sick = TruthValue(name="gateway_health", value="不可达", status=CONFLICT)
+
+    def strip_width() -> int:
+        tk_root.update_idletasks()
+        return int(strip.winfo_reqwidth())
+
+    for key in [k for _, k in panel.SYSTEM_INDICATORS]:
+        stub._set_health(key, healthy)
+    six = strip_width()
+    still_seated = [k for k in panel.HEADER_FOLD_TO_L1 if stub._indicator_cells[k].grid_info()]
+    for key in panel.HEADER_FOLD_TO_L1:
+        stub._set_health(key, sick)
+    nine = strip_width()
+    print(f"    all nine healthy（今天真实取数）      : {six:>5} px"
+          f"   L3 三格里还在条上的：{still_seated}（空 = 三格都收起了）")
+    print(f"    the three not healthy              : {nine:>5} px"
+          f"   多占 {nine - six} px（{100 * (nine - six) / max(nine, 1):.0f}%）")
+    back = {k: stub._indicator_cells[k].grid_info().get("column")
+            for k in panel.HEADER_FOLD_TO_L1}
+    print(f"    收起后各自的列号（重排会骗人）        : {back}")
+    print(f"    L1 六格任何读数下都在                : "
+          f"{[k for k in panel.HEADER_ALWAYS if stub._indicator_cells[k].grid_info()] == list(panel.HEADER_ALWAYS)}")
 
     tk_root.destroy()
     return 0

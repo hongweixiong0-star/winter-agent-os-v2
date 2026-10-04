@@ -1531,6 +1531,52 @@ SYSTEM_INDICATORS: tuple[tuple[str, str], ...] = (
     ("预载", "dot_boot"), ("时间", "clock"),
 )
 
+# §六's first row: 「顶栏 9 格 → 6 常驻 + 3 折叠」.  The three L3 cells are *removed from the strip*
+# while healthy rather than given a click-to-open header, for a reason that is about the strip and
+# not about the cells: nine cells exist to be read in one glance, so the price of a disclosure
+# control is higher here than anywhere else on the page -- and the row that would have to be clicked
+# is the one worth least.  Removal is not silence: the cell returns the instant its reading stops
+# being 健康, which is the 「异常浮 L1」 half of the same rule, and it returns *in its own column*
+# (``grid_remove`` remembers the seat) so the bar never re-shuffles under the operator's eyes.
+#
+# 未确认 counts as **not** healthy, deliberately.  The console's standing rule is 「不显示 ≠ 一切正常」:
+# if absence could mean either "fine" or "I could not read it", absence would answer nothing, and a
+# broken reader would look exactly like a healthy system -- the same reason ``run_fold_rule`` prints
+# 异常判定失败 rather than an all-clear when a rule raises.
+#
+# Measured on the real root, 2026-10-04: WorkBuddy 正常 / 预载 等待 / 本地模型 正常 -- all three hide,
+# so this is a 9→6 strip today and not a declaration with no effect.
+HEADER_FOLD_TO_L1: dict[str, str] = {
+    "dot_wb": "WorkBuddy 是内部开发平台：健康时用户不据此决策，且长期不变",
+    "dot_model": "本地模型是可替换算力：换一个模型，用户要做的事不变",
+    "dot_boot": "预载进度不是决策项；它停住或降级时自己会浮回 L1",
+}
+# Read off the one row above, so the prose "6 常驻" cannot drift from the table that says 9.
+# (``SYSTEM_INDICATORS`` is ``(label, key)`` in that order, as the construction loop reads it.)
+HEADER_ALWAYS: tuple[str, ...] = tuple(
+    cell_key for _label, cell_key in SYSTEM_INDICATORS
+    if cell_key not in HEADER_FOLD_TO_L1)
+# The colour classes ``state_truth.health_of`` returns for the words that mean "nothing to report".
+# Three of six: 降级/未确认/异常 all stay on the strip.
+HEADER_HEALTHY_COLOURS: tuple[str, ...] = ("good", "work", "idle")
+
+
+def header_cell_is_visible(key: str, value: Any) -> bool:
+    """Whether one top-bar cell has earned its seat on the strip, per §六's tier table.
+
+    Decided from the raw ``TruthValue`` -- the same object the cell is painted from -- rather than
+    from the painted word, because two readings of one value is how a cell ends up hidden while its
+    own text says 异常.  ``None`` (the audit has no such source at all) is visible for the same
+    reason 未确认 is: "no answer" must not be indistinguishable from "fine".
+    """
+    if key not in HEADER_FOLD_TO_L1:
+        return True
+    if value is None:
+        return True
+    from winter_agent_v2.state_truth import health_of
+
+    return health_of(value)[1] not in HEADER_HEALTHY_COLOURS
+
 # The tab labels, and **only** the tabs that exist.  Key = the page's internal name (what
 # ``_tab`` and every deep link use); value = the text the operator reads.  This is a
 # *display-name* map, not a restructuring: the frames and their content are untouched, so an
@@ -1633,6 +1679,25 @@ INERT_FOLDS: dict[str, str] = {
                 "真卡住时 ``WORKBUDDY_QUEUE_STUCK`` 与闭环断点已经先浮上来了。",
     "dev_jobs": "Job 历史与模型战绩是两本账：审计**过去**某一轮怎么跑的时候才看，"
                 "不决定下一步做什么。",
+    # The five added with the last three pages (策略 / 活动 / 目标).  Same rule again: a block with
+    # no rule of its own says here why it has none, so "folded and silent" is never the same thing
+    # as "forgotten".  Note that 目标 contributes nothing to this dict -- it declares no folds at
+    # all, for the reason written on ``GOAL_COLUMNS``.
+    "policy_reward": "这一行是**已经在生效**的奖励规则，不是设置：它只在操作者改奖励策略时才变，"
+                     "所以按第三问「它是不是一直不变」折叠。它的异常形态（出现一个有成本的奖励）"
+                     "由 Resource Policy 判定，不在这一行报。",
+    "policy_resource": "六行资源策略同理。§六 的例外表确实说「任一花钱 / 不可逆操作在进行" 
+                       "时资源策略浮 L1」，但 §五 的审计结论是**这个信号在项目里还不存在** —— "
+                       "它是那份审计里唯一真正缺的一项。为它写规则就得先编出这个信号，"
+                       "那正是这套机制存在的意义所在要避免的第二个意见（同 ``dev_queue``）。",
+    "policy_forbidden": "这一块是操作者**自己过去**下的禁令清单。看不到它不会让系统做错事"
+                        "（禁止的目标本来就不会进候选），只会在操作者忘了自己禁过什么时"
+                        "需要翻一眼 —— 这正是「按需查看」的定义。",
+    "event_detail": "阶段 / 档位 / 计划 / 消耗 / 积分验证回答的是「怎么走到这一步的」，"
+                    "而「现在什么情况」由上面常驻的九行回答。§六 给这一页没有例外行，"
+                    "唯一说得通的触发（剩余时间将尽）在项目里没有任何声明过的阈值（同 ``dev_queue``）。",
+    "event_fishing": "钓鱼是一个子玩法，六格 × 两个角色 + 十一项指标。它是**参考**："
+                     "不出钓的时候不需要看，出钓的时候看的也是活动页上面那九行。",
 }
 
 
@@ -1646,6 +1711,26 @@ def failure_priority(count: int) -> str:
     bucketing already existed; the threshold is the project's, not the fold's.
     """
     return "P0" if count >= 10 else ("P1" if count >= 3 else "P2")
+
+
+def progress_is_stalled(rows: Any) -> bool:
+    """Did the last steps succeed as *actions* without moving a Goal?
+
+    The project's own "stuck" predicate, extracted for the same reason as ``failure_priority``:
+    two places need it, and two copies would be two opinions about the same fact.  The progress
+    line already prefixes ``⚠ 无目标进展`` on exactly this condition -- it is the distinction the
+    operator asked for himself (动作成功 vs 目标进展) -- and §六's 游戏实时画面 row is "L2 →
+    卡住时 L1", so the fold rule opens the image on it.  **No threshold is invented here**: the
+    predicate existed, and §六's 卡住 is its name.
+
+    ``actions`` must be non-zero on purpose.  With nothing having run there is no evidence of
+    being stuck, only of not having started, and opening a block for that is the wolf-cry this
+    whole mechanism exists to avoid -- the same line ``_escalate_dev_loop`` draws between "no
+    card" and "a card that says it never ran".
+    """
+    actions = sum(1 for row in rows if row.get("verifier_ok") is True)
+    progress = sum(1 for row in rows if row.get("goal_progress") is True)
+    return bool(actions) and not progress
 
 
 def run_fold_rule(rule: Callable[[], str] | None) -> str:
@@ -1864,6 +1949,56 @@ CATALOG_UNFRESHNESSED: dict[str, str] = {
 #: a second time -- so the fold cannot watch a different set of files from the ones its cards
 #: print the age of.
 KPI_FOLD_SOURCES: tuple[str, ...] = tuple(dict.fromkeys(CATALOG_FRESHNESS.values()))
+
+#: The goal table's columns, in the order they are drawn: ``(key, title, width, tier)``.
+#:
+#: One declaration on purpose.  The headings and every ``insert()`` row are positionally coupled --
+#: ``values=(...)`` is matched to ``columns=(...)`` by index, so a column moved in one place and
+#: not the other silently relabels every cell while still looking like a working table.  Both sides
+#: are derived from this tuple, which removes that class of defect rather than documenting it.
+#:
+#: §六 assigned tiers per *column* here, and a table is the one shape the fold mechanism cannot
+#: express: the board is a single ``Treeview`` with ``expand=True``, so it has no vertical slack to
+#: give back (measured: this page is 338 px whether or not anything is folded).  Folding is
+#: therefore the wrong instrument, and §六's assignment is honoured by **column order** instead --
+#: L1 leftmost, so the columns a reader decides on are visible without scrolling sideways.
+#: ``blocked`` also gains width: §六 makes it L1 ("卡在哪"), but at its old 120 px the reason it
+#: carries was cut off.
+GOAL_COLUMNS: tuple[tuple[str, str, int, str], ...] = (
+    ("goal", "目标", 180, L1),
+    ("priority", "优先级", 64, L1),
+    ("status", "状态", 88, L1),
+    ("deadline", "剩余", 80, L1),
+    ("blocked", "阻塞原因", 210, L1),
+    ("progress", "进度/目标", 105, L2),
+    ("next", "下一动作", 150, L2),
+    ("category", "类别", 76, L3),
+    ("skills", "贡献能力", 190, L3),
+)
+
+#: The activity record's fields, split by §六's tier for each one.
+#:
+#: Two tuples rather than one list with tiers attached, because the split *is* the change: the
+#: reader's question is "is this activity safe, on track, and running out of time", and §六 answers
+#: exactly that with these nine -- including 数据来源 / 最后验证, which it keeps at L1 under
+#: 诚实性要求 rather than under convenience.  The other five are how it got there.
+#:
+#: 阶段 moved out of the headline card even though it reads like a status word: §六 tiers it L2
+#: beside 目标档位, and the two are the same kind of fact (which rung, which phase).
+#:
+#: The union of the two is a contract with ``_refresh_event_goal_display``, which writes each key
+#: straight into ``event_goal_vars``: a key in the tuples and not in its ``values`` dict renders a
+#: permanently blank row, and one in its dict and not here raises on the next refresh.
+EVENT_L1_FIELDS: tuple[tuple[str, str], ...] = (
+    ("活动", "name"), ("数据来源", "source"), ("最后验证", "last_verified"),
+    ("当前积分", "current"), ("低保目标", "target"), ("积分缺口", "missing"),
+    ("剩余时间（验证时）", "remaining"), ("状态", "status"), ("奖励", "rewards"),
+)
+
+EVENT_L2_FIELDS: tuple[tuple[str, str], ...] = (
+    ("阶段", "phase"), ("目标档位", "tier"), ("已执行计划", "plan"),
+    ("资源消耗", "resource"), ("积分验证", "verified"),
+)
 
 _CACHE_LOCK = threading.Lock()
 _CATALOG_CACHE: tuple[float, dict[str, Any]] | None = None
@@ -4869,12 +5004,23 @@ class ControlPanel:
         # as WorkBuddy's second-level detail: this row is the four frozen layers plus the
         # three system services, and nothing else.
         self.indicators: dict[str, tk.Label] = {}
+        # The three §六 L3 cells are *removed from the strip*, not blanked: a blank cell still holds
+        # its column, and nine slots with three holes in them are still nine slots.  Held here rather
+        # than looked up through the widget tree so ``_set_health`` can decide visibility without
+        # walking parents on every tick.
+        self._indicator_cells: dict[str, Any] = {}
         for i, (label, key) in enumerate(SYSTEM_INDICATORS):
             cell = ttk.Frame(status, style="Card.TFrame"); cell.grid(row=0, column=i, padx=6, sticky="w")
             ttk.Label(cell, text=label, style="Muted.TLabel", background=PANEL).pack(anchor="w")
             mark = tk.Label(cell, textvariable=self.values[key], background=PANEL, fg=MUTED)
             mark.pack(anchor="w")
             self.indicators[key] = mark
+            self._indicator_cells[key] = cell
+            if key in HEADER_FOLD_TO_L1:
+                # Starts hidden; the first ``_refresh_top`` pass re-decides it from the real reading,
+                # so this cannot outlive the first tick.  ``grid_remove`` (not ``pack_forget``/destroy)
+                # keeps ``column=i``, so a cell that comes back lands where the table says it belongs.
+                cell.grid_remove()
         self.tabs = ttk.Notebook(shell); self.tabs.pack(fill="both", expand=True, pady=(10, 0))
         self._overview(); self._goals(); self._strategy(); self._event_goal(); self._capabilities(); self._auto_development(); self._system()
         # Opening a tab is the moment its data must be current, not the next tick.
@@ -5190,6 +5336,24 @@ class ControlPanel:
         count, failure = max(worst)
         return f"{human_reason(failure)} 已出现 {count} 次（P0）"
 
+    def _escalate_preview(self) -> str:
+        """§六: 游戏实时画面 is L2, and rises to L1 「卡住时」.
+
+        The condition is ``progress_is_stalled`` -- the very predicate that puts ``⚠ 无目标进展``
+        on the progress line, read from the window's own last reading of it rather than by
+        re-reading the episode tail here.  Two consequences worth stating:
+
+        * the block and the line can never disagree, because they are one judgement;
+        * no reading yet (``_progress_stalled`` is unset) does **not** open it.  Not knowing is not
+          the same as knowing something is wrong -- the same line ``_escalate_dev_loop`` draws
+          between "no closure card" and "a card that says it never ran".
+        """
+        if not getattr(self, "_progress_stalled", None):
+            return ""
+        # No leading ⚠: ``_sync_folds`` puts that on the badge itself (``f"⚠ {said}"``), and a
+        # rule that adds its own renders as "⚠ ⚠ ..." -- measured on the first run of this rule.
+        return "动作在做但没有目标进展｜原始画面是这一刻唯一能直接看懂的证据"
+
     def _escalate_watchdog(self) -> str:
         """The one watchdog rule, used by **both** blocks that show the watchdog.
 
@@ -5299,14 +5463,21 @@ class ControlPanel:
             ttk.Label(row, text=task, background=PANEL).pack(side="left")
             self.today[task] = tk.StringVar(value=PENDING)
             ttk.Label(row, textvariable=self.today[task], style="Muted.TLabel", background=PANEL).pack(side="right")
-        bar = ttk.Frame(center, style="Card.TFrame"); bar.pack(fill="x", pady=(0, 8))
-        ttk.Label(bar, text="游戏实时画面", style="Section.TLabel", background=PANEL).pack(side="left")
+        # §六: 游戏实时画面 is L2 and becomes L1 「卡住时」.  It is the largest single thing on this
+        # page (a fixed 300 px holder plus its header row), and it is a *raw evidence* pane: while
+        # the system is moving, the answer to "what is happening" is the three lines to the right,
+        # not a screenshot.  When it is not moving, the screenshot is the only thing a reader can
+        # interpret without help -- which is exactly why §六 raises it rather than deleting it.
+        live = self._fold(center, key="preview", title="游戏实时画面", level=L2,
+                          escalate=self._escalate_preview,
+                          pack={"fill": "both", "expand": True}, badge_wrap=320)
+        bar = ttk.Frame(live, style="Card.TFrame"); bar.pack(fill="x", pady=(0, 8))
         choice = ttk.Combobox(bar, textvariable=self.preview_mode, values=("原始画面", "Vision", "OCR", "识别结果"), width=12, state="readonly")
         choice.pack(side="right"); choice.bind("<<ComboboxSelected>>", lambda _e: self._render_preview())
         # Fixed-height holder: inside a scroll area the preview has no leftover space
         # to expand into, so without a declared height it would render at whatever
         # the last label measured and jump when the first screenshot arrived.
-        holder = tk.Frame(center, bg="#070b10", height=300)
+        holder = tk.Frame(live, bg="#070b10", height=300)
         holder.pack(fill="both", expand=True); holder.pack_propagate(False)
         self.preview = tk.Label(holder, text="正在获取 MuMu 截图…", bg="#070b10", fg=MUTED, font=("Microsoft YaHei UI", 11))
         self.preview.pack(fill="both", expand=True)
@@ -5316,7 +5487,7 @@ class ControlPanel:
         # last resize event is indistinguishable and costs one pass.
         self.preview.bind("<Configure>", lambda _e: self._schedule_preview_render())
         self.preview_meta = tk.StringVar(value=NO_DATA)
-        ttk.Label(center, textvariable=self.preview_meta, style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(8, 0))
+        ttk.Label(live, textvariable=self.preview_meta, style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(8, 0))
         ttk.Label(right, text="当前决策", style="Section.TLabel", background=PANEL).pack(anchor="w")
         # V2 decides, MAA executes.  The backend is the first thing in this column
         # because "which hands moved" is the fact that makes every other line here
@@ -5534,15 +5705,31 @@ class ControlPanel:
             button.grid(row=1 + index // 4, column=index % 4, sticky="w", padx=18, pady=10)
             self.policy_buttons[name] = button
             grid.columnconfigure(index % 4, weight=1)
-        reward = ttk.Frame(tab, style="Card.TFrame", padding=18); reward.pack(fill="x", pady=(12, 0))
-        ttk.Label(reward, text="Reward Policy · FREE_CLAIM_FIRST", style="Section.TLabel", background=PANEL).pack(anchor="w")
-        ttk.Label(reward, text="免费无选择奖励：自动领取  ·  未知奖励内容：允许领取  ·  有选择奖励：交给 Strategy  ·  有成本：Resource Policy 判断  ·  真实支付：永久禁止 🔒", background=PANEL, wraplength=1050).pack(anchor="w", pady=(8, 0))
-        resource = ttk.Frame(tab, style="Card.TFrame", padding=18); resource.pack(fill="x", pady=(12, 0))
-        ttk.Label(resource, text="Resource Policy", style="Section.TLabel", background=PANEL).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 8))
+        # §六 has no 策略 page row at all -- it is mentioned once, in the exception table, as the
+        # page whose 🔒 row and 资源策略 float to L1 when something irreversible is in flight.  So
+        # the tiers below are derived from §六's own three questions rather than copied from a
+        # table: 看到它会不会改变行为 / 看不到会不会做错决策 / 它是不是一直不变.
+        #
+        # The switches above stay open because they are the controls.  These three cards are
+        # statements of policy already in force -- they change when the operator changes them and
+        # at no other time, which is the third question answered.  Measured before folding: they
+        # were 586 of the page's 1024 px, and this page does *not* scroll, so on a 1080p screen the
+        # bottom was unreachable rather than merely long.  That is the defect, not the length.
+        #
+        # No rule on any of the three, and the reason is the one ``dev_queue`` records: §六's
+        # trigger for the 资源策略 half is "任一花钱 / 不可逆操作在进行", and §五 of the audit found
+        # that signal does not exist in this project yet -- it is the one genuinely missing item.
+        # A rule here would have to invent the signal, which is the second opinion this mechanism
+        # exists to avoid.
+        reward = self._fold(tab, key="policy_reward", title="Reward Policy · FREE_CLAIM_FIRST",
+                            level=L2, pack={"fill": "x", "pady": (12, 0)})
+        ttk.Label(reward, text="免费无选择奖励：自动领取  ·  未知奖励内容：允许领取  ·  有选择奖励：交给 Strategy  ·  有成本：Resource Policy 判断  ·  真实支付：永久禁止 🔒", background=PANEL, wraplength=1050).pack(anchor="w")
+        resource = self._fold(tab, key="policy_resource", title="Resource Policy", level=L2,
+                              pack={"fill": "x", "pady": (12, 0)})
         policies = (("普通资源", "自动优化"), ("加速", "按 Queue / Deadline / Event Synergy 决定"),
                     ("钻石", "保守"), ("活动道具", "优先截止期"), ("稀缺资源", "Resource Bank 预留"),
                     ("真实支付", "永久禁止 🔒"))
-        for row, (name, value) in enumerate(policies, 1):
+        for row, (name, value) in enumerate(policies):
             ttk.Label(resource, text=name, style="Muted.TLabel", background=PANEL, width=16).grid(row=row, column=0, sticky="w", pady=5)
             ttk.Label(resource, text=value, background=PANEL, foreground=BAD if name == "真实支付" else TEXT).grid(row=row, column=1, sticky="w", pady=5)
         # The operator's standing prohibitions are shown as read-only rules, for the same
@@ -5552,10 +5739,14 @@ class ControlPanel:
         # build -- so it has to be visible as forbidden, or it will be re-proposed forever.
         forbidden = read_policy_state(POLICY_STATE_PATH).get("disabled_goals")
         if isinstance(forbidden, dict) and forbidden:
-            blocked = ttk.Frame(tab, style="Card.TFrame", padding=18); blocked.pack(fill="x", pady=(12, 0))
-            ttk.Label(blocked, text="禁止执行 · POLICY_DISABLED_BY_USER 🔒", style="Section.TLabel", background=PANEL).pack(anchor="w")
+            # Conditional, so this fold exists only when the operator has actually forbidden
+            # something.  That is correct here -- an empty list is not a state worth a header --
+            # and it is why ``INERT_FOLDS`` keys off the declaration rather than the runtime set.
+            blocked = self._fold(
+                tab, key="policy_forbidden", title="禁止执行 · POLICY_DISABLED_BY_USER 🔒",
+                level=L2, pack={"fill": "x", "pady": (12, 0)})
             ttk.Label(blocked, text="由操作者明确禁止：不进入候选、不执行、不需要开发；不是待接入，也不是能力缺失。",
-                      style="Muted.TLabel", background=PANEL, wraplength=1200, justify="left").pack(anchor="w", pady=(6, 4))
+                      style="Muted.TLabel", background=PANEL, wraplength=1200, justify="left").pack(anchor="w", pady=(0, 4))
             for goal_id, reason in sorted(forbidden.items()):
                 ttk.Label(blocked, text=f"{goal_id}   ·   {reason}",
                           background=PANEL, foreground=BAD).pack(anchor="w", pady=1)
@@ -5616,9 +5807,14 @@ class ControlPanel:
         # rule for this audit is "不要因为以后可能有用就保留".  The frame's number is still
         # shown once, correctly labelled, in ``goal_board_meta`` below -- which is where
         # "this is page recognition, not a per-Goal figure" can actually be said in words.
-        self.goal_board = ttk.Treeview(tab, columns=("goal", "category", "priority", "status", "progress", "deadline", "next", "blocked", "skills"), show="headings")
-        for key, title, width in (("goal", "目标", 185), ("category", "类别", 80), ("priority", "优先级", 70), ("status", "状态", 90), ("progress", "进度/目标", 105), ("deadline", "剩余", 80), ("next", "下一动作", 150), ("blocked", "阻塞原因", 120), ("skills", "贡献能力", 190)):
-            self.goal_board.heading(key, text=title); self.goal_board.column(key, width=width, anchor="w")
+        #
+        # No folds on this page either, and that is the finding rather than an omission: see
+        # ``GOAL_COLUMNS``.  §六 tiers these columns, and a ``Treeview`` is not a stack of blocks.
+        self.goal_board = ttk.Treeview(
+            tab, columns=tuple(key for key, _, _, _ in GOAL_COLUMNS), show="headings")
+        for key, title, width, _tier in GOAL_COLUMNS:
+            self.goal_board.heading(key, text=title)
+            self.goal_board.column(key, width=width, anchor="w")
         self.goal_board.pack(fill="both", expand=True)
         self.goal_board_meta = tk.StringVar(value="尚无真实 GoalState；运行识别后自动更新。")
         ttk.Label(tab, textvariable=self.goal_board_meta, style="Muted.TLabel").pack(anchor="w", pady=(8, 0))
@@ -5696,6 +5892,17 @@ class ControlPanel:
             parts.append(f" · 至 {until}")
         return "".join(parts)
 
+    def _goal_row(self, cells: dict) -> tuple:
+        """One table row, in the declared column order, from cells keyed by column name.
+
+        Strict on purpose: a missing cell must raise here rather than print as a blank, because a
+        blank reads as "unknown" and that is the exact failure the 置信度 column was deleted for.
+        The companion guard asserts every declared column is named by every caller, so this cannot
+        fire from a forgotten column -- only from a caller that was never updated, which is what it
+        is for.
+        """
+        return tuple(str(cells[key]) for key, _, _, _ in GOAL_COLUMNS)
+
     def _refresh_goal_board(self) -> None:
         if not hasattr(self, "goal_board"):
             return
@@ -5714,7 +5921,12 @@ class ControlPanel:
         blockers = snapshot.get("blockers")
         blockers = blockers if isinstance(blockers, dict) else {}
         if not goals:
-            self.goal_board.insert("", "end", values=("等待下一次可验证 Goal", "运行时", "—", PENDING, "—", "—", "观察 WorldState", "当前页面信息不足", "GoalLibrary / Scheduler"))
+            self.goal_board.insert("", "end", values=self._goal_row({
+                "goal": "等待下一次可验证 Goal", "priority": "—", "status": PENDING,
+                "deadline": "—", "blocked": "当前页面信息不足", "progress": "—",
+                "next": "观察 WorldState", "category": "运行时",
+                "skills": "GoalLibrary / Scheduler",
+            }))
         for goal in goals:
             remaining = goal.get("remaining_seconds")
             deadline = "—" if remaining is None else f"{int(remaining)//3600:02d}:{int(remaining)%3600//60:02d}"
@@ -5726,9 +5938,17 @@ class ControlPanel:
             progress = f"{float(goal.get('completion',0)):.0%}"
             if "points_missing" in evidence: progress += f" · 缺 {evidence['points_missing']}"
             skills = ", ".join(goal.get("available_skills", ())) or "待发现"
-            self.goal_board.insert("", "end", values=(names.get(goal_id, goal_id), category, priority,
-                statuses.get(goal.get("status"), goal.get("status")), progress, deadline,
-                (goal.get("available_skills") or ["待规划"])[0], self._blocked_cell(goal, blockers), skills))
+            self.goal_board.insert("", "end", values=self._goal_row({
+                "goal": names.get(goal_id, goal_id),
+                "priority": priority,
+                "status": statuses.get(goal.get("status"), goal.get("status")),
+                "deadline": deadline,
+                "blocked": self._blocked_cell(goal, blockers),
+                "progress": progress,
+                "next": (goal.get("available_skills") or ["待规划"])[0],
+                "category": category,
+                "skills": skills,
+            }))
             left_key = {"EVENT_MINIMUM_GUARANTEE": "活动低保", "CLEAR_INTEL": "情报", "AVOID_STAMINA_WASTE": "体力",
                         "KEEP_TRAINING_PRODUCTIVE": "训练", "KEEP_RESEARCH_PRODUCTIVE": "科研", "KEEP_BUILDING_PRODUCTIVE": "建筑"}.get(goal_id)
             if left_key in getattr(self, "today", {}): self.today[left_key].set(statuses.get(goal.get("status"), goal.get("status")))
@@ -5736,6 +5956,20 @@ class ControlPanel:
             f"识别页面：{snapshot.get('page','UNKNOWN')} · 整帧识别置信度：{float(snapshot.get('confidence',0)):.0%}"
             f"（这是页面识别，不是每个目标的置信度）· 时间：{snapshot.get('observed_at','—')}"
         )
+
+    def _event_field_rows(self, box: Any, fields: tuple[tuple[str, str], ...]) -> None:
+        """Draw one label/value row per field.
+
+        One loop for both halves on purpose: two copies would let the open card and the folded
+        card drift into two rendering styles for the same kind of row, which is the kind of
+        difference a reader notices without being able to name.
+        """
+        for index, (label, key) in enumerate(fields):
+            ttk.Label(box, text=label, style="Muted.TLabel", background=PANEL, width=18).grid(
+                row=index, column=0, sticky="nw", pady=6)
+            style = "Value.TLabel" if key in {"name", "status"} else "TLabel"
+            ttk.Label(box, textvariable=self.event_goal_vars[key], style=style, background=PANEL,
+                      wraplength=760).grid(row=index, column=1, sticky="w", pady=6)
 
     def _event_goal(self) -> None:
         tab = self._tab("活动", scroll=True)
@@ -5749,15 +5983,15 @@ class ControlPanel:
         # forever.  "待计算" is not an empty cell; it is a promise that a calculation is
         # pending, and there is no calculation.  The operator's rule for this audit is that
         # a field the system cannot fill must not be drawn.
-        fields = (("活动", "name"), ("阶段", "phase"), ("数据来源", "source"), ("最后验证", "last_verified"),
-                  ("目标档位", "tier"), ("当前积分", "current"), ("低保目标", "target"), ("积分缺口", "missing"),
-                  ("剩余时间（验证时）", "remaining"), ("状态", "status"), ("已执行计划", "plan"),
-                  ("资源消耗", "resource"), ("积分验证", "verified"), ("奖励", "rewards"))
-        self.event_goal_vars = {key: tk.StringVar(value="暂无数据") for _, key in fields}
-        for i, (label, key) in enumerate(fields):
-            ttk.Label(box, text=label, style="Muted.TLabel", background=PANEL, width=18).grid(row=i, column=0, sticky="nw", pady=6)
-            style = "Value.TLabel" if key in {"name", "status"} else "TLabel"
-            ttk.Label(box, textvariable=self.event_goal_vars[key], style=style, background=PANEL, wraplength=760).grid(row=i, column=1, sticky="w", pady=6)
+        self.event_goal_vars = {key: tk.StringVar(value="暂无数据")
+                                for _, key in EVENT_L1_FIELDS + EVENT_L2_FIELDS}
+        self._event_field_rows(box, EVENT_L1_FIELDS)
+        # No rule on either fold here.  §六's exception table has no row for this page, and the
+        # only trigger that would fit one -- 剩余时间 running out -- has no declared threshold
+        # anywhere in the project, which is the same reason ``dev_queue`` records for itself.
+        detail = self._fold(tab, key="event_detail", title="阶段 / 计划 / 消耗（过程）", level=L2,
+                            pack={"fill": "x", "pady": (12, 0)}, padding=(22, 14))
+        self._event_field_rows(detail, EVENT_L2_FIELDS)
         self._fishing_box(tab)
         self._refresh_fishing_display()
         self._refresh_event_goal_display()
@@ -5803,15 +6037,19 @@ class ControlPanel:
     }
 
     def _fishing_box(self, tab: ttk.Frame) -> None:
-        box = ttk.Frame(tab, style="Card.TFrame", padding=18); box.pack(fill="x", pady=(18, 0))
-        ttk.Label(box, text="钓鱼锦标赛 · 普通鱼饵策略", style="Section.TLabel",
-                  background=PANEL).pack(anchor="w")
+        # §六 tiers the fishing sub-play L2 -- bait / next_bait_at / points / pressure are real
+        # readings, but they answer "how is the tournament going", not "is anything wrong".
+        # Measured: this block was 503 px, half the page, and it is a reference while the operator
+        # is not fishing.  No rule: §六 gives this page no exception row, and the sequence it would
+        # need (剩余可出钓 approaching zero) is a threshold nothing in the project declares.
+        box = self._fold(tab, key="event_fishing", title="钓鱼锦标赛 · 普通鱼饵策略", level=L2,
+                         pack={"fill": "x", "pady": (12, 0)}, padding=(18, 14))
         ttk.Label(box, text=(
             "唯一允许消耗：NORMAL_BAIT。特殊鱼饵 / 宝藏券 / Treasure Mode / 免费特殊次数 = "
             "POLICY_DISABLED_BY_USER（即使免费也不使用）。它是策略禁止，不是能力缺失，"
             "所以这里也不列为待办。"
         ), style="Muted.TLabel", background=PANEL, wraplength=1200,
-            justify="left").pack(anchor="w", pady=(6, 10))
+            justify="left").pack(anchor="w", pady=(0, 10))
 
         self.fishing_vars: dict[str, tk.StringVar] = {}
         roles = ttk.Frame(box, style="Card.TFrame"); roles.pack(fill="x")
@@ -6748,6 +6986,12 @@ class ControlPanel:
             # "无法判断" statement that a missing audit deserves.
             self._attention_kinds = set()
             self._watchdog_value = None
+            # §六: an audit that could not run is not an all-clear for the three L3 cells either.
+            # They go *back* on the strip as 未确认 rather than keeping last tick's verdict, because
+            # a cell that was healthy when the audit broke would otherwise stay off the strip while
+            # the bar went on claiming 6 of 6 -- and "no answer" would be drawn exactly like "fine".
+            for key in HEADER_FOLD_TO_L1:
+                self._set_health(key, None)
             return
 
         role = report.by_name("current_role")
@@ -6879,12 +7123,19 @@ class ControlPanel:
         self._progress_line()
 
     def _set_health(self, key: str, value: Any) -> None:
-        """Paint one top-bar cell from a TruthValue, using the shared six words."""
+        """Paint one top-bar cell from a TruthValue, using the shared six words.
+
+        This is the **only** place a health cell is painted, so it is also the only place §六's
+        「健康时收起来 / 异常时浮到 L1」 decision is made -- both branches call ``_show_header_cell``,
+        including the ``None`` one, because "the audit has no such source" is exactly the state that
+        must not read as healthy.
+        """
         label = self.indicators.get(key)
         if value is None:
             self.values[key].set(DOT_UNKNOWN)
             if label is not None:
                 label.configure(fg=MUTED)
+            self._show_header_cell(key, value)
             return
         from winter_agent_v2.state_truth import health_of
 
@@ -6893,6 +7144,17 @@ class ControlPanel:
         if label is not None:
             label.configure(fg={"good": GOOD, "work": GOOD, "idle": WARN,
                                 "warn": WARN, "bad": BAD, "unknown": MUTED}[colour])
+        self._show_header_cell(key, value)
+
+    def _show_header_cell(self, key: str, value: Any) -> None:
+        """Seat or unseat one top-bar cell, from the verdict that was just painted into it."""
+        cell = getattr(self, "_indicator_cells", {}).get(key)
+        if cell is None or key not in HEADER_FOLD_TO_L1:
+            return
+        if header_cell_is_visible(key, value):
+            cell.grid()
+        else:
+            cell.grid_remove()
 
     def _progress_line(self) -> str:
         """Action progress vs goal progress, from the last steps of the real stream.
@@ -6910,13 +7172,22 @@ class ControlPanel:
             rows = []
         if not rows:
             self.values["progress"].set(PENDING)
+            # No rows is "not yet observed", not "not stalled" -- but it is also not evidence of
+            # being stuck, so the image stays shut.  Recorded explicitly so the rule cannot read a
+            # stale verdict left by the previous tick.
+            self._progress_stalled = False
             return ""
         actions = sum(1 for r in rows if r.get("verifier_ok") is True)
         progress = sum(1 for r in rows if r.get("goal_progress") is True)
         unobserved = sum(1 for r in rows if r.get("goal_progress") is None)
         text = (f"最近 {len(rows)} 步：动作成功 {actions} · 目标进展 {progress}"
                 f" · 未观测 {unobserved}")
-        if actions and not progress:
+        # The ⚠ prefix and the 游戏实时画面 block's opening rule are one judgement, so they are now
+        # one call.  Kept as data rather than re-derived by the rule: the rule runs from
+        # ``_sync_folds``, and reading the episode tail a second time per tick would double this
+        # method's disk cost for an answer that has already been computed here.
+        self._progress_stalled = progress_is_stalled(rows)
+        if self._progress_stalled:
             text = "⚠ 无目标进展｜" + text
         self.values["progress"].set(text)
         return text

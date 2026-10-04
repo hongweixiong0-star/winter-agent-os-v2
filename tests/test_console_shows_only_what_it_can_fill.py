@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import ast
 import json
+import types
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -68,6 +69,26 @@ def _string_literals(source: str) -> set:
     return literals
 
 
+def _page_builders() -> tuple[dict, set, set]:
+    """``(every FunctionDef, the pages ``_build`` calls, every method that opens a tab)``.
+
+    Lifted out of the tab-family guard so the tiering guard reads the **same** derivation: two
+    answers to "what counts as a page" is the drift this whole file is about, one level up.
+    """
+    methods = {node.name: node for node in ast.walk(ast.parse(_panel_source()))
+               if isinstance(node, ast.FunctionDef)}
+
+    def self_calls(node) -> set:
+        return {n.func.attr for n in ast.walk(node)
+                if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                and isinstance(n.func.value, ast.Name) and n.func.value.id == "self"}
+
+    built = {name for name in self_calls(methods["_build"])
+             if name in methods and "_tab" in self_calls(methods[name])}
+    every = {name for name, node in methods.items() if "_tab" in self_calls(node)}
+    return methods, built, every
+
+
 # --------------------------------------------------------------------------------------
 # R3 -- the tab family is derived, not declared twice
 # --------------------------------------------------------------------------------------
@@ -82,22 +103,10 @@ class TheTabFamilyIsDerivedFromBuildTests:
     retired page or a renamed page fails here instead of shipping.
     """
 
-    def _methods(self):
-        tree = ast.parse(_panel_source())
-        return {node.name: node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)}
-
-    @staticmethod
-    def _self_calls(node) -> set:
-        return {n.func.attr for n in ast.walk(node)
-                if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
-                and isinstance(n.func.value, ast.Name) and n.func.value.id == "self"}
-
     def _builders(self):
-        methods = self._methods()
-        built = {name for name in self._self_calls(methods["_build"])
-                 if name in methods and "_tab" in self._self_calls(methods[name])}
-        every = {name for name, node in methods.items() if "_tab" in self._self_calls(node)}
-        return methods, built, every
+        # Delegates to the module-level derivation so "what is a page" has one answer; the two
+        # helpers that used to do it here are gone rather than left as a second copy.
+        return _page_builders()
 
     def test_every_page_builder_is_reachable_and_every_reachable_page_is_built(self):
         _methods, built, every = self._builders()
@@ -583,12 +592,15 @@ class EveryPageBuildsOnARealTkRootTests:
         panel, harness, root = self._build_overview(tmp_path, monkeypatch)
         assert {key: fold.level for key, fold in harness._folds.items()} == {
             "today": panel.L2, "decision": panel.L2, "queues": panel.L2, "facts": panel.L2,
+            "preview": panel.L2,
             "kpi": panel.L3, "workbuddy": panel.L3, "watchdog": panel.L3,
             "stats": panel.L3, "events": panel.L3,
         }
         open_on_first_paint = [key for key, fold in harness._folds.items() if fold.expanded]
         assert open_on_first_paint == [], (
-            f"{open_on_first_paint} are open before the operator touches anything"
+            f"{open_on_first_paint} are open before the operator touches anything -- and "
+            f"``preview`` is included deliberately: §六 raises the live image only *while* the "
+            f"progress line reads 无目标进展, so it is shut on a fresh window"
         )
         # The two blocks the audit named as permanent L1 must not be folds at all: a block that
         # says "a fault exists" may not be the one that can be collapsed.
@@ -857,6 +869,7 @@ class AFoldedBlockCannotHideAnAbnormalityTests:
         "dev_wb",            # the same source again, on the 自动开发 page
         "dev_loop",          # 自主开发闭环「L1 当有断点」
         "dev_failures",      # 最近失败分类「次数超阈值」-- 用项目自己的 P0 分桶
+        "preview",           # 总览「游戏实时画面 L2 → 卡住时 L1」-- 判据是进度行那条「无目标进展」
         "queues",            # 队列积压 —— 故意不实现：面板没有声明过的积压阈值（见 INERT_FOLDS）
         "boot",              # 预载非正常 —— 尚未实现（报告 §十）
     })
@@ -1150,6 +1163,366 @@ class AFoldedBlockCannotHideAnAbnormalityTests:
         )
         assert "if unexpected:" not in rule and "if exits:" not in rule, (
             "that spelling is the literal again: it fires on any non-zero total"
+        )
+
+    # -- the three pages the rollout reached last (策略 / 目标 / 活动) --------------------------
+    #
+    # 目标 declares no folds at all, and that is the finding rather than an omission: §六 assigns
+    # its tiers per *column*, and a single expanding ``Treeview`` has no vertical slack for a fold
+    # to give back (measured: 338 px either way).  So §六 is honoured by column order there, and
+    # the guards below pin the order instead of pinning folds that would not exist.
+
+    def test_the_goal_board_draws_its_l1_columns_first(self):
+        """§六's per-column tiers, honoured as order because a table cannot be folded.
+
+        Worth pinning because the failure is silent: the board still renders, with the columns the
+        reader decides on pushed off to the right behind two L3 ones.
+        """
+        panel = self._panel()
+        tiers = [tier for _key, _title, _width, tier in panel.GOAL_COLUMNS]
+        runs = [tier for index, tier in enumerate(tiers) if index == 0 or tiers[index - 1] != tier]
+        assert runs == [panel.L1, panel.L2, panel.L3], (
+            f"the columns must read L1, then L2, then L3, with no tier resumed after a later one; "
+            f"got {tiers}"
+        )
+        assert [key for key, _t, _w, tier in panel.GOAL_COLUMNS if tier == panel.L1] == [
+            "goal", "priority", "status", "deadline", "blocked"], (
+            "§六 L1 on this page is 目标 / 优先级 / 状态 / 剩余 / 阻塞原因 -- the columns that "
+            "answer 「卡在哪、要不要干预」"
+        )
+
+    def test_every_goal_column_is_named_by_the_row_builder(self):
+        """The heading/value pairing is positional, so both sides must come from one declaration.
+
+        Checked per declared key rather than by rendering, because the edit this forbids -- add a
+        column and forget its value -- reaches the operator as a blank cell, and a blank reads as
+        "unknown".  That is the same defect the 置信度 column was deleted for.
+        """
+        source = _panel_source()
+        start = source.index("    def _refresh_goal_board")
+        body = source[start:source.find("\n    def ", start + 1)]
+        for key, title, _width, _tier in self._panel().GOAL_COLUMNS:
+            assert f'"{key}":' in body, (
+                f"the goal row builder never supplies a value for the {title!r} column "
+                f"({key!r}), so it would render as a blank cell"
+            )
+        assert "values=(" not in body, (
+            "rows must be built through _goal_row(): a positional tuple is exactly what couples "
+            "the cells to the columns by index"
+        )
+
+    def test_the_activity_record_splits_the_way_the_audit_says(self):
+        """§六 puts nine of the activity record's fields at L1 and five at L2, and the split *is*
+        the change -- so it is pinned as data rather than left implicit in the page's layout.
+
+        The second assertion is the one that matters: the two halves have to be exactly the keys
+        the page writes.  A field dropped from both would vanish from the screen while every
+        statement about "the L1 fields" still passed, and the page would raise on the next
+        refresh -- ``_refresh_event_goal_display`` writes each key straight into
+        ``event_goal_vars``, so its key set and this declaration are two halves of one contract.
+        """
+        panel = self._panel()
+        l1 = [key for _label, key in panel.EVENT_L1_FIELDS]
+        l2 = [key for _label, key in panel.EVENT_L2_FIELDS]
+        assert l1 == ["name", "source", "last_verified", "current", "target", "missing",
+                      "remaining", "status", "rewards"], (
+            "§六 L1 on this page is the activity, its provenance, and where it stands -- including "
+            f"数据来源 / 最后验证, which it keeps at L1 under 诚实性要求; got {l1}"
+        )
+        assert l2 == ["phase", "tier", "plan", "resource", "verified"], (
+            f"§六 L2 is how it got there; got {l2}"
+        )
+        assert not set(l1) & set(l2), "a field cannot sit in both halves"
+
+        source = _panel_source()
+        start = source.index("    def _refresh_event_goal_display")
+        body = source[start:source.find("\n    def ", start + 1)]
+        assert "self.event_goal_vars[key].set(value)" in body, (
+            "the writes no longer go through the loop this test reasons about; re-anchor it "
+            "before trusting the key comparison below"
+        )
+        # Parsed from the whole module and located by name rather than by slicing the text: a
+        # slice starts mid-indentation, so ``ast.parse`` on it raises IndentationError and the
+        # guard would fail for a reason that has nothing to do with what it checks.
+        written: set = set()
+        for node in ast.walk(ast.parse(source)):
+            if not isinstance(node, ast.FunctionDef) or node.name != "_refresh_event_goal_display":
+                continue
+            for inner in ast.walk(node):
+                if isinstance(inner, ast.Assign) and any(
+                        isinstance(target, ast.Name) and target.id == "values"
+                        for target in inner.targets):
+                    written = {key.value for key in inner.value.keys
+                               if isinstance(key, ast.Constant) and isinstance(key.value, str)}
+        assert written, "the key extraction found nothing -- this test would be vacuous"
+        assert set(l1 + l2) == written, (
+            f"the page writes {sorted(written)} but declares {sorted(set(l1 + l2))}; a key in one "
+            f"and not the other is either a blank row or a KeyError on the next refresh"
+        )
+
+    def test_the_new_folds_hide_statements_and_never_a_control(self):
+        """The 策略 page exists so the operator can change the switches, so the switches must not
+        end up behind a header -- while the policy *statements* fold.
+
+        Written as a source-order check because that is the only place the distinction lives: both
+        are created by the same method, and a tier applied to the wrong one looks identical in the
+        running window until someone goes looking for a control that is no longer there.
+        """
+        source = _panel_source()
+        start = source.index("    def _strategy")
+        body = source[start:source.find("\n    def ", start + 1)]
+        switches = body.index("for index, (name, var) in enumerate(self.policy_enabled.items())")
+        assert switches < body.index("self._fold("), (
+            "the Goal Category switches are the page's only controls and must be created -- and "
+            "placed -- before the first fold, or the page hides the thing it exists for"
+        )
+        assert body.count("Checkbutton") >= 2, (
+            "the switches and the 运行方式 checkbox both stay outside the folds"
+        )
+        declared = self._declared_folds()
+        for key in ("policy_reward", "policy_resource", "policy_forbidden",
+                    "event_detail", "event_fishing"):
+            assert key in declared, (
+                f"{key} is no longer declared, so the statement it was hiding is back on the "
+                f"page by default"
+            )
+
+    def test_the_live_image_opens_on_the_projects_own_stuck_predicate(self):
+        """§六's 「游戏实时画面 L2 → 卡住时 L1」, and 卡住 is a predicate that already existed.
+
+        ``_progress_line`` prefixes ``⚠ 无目标进展`` when the last steps succeeded as actions
+        without moving a Goal -- the operator's own distinction.  The block opens on that same
+        judgement rather than on a threshold invented for it, which is why §六's row was
+        implementable at all (the same reason ``failure_priority`` served the 失败次数 row).
+
+        All four states are exercised, because the one that matters is the one that does *not*
+        open: with no reading yet, or with nothing having run, there is no evidence of being
+        stuck -- only of not having started.
+        """
+        panel = self._panel()
+        stalled = panel.progress_is_stalled
+        assert stalled([]) is False, "nothing observed is not evidence of being stuck"
+        assert stalled([{"verifier_ok": True, "goal_progress": True}]) is False, (
+            "an action that moved a Goal is progress, not a stall"
+        )
+        assert stalled([{"verifier_ok": False, "goal_progress": False}]) is False, (
+            "a step that failed its verifier did not succeed as an action, so it is not the "
+            "predicate -- it is the failure path, which has its own block"
+        )
+        assert stalled([{"verifier_ok": True, "goal_progress": False}]) is True, (
+            "actions succeeding with no Goal moving is exactly what §六 calls 卡住"
+        )
+
+    def test_the_progress_line_and_the_image_rule_share_one_predicate(self):
+        """One judgement, two readers -- so they cannot drift into two opinions about 卡住.
+
+        Checked in the source rather than by rendering, and both halves are checked: the line that
+        paints ``⚠ 无目标进展`` and the rule that opens the image must both go through
+        ``progress_is_stalled``, and neither may re-implement the comparison inline.
+        """
+        source = _panel_source()
+
+        def body_of(name: str) -> str:
+            start = source.index(f"    def {name}")
+            end = source.find("\n    def ", start + 1)
+            return source[start:end if end != -1 else len(source)]
+
+        line = body_of("_progress_line")
+        rule = body_of("_escalate_preview")
+        assert "progress_is_stalled(rows)" in line, (
+            "the progress line must derive ⚠ 无目标进展 from the shared predicate"
+        )
+        assert "_progress_stalled" in rule, (
+            "the rule must read the window's own last verdict rather than re-reading the episode "
+            "tail a second time on every tick"
+        )
+        assert "verifier_ok" not in rule, (
+            "the rule must not re-implement the comparison; that is the second opinion this "
+            "shares the predicate to avoid"
+        )
+
+
+class EveryPageHasBeenThroughTheAuditTests:
+    """A page with no tier and a page nobody classified look identical in the source.
+
+    §六 assigned a layer to every block and column of all seven pages.  Six pages carry folds; 目标
+    carries none, and that is a *decision with a reason* -- a Treeview has no vertical slack (338 px
+    whether or not its columns are grouped), so its layering is done by column order instead.  The
+    only thing separating "decided" from "forgotten" is a written-down reason, so this guard demands
+    one: a newly built page that folds nothing fails here until somebody says why it needs to fold
+    nothing.  The page list is derived from ``_build``, not typed out, for the same reason the tab
+    map is -- a new page has to be unable to slip past it.
+    """
+
+    # page builder -> why it declares no fold.  Only fold-less pages belong here.
+    NO_FOLD_PAGES: dict[str, str] = {
+        "_goals": (
+            "目标页是一张 Treeview：它没有可折叠的竖向空间（实测 338 px 恒定），所以 §六 给它分的层"
+            "由**列序**实现 —— GOAL_COLUMNS 一条声明同时驱动表头与每一行，L1 列在前"
+        ),
+    }
+
+    def test_every_page_folds_something_or_says_why_it_folds_nothing(self):
+        methods, built, every = _page_builders()
+        assert len(built) == 7, sorted(built)
+        builder_names = {name for name in every if name in built}
+        assert set(self.NO_FOLD_PAGES) <= builder_names, (
+            f"NO_FOLD_PAGES names something that is not a built page: "
+            f"{sorted(set(self.NO_FOLD_PAGES) - builder_names)}"
+        )
+
+        def folds_of(name: str) -> int:
+            return sum(1 for n in ast.walk(methods[name])
+                       if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                       and n.func.attr == "_fold")
+
+        untiered = sorted(name for name in builder_names
+                          if folds_of(name) == 0 and name not in self.NO_FOLD_PAGES)
+        assert untiered == [], (
+            f"these pages declare no fold and no reason: {untiered}.  Either give them §六's tiers "
+            f"or add them to NO_FOLD_PAGES with the reason -- 「没有折叠」 and 「没人分过」 must not "
+            f"be the same source text"
+        )
+        for name, reason in self.NO_FOLD_PAGES.items():
+            assert len(reason) >= 15, f"{name} must state why, not just that it has none"
+
+    def test_the_page_without_folds_layers_its_columns_instead(self):
+        """目标's exemption is only honest if the ordering really is the layering."""
+        panel = _module_panel()
+        tiers = [tier for _key, _title, _width, tier in panel.GOAL_COLUMNS]
+        assert tiers == ["L1"] * 5 + ["L2"] * 2 + ["L3"] * 2, tiers
+        assert tiers == sorted(tiers, key=tiers.index), (
+            "a later tier appearing before an earlier one would split L1 across the board, and the "
+            "operator's eye would have to skip a column to finish reading the things that matter"
+        )
+
+
+class _FakeCell:
+    """A top-bar cell: seated on the strip, or removed from it.
+
+    ``grid_remove`` rather than ``pack_forget`` because the strip is a grid -- the *seat number* is
+    what decides where a returned cell lands, and that is the half of the rule the source cannot be
+    asked about.
+    """
+
+    def __init__(self):
+        self.seated = True
+
+    def grid(self, **_kwargs):
+        self.seated = True
+
+    def grid_remove(self):
+        self.seated = False
+
+
+class TheTopBarTieringTests:
+    """§六's first row: 「顶栏 9 格 → 6 常驻 + 3 折叠」 -- written in the audit, never built.
+
+    Four checks, and each one closes a way the row could be *declared* instead of built.  The six
+    come off the one table rather than off a second list.  A hidden cell must still be painted, or
+    「收起来」 would quietly become 「没人写」 -- indistinguishable on screen, and the 待计算 defect
+    this whole file exists for.  The decision must be made where the cell is painted and nowhere
+    else, or the word beside a cell can disagree with whether the cell is there at all.
+    """
+
+    def _panel(self):
+        return _module_panel()
+
+    def test_the_top_bar_keeps_exactly_the_six_cells_the_audit_kept(self):
+        panel = self._panel()
+        keys = [key for _, key in panel.SYSTEM_INDICATORS]
+        assert len(keys) == 9, "the strip is nine cells; this class is about tiering them"
+        assert tuple(panel.HEADER_ALWAYS) == (
+            "dot_v2", "dot_maa", "dot_mumu", "dot_game", "dot_auto", "clock"
+        ), (
+            "§六 kept these six as L1: the four physical layers plus AUTO plus the clock.  The clock "
+            "is not decoration -- it is the base every 「最近 N 分钟」 reading is converted against"
+        )
+        assert tuple(panel.HEADER_FOLD_TO_L1) == ("dot_wb", "dot_model", "dot_boot"), (
+            "§六 named exactly these three as L3 with 「异常浮 L1」"
+        )
+        assert set(panel.HEADER_ALWAYS) | set(panel.HEADER_FOLD_TO_L1) == set(keys), (
+            "every cell is either 常驻 or 折叠.  A cell in neither would leave the strip with no "
+            "rule at all, which is how the tab map came to advertise five pages nobody builds"
+        )
+        assert not set(panel.HEADER_ALWAYS) & set(panel.HEADER_FOLD_TO_L1)
+        for key, reason in panel.HEADER_FOLD_TO_L1.items():
+            assert len(reason) >= 15, (
+                f"{key} must say *why* it left the strip, not just that it did -- the same rule "
+                f"INERT_FOLDS is held to"
+            )
+
+    def test_a_healthy_cell_leaves_the_strip_and_a_sick_one_returns(self):
+        """The mechanism, through the real methods, on a stub that records seating.
+
+        Rendering is not needed to answer this one: what is being checked is a decision plus the two
+        widget calls it makes.  The painted word is checked too, because the failure mode this guards
+        against is 「hidden」 being achieved by simply not writing the cell any more.
+        """
+        panel = self._panel()
+        from winter_agent_v2.state_truth import CONFLICT, LIVE_OBSERVED, TruthValue
+
+        keys = [key for _, key in panel.SYSTEM_INDICATORS]
+
+        class _Stub:
+            pass
+
+        stub = _Stub()
+        stub.values = {key: _FakeVar() for key in keys}
+        stub.indicators = {key: _FakeWidget() for key in keys}
+        stub._indicator_cells = {key: _FakeCell() for key in keys}
+        for name in ("_set_health", "_show_header_cell"):
+            setattr(stub, name, types.MethodType(getattr(panel.ControlPanel, name), stub))
+
+        healthy = TruthValue(name="gateway_health", value="正常", status=LIVE_OBSERVED)
+        sick = TruthValue(name="gateway_health", value="不可达", status=CONFLICT)
+
+        stub._set_health("dot_wb", healthy)
+        assert stub.values["dot_wb"].get() == panel.DOT_GOOD, (
+            "a hidden cell must still be painted: 「收起来」 and 「没人写」 must not look the same"
+        )
+        assert stub._indicator_cells["dot_wb"].seated is False, (
+            "a healthy WorkBuddy gateway is L3 by §六 -- it does not need a seat"
+        )
+
+        stub._set_health("dot_wb", sick)
+        assert stub._indicator_cells["dot_wb"].seated is True, (
+            "异常 is the half of the rule that must work: 异常浮 L1"
+        )
+        assert stub.values["dot_wb"].get() == panel.DOT_BAD
+
+        stub._set_health("dot_model", None)
+        assert stub._indicator_cells["dot_model"].seated is True, (
+            "「报告里没有这个来源」 is not health.  If absence could mean either 「正常」 or "
+            "「读不到」, absence would answer nothing and a broken reader would look healthy"
+        )
+
+        for key in panel.HEADER_ALWAYS:
+            stub._set_health(key, healthy)
+            assert stub._indicator_cells[key].seated is True, (
+                f"{key} is L1 by §六 and must not be removable by any reading"
+            )
+
+    def test_a_failed_audit_seats_the_three_instead_of_leaving_them_off(self):
+        """The worst reading for a hidden cell is the one where nobody checks.
+
+        If the audit cannot run, the three cells keep whatever verdict they had -- so a cell that was
+        healthy when the audit broke would stay off the strip while the bar went on looking complete.
+        The failure branch has to put them back as 未确认.
+        """
+        source = _panel_source()
+        start = source.index("    def _refresh_truth")
+        end = source.find("\n    def ", start + 1)
+        body = source[start:end if end != -1 else len(source)]
+        # The 「审计不可用」 branch is everything above its own ``return``; every reading below that
+        # point is taken on a report that exists.
+        failing = body[:body.index("return")]
+        assert "for key in HEADER_FOLD_TO_L1" in failing, (
+            "the 「审计不可用」 branch must re-seat the three L3 cells; otherwise the strip's "
+            "completeness is itself the thing hiding the failure"
+        )
+        assert "self._set_health(key, None)" in failing, (
+            "re-seated as 未确认 -- passed None so the cell and the seating decision cannot disagree"
         )
 
 
