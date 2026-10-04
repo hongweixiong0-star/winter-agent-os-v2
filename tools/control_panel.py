@@ -3334,7 +3334,8 @@ class PanelProbes:
     TRUTH_EVERY = 4
 
     def __init__(self, root: Path | None = None, device: Any | None = None,
-                 gateway_service: Any | None = None) -> None:
+                 gateway_service: Any | None = None,
+                 gui_model_service: Any | None = None) -> None:
         self.root = root or ROOT
         self._device_probe = device
         self._lock = threading.Lock()
@@ -3348,6 +3349,13 @@ class PanelProbes:
         # loop without a port or a process.
         self._gateway_service = gateway_service
         self._gateway_lifecycle: dict[str, Any] = {}
+        # The local GUI model's *process* lifecycle.  The panel owns it for the same reason it
+        # owns the gateway's, and the reason is the one the operator hit: 2026-10-03/04 the
+        # model was down for 24 hours while this probe went on asking its ``/health`` every
+        # fifteen seconds and grading the cell 等待.  Reporting an outage the window cannot end
+        # is half a probe.  Injectable so a test drives the loop with no port and no GPU.
+        self._gui_model_service = gui_model_service
+        self._gui_model_lifecycle: dict[str, Any] = {}
         # The GUI's own acceptance soak (§一).  Created lazily, and only when this window is
         # the *production* launch path: a window started by a development tool must not
         # produce a soak that looks like evidence (§三/§九).
@@ -3431,6 +3439,24 @@ class PanelProbes:
         """The ``TruthValue`` for the model cell, graded from the probe's own answer."""
         return local_gui_model_truth(self.root, online=self.local_model().get("online"))
 
+    def gui_model_service(self) -> Any:
+        """The local model's lifecycle owner, built on first use against the *current* root.
+
+        Built here rather than in ``__init__`` for the same two reasons as the gateway's: the
+        paths are read at call time, and a window that never reaches this code never
+        constructs one.
+        """
+        if self._gui_model_service is None:
+            from winter_agent_v2.gui_model_service import GuiModelService
+
+            self._gui_model_service = GuiModelService(self.root)
+        return self._gui_model_service
+
+    def local_model_lifecycle(self) -> dict[str, Any]:
+        """The last lifecycle record, so a test and the window read the same sentence."""
+        with self._lock:
+            return dict(self._gui_model_lifecycle)
+
     def truth(self) -> dict[str, Any]:
         """The last truth-source audit, or an empty record before the first pass.
 
@@ -3502,8 +3528,43 @@ class PanelProbes:
             except Exception as exc:  # noqa: BLE001 - a poll never reaches the UI as an exception
                 state["online"] = False
                 state["reason"] = type(exc).__name__
+        # Measured, then handed to the lifecycle owner -- the same order and for the same reason
+        # as the gateway probe: the window shows the lifecycle beside the health it came from.
+        # This is where the 2026-10-04 outage gets *ended* rather than merely reported.  The
+        # probe already knew the answer for twenty-four hours; nothing was allowed to act on it.
+        state["lifecycle"] = self._ensure_gui_model(state)
         with self._lock:
             self._local_model = state
+
+    def _ensure_gui_model(self, state: dict[str, Any]) -> dict[str, Any]:
+        """One lifecycle pass for the resident model.  Never raises: this thread also drives
+        gameplay's probes.
+
+        Fire and forget, and that is a requirement rather than a shortcut.
+        ``launch_gui_model_server`` blocks for up to 180 seconds waiting for ``/health``,
+        because a human running it by hand wants the verdict; this thread must not, or the
+        gateway and device probes queue behind it for three minutes and the window stops
+        updating -- the defect class 2026-10-04 was spent removing.  Nothing is lost by not
+        waiting: ``_poll_local_model`` re-asks ``/health`` itself, so the next pass *is* the
+        confirmation.  ``observed`` hands it the answer this pass already has instead of taking
+        it twice.
+        """
+        observed: tuple[bool | None, str] | None = (
+            state.get("online"), str(state.get("reason") or "")
+        )
+        if observed[0] is None:
+            # "Not probed" is not "down", and the two may not be conflated -- the gateway's own
+            # history is the proof: inferring reachability from configuration restarted a
+            # healthy gateway 51 consecutive times.  An unanswered probe hands the service
+            # nothing, so it decides from the config instead of from a fabricated outage.
+            observed = None
+        try:
+            lifecycle = self.gui_model_service().ensure(observed=observed)
+        except Exception as exc:  # noqa: BLE001
+            lifecycle = {"state": "UNKNOWN", "detail": f"{type(exc).__name__}: {exc}"}
+        with self._lock:
+            self._gui_model_lifecycle = dict(lifecycle)
+        return dict(lifecycle)
 
     def _poll_truth(self) -> None:
         """Every state the window claims to know -- with its source, or saying it does not.

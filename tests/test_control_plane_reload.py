@@ -78,6 +78,11 @@ def test_every_named_control_plane_file_is_recognised():
      "the window calls needs_reload / changed_paths_since / safe_to_reload in its own process, "
      "and a stale detector is the one staleness nothing else can report: the commit that added "
      "the two names above could not announce itself, because this is the module that announces"),
+    ("winter_agent_v2/gui_model_service.py",
+     "the window runs one lifecycle pass for the resident planner every fifteenth second in "
+     "PanelProbes._ensure_gui_model, on its own probe thread -- so it is executed by *this "
+     "window*, and a stale copy fails by adopting a server it cannot see or starting a second "
+     "5.9 GB one on an 8 GB card"),
 ])
 def test_a_module_the_window_executes_itself_is_on_the_list(path, why):
     """The criterion is the one the constant already documents: does *this window* run it?

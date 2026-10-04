@@ -83,6 +83,13 @@ CONTROL_PLANE_PATHS: tuple[str, ...] = (
     # one staleness nothing else here can report -- measured 2026-10-02, the fix above could not
     # announce itself, because the module that would announce it was the module that changed.
     "winter_agent_v2/control_plane_reload.py",
+    # Added 2026-10-04 with the module itself, and by the criterion above rather than by a
+    # symptom: ``PanelProbes._ensure_gui_model`` runs on the window's own probe thread, so the
+    # window executes this module in-process.  Its staleness would have been *silent* -- the
+    # window would go on adopting a model it could no longer see, or start one it could not
+    # supervise, while reporting that it was watching.  The three names above are the precedent:
+    # a module the window runs belongs here when the window starts running it.
+    "winter_agent_v2/gui_model_service.py",
 )
 
 
