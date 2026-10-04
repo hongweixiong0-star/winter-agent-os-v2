@@ -6269,3 +6269,34 @@ TypeError: ControlPanel._run_rule() takes 1 positional argument but 2 were given
 但只按 `getattr` 绑定的桩看不出）。
 **同源教训**：这条和 §51 是一类 —— 失败发生在"环境/桩"里而不在"被测对象"里时，
 先怀疑那个**依赖了未写明约定**的地方。
+
+## §56 一个"所有机器都能跑"的模块，可能根本不在版本控制里（2026-10-04）
+
+`config/paths.py` 是路径合并的产物：2026-10-04 把 81 处硬编码 `E:\无尽冬日智能体`
+收敛成一个模块。合并**本身落地了** —— 已提交的 `tools/check_mainline.py`、
+`tools/repin_production.py`、`tools/replay_loop_main_path.py` 从 `c6cadfb6` 起就在
+`from config import paths`。但这个模块**从未进过任何分支**（`git log --all -- config/paths.py`
+是空的，`git ls-tree -r HEAD` 里没有这个路径）。
+
+于是：**新克隆跑不了**「审计主线的工具」和「移动 pin 的工具」，这个项目的 GitHub 镜像
+（这些提交的 SHA 镜像）也跑不了。而这台机器上一切都好 —— 因为工作树里**也**有这个文件，
+未跟踪、且**没有**被 ignore。
+
+**发现它的方式，就是唯一的判据**：不是"本机能不能跑"，而是
+**从这个提交本身导出一份干净副本再跑**：
+
+```
+git archive <sha> tools/check_mainline.py config | tar -x -C "$tmp"
+ls "$tmp/config"                      # 修复前只有 v2.json
+python tools/check_mainline.py        # 修复前：ImportError: cannot import name 'paths' from 'config'
+```
+
+这与"数据文件脏"完全同形：脏文件会替代码掩盖缺失。**只要判据是"本机现象"，
+工作树里多出来的东西就会一直替真实状态撒谎。**
+⇒ 改动范围一旦涉及跨模块引用，收尾时补一次干净导出探针；它比重跑测试便宜得多。
+
+**同一批里的第二条**：落地前查到 `config/paths.py` 支持 `WINTER_MAIN_REPO` 覆盖
+`MAIN_REPO`，于是先确认**没有任何地方设置它**（只在模块自己的文档串和常量里出现）。
+它若被设成某个 worktree，`VENV` 会指向那个不存在的 `.venv`，而 `tools/panel_restart.py`
+正是靠 `VENV_PYTHONW` 启动面板的 —— 那就等于"修好新克隆的同时，把本机重启能力弄坏"。
+**改共享基础设施时，先查它的覆盖开关在真实环境里被谁设过。**

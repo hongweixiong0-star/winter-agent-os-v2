@@ -1606,6 +1606,18 @@ INERT_FOLDS: dict[str, str] = {
                 "而它现在的答案已经在常驻的三行里（当前 Goal / Skill / 状态）；"
                 "要报的故障由「需要关注」与干预卡承担。给「风险」编一个严重度解析器"
                 "就是第二个意见。",
+    # The four added with the 系统 page.  Same rule as above: a block with no rule of its own
+    # says here why it has none, so "folded and silent" is never the same thing as "forgotten".
+    "sys_decision": "两行是「上一次怎么决定的 / 下一次什么时候醒来」——按定义一行是过去、"
+                    "一行是将来，都不是当前状态。这页的 L1 是当前角色，这两行不改变任何决定；"
+                    "真出事由看门狗块和「需要关注」承担。",
+    "arbitration": "十一行是同一个 Scheduler 的内部记账（两个角色各剩多少、切换指标、"
+                   "最近十次选择）。它们只在解释「为什么不动」时有用，而那时看门狗块和"
+                   "「需要关注」已经先浮上来了；给「切换质量」编阈值就是第二个意见。",
+    "header_evidence": "六行是顶栏几个格的原始依据。顶栏本身在 L1 常驻，这一块只是同一件事"
+                       "展开一层——它永远不会比顶栏先出问题。",
+    "sys_logs": "日志文本框与四个「打开目录」按钮：要看的时候才看，按定义不会自己变成"
+                "一条告警。",
 }
 
 
@@ -5088,15 +5100,41 @@ class ControlPanel:
         return ""
 
     def _escalate_watchdog(self) -> str:
-        """One source, two surfaces: the V2 top-bar dot is painted from this very value, so a
-        restart storm cannot make the dot say 异常 while this block stays folded."""
-        value = getattr(self, "_watchdog_value", None)
-        if value is None:
-            return ""
-        from winter_agent_v2.state_truth import health_of
+        """The one watchdog rule, used by **both** blocks that show the watchdog.
 
-        word, colour = health_of(value)
-        return f"看门狗{word}" if colour in ("bad", "warn") else ""
+        The 总览 block and the 系统 page block call this same method rather than each writing
+        their own, because a block and its indicator grading one source differently is how the
+        audit's P0-3 class of defect happens.
+
+        Two halves, and the second is §六's own threshold row (``unexpected_worker_exits`` > 0 ·
+        ``watchdog_restart_count`` 增长 → 看门狗块浮到 L1):
+
+        * the truth value first, because the V2 top-bar dot is painted from that very value --
+          a restart storm cannot make the dot say 异常 while this block stays folded;
+        * then the two *counters*, because the truth value does not necessarily move for a
+          single unexpected exit, and one worker dying and being restarted is a fault the
+          operator must be able to see without clicking anything.
+
+        The restart half is measured against a baseline captured on the window's first tick,
+        not against zero: the count is cumulative for the machine, so ``> 0`` would open this
+        block forever on a host that ever restarted once.  增长 means "grew while you were
+        watching", which is the only reading under which the threshold says anything.
+        """
+        value = getattr(self, "_watchdog_value", None)
+        if value is not None:
+            from winter_agent_v2.state_truth import health_of
+
+            word, colour = health_of(value)
+            if colour in ("bad", "warn"):
+                return f"看门狗{word}"
+        unexpected = getattr(self, "_unexpected_exits", None)
+        if unexpected:
+            return f"有 {unexpected} 次意外的 Worker 退出"
+        base = getattr(self, "_restart_baseline", None)
+        restarts = getattr(self, "_restart_count", None)
+        if base is not None and restarts is not None and restarts > base:
+            return f"看门狗重启次数从 {base} 涨到 {restarts}"
+        return ""
 
     def _sync_folds(self) -> None:
         """Open what must float, mark what went stale, shut what healed, and never hide a reason.
@@ -6256,49 +6294,74 @@ class ControlPanel:
 
     def _system(self) -> None:
         tab = self._tab("系统")
-        top = ttk.Frame(tab, style="Card.TFrame", padding=12); top.pack(fill="x")
-        ttk.Label(top, text="Runtime Watchdog", style="Section.TLabel", background=PANEL).grid(row=0, column=0, columnspan=4, sticky="w")
-        self.runtime_detail_vars = {key: tk.StringVar(value="待刷新") for key in ("thread", "scheduler", "tick", "action", "success", "fatal", "restart", "unexpected")}
-        names = (("thread", "Runtime Thread"), ("scheduler", "Scheduler Loop"), ("tick", "Last Tick"), ("action", "Last Action"),
-                 ("success", "Last Success"), ("fatal", "Last Fatal"), ("restart", "Watchdog Restart"), ("unexpected", "Unexpected Exit"))
-        for index, (key, name) in enumerate(names):
-            ttk.Label(top, text=name, style="Muted.TLabel", background=PANEL).grid(row=1 + index // 4 * 2, column=index % 4, sticky="w", padx=8, pady=(8, 0))
-            ttk.Label(top, textvariable=self.runtime_detail_vars[key], background=PANEL).grid(row=2 + index // 4 * 2, column=index % 4, sticky="w", padx=8)
-            top.columnconfigure(index % 4, weight=1)
-        dual = ttk.Frame(tab, style="Card.TFrame", padding=12); dual.pack(fill="x", pady=(10, 0))
-        ttk.Label(dual, text="Global Role Arbitration · 单 Scheduler", style="Section.TLabel", background=PANEL).grid(
-            row=0, column=0, columnspan=2, sticky="w")
+        # **The whole of L1 on this page is one row, and it is not foldable.**  Every number
+        # below is scoped by who is playing -- the watchdog counters, the eleven arbitration
+        # rows, the log -- so a page that opened as a stack of shut headers would make the reader
+        # guess whose numbers those are.  §六 splits one block here (当前角色 at L1, the other
+        # arbitration rows at L3), which is why the block is built as two frames and not one.
         self.global_role_vars = {
             key: tk.StringVar(value="等待双角色状态")
             for key in ("current", "session", "role_a", "role_b", "remaining_a", "remaining_b",
                         "task_completion", "decision", "wakeup", "metrics", "switch_quality",
                         "hard_event", "preempt", "timeline", "telemetry")
         }
+        role_cell = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10)); role_cell.pack(fill="x")
+        for index, (label, key, label_style) in enumerate((
+            ("当前角色", "current", "Section.TLabel"),
+            ("角色Session", "session", "Muted.TLabel"),
+        )):
+            ttk.Label(role_cell, text=label, style=label_style, background=PANEL, width=12).grid(
+                row=index, column=0, sticky="nw", padx=(0, 8), pady=(0, 2))
+            ttk.Label(role_cell, textvariable=self.global_role_vars[key], background=PANEL,
+                      wraplength=1100, justify="left").grid(row=index, column=1, sticky="w",
+                                                            pady=(0, 2))
+        role_cell.columnconfigure(1, weight=1)
+        # L2: the two answers asked *after* the role -- what was decided last, when it wakes next.
+        # No rule of its own; the reason is written into ``INERT_FOLDS``.
+        ask = self._fold(tab, key="sys_decision", title="最近决策 / 下一唤醒", level=L2,
+                         pack={"fill": "x", "pady": (10, 0)})
+        for index, (label, key) in enumerate((("最近决策", "decision"), ("下一唤醒", "wakeup"))):
+            ttk.Label(ask, text=label, style="Muted.TLabel", background=PANEL, width=12).grid(
+                row=index, column=0, sticky="nw", padx=(0, 8), pady=2)
+            ttk.Label(ask, textvariable=self.global_role_vars[key], background=PANEL,
+                      wraplength=1100, justify="left").grid(row=index, column=1, sticky="w", pady=2)
+        ask.columnconfigure(1, weight=1)
+        # L3, and one of the two blocks in the window allowed to open itself.  It calls the same
+        # rule the 总览 block calls rather than writing its own, so this block and the V2 top-bar
+        # dot cannot grade the watchdog differently.
+        watch = self._fold(tab, key="runtime_watchdog", title="Runtime Watchdog", level=L3,
+                           escalate=self._escalate_watchdog,
+                           pack={"fill": "x", "pady": (10, 0)})
+        self.runtime_detail_vars = {key: tk.StringVar(value="待刷新") for key in ("thread", "scheduler", "tick", "action", "success", "fatal", "restart", "unexpected")}
+        names = (("thread", "Runtime Thread"), ("scheduler", "Scheduler Loop"), ("tick", "Last Tick"), ("action", "Last Action"),
+                 ("success", "Last Success"), ("fatal", "Last Fatal"), ("restart", "Watchdog Restart"), ("unexpected", "Unexpected Exit"))
+        for index, (key, name) in enumerate(names):
+            ttk.Label(watch, text=name, style="Muted.TLabel", background=PANEL).grid(row=index // 4 * 2, column=index % 4, sticky="w", padx=8, pady=(8 if index // 4 else 0, 0))
+            ttk.Label(watch, textvariable=self.runtime_detail_vars[key], background=PANEL).grid(row=1 + index // 4 * 2, column=index % 4, sticky="w", padx=8)
+            watch.columnconfigure(index % 4, weight=1)
+        # L3: the eleven rows that explain "why is it not moving".  By the time they matter the
+        # watchdog block above and 需要关注 have already surfaced, so this one stays shut.
+        dual = self._fold(tab, key="arbitration", title="角色仲裁 · 单 Scheduler（其余各项）",
+                          level=L3, pack={"fill": "x", "pady": (10, 0)})
         for row, (label, key) in enumerate((
-            ("当前角色", "current"), ("角色Session", "session"),
             ("角色 A", "role_a"), ("角色 B", "role_b"),
             ("A 今日剩余", "remaining_a"), ("B 今日剩余", "remaining_b"),
             ("今日完成度", "task_completion"),
-            ("最近决策", "decision"), ("下一唤醒", "wakeup"),
             ("切换指标", "metrics"), ("切换质量", "switch_quality"),
             ("临近硬时间活动", "hard_event"), ("抢占待执行", "preempt"),
             ("生产遥测", "telemetry"),
             ("最近 10 次选择", "timeline"),
-        ), 1):
+        )):
             ttk.Label(dual, text=label, style="Muted.TLabel", background=PANEL, width=12).grid(
                 row=row, column=0, sticky="nw", padx=(0, 8), pady=2)
             ttk.Label(dual, textvariable=self.global_role_vars[key], background=PANEL,
                       wraplength=1100, justify="left").grid(row=row, column=1, sticky="w", pady=2)
         dual.columnconfigure(1, weight=1)
-        bar = ttk.Frame(tab); bar.pack(fill="x", pady=(10, 6))
-        ttk.Label(bar, text="完整日志 / Vision Debug / Replay", style="Section.TLabel").pack(side="left")
-        for label, path in (("日志目录", LOG_ROOT), ("截图目录", CAPTURE_ROOT), ("Evidence", ROOT / "evidence"), ("Replay", ROOT / "tests/replay")):
-            ttk.Button(bar, text=label, command=lambda p=path: self._open(p)).pack(side="right", padx=3)
         # The evidence behind the two header cells an operator is most likely to doubt.
         # Both lines are produced by the same functions that drive the cells, so they
         # cannot drift apart from what is displayed.
-        evidence = ttk.Frame(tab, style="Card.TFrame", padding=(10, 8)); evidence.pack(fill="x")
-        ttk.Label(evidence, text="顶部状态的真实依据", style="Section.TLabel", background=PANEL).grid(row=0, column=0, columnspan=2, sticky="w")
+        evidence = self._fold(tab, key="header_evidence", title="顶部状态的真实依据", level=L3,
+                              pack={"fill": "x", "pady": (10, 0)})
         self.maa_note_var = tk.StringVar(value=PENDING)
         self.device_note_var = tk.StringVar(value=PENDING)
         # The local model's two lines (operator directive 2026-09-30).  They belong with the other
@@ -6312,10 +6375,17 @@ class ControlPanel:
             ("最近调用", self.values["local_model_last"]),
             ("学习效果", self.values["learning"]),
             ("学习 KPI", self.values["learning_kpi"]),
-        ), 1):
+        )):
             ttk.Label(evidence, text=label, style="Muted.TLabel", background=PANEL, width=8).grid(row=index, column=0, sticky="w", pady=2)
             ttk.Label(evidence, textvariable=var, background=PANEL, wraplength=1000, justify="left").grid(row=index, column=1, sticky="w", pady=2)
-        self.log = tk.Text(tab, bg="#070b10", fg="#bccbda", relief="flat", font=("Consolas", 9), padx=12, pady=10, wrap="word", height=14); self.log.pack(fill="both", expand=True)
+        # The buttons went inside the fold with the log they open, rather than staying on the page:
+        # §六 puts both at L3, and four buttons that open a directory are not a reason to keep this
+        # page's height from shrinking.
+        logs = self._fold(tab, key="sys_logs", title="完整日志 / Vision Debug / Replay", level=L3,
+                          pack={"fill": "x", "pady": (10, 0)})
+        self.log = tk.Text(logs, bg="#070b10", fg="#bccbda", relief="flat", font=("Consolas", 9), padx=12, pady=10, wrap="word", height=14); self.log.pack(fill="both", expand=True)
+        for label, path in (("日志目录", LOG_ROOT), ("截图目录", CAPTURE_ROOT), ("Evidence", ROOT / "evidence"), ("Replay", ROOT / "tests/replay")):
+            ttk.Button(logs, text=label, command=lambda p=path: self._open(p)).pack(side="right", padx=3)
         self._append("控制台已启动。")
 
     def _refresh_runtime_snapshot(self, schedule_next: bool = True) -> None:
@@ -6414,6 +6484,14 @@ class ControlPanel:
                     "tick": snapshot.last_tick_time or "无", "action": snapshot.last_action_time or "无", "success": snapshot.last_success_time or "无",
                     "fatal": snapshot.last_fatal_error or "无", "restart": str(snapshot.watchdog_restart_count), "unexpected": str(snapshot.unexpected_worker_exits)}
             for key, value in vals.items(): self.runtime_detail_vars[key].set(value)
+        # The same two counters, as numbers, for ``_escalate_watchdog`` -- §六's threshold row is
+        # written in terms of them, and a threshold cannot be evaluated against a display string.
+        # Kept out of the ``hasattr`` guard above so the rule works even if that page was never
+        # built.  The restart baseline is taken once, on the first tick after the window opened.
+        self._unexpected_exits = int(snapshot.unexpected_worker_exits or 0)
+        self._restart_count = int(snapshot.watchdog_restart_count or 0)
+        if getattr(self, "_restart_baseline", None) is None:
+            self._restart_baseline = self._restart_count
         # The per-tab bodies are refreshed only while their tab is on screen; the
         # always-visible strip above them (runtime snapshot, truth dots, device,
         # backend) is refreshed every tick by the code above, because that is what

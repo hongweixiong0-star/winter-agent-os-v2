@@ -1,4 +1,4 @@
-"""Measure what the information tiers actually do to the 总览 page.
+"""Measure what the information tiers actually do to the pages that have them.
 
 A throwaway measurement, not a test: the guard tests pin the *rules*, this prints the numbers so
 the claim "the page asks for less of the screen" is a reading rather than a hope.
@@ -189,6 +189,62 @@ def main() -> int:
         print(f"    {fold.level}  {key:<10} open={str(fold.expanded):<5} {fold.badge.get()}")
     print(f"    -> {opened} of {len(real._folds)} blocks open unasked; "
           f"{len(real._folds) - opened} folded")
+
+    # The 系统 page, measured the same way.  It is the page §六 leaves with a single L1 *row* and
+    # no L1 fold at all, which is the shape most likely to open as a column of shut bars -- so the
+    # number that matters here is how much of the page is still readable before any click.
+    print(f"\n[7] 系统 page, folded with the same primitive")
+    h._system()
+    tk_root.update_idletasks()
+    sys_tab = h.tabs.winfo_children()[-1]
+    sys_keys = ("sys_decision", "runtime_watchdog", "arbitration", "header_evidence", "sys_logs")
+
+    def sys_height() -> int:
+        tk_root.update_idletasks()
+        return int(sys_tab.winfo_reqheight())
+
+    for key in sys_keys:
+        fold = h._folds[key]
+        rule = "has a rule" if fold.escalate is not None else "INERT (declared, see the reason)"
+        print(f"    {fold.level}  {key:<18} {fold.title:<26} open={str(fold.expanded):<5} {rule}")
+    print(f"    --   (no fold)           当前角色 / 角色Session                "
+          f"<- permanent L1, the page's scope")
+    sys_declared = sys_height()
+    sys_state = {key: h._folds[key].expanded for key in sys_keys}
+    for key in sys_keys:
+        h._folds[key].expanded = True
+        h._folds[key].paint()
+    sys_open = sys_height()
+    for key in sys_keys:
+        h._folds[key].expanded = sys_state[key]
+        h._folds[key].paint()
+    assert sys_height() == sys_declared, "state was not restored"
+    print(f"    folds as declared : {sys_declared:>5} px")
+    print(f"    every fold open   : {sys_open:>5} px")
+    print(f"    the tiers hide    : {sys_open - sys_declared:>5} px"
+          f"  ({100 * (sys_open - sys_declared) / max(sys_open, 1):.0f}% of the all-open page)")
+
+    print(f"\n[8] §六's counter threshold really opens the watchdog block")
+    h._watchdog_value = None
+    h._unexpected_exits = 0
+    h._restart_baseline, h._restart_count = 7, 7
+    h._sync_folds()
+    steady = (h._folds["runtime_watchdog"].expanded, h._folds["runtime_watchdog"].badge.get())
+    print(f"    0 exits, restarts still 7        -> expanded={steady[0]}  badge={steady[1]!r}")
+    h._unexpected_exits = 2
+    h._sync_folds()
+    exit_case = (h._folds["runtime_watchdog"].expanded, h._folds["runtime_watchdog"].badge.get())
+    print(f"    unexpected_worker_exits = 2      -> expanded={exit_case[0]}  badge={exit_case[1]!r}")
+    h._unexpected_exits = 0
+    h._restart_count = 9
+    h._sync_folds()
+    grew = (h._folds["runtime_watchdog"].expanded, h._folds["runtime_watchdog"].badge.get())
+    print(f"    restarts grew 7 -> 9             -> expanded={grew[0]}  badge={grew[1]!r}")
+    h._restart_count = 7
+    h._sync_folds()
+    healed = (h._folds["runtime_watchdog"].expanded, h._folds["runtime_watchdog"].badge.get())
+    print(f"    back to 0 exits / 7 restarts     -> expanded={healed[0]}  badge={healed[1]!r}"
+          f"   (the alarm closed itself)")
 
     tk_root.destroy()
     return 0

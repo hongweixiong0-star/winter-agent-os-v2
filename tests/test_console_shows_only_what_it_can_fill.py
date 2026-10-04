@@ -845,26 +845,92 @@ class AFoldedBlockCannotHideAnAbnormalityTests:
             f"give them a rule, or name them in INERT_FOLDS with the reason"
         )
 
+    # §六's exception table, as *declared*: every row that says a block opens itself.  The two
+    # rows with no implementation yet (队列积压 / 预载非正常) are named here rather than left out,
+    # so the gap is written next to the rule instead of existing only as a missing badge -- and so
+    # that implementing one of them forces an edit here rather than sliding in unnoticed.
+    SIX_TABLE_OPENERS = frozenset({
+        "watchdog",          # unexpected_worker_exits > 0 · watchdog_restart_count 增长
+        "runtime_watchdog",  # the same rule, on the 系统 page's own block
+        "workbuddy",         # 网关非正常，或队列有活跃 Job
+        "queues",            # 队列积压 —— 尚未实现（报告 §十）
+        "boot",              # 预载非正常 —— 尚未实现（报告 §十）
+    })
+
     def test_the_block_that_opens_and_the_block_that_marks_are_not_the_same_rule(self):
         """Pins the split itself, because merging the two is the specific error that was made and
         the two rules look identical from a distance.
 
-        The four blocks with an *opening* rule are exactly the four §六 names for it
-        (看门狗 / WorkBuddy / 队列 / 预载 非正常，或队列有活跃 Job).  Everything else that watches a
-        file only *marks* its header.
+        Every block with an *opening* rule must be one §六 names for it (看门狗 / WorkBuddy /
+        队列 / 预载 非正常，或队列有活跃 Job).  Everything else that watches a file only *marks*
+        its header.  A block never gets both.
         """
         panel = self._panel()
         declared = self._declared_folds()
         opening = sorted(key for key, spec in declared.items() if spec["escalated"])
-        assert opening == ["watchdog", "workbuddy"], (
-            "only the blocks §六 lists may float themselves to L1; found " f"{opening}"
+        illegal = sorted(key for key in opening if key not in self.SIX_TABLE_OPENERS)
+        assert illegal == [], (
+            "only the blocks §六 lists may float themselves to L1; these do not: "
+            f"{illegal} (declared openers: {opening})"
         )
+        assert opening, "one block must still be able to open itself, or this rule is dead"
         marking = sorted(key for key, spec in declared.items() if spec["annotated"])
         assert marking == ["facts", "kpi"], (
             "the stale-source row marks the cells and names the file, it does not open the "
             f"block; found {marking}"
         )
         assert not (set(opening) & set(marking)), "one block, one kind of rule"
+
+    def test_no_page_opens_as_a_stack_of_shut_headers(self):
+        """A page whose first widget is a collapsed header reads as an empty page.
+
+        §六 assigns tiers per field, and on 系统 and 能力 the mechanical reading leaves almost
+        nothing at L1 -- so applying it literally produces a page that opens as a column of shut
+        bars.  The rule that catches that is structural: before a page's *first* fold, something
+        the reader can actually read must already have been created **and placed**.  Checking the
+        source order rather than counting L1 folds is deliberate: 总览 keeps 需要关注 and 手动干预
+        outside the fold mechanism entirely, and 系统 keeps the role there, so "has an L1 fold" is
+        the wrong question.
+        """
+        source = _panel_source()
+        for builder in EveryPageBuildsOnARealTkRootTests.PAGE_BUILDERS:
+            start = source.index(f"    def {builder}")
+            nxt = source.find("\n    def ", start + 1)
+            body = source[start:nxt if nxt != -1 else len(source)]
+            first_fold = body.find("self._fold(")
+            if first_fold == -1:
+                continue
+            head = body[:first_fold]
+            assert "ttk.Label(" in head or "ttk.Frame(" in head, (
+                f"{builder} declares folds but creates nothing before the first one; it would "
+                f"open as a stack of shut headers"
+            )
+            assert ".pack(" in head or ".grid(" in head, (
+                f"{builder} creates widgets before its first fold but never places them"
+            )
+
+    def test_no_two_blocks_share_a_fold_key(self):
+        """``_fold`` keeps blocks in one dict, so a repeated key silently disables a block.
+
+        The second declaration overwrites the first in ``self._folds``: the first container and
+        its header still exist, but no rule ever runs for it, so it sits at its default tier with
+        a badge nothing updates.  ``_declared_folds()`` cannot see this -- it returns a dict, and
+        the dict is exactly what hides the collision -- so the keys are collected from the AST as
+        a *list*.
+        """
+        keys = [
+            kw.value.value
+            for node in ast.walk(ast.parse(_panel_source()))
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute) and node.func.attr == "_fold"
+            for kw in node.keywords
+            if kw.arg == "key" and isinstance(kw.value, ast.Constant)
+        ]
+        dupes = sorted({key for key in keys if keys.count(key) > 1})
+        assert dupes == [], (
+            f"two fold declarations share the key(s) {dupes}; the second would overwrite the "
+            f"first and leave it with a badge nothing updates"
+        )
 
     def test_every_kpi_card_declares_which_file_it_derives_from(self):
         """The audit's 「8 个 KPI 卡没有任何年龄标注」, closed: a card either names the file whose age

@@ -1925,6 +1925,26 @@ def main() -> int:
           and "INERT_FOLDS" in _panel_source
           and "FOLD_DEFAULT_OPEN" in _panel_source
           and 'fold.badge.set(f"⚠ {said}"' in _panel_source)
+    # The 系统 page is the one whose mechanical reading of §六 leaves a single L1 *row*, so it is
+    # the page that would silently regress into "a column of shut bars" if a later edit dropped the
+    # role row or moved the folds above it.  Both halves are pinned: the row exists as a plain
+    # frame, and the five blocks are declared with the tiers §六 gives them.
+    check("gui: the 系统 page keeps the role readable and folds the rest by tier",
+          "role_cell = ttk.Frame(tab" in _panel_source
+          and 'key="sys_decision", title="最近决策 / 下一唤醒", level=L2' in _panel_source
+          and 'key="runtime_watchdog", title="Runtime Watchdog", level=L3' in _panel_source
+          and "escalate=self._escalate_watchdog" in _panel_source
+          and 'key="arbitration"' in _panel_source
+          and 'key="header_evidence"' in _panel_source
+          and 'key="sys_logs"' in _panel_source
+          and "role_cell.pack(fill=\"x\")" in _panel_source)
+    # One rule for one source: the 总览 block and the 系统 block must call the *same* method, or a
+    # block and the V2 dot can grade the watchdog differently -- the defect class the audit's P0-3
+    # was about.
+    check("gui: both watchdog blocks grade the watchdog with one rule",
+          _panel_source.count("escalate=self._escalate_watchdog") == 2
+          and "_unexpected_exits" in _panel_source
+          and "_restart_baseline" in _panel_source)
     check("gui: debug furniture is off until asked for",
           "vision_debug" in _panel_source
           and "视觉调试" in _panel_source
