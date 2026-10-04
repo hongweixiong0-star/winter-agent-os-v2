@@ -221,3 +221,118 @@ def test_the_window_checks_itself_on_the_refresh_that_shows_the_gateway_cell():
     # The restart is delegated to the existing launcher, not reimplemented.
     assert "panel_restart.py" in source
     assert "--restart" in source
+
+
+# --------------------------------------------------- measurement off the UI thread
+
+
+def test_the_ui_side_check_runs_no_git_and_no_hashing(monkeypatch):
+    """The refresh cycle must not read the tree itself.
+
+    Measured 2026-10-04 on the pinned production tree: one ``canonical_revision`` cost
+    1.03 s (``git rev-parse`` plus a ``sha256`` over every version-relevant dirty path) and
+    the cycle that asked for it ran every 1.5 s on the Tk thread -- so the window spent two
+    thirds of every cycle inside ``git``.  That was the operator's 卡顿.
+
+    Both I/O entry points are replaced with functions that fail the test if called, and the
+    check must still produce its answer from what the background probe published.
+    """
+    from winter_agent_v2 import version_identity
+    from tools import control_panel as panel_module
+
+    def _boom(*args, **kwargs):  # noqa: ANN002, ANN003
+        raise AssertionError("the UI thread must not read the tree")
+
+    monkeypatch.setattr(cpr, "changed_paths_since", _boom)
+    monkeypatch.setattr(version_identity, "canonical_revision", _boom)
+
+    class _Cell:
+        def __init__(self) -> None:
+            self.text = ""
+
+        def set(self, value: str) -> None:
+            self.text = str(value)
+
+    class _StubProbe:
+        def latest(self):
+            # Equal versions: a synced window, so the check returns before it would write a
+            # marker and delegate a restart -- those stay on the UI thread and are covered by
+            # the structural test above.
+            return panel_module.ControlPlaneAnswer(DISK, DISK, ())
+
+    class _StubPanel:
+        values = {}
+
+    stub = _StubPanel()
+    stub.control_plane_probe = _StubProbe()
+    for name in ("control_plane", "control_plane_loaded", "control_plane_disk"):
+        stub.values[name] = _Cell()
+
+    panel_module.ControlPanel._check_control_plane_reload(stub)
+
+    assert stub.values["control_plane"].text == "已同步（无需重载）"
+    assert stub.values["control_plane_loaded"].text == DISK[:12]
+    assert stub.values["control_plane_disk"].text == DISK[:12]
+
+
+def test_the_ui_side_check_never_waits_for_the_first_answer():
+    """Before the probe has answered, the cell says so -- it does not compute it itself."""
+    from tools import control_panel as panel_module
+
+    class _Cell:
+        def __init__(self) -> None:
+            self.text = ""
+
+        def set(self, value: str) -> None:
+            self.text = str(value)
+
+    class _NullProbe:
+        def latest(self):
+            return None
+
+    stub = type("_StubPanel", (), {})()
+    stub.control_plane_probe = _NullProbe()
+    stub.values = {name: _Cell() for name in
+                   ("control_plane", "control_plane_loaded", "control_plane_disk")}
+
+    panel_module.ControlPanel._check_control_plane_reload(stub)
+
+    assert "后台检查中" in stub.values["control_plane"].text
+
+
+def test_the_probe_publishes_before_anything_reads_it(tmp_path):
+    """``latest()`` is ``None`` until an answer exists, then it is that answer."""
+    from tools import control_panel as panel_module
+
+    probe = panel_module.ControlPlaneProbe(tmp_path)
+    assert probe.latest() is None, "an unanswered probe must not invent a version"
+    answer = probe.refresh_once()
+    assert isinstance(answer, panel_module.ControlPlaneAnswer)
+    assert probe.latest() is answer
+    assert isinstance(answer.changed, tuple)
+    assert answer.loaded_token == "" or len(answer.loaded_token) > 0
+
+
+def test_the_probe_never_raises_on_an_unreadable_tree(tmp_path):
+    """A probe that can fail the window is worse than no probe: it reports instead."""
+    from tools import control_panel as panel_module
+
+    missing = tmp_path / "does-not-exist"
+    probe = panel_module.ControlPlaneProbe(missing)
+    answer = probe.refresh_once()          # must not raise
+    assert isinstance(answer, panel_module.ControlPlaneAnswer)
+    assert probe.latest() is answer
+
+
+def test_the_probe_starts_once_and_stops_cleanly(tmp_path):
+    """Two starts must not mean two threads, and stopping must be safe to repeat."""
+    from tools import control_panel as panel_module
+
+    probe = panel_module.ControlPlaneProbe(tmp_path, interval=1.0)
+    probe.start()
+    first = probe._thread
+    probe.start()
+    assert probe._thread is first, "a second start must be a no-op"
+    assert first is not None and first.daemon, "it must not keep the process alive"
+    probe.stop()
+    probe.stop()

@@ -42,6 +42,8 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import threading
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -178,15 +180,103 @@ def _read_json(path: Path) -> Mapping[str, Any]:
     return payload if isinstance(payload, Mapping) else {}
 
 
-def _tail_jsonl(path: Path, count: int) -> tuple[Mapping[str, Any], ...]:
-    """The last ``count`` well-formed rows.  Skips a half-written trailing line."""
+# --------------------------------------------------- bounded tail reads and caches
+#
+# ``episodes.jsonl`` passed 162 MB while ``TruthAudit.__init__`` asks this module for its
+# last *three* rows.  Reading the whole file to keep three measured 1.6 s of I/O plus
+# 162 MB of JSON parsing, every 20 s (``TRUTH_EVERY`` 4 x ``GATEWAY_INTERVAL`` 5.0): the
+# panel's own ``_poll_truth`` was the largest consumer in a py-spy profile of the live
+# window -- 42 % of samples, against 57 % for the whole GUI main loop.
+#
+# Two things were wrong and both are fixed here:
+#
+# * the read was unbounded.  A tail is read as a tail: the window starts at
+#   ``_TAIL_FIRST_WINDOW`` and is grown only until it holds ``count + 1`` line breaks, so a
+#   3-row tail of a 162 MB file costs 256 KB and 15 ms cold / 10 us warm (measured).
+# * the cache could not survive.  It was an instance attribute and the poll builds a
+#   *fresh* ``TruthAudit`` every 20 s, so it was cold forever.  It is module level now,
+#   keyed by ``(path, count)``, and a call that finds only appended bytes parses those
+#   bytes and nothing else.
+#
+# The wide window (``_all_episodes``) is the one case where the rows wanted genuinely cost
+# 85 MB, so it is built by ``_episode_rows`` below rather than held here: measured 1.03 s
+# cold and 12 MB retained, against 19 us per call once built.
+
+_TAIL_LOCK = threading.Lock()
+_TAIL_CACHE: dict[tuple[str, int], "_TailState"] = {}
+
+#: First window tried.  Grown on demand -- see the module comment above.
+_TAIL_FIRST_WINDOW = 256 * 1024
+#: Smallest growth step, and the unit the density estimate is trusted against.  One
+#: megabyte of the current stream is ~70 rows, which is a stable sample: measured
+#: 13 107 / 14 170 / 13 797 / 14 463 / 13 707 / 15 746 bytes per row for windows of
+#: 0.25 / 0.5 / 1 / 4 / 16 / 64 MB.
+_TAIL_SAMPLE_BYTES = 1024 * 1024
+#: Margin on the estimate.  The estimate is a sample, so it is allowed to overshoot a
+#: little; what it must not do is come up short, because the shortfall is then filled by
+#: another read.
+_TAIL_ESTIMATE_MARGIN = 1.15
+#: Largest window kept resident.  A 5000-row window of the current episode stream is
+#: ~75 MB of text and ~206 MB of parsed mappings (measured), which is not something to
+#: hold for the whole soak, so wide windows are not cached here; the one caller that
+#: needs a wide view goes through ``_episode_rows`` below, which keeps only the fields
+#: that caller reads.
+_TAIL_CACHE_MAX_COUNT = 1024
+#: Bytes kept from the *head* of the file, plus its inode, as a rewrite detector.  Size
+#: alone cannot tell an append from a rewrite that happens to grow: rewriting one of these
+#: logs in place (which is what a retention pass does) leaves the size *larger*, and an
+#: incremental read from the old offset then parses a mid-row slice of unrelated content
+#: and reports it as if it were a row.  An append never changes the first bytes, a rewrite
+#: does, and a rotation changes the inode as well -- so the incremental path is taken only
+#: while both are unchanged.  Measured on NTFS: ``st_ino`` is populated and differs across
+#: a replacement, stays equal across a truncate-and-rewrite.
+_TAIL_HEAD_BYTES = 64
+
+
+def _prefix(path: Path, size: int) -> tuple[int, bytes]:
+    """Identity of the file's beginning: ``(st_ino, first bytes)``. ``(0, b"")`` if unreadable."""
     try:
-        text = path.read_text(encoding="utf-8", errors="replace")
+        stat = path.stat()
+        with path.open("rb") as handle:
+            head = handle.read(min(_TAIL_HEAD_BYTES, size))
     except OSError:
-        return ()
+        return 0, b""
+    return stat.st_ino, head
+
+
+class _TailState:
+    """A cached tail: the rows, and the file position they were read up to."""
+
+    __slots__ = ("size", "mtime_ns", "offset", "limit", "rows", "carry", "ino", "head")
+
+    def __init__(self, size: int, mtime_ns: int, limit: int,
+                 rows: list[Mapping[str, Any]], carry: str,
+                 ino: int, head: bytes) -> None:
+        self.size = size
+        self.mtime_ns = mtime_ns
+        self.offset = size
+        self.limit = limit
+        self.rows = rows
+        self.carry = carry
+        self.ino = ino
+        self.head = head
+
+
+def _split_rows(text: str) -> tuple[list[Mapping[str, Any]], str]:
+    """Rows in file order, plus an unterminated trailing line that is not yet a row.
+
+    The trailing-line rule is the original behaviour and it matters: the writer appends a
+    line at a time, so the last line can be caught mid-write and must not be parsed.
+    """
+    carry = ""
+    if text and not text.endswith("\n"):
+        cut = text.rfind("\n")
+        carry = text[cut + 1:] if cut != -1 else text
+        text = text[:cut + 1] if cut != -1 else ""
     rows: list[Mapping[str, Any]] = []
-    for line in reversed(text.splitlines()):
-        if not line.strip():
+    for line in text.splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
             continue
         try:
             payload = json.loads(line)
@@ -194,10 +284,320 @@ def _tail_jsonl(path: Path, count: int) -> tuple[Mapping[str, Any], ...]:
             continue
         if isinstance(payload, Mapping):
             rows.append(payload)
-        if len(rows) >= count:
+    return rows, carry
+
+
+def _tail_window(path: Path, count: int) -> tuple[str, int, int]:
+    """Decoded text of a window holding at least ``count`` whole rows at the end of *path*.
+
+    Returns ``(text, size, mtime_ns)``, where ``text`` starts on a line boundary unless
+    the whole file is inside it.  The window is grown from ``_TAIL_FIRST_WINDOW`` with the
+    remaining need *estimated from the density of the bytes already read*: growing by x4
+    from 64 MB would overshoot a 74 MB need straight into the whole 162 MB file, which is
+    the cost this function exists to avoid.
+
+    There is deliberately no byte ceiling.  There was one (64 MB) and it was a defect: for
+    ``count=5000`` -- whose rows average 15.5 KB, so 5000 of them need ~75 MB -- the window
+    stopped at the ceiling and the caller silently received the last **4254** rows.  The
+    panel prints that length as a denominator (``f"{len(scoped)}/{total}"``), so a quiet
+    shortfall is a wrong number on screen.  When the estimate cannot be met the window
+    becomes the whole file, which is the honest answer: refusing to read further does not
+    make the tail shorter, it makes it wrong.
+    """
+    stat = path.stat()
+    size = stat.st_size
+    sample = min(_TAIL_SAMPLE_BYTES, size)
+    window = min(_TAIL_FIRST_WINDOW, size)
+    start = 0
+    blob = b""
+    while True:
+        start = max(0, size - window)
+        with path.open("rb") as handle:
+            handle.seek(start)
+            blob = handle.read(size - start)
+        # ``count + 1``: the window may end mid-line, so one spare break proves ``count``
+        # whole rows are inside even after that partial is dropped.
+        breaks = blob.count(b"\n")
+        if breaks >= count + 1 or start == 0:
             break
-    rows.reverse()
-    return tuple(rows)
+        # Grow by the estimate, never by a fixed multiple of the current window.  A
+        # multiple is what made this read the whole file: at 64 MB the window held 4262 of
+        # the 5001 rows wanted, and ``x4`` turned a 79 MB shortfall into 256 MB, clamped to
+        # 162 MB -- the entire stream.  ``window + sample`` is the floor so the loop always
+        # advances even when the estimate comes back low.
+        density = (size - start) / max(1, breaks)
+        need = int((count + 1) * density * _TAIL_ESTIMATE_MARGIN)
+        window = min(size, max(need, window + sample))
+    text = blob.decode("utf-8", "replace")
+    del blob  # the caller holds ``text``; the raw bytes are ~75 MB on a wide window
+    if start > 0:
+        # The window began mid-line: that partial line is not a row.
+        cut = text.find("\n")
+        text = text[cut + 1:] if cut != -1 else ""
+    return text, size, stat.st_mtime_ns
+
+
+def _cold_tail(path: Path, count: int) -> "_TailState":
+    """Read a window off the end of *path* and keep its last ``count`` rows."""
+    text, size, mtime_ns = _tail_window(path, count)
+    rows, carry = _split_rows(text)
+    if len(rows) > count:
+        # The window grows in steps and may hold more rows than asked for.  Keeping only
+        # the last ``count`` is the same invariant ``_grow_tail`` maintains.
+        del rows[:len(rows) - count]
+    ino, head = _prefix(path, size)
+    return _TailState(size, mtime_ns, count, rows, carry, ino, head)
+
+
+def _grow_tail(state: "_TailState", path: Path, count: int) -> bool:
+    """Parse only the bytes appended since the previous call.
+
+    Returns ``False`` -- having modified nothing -- when the file was not appended to: its
+    inode or its first bytes changed, so this is a rewrite or a rotation and the caller has
+    to rebuild from scratch.  ``state.carry`` is the half-written line left over from the
+    previous read and is prepended so a row split across two reads is still parsed once.
+    """
+    stat = path.stat()
+    size = stat.st_size
+    with path.open("rb") as handle:
+        head = handle.read(min(_TAIL_HEAD_BYTES, size))
+        if head != state.head or stat.st_ino != state.ino:
+            return False
+        handle.seek(state.offset)
+        blob = handle.read(size - state.offset)
+    rows, carry = _split_rows(state.carry + blob.decode("utf-8", "replace"))
+    state.rows.extend(rows)
+    if len(state.rows) > count:
+        del state.rows[:len(state.rows) - count]
+    state.carry = carry
+    state.offset = size
+    state.size = size
+    state.mtime_ns = stat.st_mtime_ns
+    state.ino = stat.st_ino
+    state.head = head
+    return True
+
+
+def _tail_jsonl(path: Path, count: int) -> tuple[Mapping[str, Any], ...]:
+    """The last ``count`` well-formed rows.  Skips a half-written trailing line."""
+    if count <= 0:
+        return ()
+    try:
+        stat = path.stat()
+    except OSError:
+        return ()
+    if count > _TAIL_CACHE_MAX_COUNT:
+        # Not cached on purpose: keeping this many rows resident is the leak this limit
+        # exists to prevent.  Correct, just not remembered.
+        try:
+            return tuple(_cold_tail(path, count).rows)
+        except OSError:
+            return ()
+    key = (str(path), count)
+    with _TAIL_LOCK:
+        state = _TAIL_CACHE.get(key)
+        try:
+            if state is None or stat.st_size < state.size or (
+                stat.st_size == state.size and stat.st_mtime_ns != state.mtime_ns
+            ):
+                # Cold, or rewritten in place: re-read the window.
+                state = _cold_tail(path, count)
+            elif stat.st_size > state.size and not _grow_tail(state, path, count):
+                # It grew, but it is not the same file: a rewrite that happened to end up
+                # larger, or a rotation.  The cached offset means nothing in the new bytes.
+                state = _cold_tail(path, count)
+            _TAIL_CACHE[key] = state
+        except OSError:
+            return ()
+        rows = state.rows
+        return tuple(rows[-count:]) if rows else ()
+
+
+# ----------------------------------------------------- the wide episode window
+#
+# ``_all_episodes`` asks for the last ``_EPISODE_WINDOW_ROWS`` episode rows, and every
+# consumer reads only three things out of it:
+#
+#   * ``len(...)``                     -- the denominator the panel prints
+#   * ``row.get("role_id")``           -- over the whole window
+#   * full payloads from ``[-200:]`` and shorter slices of it
+#
+# Parsing all 5000 and keeping them retains ~206 MB of mappings (measured) to answer that.
+# So the rows are parsed once, the ``role_id`` of every row is kept as a plain string, and
+# only the last ``_EPISODE_CONTENT_ROWS`` payloads stay in memory: ~10 MB retained instead
+# of ~206 MB, with ``len()`` and every slice still exact.  Like the tails above, the
+# projection is cached at module level by file identity and grows incrementally, so the
+# 0.5 s cold parse is paid once and an append costs only the appended bytes.
+
+#: How many recent episode rows the panel's ratios are computed over.
+_EPISODE_WINDOW_ROWS = 5000
+#: How much of that window keeps its payload.  The widest consumer is ``[-200:]``.
+_EPISODE_CONTENT_ROWS = 256
+
+_WINDOW_LOCK = threading.Lock()
+#: str(path) -> _EpisodeWindowState
+_WINDOW_CACHE: dict[str, "_EpisodeWindowState"] = {}
+_WINDOW_CACHE_LIMIT = 16
+
+
+class _EpisodeWindowState:
+    """Cached projection: one ``role_id`` per row, plus the payloads of the tail."""
+
+    __slots__ = ("size", "mtime_ns", "offset", "carry", "role_ids", "recent", "ino", "head")
+
+    def __init__(self, size: int, mtime_ns: int, offset: int, carry: str,
+                 role_ids: list[str], recent: deque, ino: int, head: bytes) -> None:
+        self.size = size
+        self.mtime_ns = mtime_ns
+        self.offset = offset
+        self.carry = carry
+        self.role_ids = role_ids
+        self.recent = recent
+        self.ino = ino
+        self.head = head
+
+
+class _EpisodeRows(Sequence[Mapping[str, Any]]):
+    """The last N episode rows, without keeping all N payloads in memory.
+
+    A sequence rather than a tuple so the existing call sites -- ``len()``, iteration and
+    ``[-200:]`` -- keep working unchanged.  Rows outside the retained tail are yielded as
+    a one-field mapping, which is exactly what the wide consumers read: the only field
+    taken from them is ``role_id``, and a row that never carried one reads as ``""``
+    through ``row.get("role_id")`` either way.
+    """
+
+    __slots__ = ("_total", "_role_ids", "_recent")
+
+    def __init__(self, total: int, role_ids: Sequence[str],
+                 recent: Sequence[Mapping[str, Any]]) -> None:
+        self._total = total
+        self._role_ids = role_ids
+        self._recent = recent
+
+    def __len__(self) -> int:
+        return self._total
+
+    def __getitem__(self, index: Any) -> Any:
+        if isinstance(index, slice):
+            return tuple(self[i] for i in range(*index.indices(self._total)))
+        position = index
+        if position < 0:
+            position += self._total
+        if position < 0 or position >= self._total:
+            raise IndexError(index)
+        content_from = self._total - len(self._recent)
+        if position >= content_from:
+            return self._recent[position - content_from]
+        return {"role_id": self._role_ids[position]}
+
+    def __iter__(self) -> Any:
+        content_from = self._total - len(self._recent)
+        for position in range(content_from):
+            yield {"role_id": self._role_ids[position]}
+        yield from self._recent
+
+
+def _feed_episode_rows(text: str, role_ids: list[str], recent: deque) -> str:
+    """Append the rows in *text*; return the unterminated trailing line (the carry)."""
+    carry = ""
+    if text and not text.endswith("\n"):
+        cut = text.rfind("\n")
+        carry = text[cut + 1:] if cut != -1 else text
+        text = text[:cut + 1] if cut != -1 else ""
+    for line in text.splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(payload, Mapping):
+            continue
+        role_ids.append(str(payload.get("role_id") or ""))
+        recent.append(payload)
+    return carry
+
+
+def _trim_episode_rows(role_ids: list[str]) -> None:
+    if len(role_ids) > _EPISODE_WINDOW_ROWS:
+        del role_ids[:len(role_ids) - _EPISODE_WINDOW_ROWS]
+
+
+def _episode_rows(path: Path) -> "_EpisodeRows":
+    """The last ``_EPISODE_WINDOW_ROWS`` rows of *path*, reduced to what is read.
+
+    The parse runs *outside* the lock: a cold window is ~0.5 s of JSON work, and holding a
+    lock across it would block whichever thread asked second for exactly that long.  Two
+    builders racing is harmless -- the result is a pure function of the file bytes -- and
+    the loser's copy is discarded.
+
+    Never raises: an unreadable stream is an empty window, which the callers already
+    handle as "no episodes".
+    """
+    empty = _EpisodeRows(0, (), ())
+    if _EPISODE_WINDOW_ROWS <= 0:
+        return empty
+    key = str(path)
+    try:
+        stat = path.stat()
+    except OSError:
+        return empty
+    with _WINDOW_LOCK:
+        cached = _WINDOW_CACHE.get(key)
+    stale = cached is None or stat.st_size < cached.size or (
+        stat.st_size == cached.size and stat.st_mtime_ns != cached.mtime_ns
+    )
+    append = False
+    if not stale and stat.st_size > cached.size:
+        # Cheap pre-check on the prefix before committing to the incremental path; the
+        # authoritative check is repeated inside the same handle as the append read.
+        ino, head = _prefix(path, stat.st_size)
+        append = ino == cached.ino and head == cached.head
+    if not stale and not append:
+        if stat.st_size == cached.size:
+            return _EpisodeRows(
+                len(cached.role_ids), tuple(cached.role_ids), tuple(cached.recent)
+            )
+        # It grew, but it is not the same file any more.  Fall through to a cold rebuild.
+    try:
+        if not append:
+            text, size, mtime_ns = _tail_window(path, _EPISODE_WINDOW_ROWS)
+            role_ids: list[str] = []
+            recent: deque = deque(maxlen=_EPISODE_CONTENT_ROWS)
+            carry = _feed_episode_rows(text, role_ids, recent)
+            _trim_episode_rows(role_ids)
+            ino, head = _prefix(path, size)
+            state = _EpisodeWindowState(
+                size, mtime_ns, size, carry, role_ids, recent, ino, head
+            )
+        else:
+            with path.open("rb") as handle:
+                head = handle.read(min(_TAIL_HEAD_BYTES, stat.st_size))
+                handle.seek(cached.offset)
+                blob = handle.read(stat.st_size - cached.offset)
+            # Copied rather than mutated in place: ``cached`` is still installed in the
+            # cache and another thread may be reading its ``role_ids`` right now.  A 5000
+            # element list of short strings costs ~40 us to copy, which buys the invariant
+            # that a cached state is never modified after it is published.
+            role_ids = list(cached.role_ids)
+            recent: deque = deque(cached.recent, maxlen=_EPISODE_CONTENT_ROWS)
+            carry = _feed_episode_rows(
+                cached.carry + blob.decode("utf-8", "replace"), role_ids, recent
+            )
+            _trim_episode_rows(role_ids)
+            state = _EpisodeWindowState(
+                stat.st_size, stat.st_mtime_ns, stat.st_size, carry, role_ids, recent,
+                stat.st_ino, head,
+            )
+    except OSError:
+        return empty
+    with _WINDOW_LOCK:
+        if len(_WINDOW_CACHE) >= _WINDOW_CACHE_LIMIT and key not in _WINDOW_CACHE:
+            _WINDOW_CACHE.clear()
+        _WINDOW_CACHE[key] = state
+    return _EpisodeRows(len(state.role_ids), tuple(state.role_ids), tuple(state.recent))
 
 
 # ------------------------------------------------------------------ the value object
@@ -389,7 +789,7 @@ class TruthAudit:
         self.now = now or datetime.now(timezone.utc)
         self._snapshot = _read_json(self.root / SNAPSHOT)
         self._episodes = _tail_jsonl(self.root / EPISODES, 3)
-        self._all_episodes_cache: tuple[Mapping[str, Any], ...] | None = None
+        self._all_episodes_cache: "_EpisodeRows | None" = None
         # ``git rev-parse`` is answered once per audit: the commit cannot change under a
         # running process, and a fresh subprocess per window refresh is what flashed a
         # console window every few seconds (operator P0, 2026-09-18).
@@ -400,23 +800,32 @@ class TruthAudit:
         self._conflicts: list[Conflict] = []
 
     @property
-    def _all_episodes(self) -> tuple[Mapping[str, Any], ...]:
-        """The whole episode stream, read at most once per audit.
+    def _all_episodes(self) -> "_EpisodeRows":
+        """The recent episode window, reduced to the fields this audit reads.
 
-        Lazy because it is four megabytes and most states do not need it: the panel asks
-        this question on a slower cadence than it asks for the page, and paying for the
-        whole stream on every refresh would make the window stutter for a number nobody
-        looks at that often.
+        Lazy because most states do not need it: the panel asks this question on a slower
+        cadence than it asks for the page.  The old comment here said "it is four
+        megabytes" and read the last 5000 rows as a tuple -- that window is now ~74 MB of
+        text and ~206 MB of parsed mappings, which is why ``_episode_rows`` keeps only
+        ``role_id`` for the wide part and full payloads for the last 256 rows.  ``len()``
+        and every slice are unchanged, so the ``N/5000`` ratio on the panel is unchanged.
         """
         if self._all_episodes_cache is None:
-            self._all_episodes_cache = _tail_jsonl(self.root / EPISODES, 5000)
+            self._all_episodes_cache = _episode_rows(self.root / EPISODES)
         return self._all_episodes_cache
 
     @property
     def _all_executor(self) -> tuple[Mapping[str, Any], ...]:
-        """The executor ledger, read at most once per audit (1211 rows, ~570 KB)."""
+        """The recent executor ledger rows, read at most once per audit.
+
+        ``100`` rather than ``5000``: both consumers of this property read ``[-100:]`` and
+        nothing else (``maa_state`` and ``executor_mix``), so a hundred rows is the whole
+        requirement -- and it is exactly equivalent even on a ledger shorter than 100
+        rows, where the slice is the entire file either way.  The old ``5000`` parsed
+        10.7 MB to fill a tuple the callers then sliced back down to 100.
+        """
         if self._all_executor_cache is None:
-            self._all_executor_cache = _tail_jsonl(self.root / EXECUTOR_LEDGER, 5000)
+            self._all_executor_cache = _tail_jsonl(self.root / EXECUTOR_LEDGER, 100)
         return self._all_executor_cache
 
     # -- primitives --------------------------------------------------------

@@ -4160,6 +4160,98 @@ def auto_rounds_completed() -> int:
         return _AUTO_ROUNDS_COMPLETED
 
 
+#: How often the control-plane staleness question is recomputed.
+#:
+#: Measured 2026-10-04 on the pinned production tree: one answer costs
+#: ``canonical_revision`` 1.03 s (a ``git rev-parse`` plus a content hash of every
+#: version-relevant dirty path) and ``changed_paths_since`` a second ``git`` process on top.
+#: The refresh cycle that consumed it ran every 1.5 s (``root.after(1500, ...)``) *on the UI
+#: thread*, so two thirds of every cycle was spent in ``git`` and hashing -- the operator's
+#: 卡顿, and the largest single block in a py-spy profile of the live window.
+#:
+#: Thirty seconds is far tighter than the event it detects: the notice is "a commit touched a
+#: file this window imports", and the operator's next action is a restart at a safe point.
+#: Nobody commits a control-plane fix and expects the banner within the same second.
+CONTROL_PLANE_INTERVAL = 30.0
+
+
+class ControlPlaneAnswer(NamedTuple):
+    """One computed answer.  Immutable, so publishing it is a single reference swap."""
+
+    loaded_token: str
+    disk_token: str
+    changed: tuple[str, ...]
+    error: str = ""
+
+
+class ControlPlaneProbe:
+    """Answers "is this window running code that is no longer on disk?" off the UI thread.
+
+    Division of labour, the operator's rule of 2026-10-04: the main thread does UI,
+    scheduling and dispatch only, and I/O belongs on a background thread.  Reading the tree's
+    version is I/O by that rule (``git`` subprocesses, then ``sha256`` over the dirty files),
+    and by measurement it is the most expensive thing the refresh cycle did.
+
+    This class only *computes and publishes*.  Acting on the answer -- writing the reload
+    marker, deciding a safe point, delegating the restart to the launcher -- stays on the UI
+    thread, because it touches the process and Tk.  ``_check_control_plane_reload`` is the
+    consumer; ``refresh_once`` is exposed so a test can compute one answer synchronously
+    instead of waiting for the thread.
+    """
+
+    def __init__(self, root: Path | str, *,
+                 interval: float = CONTROL_PLANE_INTERVAL) -> None:
+        self.root = Path(root)
+        self.interval = max(1.0, float(interval))
+        self._lock = threading.Lock()
+        self._answer: ControlPlaneAnswer | None = None
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def start(self) -> None:
+        """Begin publishing answers.  Idempotent, and it never blocks the caller."""
+        if self._thread is not None:
+            return
+        self._thread = threading.Thread(
+            target=self._loop, name="control-plane-probe", daemon=True
+        )
+        self._thread.start()
+
+    def stop(self) -> None:
+        """Ask the thread to finish.  Daemon, so a missed call cannot keep the process up."""
+        self._stop.set()
+
+    def latest(self) -> ControlPlaneAnswer | None:
+        """The most recent answer, or ``None`` before the first one lands.  No I/O."""
+        with self._lock:
+            return self._answer
+
+    def refresh_once(self) -> ControlPlaneAnswer:
+        """Compute one answer, publish it and return it.  Never raises."""
+        try:
+            from winter_agent_v2.control_plane_reload import changed_paths_since
+            from winter_agent_v2.version_identity import canonical_revision, process_revision
+
+            loaded = process_revision()
+            loaded_token = loaded.token if loaded is not None else ""
+            disk_token = canonical_revision(self.root, timeout=15.0).token
+            changed = changed_paths_since(
+                self.root, loaded.head if loaded is not None else ""
+            )
+            answer = ControlPlaneAnswer(loaded_token, disk_token, tuple(changed))
+        except Exception as exc:  # noqa: BLE001 - a probe must never take the window down
+            answer = ControlPlaneAnswer("", "", (), f"{type(exc).__name__}: {exc}")
+        with self._lock:
+            self._answer = answer
+        return answer
+
+    def _loop(self) -> None:
+        while True:
+            self.refresh_once()
+            if self._stop.wait(self.interval):
+                return
+
+
 class ControlPanel:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
@@ -4221,6 +4313,10 @@ class ControlPanel:
             freeze_process_revision(ROOT)
         except Exception:  # noqa: BLE001 - a missing version is reported, not fatal
             pass
+        # Measured lazily, off the UI thread: see ControlPlaneProbe.  Started here rather than
+        # on first use so the first refresh already has an answer to read.
+        self.control_plane_probe = ControlPlaneProbe(ROOT)
+        self.control_plane_probe.start()
         self.probes.start()
         # The queue's clock.  Started with the window, not with AUTO: the operator's
         # rule is that a running GUI keeps consuming its development backlog even
@@ -6314,26 +6410,44 @@ class ControlPanel:
         step in flight, a device lease, or an operator STOP/PAUSE each refuse it.  A process
         cannot replace itself through its own imports, so the restart is delegated to the
         project's existing launcher -- there is no second reload mechanism here.
+
+        Measurement and decision are split by thread.  Reading the versions is I/O -- a ``git
+        rev-parse``, then a content hash of every version-relevant dirty path, measured at
+        1.03 s on the pinned tree -- so :class:`ControlPlaneProbe` does it on a background
+        thread and this method, which runs every 1.5 s on the UI thread, only reads the latest
+        answer and acts on it.  Before that split the UI thread was inside ``git`` for two
+        thirds of every cycle, which was the 卡顿.
+
+        The answer can therefore be up to :data:`CONTROL_PLANE_INTERVAL` seconds old.  That is
+        deliberately acceptable: the event being detected is a commit touching a file this
+        window imports, and acting on it means a restart at a safe point -- not a reaction
+        that has to land inside a second.
         """
+        answer = self.control_plane_probe.latest()
+        if answer is None:
+            # First cycle after start-up: the background thread has not answered yet.  Say so
+            # rather than showing the previous window's opinion, and never block waiting.
+            self.values["control_plane"].set(f"{PENDING}（后台检查中）")
+            return
+        if answer.error:
+            self.values["control_plane"].set(f"{PENDING}（{answer.error}）")
+            return
         try:
             from winter_agent_v2.control_plane_reload import (
-                changed_paths_since, control_plane_signal, needs_reload, reload_reason,
-                safe_to_reload,
+                control_plane_signal, needs_reload, reload_reason, safe_to_reload,
             )
-            from winter_agent_v2.version_identity import canonical_revision, process_revision
         except Exception as exc:  # noqa: BLE001 - a probe must never take the window down
             self.values["control_plane"].set(f"{PENDING}（{type(exc).__name__}）")
             return
 
-        loaded = process_revision()
-        loaded_token = loaded.token if loaded is not None else ""
-        current = canonical_revision(ROOT, timeout=15.0)
-        changed = changed_paths_since(ROOT, loaded.head if loaded is not None else "")
-        reason = reload_reason(loaded_token, current.token, changed)
-        stale = needs_reload(loaded_token, current.token, changed)
+        loaded_token = answer.loaded_token
+        current_token = answer.disk_token
+        changed = answer.changed
+        reason = reload_reason(loaded_token, current_token, changed)
+        stale = needs_reload(loaded_token, current_token, changed)
 
         self.values["control_plane_loaded"].set(loaded_token[:12] or "未记录")
-        self.values["control_plane_disk"].set(current.token[:12] or "读不到")
+        self.values["control_plane_disk"].set(current_token[:12] or "读不到")
         if not stale:
             self.values["control_plane"].set("已同步（无需重载）")
             return
@@ -7537,6 +7651,8 @@ class ControlPanel:
         self.probes.stop()
         # Same for the pump: a closing window must not leave a thread mid-submit.
         self.pump.stop()
+        # And the control-plane probe, which shells out to ``git``.
+        self.control_plane_probe.stop()
         self.root.destroy()
 
 

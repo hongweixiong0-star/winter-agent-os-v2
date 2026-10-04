@@ -54,6 +54,7 @@ from .version_identity import canonical_revision
 import json
 import re
 import subprocess
+import threading
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -457,6 +458,54 @@ class EscalationCandidate:
 
 DEFAULT_LEDGER = "learning/workbuddy_escalations.jsonl"
 
+# The panel builds a *new* ``EscalationLedger`` on every tick (``escalation_view``
+# and ``_poll_truth`` both do), so any cache that lives on the instance is cold
+# every time and the ledger is re-read and re-folded forever.  Measured on the
+# live panel: ``snapshot`` was 24.5% of all samples and the ``evidence_appended``
+# fold branch another 18.6%.  The cache therefore lives at module level and is
+# keyed by the file's identity (size + mtime_ns), which is the only thing that
+# can change the answer:
+#
+# * ``evidence_appended`` is O(K^2) -- one key had 1500 of them, so a single
+#   fold copied sum(K(K+1)/2) = 2,113,555 elements.  Recomputing that on every
+#   UI tick is what the operator experienced as lag.
+# * The ledger only grows at ~0.2 events/min, so a size+mtime key hits on
+#   essentially every tick and the fold happens only when the file truly moved.
+#
+# Nothing outside ``fold`` mutates an ``EscalationRecord`` (checked across the
+# repo: the only writers are inside ``fold`` itself), so handing the same folded
+# snapshot to every reader is safe -- it is an immutable projection of an
+# append-only log, which is exactly what the docstring already claims.
+_LEDGER_LOCK = threading.Lock()
+_LEDGER_CACHE_LIMIT = 16
+# str(path) -> ((size, mtime_ns), events, snapshot)
+_LEDGER_CACHE: dict[str, tuple[tuple[int, int], tuple[dict[str, Any], ...], "EscalationSnapshot"]] = {}
+
+
+def _ledger_stamp(path: Path) -> tuple[int, int] | None:
+    """Identity of the ledger contents, or ``None`` when it cannot be read."""
+
+    try:
+        info = path.stat()
+    except OSError:
+        return None
+    return (info.st_size, info.st_mtime_ns)
+
+
+def _parse_ledger_rows(text: str) -> tuple[dict[str, Any], ...]:
+    out: list[dict[str, Any]] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, dict):
+            out.append(payload)
+    return tuple(out)
+
 
 class EscalationLedger:
     """Append-only event log.  ``snapshot()`` folds it; nothing else stores state."""
@@ -472,26 +521,41 @@ class EscalationLedger:
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
         return record
 
-    def events(self) -> list[dict[str, Any]]:
+    def _cached(self) -> tuple[tuple[dict[str, Any], ...], "EscalationSnapshot"]:
+        """Parsed rows + folded snapshot for the current file identity.
+
+        A stale stamp can only ever cause a re-read, never a wrong answer: the
+        stamp is compared against a *fresh* ``stat`` on every call, so if the
+        file moved between the ``stat`` and the ``read_text`` the entry lands
+        under the older stamp and the next caller simply misses.
+        """
+
+        key = str(self.path)
+        stamp = _ledger_stamp(self.path)
+        if stamp is not None:
+            with _LEDGER_LOCK:
+                hit = _LEDGER_CACHE.get(key)
+                if hit is not None and hit[0] == stamp:
+                    return hit[1], hit[2]
         try:
-            lines = self.path.read_text(encoding="utf-8").splitlines()
+            text = self.path.read_text(encoding="utf-8")
         except OSError:
-            return []
-        out: list[dict[str, Any]] = []
-        for line in lines:
-            line = line.strip()
-            if not line.startswith("{"):
-                continue
-            try:
-                payload = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(payload, dict):
-                out.append(payload)
-        return out
+            rows: tuple[dict[str, Any], ...] = ()
+        else:
+            rows = _parse_ledger_rows(text)
+        snapshot = fold(rows)
+        if stamp is not None:
+            with _LEDGER_LOCK:
+                if len(_LEDGER_CACHE) >= _LEDGER_CACHE_LIMIT and key not in _LEDGER_CACHE:
+                    _LEDGER_CACHE.clear()
+                _LEDGER_CACHE[key] = (stamp, rows, snapshot)
+        return rows, snapshot
+
+    def events(self) -> list[dict[str, Any]]:
+        return list(self._cached()[0])
 
     def snapshot(self) -> "EscalationSnapshot":
-        return fold(self.events())
+        return self._cached()[1]
 
 
 # ------------------------------------------------------------------ state fold
