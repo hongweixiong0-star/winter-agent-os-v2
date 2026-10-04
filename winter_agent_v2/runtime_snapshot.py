@@ -48,7 +48,18 @@ class RuntimeSnapshot:
     verifier: str | None = None
     next_action: str | None = None
     risk: str = "UNKNOWN"
+    #: The **decision's** confidence -- how sure the chooser was of the step it picked.
+    #:
+    #: Measured 2026-10-04: this field had no owner declared and four writers, two of which
+    #: meant something else entirely (``runtime.py`` wrote ``before.confidence`` and
+    #: ``after.confidence`` here -- the *frame's page-recognition* confidence -- while the two
+    #: decision sites wrote ``decision.confidence``).  The console printed it under 当前决策 as
+    #: plain "置信度", so the same cell alternated between two different questions depending on
+    #: which writer ran last.  That is the same defect as the "every Goal shows 99%" report,
+    #: and it is fixed the same way: each number gets a field that names its owner.
     confidence: float = 0.0
+    #: The frame's own recognition confidence, written only where a frame is written.
+    frame_confidence: float = 0.0
     device: str = "UNKNOWN"
     game: str = "UNKNOWN"
     mode: str = "AUTO"

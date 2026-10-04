@@ -78,12 +78,23 @@ def _stub() -> SimpleNamespace:
             return panel.local_gui_model_truth(ROOT, online=None)
 
     stub = SimpleNamespace(values=values, probes=Probes(), indicators={},
-                           vision_debug=None, preview_mode=_Var())
+                           vision_debug=None, preview_mode=_Var(),
+                           # No AUTO process exists in a stub, and saying so is the honest
+                           # reading rather than a convenience: ``_freshness`` escalates a
+                           # stale source only while a writer *should* have been running, so
+                           # with AUTO down the correct answer is "nothing to escalate".  The
+                           # one that must still fire is the statement half
+                           # (``_source_age_note``), and that one ignores AUTO -- so an
+                           # over-age source is still verified here.
+                           process=None)
     # The helpers the refresh calls, bound to this stub.  Bound *unbound* on purpose: the
     # real implementations run, so a change to how the panel paints a cell is verified
     # here rather than assumed.
     stub._set_health = lambda key, value: panel.ControlPanel._set_health(stub, key, value)
     stub._progress_line = lambda: panel.ControlPanel._progress_line(stub)
+    stub._attention_with_sources = lambda lines: panel.ControlPanel._attention_with_sources(stub, lines)
+    stub._source_age_note = lambda key: panel.ControlPanel._source_age_note(stub, key)
+    stub._freshness = lambda: panel.ControlPanel._freshness(stub)
     stub._report = report
     return stub
 

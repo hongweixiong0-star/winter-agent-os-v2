@@ -90,6 +90,14 @@ CONTROL_PLANE_PATHS: tuple[str, ...] = (
     # supervise, while reporting that it was watching.  The three names above are the precedent:
     # a module the window runs belongs here when the window starts running it.
     "winter_agent_v2/gui_model_service.py",
+    # Added 2026-10-04 by the same criterion, and it is the narrowest case on this list: the
+    # window does not *run* this module, it *parses data with it*.  ``RuntimeSnapshotStore``
+    # filters the file's keys through the dataclass fields, so a field that exists on disk and
+    # not in the window's copy is dropped in silence -- a new cell reads its default and looks
+    # like a measurement.  Measured the same day while adding ``frame_confidence``: the value
+    # was written to ``learning/runtime_snapshot.json`` and the running window would have gone
+    # on showing 0% for it, which is indistinguishable from "the recognition score is zero".
+    "winter_agent_v2/runtime_snapshot.py",
 )
 
 

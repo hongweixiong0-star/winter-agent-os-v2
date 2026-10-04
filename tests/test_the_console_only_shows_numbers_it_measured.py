@@ -141,13 +141,26 @@ class AnExpiredActivityRecordIsNotTodaysPlanTests:
 
 
 class TheConfidenceColumnIsAboutTheGoalTests:
-    def test_a_goal_with_no_confidence_says_so(self, panel):
-        assert panel.ControlPanel._goal_confidence_cell({"confidence": None}) == "未计算"
-        assert panel.ControlPanel._goal_confidence_cell({}) == "未计算"
-        assert panel.ControlPanel._goal_confidence_cell({"confidence": "nonsense"}) == "未计算"
+    """2026-10-04, second round: the column itself is gone, which is the stronger statement.
 
-    def test_a_goal_with_its_own_confidence_shows_it(self, panel):
-        assert panel.ControlPanel._goal_confidence_cell({"confidence": 0.42}) == "42%"
+    The first fix made the cell honest -- it read the Goal's *own* confidence and printed
+    未计算 when there was none, which was every row, because ``GoalState`` has no such field.
+    That left a column whose every cell said 未计算: honest, and no information.  The operator's
+    audit rule is "不要因为'以后可能有用'就保留", so the column was removed and ``GoalState``
+    did not change.  The assertions below are therefore about the *absence* of a per-row
+    confidence, which is a property no rendering of a fake number can satisfy.
+    """
+
+    def test_the_board_has_no_confidence_column_at_all(self, panel):
+        source = PANEL_PATH.read_text(encoding="utf-8")
+        start = source.index("def _goals(")
+        board = source[start:source.index("def _refresh_goal_board")]
+        assert '"confidence"' not in board, (
+            "a per-Goal confidence is not computed anywhere, so it must not be a column"
+        )
+        assert "_goal_confidence_cell" not in source, (
+            "the helper existed only for the removed column"
+        )
 
     def test_the_goal_board_never_prints_the_frames_confidence_per_row(self, panel, tmp_path, monkeypatch):
         """The defect, reproduced on the shape that produced it: 99% in every row."""
@@ -162,10 +175,9 @@ class TheConfidenceColumnIsAboutTheGoalTests:
         })
         monkeypatch.setattr(panel, "ROOT", tmp_path)
         rows = _capture_goal_rows(panel)
-        confidences = {row[0]: row[-1] for row in rows}
-        assert confidences["保持建筑"] == "未计算"
-        assert confidences["清空情报"] == "未计算"
-        assert not any("99%" in row[-1] for row in rows), (
+        assert len(rows) == 2
+        assert all(len(row) == 9 for row in rows), "the board is nine columns wide"
+        assert not any("99%" in str(cell) for row in rows for cell in row), (
             "the frame's confidence must not be printed once per Goal"
         )
 
@@ -311,7 +323,7 @@ class _BoardStub:
     """Just enough of the Treeview + StringVar pair that ``_refresh_goal_board`` touches.
 
     Missing attributes fall through to the real ``ControlPanel``, so the helper methods the
-    board calls (``_blocked_cell`` / ``_goal_confidence_cell``) are the shipped ones rather
+    board calls (``_blocked_cell``) are the shipped one rather
     than copies -- a stub with its own copies would pass while the panel was broken.
     """
 

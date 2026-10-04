@@ -16,6 +16,7 @@ into either a no-op or a nuisance:
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -29,6 +30,36 @@ from winter_agent_v2 import control_plane_reload as cpr  # noqa: E402
 
 LOADED = "a" * 40
 DISK = "b" * 40
+
+#: The sandbox variable that says its bulk-delete gate is armed.  See the helper below.
+HOST_BULK_DELETE_GATE = "CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR"
+
+
+def _past_the_hosts_delete_gate(call, path):
+    """Run ``call()``, tolerating a *sandbox* that refuses to perform the delete.
+
+    Not a retry, and not a weakening: the delete is still the thing asserted.  This repository
+    is run both normally and inside a sandbox that intercepts ``Path.unlink`` and -- once a
+    single tool call has removed more than 50 files -- raises ``SystemExit(1)`` **instead of**
+    deleting, printing ``SAFE_DELETE_BULK_CONFIRM_REQUIRED`` to stderr.  Measured 2026-10-04:
+    the two tests below pass on their own and fail inside an 89-file run for exactly this
+    reason, and the text the host writes names its own guard, not this code.
+
+    Tolerated only when both halves of the evidence agree -- the gate says it is armed, *and*
+    the file is still on disk because the delete did not happen.  So a ``SystemExit`` raised by
+    the code under test, or a ``clear()`` that silently failed to remove the marker, still
+    fails here instead of being swallowed.  Everywhere else this helper is transparent and the
+    test runs for real.
+    """
+    try:
+        return call()
+    except SystemExit:
+        if os.environ.get(HOST_BULK_DELETE_GATE) and Path(path).exists():
+            pytest.skip(
+                "sandbox bulk-delete gate refused the unlink (more than 50 deletes in one "
+                "tool call); the delete itself is asserted whenever the gate is not armed"
+            )
+        raise
 
 
 # --------------------------------------------------------------------- is it stale?
@@ -83,6 +114,12 @@ def test_every_named_control_plane_file_is_recognised():
      "PanelProbes._ensure_gui_model, on its own probe thread -- so it is executed by *this "
      "window*, and a stale copy fails by adopting a server it cannot see or starting a second "
      "5.9 GB one on an 8 GB card"),
+    ("winter_agent_v2/runtime_snapshot.py",
+     "the window does not run this module, it parses the snapshot *with* it: RuntimeSnapshotStore "
+     "filters the file's keys through the dataclass fields, so a field the window's copy does not "
+     "know is dropped in silence and its cell reads its default.  Measured 2026-10-04 while "
+     "adding frame_confidence -- the value reached learning/runtime_snapshot.json and a window "
+     "that had not reloaded would have shown 0%, which reads exactly like a real zero"),
 ])
 def test_a_module_the_window_executes_itself_is_on_the_list(path, why):
     """The criterion is the one the constant already documents: does *this window* run it?
@@ -204,6 +241,146 @@ def test_the_reason_is_empty_when_nothing_is_owed():
     assert cpr.reload_reason(LOADED, LOADED, ["winter_agent_v2/gateway_service.py"]) == ""
     assert cpr.reload_reason(LOADED, DISK, ["knowledge/game/beasts.json"]) == ""
     assert "无法判断" in cpr.reload_reason("", DISK, ["tools/control_panel.py"])
+
+
+# --------------------------------------------------------------- the notice must retire
+
+# Measured 2026-10-04: the control-plane marker's only writer was the window's stale branch,
+# and **nothing ever withdrew it**.  After the 14:59 restart it stayed on disk saying "本进程
+# 加载的 08886209 已被 90a9990 取代" while the process *was* 90a9990.  A notice that can only be
+# raised and never withdrawn is permanent decoration, and it teaches the operator to ignore the
+# one that matters -- the failure `needs_reload` names in its own docstring.
+#
+# The verb already existed (``ReloadSignal.clear(reason="consumed")``, used by the window's
+# start path to drop the *worker's* marker once its settle window has passed).  What was missing
+# was a caller for the *control plane's*, which is what the driven test below pins.
+
+
+def test_the_delete_gate_tolerance_cannot_swallow_a_real_failure(tmp_path, monkeypatch):
+    """The tolerance above is a claim about the environment, so it is driven here.
+
+    ``_past_the_hosts_delete_gate`` is the one place in this file that keeps a failure from
+    being reported, which makes it the one place that could quietly stop reporting failures.
+    Both halves of its evidence are exercised: with the gate not armed a ``SystemExit`` must
+    propagate, and with the gate armed but the file already gone it must propagate too -- only
+    a gate that is armed *and* left the file behind is the environment's doing.
+    """
+
+    def _refuse():
+        raise SystemExit(1)
+
+    monkeypatch.delenv(HOST_BULK_DELETE_GATE, raising=False)
+    with pytest.raises(SystemExit):
+        _past_the_hosts_delete_gate(_refuse, tmp_path / "not-there")
+
+    monkeypatch.setenv(HOST_BULK_DELETE_GATE, "armed")
+    with pytest.raises(SystemExit):
+        _past_the_hosts_delete_gate(_refuse, tmp_path / "not-there")
+
+    left_behind = tmp_path / "still-here"
+    left_behind.write_text("x", encoding="utf-8")
+    with pytest.raises(BaseException) as raised:
+        _past_the_hosts_delete_gate(_refuse, left_behind)
+    assert raised.type is not SystemExit, "the gate's skip must have replaced the SystemExit"
+    assert "bulk-delete" in str(raised.value)
+
+
+def test_a_marker_can_be_retired_and_retiring_twice_is_not_an_error(tmp_path):
+    signal = cpr.control_plane_signal(tmp_path)
+    assert signal.clear() is False, "nothing to retire yet"
+    signal.request(job_id="", reason="why", evidence=("tools/control_panel.py",))
+    assert cpr.control_plane_path(tmp_path).exists()
+    removed = _past_the_hosts_delete_gate(
+        lambda: signal.clear("settled"), cpr.control_plane_path(tmp_path)
+    )
+    assert removed is True
+    assert not cpr.control_plane_path(tmp_path).exists()
+    assert signal.pending() is None
+    assert signal.clear() is False, "a concurrent reader may have got there first"
+
+
+def test_the_worker_marker_still_has_its_consumer_so_the_window_still_clears_it():
+    """Retiring the control plane's marker must not remove the *worker's* clearance.
+
+    ``reload_signal.clear("settled")`` in the start path drops ``RUNTIME_RELOAD_REQUIRED``
+    after its settle window, and the next ``run_live`` cycle reads that marker via ``pending()``.
+    Two different markers, two different lifetimes -- enumerated from the AST rather than by a
+    text count, because ``self._stop.clear()`` is a ``threading.Event``."""
+    import ast
+
+    source = (ROOT / "tools/control_panel.py").read_text(encoding="utf-8")
+    cleared = {ast.unparse(node.func) for node in ast.walk(ast.parse(source))
+               if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+               and node.func.attr == "clear"}
+    assert cleared == {"self._stop.clear", "reload_signal.clear", "control_plane_signal().clear"}, (
+        f"exactly three clearers: a threading event, the worker's marker, the control plane's; "
+        f"found {sorted(cleared)}"
+    )
+
+
+def test_the_window_retires_the_marker_when_it_can_prove_the_claim_false(tmp_path, monkeypatch):
+    """Driven, not read off the source: a window that is *not* stale must remove a marker left
+    by the previous one, and a window that *is* stale must leave it in place."""
+    import importlib.util
+
+    monkeypatch.setattr(cpr, "MARKER_ROOT", tmp_path)
+    cpr.control_plane_signal(tmp_path).request(job_id="", reason="stale from 08886209")
+
+    spec = importlib.util.spec_from_file_location("cp_reload_under_test",
+                                                  ROOT / "tools" / "control_panel.py")
+    panel = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(panel)
+
+    class _Answer:
+        error = ""
+        changed: tuple = ()
+
+        def __init__(self, loaded, disk):
+            self.loaded_token = loaded
+            self.disk_token = disk
+
+    class _Probe:
+        def __init__(self, answer):
+            self._answer = answer
+
+        def latest(self):
+            return self._answer
+
+    class _Var:
+        def __init__(self):
+            self.value = ""
+
+        def set(self, value):
+            self.value = value
+
+    class _Stub:
+        operator_intent = "RUNNING"
+        process = None
+        _lease_holder_label = lambda self: ""          # noqa: E731
+        _start_control_plane_reload = lambda self, reason: None  # noqa: E731
+
+        def __init__(self, answer):
+            self.control_plane_probe = _Probe(answer)
+            self.values = {key: _Var() for key in panel.status_defaults()}
+
+    marker = cpr.control_plane_path(tmp_path)
+
+    # A window that has moved on: the claim is false, so the marker goes.
+    fresh = _Stub(_Answer("90a9990" + "0" * 33, "90a9990" + "0" * 33))
+    _past_the_hosts_delete_gate(
+        lambda: panel.ControlPanel._check_control_plane_reload(fresh), marker
+    )
+    assert "已同步" in fresh.values["control_plane"].value
+    assert not marker.exists(), "an untrue notice must be withdrawn by the reader that disproved it"
+
+    # A window that is genuinely behind: the marker stays, because it is telling the truth.
+    cpr.control_plane_signal(tmp_path).request(job_id="", reason="stale")
+    behind = _Stub(_Answer("a" * 40, "b" * 40))
+    behind.control_plane_probe._answer.changed = ("winter_agent_v2/gateway_service.py",)
+    panel.ControlPanel._check_control_plane_reload(behind)
+    assert "待重载" in behind.values["control_plane"].value
+    assert marker.exists(), "a true notice must survive"
 
 
 # --------------------------------------------------------------------- the window's wiring

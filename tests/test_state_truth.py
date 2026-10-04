@@ -294,11 +294,41 @@ class TheControlCentreIsWired(unittest.TestCase):
                   (v.split(" ", 1)[-1] for v in self.panel.DOT_TEXT.values())}
         self.assertTrue(listed)
 
-    def test_every_flat_tab_is_regrouped(self):
-        """Twelve tabs became unreadable; none may be left out of the grouping."""
-        for name in ("任务", "策略", "目标", "活动", "自动化覆盖", "能力", "知识",
-                     "自动开发", "系统", "日志", "设置", "总览"):
-            self.assertIn(name, self.panel.TAB_GROUP, name)
+    def test_every_tab_label_is_a_name_for_the_page_it_sits_on(self):
+        """Every tab the operator can click reads as the page it opens -- and nothing else.
+
+        This check used to name the twelve flat tabs and assert each was a key of
+        ``TAB_GROUP``.  That requirement was **retired** on 2026-10-04: five of the twelve
+        (``任务`` / ``自动化覆盖`` / ``知识`` / ``日志`` / ``设置``) were pages ``_build`` had
+        stopped creating, so the check was insisting the map keep advertising work that had
+        already been decided against.  A check that defends a retired requirement is worse
+        than no check -- it is why nobody noticed the map and the window had drifted apart.
+
+        Per §46 it is sharpened rather than deleted or relaxed, into the half the derived
+        guard cannot state.  ``tests/test_console_shows_only_what_it_can_fill.py`` derives
+        *which* pages exist from ``_build`` and proves the map's **keys** match them; that
+        says nothing about the words the operator actually reads, which are the map's
+        **values**.  Those are asserted here, purely structurally so no second name list has
+        to be maintained (a hand-written list is this defect's own origin):
+
+          * non-empty -- a blank tab is a page the operator cannot name;
+          * unique -- two pages under one word is not a grouping, it is an ambiguity;
+          * derived from the page's own name, optionally under one prefix (``运行·``).  A
+            label that follows neither is a second vocabulary: a word the operator can read
+            on a tab but cannot match to any page they can ask about.
+        """
+        labels = list(self.panel.TAB_GROUP.items())
+        self.assertTrue(all(label.strip() for _key, label in labels), labels)
+        self.assertEqual(
+            len({label for _key, label in labels}), len(labels),
+            f"two tabs read the same, so neither can be referred to: {labels}",
+        )
+        for key, label in labels:
+            self.assertIn(
+                label, (key, f"运行·{key}"),
+                f"tab {label!r} is neither the page name {key!r} nor that name under the "
+                f"one prefix the window uses",
+            )
 
     def test_the_new_panels_have_status_values_and_they_start_empty(self):
         """A panel with a plausible default is the same defect as a literal role."""

@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from tools import control_panel as cp
-from tools.control_panel import NO_WINDOW_FLAGS, _background_popen, _background_run, bootstrap_recovery_action, event_goal_is_current, human_reason, load_continuous_selection, load_task_selection, parse_runtime_result, panel_clock_owner, save_task_selection, summarize_runtime_result, task_toggle_label
+from tools.control_panel import NO_WINDOW_FLAGS, _background_popen, _background_run, bootstrap_recovery_action, human_reason, load_continuous_selection, load_task_selection, parse_runtime_result, panel_clock_owner, save_task_selection, summarize_runtime_result, task_toggle_label
 from winter_agent_v2.models import Page, WorldState
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.skills import v2_registry
@@ -288,10 +288,18 @@ class ControlPanelTests(unittest.TestCase):
         payload = {"stop_reason":"training_queue_busy", "steps":[{"decision":{"skill":"SAFE_STOP"}}]}
         self.assertTrue(summarize_runtime_result(payload, 0)["ok"])
 
-    def test_old_event_record_is_not_presented_as_today(self):
-        item = {"updated_at":"2026-09-05T23:52:00+08:00"}
-        now = datetime.fromisoformat("2026-09-07T18:00:00+08:00")
-        self.assertFalse(event_goal_is_current(item, now))
+    def test_the_event_records_age_has_exactly_one_rule(self):
+        """``event_goal_is_current`` was a second, contradicting rule for one fact.
+
+        It read ``item["updated_at"]`` while the record writes ``verified_at``, so it answered
+        False for every input -- and its only test asserted that False, which is why a
+        permanently-wrong function survived.  The one rule is the audit's
+        (``state_truth.legacy_event_row_for``): it reads ``verified_at``, checks the recorded
+        countdown against the clock, and carries the verdict on the row.
+        """
+        source = (Path(__file__).resolve().parents[1] / "tools/control_panel.py").read_text(encoding="utf-8")
+        self.assertNotIn("def event_goal_is_current", source)
+        self.assertIn("legacy_event_row_for", source)
 
     def test_continuous_mode_defaults_on_and_is_persisted(self):
         with TemporaryDirectory() as folder:
@@ -365,13 +373,6 @@ class ControlPanelTests(unittest.TestCase):
     def test_runtime_children_are_backgrounded(self, popen):
         _background_popen(["python.exe", "run_live.py"])
         self.assertEqual(popen.call_args.kwargs["creationflags"], NO_WINDOW_FLAGS)
-
-    def test_command_center_has_exactly_seven_primary_tabs(self):
-        source = (Path(__file__).resolve().parents[1] / "tools/control_panel.py").read_text(encoding="utf-8")
-        build = source[source.index("    def _build(self)"):source.index("    def _tab(self")]
-        self.assertIn("self._overview(); self._goals(); self._strategy(); self._event_goal(); self._capabilities(); self._auto_development(); self._system()", build)
-        for legacy in ("self._tasks()", "self._coverage()", "self._knowledge()", "self._logs()", "self._settings()", "self._learning()"):
-            self.assertNotIn(legacy, build)
 
     def test_header_shows_the_frozen_layers_and_no_provider(self):
         # Operator directive 2026-09-18: the status row is V2 / MAA / MuMu / 游戏 / AUTO /

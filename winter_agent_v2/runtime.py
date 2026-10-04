@@ -9015,7 +9015,7 @@ class LiveRuntime:
                 # record here -- after the line above, so the two can never disagree.
                 before = self._stamp_gather_formation_resource(before, planned_resource)
             self._runtime(last_tick_time=datetime.now(timezone.utc).isoformat(),
-                          page=before.page.value, confidence=before.confidence,
+                          page=before.page.value, frame_confidence=before.confidence,
                           vision="READY" if before.known else "UNKNOWN", screenshot_path=str(before_path),
                           march_used=before.march_used, march_max=before.march_max,
                           queues={"building": before.building, "research": before.research, "training": before.training,
@@ -10389,7 +10389,7 @@ class LiveRuntime:
                 continue
             self._runtime(verifier="PASS" if verification.ok else verification.reason,
                           last_success_time=(datetime.now(timezone.utc).isoformat() if verification.ok else None),
-                          page=after.page.value, confidence=after.confidence, screenshot_path=str(after_path),
+                          page=after.page.value, frame_confidence=after.confidence, screenshot_path=str(after_path),
                           march_used=after.march_used, march_max=after.march_max,
                           queues={"building": after.building, "research": after.research, "training": after.training,
                                   "intel": after.intel, "alliance": after.alliance, "events": after.events})

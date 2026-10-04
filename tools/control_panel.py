@@ -1294,19 +1294,14 @@ POLICY_CATEGORIES: tuple[str, ...] = (
 )
 
 
-def event_goal_is_current(item: dict[str, Any], now: datetime | None = None) -> bool:
-    """Only label a saved event result as today's fact when it was updated today."""
-    stamp = item.get("updated_at") if isinstance(item, dict) else None
-    if not isinstance(stamp, str):
-        return False
-    try:
-        updated = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
-    except ValueError:
-        return False
-    current = now or datetime.now().astimezone()
-    if updated.tzinfo is None:
-        updated = updated.replace(tzinfo=current.tzinfo)
-    return updated.astimezone(current.tzinfo).date() == current.date()
+# ``event_goal_is_current(item)`` used to live here: a second, contradicting rule for the same
+# fact the activity record's audit already answers.  It read ``item["updated_at"]`` -- a key the
+# record does not carry (``learning/event_goal_state.json`` writes ``verified_at``) -- so it
+# returned False for every input, and its only test asserted that False, which is exactly why it
+# survived.  The one rule is ``state_truth.legacy_event_row_for``: it reads ``verified_at``,
+# compares the recorded countdown against the clock, and *carries the verdict on the row* so no
+# reader re-derives it.  Removed 2026-10-04 with the R4 sweep; a page that keeps a private
+# freshness rule is how two pages come to disagree about the same file.
 GATHER_RUNTIME_PAGES = frozenset({
     Page.HOME,
     Page.MAP,
@@ -1481,27 +1476,13 @@ def load_policy_categories(path: Path, names: tuple[str, ...]) -> dict[str, bool
     return {name: bool(saved.get(name, True)) for name in names}
 
 
-def count_knowledge() -> dict[str, int]:
-    def records(path: Path) -> int:
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return 0
-        if isinstance(data, list):
-            return len(data)
-        if isinstance(data, dict):
-            for key in ("entries", "items", "records", "semantics", "templates", "icons", "samples"):
-                if isinstance(data.get(key), list):
-                    return len(data[key])
-            return len(data)
-        return 0
-    return {
-        "游戏知识": sum(records(p) for p in (ROOT / "knowledge/game").glob("*.json")),
-        "UI 语义": records(ROOT / "knowledge/ui/semantic_dictionary.json"),
-        "Template": records(ROOT / "dataset/candidate/template_manifest.json"),
-        "Icon": records(ROOT / "knowledge/ui/icons/manifest.json"),
-        "Replay": records(ROOT / "tests/replay/labels.json"),
-    }
+# ``count_knowledge()`` lived here until 2026-10-04.  Its only caller was ``_knowledge`` --
+# the 知识 page, which is never built -- so it was removed rather than kept "in case".  Note
+# what it did, because that is the part worth not repeating: it counted files in three
+# directories (one of them 29 days stale) and printed the totals as the state of the
+# knowledge base, with no age and no denominator.  A count of records in an unread file is
+# not knowledge coverage, and the audit that removed this asked two questions of every
+# displayed field: who writes it, and who can see how old it is.
 
 
 # ------------------------------------------------------- architecture status layer
@@ -1550,29 +1531,45 @@ SYSTEM_INDICATORS: tuple[tuple[str, str], ...] = (
     ("预载", "dot_boot"), ("时间", "clock"),
 )
 
-# Twelve flat tabs became unreadable once every subsystem got its own page, so they are
-# grouped under the operator's seven headings.  This is a *label* map, not a restructuring:
-# the frames and their content are untouched, which keeps every existing test and every
-# deep link to a tab working.
+# The tab labels, and **only** the tabs that exist.  Key = the page's internal name (what
+# ``_tab`` and every deep link use); value = the text the operator reads.  This is a
+# *display-name* map, not a restructuring: the frames and their content are untouched, so an
+# existing link to a page still lands on that page -- only the visible text changed.
+#
+# Measured 2026-10-04: this map declared twelve names while ``_build`` created seven, so
+# five of them -- 任务 / 自动化覆盖 / 知识 / 日志 / 设置 -- labelled nothing at all.  A label
+# map that lists a page nobody builds is the same class of defect as a column that is always
+# empty, and it is worse for a reader: the five were retired on purpose, so the map was
+# advertising work that had already been decided against.  The 运行· prefix is carried by the
+# three pages that *are* one activity stream in the operator's head; 总览 / 能力 / 自动开发 /
+# 系统 are single answers and read vaguer with a prefix than without one.
+# ``tests/test_console_shows_only_what_it_can_fill.py`` derives the tab list from ``_build``
+# and asserts this map matches it, so the two cannot drift again.
 TAB_GROUP: dict[str, str] = {
     "总览": "总览",
-    "任务": "运行·任务",
     "策略": "运行·策略",
     "目标": "运行·目标",
     "活动": "运行·活动",
-    "自动化覆盖": "能力·覆盖",
     "能力": "能力",
-    "知识": "知识",
     "自动开发": "自动开发",
     "系统": "系统",
-    "日志": "证据·日志",
-    "设置": "系统·设置",
 }
 UNKNOWN_NOW = "未知（识别中）"
+# One word for "the evidence behind this expired, so it is not today's answer".  Used by the
+# activity record's TTL and by every derived figure whose source has stopped being written --
+# one word, so the reader learns it once.  (The word is load-bearing: 2026-10-04 the operator
+# rejected the earlier approach of printing the stale number with a 历史参考 prefix, on the
+# grounds that "前缀不是藏身处".)
+REOBSERVE = "待重新观测"
 # A stop reason the panel cannot classify while nothing is running.  Distinct from
 # UNKNOWN_NOW because nothing is being recognised at that moment -- the honest
 # reading is that the reason itself is unclassified, not that a look is in flight.
 UNKNOWN_STOP = "未知（原因未分类）"
+# How long a freshness table may be reused.  ``_refresh_truth`` runs on the 1500 ms UI tick
+# and the table stats 26 files; once every half minute is indistinguishable to the reader and
+# 20x cheaper.  Time-boxed rather than permanent because the *content* of this table is an
+# age -- a memo that never expires would freeze exactly the number it exists to report.
+FRESHNESS_TTL_SECONDS = 30.0
 
 CATALOG_PATH = ROOT / "knowledge/game/capability_catalog.json"
 EPISODES_PATH = ROOT / "learning/episodes.jsonl"
@@ -1654,6 +1651,22 @@ CATALOG_META = {
     "blocked": ("Blocked", "capability_catalog.json · 带 blocked_reason"),
     "queue": ("WorkBuddy Queue", "workbuddy_escalations.jsonl · 活跃 / 累计"),
 }
+
+#: The four 总览 fact cards: (title, value key, source label, the freshness-table key).
+#: One declaration read by both the build and the refresh, so a card cannot print a source
+#: line that the freshness table does not know about -- and every one of these four figures
+#: is derived from a file, which is why each now carries its own file's age.
+OVERVIEW_FACTS: tuple[tuple[str, str, str, str], ...] = (
+    ("现在为什么不动", "why_idle",
+     "learning/runtime_snapshot.json · 决策原因", "learning/runtime_snapshot.json"),
+    ("执行器（最近 100 步实测）", "executor_mix",
+     "learning/executor_backend.jsonl", "learning/executor_backend.jsonl"),
+    ("自动开发 / 能力学习", "bootstrap",
+     "learning/knowledge_bootstrap/STATE.json · WorkBuddy 台账",
+     "learning/knowledge_bootstrap/STATE.json"),
+    ("能力覆盖", "coverage",
+     "knowledge/game/capability_catalog.json", "knowledge/game/capability_catalog.json"),
+)
 
 _CACHE_LOCK = threading.Lock()
 _CATALOG_CACHE: tuple[float, dict[str, Any]] | None = None
@@ -2967,6 +2980,47 @@ def overview_kpis(root: Path | None = None, *, registry: Any = None, view: dict[
             for key in CATALOG_META}
 
 
+def intervention_of(*, problems: list, auto_running: bool, policy: Any = None) -> str:
+    """The one cell that answers 需要我干预吗, and what the operator would do about it.
+
+    Operator's audit (2026-10-04, second layer §五A) found this slot **missing**: the console
+    could say what it was doing and why, but no cell anywhere said whether the *human* was
+    needed -- and the two nearest answers, ``attention`` and ``mode``, sat far apart on the
+    same page.  It was the only L1 item absent from the whole window.
+
+    Two properties make this honest rather than decorative:
+
+    * ``problems`` is the *same list* the 需要关注 card prints, passed in rather than
+      recomputed, so this cell and that card cannot hold different opinions.
+    * The spend line is read from ``config/policy_state.json`` -- the file the strategy page
+      already renders -- so "花钱" is answered from a declared verdict rather than from a
+      plausible-looking zero.  Where the file is silent the cell says 未声明 instead of
+      implying nothing can be spent.
+    """
+    problems = [str(item) for item in problems if str(item).strip()]
+    if problems:
+        verdict = f"需要你看一眼（{len(problems)} 项）"
+        reason = "；".join(problems[:2])
+    else:
+        verdict = "不需要你干预"
+        reason = ("没有冲突、没有过期数据源、没有卡住；"
+                  + ("AUTO 正在运行" if auto_running else "AUTO 未在运行（这是你的选择，不是故障）"))
+
+    state = policy if isinstance(policy, dict) else {}
+    money = str(state.get("real_money") or "").upper()
+    spend = "真钱：永久禁止 🔒" if money == "PERMANENTLY_BLOCKED" else f"真钱：{money or '未声明'}"
+    forbid = state.get("disabled_goals")
+    if isinstance(forbid, dict) and forbid:
+        spend += f" · 已禁用 Goal {len(forbid)} 个（自动选择已排除）"
+
+    return "\n".join([
+        f"结论：{verdict}",
+        f"原因：{reason}",
+        f"此刻会不会花钱 / 不可逆操作：{spend}",
+        "去哪里：策略页「运行方式」有截图 / 证据 / 日志入口；顶部 AUTO 指示器可确认它在不在跑",
+    ])
+
+
 def status_defaults() -> dict[str, str]:
     """Every status variable the panel owns, with its value before anything is read.
 
@@ -2983,7 +3037,7 @@ def status_defaults() -> dict[str, str]:
         "march": "行军：暂无数据", "task_cn": "等待启动", "skill": NO_DATA,
         "reason": "尚未产生决策", "preconditions": PENDING, "next": "截图并识别当前页面",
         "backend": PENDING, "backend_detail": PENDING, "risk": PENDING,
-        "confidence": NO_DATA, "runtime_state": PENDING,
+        "confidence_decision": NO_DATA, "confidence_frame": NO_DATA, "runtime_state": PENDING,
         "verifier": "等待任务执行", "result": "尚未运行",
         "wb_state": WORKBUDDY_LABELS["IDLE"], "wb_capability": PENDING, "wb_reason": PENDING,
         "wb_job": PENDING, "wb_model": PENDING, "wb_duration": PENDING,
@@ -3004,6 +3058,11 @@ def status_defaults() -> dict[str, str]:
         # The new panels' own lines.
         "why_idle": PENDING, "executor_mix": PENDING, "progress": PENDING,
         "bootstrap": PENDING, "coverage": PENDING, "attention": "暂无需要关注的问题",
+        # The one L1 slot the 2026-10-04 audit found missing from the entire window: whether
+        # the operator is needed, and what they would do.  It starts at 未读取 rather than at
+        # a reassuring 不需要, because a cell that answers "is the human needed" must not
+        # answer it before anything has been read.
+        "intervene": PENDING,
         "watchdog": PENDING, "local_model": PENDING, "local_model_last": PENDING,
         # Operator directive 2026-10-01 §36: the learning-effect lines.  Two rows rather than one
         # because the funnel and the KPI set answer different questions -- "where did it stop" is
@@ -4556,9 +4615,11 @@ class ControlPanel:
         self.operator_intent = load_operator_intent(PANEL_STATE_PATH)
         self.startup_preflight: dict | None = None
         self.preview_mode = tk.StringVar(value="原始画面")
-        self.resource_policy = {"普通资源": tk.StringVar(value="自动使用"), "普通加速": tk.StringVar(value="自动使用"),
-                                "高级加速": tk.StringVar(value="保守"), "钻石": tk.StringVar(value="保守"),
-                                "真实支付": tk.StringVar(value="禁止")}
+        # ``self.resource_policy`` (五个 StringVar，绑在 设置 页的组合框上) was removed on
+        # 2026-10-04.  Nothing read it -- not this window, not ``winter_agent_v2`` -- so those
+        # comboboxes were controls that changed no policy, and a control that changes nothing
+        # is worse than no control: the operator would believe a limit had been set.  The
+        # enforced limits are real and are shown on 运行·策略 as a read-only list.
         self.policy_enabled = {
             name: tk.BooleanVar(value=enabled)
             for name, enabled in load_policy_categories(POLICY_STATE_PATH, POLICY_CATEGORIES).items()
@@ -4696,6 +4757,68 @@ class ControlPanel:
         canvas.bind("<Leave>", lambda _e: canvas.unbind_all("<MouseWheel>"))
         return inner
 
+    # -- how old the evidence behind every number is ------------------------------------
+    #
+    # One table, one place.  Measured 2026-10-04: the console read 28 data files and checked
+    # the age of exactly one of them, so a 24.9-day-old ``goal_coverage.json`` and a fresh
+    # ``runtime_snapshot.json`` rendered identically.  These three helpers are the whole of
+    # the cure: ``_freshness`` holds the table, ``_source_age_note`` is how a column admits
+    # its source has stopped moving, and ``_attention_with_sources`` is how that admission
+    # reaches the one card the operator is told to watch.
+
+    def _freshness(self) -> tuple:
+        """``(all ages, keys of sources that aged out while a writer should have run)``.
+
+        The second element is deliberately *not* "every old file": ``stale_among`` returns
+        nothing at all when AUTO is down, because when nothing is running nothing writes these
+        files and their age is the design, not a fault.  Reporting them would be the "狼来了"
+        failure the operator named, and it would train them to ignore the one notice that
+        matters.
+
+        Only the *ages* are memoised.  Caching the AUTO verdict alongside them would freeze it
+        for the whole window, so pressing 开始 would not raise the alarm for up to
+        ``FRESHNESS_TTL_SECONDS`` and pressing 停止 would not clear it for the same time.
+        """
+        from winter_agent_v2 import source_freshness
+
+        now = time.monotonic()
+        ages = getattr(self, "_freshness_ages", None)
+        if ages is None or now - getattr(self, "_freshness_at", 0.0) >= FRESHNESS_TTL_SECONDS:
+            ages = source_freshness.all_ages(ROOT)
+            self._freshness_ages, self._freshness_at = ages, now
+        running = self.process is not None and self.process.poll() is None
+        ends = {age.key for age in source_freshness.stale_among(ages, auto_running=running)}
+        return ages, ends
+
+    def _source_age_note(self, key: str) -> str:
+        """``""`` when the source is current, otherwise a suffix naming how old it is.
+
+        Empty-when-fine so a caller can concatenate it unconditionally and get the honest
+        line either way, instead of writing an ``if`` at every use site and eventually
+        forgetting one -- which is how the columns got into this state.
+
+        This is a statement about the file, not an alarm: it does not consult AUTO, so it also
+        fires while the system is paused.  ``_attention_with_sources`` is the alarming half and
+        that one does consult AUTO; the split is the difference between "written 8 days ago"
+        (always worth saying) and "something stopped writing" (only a fault if a writer should
+        have been running).
+        """
+        ages, _ = self._freshness()
+        age = ages.get(key)
+        if age is None or age.fresh:
+            return ""
+        return f"　（{age.source.label}{age.age_text()}，已过期）"
+
+    def _attention_with_sources(self, lines: list) -> list:
+        """Prepend the stale-source lines the operator must see, then the truth conflicts."""
+        ages, ends = self._freshness()
+        if not ends:
+            return lines
+        worst = sorted((ages[k] for k in ends), key=lambda a: -(a.age_seconds or 0.0))
+        head = [f"⚠ 数据源已过期：{a.source.key}（{a.age_text()}）· 用于 {a.source.used_by}"
+                for a in worst[:2]]
+        return head + list(lines)
+
     def _overview(self) -> None:
         tab = self._tab("总览", scroll=True); tab.rowconfigure(0, weight=1); tab.columnconfigure(1, weight=1)
         left = ttk.Frame(tab, style="Card.TFrame", padding=14, width=215); left.grid(row=0, column=0, sticky="nsew", padx=(0, 8)); left.grid_propagate(False)
@@ -4718,7 +4841,7 @@ class ControlPanel:
         ttk.Label(left, textvariable=self.values["march"], style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(3, 16))
         ttk.Separator(left).pack(fill="x", pady=(0, 12)); ttk.Label(left, text="今日 Goal 摘要", style="Section.TLabel", background=PANEL).pack(anchor="w", pady=(0, 8))
         self.today: dict[str, tk.StringVar] = {}
-        for task in ("活动低保", "情报", "体力", "训练", "科研", "建筑", "奖励"):
+        for task in ("活动低保", "情报", "体力", "训练", "科研", "建筑"):
             row = ttk.Frame(left, style="Card.TFrame"); row.pack(fill="x", pady=3)
             ttk.Label(row, text=task, background=PANEL).pack(side="left")
             self.today[task] = tk.StringVar(value=PENDING)
@@ -4754,12 +4877,25 @@ class ControlPanel:
                                   ("当前状态", "runtime_state", "Value.TLabel"), ("为什么执行", "reason", "TLabel"),
                                   ("Preconditions", "preconditions", "TLabel"), ("Verifier", "verifier", "TLabel"),
                                   ("下一步", "next", "TLabel"), ("风险", "risk", "TLabel"),
-                                  ("置信度", "confidence", "Value.TLabel")):
+                                  ("决策置信度", "confidence_decision", "Value.TLabel")):
             ttk.Label(right, text=label, style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(10, 1))
             ttk.Label(right, textvariable=self.values[key], style=style, background=PANEL, wraplength=235, justify="left").pack(anchor="w")
         ttk.Label(right, textvariable=self.values["stats"], style="Muted.TLabel", background=PANEL, wraplength=235).pack(anchor="w", side="bottom")
         # Row 1: coverage and verification progress, first thing the eye lands on.
-        kpis = ttk.Frame(tab, style="Card.TFrame", padding=10); kpis.grid(row=1, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        # Row 1, above everything else: the one question the 2026-10-04 audit found nowhere in
+        # the window -- 需要我干预吗.  It sits first because it is the only cell whose answer
+        # changes what the operator does next; every block beneath it is detail for the case
+        # where the answer is 「需要」.  Same reason the report put it at L1 and marked it the
+        # only missing L1 item.
+        verdict = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10))
+        verdict.grid(row=1, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        ttk.Label(verdict, text="需不需要干预", style="Section.TLabel", background=PANEL).pack(anchor="w")
+        ttk.Label(verdict, textvariable=self.values["intervene"], background=PANEL,
+                  wraplength=1150, justify="left").pack(anchor="w", pady=(5, 0))
+        ttk.Label(verdict, text="state_truth 需要的关注项 + 数据源新鲜度 · config/policy_state.json",
+                  style="Muted.TLabel", background=PANEL, font=("Microsoft YaHei UI", 7),
+                  wraplength=1150, justify="left").pack(anchor="w", pady=(4, 0))
+        kpis = ttk.Frame(tab, style="Card.TFrame", padding=10); kpis.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(10, 0))
         self.kpi_source: dict[str, tk.StringVar] = {}
         for i, (key, meta) in enumerate(CATALOG_META.items()):
             card = ttk.Frame(kpis, style="Card2.TFrame", padding=(12, 7)); card.grid(row=0, column=i, sticky="ew", padx=4); kpis.columnconfigure(i, weight=1)
@@ -4769,7 +4905,7 @@ class ControlPanel:
             self.kpi_source[key] = tk.StringVar(value=meta[1])
             ttk.Label(card, textvariable=self.kpi_source[key], style="Muted.TLabel", background=PANEL2, wraplength=140, justify="left", font=("Microsoft YaHei UI", 7)).pack(anchor="w")
         # Row 2: what the development platform is doing right now.
-        wb = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10)); wb.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        wb = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10)); wb.grid(row=3, column=0, columnspan=3, sticky="ew", pady=(10, 0))
         head = ttk.Frame(wb, style="Card.TFrame"); head.pack(fill="x")
         ttk.Label(head, text="WorkBuddy 自动开发", style="Section.TLabel", background=PANEL).pack(side="left")
         ttk.Label(head, textvariable=self.values["wb_gateway"], style="Muted.TLabel", background=PANEL).pack(side="right")
@@ -4785,7 +4921,7 @@ class ControlPanel:
         result = ttk.Frame(grid, style="Card.TFrame"); result.grid(row=2, column=0, columnspan=4, sticky="ew", pady=(6, 0))
         ttk.Label(result, text="最近结果", style="Muted.TLabel", background=PANEL).pack(anchor="w")
         ttk.Label(result, textvariable=self.values["wb_result"], background=PANEL, wraplength=1150, justify="left").pack(anchor="w")
-        cards = ttk.Frame(tab, style="Card.TFrame", padding=10); cards.grid(row=3, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        cards = ttk.Frame(tab, style="Card.TFrame", padding=10); cards.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(10, 0))
         self.queues: dict[str, tk.StringVar] = {}
         for i, name in enumerate(("行军", "建筑", "科技", "训练", "Intel", "联盟", "活动")):
             card = ttk.Frame(cards, style="Card2.TFrame", padding=(14, 8)); card.grid(row=0, column=i, sticky="ew", padx=4); cards.columnconfigure(i, weight=1)
@@ -4798,26 +4934,25 @@ class ControlPanel:
         # them, and any line that cannot be confirmed says 未确认 / 未知 rather than a
         # plausible-looking stale number.
         facts = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10))
-        facts.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        facts.grid(row=5, column=0, columnspan=3, sticky="ew", pady=(10, 0))
         facts.columnconfigure(0, weight=1); facts.columnconfigure(1, weight=1)
-        for column, (title, key, source) in enumerate((
-            ("现在为什么不动", "why_idle", "learning/runtime_snapshot.json · 决策原因"),
-            ("执行器（最近 100 步实测）", "executor_mix", "learning/executor_backend.jsonl"),
-            ("自动开发 / 能力学习", "bootstrap",
-             "learning/knowledge_bootstrap/STATE.json · WorkBuddy 台账"),
-            ("能力覆盖", "coverage", "knowledge/game/capability_catalog.json"),
-        )):
+        # The source line under each card carries the age of the file it names, set on the tick
+        # by ``_refresh_truth``.  All four of these figures are *derived* -- which is exactly
+        # the surface that made a 24.9-day-old source look like a current reading.
+        self.fact_source: dict[str, tk.StringVar] = {}
+        for column, (title, key, source, source_key) in enumerate(OVERVIEW_FACTS):
             cell = ttk.Frame(facts, style="Card2.TFrame", padding=(12, 8))
             cell.grid(row=column // 2, column=column % 2, sticky="nsew", padx=4, pady=4)
             ttk.Label(cell, text=title, style="Section.TLabel", background=PANEL2).pack(anchor="w")
             ttk.Label(cell, textvariable=self.values[key], background=PANEL2,
                       wraplength=560, justify="left").pack(anchor="w", pady=(4, 0))
-            ttk.Label(cell, text=source, style="Muted.TLabel", background=PANEL2,
-                      font=("Microsoft YaHei UI", 7), wraplength=560,
+            self.fact_source[key] = tk.StringVar(value=source)
+            ttk.Label(cell, textvariable=self.fact_source[key], style="Muted.TLabel",
+                      background=PANEL2, font=("Microsoft YaHei UI", 7), wraplength=560,
                       justify="left").pack(anchor="w", pady=(4, 0))
 
         lower = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10))
-        lower.grid(row=5, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        lower.grid(row=6, column=0, columnspan=3, sticky="ew", pady=(10, 0))
         lower.columnconfigure(0, weight=1); lower.columnconfigure(1, weight=1)
         for column, (title, key, source) in enumerate((
             ("需要关注", "attention",
@@ -4837,10 +4972,10 @@ class ControlPanel:
         # 动作成功 ≠ 目标取得进展.  The operator's own distinction, shown where the eye
         # lands rather than buried in a per-step log.
         ttk.Label(tab, textvariable=self.values["progress"], background=PANEL,
-                  wraplength=1150, justify="left").grid(row=6, column=0, columnspan=3,
+                  wraplength=1150, justify="left").grid(row=7, column=0, columnspan=3,
                                                         sticky="w", pady=(8, 0))
 
-        bottom = ttk.Frame(tab, style="Card.TFrame", padding=10); bottom.grid(row=7, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        bottom = ttk.Frame(tab, style="Card.TFrame", padding=10); bottom.grid(row=8, column=0, columnspan=3, sticky="ew", pady=(10, 0))
         controls = ttk.Frame(bottom, style="Card.TFrame"); controls.pack(side="left")
         self.start_button = ttk.Button(controls, text="开始自动运行", style="Accent.TButton", command=self.start); self.start_button.pack(side="left", padx=(0, 4))
         self.pause_button = ttk.Button(controls, text="暂停", command=self.pause, state="disabled"); self.pause_button.pack(side="left", padx=3)
@@ -4857,19 +4992,6 @@ class ControlPanel:
         ttk.Label(event, text="最近事件", style="Muted.TLabel", background=PANEL).pack(anchor="w")
         self.event_text = tk.StringVar(value="控制台已启动，等待真实状态。")
         ttk.Label(event, textvariable=self.event_text, background=PANEL, wraplength=640).pack(anchor="w")
-
-    def _tasks(self) -> None:
-        tab = self._tab("任务"); ttk.Label(tab, text="任务设置", style="Title.TLabel").pack(anchor="w", pady=(5, 4))
-        ttk.Label(tab, text="绿色 ✓ 已启用＝允许自动执行；灰色 ○ 未启用＝不会执行；◇ 待接入＝尚不能从控制台启动。", style="Muted.TLabel").pack(anchor="w", pady=(0, 16))
-        grid = ttk.Frame(tab, style="Card.TFrame", padding=18); grid.pack(fill="x")
-        self.task_buttons: dict[str, ttk.Button] = {}
-        for i, (name, var) in enumerate(self.task_enabled.items()):
-            button = ttk.Button(grid, command=lambda task=name: self._toggle_task(task), width=22)
-            button.grid(row=i // 3, column=i % 3, sticky="ew", padx=12, pady=8)
-            grid.columnconfigure(i % 3, weight=1)
-            self.task_buttons[name] = button
-        self._sync_tasks()
-        ttk.Label(tab, text="已接入实机主循环：邮件、每日奖励、联盟赠礼、训练、探险收益、Intel、野怪、资源采集。其余能力不会从面板伪启动。", foreground=WARN).pack(anchor="w", pady=16)
 
     def _strategy(self) -> None:
         tab = self._tab("策略")
@@ -4917,6 +5039,28 @@ class ControlPanel:
             for goal_id, reason in sorted(forbidden.items()):
                 ttk.Label(blocked, text=f"{goal_id}   ·   {reason}",
                           background=PANEL, foreground=BAD).pack(anchor="w", pady=1)
+        # The one live control that had no surface.  ``continuous`` is read by the runtime
+        # handoff, the watchdog and the stop path (four call sites) and persisted to
+        # ``config/control_panel_state.json``, and its only checkbox lived on `_settings` --
+        # a page that is never built, so the operator could not change it.  Found by the
+        # audit of 2026-10-04 that asked, per field, "who can set this, and who reads it".
+        # 运行方式 is a real decision (it is the difference between unattended repeat and
+        # "stop after one round"), so it belongs on the page whose whole job is policy.
+        runtime = ttk.Frame(tab, style="Card.TFrame", padding=18); runtime.pack(fill="x", pady=(12, 0))
+        ttk.Label(runtime, text="运行方式", style="Section.TLabel", background=PANEL).pack(anchor="w")
+        ttk.Checkbutton(
+            runtime,
+            text="连续运行（可执行时 30 秒复查；行军已满时 10 分钟复查）",
+            variable=self.continuous,
+            command=self._save_panel_state,
+        ).pack(anchor="w", pady=(8, 0))
+        ttk.Label(runtime, text="硬安全边界：真实充值、账号/角色删除、账号安全设置始终禁止。",
+                  background=PANEL, foreground=BAD).pack(anchor="w", pady=(10, 0))
+        row = ttk.Frame(runtime, style="Card.TFrame"); row.pack(anchor="w", pady=(8, 0))
+        for label, path in (("打开截图目录", CAPTURE_ROOT), ("打开证据目录", ROOT / "evidence"),
+                            ("打开最新截图", None), ("打开日志目录", LOG_ROOT)):
+            command = self.open_latest if path is None else (lambda p=path: self._open(p))
+            ttk.Button(row, text=label, command=command).pack(side="left", padx=4)
 
     def _toggle_policy(self, name: str) -> None:
         """Redraw the switch's own label, then persist -- in that order.
@@ -4945,38 +5089,20 @@ class ControlPanel:
         tab = self._tab("目标")
         ttk.Label(tab, text="今日目标", style="Title.TLabel").pack(anchor="w", pady=(5, 4))
         ttk.Label(tab, text="来自最近一次真实识别；“未知”不是完成，勾选任务也不是完成。", style="Muted.TLabel").pack(anchor="w", pady=(0, 12))
-        self.goal_board = ttk.Treeview(tab, columns=("goal", "category", "priority", "status", "progress", "deadline", "next", "blocked", "skills", "confidence"), show="headings")
-        for key, title, width in (("goal", "目标", 185), ("category", "类别", 80), ("priority", "优先级", 70), ("status", "状态", 90), ("progress", "进度/目标", 105), ("deadline", "剩余", 80), ("next", "下一动作", 150), ("blocked", "阻塞原因", 120), ("skills", "贡献能力", 190), ("confidence", "置信度", 70)):
+        # No 置信度 column.  It was added on 2026-10-04 to stop the board printing the frame's
+        # recognition confidence in every Goal row, and it did that honestly -- by reading the
+        # Goal's *own* confidence, which ``GoalState`` does not have, so all 33 rows read
+        # 未计算.  A column whose every cell is 未计算 carries no information; the operator's
+        # rule for this audit is "不要因为以后可能有用就保留".  The frame's number is still
+        # shown once, correctly labelled, in ``goal_board_meta`` below -- which is where
+        # "this is page recognition, not a per-Goal figure" can actually be said in words.
+        self.goal_board = ttk.Treeview(tab, columns=("goal", "category", "priority", "status", "progress", "deadline", "next", "blocked", "skills"), show="headings")
+        for key, title, width in (("goal", "目标", 185), ("category", "类别", 80), ("priority", "优先级", 70), ("status", "状态", 90), ("progress", "进度/目标", 105), ("deadline", "剩余", 80), ("next", "下一动作", 150), ("blocked", "阻塞原因", 120), ("skills", "贡献能力", 190)):
             self.goal_board.heading(key, text=title); self.goal_board.column(key, width=width, anchor="w")
         self.goal_board.pack(fill="both", expand=True)
         self.goal_board_meta = tk.StringVar(value="尚无真实 GoalState；运行识别后自动更新。")
         ttk.Label(tab, textvariable=self.goal_board_meta, style="Muted.TLabel").pack(anchor="w", pady=(8, 0))
         self._refresh_goal_board()
-
-    @staticmethod
-    def _goal_confidence_cell(goal: dict) -> str:
-        """The Goal's **own** confidence, or an explicit ``未计算``.
-
-        Measured 2026-10-04, and this is the whole defect: every row of 今日目标 read
-        ``99%``.  The cell rendered ``snapshot["confidence"]`` -- one number for the whole
-        frame, the page-recognition confidence -- inside a column headed 置信度 that sits
-        under a table of *Goals*.  A per-Goal confidence is not computed anywhere:
-        ``GoalState`` has no such field (its 15 fields are goal_id/status/completion/…/
-        distance) and ``GoalStateStore`` writes none, so all 33 Goals carried
-        ``confidence: null`` and the frame's number stood in for every one of them.
-
-        The operator's rule for this is "不要显示假的 99%".  So the honest cell when the
-        Goal has no confidence of its own is ``未计算``, not a number borrowed from a
-        different question.  The page's own confidence is still shown, once, in the line
-        under the table -- where it is labelled as belonging to the frame.
-        """
-        value = goal.get("confidence")
-        if value is None:
-            return "未计算"
-        try:
-            return f"{float(value):.0%}"
-        except (TypeError, ValueError):
-            return "未计算"
 
     #: The frame's own reasons for holding a Goal back, in words.  A code that is not in
     #: here is shown as its own code rather than guessed at: an unrecognised reason is
@@ -5068,7 +5194,7 @@ class ControlPanel:
         blockers = snapshot.get("blockers")
         blockers = blockers if isinstance(blockers, dict) else {}
         if not goals:
-            self.goal_board.insert("", "end", values=("等待下一次可验证 Goal", "运行时", "—", PENDING, "—", "—", "观察 WorldState", "当前页面信息不足", "GoalLibrary / Scheduler", "未计算"))
+            self.goal_board.insert("", "end", values=("等待下一次可验证 Goal", "运行时", "—", PENDING, "—", "—", "观察 WorldState", "当前页面信息不足", "GoalLibrary / Scheduler"))
         for goal in goals:
             remaining = goal.get("remaining_seconds")
             deadline = "—" if remaining is None else f"{int(remaining)//3600:02d}:{int(remaining)%3600//60:02d}"
@@ -5082,8 +5208,7 @@ class ControlPanel:
             skills = ", ".join(goal.get("available_skills", ())) or "待发现"
             self.goal_board.insert("", "end", values=(names.get(goal_id, goal_id), category, priority,
                 statuses.get(goal.get("status"), goal.get("status")), progress, deadline,
-                (goal.get("available_skills") or ["待规划"])[0], self._blocked_cell(goal, blockers), skills,
-                self._goal_confidence_cell(goal)))
+                (goal.get("available_skills") or ["待规划"])[0], self._blocked_cell(goal, blockers), skills))
             left_key = {"EVENT_MINIMUM_GUARANTEE": "活动低保", "CLEAR_INTEL": "情报", "AVOID_STAMINA_WASTE": "体力",
                         "KEEP_TRAINING_PRODUCTIVE": "训练", "KEEP_RESEARCH_PRODUCTIVE": "科研", "KEEP_BUILDING_PRODUCTIVE": "建筑"}.get(goal_id)
             if left_key in getattr(self, "today", {}): self.today[left_key].set(statuses.get(goal.get("status"), goal.get("status")))
@@ -5097,10 +5222,16 @@ class ControlPanel:
         ttk.Label(tab, text="活动低保", style="Title.TLabel").pack(anchor="w", pady=(5, 4))
         ttk.Label(tab, text="当前活动页拥有最终事实优先级；外部资料只提供候选先验。", style="Muted.TLabel").pack(anchor="w", pady=(0, 16))
         box = ttk.Frame(tab, style="Card.TFrame", padding=22); box.pack(fill="x")
+        # Two fields were removed here on 2026-10-04: 预计成本 / 预计完成.  The record this
+        # page reads has 14 keys and neither of them is among them, and nothing in the tree
+        # ever writes either one into it (``goal_library`` reads ``estimated_cost`` off a
+        # *goal spec*, a different object) -- so the two rows read 待计算 on every cycle
+        # forever.  "待计算" is not an empty cell; it is a promise that a calculation is
+        # pending, and there is no calculation.  The operator's rule for this audit is that
+        # a field the system cannot fill must not be drawn.
         fields = (("活动", "name"), ("阶段", "phase"), ("数据来源", "source"), ("最后验证", "last_verified"),
-                  ("置信度", "confidence"), ("目标档位", "tier"), ("当前积分", "current"), ("低保目标", "target"), ("积分缺口", "missing"),
+                  ("目标档位", "tier"), ("当前积分", "current"), ("低保目标", "target"), ("积分缺口", "missing"),
                   ("剩余时间（验证时）", "remaining"), ("状态", "status"), ("已执行计划", "plan"),
-                  ("预计成本", "estimated_cost"), ("预计完成", "estimated_completion"),
                   ("资源消耗", "resource"), ("积分验证", "verified"), ("奖励", "rewards"))
         self.event_goal_vars = {key: tk.StringVar(value="暂无数据") for _, key in fields}
         for i, (label, key) in enumerate(fields):
@@ -5303,35 +5434,6 @@ class ControlPanel:
             notes.append("恢复节奏目前来自操作者先验（3 小时/个），未真机标定")
         self.fishing_meta.set(" · ".join(notes))
 
-    def _coverage(self) -> None:
-        tab = self._tab("自动化覆盖")
-        ttk.Label(tab, text="Goal 自动化覆盖", style="Title.TLabel").pack(anchor="w", pady=(5, 4))
-        ttk.Label(tab, text="按完整执行路径与真实 Verifier 统计，不按文件数量统计。", style="Muted.TLabel").pack(anchor="w", pady=(0, 12))
-        summary = ttk.Frame(tab, style="Card.TFrame", padding=15); summary.pack(fill="x")
-        self.coverage_vars = {key: tk.StringVar(value="暂无数据") for key in ("automated", "candidate", "missing")}
-        for index, (key, label) in enumerate((("automated", "已自动化"), ("candidate", "验证中"), ("missing", "缺失"))):
-            card = ttk.Frame(summary, style="Card2.TFrame", padding=16); card.grid(row=0, column=index, padx=6, sticky="ew"); summary.columnconfigure(index, weight=1)
-            ttk.Label(card, text=label, style="Muted.TLabel", background=PANEL2).pack(anchor="w")
-            ttk.Label(card, textvariable=self.coverage_vars[key], style="Title.TLabel", background=PANEL2).pack(anchor="w")
-        ttk.Label(tab, text="最高杠杆缺口", style="Section.TLabel").pack(anchor="w", pady=(18, 7))
-        self.coverage_tree = ttk.Treeview(tab, columns=("skill", "goals", "score"), show="headings", height=12)
-        for key, label, width in (("skill", "共享能力", 420), ("goals", "阻塞目标", 130), ("score", "杠杆分", 130)):
-            self.coverage_tree.heading(key, text=label); self.coverage_tree.column(key, width=width, anchor="w")
-        self.coverage_tree.pack(fill="both", expand=True)
-        self._refresh_coverage()
-
-    def _refresh_coverage(self) -> None:
-        if not hasattr(self, "coverage_tree"): return
-        try: audit = json.loads((ROOT / "learning/goal_coverage.json").read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError): return
-        summary = audit.get("summary", {})
-        self.coverage_vars["automated"].set(f"{float(summary.get('automated_percent',0)):.1f}%")
-        self.coverage_vars["candidate"].set(f"{float(summary.get('candidate_percent',0)):.1f}%")
-        self.coverage_vars["missing"].set(f"{float(summary.get('missing_percent',0)):.1f}%")
-        for row in self.coverage_tree.get_children(): self.coverage_tree.delete(row)
-        for item in audit.get("top_leverage", [])[:10]:
-            self.coverage_tree.insert("", "end", values=(item.get("skill_id"), item.get("blocked_goals"), item.get("automation_leverage")))
-
     def _refresh_event_goal_display(self) -> None:
         """The activity page: what is live now, and separately what is only history.
 
@@ -5373,7 +5475,8 @@ class ControlPanel:
         # figures on the page, and they were 25 days old.  Every value cell now reads
         # 待重新观测.  What stays is provenance (which file, recorded when, how old), because
         # "which reading is this" is the one question a stale row can still answer truthfully.
-        REOBSERVE = "待重新观测"
+        # (The word itself is the module-level ``REOBSERVE`` -- it is shared with the source
+        # freshness lines so the reader learns one word, not two spellings of one idea.)
 
         def number(key: str, default: str = "暂无数据") -> str:
             if expired:
@@ -5397,11 +5500,11 @@ class ControlPanel:
             "source": row.get("source") or "",
             "last_verified": (str(row.get("observed_at") or "待验证")
                               + (f"（{age_text}，已过期）" if expired and age_text else "")),
-            # ``0.0`` from the classifier is the verdict "this is not a live observation",
-            # not a percentage, and this row has no confidence of its own to show.  The
-            # frame's confidence is labelled once in the Goal board's meta line.
-            "confidence": ("—" if (row.get("confidence") is None or not live)
-                           else f"{float(row['confidence']):.0%}"),
+            # No 置信度 cell.  The classifier returns ``confidence = 0.0`` for this row as a
+            # verdict ("this is not a live observation"), not as a percentage, and the record
+            # itself carries no confidence key -- so the cell read "—" on every cycle.  A row
+            # that can never be filled is not a row; 数据来源 + 最后验证 already answer "which
+            # reading is this", which is the only question this row can answer truthfully.
             "tier": text("target_tier", "低保目标档"),
             "target": number("target_points"),
             "missing": number("points_missing"),
@@ -5414,8 +5517,6 @@ class ControlPanel:
             ),
             "plan": text("plan", "暂无数据"),
             "resource": number("resource_spent"),
-            "estimated_cost": text("estimated_cost", "待计算"),
-            "estimated_completion": text("estimated_completion", "待计算"),
             "verified": number("verified_points_gain"),
             "rewards": (("全部目标档位已领取" if raw.get("all_target_rewards_claimed")
                          else "仍有奖励待领取") if live else REOBSERVE),
@@ -5552,27 +5653,18 @@ class ControlPanel:
         return skill.state.value if skill is not None else ""
 
 
-    def _skills(self) -> None:
-        tab = self._tab("能力", scroll=True); ttk.Label(tab, text="能力目录", style="Title.TLabel").pack(anchor="w", pady=(5, 10))
-        tree = ttk.Treeview(tab, columns=("name", "id", "state", "risk"), show="headings")
-        for key, title, width in (("name", "能力", 220), ("id", "内部标识", 300), ("state", "验证阶段", 140), ("risk", "资源影响", 200)):
-            tree.heading(key, text=title); tree.column(key, width=width, anchor="w")
-        states = {SkillState.DISCOVERED: "已发现", SkillState.CANDIDATE: "候选", SkillState.VERIFIED: "已验证", SkillState.STABLE: "稳定", SkillState.BLOCKED: "暂不可执行"}
-        for skill in self.registry.all():
-            tree.insert("", "end", values=(SKILL_ZH.get(skill.id, skill.description), skill.id, states[skill.state], skill.risk))
-        tree.pack(fill="both", expand=True)
+    # ``_skills()`` (能力目录) was removed here on 2026-10-04.  It built a *second* tab also
+    # named 能力 and was never called.  The guard that enforces "exactly seven primary tabs"
+    # listed the retired builders **by hand** -- ``_tasks/_coverage/_knowledge/_logs/
+    # _settings/_learning`` -- and did not mention this one, so that retirement had an element
+    # nobody was checking.  The guard below now enumerates the family by walking ``_build``,
+    # which is why this method is gone rather than merely unused: a hand-written family list
+    # is a family list that loses members.
 
-    def _knowledge(self) -> None:
-        tab = self._tab("知识"); ttk.Label(tab, text="知识库", style="Title.TLabel").pack(anchor="w", pady=(5, 4))
-        ttk.Label(tab, text="统计直接读取当前 V2 Knowledge 与 Dataset。", style="Muted.TLabel").pack(anchor="w", pady=(0, 16))
-        box = ttk.Frame(tab, style="Card.TFrame", padding=15); box.pack(fill="x")
-        for i, (name, number) in enumerate(count_knowledge().items()):
-            card = ttk.Frame(box, style="Card2.TFrame", padding=16); card.grid(row=0, column=i, padx=5, sticky="ew"); box.columnconfigure(i, weight=1)
-            ttk.Label(card, text=name, style="Muted.TLabel", background=PANEL2).pack(anchor="w")
-            ttk.Label(card, text=str(number), style="Title.TLabel", background=PANEL2).pack(anchor="w")
-        verified = [SKILL_ZH.get(s.id, s.id) for s in self.registry.all() if s.state in (SkillState.VERIFIED, SkillState.STABLE)]
-        ttk.Label(tab, text="最近学会", style="Section.TLabel").pack(anchor="w", pady=(22, 8))
-        ttk.Label(tab, text=" · ".join(verified[-8:]) or "暂无数据", style="Muted.TLabel", wraplength=1000).pack(anchor="w")
+    # ``_knowledge()`` (知识库) and its helper ``count_knowledge()`` were removed here on
+    # 2026-10-04.  The page was never built, and the helper it needed printed raw record
+    # counts from three files -- one of them 29 days stale -- as the state of the knowledge
+    # base, with no age and no denominator.
 
     def _auto_development(self) -> None:
         """The development platform's own page.
@@ -5856,7 +5948,14 @@ class ControlPanel:
         self.values["reason"].set(human_reason(snapshot.reason)); self.values["preconditions"].set(" · ".join(snapshot.preconditions) or PENDING)
         self.values["verifier"].set(human_reason(snapshot.verifier)); self.values["next"].set(human_reason(snapshot.next_action))
         self.values["risk"].set(snapshot.risk if snapshot.risk and snapshot.risk != "UNKNOWN" else PENDING)
-        self.values["confidence"].set(f"{snapshot.confidence:.0%}")
+        # Two cells, because there are two questions and this cell used to answer both.
+        # ``RuntimeSnapshot.confidence`` is the *decision's* confidence (fixed 2026-10-04 --
+        # it had four writers, two of which were writing the frame's recognition score into
+        # it); the frame's own number lives in ``frame_confidence`` and is shown where the
+        # picture is, not in a column headed 当前决策.
+        self.values["confidence_decision"].set(
+            f"{snapshot.confidence:.0%}" if snapshot.current_skill or snapshot.current_goal else NO_DATA)
+        self.values["confidence_frame"].set(f"{snapshot.frame_confidence:.0%}")
         # AUTO is derived from this panel's own control state -- the worker process it
         # spawned, its pause flag, its scheduled restart -- not from the status file a
         # dead worker may have left behind.  See auto_cell().
@@ -5927,7 +6026,7 @@ class ControlPanel:
                     self.preview_source = Image.open(image_path)
                     self._preview_rgb = None
                     self._render_preview()
-                    self.preview_meta.set(f"Runtime Evidence · {PAGE_ZH.get(snapshot.page, snapshot.page)} · {snapshot.confidence:.0%}")
+                    self.preview_meta.set(f"Runtime Evidence · {PAGE_ZH.get(snapshot.page, snapshot.page)} · 识别置信度 {snapshot.frame_confidence:.0%}")
                 except OSError: pass
         if hasattr(self, "runtime_detail_vars"):
             vals = {"thread": "存活" if snapshot.runtime_thread_alive else "未运行", "scheduler": "存活" if snapshot.scheduler_loop_alive else "未运行",
@@ -6034,6 +6133,9 @@ class ControlPanel:
                 "角色未知" if not self.probes.truth().get("reason") else "审计不可用"
             )
             self.values["truth"].set("")
+            # The verdict cell must not keep a stale 不需要 while the audit it derived that
+            # from is unavailable -- "I could not check" and "nothing is wrong" are opposites.
+            self.values["intervene"].set("结论：未知（审计不可用，无法判断是否需要你干预）")
             return
 
         role = report.by_name("current_role")
@@ -6105,14 +6207,37 @@ class ControlPanel:
             self.values["watchdog"].set(f"{watch.value}\n{watch.note}".strip())
 
         attention = report.needs_attention()
-        if attention:
-            lines = [f"⚠ {a['kind']}：{str(a['detail'])[:110]}" for a in attention[:4]]
+        lines = [f"⚠ {a['kind']}：{str(a['detail'])[:110]}" for a in attention[:4]]
+        # Stale sources go first because they are the one class of fault the audit cannot
+        # see: ``needs_attention`` grades *contradictions between artifacts*, and a file
+        # that simply stopped being written contradicts nothing.  It is also why this card
+        # can no longer print 暂无需要关注的问题 while a source is dead -- measured
+        # 2026-10-04, it said "nothing to watch" beside a 24.9-day-old goal_coverage.json.
+        lines = self._attention_with_sources(lines)
+        if lines:
             self.values["attention"].set("\n".join(lines))
         else:
             healed = len(report.anomalies) - len(attention)
             self.values["attention"].set(
                 f"暂无需要关注的问题" + (f"（{healed} 条已自动恢复，见历史）" if healed else "")
             )
+        # The verdict, from the very lines the card above is printing.  Passing them in
+        # rather than recomputing is what keeps this cell from becoming a second opinion.
+        self.values["intervene"].set(intervention_of(
+            problems=lines,
+            auto_running=self.process is not None and self.process.poll() is None,
+            policy=read_policy_state(POLICY_STATE_PATH),
+        ))
+        # Each fact card now says how old the file it derived its figure from is.  This is the
+        # weaker of the two freshness statements, and deliberately so: it is a property of the
+        # *source line*, not a warning, so it is shown whenever the file is over budget --
+        # including while AUTO is stopped, when that age is expected and harmless.  The
+        # 需要关注 card above is where a stopped writer becomes an alarm, and that one does
+        # honour the AUTO check.
+        for _title, key, label, source_key in OVERVIEW_FACTS:
+            var = getattr(self, "fact_source", {}).get(key)
+            if var is not None:
+                var.set(label + self._source_age_note(source_key))
 
         # MuMu and 游戏 are probed live (adb shell), not audited -- they are the two facts
         # that cannot come from a file, which is why they live on the probe thread.
@@ -6403,31 +6528,17 @@ class ControlPanel:
             parts.append(f"证据 {Path(str(record.evidence[0])).name}")
         return " · ".join(parts)
 
-    def _logs(self) -> None:
-        tab = self._tab("日志"); bar = ttk.Frame(tab); bar.pack(fill="x", pady=(0, 8))
-        ttk.Label(bar, text="完整运行日志", style="Title.TLabel").pack(side="left")
-        ttk.Button(bar, text="打开日志目录", command=lambda: self._open(LOG_ROOT)).pack(side="right")
-        self.log = tk.Text(tab, bg="#070b10", fg="#bccbda", relief="flat", font=("Consolas", 9), padx=12, pady=10, wrap="word"); self.log.pack(fill="both", expand=True)
-        self._append("控制台已启动。")
-
-    def _settings(self) -> None:
-        tab = self._tab("设置"); ttk.Label(tab, text="运行与资源策略", style="Title.TLabel").pack(anchor="w", pady=(5, 14))
-        box = ttk.Frame(tab, style="Card.TFrame", padding=18); box.pack(fill="x")
-        ttk.Checkbutton(
-            box,
-            text="连续运行（可执行时 30 秒复查；行军已满时 10 分钟复查）",
-            variable=self.continuous,
-            command=self._save_panel_state,
-        ).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 12))
-        for i, (name, var) in enumerate(self.resource_policy.items(), 1):
-            ttk.Label(box, text=name, background=PANEL, width=15).grid(row=i, column=0, sticky="w", pady=6)
-            choices = ("禁止",) if name == "真实支付" else ("自动使用", "保守", "禁止")
-            ttk.Combobox(box, textvariable=var, values=choices, state="readonly", width=18).grid(row=i, column=1, sticky="w")
-        ttk.Label(tab, text="硬安全边界：真实充值、账号/角色删除、账号安全设置始终禁止。", foreground=BAD).pack(anchor="w", pady=15)
-        row = ttk.Frame(tab); row.pack(fill="x")
-        ttk.Button(row, text="打开截图目录", command=lambda: self._open(CAPTURE_ROOT)).pack(side="left", padx=4)
-        ttk.Button(row, text="打开证据目录", command=lambda: self._open(ROOT / "evidence")).pack(side="left", padx=4)
-        ttk.Button(row, text="打开最新截图", command=self.open_latest).pack(side="left", padx=4)
+    # ``_logs()`` (日志) was removed here on 2026-10-04 -- the page was never built, and the
+    # window's log is already on 系统 as a real Text widget that ``_append`` writes to.
+    #
+    # ``_settings()`` (设置) went with it, and the two live things it held were moved rather
+    # than dropped: the 连续运行 checkbox now sits on 运行·策略 (it is read by the runtime
+    # handoff, the watchdog and the stop path, and persisted), and the four 打开目录 buttons
+    # went with it.  Its ``resource_policy`` comboboxes were **not** moved, because they set
+    # nothing: neither the panel nor ``winter_agent_v2`` ever reads those StringVars, so they
+    # were controls that changed no policy -- which is worse than no control, since the
+    # operator would believe something had been set.  The rules themselves are still shown on
+    # 运行·策略 as what they are (a read-only list, with 真实支付 locked).
 
     def _tick(self) -> None:
         self.values["clock"].set(datetime.now().strftime("%H:%M:%S")); self.root.after(1000, self._tick)
@@ -6459,19 +6570,16 @@ class ControlPanel:
             # A log that cannot be written must never take the window down.
             pass
 
-    def _sync_tasks(self) -> None:
-        running_task = getattr(self, "active_panel_task", None) if (self.process is not None or self.starting) else None
-        for name, var in self.task_enabled.items():
-            self.today[name].set("运行中" if name == running_task else ("待执行" if var.get() else "等待"))
-            button = getattr(self, "task_buttons", {}).get(name)
-            if button is not None:
-                available = name in LIVE_PANEL_TASKS
-                button.configure(
-                    text=task_toggle_label(name, var.get(), available),
-                    style=("TaskEnabled.TButton" if var.get() else "TaskDisabled.TButton") if available else "TaskUnavailable.TButton",
-                    state="normal" if available else "disabled",
-                )
-        self._save_panel_state()
+    # ``_sync_tasks()`` and ``_toggle_task()`` were removed here on 2026-10-04: the only page
+    # that could reach them was ``_tasks``, which is never built, so both were unreachable
+    # code whose effect was a config round-trip nothing reads -- ``task_enabled`` has no
+    # consumer anywhere in ``winter_agent_v2/``.  ``task_toggle_label`` and the
+    # load/save pair stay: they are the persistence contract for
+    # ``config/control_panel_state.json`` and are covered by tests of their own.
+    #
+    # ``_sync_tasks`` was also the only writer of the 奖励 row in 总览's 今日 Goal 摘要, which
+    # is why that row was removed with it: a row whose last writer is gone reads "待执行"
+    # forever, and this audit's rule is that a field the system cannot fill must not be drawn.
 
     def _save_panel_state(self) -> None:
         save_task_selection(
@@ -6479,15 +6587,6 @@ class ControlPanel:
             {name: var.get() for name, var in self.task_enabled.items()},
             self.continuous.get(),
         )
-
-    def _toggle_task(self, name: str) -> None:
-        if name not in LIVE_PANEL_TASKS:
-            self._append(f"任务“{name}”尚未接入控制台实机主循环，未启用。")
-            return
-        var = self.task_enabled[name]
-        var.set(not var.get())
-        self._sync_tasks()
-        self._append(f"任务“{name}”已{'启用，允许自动执行' if var.get() else '关闭，不会自动执行'}。")
 
     def refresh(self) -> None:
         self._refresh_runtime_snapshot(schedule_next=False)
@@ -6769,6 +6868,25 @@ class ControlPanel:
         self.values["control_plane_disk"].set(current_token[:12] or "读不到")
         if not stale:
             self.values["control_plane"].set("已同步（无需重载）")
+            # Retire the marker an earlier window left behind.  Measured 2026-10-04: this
+            # marker's only writer is the ``stale`` branch below, and nothing ever withdrew it,
+            # so after a restart it stayed on disk reading "本进程加载的 08886209 已被 90a9990
+            # 取代" while the process *was* 90a9990 -- permanently true and permanently wrong.
+            # ``needs_reload``'s own docstring names the cost: telling the operator to restart
+            # for nothing trains them to ignore the one that matters.
+            #
+            # Not disguised by hand-deleting it once: the defect returns on the next
+            # deployment.  The reader that can prove the claim false is the one that retires
+            # it, and that reader is this branch.
+            #
+            # A read-only second window runs this check too, and each process can only speak
+            # for itself -- but the marker is one shared file and a window that really is
+            # behind re-raises it on its own next tick (1.5 s), so a withdrawal cannot stick
+            # against a true claim.  That is why no second ownership rule is needed here.
+            try:
+                control_plane_signal().clear("superseded_claim_resolved")
+            except Exception:  # noqa: BLE001 - retiring a notice must never take the window down
+                pass
             return
         self.values["control_plane"].set(f"待重载 -- {reason}")
         try:
@@ -7623,11 +7741,10 @@ class ControlPanel:
         expected_package = self.config["device"]["package_name"]
         self.values["game"].set("运行中" if status.foreground_package == expected_package else "未在前台")
         self.values["page"].set(PAGE_ZH.get(world.page.value, world.page.value) if world.known else UNKNOWN_NOW)
-        self.values["confidence"].set(f"{world.confidence:.0%}")
+        self.values["confidence_frame"].set(f"{world.confidence:.0%}")
         self.values["runtime_state"].set("执行中" if world.known else UNKNOWN_NOW)
         self._refresh_event_goal_display()
         self._refresh_goal_board()
-        self._refresh_coverage()
         self._refresh_fishing_display()
         march = f"{world.march_used}/{world.march_max}" if world.march_used is not None and world.march_max is not None else "暂无数据"
         self.values["march"].set(f"行军：{march}"); self.queues["行军"].set(march)

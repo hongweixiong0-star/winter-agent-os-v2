@@ -1872,11 +1872,39 @@ def main() -> int:
           and "轮次之间" in _truth_source
           and "历史累计重启" in _truth_source
           and "重启：UNKNOWN" in _truth_source)
-    check("gui: the twelve flat tabs are grouped under the operator's headings",
+    # The twelve-name map was reduced to the seven pages that exist on 2026-10-04: five of the
+    # twelve labelled nothing at all, and they were the pages that had been retired on purpose,
+    # so the map was advertising work already decided against.  The three strings asserted-gone
+    # below are the retired labels; the *derived* guard -- TAB_GROUP == the labels the pages
+    # actually ask for -- lives in tests/test_console_shows_only_what_it_can_fill.py, because a
+    # hand-written list here is what drifted in the first place.
+    check("gui: the tab map lists the seven pages that exist, and only those",
           "TAB_GROUP" in _panel_source
-          and "运行·任务" in _panel_source
-          and "能力·覆盖" in _panel_source
-          and "证据·日志" in _panel_source)
+          and '"运行·策略"' in _panel_source
+          and '"运行·活动"' in _panel_source
+          and '"运行·目标"' in _panel_source
+          and "运行·任务" not in _panel_source
+          and "能力·覆盖" not in _panel_source
+          and "证据·日志" not in _panel_source)
+    # 2026-10-04, the audit's two P1 findings, as wiring checks rather than prose: a derived
+    # figure must be able to say how old its source is, and the window must say whether the
+    # operator is needed.  Both were absent -- 27 of 28 sources had no age, and 需不需要干预
+    # was the only L1 item missing from the whole window.
+    check("gui: a derived figure can name the age of the file it came from",
+          "source_freshness" in _panel_source
+          and "def _source_age_note(" in _panel_source
+          and "OVERVIEW_FACTS" in _panel_source
+          and "stale_among" in _panel_source
+          and "def all_ages(" in (ROOT / "winter_agent_v2" / "source_freshness.py").read_text(encoding="utf-8"))
+    check("gui: the window says whether the operator is needed",
+          "def intervention_of(" in _panel_source
+          and "需不需要干预" in _panel_source
+          and '"intervene"' in _panel_source)
+    check("gui: the two confidences are two fields with two names",
+          "frame_confidence" in _panel_source
+          and '"confidence_decision"' in _panel_source
+          and '"confidence_frame"' in _panel_source
+          and '"confidence": NO_DATA' not in _panel_source)
     check("gui: debug furniture is off until asked for",
           "vision_debug" in _panel_source
           and "视觉调试" in _panel_source
