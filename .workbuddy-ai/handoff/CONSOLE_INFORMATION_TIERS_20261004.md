@@ -2257,3 +2257,62 @@ panel.log（21:09:35）                     磁盘保护：已清理 30 张过�
    两种处置必须选一种：**接线**（则需真机校准与验收）或**归档**（`learning/archive/` + INDEX.json）。
    让它继续以"代码文件"的样子躺在包里却不进 git，是最坏的一种：
    任何一次 checkout 都复现不出它，而它看起来像仓库的一部分。
+
+## 二十一、第七批候选：版本指纹的脏集被运行产物占满（2026-10-04 实测，未修）
+
+重启后**看实时面板**时（这一步本身就是第四把尺子），顶格出现一条本批没有预料到的告警：
+
+```
+▲ STATE_CONFLICT：version_active: git HEAD=98f008c vs episode 20261004_211444_43249=335d2ee
+                  （生产仍在跑旧树；新版本的 episode 尚未产生）
+```
+
+追下去，两半结论都要留档。
+
+### 21.1 这条告警是**瞬态**，不是卡住的假警报 —— 不要"修"它
+
+第一判断是"假警报"，被测量否掉了。判据是**两个时间戳的先后**：
+
+| 事件 | 时刻 | 版本 |
+|---|---|---|
+| 抓图（卡片上还挂着冲突） | 21:17:22 | `335d2ee7`（最新 episode） |
+| AUTO 写出下一条 episode | 21:19:32 | `98f008c7`（= 当时 HEAD） |
+
+`learning/episodes.jsonl` 实测：一路 `335d2ee7` 直到 13:17:49Z，13:19:32Z 出现 `98f008c7`。
+`version_active()` 取**最新**带 `repo_revision` 的 episode，于是告警自己消失。
+**结论**：它只在「某次 commit 把 HEAD 推走」到「下一轮 AUTO 写出 episode」之间亮（本次约 2 分钟）。
+AUTO 的 episode 密度约 11 秒/条，所以窗口通常极短。**它报的是一件真事**：树上的版本比最近一次
+跑过的版本新。把这种瞬态当假警报去"修"，就是在拆掉 VERSION_ACTIVATION_PENDING 本身。
+
+### 21.2 底下那件更重的事：`canonical_revision` 的脏集，782 / 886 个是运行产物
+
+同一次测量顺手量到的，比那条告警重要得多：
+
+| 树 | head | dirty | 脏在哪 |
+|---|---|---|---|
+| dev（DATA_ROOT） | 98f008c79c4f | **782** | `config/v2.json` + `dataset/candidate/auto_collected/*.png` |
+| pin（生产） | 98f008c79c4f | **886** | 同上 + `dataset/candidate/.gitkeep` |
+
+`git ls-files dataset/candidate/auto_collected/` 只数到 **1** 个文件（`.gitkeep`），
+其余全是 `??` —— 那 780 多个是 **AUTO 自己采集出来的 UI 模板**（运行产物），不是人编的资产。
+而 `dataset/candidate/` 在 `VERSION_RELEVANT_PREFIXES` 里，`auto_collected/` **不在**
+`EXCLUDED_DIRECTORIES` 里。
+
+这是 `version_identity` 自己的文档明令禁止的形状（"一个日志被追加就变的版本身份不是身份"），
+也是 2026-09-21 `knowledge/preload/` 那次事故**同一个成员资格错误** ——
+那次的代价是 6.5 小时、54 次 AUTO 周期全卡在 `run_live` 的版本门 `EXIT_4`。
+
+**可断言的部分**：`Revision.token` 对运行中的系统**永远不是裸 commit**，永远是 `<head>+<digest>`，
+digest 每采一次模板就变。所以 `state_truth.version_active()` 的
+`conflict = not (head.startswith(running) or running.startswith(head[:7]))` 里，
+`head.startswith(running)` 这半边在脏树情形下**恒假**（死分支），实际生效的只有
+`running.startswith(head[:7])` —— 即"两边 commit 前 7 位是否相同"。
+
+**未断言的部分（所以本批不修）**：它是否已经造成过真实故障，今天**没有测**。
+`escalation_queue` 那条激活证明用的是 `commit_of()`（会剥掉 `+digest`，稳），
+`startup_fence` 比较的是同一进程的 frozen/current 两次读数（窗口很短）。
+在拿到"确实红过"的证据之前改这个名单，就是拿 2026-09-21 的代价再赌一次。
+
+**修法（第七批）**：照 `knowledge/preload/` 的先例把 `dataset/candidate/auto_collected/` 加进
+`EXCLUDED_DIRECTORIES`；`config/v2.json` 若确认由运行时写则进 `EXCLUDED_FILES`。
+必须单独一批、带 A/B。
