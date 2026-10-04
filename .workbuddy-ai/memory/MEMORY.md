@@ -6645,3 +6645,38 @@ panel.log 自己写着（21:09:35）            磁盘保护：已清理 30 张�
 **所以顺序是固定的：拷 → 提交 → repin**（不是"拷 → repin → 提交"）。
 判据：拷完立刻比一次**去 CR 的 sha256**，每次 repin 之后再比一次。
 把"树同步"和"提交"分成两次动作用同一把尺子量，才分得清"同步成功"和"同步被回退"。
+
+## 67. 版本指纹的"脏集"被**运行产物**占满（2026-10-04 实测，未修）
+
+追控制台顶格那条 `STATE_CONFLICT version_active` 时量到的，比那条告警本身重要得多。
+
+**读数**（`canonical_revision` 实测）：
+
+| 树 | head | dirty | 脏在哪 |
+|---|---|---|---|
+| dev（DATA_ROOT） | 98f008c79c4f | **782** | `config/v2.json` + `dataset/candidate/auto_collected/*.png` |
+| pin（生产） | 98f008c79c4f | **886** | 同上 + `dataset/candidate/.gitkeep` |
+
+`dataset/candidate/auto_collected/` 里 `git ls-files` 只数到 **1** 个文件（`.gitkeep`），
+其余全是 `??` —— 也就是说那 780 多个是 **AUTO 自己采集出来的 UI 模板**，是运行产物，不是人编的资产。
+而 `dataset/candidate/` 在 `VERSION_RELEVANT_PREFIXES` 里，`auto_collected/` 不在 `EXCLUDED_DIRECTORIES` 里。
+
+**这正是 `version_identity` 自己的文档明令禁止的形状**：「一个日志被追加就变的版本身份不是身份」。
+也和 2026-09-21 那次 `knowledge/preload/` 事故是同一个成员资格错误（那次代价：6.5 小时、
+54 次 AUTO 周期全卡在 `run_live` 的版本门、`EXIT_4`）。
+
+**后果（可断言的部分）**：`Revision.token` 对运行中的系统**永远不可能是裸 commit**，永远是
+`<head>+<digest>`，而且 digest 每采一次模板就变。所以任何"把 token 和 commit 直接比"的消费者都脆：
+`escalation_queue.commit_of()` 会剥掉 `+digest`（稳）；`state_truth.version_active()` 用 `startswith`，
+它的 `head.startswith(running)` 那半边在脏树情形下**恒假**（死分支），实际生效的只有
+`running.startswith(head[:7])`。
+
+**同一次测量顺手否掉了我自己的一个怀疑，必须记下来**：`version_active` 不是"卡住的假警报"，
+它是**瞬态**的 —— 只在"某次 commit 把 HEAD 推走"到"下一轮 AUTO 写出新 episode"之间亮。
+实测：episode 一路是 `335d2ee7` 直到 13:17:49Z，13:19:32Z 就出现了 `98f008c7`（= 当时 HEAD），
+告警自己就没了。**所以不要把它当假警报去"修"** —— 先量，再判。
+
+**处置**：登记为第七批，未修。修法是照 `knowledge/preload/` 的先例把
+`dataset/candidate/auto_collected/` 加进 `EXCLUDED_DIRECTORIES`（`config/v2.json` 若确认由运行时写，
+则进 `EXCLUDED_FILES`）。**但这个名单本身动过一次就出过 6.5 小时的事故**，
+所以它得单独一批、带 A/B，不能顺手改。
