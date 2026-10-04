@@ -46,10 +46,33 @@ CONFIG = json.loads((ROOT / "config/v2.json").read_text(encoding="utf-8"))
 
 #: The live frames: the exploration page, the dialog the client answered with, and the 射手营 page the
 #: route walked away from.
-CLAIM_BEFORE = sorted(AUTO.glob("*/" + "*_step_002_before_20260922T112112745827.png"))[-1]
-CLAIM_DIALOG = sorted(AUTO.glob("*/" + "*_step_002_after_refresh_2_20260922T112144508334.png"))[-1]
-MARKSMAN_PAGE = sorted(AUTO.glob("*/" + "*_step_010_before_20260922T112451123479.png"))[-1]
-LANCER_PAGE = sorted(AUTO.glob("*/" + "*_step_009_before_20260922T112425181244.png"))[-1]
+#:
+#: They are resolved, not indexed.  ``dataset/raw/**`` is machine-local and a retention pass prunes
+#: it -- on 2026-10-04, 4,209 of the 5,301 episode directories under ``runtime_auto`` were empty
+#: while the directories themselves remained -- so ``sorted(...)[-1]`` on a pruned frame raised
+#: IndexError *at import*, which pytest reports as a collection error: it took the whole suite down
+#: rather than one test.  A frame that is gone is now named by whoever needs it (``_require``).
+def _archived(pattern: str) -> Path | None:
+    """An archived frame, by the timestamp in its name, or ``None`` if the retention pass took it."""
+    found = sorted(AUTO.glob("*/" + pattern))
+    return found[-1] if found else None
+
+
+def _require(*frames: tuple[str, Path | None]) -> None:
+    """Skip, naming what is gone -- ``test_event_panel_observation``'s contract.
+
+    Skipped rather than re-pinned to a lookalike: a test that swaps in its own evidence is the
+    habit that hid the two faults this file exists for.
+    """
+    gone = [role for role, path in frames if path is None or not path.is_file()]
+    if gone:
+        raise unittest.SkipTest("archived frames not on this machine: " + ", ".join(gone))
+
+
+CLAIM_BEFORE = _archived("*_step_002_before_20260922T112112745827.png")
+CLAIM_DIALOG = _archived("*_step_002_after_refresh_2_20260922T112144508334.png")
+MARKSMAN_PAGE = _archived("*_step_010_before_20260922T112451123479.png")
+LANCER_PAGE = _archived("*_step_009_before_20260922T112425181244.png")
 
 _OCR = None
 _VISION = None
@@ -99,6 +122,8 @@ class TheIdleIncomeDialogTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        _require(("the 挂机收益 page before the claim", CLAIM_BEFORE),
+                 ("the dialog the client answered it with", CLAIM_DIALOG))
         cls.before = _ocr().recognize(CLAIM_BEFORE)
         cls.dialog = _ocr().recognize(CLAIM_DIALOG)
 
@@ -142,6 +167,7 @@ class TheTrainingPageTests(unittest.TestCase):
         from winter_agent_v2.ocr import HybridVision
         from winter_agent_v2.vision import SemanticWorldVision
 
+        _require(("the 射手营 page", MARKSMAN_PAGE))
         cls.vision = HybridVision(
             SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json"), _ocr()
         )
@@ -208,6 +234,7 @@ class TheCampGoalOwnsThePageTests(unittest.TestCase):
         cls.vision = HybridVision(
             SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json"), _ocr()
         )
+        _require(("the 射手营 page", MARKSMAN_PAGE), ("the 矛兵营 page", LANCER_PAGE))
         cls.marksman = cls.vision.observe(MARKSMAN_PAGE)
         cls.lancer = cls.vision.observe(LANCER_PAGE)
 
@@ -255,6 +282,14 @@ class TheCampSwitchBudgetTests(unittest.TestCase):
         from winter_agent_v2.vision import SemanticWorldVision
 
         run = AUTO / "20260922_205021_021360"
+        _require(*[
+            (name, run / name) for name in (
+                "20260922_205021_021360_step_013_before_20260922T125450115785.png",
+                "20260922_205021_021360_step_014_before_20260922T125515312326.png",
+                "20260922_205021_021360_step_015_before_20260922T125540200598.png",
+                "20260922_205021_021360_step_016_before_20260922T125607147502.png",
+            )
+        ])
         cls.vision = HybridVision(
             SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json"), _ocr()
         )
@@ -437,13 +472,13 @@ class TheRowArrowOpensTheTaskBarTests(unittest.TestCase):
     """
 
     #: The archived frame the tap produced (23:42:41), and the panel frame it was tapped from.
-    BAR_AFTER = sorted(AUTO.glob("*/" + "*_step_006_after_refresh_2_20260922T154326121610.png"))[-1]
-    ROW_BEFORE = sorted(AUTO.glob("*/" + "*_step_006_before_20260922T154241186835.png"))[-1]
+    BAR_AFTER = _archived("*_step_006_after_refresh_2_20260922T154326121610.png")
+    ROW_BEFORE = _archived("*_step_006_before_20260922T154241186835.png")
 
     @classmethod
     def setUpClass(cls):
-        if not cls.BAR_AFTER.exists():
-            raise unittest.SkipTest("the archived bar frame is not on this machine")
+        _require(("the bar after the tap", cls.BAR_AFTER),
+                 ("the row the arrow sits on", cls.ROW_BEFORE))
         cls.state = _vision().observe(cls.BAR_AFTER)
 
     def test_the_frame_says_which_bar_is_open_and_where_its_button_is(self):
@@ -623,12 +658,11 @@ class TheTrainingButtonPositionTests(unittest.TestCase):
     """
 
     #: The two independently archived 矛兵营 training pages whose 訓練 label the hand covers.
-    PAGE_WITH_HAND = sorted(AUTO.glob("*/" + "*_step_005_before_20260922T164827367068.png"))[-1]
+    PAGE_WITH_HAND = _archived("*_step_005_before_20260922T164827367068.png")
 
     @classmethod
     def setUpClass(cls):
-        if not cls.PAGE_WITH_HAND.exists():
-            raise unittest.SkipTest("the archived training frame is not on this machine")
+        _require(("the 矛兵营 page whose hand covers the label", cls.PAGE_WITH_HAND))
         cls.state = _vision().observe(cls.PAGE_WITH_HAND)
 
     def test_the_page_is_startable_even_though_its_label_is_covered(self):
@@ -713,13 +747,12 @@ class TheDoneMarkerTests(unittest.TestCase):
     x 291 on the row's text (17:21:50) and opened nothing.
     """
 
-    DONE_FRAME = sorted(AUTO.glob("*/" + "*_step_006_before_20260922T172143222865.png"))[-1]
-    ALL_IDLE_FRAME = sorted(AUTO.glob("*/" + "*_step_003_before_20260922T161229012339.png"))[-1]
+    DONE_FRAME = _archived("*_step_006_before_20260922T172143222865.png")
+    ALL_IDLE_FRAME = _archived("*_step_003_before_20260922T161229012339.png")
 
     @classmethod
     def setUpClass(cls):
-        if not cls.DONE_FRAME.exists():
-            raise unittest.SkipTest("the archived frames are not on this machine")
+        _require(("the done frame", cls.DONE_FRAME), ("the all-idle frame", cls.ALL_IDLE_FRAME))
         cls.state = _vision().observe(cls.DONE_FRAME)
 
     def _row(self, state, key):

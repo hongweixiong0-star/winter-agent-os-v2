@@ -45,18 +45,53 @@ from winter_agent_v2.vision import MAP_FIELD_PAGES, SemanticROIVision, SemanticW
 
 MANIFEST = ROOT / "dataset/candidate/template_manifest.json"
 
-#: Real frames: a named training page, the quick panel open over HOME, and two unnamed screens.
-FRAMES = {
-    "training": ROOT / "dataset/raw/live_train_selection_available.png",
-    "quick_panel": ROOT / (
+#: The archived frames by role: a named training page, the quick panel open over HOME, and one
+#: unnamed screen -- the frame whose page the attention must not decide by name alone.
+_FRAME_PINS = {
+    "training": "dataset/raw/live_train_selection_available.png",
+    "quick_panel": (
         "dataset/raw/control_panel/runtime_auto/20260921_213506_694242/"
         "20260921_213506_694242_step_001_before_20260921T133510479855.png"
     ),
-    "frostfire": ROOT / (
+    "frostfire": (
         "dataset/raw/control_panel/runtime_auto/20260922_163010_905874/"
         "20260922_163010_905874_step_002_before_20260922T083049654040.png"
     ),
 }
+
+
+class _PinnedFrames(dict):
+    """``role -> frame``, where the retention pass's damage is a skip that names the frame.
+
+    ``dataset/raw/**`` is machine-local and pruned: on 2026-10-04 both ``runtime_auto`` frames
+    above were gone while their episode directories remained, which turned nine tests here red for
+    a reason that had nothing to do with the attention code.  Looking up a frame that was pinned
+    and has been pruned therefore *skips*, naming it; looking up a role that was never pinned is
+    still a ``KeyError``, because that is a typo in this file and not the disk's fault.
+    """
+
+    def __missing__(self, role: str):
+        if role in _FRAME_PINS:
+            raise unittest.SkipTest(f"archived frame not on this machine: {role}")
+        raise KeyError(role)
+
+
+FRAMES = _PinnedFrames(
+    (role, ROOT / relative)
+    for role, relative in _FRAME_PINS.items()
+    if (ROOT / relative).is_file()
+)
+
+
+def _require_all_frames() -> None:
+    """The frames a test iterates over, all of them, or a skip naming the pruned ones.
+
+    A test that walks ``FRAMES`` must require every pin: with a frame silently absent the loop
+    would still pass while covering strictly less than it claims to.
+    """
+    gone = [role for role in _FRAME_PINS if role not in FRAMES]
+    if gone:
+        raise unittest.SkipTest("archived frames not on this machine: " + ", ".join(gone))
 
 #: The sweep the measurement blames for most of the cost.
 EXPENSIVE_SWEEP = "TARGET_INTEL_BEAST_MISSION"
@@ -159,6 +194,7 @@ class AttentionGateTests(unittest.TestCase):
 
     def test_the_page_is_identical_with_and_without_the_attention(self):
         """The one thing the attention may not change: what the frame is."""
+        _require_all_frames()
         for name, frame in FRAMES.items():
             with self.subTest(frame=name):
                 plain = _vision()
