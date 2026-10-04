@@ -939,3 +939,129 @@ tools/check_wiring.py（生产树）      -> 两条控制台检查 OK；余 2 pr
 这一层已经不存在了（联接目标字符串是残留元数据，实际解析仍落到 E 盘）。
 **判据必须是"同一个文件的哈希相等"，不是"LinkType 看起来像不像联接"** ——
 `Attributes` 那一栏在这里撒了谎。
+
+## 十四、第四批：策略 / 目标 / 活动，总览的实时画面，以及 §六 里从没实现过的「顶栏 9 格」（2026-10-04 续）
+
+### 1. 本批做了什么
+
+| 页面 / 部位 | §六 说什么 | 本批怎么做 |
+|---|---|---|
+| 策略 | 三个开关块是"想改才看"的 | 3 个 L2 折叠：`policy_reward` / `policy_resource` / `policy_forbidden`（最后一个条件声明——开关存在时才建） |
+| 活动 | 活动明细与钓鱼块是执行细节 | 2 个 L2 折叠：`event_detail` / `event_fishing` |
+| 目标 | 10 列 → 9 列（置信度删） | **不给折叠**：分层靠**列序**，`GOAL_COLUMNS` 一条声明同时驱动表头与每一行 |
+| 总览 · 游戏实时画面 | L2 → **卡住时 L1** | 折成 L2，规则 `_escalate_preview` 复用项目自己的 `progress_is_stalled` |
+| **顶栏 9 格** | **6 常驻 + 3 折叠（异常浮 L1）** | `HEADER_FOLD_TO_L1` 三个 key；健康时**离开条子**，不健康时回来 |
+
+顶栏这一条是 §六 的第一行，写了两轮、一直没建。它现在是一个模块级声明加一个判据函数：
+
+```
+HEADER_FOLD_TO_L1  = {"dot_wb", "dot_model", "dot_boot"}     # 每条都带"为什么它离开条子"
+HEADER_ALWAYS      = 从 SYSTEM_INDICATORS 里减出来的 6 个      # 不在散文里写数字
+header_cell_is_visible(key, value) -> bool                    # 判据只有一个
+```
+
+### 2. 一处**故意偏离 §六字面**的地方，以及为什么不许照字面做
+
+§六 写的是「3 格**折叠**」。字面实现就是给这三格各加一个"点一下展开"的头 ——
+**那是错的**，理由是关于条子而不是关于这三格的：
+
+- 九格条子的全部用途是**一眼看完**。给它加 3 个需要点击才能读懂的东西，
+  读者为了省 200 px 要多点三下，而这三下点的正是价值最低的三格。
+- 条子上根本没有"表头"这个位置：格子是 `label + 值` 两行，没有一个可以当开关的行。
+  硬加就是给条子引入**第二种交互方式**。
+
+所以本批把「折叠」实现成**离场**：健康时格子 `grid_remove()`（不是留空位 ——
+留空的九格还是九格），不健康时 `grid()` 回到**原来那一列**（`grid_remove` 记住座位号，
+实测回去后是第 5 / 6 / 7 列，与 `SYSTEM_INDICATORS` 的座位一致，条子不会在眼前重排）。
+
+**「藏起来」不是「不说了」**，这一点由三件事保证：格子照旧每 tick 被写（`_set_health`
+里对看得见看不见的两条分支都调 `_show_header_cell`）；**未确认算不健康**；
+审计不可用时这三格**被放回条子**并显示"未确认"（而不是留着上次的"正常"继续躲在条子外）。
+
+### 3. 实测：同一次运行里的 A/B
+
+第一版测量是**跨运行比**的，写出来的"前值"（1024 / 1114 px）第二次跑就变成了别的数 ——
+因为页面高度是**内容的函数**，而 `episodes.jsonl` 是每轮都在变的生产日志。
+现已改成同一次运行、同一批 widget 上把该页所有折叠**强制展开**再恢复，差值才是分层的收益。
+（教训已记 MEMORY §60；页面归属也不是写死的列表，是"建页前 / 建页后取 `_folds` 差集"。）
+
+```
+[11] 策略 / 目标 / 活动：同一运行内的 A/B（全开 = 没做过分层的那个页面）
+    策略   body   978 px 全开 ->   561 px 按声明   省  417 px（43%）  3 个折叠
+    目标   body   338 px 全开 ->   338 px 按声明   没有折叠（§六: 靠列序，不靠折叠）
+    活动   body  1171 px 全开 ->   550 px 按声明   省  621 px（53%）  2 个折叠
+
+[2] 总览（按操作者收到的样子）
+    folds as declared            :  1065 px
+    every fold forced open       :  1996 px
+    the tiers hide               :   931 px  (47%)
+```
+
+### 4. 总览那 15 px：把话说准，而不是说漂亮
+
+上一批结束时留了一个疑问：实时画面折了，**页面总高却没动**。现在量到了它的算法，
+结论是"**折掉的是一列，不是一页**"，而且这件事有算术可复算：
+
+```
+[2b] 实时画面 folds away whose height
+    the block sits at            : pack top
+    the block itself             :   409 px open ->    41 px folded  (-368)
+    its parent (one column)      :   429 px open ->    61 px folded  (-368)
+    the whole page               :  1080 px open ->  1065 px folded  (-15)
+    the column sits at           : grid row=0 column=1
+    the other cells in that row  : col0=218px  col2=414px   <- the row is their max
+```
+
+`max(218, 429, 414) = 429` → `max(218, 61, 414) = 414`，差 **15 px**，与页面实测的 −15 px 完全吻合。
+**所以诚实的说法是：「中列少了 368 px」；不是「总览少了一屏」。** 右边那一列（414 px）才是
+row 0 的约束；今天总览的 1065 px 主要花在下面那些堆叠块上，而那些块第三批已经分过层（全开 1996 → 1065）。
+**这个数不改代码，改的是这句话** —— 报告里说"少了 368 px"会很好看，但那是错的。
+
+### 5. 顶栏：真实取数下到底收了几格
+
+先量"今天到底是不是健康"，再决定这次改动有没有效果 ——
+`_probe_header_cells.py`（用窗口**自己的** `PanelProbes`，不是重新推导一遍）：
+
+```
+审计 report: 可用  ok=True
+  WorkBuddy  -> 正常   (good   ) value='正常'                      status=LIVE_OBSERVED
+  预载         -> 等待   (idle   ) value='学习中 · 学习 ECONOMY_RESEARCH …' status=PERSISTED
+  本地模型       -> 正常   (good   ) value='UI-Venus-2-9B Q4_K_M'    status=LIVE_OBSERVED
+
+  WorkBuddy  good    -> 隐藏（健康）
+  预载         idle    -> 隐藏（健康）
+  本地模型       good    -> 隐藏（健康）
+```
+
+三格都健康 ⇒ **9→6 是今天的效果，不是纸面上的**。条子宽度（真实 widget，`_HeaderStrip`）：
+
+```
+[14] 顶栏 9 格：§六 收起三格之后，条子有多宽
+    all nine healthy（今天真实取数）      :   324 px   L3 三格里还在条上的：[]（空 = 三格都收起了）
+    the three not healthy              :   527 px   多占 203 px（39%）
+    收起后各自的列号（重排会骗人）        : {'dot_wb': 5, 'dot_model': 6, 'dot_boot': 7}
+    L1 六格任何读数下都在                : True
+```
+
+### 6. 顺带一个**仪器撒谎**的小号重演（同 §58 / §59 一类）
+
+`_probe_header_cells.py` 第一版报的是「三格全部 未确认」。**系统没问题，是仪器没跑起来**：
+`PanelProbes.truth()` 返回的是**探针线程算出的最后一次审计**，而那份脚本从没调过 `probes.start()`，
+于是拿到的是一份空记录。加上 `start()` 并等到第一遍审计完成后，读数就变成了上面那三个"健康"。
+
+**这件事值得写进来的原因**：如果当时信了第一版读数，结论会是"顶栏分层目前没有效果"——
+一个**看起来在自省、其实在自欺**的结论，而且它会导向一个错误的改动方向（去改判据）。
+**"测量脚本报了一个坏消息"和"系统真的坏了"之间，隔着"仪器跑没跑起来"这一步。**
+
+### 7. 守卫：59 → 64
+
+新增 5 条（`tests/test_console_shows_only_what_it_can_fill.py`）：
+
+| 守卫 | 挡的是什么 |
+|---|---|
+| `test_the_top_bar_keeps_exactly_the_six_cells_the_audit_kept` | 6 从 `SYSTEM_INDICATORS` 里减出来，不是第二份清单；9 格必须**每一格**归入常驻或折叠；折叠项必须写理由 |
+| `test_a_healthy_cell_leaves_the_strip_and_a_sick_one_returns` | 走**真方法**（`_set_health` / `_show_header_cell`）打在一个记录"有没有座位"的桩上：六种词全覆盖，`None` 必须可见，且被藏起来时**值照旧被写** |
+| `test_a_failed_audit_seats_the_three_instead_of_leaving_them_off` | 「审计不可用」那一支必须把三格放回来（否则"条子是完整的"本身成了掩盖故障的东西） |
+| `test_every_page_folds_something_or_says_why_it_folds_nothing` | 页面清单**从 `_build` 推导**（和页签表同一条推导，已从测试类提到模块级 `_page_builders()`）；没有折叠的页面必须在 `NO_FOLD_PAGES` 里写理由 —— 「没有折叠」和「没人分过」不许长成同一段源码 |
+| `test_the_page_without_folds_layers_its_columns_instead` | 目标页的豁免只有在"列序真的就是分层"时才诚实：tier 必须是不被后一层打断的 `L1…L2…L3` |
+
