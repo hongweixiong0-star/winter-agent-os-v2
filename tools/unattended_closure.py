@@ -158,16 +158,97 @@ def heads() -> list[str]:
     return [line for line in (done.stdout or "").splitlines() if line.strip()]
 
 
+def group_ledger(ledger: list[dict[str, Any]]) -> tuple[dict[str, list[dict[str, Any]]],
+                                                       dict[str, list[dict[str, Any]]]]:
+    """The ledger indexed by ``key`` and by ``capability``, in file order.
+
+    ``build`` needs the rows of one key -- and, when no row carries that key at all, the rows
+    of its capability.  Doing that filter inside ``build`` costs a full ledger scan per chain,
+    and the panel builds a chain per key to keep one; on 2026-10-04 that was 195 keys x 15,330
+    rows x three scans, 2602 ms of a 3104 ms card.  One pass here answers the same question for
+    every key.
+    """
+    by_key: dict[str, list[dict[str, Any]]] = {}
+    by_capability: dict[str, list[dict[str, Any]]] = {}
+    for row in ledger:
+        by_key.setdefault(str(row.get("key") or ""), []).append(row)
+        by_capability.setdefault(str(row.get("capability") or ""), []).append(row)
+    return by_key, by_capability
+
+
+def _mine(trace_id: str, by_key: dict[str, list[dict[str, Any]]],
+          by_capability: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
+    """``trace_id``'s own rows, or its capability's when no row carries the key.
+
+    A bridge-only submission carries no key, so the fallback is not an optimisation -- it is
+    the only way such a submission is visible at all.  Both readers of it go through here.
+    """
+    mine = by_key.get(trace_id)
+    if mine:
+        return mine
+    capability = (trace_id.split("|") + [""])[0]
+    return by_capability.get(capability) or []
+
+
+def _submitted_row(trace_id: str, by_key: dict[str, list[dict[str, Any]]],
+                   by_capability: dict[str, list[dict[str, Any]]]) -> dict[str, Any] | None:
+    """The ``submitted`` row ``build`` will find for ``trace_id``, or ``None``.
+
+    ``job_id`` and ``submitted_at`` -- the two things that decide whether a chain exists and
+    where it ranks -- both come from this one row, so a caller can order the chains without
+    building them.  Shared with :func:`build` on purpose: a second copy of "which row is the
+    submission" is precisely the kind of pair that drifts apart.
+    """
+    return next((row for row in _mine(trace_id, by_key, by_capability)
+                 if row.get("event") == "submitted"), None)
+
+
+def ordered_keys(ledger: list[dict[str, Any]], *, current_key: str = "") -> list[str]:
+    """The keys that have a job, in the order the closure card ranks them.
+
+    The card shows exactly one chain (:func:`build` for every key, then the first after a
+    sort, is a way of computing 194 answers nobody reads).  This is that sort, done on the two
+    fields it actually depends on, so the winner can be built once.
+
+    The order is the card's own: the current trace first, then the earliest submission, with
+    chains whose submission time is unknown last.  Note that "earliest" is what the card does
+    -- ``chains[0]`` after an ascending sort -- and this function reproduces it rather than
+    correcting it, because changing which chain the window shows is a product decision, not a
+    performance one.
+    """
+    by_key, by_capability = group_ledger(ledger)
+
+    keys: list[str] = []
+    seen: set[str] = set()
+    for row in ledger:
+        value = str(row.get("key") or "")
+        if value and value not in seen:
+            seen.add(value)
+            keys.append(value)
+
+    ranked: list[tuple[str, datetime | None]] = []
+    for key in keys:
+        submitted = _submitted_row(key, by_key, by_capability)
+        if not str((submitted or {}).get("job_id") or ""):
+            continue  # no job, so no chain: build() would return it with an empty job_id
+        ranked.append((key, moment((submitted or {}).get("recorded_at"))))
+    ranked.sort(key=lambda item: (item[0] != current_key, item[1] is None, item[1]))
+    return [key for key, _ in ranked]
+
+
 def build(trace_id: str, ledger: list[dict[str, Any]], episodes: list[dict[str, Any]],
-          commits: list[tuple[str, datetime]]) -> Chain:
+          commits: list[tuple[str, datetime]],
+          *,
+          by_key: dict[str, list[dict[str, Any]]] | None = None,
+          by_capability: dict[str, list[dict[str, Any]]] | None = None) -> Chain:
     chain = Chain(trace_id=trace_id)
     capability, failure_type, skill = (trace_id.split("|") + ["", "", ""])[:3]
     chain.capability, chain.failure_type, chain.skill = capability, failure_type, skill
 
-    mine = [row for row in ledger if str(row.get("key") or "") == trace_id]
-    if not mine:  # a bridge-only submission carries no key
-        mine = [row for row in ledger if str(row.get("capability") or "") == capability]
-    submitted = next((row for row in mine if row.get("event") == "submitted"), None)
+    if by_key is None or by_capability is None:
+        by_key, by_capability = group_ledger(ledger)
+    mine = _mine(trace_id, by_key, by_capability)
+    submitted = _submitted_row(trace_id, by_key, by_capability)
     job_id = str((submitted or {}).get("job_id") or "")
     chain.job_id = job_id
     at = moment((submitted or {}).get("recorded_at"))
@@ -375,7 +456,9 @@ def main(argv: list[str] | None = None) -> int:
         key = str(row.get("key") or "")
         if key and key not in keys:
             keys.append(key)
-    chains = [build(key, ledger, episodes, commits) for key in keys]
+    by_key, by_capability = group_ledger(ledger)
+    chains = [build(key, ledger, episodes, commits, by_key=by_key, by_capability=by_capability)
+              for key in keys]
     chains = [chain for chain in chains if chain.job_id]
     # By submission time, not by job id.  Job ids are opaque hex, and sorting them
     # string-wise put an older chain after a newer one -- so the default view reported

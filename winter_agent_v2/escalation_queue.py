@@ -50,6 +50,7 @@ from __future__ import annotations
 from .winproc import hidden_kwargs
 from .workbuddy_bridge import JobLost
 from .version_identity import canonical_revision
+from .jsonl_index import index_for as _index_for
 
 import json
 import re
@@ -58,7 +59,7 @@ import threading
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any, Iterable, Mapping, NamedTuple, Sequence
 
 # ----------------------------------------------------------------- conditions
 
@@ -1606,6 +1607,47 @@ def repo_revision(root: Path | str, *, timeout: float = 20.0) -> RepoRevision:
     return RepoRevision(head=head, dirty=dirty, ok=True, digest=digest)
 
 
+class EpisodeFields(NamedTuple):
+    """The eight fields the two episode readers below test, and nothing else.
+
+    Read raw -- no ``str()``, no ``or ""`` -- so a comparison at the use site is the same
+    comparison it was before this projection existed.  Converting here would have been the
+    quiet way to change an answer: ``row.get("skill") != skill`` and ``str(row.get("skill")
+    or "") != skill`` disagree on a row whose ``skill`` is not a string.
+    """
+
+    recorded_at: Any
+    verifier_ok: Any
+    skill: Any
+    before_screenshot: Any
+    after_screenshot: Any
+    goal_progress: Any
+    repo_revision: Any
+    failure_type: Any
+
+
+def _episode_projection(row: Mapping[str, Any]) -> EpisodeFields:
+    return EpisodeFields(
+        recorded_at=row.get("recorded_at"),
+        verifier_ok=row.get("verifier_ok"),
+        skill=row.get("skill"),
+        before_screenshot=row.get("before_screenshot"),
+        after_screenshot=row.get("after_screenshot"),
+        goal_progress=row.get("goal_progress"),
+        repo_revision=row.get("repo_revision"),
+        failure_type=row.get("failure_type"),
+    )
+
+
+#: One index for ``learning/episodes.jsonl``, shared by both readers below.  They want the same
+#: eight fields, so they want the same index; giving them one each would re-read 158 MB twice.
+_EPISODE_INDEX_TAG = "escalation_queue.episodes"
+
+
+def _episode_index(path: Path):
+    return _index_for(path, _episode_projection, tag=_EPISODE_INDEX_TAG)
+
+
 def new_live_episodes(
     capability: str,
     *,
@@ -1647,45 +1689,41 @@ def new_live_episodes(
     *defines* the failure.  The job's own report said the opposite ("criterion 2 ...
     does not hold").  A proof has to show the wall is gone; when the wall is "the
     goal does not move", the proof is a measured move.
+
+    The rows are tested through :mod:`.jsonl_index`, which parses ``episodes.jsonl``
+    once and then only the bytes appended since.  That matters because this function
+    is called *per record* (``_proven_since``), so an unbounded read of a 158 MB log
+    measured 1836 ms each time.  The index never skips a line: every row is still
+    offered to the tests below, so this function answers exactly what it answered
+    before.  Only the rows that pass are read back in full.
     """
     base = Path(root) if root else Path(__file__).resolve().parents[1]
     path = Path(episodes_path) if episodes_path else base / "learning/episodes.jsonl"
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return ()
-
-    found: list[dict[str, Any]] = []
-    for line in lines:
-        line = line.strip()
-        if not line.startswith("{"):
+    wanted = []
+    for row in _episode_index(path).rows():
+        fields = row.fields
+        if not fields.recorded_at or fields.verifier_ok is not True:
             continue
-        try:
-            row = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if not row.get("recorded_at") or row.get("verifier_ok") is not True:
-            continue
-        recorded = _moment(row.get("recorded_at"))
+        recorded = _moment(fields.recorded_at)
         if since is not None and (recorded is None or recorded <= since):
             continue
         if after is not None and (recorded is None or recorded <= after):
             continue
-        if skill and row.get("skill") != skill:
+        if skill and fields.skill != skill:
             continue
         if not skill and capability:
-            if capability_for_skill(str(row.get("skill") or ""), root=base) != capability:
+            if capability_for_skill(str(fields.skill or ""), root=base) != capability:
                 continue
-        if not (row.get("before_screenshot") and row.get("after_screenshot")):
+        if not (fields.before_screenshot and fields.after_screenshot):
             continue
-        if require_goal_progress and row.get("goal_progress") is not True:
+        if require_goal_progress and fields.goal_progress is not True:
             continue
         if version_changed_from:
-            revision = str(row.get("repo_revision") or "")
+            revision = str(fields.repo_revision or "")
             if not revision or revision == version_changed_from:
                 continue
-        found.append(row)
-    return tuple(found)
+        wanted.append(row)
+    return tuple(_episode_index(path).load_all(wanted))
 
 
 def failures_since(
@@ -1699,30 +1737,24 @@ def failures_since(
     Read back from the episode stream rather than from the in-memory run steps,
     so what AUTO escalates about is the same thing the project records as
     evidence -- one source, not two.
+
+    Reads through :mod:`.jsonl_index` for the same reason :func:`new_live_episodes`
+    does: a whole-file read of the 158 MB log measured 1566 ms, and this runs at the end
+    of every production run.
     """
     base = Path(root) if root else Path(__file__).resolve().parents[1]
     path = Path(episodes_path) if episodes_path else base / "learning/episodes.jsonl"
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return ()
-
-    out: list[dict[str, Any]] = []
-    for line in lines:
-        line = line.strip()
-        if not line.startswith("{"):
-            continue
-        try:
-            row = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        recorded = _moment(row.get("recorded_at"))
+    index = _episode_index(path)
+    wanted = []
+    for row in index.rows():
+        fields = row.fields
+        recorded = _moment(fields.recorded_at)
         if recorded is None or recorded < since:
             continue
-        if not row.get("failure_type"):
+        if not fields.failure_type:
             continue
-        out.append(row)
-    return tuple(out)
+        wanted.append(row)
+    return tuple(index.load_all(wanted))
 
 
 def reconcile_outcome(
@@ -3560,7 +3592,14 @@ class EscalationQueueAdapter:
             return False
 
     def _read_episodes(self) -> list[dict[str, Any]]:
-        """The episode stream as rows.  Read whole: the gates need mode, trace and version."""
+        """The episode stream as rows.  Read whole: the gates need mode, trace and version.
+
+        Whole because the two callers below test on fields that only the full row carries, and
+        because a chain of evidence is not a place to be clever about which half of a row is
+        needed.  It is, however, a 158 MB read (1566 ms measured 2026-10-04), so every caller
+        now reads it at most once per pass and only once a record has reached the state that
+        needs it -- see :meth:`settle_validations`.
+        """
         path = self.root / "learning/episodes.jsonl"
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
@@ -3598,7 +3637,12 @@ class EscalationQueueAdapter:
         now = moment or datetime.now(timezone.utc)
         events: list[str] = []
         snapshot = self.ledger.snapshot()
-        episodes = self._read_episodes()
+        # Read once, and only if a record actually needs it.  The episode stream is 158 MB;
+        # measured 2026-10-04, one whole-file read is 1566 ms and this method used to do two
+        # per call -- the second inside ``detect_production_reuse``, with nothing between them
+        # but ledger appends, and those do not touch ``episodes.jsonl``.  In the ordinary state
+        # (nothing waiting for an examination and nothing re-joined) neither read happens at all.
+        episodes: list[dict[str, Any]] | None = None
 
         for record in list(snapshot.records.values()):
             if record.state != LIVE_VERIFY_PENDING:
@@ -3606,6 +3650,8 @@ class EscalationQueueAdapter:
             if str(record.outcome) != VERSION_ACTIVE:
                 # Not yet handed to an examination; §一's driver is what requests that.
                 continue
+            if episodes is None:
+                episodes = self._read_episodes()
             outcome, why, episode = validation_settlement(
                 trace_key=record.key, job_id=record.job_id, capability=record.capability,
                 skill=record.skill, after_version=record.after_version,
@@ -3660,11 +3706,13 @@ class EscalationQueueAdapter:
                 })
                 events.append(f"{record.capability}: {outcome}")
 
-        events.extend(self.detect_production_reuse(snapshot=self.ledger.snapshot(), moment=now))
+        events.extend(self.detect_production_reuse(snapshot=self.ledger.snapshot(), moment=now,
+                                                   episodes=episodes))
         return events
 
     def detect_production_reuse(self, *, snapshot: EscalationSnapshot | None = None,
-                                moment: datetime | None = None) -> list[str]:
+                                moment: datetime | None = None,
+                                episodes: list[dict[str, Any]] | None = None) -> list[str]:
         """Has a verified capability been used by ordinary play, on the version it was for?
 
         The last question in the chain, and the only one that distinguishes "WorkBuddy taught V2
@@ -3675,8 +3723,11 @@ class EscalationQueueAdapter:
         """
         now = moment or datetime.now(timezone.utc)
         snapshot = snapshot or self.ledger.snapshot()
-        episodes = self._read_episodes()
         events: list[str] = []
+        # ``episodes`` may be handed in by a caller that already read the stream for its own
+        # reason (``settle_validations`` does); otherwise it is read here, and only once a
+        # record has actually reached the point of needing it.
+        rows: list[dict[str, Any]] | None = episodes
 
         for record in list(snapshot.records.values()):
             if record.state != REJOINED:
@@ -3686,8 +3737,10 @@ class EscalationQueueAdapter:
             expected = str(record.after_version or "")
             if not expected:
                 continue
+            if rows is None:
+                rows = self._read_episodes()
             needs_goal = str(record.failure_type).upper() in PROOF_IS_GOAL_PROGRESS
-            for row in episodes:
+            for row in rows:
                 if str(row.get("execution_mode") or "PRODUCTION").upper() != "PRODUCTION":
                     continue
                 if str(row.get("repo_revision") or "") != expected:

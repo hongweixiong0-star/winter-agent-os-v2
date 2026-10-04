@@ -2415,52 +2415,165 @@ def launch_context() -> tuple[str, str]:
 
 #: The card is derived from the ledger, the episodes and ``git log``, and the window
 #: refreshes every few seconds -- but the project's rule is that the GUI refresh path does
-#: not run CLIs.  So it is computed at most once a minute, and only when the ledger has
-#: actually changed: the answer moves on the scale of a job, not of a repaint.
-_CLOSURE_CACHE: dict[str, Any] = {"key": None, "at": 0.0, "card": {}}
-CLOSURE_TTL_SECONDS = 60.0
+#: not run CLIs, and the answer moves on the scale of a job, not of a repaint.  So it is
+#: computed once a minute.  What changed on 2026-10-04 is *where*: see
+#: :class:`ClosureCardProbe`.
+CLOSURE_INTERVAL = 60.0
+#: A card that *failed* to compute is retried at this cadence instead of waiting the full
+#: interval.  The usual failure is transient -- the escalation ledger rewritten under the
+#: reader, or ``git`` briefly unavailable -- and a stale card plus up to a minute of silence is
+#: exactly the lag :class:`ClosureCardProbe` exists to remove.  A card that is merely *empty*
+#: ("no upgrade carries a job id yet") is a real answer, not a failure, and keeps the full
+#: interval so the idle case is not read six times as often for no new information.
+CLOSURE_RETRY_SECONDS = 10.0
 #: How much of the tail of ``episodes.jsonl`` the closure card may read.  The log passed
-#: 150 MB; a full ``read_text`` of it measured 549 ms and was the single hottest frame in
+#: 158 MB; a full ``read_text`` of it measured 549 ms and was the single hottest frame in
 #: a py-spy dump of the live panel.  The card joins a trace to *its own* episode, and the
 #: trace it shows is the newest one, so the rows it can possibly need are at the tail.
 CLOSURE_EPISODE_BYTES = 32_000_000
 CLOSURE_EPISODE_LIMIT = 5_000
+#: What the window shows until the first card lands.  ``pending`` is what tells the renderer
+#: this is "still counting" rather than "nothing has happened" -- the two must not look alike,
+#: and the previous design could only ever show the second one honestly.
+CLOSURE_WARMING: dict[str, Any] = {
+    "ok": False,
+    "pending": True,
+    "reason": "闭环卡片正在后台计算（首次约数秒，之后每分钟一次）",
+}
+
+
+class ClosureCardProbe:
+    """Keeps the closure card computed and published, off the UI thread.
+
+    Division of labour, the operator's rule of 2026-10-04: the main thread does UI, scheduling
+    and dispatch; I/O belongs on a background thread.  This card is I/O by that rule -- it reads
+    ``learning/workbuddy_escalations.jsonl`` (7.5 MB), a 32 MB tail of ``learning/episodes.jsonl``
+    and runs ``git log`` through :func:`unattended_closure.heads` -- and by measurement it cost
+    **3104 ms cold on the thread that draws the window**, once a minute.  The operator reported
+    that as lag, and a 3 s freeze is not something a TTL can excuse: the previous cache knew the
+    answer was fresh and still recomputed it on the UI thread.
+
+    This class only *computes and publishes*.  Nothing here touches Tk, the process or the
+    device.  ``closure_card`` is the consumer and reads a published snapshot; ``refresh_once``
+    is exposed so a test can compute one card synchronously instead of waiting for the thread.
+
+    Measured 2026-10-04, before and after moving the chain selection to
+    :func:`unattended_closure.ordered_keys`:
+
+        closure_card cold              3104 ms   ->  ~700 ms
+          of which closure.build x 195 2602 ms   ->  ~13 ms (one chain, not 195)
+          tail_jsonl(32 MB)             396 ms   ->   396 ms (unchanged, now off-thread)
+          EscalationLedger.events()     168 ms   ->   168 ms
+          current_development_trace     111 ms   ->   111 ms
+    """
+
+    def __init__(self, root: Path | str, *, interval: float = CLOSURE_INTERVAL) -> None:
+        self.root = Path(root)
+        self.interval = max(5.0, float(interval))
+        self._lock = threading.Lock()
+        self._card: dict[str, Any] | None = None
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def start(self) -> None:
+        """Begin publishing cards.  Idempotent, and it never blocks the caller."""
+        if self._thread is not None:
+            return
+        self._thread = threading.Thread(
+            target=self._loop, name="closure-card-probe", daemon=True
+        )
+        self._thread.start()
+
+    def stop(self) -> None:
+        """Ask the thread to finish.  Daemon, so a missed call cannot keep the process up."""
+        self._stop.set()
+
+    def latest(self) -> dict[str, Any] | None:
+        """The most recent card, or ``None`` before the first one lands.  No I/O."""
+        with self._lock:
+            return self._card
+
+    def refresh_once(self) -> dict[str, Any]:
+        """Compute one card, publish it and return it.  Never raises."""
+        card = closure_card_now(self.root)
+        with self._lock:
+            self._card = card
+        return card
+
+    def _loop(self) -> None:
+        """Publish a card, then wait -- sooner if the card is a failure rather than an answer.
+
+        ``refresh_once`` never raises: it returns a failure as ``ok: False``, so the delay is
+        decided from the returned card, not from an exception.  Only a card marked
+        ``transient`` (an exception was caught while building it) shortens the wait; an empty
+        ledger keeps the full interval.
+        """
+        while True:
+            card = self.refresh_once()
+            delay = CLOSURE_RETRY_SECONDS if card.get("transient") else self.interval
+            if self._stop.wait(delay):
+                return
+
+
+_CLOSURE_PROBES: dict[str, ClosureCardProbe] = {}
+_CLOSURE_PROBES_LOCK = threading.Lock()
+
+
+def closure_probe(root: Path | None = None) -> ClosureCardProbe:
+    """The one probe for ``root``, created on first use.
+
+    One per root rather than one per caller: two probes would compute the same card twice, and
+    the panel's page and its narration both ask for it.
+    """
+    target = Path(root or ROOT)
+    key = str(target.resolve())
+    with _CLOSURE_PROBES_LOCK:
+        probe = _CLOSURE_PROBES.get(key)
+        if probe is None:
+            probe = ClosureCardProbe(target)
+            _CLOSURE_PROBES[key] = probe
+        return probe
 
 
 def closure_card(root: Path | None = None) -> dict[str, Any]:
-    """The unattended chain, read from the artifacts -- never re-derived here.
+    """The unattended chain as last published.  Never computes, never blocks.
 
     §八 asks the window to show the eight steps with the current ``trace_id`` and the current
     breakpoint.  All of it already exists: ``tools/unattended_closure.py`` joins the ledger,
     the episodes and the commits by ``trace_id`` and reports ``failure_step``.  Re-implementing
     that join in the GUI would be a second answer to one question, and the two would drift.
 
-    The chain chosen is the one that tool would call the newest -- built for every key, kept
-    where a job id exists, sorted by submission time -- so the window and the command line
-    cannot disagree about which chain is current.
-    """
-    now = time.time()
-    try:
-        ledger_path = Path(_ESCALATION_LEDGER_PATH)
-        key = (ledger_path.stat().st_mtime, ledger_path.stat().st_size)
-    except Exception:  # noqa: BLE001
-        key = None
-    cached = _CLOSURE_CACHE
-    # The TTL is the gate, not the key.  AUTO *appends* to the ledger continuously, so a
-    # (mtime, size) key changes on literally every tick and this cache never once hit --
-    # the card was rebuilt from a 150 MB episode log every 1.5 s, which a py-spy dump of
-    # the live window named as its hottest frame.  The comment above has always said
-    # "at most once a minute"; this is what that actually looks like.  The key is still
-    # recorded so an unchanged ledger is visible in the cache entry.
-    if cached["card"] and (now - float(cached["at"])) < CLOSURE_TTL_SECONDS:
-        return dict(cached["card"])
+    The chain chosen is the one that tool would call the newest -- decided by
+    :func:`unattended_closure.ordered_keys`, which is the same ranking that tool applies, done
+    without building the chains that lose -- so the window and the command line cannot disagree
+    about which chain is current.
 
+    Call this from the UI thread.  It starts the publisher on first use (idempotent) and then
+    reads whatever is published; until the first card lands it returns :data:`CLOSURE_WARMING`,
+    which says so rather than rendering as "the loop has not started".
+    """
+    probe = closure_probe(root)
+    probe.start()
+    card = probe.latest()
+    if card is None:
+        return dict(CLOSURE_WARMING)
+    return dict(card)
+
+
+def closure_card_now(root: Path | None = None) -> dict[str, Any]:
+    """Compute the card on *this* thread and return it.
+
+    For the CLI, for tests, and for :class:`ClosureCardProbe`.  The window must go through
+    :func:`closure_card` instead -- calling this from a repaint is the 3 s freeze this pair
+    exists to remove.
+    """
     try:
         tools_dir = str(Path(__file__).resolve().parent)
         if tools_dir not in sys.path:
             sys.path.insert(0, tools_dir)
         import unattended_closure as closure
 
+        ledger_path = Path(_ESCALATION_LEDGER_PATH)
         ledger = closure.rows(closure.LEDGER)
         episodes = tail_jsonl(closure.EPISODES, limit=CLOSURE_EPISODE_LIMIT,
                               max_bytes=CLOSURE_EPISODE_BYTES)
@@ -2468,28 +2581,29 @@ def closure_card(root: Path | None = None) -> dict[str, Any]:
                    for line in closure.heads()]
         commits = [(sha, when) for sha, when in commits if when is not None]
 
-        keys: list[str] = []
-        for row in ledger:
-            value = str(row.get("key") or "")
-            if value and value not in keys:
-                keys.append(value)
-
         # §7: the trace this card shows is the one the *panel* shows -- chosen by the one
         # selector both of them now share, not by "newest with a job id".  When nothing is open,
         # the newest chain is still built so the page has history to show, but it is labelled as
         # such rather than presented as the present.
         current = current_development_trace(fold(ledger))
         current_key = str(current.key) if current is not None else ""
-        ordered = ([current_key] if current_key in keys else []) + [k for k in keys if k != current_key]
-        chains = [closure.build(k, ledger, episodes, commits) for k in ordered]
-        chains = [chain for chain in chains if chain.job_id]
-        chains.sort(key=lambda chain: (chain.trace_id != current_key,
-                                       chain.submitted_at is None, chain.submitted_at))
-        if not chains:
-            card: dict[str, Any] = {"ok": False,
-                                    "reason": "台账中没有带 Job 的升级记录，闭环尚未开始"}
+
+        # One chain is read, so one chain is built.  This used to build every key's chain and
+        # keep the first after sorting: measured 2026-10-04, 195 chains cost 2602 ms of a
+        # 3104 ms card, and the 127 that had a job id were all discarded.  ``ordered_keys`` is
+        # that same filter-and-sort, on the two fields it needs, so the winner can be built
+        # alone.  A key that has no chain (no submission row, so no job) is dropped there
+        # exactly as ``if not chain.job_id`` dropped it here.
+        ordered = closure.ordered_keys(ledger, current_key=current_key)
+
+        card: dict[str, Any]
+        if not ordered:
+            card = {"ok": False,
+                    "reason": "台账中没有带 Job 的升级记录，闭环尚未开始"}
         else:
-            chain = chains[0]
+            by_key, by_capability = closure.group_ledger(ledger)
+            chain = closure.build(ordered[0], ledger, episodes, commits,
+                                  by_key=by_key, by_capability=by_capability)
             # The record's own lifecycle state, so §十一's "Version must read the real
             # ledger" is satisfied: VERSION_ACTIVATION_PENDING and VERSION_ACTIVE are states
             # in the ledger, and the card shows which one it is rather than inferring a
@@ -2564,10 +2678,12 @@ def closure_card(root: Path | None = None) -> dict[str, Any]:
                 "is_current": bool(current_key),
             }
     except Exception as exc:  # noqa: BLE001 - a card must never take the window down
-        card = {"ok": False, "reason": f"{type(exc).__name__}: {exc}"}
+        # ``transient`` is what tells :class:`ClosureCardProbe` this is a *failure to answer*
+        # -- retry soon -- and not the answer "nothing has happened yet", which is also
+        # ``ok: False`` but carries no such mark.
+        card = {"ok": False, "transient": True, "reason": f"{type(exc).__name__}: {exc}"}
 
-    _CLOSURE_CACHE.update({"key": key, "at": now, "card": card})
-    return dict(card)
+    return card
 
 
 #: The eight cells §八 asks for, each mapped onto the chain steps that prove it.  A cell is
@@ -2588,6 +2704,12 @@ LOOP_CELLS: tuple[tuple[str, tuple[str, ...]], ...] = (
 
 def render_loop_card(card: Mapping[str, Any] | None) -> str:
     """The eight cells as one line of ✓ / 等待 / 异常, plus the trace and the breakpoint."""
+    if card and card.get("pending"):
+        # Not the same claim as "the loop has not started".  The card is computed on a
+        # background thread (see ClosureCardProbe) and the first answer takes a few seconds;
+        # rendering that window as 闭环尚未开始 would be a claim about the system made from a
+        # fact about the renderer.
+        return f"闭环卡片计算中（{str(card.get('reason') or '')}）"
     if not card or not card.get("ok"):
         return f"闭环尚未开始（{str((card or {}).get('reason') or '无记录')}）"
     done = {name: bool(state) for name, state, _ in card.get("steps") or ()}
@@ -4317,6 +4439,11 @@ class ControlPanel:
         # on first use so the first refresh already has an answer to read.
         self.control_plane_probe = ControlPlaneProbe(ROOT)
         self.control_plane_probe.start()
+        # The closure card is I/O too -- a 7.5 MB ledger, a 32 MB episode tail and a git log --
+        # and it measured 3104 ms cold on this thread, once a minute.  Same reasoning as the
+        # probe above, same shape: computed and published on a daemon thread, read here.
+        self.closure_probe = closure_probe(ROOT)
+        self.closure_probe.start()
         self.probes.start()
         # The queue's clock.  Started with the window, not with AUTO: the operator's
         # rule is that a running GUI keeps consuming its development backlog even
@@ -7653,6 +7780,8 @@ class ControlPanel:
         self.pump.stop()
         # And the control-plane probe, which shells out to ``git``.
         self.control_plane_probe.stop()
+        # And the closure-card publisher, which reads the ledger and the episode tail.
+        self.closure_probe.stop()
         self.root.destroy()
 
 
