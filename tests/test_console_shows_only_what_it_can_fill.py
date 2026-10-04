@@ -1526,5 +1526,55 @@ class TheTopBarTieringTests:
         )
 
 
+class TheWiringVerifierCanStillRunTheRealRefreshTests:
+    """A tool that stubs a panel must be updated the day the panel's refresh grows a call.
+
+    ``gui_wiring_verify`` binds the real ``_refresh_truth`` onto a stub **on purpose** -- so that a
+    change to how the panel paints a cell is verified rather than assumed.  The price of that design
+    is a failure mode with no warning: add one call inside the refresh and the verifier raises
+    ``AttributeError`` and verifies nothing at all.  The tool that exists to catch unwired fields
+    becomes an unwired tool.  That is not hypothetical -- it happened on 2026-10-04, when
+    ``_set_health`` began seating top-bar cells for §六 and the verifier died on
+    ``_show_header_cell``, *after* the change had been measured and committed.
+
+    So this guard is not "the source mentions the new helper".  It runs the verifier's **own stub**
+    through the real refresh, which raises exactly the way the tool raises.  A new collaborator of
+    ``_refresh_truth`` now fails here the same day instead of the next time somebody hand-runs the
+    tool -- and the failure names the tool, which is where the fix belongs.
+    """
+
+    def _verifier(self):
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location(
+            "gui_wiring_verify_under_test", ROOT / "tools" / "gui_wiring_verify.py")
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        return module
+
+    def test_the_verifier_stub_runs_the_real_refresh(self):
+        module = self._verifier()
+        # Raises AttributeError if the stub is missing anything the refresh now calls.
+        module.panel.ControlPanel._refresh_truth(module._stub())
+
+    def test_the_verifier_models_a_cell_as_leaving_the_strip_not_as_blank_text(self):
+        """The stub has to hide cells the same *way* the window does, or it verifies the opposite."""
+        module = self._verifier()
+        stub = module._stub()
+        assert hasattr(stub, "_show_header_cell"), (
+            "the verifier must bind the seating helper: with ``_indicator_cells`` absent the helper "
+            "returns early, and the top bar would be reported as verified without the tiering ever "
+            "being exercised"
+        )
+        for _, key in module.panel.SYSTEM_INDICATORS:
+            cell = stub._indicator_cells[key]
+            assert callable(getattr(cell, "grid_remove", None)), (
+                f"{key} is modelled as {type(cell).__name__}; §六's tiering takes the cell *off the "
+                f"strip*, and a stub that modelled hiding as an empty string would agree with a "
+                f"window that only blanked the text"
+            )
+
+
 if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(pytest.main([__file__, "-q"]))

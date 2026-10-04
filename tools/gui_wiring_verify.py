@@ -53,6 +53,24 @@ class _Var:
         return self.value
 
 
+class _Cell:
+    """One top-bar cell, with the only two things §六's tiering does to it.
+
+    ``grid_remove`` rather than a blank cell: the tiering takes the cell *off the strip*, and the
+    difference between "hidden" and "painted with an empty word" is the whole rule.  A stub that
+    modelled hiding as an empty string would verify the opposite of what ships.
+    """
+
+    def __init__(self) -> None:
+        self.seated = True
+
+    def grid(self, **_kwargs) -> None:
+        self.seated = True
+
+    def grid_remove(self) -> None:
+        self.seated = False
+
+
 def _stub() -> SimpleNamespace:
     """A panel with just enough of itself to run ``_refresh_truth`` for real.
 
@@ -78,6 +96,11 @@ def _stub() -> SimpleNamespace:
             return panel.local_gui_model_truth(ROOT, online=None)
 
     stub = SimpleNamespace(values=values, probes=Probes(), indicators={},
+                           # The cells are real objects rather than an empty dict, because §六's
+                           # tiering is decided *inside* ``_set_health``: with no cells to seat, the
+                           # helper returns early and this verifier would report the top bar as
+                           # verified while never once exercising the rule that draws it.
+                           _indicator_cells={key: _Cell() for _, key in panel.SYSTEM_INDICATORS},
                            vision_debug=None, preview_mode=_Var(),
                            # No AUTO process exists in a stub, and saying so is the honest
                            # reading rather than a convenience: ``_freshness`` escalates a
@@ -89,8 +112,14 @@ def _stub() -> SimpleNamespace:
                            process=None)
     # The helpers the refresh calls, bound to this stub.  Bound *unbound* on purpose: the
     # real implementations run, so a change to how the panel paints a cell is verified
-    # here rather than assumed.
+    # here rather than assumed.  That design has one cost, paid on 2026-10-04: add a call
+    # inside the refresh and this file raises before verifying anything, so the tool that
+    # exists to catch unwired fields becomes an unwired tool.  Every new collaborator of
+    # ``_refresh_truth`` has to be bound here, and
+    # ``tests/test_console_shows_only_what_it_can_fill.py`` runs this very stub through the
+    # real refresh so the omission fails a test instead of a hand-run.
     stub._set_health = lambda key, value: panel.ControlPanel._set_health(stub, key, value)
+    stub._show_header_cell = lambda key, value: panel.ControlPanel._show_header_cell(stub, key, value)
     stub._progress_line = lambda: panel.ControlPanel._progress_line(stub)
     stub._attention_with_sources = lambda lines: panel.ControlPanel._attention_with_sources(stub, lines)
     stub._source_age_note = lambda key: panel.ControlPanel._source_age_note(stub, key)
@@ -175,16 +204,41 @@ def main() -> int:
             "expected": expected, "displayed": shown, "verdict": verdict,
         })
 
-    # The top bar, checked the same way: each cell must be one of the six words and must
-    # have been painted from a value rather than left at its default.
+    # The top bar, checked the same way: each cell must be one of the six words, must have been
+    # painted from a value rather than left at its default, and -- because §六's tiering decides
+    # it in the same place the cell is painted -- must be seated on the strip exactly when the
+    # rule says so.
+    #
+    # The seating is checked against the *word the cell is wearing*, not against a second list of
+    # three keys: re-deriving "which cells should be hidden" here would agree with the panel
+    # whenever both were wrong.  The reading is independent -- the word comes from the stub's
+    # variable, the seat from the cell -- so a cell displaying 异常 while it sits off the strip is
+    # a MISMATCH rather than a silent omission.  (Today's stub, unlike the live window, has no
+    # gateway/bootstrap source, so the three L3 cells read 未确认 here and are correctly seated:
+    # 未确认 is not 健康.  That is the rule working, not the tiering failing.)
+    healthy_words = {panel.DOT_TEXT[colour] for colour in panel.HEADER_HEALTHY_COLOURS}
     for _, key in panel.SYSTEM_INDICATORS:
         shown = stub.values[key].get()
+        seated = stub._indicator_cells[key].seated
         if key == "clock":
-            continue
-        verdict = "OK" if shown in panel.DOT_TEXT.values() else "MISMATCH"
+            should_seat = True
+        elif key in panel.HEADER_FOLD_TO_L1:
+            should_seat = shown not in healthy_words
+        else:
+            should_seat = True
+        if shown not in panel.DOT_TEXT.values() and key != "clock":
+            verdict, note = "MISMATCH", "not one of the six words"
+        elif seated != should_seat:
+            verdict = "MISMATCH"
+            note = "should be on the strip" if should_seat else "should be off the strip"
+        else:
+            verdict, note = "OK", ""
         rows.append({"field": key, "state": "(top bar)", "source": "state_truth.health_of",
-                     "source_value": "", "expected": "one of the six words",
-                     "displayed": shown, "verdict": verdict})
+                     "source_value": "§六 L1" if key not in panel.HEADER_FOLD_TO_L1 else "§六 L3",
+                     "expected": "one of the six words" + ("" if should_seat else " · 收起"),
+                     "displayed": f"{shown or '(未读)'}  [{'条上' if seated else '收起'}]"
+                                  + (f"  {note}" if note else ""),
+                     "verdict": verdict})
 
     rows.extend(_source_checks((ROOT / "tools/control_panel.py").read_text(encoding="utf-8")))
 
