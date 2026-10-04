@@ -1,0 +1,139 @@
+{
+ "skill_id": "VISIT_WANDERING_MERCHANT",
+ "name": "Visit the Wandering Merchant and buy only what the policy allows",
+ "goal": "Read 游荡商人's six cards on the live client, name every item from the purchase overlay, and buy exactly the ones the operator's zero-spend policy names",
+ "preconditions": [
+  "the client is on any page from which the HOME bottom nav can be reached (<=3 bounded back presses)",
+  "the 商店 nav item is readable in the bottom band",
+  "device lease held by a development owner so AUTO yields"
+ ],
+ "required_page": "SHOP_WANDERING_MERCHANT",
+ "required_state": {
+  "store_tab_游荡商人_selected": true,
+  "not_sold_out": true
+ },
+ "required_vision": [
+  "NAV_STORE_商店 (HOME bottom nav, exact text; 联盟商店 is a different item and must not match)",
+  "TAB_游荡商人 (store tab strip, bottom 7% of the frame)",
+  "CARD_ANCHOR_剩余：N (one per card, de-duplicated across OCR bands)",
+  "CARD_PRICE (numeric token below its anchor, INCLUDING 万-suffixed ones) + currency icon by colour",
+  "CARD_DISCOUNT -N% (badge above the card's anchor)",
+  "DIALOG_确定购买 (the purchase overlay: the only reader and the only way to buy)",
+  "ORANGE_PRICE_BUTTON (the overlay's price button, located by its own orange paint AND its shape)",
+  "CARD_BODY_ZONE (a raw capture tested for the orange button, which is what says 'the overlay is open')",
+  "BTN_免费刷新 (tapped only when the label literally says 免费)",
+  "WALLET_钻石 (top bar, the spend witness)"
+ ],
+ "required_actions": [
+  "reach the store: tap HOME nav 商店, or a bounded back press then re-check",
+  "select the 游荡商人 tab from its OCR box (its own text, re-read across up to 3 frames)",
+  "read the six cards (anchor -> price -> currency -> discount)",
+  "inspect the resource-priced offers first: a pass costs ~2 min per card while the merchant re-rolls on a ~20 min timer, so order decides whether a BUY candidate is still there when its card is opened",
+  "open each card's 确定购买 overlay by tapping the card body and read the item's real name AND its live price there",
+  "apply the policy: resource-for-resource BUY, diamonds-for-统帅经验 BUY, other diamond offers SKIP, anything else ASK",
+  "for BUY, tap the overlay's own orange price button, then the 购买确认 dialog's own orange button, then verify against the wallet",
+  "free refresh only when the control reads 免费刷新, and at most 3 times a day"
+ ],
+ "verification": [
+  "the item name is read from the client's own overlay, never from an icon guess",
+  "the price is the number printed INSIDE the orange button, read by re-drawing its white glyphs as black on white",
+  "a diamond purchase is verified by the top-bar diamond wallet moving by exactly the price",
+  "a resource purchase is reported as changed/unchanged on that slot, never asserted bought (the shop re-rolls its own slots)",
+  "the store page is still current after every overlay is dismissed",
+  "touch_balance balanced: a long press never leaves a finger down",
+  "taps_refused is reported, so 'the client ignored the tap' can be told apart from 'the tap never left the host'"
+ ],
+ "failure_conditions": [
+  "SHOP_ENTRY_FAILED",
+  "TAB_NOT_FOUND:游荡商人",
+  "TAB_TAP_DID_NOT_CHANGE_THE_PAGE",
+  "WANDERING_TAB_NOT_CONFIRMED",
+  "PURCHASE_OVERLAY_NOT_OPENED",
+  "PRICE_NOT_IN_BUTTON",
+  "PRICE_BUTTON_AMBIGUOUS (degraded path only, when no orange button is found)",
+  "CONFIRM_BUTTON_NOT_FOUND",
+  "CONFIRM_AMOUNT_NOT_MATCHED",
+  "CONFIRM_BUTTON_DISAGREES",
+  "PURCHASE_OVERLAY_WOULD_NOT_CLOSE",
+  "LEFT_THE_STORE_WHILE_DISMISSING",
+  "DIALOG_STILL_OPEN_AFTER_CONFIRM"
+ ],
+ "recovery": [
+  "a card whose overlay will not open is reported NOT_EXECUTED and nothing at all is tapped for it",
+  "the tap ladder covers the whole measured body zone (anchor+0 .. anchor+80) and is retried once from a re-derived anchor; a dense ladder is affordable because the overlay is detected on a raw capture with no OCR",
+  "an exit prompt raised by stacked back presses is cancelled by tapping its 取消",
+  "the roll re-rolls itself mid-pass, so a BUY is decided and spent on the overlay's own live price",
+  "a 购买确认 left armed by an interrupted pass is closed by its own ✕, never by tapping its button"
+ ],
+ "dependencies": [
+  "MaaExecutorAdapter (capture/click/touch_down/touch_up/press_back)",
+  "ocr_full.read_all",
+  "device_lease",
+  "ShopVisitor + decide_wandering (winter_agent_v2/shop_visit.py)",
+  "tools/run_shop_wandering.py",
+  "tools/shop_zone_map.py (the tap-zone instrument)"
+ ],
+ "risk": "LOW_CONTROLLED_SPEND",
+ "confidence": 0.9,
+ "source": [
+  "LIVE_CLIENT",
+  "OPERATOR_POLICY_CONFIRMED"
+ ],
+ "status": "LIVE_TRIED",
+ "blocker": null,
+ "live_attempts": 9,
+ "live_successes": 5,
+ "verified_variant": "SHOP_WANDERING_2026_10_05",
+ "stable": false,
+ "branches": {
+  "diamonds_for_统帅经验": "LIVE_VERIFIED -- bought 10点统帅经验 for 19 diamonds twice (2026-10-05 02:46 and 04:27), each confirmed by the diamond wallet moving by exactly the price (245,545 -> 245,526)",
+  "resource_for_resource": "VERDICT_VERIFIED_PURCHASE_NOT_YET_MADE -- the verdict fires live (木材 (安全) @ 10万 read from the overlay, 2026-10-05 03:53 roll) but no buying pass has yet had a resource-priced card in its roll, so this branch's spend path is unproven on-device. It is the same two-tap code path with a different currency, and confirm() gates on the client's own quoted sentence via _num_of (which handles 万)",
+  "other_diamond_offers": "LIVE_VERIFIED -- SKIP fired on 随机迁城 / 史诗探险技能书 / 史诗远征技能书 / 5分钟治疗加速 / 5分钟建造加速 / 5分钟训练加速 / 木材 (安全) / 铁矿 (安全)",
+  "free_refresh": "control verified (a paid 刷新 💎50 was refused); the free control has not been tapped in a buying pass yet"
+ },
+ "operator_policy": {
+  "resource_for_resource": "BUY",
+  "diamonds_for_统帅经验": "BUY",
+  "other_diamond_offers": "SKIP",
+  "free_refresh_only": true,
+  "free_refresh_per_day": 3,
+  "never_diamond_refresh": true,
+  "uncovered_cases": "STOP_AND_ASK"
+ },
+ "measured_ui_path": {
+  "entry": "HOME bottom nav, 4th of 6 items (探险/英雄/背包/商店/联盟/野外); tap from the OCR box of the exact token 商店 at y=1258 on a 720x1280 frame",
+  "tabs": "游荡商人 / 神秘商店 / 竞技商店 / 统帅市, in a bottom tab strip at y>=0.93*H; the strip slides in, so the tab text can be missing on the first frame (retried up to 3 times)",
+  "cards": "3 columns x 2 rows at x≈140/361/582; anchors 剩余：1 at y=608 (row 0) and y=897 (row 1). Each card = icon, 剩余：N, price pill (currency icon + number); NO item name is printed anywhere on the card",
+  "name_source": "tap the card BODY -> 确定购买 overlay: it prints the item name AND the live price with its currency. This overlay is both the reader and the purchase step",
+  "tap_zones": "measured properly 2026-10-05 with tools/shop_zone_map.py (shop_zone_map_20261005T035348), a fine ladder across a card's whole vertical extent on BOTH a resource-priced and a diamond-priced card. The two earlier probes disagreed because each had seen one card; the answer is identical for both and the boundaries are sharp: anchor-110 .. anchor-30 -> the read-only 拥有数量 tooltip; anchor-10 -> nothing on one card and the overlay on the other; anchor+0 .. anchor+80 -> 确定购买 on every offset on both cards; anchor+100 and beyond -> nothing. The production ladder covers +0/+15/+30/+45/+60/+80, and no coordinate is ever stored",
+  "tooltip_exit": "the tooltip zone is never entered by the purchase path, so a pass needs no back press inside the card loop (measured: backs=1, from the entry only). _dismiss_tooltip still exists for the read-only path and closes it with a bounded back press, then verifies the store page is still current",
+  "price_button": "the price lives on one big orange button at a fixed place on both dialogs: bbox [222,795,276,71] (w/h 3.89, 15,802-16,637 px) on 确定购买, and [222,755,276,71] on 购买确认. It is separated from the shop's own orange paint by SHAPE, not area: the 统帅经验 offer's gold hexagon icon is 75x62 at 3,116 px, w/h 1.21",
+  "purchase": "TWO taps, not one. Tap the card body -> 确定购买 overlay (name / description / quantity slider / orange price button); tap that orange button -> the client's own spend question 「购买确认」「您是否要花费N钻石?」 with a SECOND orange button; only that second tap moves the goods. The second dialog restates the amount, so it is also the last gate: it is tapped only when the client's own sentence names exactly the price the decision was made on. That second button is located BY ITS PAINT (it is the only orange button on that dialog) -- not by searching for its digits, which failed. Its own number is read as corroboration only: a disagreement stops the spend, an unreadable number does not. The 「今日不再提示」 checkbox is deliberately never ticked",
+  "spend_dialog_recovery": "a pass interrupted between the two taps leaves 购买确认 armed on screen; enter() closes it with its own ✕ and never taps its button",
+  "danger": "press_back is not 'go up one level': six blind presses walked out of the shop and raised the client's 确认退出游戏吗 prompt"
+ },
+ "live_evidence": {
+  "clean_full_pass": "dataset/evidence/shop_visit_wandering_20261005T042733 -- 6 of 6 cards decided, 1 BUY executed and wallet-verified (245,545 -> 245,526, spent 19, expected 19), backs=1, taps_refused=0",
+  "first_verified_purchase": "dataset/evidence/shop_visit_wandering_20261005T024627 -- 10点统帅经验 for 16 diamonds, 245,561 -> 245,545",
+  "tap_zone_map": "dataset/evidence/shop_zone_map_20261005T035348 -- the zone map above, 23 hits of 28 taps",
+  "gold_hexagon_false_positive": "dataset/evidence/shop_zone_map_20261005T033937 -- map_03_tab_游荡商人.png, the icon at bbox [101,788,75,62]",
+  "confirm_bug": "dataset/evidence/shop_visit_wandering_20261005T041329 -- an authorised 19-diamond purchase that FAILED (CONFIRM_BUTTON_NOT_FOUND) and spent nothing"
+ },
+ "failure_patterns": [
+  "calling a SQUARE orange blob a price button: the shop paints a gold hexagon icon for the 统帅经验 offer (75x62, w/h 1.21, 3,116 px) and under a bare area floor it passed as the button. A probe that asked 'is an overlay open?' was answered yes on a plain shop page, so it dismissed a dialog that did not exist and pressed back out of the store. The button is 276x71 at w/h 3.89, and the two are separated by shape rather than size",
+  "locating the SECOND purchase button by searching for a numeric token inside it: on 2026-10-05 04:13 the client's sentence was read correctly and the amount matched, yet no numeric token could be found inside the box, so an authorised 钻石换统帅经验 purchase came back CONFIRM_BUTTON_NOT_FOUND and spent nothing. It is the same white-on-orange misread read_button_price exists for -- the button must be located by its paint",
+  "taking 'nothing happened' for a geometry error: two passes had one card absorb 9 and 12 taps without an overlay, while a probe opened the same coordinates minutes later. taps_refused=0 proved the taps left the host, so the client simply ignored them; a ladder covering the whole measured zone now rides over it. The absolute tap targets and any refusal are logged, because the evidence frames alone cannot answer 'where did it tap?'",
+  "trusting the round-0 list price: on 2026-10-05 04:13 r1c2 was read as '150 / resource' while the card on screen was 5分钟建造加速 at 💎53 -- the misread also made price_is_diamond wrong. Harmless because the verdict comes from the overlay, but the list is a hint, never a fact (same class as the 2026-10-05 03:22 r1c1 card read as 67万 while it was 16万)",
+  "taking 'the 确定购买 overlay closed' as 'it bought': the spend is TWO taps, and the first attempt reported success while the diamond wallet had not moved at all -- the purchase was actually still sitting on the 「购买确认」 dialog. Only the wallet check exposed it",
+  "merge_fragments DELETED every price written as N万 -- it selected the tokens to join with [\\d,，]+ and then rebuilt its output from that same selection, so 67万 and 25万 vanished. read_cards takes that output as its whole universe of numbers, so the cards that disappeared were exactly the 资源换资源 ones the policy says to BUY; a pass could report '4 of 6 cards read' while the two it never saw were the only two it was supposed to buy",
+  "DROPPING a card because its list price token was missing -- the list price is only for the report, the verdict comes from the overlay, so a card that could be evaluated in full was silently skipped (measured: 'read 5 cards' on the 02:19 roll, r1c0 missing)",
+  "reading the Exp bottle as 统帅经验 -- it is 英雄经验 (measured: '1,000点英雄经验', '50,000点英雄经验'). The item the policy wants is the gold hexagon engraved 10, 「10点统帅经验」",
+  "believing a price read as ',000' -- it was the right-rail OCR band re-reading the tail of a whole-frame '15,000'",
+  "taking the whole-frame name reader's output for the tooltip: OCR read the 拥有数量 line as 有数量 (the 拥 dropped), the stopword missed, and the 'longest CJK token' tie-break chose 有数量：286,010,314 over the real name 木材 (安全)",
+  "picking the overlay's price by elimination: the whole-frame pass read the quantity slider as '1' (one char, filtered) while the grid pass read the same pixels as '00' (two chars, kept), which collided with the real price and aborted the overlay as PRICE_BUTTON_AMBIGUOUS on 2 of 6 cards",
+  "the merchant re-rolls its own slots mid-pass: one slot held 建造加速 for 33,000 铁, then 煤 for 10,000 铁, then 木材 for 💎100, all inside three minutes with 22 minutes left on its own countdown. Measured again 2026-10-05: r1c1 read 木材 (安全) @ 10万 (resource) at 03:53 and the same slot read 木材 (安全) @ 💎10 at 04:14",
+  "reading a tab strip mid-slide: the strip animates in when the store page opens, and a capture taken then has no tab text -- 04:25 lost a whole pass to TAB_NOT_FOUND:游荡商人 after enter() had already reported the store page",
+  "evidence filenames without the round: round 2's 40_card_r0c2_buy0_0 overwrote round 1's, and re-reading the evidence then reconstructed the wrong roll",
+  "a run whose log was piped through tail and then interrupted left frames but no reasons -- the log now goes into the evidence directory"
+ ]
+}
