@@ -6537,3 +6537,111 @@ explorer               在 session 1            -> 桌面外壳在
   但这不能当保证 —— 依赖"只在成功后写文件"就得先去读一遍实现，别靠运气。
 - 因此"尺子 4"是**可复现的路径**，不是一次性的提交物：环境不允许抓屏时，
   读**上一次成功的那张**并标注它的时间，不要用"这次没抓到"冒充"这次没问题"。
+
+## 64. 一个年龄只有在"写入者本该来过"时才是报警（2026-10-04）
+
+`source_freshness.stale_among` 原来只按**一个**开关 gate：AUTO 在不在跑。而 §六 那一行写的是
+「过期 **且** AUTO 在跑」—— 那个"且"里藏着一个假设：**有写入者应该来过**。对"写入者就是 AUTO 自己的
+循环"那几行，这个假设是被**检查**的；对其余每一行，它只是被**默认**成立。于是那些文件在 AUTO 恰好停着
+时是对的、在 AUTO 跑着时是错的 —— 这就是"没有任何东西会去重写它的文件"长期占着操作者 L1 卡片的成因。
+
+现场（AUTO 在跑，本批之前）：5 行被判过期并升级成故障
+
+```
+learning/event_goal_state.json           25.20 d   预算     6 h
+knowledge/game/capability_catalog.json    7.81 d   预算   168 h
+learning/fishing_runs.jsonl               4.24 d   预算    24 h
+learning/workbuddy_model_stats.jsonl      2.97 d   预算    48 h
+learning/fishing_state.json               2.87 d   预算    24 h
+```
+
+**危害不是"难看"**：`_attention_with_sources` 会把最差的两条前置，`intervention_of` 又做
+`"；".join(problems[:2])`，所以那两条永久条目变成了操作者真正会读的**原因行**，真故障被挤出去。
+卡片因此写着「需要你看一眼（3 项）」，而其中 2 项是任何干预都改不了的。
+
+四类写入者（26 行 → loop 10 / call 3 / window 2 / unscheduled 11）：
+
+- **`loop`**（AUTO 自己的循环）：`writer_was_due()` 就是原来那个 AUTO 判据。
+- **`call`**（按调用追加的台账）：`mtime` 回答的是"多久没人需要它了"，**这种年龄不是故障**。
+  实测 `workbuddy_model_stats.jsonl` 174 行 / 12.5 行每天，最近三条 `"success": true`，
+  写入者是 `escalation_queue.py:3906`。而且"队列没被服务"**已经有专门通道**（升级队列卡片），
+  不需要靠这个文件的年龄来说。拆分判据是实测出来的：`local_gui_model_calls` 75.6/天、
+  `local_planner_steps` 21.2/天、`workbuddy_model_stats` 12.5/天走**调用**；
+  `workbuddy_escalations` 627/天、`episodes` 6,699/天、`executor_backend` 6,718/天走**循环**。
+- **`window`**（只在活动窗口内被写）：窗口由**它自己声明的截止时间**决定。`fishing_state.json` 的
+  `event_end_at = 2026-10-01T15:59:58Z`，而文件年龄**正好等于**该截止时间过去的时间（到分钟）——
+  它已经被写得"该事件允许的那么新"了。**不要读记录里那个 `event_live_open: true`**：那是写入时刻的
+  事实，不是现在的事实。`FishingState.window_open()` 读 deadline，不读那个字段。
+- **`unscheduled`**（没有时钟）：`capability_catalog.json`（手工重建；它自己的 git 历史里就有一段
+  ≥9 天的空档 09-18→09-27）、`capability_skill_map.json`（45 次提交）、`role_inventory.json`
+  （**根本没被 git 跟踪**）、`template_manifest.json`、`config/v2.json`、`config/policy_state.json`、
+  `config/control_panel_state.json`（只有操作者自己按开关时经 `_save_panel_state` 写，**一个调用点**）。
+
+改法：每一行声明 `writer=`；`writer_was_due()` 是唯一判据；新增 `statement_among()` /
+`statement_lines()` / `describe_line()`，把"超预算"**点名但不计数**。
+
+卡片**分区**而不是丢弃（§六 同时要求"在需要关注里点名"）：
+
+```
+_freshness()                -> (ages, due, stated)
+_attention_with_sources()   -> (display, counted, notices)   display = alarms + lines + notices
+intervention_of(notices=...)  只有"没有别的东西可印"时才把陈述印进原因行；计数仍只归 due
+```
+
+折叠规则取 `due | stated` 的**并集**（annotate 是陈述、不是控制），所以"格子自己承认它"没有被削弱。
+每条回归风险都有具名测试，包括必须互补的那一对：窗口关了就放过、窗口开着仍然是报警。
+
+现场读数（本批之后）：5 行超预算、**计数 0**、点名 5，每行一句真话 ——
+`没有按时钟运行的写入者会来刷新它` / `它只在活动窗口开着时被写，而窗口已经结束`。
+
+**留档而不是"顺手修掉"的矛盾**：`build_runtime_state_manifest.py` 把
+`learning/event_goal_state.json` 列为 RUNTIME_MUTABLE，理由是"每个都有写入者"；而
+`state_truth.py:2123-2128` 实测它**没有任何写入者**。两条声明直接冲突，谁对要看读数。
+
+## 65. `dataset/raw/**` 会被磁盘保护清掉，但**目录留着**（2026-10-04）
+
+这不是一个测试夹具的小问题，是一条**测量口径**的问题：
+
+```
+dataset/raw/control_panel/runtime_auto/   5,301 个会话目录，其中 4,209 个是空的（79.4%）
+                                          27,583 个文件 / 19 GB
+panel.log 自己写着（21:09:35）            磁盘保护：已清理 30 张过期或超额运行截图
+```
+
+面板自己的日志就是成因：清理器**删文件、不删目录**。
+
+三条后果各自独立：
+
+1. **模块级** `sorted(AUTO.glob(...))[-1]`（`test_last_step_execution.py:49`）在导入期抛 `IndexError`。
+   pytest 把它当**收集错误**，而 `pytest tests/` 默认**遇到收集错误就中断整个套件** ——
+   一个 2026-09-22 的帧消失，代价是整套测试一条都不跑（`Interrupted: 3 errors during collection`）。
+   这就是"上次记录 297 passed"后来**根本不可达**的原因。
+2. **模块内**的 `[-1]` 只让该模块红（`test_goal_attention.py`：3 个钉子帧里 2 个没了 → 9 个红）。
+3. **已经写好的守卫是死代码**：`if not cls.BAR_AFTER.exists(): raise SkipTest(...)` 写在 `[-1]`
+   **之后**，`[-1]` 先抛，那行守卫永远到不了。同一形状还留一个洞：`ALL_IDLE_FRAME` 被后面的方法用，
+   而守卫只检查了 `DONE_FRAME`。
+
+修法按仓库自己的 house style（`test_event_panel_observation._require`，全仓 40+ 处）：
+**有则用、无则点名跳过**。不"换成一张长得像的帧"—— 一个自己制造证据的测试，正是当初藏住这两个故障的习惯。
+`test_goal_attention` 保留原有 `FRAMES[...]` 调用点不变：把那个 dict 换成 dict 子类，`__missing__`
+在"这个角色钉过、只是被清了"时跳过，而在"这个角色从来没钉过"时**仍然 KeyError**（那是本文件里的
+笔误，不是磁盘的错）。
+
+顺带一条必须记住的读数纪律：**"全套通过"这把尺子在数据集被清之后是不成立的**。
+先修夹具，再谈回归；否则每一次 A/B 都被两百多个环境红污染。
+（本次全量：4,890 passed / 208 failed / 27 errors / 63 skipped，18 分 29 秒。
+其中大量红属既有：`runtime.py:2858` 的 AttributeError、`check_wiring.py` 的 2 条既有 problem、
+以及被清的实时证据截图。）
+
+## 66. repin 会丢掉 pin 树里**未提交**的非数据改动（2026-10-04）
+
+`repin_production.py` 做的是 `reset --mixed` + `checkout <sha> -- .`（排除
+`config/knowledge/learning/dataset`）。所以它的 `checkout` 会把 pin 树里**任何未提交的代码改动**
+抹回该提交的状态。
+
+实测：把 6 个文件拷进 pin 树 → 跑一次 repin → 输出里赫然一行
+`OUT  M winter_agent_v2/source_freshness.py` → 4 个未提交的文件被抹回 HEAD，只剩 2 个已提交的还在。
+
+**所以顺序是固定的：拷 → 提交 → repin**（不是"拷 → repin → 提交"）。
+判据：拷完立刻比一次**去 CR 的 sha256**，每次 repin 之后再比一次。
+把"树同步"和"提交"分成两次动作用同一把尺子量，才分得清"同步成功"和"同步被回退"。

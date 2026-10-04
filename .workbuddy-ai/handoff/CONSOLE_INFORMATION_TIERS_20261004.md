@@ -2034,3 +2034,217 @@ explorer          在 session 1  -> 桌面外壳在
 
 抓屏失败**没有**截断 `--out`（实测原图 393,991 B / mtime 20:05 未变），但这不能当保证。
 判据顺序写进 MEMORY **§63**：先证环境，再谈面板。
+
+---
+
+## 二十、第六批（2026-10-04）：一个年龄只有在"写入者本该来过"时才是报警
+
+提交 `0afe1c45`（夹具）与 `34cd2332`（判据），四把尺子都有读数。
+
+### 20.0 本批的起点是卡片自己点名的两个文件
+
+第五批的截图里，L1 干预卡的**原因行**被两个数据源年龄占着：
+
+```
+结论：需要你看一眼（3 项）
+原因：⚠ 数据源已过期：event_goal_state.json（25.2 天前）· 用于 运行·活动；
+      ⚠ 数据源已过期：capability_catalog.json（7.8 天前）· 用于 总览·KPI / 能力页 / 覆盖
+```
+
+3 项里有 **2 项**是任何干预都改不了的。这不是"显示得不好看"，而是**真故障被挤出了唯一那行会读的文字**。
+
+### 20.1 判据：§六 那个"且"里藏着一个假设
+
+§六 那行写的是「过期 **且** AUTO 在跑」。而 `stale_among` 实际只按**一个**开关 gate：AUTO 在不在跑。
+那个"且"里藏着的假设是 —— **有写入者应该来过**。对"写入者就是 AUTO 自己的循环"那几行，它被**检查**了；
+对其余每一行，它只是被**默认**成立。于是那些行在 AUTO 恰好停着时是对的、在 AUTO 跑着时是错的。
+
+改法不是调 TTL，而是把假设**变成被检查的事实**：每一行声明 `writer=`。
+
+| writer | 行数 | 什么叫"该来了" |
+| --- | --- | --- |
+| `loop` | 10 | AUTO 在跑（就是原来那个判据） |
+| `call` | 3 | 不按时间——按调用追加；`mtime` 回答的是"多久没人需要它了" |
+| `window` | 2 | 只在活动窗口内被写；窗口由**它自己声明的截止时间**决定 |
+| `unscheduled` | 11 | **没有时钟**；手工/构建器/操作者自己写 |
+
+### 20.2 逐源审计（每一行都有实测支撑）
+
+| 源 | 年龄 / 预算 | 判定的依据 |
+| --- | --- | --- |
+| `learning/event_goal_state.json` | 25.20 d / 6 h | **全树没有任何写入者**。`state_truth.py:2123-2128` 早就实测过，并判它 `HISTORY`、还提"操作者可能想退休它"。`source_freshness` 却在永久升级它 —— 两处对同一事实给了相反答案 |
+| `knowledge/game/capability_catalog.json` | 7.81 d / 168 h | 手工重建。它**自己的 git 历史**里就有一段 ≥9 天的空档（09-18→09-27），所以"7.8 天"是这种文件的正常节奏 |
+| `learning/fishing_runs.jsonl` | 4.24 d / 24 h | 只在活动窗口内被写；窗口已结束 |
+| `learning/workbuddy_model_stats.jsonl` | 2.97 d / 48 h | 按调用追加的台账：174 行、12.5 行/天、最近三条 `"success": true`，写入者 `escalation_queue.py:3906`。"队列没被服务"**已有专门通道**（升级队列卡片） |
+| `learning/fishing_state.json` | 2.87 d / 24 h | 它自己声明 `event_end_at = 2026-10-01T15:59:58Z`；文件年龄**正好等于**该截止时间过去的时间（到分钟）⇒ 它已经被写得"该事件允许的那么新" |
+
+`fishing_state.json` 那一条有个必须记住的细节：**记录里的 `event_live_open: true` 不能读**。
+那是**写入时刻**的事实，不是现在的事实。截止时间才是事实。`FishingState.window_open()` 读 deadline。
+
+### 20.3 危害：为什么这不是"难看"
+
+`_attention_with_sources` 会把最差的两条前置进列表，`intervention_of` 又做
+`"；".join(problems[:2])` —— 所以**那两条永久条目就是操作者读到的那行字**。真故障（`WORKBUDDY_QUEUE_STUCK`）
+被挤到第三位、看不见。
+
+### 20.4 改法：分区，不是丢弃
+
+§六 同时要求"在需要关注里**点名**"，所以不能简单地把它们藏掉。做法是把**一个读数分成三个答案**：
+
+```
+_freshness()                -> (ages, due, stated)
+_attention_with_sources()   -> (display, counted, notices)
+                               display = alarms + lines + notices   ← 仍然点名
+                               counted = alarms + lines             ← 只数"该来没来"的
+intervention_of(notices=...)  只有"没有别的东西可印"时才把陈述印进原因行
+```
+
+折叠规则取 `due | stated` 的**并集**（`annotate` 是陈述、不是控制），所以"格子自己承认它"没有被削弱：
+`_stale_source_note` 仍挂在 KPI 卡与事实卡的来源行上。
+
+12 条新测试，其中包括必须**互补**的那一对（否则规则就从"区分"退化成"消音"）：
+窗口关了就放过、窗口开着仍然是报警。另有一条专门钉"记录的标志**不能**把窗口打开"。
+
+### 20.5 两个单元与部署链
+
+| 单元 | 提交 | 内容 |
+| --- | --- | --- |
+| 夹具（先做，因为它是尺子） | `0afe1c45` | 数据集帧缺席时**点名跳过**，而不是 `[-1]` 抛异常（2 文件，+89/−20） |
+| 判据 | `34cd2332` | `writer=` / `writer_was_due()` / `statement_*()` / 卡片三分区（4 文件，+470/−61） |
+
+两个提交都落在 **pin worktree**（`main` 只做 `merge --ff-only`，不产生提交）：
+
+```
+commit 0afe1c45 -> repin --to 0afe1c45  -> CLEAN_OUTSIDE_DATA (outside_data_dirs=0) -> MAINLINE_OK
+commit 34cd2332 -> repin --to 34cd2332  -> CLEAN_OUTSIDE_DATA -> --check-only CLEAN -> MAINLINE_OK
+镜像 git merge --ff-only 34cd2332        -> Fast-forward，6 文件
+去 CR 口径复核                            disk == 提交 blob == 合并前备份   True
+```
+
+### 20.6 四把尺子
+
+**尺子 1（窗口自报）**
+
+```
+desktop_startup.log 尾行  [2026-10-04T21:09:07+08:00] CODE_COMMIT=34cd2332950ff939eb18910135440953ae7bb41c WORKTREE_CLEAN=true
+                          launcher=...\winter-prod-pinned\无尽冬日智能体	ools\launch_pinned_production.py
+pump.json                 runtime_loaded_revision = 34cd2332950ff939eb18910135440953ae7bb41c+dab8a29e7e70147f
+                          runtime_loaded_at       = 2026-10-04T13:09:08Z  （本地 21:09:08，就是这次重启）
+```
+
+**尺子 2（加载的字节 == 提交的字节）** —— 这次有一个**可直接对的字段**：
+`pump.json` 里有 `control_plane_loaded_sha256`，而它正是
+`sha256(Path(__file__).read_bytes())`（**原始字节，带 CRLF**）。
+
+```
+窗口记录的 (pump.json)      e86fe8fade09f2beba7437811e83dd8143dd9295b4c73fbded6a7b6b94659d81
+pin 树 原始字节(CRLF)        e86fe8fa…   MATCH=True   <- 这一对证明"加载的是这份文件"
+dev 树 原始字节(CRLF)        e86fe8fa…   MATCH=True
+剥掉 \r 后                 3962e15f6763c355b70b95aaf668982a241996a71fbf85de8f311a130ee9f4e9
+提交 34cd2332 的 blob(LF)    3962e15f…   MATCH=True   <- 这一对证明"提交里就是这份内容"
+```
+
+**尺子 3（行为）**
+
+```
+tools/gui_wiring_verify.py（生产树）  wired and matching : 19/19，mismatched 0，unconfirmed 0
+生产树 pytest（--basetemp 在仓库外）   139 passed, 8 skipped, 0 failed
+desktop_startup.log 最后一次 CODE_COMMIT 之后的 Traceback 数   0
+learning/runtime_snapshot.json        agent_state = GOAL_RUNNING，updated_at = 21:10:22 本地
+```
+
+**尺子 4（一张画）** —— `_capture_panel_window.py` 本次**成功**（21:10，343,040 B，2064×1289），
+另存 `learning/control_panel/_panel_window_20261004T2110_34cd2332.png`。
+
+这一张就是本批的现场证据 —— 卡片变化是**可见**的：
+
+```
+本批之前   结论：需要你看一眼（3 项）
+           原因：⚠ 数据源已过期：event_goal_state.json（25.2 天前）…；⚠ 数据源已过期：capability_catalog.json…
+本批之后   结论：需要你看一眼（1 项）
+           原因：⚠ WORKBUDDY_QUEUE_STUCK：12 条仍未被消费（NEW/QUEUED）——不得显示成「开发中」
+```
+
+**真故障重新坐回了原因行。** 顶栏 7 格读数：MuMu 正常 · 游戏 正常 · AUTO 工作中 · WorkBuddy **异常**（既有 L3）。
+
+### 20.7 重启与否：这次**必须**重启，判据是算出来的
+
+```
+loaded sha (重启前)   dc3463348ac73af8100935f93e81a13b4ee96bdd
+changed paths         81
+control-plane hits    1      tools/control_panel.py
+needs_reload          True
+```
+
+与第五批的文档提交恰好相反（那次是 `()` ⇒ 不重启、也不放标记）。重启走**计划任务**
+`\WinterAgentV2Panel`（`schtasks /End` → `/Run`），因为面板自己的日志里写着自动重载**故意停用**：
+「重启助手会被它自己的 taskkill /T 杀掉，窗口不会回来」。
+
+`/End` 之后有 **2 个 `run_live.py` 的 AUTO 子进程活了下来**（它们的父进程是面板 27084，但没被
+进程树带走）。**必须先清掉再启动新窗口**：两个 AUTO worker 同时打同一个 MuMu 会互相抢点击。
+清理后 `(none left)`，再 `/Run`。
+
+**过期标记不是手工删的**：重启前它存在（827 B，21:08，是旧窗口自己写的）；新窗口起来后
+**`ls` 报 No such file** —— 是代码里 `if not stale:` 那一支把它退休的。与第四批同一条判据：
+证明"调用者存在"之后，还要证明"它真的会跑"。
+
+### 20.8 顺带修掉的：数据集帧被清 ⇒ 整个套件不可跑
+
+这一条不在计划里，是查"为什么套件是红的"查出来的，而它**必须先修**，否则本批没有可信的尺子。
+
+```
+dataset/raw/control_panel/runtime_auto/   5,301 个会话目录，4,209 个是空的（79.4%）
+                                          27,583 个文件 / 19 GB
+panel.log（21:09:35）                     磁盘保护：已清理 30 张过期或超额运行截图
+```
+
+**面板自己的日志就是成因**：清理器删文件、**不删目录**。三条后果各自独立：
+
+1. **模块级** `sorted(AUTO.glob(...))[-1]` 在导入期抛 IndexError ⇒ pytest 报**收集错误** ⇒
+   默认**中断整个套件**。一个 2026-09-22 的帧消失，代价是"297 passed"这个读数**根本不可达**。
+2. **模块内**的 `[-1]` 只让该模块红：`test_goal_attention.py` 3 个钉子帧里 2 个没了 → 9 个红。
+3. **已写好的守卫是死代码**：`if not cls.BAR_AFTER.exists(): raise SkipTest(...)` 写在 `[-1]` **之后**，
+   永远到不了；同一形状还留个洞 —— `ALL_IDLE_FRAME` 被后面的方法用，守卫却只检查 `DONE_FRAME`。
+
+修法用仓库自己的 house style（`test_event_panel_observation._require`，全仓 40+ 处）：
+**有则用、无则点名跳过**。不换"长得像的帧"—— 自己制造证据正是当初藏住这两个故障的习惯。
+
+**A/B（这是本批最该记住的一段）**：
+
+```
+回退 test_last_step_execution.py 到 HEAD -> ERROR ... IndexError, Interrupted: 1 error during collection
+                                          ⇒ 它以前**根本没跑过**
+回退 fishing_state.py 到 HEAD             -> 同样 4 failed（runtime.py:2858 AttributeError）⇒ 既有
+```
+
+所以本批**暴露出** 3 个既有断言失败（`OPEN_POWER_OVERVIEW` vs 期望的 `SAFE_STOP`，第 916 行），
+它们一直被收集错误**挡在视野之外**。这不是本批造成的，本批也没有修它们 —— 那是决策引擎的问题、
+是另一个工作单元。
+
+顺带：`tests/` 下两个**未被跟踪**的模块（`test_one_shot_validation_probe.py`、
+`test_travel_and_underground_pages.py`）的目标 API 已经全树消失（`_blocked_probe_window_minutes`
+在 `tools/run_live.py` 里 0 次；`travel_supply` 在 `verifier.py` 里 0 次；git 里没有任何提交引用它们）。
+它们从来不属于套件，但 pytest 会收集 `tests/` 下未跟踪的模块，所以它们的 ImportError 也是那次
+收集中断的一部分。**归档不删除**：移进 `learning/archive/orphaned_tests_20261004/` 并带一份
+`INDEX.json`（文件名、字节数、时间、原因），与 `root_scratch_20260923` 同一套可逆约定。
+
+### 20.9 本批**没有**修的，以及为什么
+
+1. **`runtime.py:2858` 的 AttributeError**（`test_fishing_production_closure.py` 4 红）。
+   它看起来像**运行时的真缺陷**而不是环境问题，但要先读 `runtime.py` 那一行才能定性。A/B 已证明
+   与本批无关（回退 `fishing_state.py` 后同样 4 红）。**登记**。
+2. **决策引擎的 3 个断言失败**：快速面板关着时，期望 `SAFE_STOP` 却给出 `OPEN_POWER_OVERVIEW`。
+   这是"该停却去开电源总览"级别的行为分歧，值得下一批优先看。**登记**。
+3. **L1 卡片剩下的两个空缺**（`queues`/`dev_queue` 的积压阈值、"花钱/不可逆"信号）：前者项目里
+   **没有声明过的**积压阈值，后者全 522 条能力目录的 `unlock_status`/`resource_cost` 都是 `UNKNOWN`
+   ⇒ **今天没有数据源**，不能拿别的量冒充。与第五批 §十七 的记录一致。
+
+### 20.10 两个新发现的独立缺陷（登记，不修）
+
+1. **`build_runtime_state_manifest.py` 与 `state_truth` 直接冲突**：前者把
+   `learning/event_goal_state.json` 列为 RUNTIME_MUTABLE 并声称"每个都有写入者"；后者实测它**没有
+   任何写入者**。两条声明不可能同时为真。本批只把它**留档**，没有按"把文件退休掉"去改 ——
+   那是操作者的策略决定，不是技术细节。
+2. **4,209 个空会话目录**：除了把测试打红，它们还让"会话数"这个词在任何**按目录数**的口径下虚高
+   4.2 倍。本次已核实**控制台的数字不来自目录计数**（它读 `learning/episodes.jsonl`），所以
+   目前**没有**屏幕上的数字是错的 —— 但这是"碰巧"，不是"有守卫"。
