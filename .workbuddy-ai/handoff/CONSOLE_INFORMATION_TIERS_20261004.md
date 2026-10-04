@@ -1035,6 +1035,11 @@ row 0 的约束；今天总览的 1065 px 主要花在下面那些堆叠块上�
 
 三格都健康 ⇒ **9→6 是今天的效果，不是纸面上的**。条子宽度（真实 widget，`_HeaderStrip`）：
 
+> **订正（同日 19:30，见 §十五.4）**：上面这条读数是 19:0x 的。19:30 同一台机器上，
+> 窗口顶栏是 **7 格** —— WorkBuddy 显示 `● 异常`，于是它按规则回到条上，而 本地模型 / 预载 不在。
+> **层是规则，不是格数**；"今天几格"这个说法本身就依赖当时的状态。
+> 下面 324 px 也是"三格都健康"那一种情形，不是恒值。
+
 ```
 [14] 顶栏 9 格：§六 收起三格之后，条子有多宽
     all nine healthy（今天真实取数）      :   324 px   L3 三格里还在条上的：[]（空 = 三格都收起了）
@@ -1065,3 +1070,144 @@ row 0 的约束；今天总览的 1065 px 主要花在下面那些堆叠块上�
 | `test_every_page_folds_something_or_says_why_it_folds_nothing` | 页面清单**从 `_build` 推导**（和页签表同一条推导，已从测试类提到模块级 `_page_builders()`）；没有折叠的页面必须在 `NO_FOLD_PAGES` 里写理由 —— 「没有折叠」和「没人分过」不许长成同一段源码 |
 | `test_the_page_without_folds_layers_its_columns_instead` | 目标页的豁免只有在"列序真的就是分层"时才诚实：tier 必须是不被后一层打断的 `L1…L2…L3` |
 
+
+## 十五、第四批落地记录（2026-10-04，五步各带证据）
+
+| 步 | 动作 | 证据 |
+|---|---|---|
+| 1 | commit | 代码 `940f8d4`（`feat(console): the last of §六 …`，`4 files changed, 993 insertions(+), 51 deletions(-)`）；文档 `6560aa2`；**校验器修复 `3e430e14`**（在生产树里提交，见下） |
+| 2 | repin | `repin_production.py --to 6560aa21…` → `RESULT: CLEAN_OUTSIDE_DATA`；`[AFTER_RESET] outside_data_dirs=7` 恰好是本批那 7 个文件（"索引新、工作树旧"），`[AFTER_CHECKOUT] outside_data_dirs=0`。再 `--to 3e430e14…` → 已在 HEAD，全程 0 |
+| 3 | 重启面板 | pid 25560 / 9816（18:48）→ **11880 / 12404**（19:24:24）；`panel_restart.py --stop --force` 报 `workers left after the kill: 0`、`panel pids still alive: none` |
+| 4 | 验证生效 | 见下（三把尺子 + 一张画） |
+| 5 | 过期标记 | **磁盘上不存在**（见 15.5，含一处必须说明的不可判定） |
+
+### 15.1 流程上我做错了一步，而且是判据抓到的（不是自觉）
+
+本批前两个提交是在**主仓 `main` 上**做的，而 §27.2 第 3 条写的是「**禁止**在 `main` 上产生任何新提交」，
+开发应当落在 pin worktree 的 `codex/production-pin-recovery` 上。按下 commit 之前我没有先跑判据。
+
+跑 `tools/check_mainline.py` 时它当场报出来了：
+
+```
+  OK   1. pin worktree HEAD 1ba5bf75 == manifest expected_commit 1ba5bf75
+  OK   2. expected_commit 1ba5bf75 is on codex/production-pin-recovery 1ba5bf75
+  FAIL 3. mirror main 6560aa21 is on codex/production-pin-recovery 1ba5bf75
+RESULT: MAINLINE_BROKEN=1
+```
+
+**这条判据的方向是"允许落后、不允许领先"**，所以"我在 main 上提交"这个动作**有**判据 ——
+它只是在我 commit 之后才被跑到。修法与收尾：
+
+1. `repin_production.py --to 6560aa21…` —— repin 本身就是**推进主线引用**的动作
+   （`git -C WT reset --mixed <sha>` 移动的正是 pin worktree 检出的那条分支），
+   于是 `6560aa21` 落到了 `codex/production-pin-recovery` 上，且是快进（祖先关系本来就成立）。
+2. 第三个提交（校验器修复）**改在 pin worktree 里做**，落在主线上。
+3. 镜像 `main` 用 `git merge --ff-only 3e430e14` **快进**（不是提交）到主线，
+   `check_mainline.py` → `RESULT: MAINLINE_OK`（三条判据全过，且 `main == 主线 == 3e430e14`）。
+
+最终状态与标准流程完全相同（两条引用相等），没有重写历史、没有丢提交、`main` 上没有产生新提交。
+**但顺序错了就是错了**：如果当时没有跑判据，下一批会在一条"主线之外"的提交上继续开发，
+而这个仓库已经因为这个原因付过一次代价（`REPO_TOPOLOGY_8_WORKTREES_20261003.md` 记的两次回写）。
+**教训不是"下次注意"，是 commit 之前先跑 `check_mainline.py`** —— 判据在，位置在流程的第 0 步。
+
+### 15.2 三把尺子（第 4 步）
+
+**(a) 窗口自报的提交** —— 两个互不依赖的写入点，结论一致：
+
+```
+learning/control_panel/desktop_startup.log:
+  [2026-10-04T19:24:25] CODE_COMMIT=6560aa2194f4e5d67301d6057380828d331aa41b WORKTREE_CLEAN=true DATA_ROOT=E:\无尽冬日智能体
+learning/control_panel/pump.json:
+  runtime_loaded_revision = 6560aa2194f4e5d67301d6057380828d331aa41b+aa382debbad672ee
+  runtime_loaded_at       = 2026-10-04T11:24:27Z   (= 本地 19:24:27，正是新窗口)
+```
+
+**窗口自报 `6560aa21`，而 pin 现在是 `3e430e14` —— 这不是不一致，是这两个数的定义不同**：
+窗口报的是它**启动时**的 HEAD，而 `3e430e14` 是在它启动之后才提交的，且只动了
+`tools/gui_wiring_verify.py` + `tests/…`，**两者都不在 `CONTROL_PLANE_PATHS` 里**。
+所以窗口加载的控制面字节一个字没变（这正是 (b) 里那条链仍然成立的原因），
+也就不需要为它再重启一次。**判断"要不要重启"的依据是加载的字节，不是 HEAD 的名字。**
+
+**(b) 加载的字节 == 提交里的字节** —— 全程同一把尺子（CRLF/LF 不能混，§59）：
+
+```
+1. 窗口记录（磁盘原始字节）   5414c6bf…ee0f
+2. 磁盘原始（CRLF）          5414c6bf…ee0f   == 1 ✔
+3. 磁盘剥 CR（LF）            9d10a21f…0a6d
+4. 提交 6560aa21 的 blob      9d10a21f…0a6d   == 3 ✔
+-> 窗口加载的就是提交里的字节：True   （直接比 1 与 4 会得到 False，那是换错了尺子）
+```
+
+**(c) 行为** —— 四个互相独立的读数：
+
+```
+tools/gui_wiring_verify.py（生产树）   -> wired and matching : 19/19，mismatched 0，unconfirmed 0
+   顶栏九格逐格带上了座位：dot_boot 穿 等待 且 [收起]；dot_wb 穿 异常 且 [条上]；clock [条上]
+   这 19 行里第一次能看到 §六 的规则在跑，而不只是"某一格有字"
+生产树 pytest（test_console_shows_only_what_it_can_fill + test_control_panel）
+                                    -> 135 passed, 6 subtests passed（66 守卫 + 69 面板）
+learning/control_panel/panel.log     -> Traceback 0 条（3411 行）
+learning/control_panel/latest.log    -> Traceback 0 条（73 行）
+learning/runtime_snapshot.json       -> agent_state = GOAL_RUNNING，updated_at = 11:30:59Z（本地 19:30:59，实时）
+                                        unexpected_worker_exits = 22 / watchdog_restart_count = 28
+                                        （与重启前一致 ⇒ 增长型规则保持安静）
+```
+
+### 15.3 一处我以为会看到、结果不同的地方，先用工具查清再下结论
+
+上一批的落地记录里，`dot_wb` 是**唯一该浮上来**的那一格。上一节 15.6 的探针（19:0x）读到的却是
+`WorkBuddy 正常`，而 `gui_wiring_verify` 的桩读到的 `dot_wb` 是 `● 异常`。两个来源、两个结论 ——
+所以这一条不能靠"哪个更像"来定，只能靠当时的状态回答。19:30 的窗口截图给了答案（见 15.4）：
+**那一刻 WorkBuddy 确实是异常**，格子也确实是浮上来的。两个读数都对，只是两个时刻。
+
+### 15.4 一张画：顶栏此刻是 **7 格**，而这是规则在起作用
+
+新增 `_capture_panel_window.py`（根目录脚本，不是生产工具）。**为什么要有一把"看"的尺子**：
+本仓库其他所有尺子读的都是窗口的**输出**（它写了什么变量、记了什么哈希、留了什么日志行）——
+那些能证明代码跑过，**不能证明操作者收到了什么**，而这一整轮审计的题目恰好就是这两者之间的缝。
+`learning/control_panel/_panel_window.png`（2064×1289）里的顶栏，逐字读出：
+
+```
+V2 ●正常   MAA ●工作中   MuMu ●正常   游戏 ●正常   AUTO ●工作中   WorkBuddy ●异常   时间 19:30:23
+```
+
+七个格子里：**本地模型 与 预载 不在条上**（健康），**WorkBuddy 在条上，因为它是 异常**。
+§六 写的是「健康时收起 / 异常浮 L1」，这张画就是它：**层是规则，不是格数**。
+同一张画上还能读到本批另一处改动 —— 策略页三个块是折起来的
+（`▸ Reward Policy · FREE CLAIM FIRST` / `▸ Resource Policy` / `▸ 禁止执行 · POLICY DISABLED BY USER`），
+而 8 个策略开关和 运行方式 仍然常驻（它们是**控件**，不是陈述）。
+
+（`_capture_panel_window.py` 里有一条不显然但要紧的实现细节：截图前必须**先把窗口抬到前面**并在
+`ShowWindow` 后等一个 Tk 周期 —— 一张"被别的窗口盖住的窗口"的截图，只是一张别的窗口的截图。
+第一次抓到的图正好证明了这一点：面板被 WorkBuddy 覆盖，顶栏只露出一半。）
+
+### 15.5 第 5 步：磁盘上没有过期标记，以及一处**不能判定**的地方
+
+`learning/CONTROL_PLANE_RELOAD_REQUIRED.json` **不存在**；`learning/` 下也扫不到任何 reload 类标记。
+但**"不存在"在这里有两种原因，而现有证据分不开它们**：
+
+- 旧窗口（加载 24ecfc2b）在 repin 之后、被我停掉之前的 1～2 分钟里**写下**了标记，新窗口起来后
+  自己 `clear("superseded_claim_resolved")` 把它删了；
+- 或者，旧窗口**还没来得及**写（`panel.log` 里最后一条"控制面已变更"是 **18:01:57**，属于上一批，
+  本批没有任何一条）。
+
+分不开的原因在代码里：`ReloadSignal.clear()` 是 `unlink`（删除），**不留下"曾经有过"的痕迹**
+（`winter_agent_v2/runtime_reload.py:191`）。所以这一批的第 5 步**证据强度低于上一批** ——
+上一批能把"写下它的那条路径同时具备撤回它的能力"这条链摆出来，这一批只能说"盘上干净"。
+**把这条差别写下来，而不是两批都写成"标记已清理"**，才是这两句话各自值多少的区别。
+
+### 15.6 顺带：一个**验证工具**死了，而它正是"验证工具"（已修）
+
+`gui_wiring_verify.py` 的设计是"把真实的 `_refresh_truth` 绑到桩上跑"，这个设计只有一种坏法：
+刷新里多一次调用，工具就抛 `AttributeError` 而**什么也没验证**——
+**一个专门用来抓"有显示、无来源"的工具，自己变成了"有工具、无验证"。** 本批就发生了：
+
+```
+AttributeError: 'types.SimpleNamespace' object has no attribute '_show_header_cell'
+```
+
+修法与防止复发都写进了工具本身：桩拿到真正的格子对象（能 `grid_remove` 的，而不是空字符串，
+否则工具会去同意一个"只是把字涂白"的窗口），顶栏逐行开始校验**座位与它穿的那个词是否自洽**
+（穿着 异常 却坐在条子外 = MISMATCH）。行数 18 → 19（`clock` 以前是读完再 `continue`）。
+`tests/test_console_shows_only_what_it_can_fill.py` 新增两条守卫**直接跑这个工具自己的桩**，
+于是"下一次给刷新加协作者"会在当天挂一条测试，而不是等到某人下次手跑工具。
