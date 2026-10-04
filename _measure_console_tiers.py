@@ -225,25 +225,29 @@ def main() -> int:
           f"  ({100 * (sys_open - sys_declared) / max(sys_open, 1):.0f}% of the all-open page)")
 
     print(f"\n[8] §六's counter threshold really opens the watchdog block")
+    # The live values on this machine are ``unexpected_worker_exits = 22`` and
+    # ``watchdog_restart_count = 28``, both cumulative.  The first case below is the one that
+    # matters: a big historical count with no growth must NOT hold the block open, or the
+    # threshold would be measuring the machine's history rather than the present.
     h._watchdog_value = None
-    h._unexpected_exits = 0
-    h._restart_baseline, h._restart_count = 7, 7
+    h._exits_baseline, h._unexpected_exits = 22, 22
+    h._restart_baseline, h._restart_count = 28, 28
     h._sync_folds()
     steady = (h._folds["runtime_watchdog"].expanded, h._folds["runtime_watchdog"].badge.get())
-    print(f"    0 exits, restarts still 7        -> expanded={steady[0]}  badge={steady[1]!r}")
-    h._unexpected_exits = 2
+    print(f"    the real cumulative values, no growth -> expanded={steady[0]}  badge={steady[1]!r}")
+    h._unexpected_exits = 23
     h._sync_folds()
     exit_case = (h._folds["runtime_watchdog"].expanded, h._folds["runtime_watchdog"].badge.get())
-    print(f"    unexpected_worker_exits = 2      -> expanded={exit_case[0]}  badge={exit_case[1]!r}")
-    h._unexpected_exits = 0
-    h._restart_count = 9
+    print(f"    one more unexpected exit (22 -> 23)  -> expanded={exit_case[0]}  badge={exit_case[1]!r}")
+    h._unexpected_exits = 22
+    h._restart_count = 30
     h._sync_folds()
     grew = (h._folds["runtime_watchdog"].expanded, h._folds["runtime_watchdog"].badge.get())
-    print(f"    restarts grew 7 -> 9             -> expanded={grew[0]}  badge={grew[1]!r}")
-    h._restart_count = 7
+    print(f"    restarts grew 28 -> 30               -> expanded={grew[0]}  badge={grew[1]!r}")
+    h._restart_count = 28
     h._sync_folds()
     healed = (h._folds["runtime_watchdog"].expanded, h._folds["runtime_watchdog"].badge.get())
-    print(f"    back to 0 exits / 7 restarts     -> expanded={healed[0]}  badge={healed[1]!r}"
+    print(f"    back to 22 exits / 28 restarts       -> expanded={healed[0]}  badge={healed[1]!r}"
           f"   (the alarm closed itself)")
 
     tk_root.destroy()

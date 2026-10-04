@@ -5115,10 +5115,19 @@ class ControlPanel:
           single unexpected exit, and one worker dying and being restarted is a fault the
           operator must be able to see without clicking anything.
 
-        The restart half is measured against a baseline captured on the window's first tick,
-        not against zero: the count is cumulative for the machine, so ``> 0`` would open this
-        block forever on a host that ever restarted once.  增长 means "grew while you were
-        watching", which is the only reading under which the threshold says anything.
+        **Both counters are read as growth against the value this window first saw, not against
+        zero -- including the unexpected-exit half, where §六 writes the literal ``> 0``.**  The
+        literal was implemented first and measurement killed it on this very machine: the two
+        fields are cumulative (``previous.unexpected_worker_exits + 1``, persisted in the runtime
+        store), and the live values here are ``unexpected_worker_exits = 22`` and
+        ``watchdog_restart_count = 28``.  ``> 0`` therefore measures the machine's *history*
+        rather than the present, and would hold this block permanently open on a host whose
+        workers have ever died once -- the "狼来了" failure mode ``source_freshness`` warns about
+        in its own docstring, and the same mistake the first commit in this series had to fix for
+        stale sources.  Growth means "it happened while you were watching", which is the only
+        reading under which the threshold says anything about now.  §六's *intent* -- an
+        unexpected exit is the signal -- is kept; its arithmetic is corrected to match what the
+        fields actually hold.
         """
         value = getattr(self, "_watchdog_value", None)
         if value is not None:
@@ -5127,13 +5136,15 @@ class ControlPanel:
             word, colour = health_of(value)
             if colour in ("bad", "warn"):
                 return f"看门狗{word}"
-        unexpected = getattr(self, "_unexpected_exits", None)
-        if unexpected:
-            return f"有 {unexpected} 次意外的 Worker 退出"
-        base = getattr(self, "_restart_baseline", None)
+        exits_base = getattr(self, "_exits_baseline", None)
+        exits = getattr(self, "_unexpected_exits", None)
+        if exits_base is not None and exits is not None and exits > exits_base:
+            return (f"窗口打开以来有 {exits - exits_base} 次意外的 Worker 退出"
+                    f"（累计 {exits}）")
+        restarts_base = getattr(self, "_restart_baseline", None)
         restarts = getattr(self, "_restart_count", None)
-        if base is not None and restarts is not None and restarts > base:
-            return f"看门狗重启次数从 {base} 涨到 {restarts}"
+        if restarts_base is not None and restarts is not None and restarts > restarts_base:
+            return f"看门狗重启次数从 {restarts_base} 涨到 {restarts}"
         return ""
 
     def _sync_folds(self) -> None:
@@ -6484,12 +6495,12 @@ class ControlPanel:
                     "tick": snapshot.last_tick_time or "无", "action": snapshot.last_action_time or "无", "success": snapshot.last_success_time or "无",
                     "fatal": snapshot.last_fatal_error or "无", "restart": str(snapshot.watchdog_restart_count), "unexpected": str(snapshot.unexpected_worker_exits)}
             for key, value in vals.items(): self.runtime_detail_vars[key].set(value)
-        # The same two counters, as numbers, for ``_escalate_watchdog`` -- §六's threshold row is
-        # written in terms of them, and a threshold cannot be evaluated against a display string.
-        # Kept out of the ``hasattr`` guard above so the rule works even if that page was never
-        # built.  The restart baseline is taken once, on the first tick after the window opened.
+        # Both counters are cumulative for the machine, so both are read against the value this
+        # window first saw -- see ``_escalate_watchdog`` for why ``> 0`` was not usable.
         self._unexpected_exits = int(snapshot.unexpected_worker_exits or 0)
         self._restart_count = int(snapshot.watchdog_restart_count or 0)
+        if getattr(self, "_exits_baseline", None) is None:
+            self._exits_baseline = self._unexpected_exits
         if getattr(self, "_restart_baseline", None) is None:
             self._restart_baseline = self._restart_count
         # The per-tab bodies are refreshed only while their tab is on screen; the

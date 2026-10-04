@@ -1017,6 +1017,62 @@ class AFoldedBlockCannotHideAnAbnormalityTests:
         for spec in self._declared_folds().values():
             assert spec["level"] in panel.FOLD_DEFAULT_OPEN
 
+    def test_a_cumulative_counter_is_read_as_growth_not_as_a_total(self):
+        """§六's watchdog row is written ``unexpected_worker_exits > 0``, and that literal was
+        implemented first and then killed by measurement on this machine.
+
+        Both fields are cumulative -- ``previous.unexpected_worker_exits + 1``, persisted in the
+        runtime store -- and the live values here are 22 and 28.  ``> 0`` therefore opens the
+        block **forever** on any host whose workers have ever died once, which is the 狼来了
+        failure mode that already had to be fixed once for stale sources.  The rule reads growth
+        against the value this window first saw, and this test pins that with the real cumulative
+        numbers rather than with tidy ones, because 22 is exactly the number the literal got wrong.
+        """
+        import types
+
+        panel = self._panel()
+        stub = types.SimpleNamespace(
+            _watchdog_value=None,
+            _unexpected_exits=22, _exits_baseline=22,
+            _restart_count=28, _restart_baseline=28,
+        )
+        rule = types.MethodType(panel.ControlPanel._escalate_watchdog, stub)
+
+        assert rule() == "", (
+            "22 exits and 28 restarts, all of them older than this window, is not a fault now"
+        )
+        stub._unexpected_exits = 23
+        grew_by_one = rule()
+        assert "1 次" in grew_by_one and "22" not in grew_by_one.split("累计")[0], (
+            f"the badge must lead with the growth and keep the total as context: {grew_by_one!r}"
+        )
+        stub._unexpected_exits = 22
+        stub._restart_count = 30
+        assert "28" in rule(), "the restart half also reports growth against the baseline"
+        stub._restart_count = 28
+        assert rule() == "", "and it clears, so the alarm can shut itself again"
+
+    def test_the_watchdog_rule_does_not_compare_a_cumulative_counter_to_zero(self):
+        """The source-level half of the test above: a later edit could re-introduce the literal
+        without breaking the behaviour test, by writing ``if exits:`` -- which is the same defect
+        in a different spelling.
+
+        Scoped to the method body rather than the whole module, so an unrelated comment that
+        happens to contain the phrase cannot fail this, and a *real* re-introduction inside the
+        rule cannot hide behind one.
+        """
+        source = _panel_source()
+        start = source.index("    def _escalate_watchdog")
+        end = source.find("\n    def ", start + 1)
+        body = source[start:end if end != -1 else len(source)]
+        assert "_exits_baseline" in body and "exits > exits_base" in body, (
+            "the unexpected-exit half must be read against the window's own baseline; §六's "
+            "literal '> 0' measures the machine's history, not the present"
+        )
+        assert "if unexpected:" not in body, (
+            "that spelling is the literal again: it fires on any non-zero total"
+        )
+
 
 if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(pytest.main([__file__, "-q"]))
