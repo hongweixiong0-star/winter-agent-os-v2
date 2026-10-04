@@ -484,6 +484,97 @@ def decide_wandering(name: str | None, diamond: bool) -> tuple[str, str]:
     return "ASK", f"资源计价但商品不是资源({name}) —— 策略未覆盖"
 
 
+# -- 神秘商店 -------------------------------------------------------------------------------
+# The operator's rule, treated as CONFIRMED business input:
+#
+#     名称含「英雄组件自选箱」 且 折扣 = 50%  ->  买 ; 否则跳过
+#     只用免费刷新（基础 1 次/天；有艾格尼丝后最多 5 次），绝不用钻石刷新
+#
+# Measured on the live client 2026-10-05 (dataset/evidence/shop_observe_mystery_20261005T054637):
+#
+#   * the page is a **3 x 3 grid -- nine slots**, not the merchant's six; anchors at
+#     y=609 / 898 / 1186, columns x≈140 / 361 / 582, and the third row's *prices* fall below
+#     the fold (its badges and 剩余 still read);
+#   * its prices are the **gold coin**, not diamonds -- so the diamond wallet is not the spend
+#     witness here and a diamond-shaped reading of "did it cost anything" would be wrong;
+#   * the cards print **no item name**, exactly like the merchant's;
+#   * tapping the card body opens the same 确定购买 overlay, with the price button at the very
+#     same bbox [222,795,276,71] (276x71, 15,901 px) -- the same dialog component;
+#   * the name the client prints is 「第3代英雄组件自选箱」, which *contains* 英雄组件自选箱, so
+#     the rule is matched as a substring and never against the whole string;
+#   * the refresh control reads **免费刷新** here.  (The docstring on ``free_refresh`` claimed
+#     神秘商店's control reads 刷新 💎100; that was never measured on this page and is wrong for
+#     the free one.  Requiring the literal 免费 is still the right guard, and is kept.)
+MYSTERY_NAME = "英雄组件自选箱"
+MYSTERY_DISCOUNT = 50
+
+
+def discount_percent(badge: str | None) -> int | None:
+    """The card's own -N% badge as an integer, or None if it does not really say one.
+
+    OCR reads the badge correctly on 神秘商店 (measured: -10% and -20% on five of nine cards)
+    but also emits near-miss fragments of the same badge (``%0L-``, ``-10``, ``OL``).  The
+    badge is trusted only when a number and a percent sign actually appear together, because
+    the whole point of the rule is that 50 has to mean 50.
+    """
+    if not badge:
+        return None
+    m = re.search(r"(\d{1,3})\s*%", str(badge))
+    return int(m.group(1)) if m else None
+
+
+def decide_mystery(name: str | None, discount: str | None) -> tuple[str, str]:
+    """The operator's 神秘商店 policy, applied literally.
+
+    名称含「英雄组件自选箱」且折扣=50% -> 买；否则跳过。
+
+    A card with **no badge at all** is not a reading failure: the badge prints the discount, so
+    no badge means full price, which is "otherwise" and therefore 跳过.  That distinction was
+    paid for on the first live pass (2026-10-05 05:55): three of the nine cards carry no badge,
+    and answering ASK for them would have buried the four cards that *do* say -10%/-20% under
+    three pieces of noise.  ASK is kept for the one case that really is unanswerable -- a name
+    that could not be read, where even "is this the item the rule names" is unknown.
+
+    The never-overspend direction is structural rather than argued: BUY is reachable only from
+    ``pct == 50`` exactly, so every failure mode of the badge reader (missing, garbled, absent)
+    lands on 跳过.  The cost of a badge that exists but will not read is a *missed* buy, never a
+    wrong one, and the report prints what each card's badge actually said.
+    """
+    if name is None:
+        return "ASK", "no_name_readable"
+    if MYSTERY_NAME not in name:
+        return "SKIP", f"规则外商品({name})"
+    pct = discount_percent(discount)
+    if pct == MYSTERY_DISCOUNT:
+        return "BUY", f"{MYSTERY_NAME} 且折扣={pct}%({name})"
+    if pct is None:
+        return "SKIP", (f"{MYSTERY_NAME} 但卡上没有折扣徽标（读到 {discount!r}）"
+                        f"—— 不是{MYSTERY_DISCOUNT}%就不买")
+    return "SKIP", f"{MYSTERY_NAME} 但折扣={pct}%（不是{MYSTERY_DISCOUNT}%）"
+
+
+def top_bar_numbers(tokens: list[dict], height: int) -> list[tuple[int, int, str]]:
+    """The top bar's large comma-grouped numbers, left to right, de-duplicated.
+
+    The store's top bar carries **two** currencies and the order is fixed: 钻石 first, the
+    gold coin second (measured 2026-10-05: 294,752 at x≈451 then 3,290 at x≈630).  ``visit``
+    reads only the first, which is correct for a diamond shop and wrong for 神秘商店 -- so
+    this returns both and the caller says which one it means by position, not by guessing.
+    """
+    rows = [t for t in tokens
+            if re.fullmatch(r"[\d,]{3,}", t["text"].strip()) and t["centre"][1] < 0.06 * height]
+    rows.sort(key=lambda t: t["centre"][0])
+    out: list[tuple[int, int, str]] = []
+    for t in rows:
+        n = _amount([t["text"]])
+        if n is None:
+            continue
+        if out and abs(t["centre"][0] - out[-1][0]) < 30:
+            continue            # an OCR fragment of the number that was just read
+        out.append((int(t["centre"][0]), n, t["text"].strip()))
+    return out
+
+
 # --------------------------------------------------------------------------- the visitor
 class ShopVisitor:
     """Drives the store with recognised elements only; no click position is ever stored."""
@@ -640,8 +731,19 @@ class ShopVisitor:
                          f"  (frame {w}x{h}, attempt {attempt})")
                 self._tap_xy(nav["centre"])
                 img, toks = self.see(f"01_shop_in{attempt}")
-                if not self.on_store_page(toks, h):
-                    self.log("   tapped 商店 but the store page did not appear")
+                if self.on_store_page(toks, h):
+                    # The store can appear on the *last* attempt, and this used to `continue`
+                    # into an exhausted ``range`` and raise -- discarding the frame it had just
+                    # verified.  Measured 2026-10-05 05:42: AUTO was still driving the client
+                    # when the pass began, so the tap on attempt 0 landed on the beast page and
+                    # only attempt 3's re-tap reached the store.  The pass then reported
+                    # ``SHOP_ENTRY_FAILED at unknown page`` while its own evidence frame
+                    # (``01_shop_in3.png``) showed all four tabs, 游荡商人 x=98 / 神秘商店 x=302 /
+                    # 竞技商店 x=507 / 统帅市 x=684, every one inside the tab band.  The absence
+                    # of the "did not appear" line is what proved this branch had been taken.
+                    self.log(f"   reached the store page ({self._any(toks, STORE_TABS)})")
+                    return img, toks
+                self.log("   tapped 商店 but the store page did not appear")
                 continue
             if self.on_home(toks, h) and attempt >= MAX_BACK_ON_ENTRY:
                 break
@@ -709,6 +811,23 @@ class ShopVisitor:
         if not self.on_store_page(toks, h):
             raise RuntimeError("LEFT_THE_STORE_WHILE_DISMISSING")
 
+    def _body_ladder(self, card: Card, h_img: int,
+                     ladder: tuple[int, ...] = BODY_DY_LADDER) -> tuple[int, ...]:
+        """The body offsets that are actually legal on this card, top to bottom.
+
+        The ladder used to be the fixed ``BODY_DY_LADDER``.  On 神秘商店 the grid is 3x3 (measured
+        2026-10-05) and the third row's anchor sits at y=1186 on a 1280-tall frame, so the last two
+        rungs land at 1246 and 1266 -- **inside the bottom tab strip**, which begins at 0.93*H =
+        1190 and holds 游荡商人 / 神秘商店 / 竞技商店 / 统帅市 (all read at y=1241..1248).  A tap
+        that lands there selects a different shop, and the pass would then read another shop's
+        stock while still believing it was on the one it selected: silently reading the wrong shop
+        is worse than failing to open one card, so the ladder is clamped to stay strictly above the
+        band.  It is a clamp and not a shortening, so a tall card keeps its whole spread.
+        """
+        band_top = TAB_BAND * h_img
+        keep = tuple(dy for dy in ladder if card.tap_xy[1] + dy < band_top)
+        return keep
+
     def open_purchase(self, card: Card) -> tuple[bool, np.ndarray | None, list[dict]]:
         """Open the 确定购买 overlay by tapping the card body.
 
@@ -738,15 +857,29 @@ class ShopVisitor:
         """
         img: np.ndarray | None = None
         toks: list[dict] = []
+        # The frame height is needed to clamp the ladder off the tab strip; this capture does no
+        # OCR, so it is cheap, and it is taken before any tap rather than after.
+        h_img = self._frame().shape[0]
+        rungs = self._body_ladder(card, h_img)
+        if not rungs:
+            self.log(f"      r{card.row}c{card.col}: anchor {list(card.tap_xy)} is inside the tab"
+                     f" band (y>={TAB_BAND * h_img:.0f}) -- refusing to tap")
+            return False, None, toks
+        if len(rungs) != len(BODY_DY_LADDER):
+            self.log(f"      r{card.row}c{card.col}: ladder clamped above the tab band"
+                     f" (y<{TAB_BAND * h_img:.0f}): {list(rungs)}")
         # Put the absolute targets in the log.  The evidence filenames carry only the offset, and
         # when a card's overlay will not open the first question is always "where did it tap?" --
         # which the frames alone cannot answer if the anchor was re-derived mid-way.
         self.log(f"      opening r{card.row}c{card.col} from anchor {list(card.tap_xy)}:"
-                 f" taps at {[(card.tap_xy[0], card.tap_xy[1] + dy) for dy in BODY_DY_LADDER]}")
+                 f" taps at {[(card.tap_xy[0], card.tap_xy[1] + dy) for dy in rungs]}")
         for cycle in range(2):
             # The second cycle is a single tap at a freshly derived anchor: the point of it is the
-            # anchor, not another spread.
-            for dy in (BODY_DY_LADDER if cycle == 0 else (20,)):
+            # anchor, not another spread.  It is clamped the same way, because the re-derived
+            # anchor is exactly where an unclamped 20 could slip into the band.
+            if cycle:
+                rungs = self._body_ladder(card, h_img, ladder=(20,))
+            for dy in rungs:
                 self._tap_xy((card.tap_xy[0], card.tap_xy[1] + dy))
                 for attempt in range(MAX_DIALOG_FRAMES):
                     probe = self._frame()
@@ -985,6 +1118,49 @@ def _verify_purchases(v: ShopVisitor, report: dict[str, Any],
             log(f"   verifier: r{p['card']['row']}c{p['card']['col']} -> {p['verify_note']}")
 
 
+LEASE_YIELD_REASON = "device_leased_for_development"
+
+
+def wait_for_the_device(root: Path, *, timeout: float = 45.0,
+                        log: Callable[[str], None] = print) -> bool:
+    """Wait until AUTO has actually handed the device over -- a lease is not a handover.
+
+    Acquiring the lease is a *request*; the production loop only honours it at its next safe
+    point, and it keeps acting until then.  Measured 2026-10-05: the lease was written at
+    05:40:52 and AUTO recorded ``device_leased_for_development`` at 05:41:14 (~22 s later).
+    The pass's first tap was issued in between and landed on the beast-hunt page the loop was
+    still working on, so the 商店 nav press did nothing at all -- and then the store only
+    appeared on the pass's *last* allowed attempt, which is what exposed the entry off-by-one.
+
+    Two files say whether the handover has happened; either is enough:
+
+      * ``learning/runtime_snapshot.json`` -> ``stop_reason == device_leased_for_development``
+        with a ``reason`` naming the development owner;
+      * ``learning/auto_uptime.jsonl``     -> the newest round's ``stop_reason``.
+
+    A missing snapshot means no panel is running, which is also "nothing is driving the
+    device", so that counts as a handover too.  On timeout this returns False and says so;
+    the caller's page check (``enter``) remains the real safety net either way.
+    """
+    snap = Path(root) / "learning" / "runtime_snapshot.json"
+    deadline = time.monotonic() + max(0.0, timeout)
+    while True:
+        try:
+            state = json.loads(snap.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001 -- "no panel" and "unreadable" are the same here
+            log("   device handover: no readable runtime snapshot -- nothing is driving")
+            return True
+        if str(state.get("stop_reason") or "") == LEASE_YIELD_REASON:
+            log(f"   device handover: AUTO yielded ({state.get('reason') or LEASE_YIELD_REASON})"
+                f"  after {(timeout - (deadline - time.monotonic())):.0f}s")
+            return True
+        if time.monotonic() >= deadline:
+            log(f"   device handover NOT seen within {timeout:.0f}s"
+                f" (stop_reason={state.get('stop_reason')!r}) -- going on anyway")
+            return False
+        time.sleep(1.5)
+
+
 def visit(ad, out_dir: Path, *, do_refresh: bool = False, execute_buys: bool = False,
           log: Callable[[str], None] = print) -> dict[str, Any]:
     """One full VISIT_WANDERING_MERCHANT pass.  Reads, decides, reports; buys only BUY."""
@@ -1085,6 +1261,96 @@ def visit(ad, out_dir: Path, *, do_refresh: bool = False, execute_buys: bool = F
     report["wallet_before_amount"] = _amount(report["wallet_before"])
     report["wallet_after_amount"] = _amount(report["wallet_after"])
     _verify_purchases(v, report, log)
+    report["backs_used"] = v._back_used
+    report["tap_refused"] = getattr(v, "_tap_refused", 0)
+    report["touch_balance"] = ad.touch_balance
+    report["steps"] = [s["step"] for s in v.trace]
+    (out_dir / "visit.json").write_text(json.dumps(report, ensure_ascii=False, indent=1),
+                                        encoding="utf-8")
+    return report
+
+
+def visit_mystery(ad, out_dir: Path, *, do_refresh: bool = False, execute_buys: bool = False,
+                  max_refreshes: int = 4, log: Callable[[str], None] = print) -> dict[str, Any]:
+    """One full VISIT_MYSTERY_SHOP pass.  Reads and decides; buys only a 50%-off 组件自选箱.
+
+    Same shape as the merchant's pass (one overlay per card, verdict from the overlay, the
+    client's own confirmation gates the spend), with the three measured differences: nine
+    slots instead of six, the **gold coin** instead of diamonds, and a rule keyed on the card's
+    own discount badge rather than on the currency.  Because the currency is not the diamond,
+    ``wallet_before``/``wallet_after`` keep meaning diamonds and ``gold_before``/``gold_after``
+    carry the number a purchase here would actually move -- a verifier reading the wrong one
+    would report \"(spent 0, expected 2500)\" on a perfectly good purchase.
+    """
+    v = ShopVisitor(ad, out_dir, log=log)
+    report: dict[str, Any] = {"skill": "VISIT_MYSTERY_SHOP", "cards": [],
+                              "wallet_before": None, "wallet_after": None,
+                              "gold_before": None, "gold_after": None,
+                              "execute_buys": execute_buys, "purchases": [], "asks": [],
+                              "unreadable": [], "refreshed": 0}
+    img, toks = v.enter()
+    h0 = img.shape[0]
+
+    def wallets(t):
+        nums = top_bar_numbers(t, h0)
+        return ([nums[0][2]] if nums else []), (nums[-1][2] if len(nums) > 1 else None)
+
+    report["wallet_before"], report["gold_before"] = wallets(toks)
+
+    img, toks = v.select_tab("神秘商店")
+    if not v._any(toks, MYSTERY_MARKERS):
+        raise RuntimeError("MYSTERY_TAB_NOT_CONFIRMED")
+
+    for round_no in range(int(max_refreshes) + 1):
+        v.tag_prefix = f"r{round_no}_"
+        cards = read_cards(img, toks)
+        log(f"   round {round_no}: read {len(cards)} cards")
+        round_report = []
+        # A 50%-off 组件自选箱 is the only thing worth reaching and the shop re-rolls its own
+        # slots, so cards whose badge says 50% are opened first; the verdict still comes from
+        # each card's own overlay, never from the list.
+        for card in sorted(cards, key=lambda c: (discount_percent(c.discount) != MYSTERY_DISCOUNT,
+                                                 c.row, c.col)):
+            if card.rest <= 0:
+                card.verdict, card.reason = "SKIP", "sold out"
+                round_report.append(card.to_dict())
+                log(f"   [r{card.row}c{card.col}] 剩余=0 -> SKIP (sold out)")
+                continue
+            got = v.inspect(card)
+            if not got.get("ok"):
+                card.inspect_why = got.get("why")
+                card.verdict, card.reason = "NOT_EXECUTED", f"overlay not usable ({got.get('why')})"
+                log(f"   [r{card.row}c{card.col}] 折扣={card.discount}"
+                    f" overlay 打不开 ({got.get('why')}) -> NOT_EXECUTED，什么都没点")
+                report["unreadable"].append(card.to_dict())
+                round_report.append(card.to_dict())
+                continue
+            card.name, card.description = got["name"], got["desc"]
+            card.price_text, card.price_is_diamond = got["price"], got["price_is_diamond"]
+            card.verdict, card.reason = decide_mystery(card.name, card.discount)
+            log(f"   [r{card.row}c{card.col}] 折扣={card.discount} 浮层名={card.name!r}"
+                f" 价={card.price_text}{'💎' if card.price_is_diamond else ''}"
+                f" -> {card.verdict}  ({card.reason})")
+            if card.verdict == "ASK":
+                report["asks"].append(card.to_dict())
+            if card.verdict == "BUY" and execute_buys:
+                ok, why = v.confirm(card, got)
+                card.reason = f"{card.reason} -> {why}"
+                report["purchases"].append({"card": card.to_dict(), "ok": ok, "why": why})
+                log(f"      purchase: {'OK' if ok else 'FAILED'} ({why})")
+            elif card.verdict != "BUY":
+                v._dismiss_dialog()
+            round_report.append(card.to_dict())
+        report["cards"].append({"round": round_no, "cards": round_report})
+        if not (do_refresh and round_no < int(max_refreshes)):
+            break
+        if not v.free_refresh():
+            break
+        report["refreshed"] += 1
+        img, toks = v.see(f"22_round{round_no + 1}_list")
+
+    img, toks = v.see("30_final")
+    report["wallet_after"], report["gold_after"] = wallets(toks)
     report["backs_used"] = v._back_used
     report["tap_refused"] = getattr(v, "_tap_refused", 0)
     report["touch_balance"] = ad.touch_balance

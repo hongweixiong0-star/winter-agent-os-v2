@@ -23,13 +23,16 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from winter_agent_v2.shop_visit import (  # noqa: E402
+    decide_mystery,
     decide_wandering,
+    discount_percent,
     group_remaining,
     item_name_from_dialog,
     merge_fragments,
     prefer_whole,
     price_is_diamond,
     read_cards,
+    top_bar_numbers,
 )
 
 BLUE = (30, 150, 240)          # H=103 -- the diamond's hue
@@ -291,6 +294,24 @@ def test_entry_needs_no_back_when_already_in_the_store():
     v = _run_enter([STORE])
     v.enter()
     assert v._back_used == 0
+
+
+def test_entry_keeps_the_store_it_reached_on_the_very_last_attempt():
+    """Measured 2026-10-05 05:42 -- the entry off-by-one, on a real pass.
+
+    AUTO was still driving when the pass began (a lease is a request, not a handover), so the
+    tap on attempt 0 landed on the beast-hunt page and only the fourth and last attempt's
+    re-tap reached the store.  That branch logged nothing, which is exactly how the evidence
+    proves the post-tap check had *passed* -- and then it ``continue``d into an exhausted
+    ``range`` and raised, throwing away the frame it had just verified.  The pass's own saved
+    frame (``shop_observe_mystery_20261005T054052/01_shop_in3.png``) shows all four tabs read
+    inside the tab band: 游荡商人 x=98, 神秘商店 x=302, 竞技商店 x=507, 统帅市 x=684, all y>=1241.
+    """
+    v = _run_enter([UNKNOWN, UNKNOWN, UNKNOWN, HOME, STORE])
+    img, toks = v.enter()
+    assert v._back_used == 3, "three backs are needed to get back to HOME"
+    assert len(v.fake.taps) == 1, "商店 is tapped exactly once, on the last attempt"
+    assert "游荡商人" in [t["text"] for t in toks], "the returned frame must be the store page"
 
 
 def test_entry_reports_what_it_could_see_when_it_gives_up():
@@ -748,3 +769,125 @@ def test_the_anchor_is_the_remaining_label_and_that_is_where_it_points():
                 and abs(t["centre"][0] - ax) < 40 and abs(t["centre"][1] - ay) < 40)
     x0, y0, w, h = rest["box"]
     assert x0 <= ax <= x0 + w and y0 <= ay <= y0 + h, (ax, ay, rest["box"])
+
+
+# --------------------------------------------------------------- 神秘商店 (measured 2026-10-05)
+ANCHOR = "第3代英雄组件自选箱"   # the name the client actually prints (shop_observe_mystery_…54637)
+
+
+@pytest.mark.parametrize("name,disc,want", [
+    # The operator's rule is a SUBSTRING rule, and the client's own name carries a generation
+    # prefix.  Matching the whole string would never fire.
+    (ANCHOR, "-50%", "BUY"),
+    (ANCHOR, "-20%", "SKIP"),
+    # No badge at all is *not* a reading failure: the badge prints the discount, so no badge
+    # means full price, which is "otherwise" and therefore 跳过.  The operator said 否则跳过, and
+    # BUY is reachable only from exactly 50 -- so every badge-reader failure lands on 跳过.
+    (ANCHOR, None, "SKIP"),
+    (ANCHOR, "%0L-", "SKIP"),         # OCR near-miss of the same badge, with no real percent
+    ("5万经验(EXP)", "-20%", "SKIP"),
+    # The one genuinely unanswerable case: if the name will not read, even "is this the item
+    # the rule names" is unknown, so it is reported instead of silently skipped.
+    (None, "-50%", "ASK"),
+])
+def test_the_mystery_policy_table(name, disc, want):
+    verdict, reason = decide_mystery(name, disc)
+    assert verdict == want, reason
+
+
+@pytest.mark.parametrize("badge,want", [
+    ("-50%", 50), ("-20%", 20), ("-10%", 10), ("-5 %", 5),
+    (None, None), ("", None), ("%0L-", None), ("-", None), ("OL", None),
+])
+def test_a_discount_is_only_read_when_a_number_and_a_percent_sign_agree(badge, want):
+    assert discount_percent(badge) == want
+
+
+def test_the_gold_coin_is_the_second_number_on_the_top_bar():
+    """神秘商店's prices are the gold coin, so the diamond wallet is not its spend witness.
+    Measured top bar: 钻石 294,752 at x≈451, then the coin 3,290 at x≈630."""
+    toks = [tok("294,752", 451, 43), tok("3,290", 630, 43)]
+    assert [n[1] for n in top_bar_numbers(toks, 1280)] == [294752, 3290]
+
+
+def test_an_ocr_fragment_of_the_diamond_count_is_not_a_third_currency():
+    toks = [tok("294,752", 451, 43), tok("4,752", 461, 43), tok("3,290", 630, 43)]
+    assert [n[1] for n in top_bar_numbers(toks, 1280)] == [294752, 3290]
+
+
+MYSTERY_EVID = ROOT / "dataset/evidence/shop_observe_mystery_20261005T054637"
+
+
+@pytest.mark.skipif(not MYSTERY_EVID.exists(), reason="the 2026-10-05 神秘商店 frame is absent")
+def test_on_the_real_mystery_page_the_reader_finds_nine_slots_and_the_measured_badges():
+    """The page is a 3x3 grid, not the merchant's 3x2, and the badges sit above each anchor.
+
+    Read from the pass's own saved frame rather than from a fixture: this is the frame
+    ``visit_mystery`` would have read, and the numbers (nine cards, -10% on r0c2, -20% on r1c0
+    and r1c2) are what it must keep getting.
+    """
+    from PIL import Image
+
+    from winter_agent_v2.ocr_full import read_all
+
+    img = np.array(Image.open(MYSTERY_EVID / "10_mystery_page_raw.png").convert("RGB"))
+    cards = read_cards(img, read_all(Image.fromarray(img)))
+    assert len(cards) == 9, [(c.row, c.col) for c in cards]
+    got = {(c.row, c.col): c.discount for c in cards}
+    assert got[(0, 2)] == "-10%", got
+    assert got[(1, 0)] == "-20%", got
+    assert got[(1, 2)] == "-20%", got
+    # Row 2's prices fall below the fold, but its anchors and badges are still read: a card
+    # with an unread price is still a card, which is the lesson the merchant's pass already paid for.
+    assert all(c.rest == 1 for c in cards if c.row == 2), [c.to_dict() for c in cards]
+
+
+@pytest.mark.skipif(not MYSTERY_EVID.exists(), reason="the 2026-10-05 神秘商店 overlay is absent")
+def test_the_mystery_overlay_names_the_item_and_its_price_button_is_the_measured_one():
+    from PIL import Image
+
+    from winter_agent_v2.ocr_full import read_all
+    from winter_agent_v2.shop_visit import orange_price_button, read_button_price
+
+    img = np.array(Image.open(MYSTERY_EVID / "20_card_overlay_raw.png").convert("RGB"))
+    toks = read_all(Image.fromarray(img))
+    name, _desc = item_name_from_dialog(toks)
+    assert name == ANCHOR, name
+    box = orange_price_button(img)
+    assert box is not None, "the overlay's price button was not found"
+    assert box["bbox"] == [222, 795, 276, 71], box      # identical to the merchant's overlay
+    says, _ev = read_button_price(img, box["bbox"])
+    assert says == "2,500", says
+
+
+def test_the_body_ladder_never_reaches_into_the_bottom_tab_strip():
+    """神秘商店 is 3x3, so its third row's anchor sits at y=1186 on a 1280 frame -- and the tab
+    strip starts at 0.93*H = 1190, holding 游荡商人 / 神秘商店 / 竞技商店 / 统帅市 (all read at
+    y=1241..1248 on the live page).  An unclamped ladder would put rungs at 1246 and 1266, i.e.
+    *on another shop's tab*: the pass would go on reading a different shop's stock while still
+    believing it was on the one it selected.  Reading the wrong shop silently is worse than
+    failing to open one card, so the ladder is clamped, not shortened.
+    """
+    from winter_agent_v2.shop_visit import BODY_DY_LADDER, TAB_BAND, Card, ShopVisitor
+
+    class V(ShopVisitor):
+        def __init__(self):  # no adapter, no output dir: only the pure clamp is under test
+            pass
+
+    v = V()
+    band_top = TAB_BAND * 1280
+
+    def card(y: int) -> Card:
+        return Card(row=2, col=0, rest=1, price_text="400", price_xy=(140, y + 45),
+                    tap_xy=(140, y), price_is_diamond=False)
+
+    low = v._body_ladder(card(1186), 1280)
+    assert low, "the anchor itself is legal and must still be tappable"
+    assert 0 in low
+    assert all(1186 + dy < band_top for dy in low), [(dy, 1186 + dy) for dy in low]
+
+    # A card high on the page keeps its whole spread: this is a clamp, not a shortening.
+    assert v._body_ladder(card(609), 1280) == BODY_DY_LADDER
+
+    # An anchor that is already inside the band yields nothing at all, so nothing is tapped.
+    assert v._body_ladder(card(1250), 1280) == ()

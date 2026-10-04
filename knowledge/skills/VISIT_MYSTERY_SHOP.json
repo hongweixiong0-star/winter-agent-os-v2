@@ -1,0 +1,128 @@
+{
+ "skill_id": "VISIT_MYSTERY_SHOP",
+ "name": "Visit 神秘商店 and buy only a 50%-off 英雄组件自选箱",
+ "goal": "Read 神秘商店's nine slots on the live client, name every item from its own purchase overlay, and buy exactly the ones the operator's zero-spend policy names -- 名称含「英雄组件自选箱」且折扣=50%",
+ "preconditions": [
+  "the client is on any page from which the HOME bottom nav can be reached (<=3 bounded back presses)",
+  "the 商店 nav item is readable in the bottom band",
+  "device lease held by a development owner so AUTO yields -- and the yield must be *observed* before the first tap (a lease is a request, not a handover; measured 2026-10-05: AUTO kept acting for 3-22 s afterwards)"
+ ],
+ "required_page": "SHOP_MYSTERY",
+ "required_state": {
+  "store_tab_神秘商店_selected": true,
+  "not_sold_out": true
+ },
+ "required_vision": [
+  "NAV_STORE_商店 (HOME bottom nav, exact text; 联盟商店 is a different item and must not match)",
+  "TAB_神秘商店 (store tab strip, bottom 7% of the frame; measured at x=302, y=1247 on 720x1280)",
+  "CARD_ANCHOR_剩余：N (one per card; nine of them here, de-duplicated across OCR bands)",
+  "CARD_DISCOUNT -N% (badge at the card's top-left, above its anchor; measured -10% and -20%)",
+  "DIALOG_确定购买 (the purchase overlay: the only place the item is NAMED, and the only way to buy)",
+  "ORANGE_PRICE_BUTTON (the overlay's price button, located by its own orange paint AND its shape; measured bbox [222,795,276,71] -- the same widget as the merchant's)",
+  "BTN_免费刷新 (tapped only when the label literally says 免费; measured at x=596, y=314)",
+  "TOP_BAR_金牌币 (the SECOND large number on the top bar; 神秘商店 prices are the gold coin, NOT diamonds)"
+ ],
+ "required_actions": [
+  "reach the store: tap HOME nav 商店, or a bounded back press then re-check",
+  "select the 神秘商店 tab from its OCR box (its own text, re-read across up to 3 frames -- the strip slides in)",
+  "read the nine cards (anchor -> price -> discount badge)",
+  "open each card's 确定购买 overlay by tapping the card body and read the item's real name there (the card itself prints no name)",
+  "apply the policy: 名称含「英雄组件自选箱」且折扣=50% -> 买；其他 -> 跳过；名称读不出 -> 报 ASK 且不动",
+  "for BUY, tap the overlay's own orange price button, then the 购买确认 dialog's own orange button, then verify against the gold coin on the top bar",
+  "free refresh only when the control reads 免费刷新, at most 1 a day (5 with 艾格尼丝)"
+ ],
+ "verification": [
+  "the item name is read from the client's own overlay, never from an icon guess",
+  "the discount is read from the card's own -N% badge; BUY is reachable ONLY from exactly 50, so every badge-reader failure (absent / garbled) lands on 跳过",
+  "the price is the number printed INSIDE the orange button, read by re-drawing its white glyphs as black on white",
+  "a purchase here is verified against the GOLD COIN on the top bar, not the diamond wallet -- 神秘商店 is priced in the coin",
+  "the store page is still current after every overlay is dismissed",
+  "touch_balance balanced: a long press never leaves a finger down",
+  "taps_refused is reported, so 'the client ignored the tap' can be told apart from 'the tap never left the host'"
+ ],
+ "failure_conditions": [
+  "SHOP_ENTRY_FAILED",
+  "TAB_NOT_FOUND:神秘商店",
+  "TAB_TAP_DID_NOT_CHANGE_THE_PAGE",
+  "MYSTERY_TAB_NOT_CONFIRMED",
+  "PURCHASE_OVERLAY_NOT_OPENED",
+  "PRICE_NOT_IN_BUTTON",
+  "CONFIRM_BUTTON_NOT_FOUND",
+  "CONFIRM_AMOUNT_NOT_MATCHED",
+  "CONFIRM_BUTTON_DISAGREES",
+  "PURCHASE_OVERLAY_WOULD_NOT_CLOSE",
+  "LEFT_THE_STORE_WHILE_DISMISSING",
+  "DIALOG_STILL_OPEN_AFTER_CONFIRM"
+ ],
+ "recovery": [
+  "a card whose overlay will not open is reported NOT_EXECUTED and nothing at all is tapped for it",
+  "the body ladder is CLAMPED to stay strictly above the tab strip: the third row's anchor is at y=1186 on a 1280 frame and the strip starts at 1190, so an unclamped rung would land on another shop's tab and the pass would read the wrong shop while believing otherwise",
+  "the overlay is detected from its own orange paint on a raw capture (no OCR), so a miss costs ~2 s instead of ~20 s and a six-rung ladder is affordable",
+  "an exit prompt raised by stacked back presses is cancelled by tapping its 取消",
+  "a 购买确认 left armed by an interrupted pass is closed by its own ✕, never by tapping its button"
+ ],
+ "dependencies": [
+  "MaaExecutorAdapter (capture/click/touch_down/touch_up/press_back)",
+  "ocr_full.read_all",
+  "device_lease + shop_visit.wait_for_the_device",
+  "ShopVisitor + decide_mystery + top_bar_numbers (winter_agent_v2/shop_visit.py)",
+  "tools/run_shop_mystery.py",
+  "tools/observe_mystery_shop.py (the read-only observer this skill was written from)"
+ ],
+ "risk": "LOW_CONTROLLED_SPEND",
+ "confidence": 0.85,
+ "source": [
+  "LIVE_CLIENT",
+  "OPERATOR_POLICY_CONFIRMED"
+ ],
+ "status": "LIVE_TRIED",
+ "blocker": null,
+ "live_attempts": 4,
+ "live_successes": 3,
+ "verified_variant": "SHOP_MYSTERY_2026_10_05",
+ "stable": false,
+ "branches": {
+  "read_all_nine_slots": "LIVE_VERIFIED -- dataset/evidence/shop_visit_mystery_20261005T055342 read all 9 of 9 cards, 0 unreadable, backs=0, taps_refused=0, touch balanced, and spent nothing (钻石 295,652 -> 295,652)",
+  "non_matching_item": "LIVE_VERIFIED -- SKIP fired live on 专精能源石 / 50,000点英雄经验 / 高级野性印记 / 传说通用英雄信物 / 8小时通用加速",
+  "component_box_not_at_50pct": "LIVE_VERIFIED -- 第3代英雄组件自选箱 matched the substring rule and was SKIPPED at -10% (and at no badge at all), which is the rule's whole point: the item alone is not enough",
+  "component_box_at_50pct": "VERDICT_UNEXERCISED_PURCHASE_NOT_YET_MADE -- no roll has yet shown a 50% badge, so the BUY branch has never fired on this page. It shares confirm() with the verified 游荡商人 diamond purchase (the same two-tap path, the same paint-located second button, the same amount gate), but sharing code is not the same as having been measured here",
+  "free_refresh": "control verified (reads 免费刷新, x=596 y=314) but not yet tapped -- the 1/day budget is counted in learning/shop_state.json under free_refresh_mystery",
+  "gold_wallet_witness": "PARTIAL -- the top bar carries 钻石 then the gold coin, and top_bar_numbers returns both by position. On the 05:53 pass frame it read (295,652, 3,290) at the end but only the diamond on the entry frame, so the coin's read is not yet reliable across frames and must not yet be the only witness for a spend"
+ },
+ "operator_policy": {
+  "name_contains": "英雄组件自选箱",
+  "discount_equals_50pct": "BUY (and nothing else is ever bought here)",
+  "otherwise": "SKIP",
+  "free_refresh_only": true,
+  "free_refresh_per_day": 1,
+  "free_refresh_per_day_with_agnes": 5,
+  "never_diamond_refresh": true,
+  "uncovered_cases": "STOP_AND_ASK -- which here means exactly one thing: a name that will not read, so even 'is this the item the rule names' is unknown"
+ },
+ "measured_ui_path": {
+  "entry": "HOME bottom nav, 4th of 6 items (探险/英雄/背包/商店/联盟/野外); tap from the OCR box of the exact token 商店 at y=1258 on a 720x1280 frame",
+  "tabs": "游荡商人 / 神秘商店 / 竞技商店 / 统帅市, bottom tab strip at y>=0.93*H.  Measured on the live page: 游荡商人 x=98, 神秘商店 x=302, 竞技商店 x=507, 统帅市 x=684, all at y=1241..1248.  神秘商店 carries a red-dot badge when it has new stock",
+  "cards": "**3 columns x 3 rows = NINE slots** (the merchant's page has six).  Anchors 剩余：1 at y=609 (row 0), y=898 (row 1), y=1186 (row 2); columns x≈140/361/582.  Row 2's PRICE falls below the fold, but its anchor and badge still read -- a card with an unread price is still a card.  NO item name is printed on any card",
+  "currency": "the gold coin, not diamonds.  Top bar: 钻石 294,752-ish at x≈451, then the coin at x≈630 (measured 3,290).  The diamond wallet is therefore NOT this page's spend witness",
+  "name_source": "tap the card BODY -> 确定购买 overlay, which prints the name and the live price.  Measured name: 「第3代英雄组件自选箱」, which CONTAINS 英雄组件自选箱, so the rule is matched as a substring",
+  "tap_zones": "the same measured zone as the merchant (anchor+0 .. anchor+80 opens 确定购买; anchor-110..-30 opens the read-only tooltip), but CLAMPED here: no rung may reach y>=0.93*H or it lands on another shop's tab",
+  "price_button": "bbox [222,795,276,71] on 确定购买 -- byte-for-byte the same widget as the merchant's overlay (276x71, 15,901 px, w/h 3.89).  read_button_price returned 2,500 on the saved overlay frame",
+  "purchase": "expected to be the merchant's two taps (card body -> 确定购买 -> its orange button -> 购买确认 -> its orange button).  Only the first overlay has been measured on this page; the second dialog has not been seen here yet, and confirm() refuses to remove the money unless the client's own sentence names the amount it decided on",
+  "refresh": "免费刷新 at x=596, y=314 (green).  The docstring on free_refresh claimed this page's control reads 刷新 💎100; that is wrong for the free one and was never measured on this page",
+  "danger": "press_back is not 'go up one level': six blind presses walk out of the shop and raise 确认退出游戏吗"
+ },
+ "live_evidence": {
+  "ui_observation": "dataset/evidence/shop_observe_mystery_20261005T054637 -- the first look at the page: 9 slots, badges -10%/-20%, the gold coin, the same overlay at bbox [222,795,276,71], and the name 第3代英雄组件自选箱",
+  "read_only_pass": "dataset/evidence/shop_visit_mystery_20261005T055342 -- 9/9 cards decided, 0 unreadable, 0 purchases, 钻石 295,652 -> 295,652, backs=0, taps_refused=0",
+  "entry_off_by_one": "dataset/evidence/shop_observe_mystery_20261005T054052 -- SHOP_ENTRY_FAILED raised while 01_shop_in3.png showed all four tabs inside the band"
+ },
+ "failure_patterns": [
+  "the entry off-by-one: `enter` tapped 商店, read a frame that WAS the store page, and then `continue`d into an exhausted `range` and raised -- because the success branch only skipped a warning line instead of returning.  It stayed hidden because the store normally appears on attempt 0 or 1; it takes a slow entry (AUTO still driving) to reach the last attempt.  Fixed, and pinned by test_entry_keeps_the_store_it_reached_on_the_very_last_attempt, whose mutation reproduces the live message verbatim",
+  "treating a lease as a handover: the lease was written at 05:40:52 and AUTO yielded at 05:41:14, and the pass's first tap in between landed on the beast-hunt page the loop was still working on, so the 商店 nav press did nothing",
+  "answering ASK when a card simply has no discount badge: the badge prints the discount, so no badge means full price, which the operator's 否则跳过 already covers.  Three of the nine cards have no badge, and ASK for each would bury the four that do under noise.  ASK is now reserved for a name that will not read",
+  "an unclamped body ladder on a 3x3 page: the third row's anchor is at y=1186 and the tab strip starts at 1190, so rungs at +60/+80 would land on 游荡商人/竞技商店's tab and the pass would read another shop's stock while believing it was on 神秘商店",
+  "reading the diamond wallet as this page's spend witness: 神秘商店 is priced in the gold coin, so a verifier keyed on diamonds would report '(spent 0, expected 2,500)' on a perfectly good purchase",
+  "trusting the tab strip on its first frame: it slides in, and a capture taken mid-slide has no tab text (cost a whole 游荡商人 pass on 2026-10-05 04:25)",
+  "a run whose log was piped through tail and then interrupted left frames but no reasons -- the log now goes into the evidence directory"
+ ]
+}
