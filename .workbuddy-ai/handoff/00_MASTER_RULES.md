@@ -851,3 +851,177 @@ Episode 可以保存实际点击位置用于**审计和故障复现**；
 
 `条件就绪 > 红点驱动 > 未来任务计划`。
 日常操作**不得阻塞限时活动**；活动前必须完成可提前完成的准备。
+
+## 26. 存储与路径硬规则（2026-10-04 操作者一次性迁移指令）
+
+### 26.1 规则原文
+
+> 项目所有 worktree 和数据都在 E 盘。Codex worktree 默认目录 = `E:\worktrees\`
+> 数据根目录 = `E:\无尽冬日智能体\` C 盘不允许出现任何 worktree 或运行时数据。
+> 任何 C 盘写入视为违规，立即报告。
+
+### 26.2 执行时核实的事实（规则以此为准，照原文写会写出假话）
+
+迁移前审计（快照见 `E:\无尽冬日智能体_migration_backup\20261004\MIGRATION_SNAPSHOT.md`）证明：
+
+- **C 盘从来没有实体 worktree。** `C:\Users\xhw\.codex\worktrees` 是 **NTFS 装入点
+  （Junction）**，`fsutil` 重解析标记 `0xa0000003`、替换名 = `\??\E:\无尽冬日智能体_worktrees`；
+  其名下 7 个"子项"经属性核验 `IsReparsePoint=False`，只是经 junction 透视到的 E 盘实体。
+  `C:\无尽冬日智能体_worktrees` 不存在。
+- **实体 worktree 位置 = `E:\无尽冬日智能体_worktrees\`**（7 个，合计 2089 MB），**不是**
+  `E:\worktrees\`。操作者已裁定"视为已达标，只做规范化"，故**正式 worktree 根就是这里**。
+  ⇒ 本文件不写 `E:\worktrees\`，写了就是事实错误。
+
+**因此本项目的硬规则是：**
+
+1. **worktree 根** = `E:\无尽冬日智能体_worktrees\`（新 worktree 一律落此）。
+2. **数据根** = `E:\无尽冬日智能体\`（`dataset/`、`learning/`、`knowledge/`、`config/`）。
+3. **C 盘不得出现任何 worktree 实体、数据目录实体或生产运行时输出。**
+   `C:\Users\xhw\.codex\worktrees` 这个 junction **必须保留**（Codex 靠它定位 worktree），
+   它是**指针不是数据**，不计入违规。
+4. **C 盘写入 = 违规，立即报告。** 唯一豁免是 WorkBuddy / Codex 宿主自身的文件
+   （`~/.workbuddy/`、`~/.codex/`、`~/.codebuddy/`）——那不是本项目生产运行时。
+
+### 26.3 单一事实源
+
+- 路径唯一事实源 = **`config/paths.py`**（`MAIN_REPO` / `DATA_HOME` / `DATA_ROOT` / `LOG_ROOT` /
+  `OUT_ROOT` / `KNOWLEDGE_ROOT` / `CONFIG_ROOT` / `VENV`）。生产代码**不得**再写盘符字面量。
+- `config/` 在生产 worktree 里是 junction 指回主仓，`Path.resolve()` 会跟随它，
+  所以 `paths.py` 在**主仓与生产 worktree 两侧解析结果完全一致**（已实测）。
+- **唯一被记录的例外**：`winter_agent_v2/workbuddy_bridge.py` 的 `PROJECT_ROOT` 保留字面量，
+  因为 `tests/test_workbuddy_bridge.py::CredentialHygieneTest` 禁止该模块可执行代码出现
+  "config" 子串（凭据不得来自被跟踪文件）。**不得为"统一路径"而绕开这条守卫。**
+
+### 26.4 可复现的机器判据（不要靠自觉）
+
+```bash
+# 1) C 盘无实体 worktree
+Test-Path 'C:\无尽冬日智能体_worktrees'          # 必须 False
+(Get-Item 'C:\Users\xhw\.codex\worktrees').Target # 必须 E:\无尽冬日智能体_worktrees
+(Get-ChildItem 'C:\Users\xhw\.codex\worktrees' -Force |
+   ? { $_.Attributes -band [IO.FileAttributes]::ReparsePoint })  # 必须为空
+
+# 2) 生产 pin 通过（含数据挂载全部指向 E 盘）
+cd <worktree>\无尽冬日智能体 && python tools/launch_pinned_production.py --check-only
+# 期望：CODE_COMMIT=<40位> WORKTREE_CLEAN=true DATA_ROOT=E:\无尽冬日智能体
+
+# 3) 生产代码路径面零硬编码
+grep -rnF "E:\无尽冬日智能体" winter_agent_v2/   # 只允许 workbuddy_bridge.py 那 1 处
+```
+
+### 26.5 已知偏差（2026-10-04 实测，记录以免被当成正常）
+
+- 生产计划任务 `WinterAgentV2Panel` 的 action 用 **C 盘 junction 路径**拼写
+  （`C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\tools\launch_pinned_production.py`）。
+  物理仍落在 E 盘，属"指针不是数据"；若要让拼写也去 C 化，可把该 action 改成
+  `E:\无尽冬日智能体_worktrees\...`（行为等价，因 `resolve()` 结果相同）。
+- `tools/` 下仍有 78 处盘符字面量，分布在 64 个开发脚本里。**生产代码一个都不 import 它们**
+  （已用精确 import 判定验证），故不阻塞生产；迁移它们属独立批次，需用
+  `MAIN_REPO`（不是 `parents[1]`）以保持审计脚本读的仍是主仓数据。
+
+## 27. 分支与主线硬规则（2026-10-04 操作者指令：自主处理主仓与生产分支的关系）
+
+### 27.1 调和前的事实（实测，不是推断）
+
+| 项 | 值 |
+|---|---|
+| 主仓 `E:\无尽冬日智能体` 的分支 | `main` |
+| 主仓 HEAD | `ff19040c`（`perf(panel): stop the 1.5 s tick re-reading the 150 MB episode log`） |
+| 生产 pin worktree | `E:\无尽冬日智能体_worktrees\winter-prod-pinned\无尽冬日智能体` |
+| 生产分支 / HEAD | `codex/production-pin-recovery` / `23360c0a` |
+| 是否同一个 commit | **不是** |
+| merge-base | `05042268` |
+| 领先/落后 | `main` 1 领先 / 41 落后 |
+| `main` 那 1 个独有提交 | `ff19040c`，与生产线的 `b314adb1` **stable patch-id 完全相同**（`7a3fb91a2184ceb82e1974311cf9cf8e7718ad8d`），即**同一个改动，生产里已经有了** |
+| 差别在哪 | **只在历史，不在内容** |
+
+调和方式与结果：
+
+```
+# 在生产分支上做一次"空合并"
+git -C <生产 worktree> merge --no-commit --no-ff ff19040c      # 0 冲突
+  23360c0a tree : 6d922d190130f7166f3ad253970ab401684ed856
+  合并树        : 6d922d190130f7166f3ad253970ab401684ed856     # 逐字节相同
+git commit  ->  ca336ddb   (父提交 = 23360c0a + ff19040c)
+```
+
+**两边一个提交都没丢**，且生产代码一个字都没变（树相同 ⇒ 不需要重切数据挂载）。
+
+### 27.2 硬规则（四条）
+
+1. **唯一主线分支 = `codex/production-pin-recovery`。**
+   依据不是名字，而是可核验的事实：生产 pin 的 `expected_commit` 必须落在这条线上，
+   且 pin worktree 检出的就是它。名字本身没有任何代码读
+   （`PRODUCTION_PIN.json` 的 `production_branch` 只是描述字段）。
+
+2. **生产 pin 只从这条线拉，而且永远用显式 SHA**：
+   `python tools/repin_production.py --to <sha>`。
+   **不依赖分支名** —— 部署的可信度必须能只从 sha 断言。
+
+3. **以后所有开发都落在这条线上。** `main` 是**只读镜像**：
+   - 允许：把 `main` **快进**到主线（主仓工作区用路径限定的补齐，见 27.3 第 5 步）；
+   - 禁止：在 `main` 上产生任何新提交。
+   理由不是洁癖：`main` 曾两次被人回写分支指针（见
+   `REPO_TOPOLOGY_8_WORKTREES_20261003.md`），在一条会被回写的线上攒提交，
+   等于把"哪个提交在生产"变成需要考古的问题。
+
+4. **允许再分叉的条件只有一条：一次性实验。** 且必须同时满足
+   (a) **不在 pin worktree 里做**；
+   (b) 分支名带日期或用途；
+   (c) 收尾前二选一 —— 把需要的改动**以主线上的一个新提交重做**，或**明确放弃并保留分支不删**。
+   **任何时候都不允许把实验分支当作生产来源。**
+
+### 27.3 标准流程（每一步都可复现）
+
+```bash
+# 0) 会话开始：先跑判据，不要假设
+python tools/check_mainline.py            # 期望 RESULT: MAINLINE_OK，退出码 0
+
+# 1) 开发：在主线 worktree 里提交（不在主仓 main 上提交）
+cd E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体
+git add <paths> && git commit -m "..."
+
+# 2) 部署：显式 SHA，改清单
+python tools/repin_production.py --to $(git rev-parse HEAD)      # 期望 RESULT: CLEAN_OUTSIDE_DATA
+
+# 3) 重启（§29/§32）：安全窗口停 + 计划任务起；--stop 的退出码不可信，按字符串判定
+python tools/panel_restart.py --stop                            # 期望出现 "stopping panel tree"
+schtasks /Run /TN "WinterAgentV2Panel"                          # 必须经 PowerShell，bash 会把 /Run 当路径
+
+# 4) 验证：启动日志 CODE_COMMIT 必须等于 pin HEAD，且 WORKTREE_CLEAN=true
+grep CODE_COMMIT learning/desktop_startup.log | tail -1
+
+# 5) 把只读镜像 main 快进到主线（路径限定，活数据目录永不 checkout）
+git -C E:/无尽冬日智能体 reset --mixed <主线sha>
+git -C E:/无尽冬日智能体 checkout <主线sha> -- <只属于代码的路径...>
+```
+
+第 5 步的脚本化版本存档在
+`E:\无尽冬日智能体_backups\20261004_mainline\reconcile_devtree_to_mainline.sh`
+（它做的正是：分类 47 条差异路径 → `reset --mixed` → 路径限定 `checkout` → 校验；
+**任何只在本地存在的内容先落盘留档再决定动不动它**）。
+
+### 27.4 机器判据（不要靠自觉）
+
+```bash
+python tools/check_mainline.py        # 三条判据，全过才是 MAINLINE_OK
+```
+
+它检查的三件事，也是规则的全部内容：
+
+1. pin worktree HEAD == `PRODUCTION_PIN.json.expected_commit`
+2. `expected_commit` 在 `codex/production-pin-recovery` 上
+3. 镜像 `main` 在 `codex/production-pin-recovery` 上（允许落后、允许相等、不允许领先）
+
+**故意不检查**：pin 是不是主线最新提交。那是有意的动作（回滚、定位），不是缺陷；
+把它做成失败，会教会读者忽略这个工具。
+
+### 27.5 为什么必须写下来（省掉下一次重新发现）
+
+- 调和前，历史**看起来**像"41 个生产提交从未被主仓看过"。实际上主仓那唯一 1 个独有提交，
+  在生产里早就有等价物。用一次空合并就把这个假象去掉，代价是 0 个文件变化。
+- 反方向（把生产线合进 `main`、然后让生产落后于 `main`）会重演"生产 pin 到底从哪条线拉"
+  这个问题，并且把生产置于被回退的风险里 —— 生产是活的，不允许被回滚。
+- 分叉的代价已经付过一次：`workbuddy/page-residency-20261003`（相对 merge-base 领先 29 个提交）、
+  `codex/main-safe-alignment`、`codex/rally-*` 等支线至今**仍未并回主线**。
+  其中确实被用到的经验，是后来"在主线重做一遍"才进的 —— 这不是路径，是浪费。
