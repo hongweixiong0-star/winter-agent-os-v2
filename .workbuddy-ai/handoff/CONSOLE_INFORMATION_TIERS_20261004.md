@@ -379,3 +379,91 @@ KPI 8 卡 + WorkBuddy 8 格 + 队列 7 卡 + 4 个事实卡 + 2 个下排卡 + �
 
 **教训（写入 MEMORY §51）**：一条绿了的测试，也可能是环境替它绿的；
 把"失败"和"环境拒绝"分开的唯一办法，是让**拒绝的发起者自己署名**，并让容忍**可被证伪**。
+
+## 九、落地记录（commit → repin → 重启 → 实测）
+
+操作者授权「1. 自己 commit 2. 自己 repin 3. 自己重启面板 4. 自己验证 5. 自己清掉过期标记」。
+下面按这五步记，**每一步都带可复算的证据**。
+
+### 1. commit
+
+| sha | 内容 |
+|---|---|
+| `c024e88b` | 控制台两层审计的修复：R1–R4 四条共享根因 + P1「需不需要干预」+ 重载标记退休 + `runtime_snapshot.py` 进 `CONTROL_PLANE_PATHS`；15 文件，+2067/−256 |
+| `b9f4573e` | `tools/repin_production.py` 的路径从**盘符字面量**改回派生（见下"顺带找到的第三个缺陷"）；2 文件 |
+
+### 2. repin
+
+```
+repin --check-only : [BEFORE] HEAD = 90a9990c   outside_data_dirs=0   → CLEAN_OUTSIDE_DATA
+repin --to b9f4573 : [AFTER_RESET]  outside_data_dirs=17（index 动了、工作树还没动）
+                     [AFTER_CHECKOUT] outside_data_dirs=0
+                     [manifest] 90a9990ca5eb → b9f4573e2fc2
+check_mainline     : OK 1. / OK 2. / OK 3.  →  RESULT: MAINLINE_OK
+```
+
+**关键细节**：`reset --mixed` 之后有 17 个"数据目录之外"的脏文件 —— 那是**预期**的
+（index 已到新提交、工作树还是旧内容），`checkout <sha> -- .` 把它们同步到新提交后归零。
+**判据：repin 成功的标志是 `outside_data_dirs=0`，不是某个 rc。**
+
+### 3. 重启面板（发现并绕过了一个陷阱）
+
+**陷阱**：`tools/panel_restart.py --start` 自己 docstring 里就写着 ——
+"本宿主会在调用进程结束 turn 时回收它 detached 子进程的整棵树（2026-09-18 实测：
+窗口 +19s 写了 pump.json，+25s 就没了），所以请从**长活任务**启动"。
+⇒ 所以**没有**用 `--restart`，而是：`--stop --force` + `Start-ScheduledTask WinterAgentV2Panel`。
+
+**过程中一个需要解释的现象**：`--stop --force` 报"nothing to stop" —— 因为面板**在那一刻已经
+自己没了**（panel.log 最后一行 16:45:24，正落在我 repin 改写生产树 `tools/control_panel.py`
+的时间点上）。**没有崩溃行、没有异常**。这不是我杀掉的，也不是我改坏的；
+但它意味着**在我操作的那一分钟里 AUTO 是停的**（约 2 分半）。
+面板起来后：`pid 26364 alive · AUTO_RUNNING · workers 1 · 预检通过`。
+
+**这条要记住**：改生产树的文件 → 正在跑的面板**可能**在下一轮自行退出；
+所以"改代码"和"确认面板还活着"必须是同一个动作，不能假设"重启前它还活着"。
+
+### 4. 实测（全部在生产树上跑，不是开发树）
+
+| 声明 | 实测输出 |
+|---|---|
+| 7 个页签 | `{'总览':'总览','策略':'运行·策略','目标':'运行·目标','活动':'运行·活动','能力':'能力','自动开发':'自动开发','系统':'系统'}` |
+| 7 个页面在真 `tk.Tk` 上真的建得起来 | 生产树跑 `tests/test_console_shows_only_what_it_can_fill.py tests/test_check_mainline.py` → **39 passed** |
+| 窗口每一个动态字段都接在真来源上 | 生产树跑 `tools/gui_wiring_verify.py` → **18/18 wired and matching, 0 mismatched, 0 unconfirmed**（exit 0） |
+| 「需不需要干预」有真内容 | 「结论：**需要你看一眼（1 项）** / 原因：⚠ WORKBUDDY_QUEUE_STUCK：12 条仍未被消费（NEW/QUEUED）——不得显示成「开发中」 / 此刻会不会花钱：真钱：**永久禁止 🔒** · 已禁用 Goal 7 个 / 去哪里：策略页「运行方式」…」 |
+| 事实卡的来源行带年龄 | 能力覆盖 → `…capability_catalog.json　（能力目录7.6 天前，已过期）`；另外三张是新的，所以**正确地**不写年龄（空字符串＝没事） |
+| 两个置信度是两个字段 | `runtime_snapshot.json` 里 `confidence = 0.99`、`frame_confidence = 0.99` 同时存在；面板 5956/5958 行分别从决策与 `snapshot.frame_confidence` 取值，7744 行另有实时帧的写法 |
+| **过期标记被真实删除** | `learning/CONTROL_PLANE_RELOAD_REQUIRED.json` 16:46:55 存在（866 B，`reason` 里写着"本进程加载的 90a9990ca5eb 已被 b9f4573e2fc2 取代"）→ 新面板 16:47:53 起来后 **`ls` 报 No such file**，且 panel.log **没有**再出现新的"控制面已变更"行 |
+
+**最后一条是这次最重要的证据**：标记不是被我手工删的，是**新的那一支**
+（`_check_control_plane_reload` 的 `if not stale:` → `control_plane_signal().clear("superseded_claim_resolved")`）
+在**真实进程里**删掉的。上一轮只证明了"调用者存在"，这一轮证明"它真的会跑"。
+
+### 5. 过期标记
+
+已由代码清掉（见上）。**没有手工 `rm`** —— 手工删只会掩盖"没有退休者"这个缺陷本身。
+
+### 顺带找到的第三个缺陷（已修，`b9f4573e`）
+
+`tools/repin_production.py` 用**盘符字面量**（`C:\Users\xhw\.codex\worktrees\...`）指生产工作树，
+而 `tools/check_mainline.py` 是**派生**的（`MAIN_REPO.parent`，它自己的注释就引 §26.3
+"derived, never a drive literal"）。两者**只是碰巧一致**：2026-10-03 迁到 E 盘时在旧路径留了
+junction（`C:\Users\xhw\.codex\worktrees` → `E:\无尽冬日智能体_worktrees`）。
+这就是 R3 的同一形状 —— **同一个事实被声明了两次，靠没人碰它才一致**。
+junction 一没，后果不是崩溃而是**"报告 repin 成功、却钉在了另一个目录"**。
+已改回派生，并加两条测试：一条**解析后比对**（不是比字符串，因为 junction 下两种拼法不同而目录必须相同），
+一条走 AST 拒绝任何盘符字面量（走 AST 而非文本，所以注释里**解释**旧路径不算违规）。
+
+### 新登记（本轮发现，不修）
+
+1. **控制面标记的 `kind` 字段名不符实（P2）**：`CONTROL_PLANE_RELOAD_REQUIRED.json` 里
+   `"kind": "RUNTIME_RELOAD_REQUIRED"` —— 文件名说这是控制面的，内容说这是 worker 的。
+   `CONTROL_PLANE_KIND` 这个常量**只用在 reason 文案里**，没有进 `kind` 字段。
+   **为什么不当场改**：两种标记共用 `ReloadSignal`，而 `pending()` 的判据是
+   `payload.get("kind") != REQUEST_KIND` —— 真把 `kind` 写成控制面的值，`pending()` 会返回 None，
+   整个控制面机制反而失效。要改得先让 `ReloadSignal` 知道自己是哪一种（或让 `pending()` 收一个集合），
+   那是**设计改动**，不是顺手一行。**当前危害有限**：分发靠**路径**不靠 `kind`（全仓没有任何代码
+   glob 这个目录），操作者看到的是 reason 文案（正确）。所以归 P2，登记不修。
+2. **测试临时目录落在数据根里**：`learning/pytest_tmp_nav/` 下面有整份 `winter_agent_v2/` 副本，
+   于是**任何全仓 grep 都会重复命中 5 遍**（我自己这一轮就被它干扰过）。
+   `out/index_verify_*` 同理。⇒ 仓内扫描之前必须先确定"要不要包含 learning/out"，
+   或者把这些目录纳入 `.gitignore` + 清理。**本轮不动**（不是本轮引入）。

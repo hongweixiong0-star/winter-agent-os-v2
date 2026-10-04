@@ -6156,3 +6156,37 @@ would train them to ignore the notice"。
 **判据：判定"这是不是我改坏的"必须看集合差异（`comm`），不能看计数** ——
 计数会因为活数据在同一分钟内变化而漂（同样的清单，1452 → 1477 → 1451 → 1452 都出现过）。
 **未证实的机制宁可不写。**
+
+## §52 两个"同一个地方"的判定：resolve 后比，不比字符串；repin 的判据是脏文件数归零（2026-10-04）
+
+**一、磁盘上"是不是同一个目录"，必须 `Path.resolve()` 后比，不能比字符串。**
+本机 `C:\Users\xhw\.codex\worktrees` 是一个 **junction → `E:\无尽冬日智能体_worktrees`**，
+所以 `C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体` 和
+`E:\无尽冬日智能体_worktrees\winter-prod-pinned\无尽冬日智能体` **是同一个工作树**
+（两个路径 `git rev-parse --absolute-git-dir` 都返回同一个 `.git/worktrees/无尽冬日智能体`）。
+后果：
+- 一个用**盘符字面量**（`tools/repin_production.py`）指生产树、另一个用**派生**
+  （`tools/check_mainline.py`，注释引 §26.3）的工具，**只是碰巧**指向同一处；
+  junction 一没，症状不是崩溃，而是**"报告成功、却钉在别处"**。
+- 已改回派生，并把判据写成测试：**`resolve()` 后相等**（不是字符串相等 —— junction 下两种拼法
+  本来就不同），另加一条走 AST 拒绝盘符字面量（走 AST 而非文本，注释里解释旧路径不算违规）。
+- 检查 junction 的命令：`Get-Item <path> -Force | Select LinkType, Target`。
+  `LinkType` 只在**junction 自身**上有值，它**里面**的子项是空的 —— 别据此判"不是链接"。
+
+**二、`repin_production.py` 成功的判据是 `outside_data_dirs=0`，不是 rc。**
+`reset --mixed` 只动 HEAD+index，**不动工作树**，所以那一步之后必然出现一段
+"index 已在新提交、工作树还是旧内容"的窗口（实测 17 个"数据目录之外"的脏文件）；
+紧接着的 `checkout <sha> -- .`（排除四个挂载目录）把它们同步过去，计数归零。
+**看到 reset 后变脏就以为失败 = 误判。** 真正要防的是**反过来的错**：用
+`git checkout <sha>`（不带 `--mixed` + 排除）会**透过 junction 写四个数据目录**，
+2026-09-29 就是这样把一份 1 万行的 episode 账本截断到 2.1k 行。
+
+**三、改生产树的文件之后，正在跑的面板**可能**在下一轮自己没了。**
+本轮实测：16:45 我在生产树里改完 `tools/control_panel.py`，面板最后一行动日志就是 16:45:24，
+**没有崩溃行、没有异常**；于是紧接着的 `panel_restart.py --stop --force` 报
+"nothing to stop: no live panel pid on record and no fresh heartbeat" ——
+**这句话是信息，不是噪声**（它当场告诉我"它已经没了"）。
+⇒ 不要假设"重启前它还活着"；"改代码"和"确认它还在"必须是同一个动作。
+⇒ 而 `panel_restart.py --start` 在这个宿主上**不该用**（它自己的 docstring 就写了：
+宿主会回收 detached 子进程的整棵树，要从**长活任务**启动 —— 本轮用
+`Start-ScheduledTask WinterAgentV2Panel`）。
