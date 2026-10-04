@@ -5872,5 +5872,64 @@ rows[-limit:]
 `module_level` / `mutable_module_state`），并且**用一段真的会 `sys.exit` 的源码验证扫描有牙** ——
 一个永远绿的检查比没有检查更坏。
 
+## §41 同一个"静默丢弃"已经咬了三次：点名今天的字段治不了明天的（2026-10-04）
+
+`RuntimeSnapshotStore.update(**changes)` 的实现是
+`data = asdict(current); data.update(changes); RuntimeSnapshot(**{k: v for k, v in data.items()
+if k in RuntimeSnapshot.__dataclass_fields__})` —— **未声明的键被静默丢弃，不报错、不警告。**
+
+已发生三次，每次都是"写进去了、看起来健康、其实没落盘"：
+
+| 时间 | 被丢的键 | 症状 |
+|---|---|---|
+| 2026-09-18 | `deferred_goals` | 延期列表查不到 |
+| 2026-10-03 | `fairness_written_at` / `fairness_write_skipped` | 公平性写入无痕迹 |
+| 2026-10-04 | LOOP_WATCH_V1 的 9 个 `loop_*` | 两条预登记的验收判据**根本无法测** |
+
+第三次的现场（2026-10-04 实测，是本次最硬的证据）：
+`learning/runtime_snapshot.json` 的 mtime `13:44:34` —— **晚于 Fix A 上线**，
+即运行中的面板确实在调 `_publish_loop_watch`、确实在打 `[loop]` 行，
+而同一个文件里 `total keys: 35`、`loop_* keys: NONE`。
+**从外面看发布是健康的，因为"发布"的另一半在丢东西时不出声。**
+
+**判据**：**点名今天的字段治不了明天的。** 修法是两条一起做——
+① 声明这 9 个字段；② 加一条**通用扫描**（`tests/test_a_ledger_that_stopped_being_written_says_so.py`）：
+遍历生产目录（`winter_agent_v2/`、`tools/`）里**每一个** `self._runtime(**changes)` 调用点与
+`runtime_store.update(...)`，任何 `loop_*` 之外的未声明键都必须报出来。
+
+**并且扫描必须验牙**：只回退两个生产文件、保留新测试 → `7 failed, 6 passed`（旧代码）；
+恢复 → `13 passed`。第 134 行的失败信息就是生产缺陷原文
+「these writes are accepted by ``update`` and then dropped without an error」。
+**只对新写的合成坏源验牙是不够的，要用真实的历史版本验一次。**
+
+**附带教训（同一个坑的第三次现身）**：`_runtime(**changes)` 是个包装器，
+**kwarg 名字只存在于调用点**。第一版扫描器去读 `update(` 的实参 → 返回 `none`，
+是**假阴性**：它读的地方根本没有那些名字。
+
+## §42 一个断言在输入为空时的返回值，不能当作它的结论用（2026-10-04）
+
+清过期标记前想用 `needs_reload(loaded, on_disk, changed)` 确认"前提是否已假"。
+第一次得出 `False`，我差点当成结论——**其实是因为我给 `git -C` 传了 Git-Bash 路径 `/e/…`，
+Windows 的 Python 读不到 → `on_disk` 为空 → `needs_reload` 对空版本号**恒返回 False**。
+那个 `False` 是**空判定**。改用 `E:\…` 并先 `assert on_disk` 之后才拿到真结论
+（`loaded == on_disk == 08886209`，`touched_control_plane` 非空 ⇒ 不成立的是"版本已移动"）。
+
+**通则**：函数在**定义域之外**（这里：空字符串、空集合、空路径）的返回值，
+和它在定义域内的返回值，是**两个不同的东西**。
+判据：调用前先断言输入非空；看到 `False`/`0`/`None` 时先问"这是结论，还是它没东西可看"。
+同类已写过 §36（一个 0，先问它的定义域）。
+
+## §43 别拿 `git show` 的 md5 去比工作树的 md5（本机 `core.autocrlf=true`）（2026-10-04）
+
+做 A/B 回退时用
+`git show HEAD:f | md5sum` vs `md5sum f` 判"回退是否干净"，两份都报 `MISMATCH`，
+一度以为 `git checkout --` 没生效——**其实是我的比较方法坏了**：
+`core.autocrlf=true`，`git show` 出的是库里原始字节，工作树是 smudge 过的 CRLF。
+
+**判据**：判"文件是否等于某个提交"，**用 git 自己**（`git status --short` 空、
+`git diff --numstat` 空），不要自己比哈希。自己比哈希 = 把编码策略当成了代码差异。
+
+（本节位置说明：§38 被排在 §40 之后，是既有的次序错乱，未擅自重排；新增按 §41 起续编。）
+
 推论（更要紧的一条）：**能被一句话骗过的检查不是检查。** 凡"扫原文"的规则，
 先问它能不能区分"提到"和"使用"。

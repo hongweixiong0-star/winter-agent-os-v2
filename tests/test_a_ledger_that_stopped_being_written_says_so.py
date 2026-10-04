@@ -31,9 +31,159 @@ gate, maybe the disk", which is exactly what makes a stall undiagnosable; the pr
 rule about diagnostic values says a code that folds two facts together cannot be acted on.
 """
 
+import ast
+import json
+from pathlib import Path
+
 import pytest
 
-from winter_agent_v2.runtime_snapshot import RuntimeSnapshot
+from winter_agent_v2.runtime_snapshot import RuntimeSnapshot, RuntimeSnapshotStore
+
+#: The two wrappers production writes through.  ``LiveRuntime._runtime`` forwards ``**changes``
+#: into the store, so the kwarg names are only visible at the *call sites*, never inside the
+#: wrapper -- which is why a scan that reads ``runtime_store.update(...)`` alone reports nothing
+#: and looks green.  Measured 2026-10-04, by writing exactly that wrong scan first.
+PRODUCTION_ROOTS = ("winter_agent_v2", "tools")
+
+
+def discarded_writes(sources: dict[str, str]) -> tuple[int, list[str]]:
+    """(call sites examined, ``file:line name`` for every kwarg the store would discard).
+
+    AST rather than text: a docstring that names a kwarg must not count as a call, and a
+    ``**splat`` inside the wrapper must not hide the names at the call site.
+    """
+    fields = set(RuntimeSnapshot.__dataclass_fields__)
+    examined = 0
+    bad: list[str] = []
+    for name, source in sources.items():
+        try:
+            tree = ast.parse(source)
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+                continue
+            receiver = ast.unparse(node.func.value)
+            is_wrapper = node.func.attr == "_runtime" and receiver == "self"
+            is_store = node.func.attr == "update" and "runtime_store" in receiver
+            if not (is_wrapper or is_store):
+                continue
+            examined += 1
+            for keyword in node.keywords:
+                if keyword.arg and keyword.arg not in fields:
+                    bad.append(f"{name}:{node.lineno} {keyword.arg}")
+    return examined, sorted(bad)
+
+
+def _production_sources() -> dict[str, str]:
+    root = Path(__file__).resolve().parents[1]
+    out: dict[str, str] = {}
+    for name in PRODUCTION_ROOTS:
+        for path in (root / name).rglob("*.py"):
+            if ".pytest_tmp" in str(path):
+                continue
+            out[str(path.relative_to(root)).replace("\\", "/")] = path.read_text(
+                encoding="utf-8", errors="replace")
+    return out
+
+
+class TheTrapIsNowGuardedGenerallyTests:
+    """``deferred_goals`` (2026-09-18), the two fairness fields (2026-10-03), LOOP_WATCH_V1's
+    nine (2026-10-04) -- three occurrences of one trap.
+
+    Each was fixed by *declaring the field it needed*, which is exactly why a third one was
+    possible: **naming today's fields cannot stop tomorrow's.**  This scans the call sites
+    instead, so a fourth write naming an undeclared field fails here rather than vanishing.
+    """
+
+    def test_the_scan_sees_the_wrapper_production_actually_uses(self):
+        """Non-vacuity.  A scan that matches nothing is green forever.
+
+        The wrapper's own body passes ``**changes``, so the *only* place the kwarg names exist
+        is the call site; if this count collapses to zero, the guard has stopped guarding.
+        """
+        examined, _ = discarded_writes(_production_sources())
+        assert examined >= 9, (
+            f"the scan examined {examined} production call sites; a guard that examines nothing "
+            "cannot fail, and this file exists because a silent write survived two previous fixes"
+        )
+
+    def test_the_scan_has_teeth(self):
+        """A deliberately bad source must be reported, or the guard above proves nothing."""
+        bad_source = (
+            "class W:\n"
+            "    def f(self):\n"
+            "        self._runtime(loop_ladder_top='x', a_key_nobody_declared=1)\n"
+        )
+        examined, bad = discarded_writes({"bad.py": bad_source})
+        assert examined == 1
+        assert len(bad) == 1 and "a_key_nobody_declared" in bad[0]
+
+    def test_the_hazard_is_real_and_the_scan_is_not_guarding_nothing(self, tmp_path):
+        """Prove ``update`` still discards, so the two tests above are about a live hazard."""
+        path = tmp_path / "snapshot.json"
+        RuntimeSnapshotStore(path).update(a_key_nobody_declared=1, loop_detected=2)
+        written = json.loads(path.read_text(encoding="utf-8"))
+        assert "a_key_nobody_declared" not in written, (
+            "``update`` started raising or storing unknown keys -- the guard's premise changed"
+        )
+        assert written["loop_detected"] == 2
+
+    def test_no_production_write_names_a_field_the_snapshot_does_not_declare(self):
+        _, bad = discarded_writes(_production_sources())
+        assert bad == [], (
+            "these writes are accepted by ``update`` and then dropped without an error; declare "
+            "the field in ``RuntimeSnapshot``, or write the value somewhere it can be read:\n  "
+            + "\n  ".join(bad)
+        )
+
+
+class TheLoopLedgerReachesDiskTests:
+    """Criteria 3 and 5 read these keys.  Before this, they were unmeasurable as written."""
+
+    LOOP_KEYS = {
+        "loop_detected": 3,
+        "loop_false_positive": 0,
+        "loop_deferred": 1,
+        "loop_recovered": 0,
+        "loop_patterns": {"AAA": 3},
+        "loop_ladder_top": "defer_goal",
+        "loop_acted": {"yield_goal": 1},
+        "loop_skipped_rungs": ["feature_reopen"],
+        "loop_broken": 0,
+    }
+
+    def test_every_loop_key_survives_the_round_trip_to_the_file(self, tmp_path):
+        path = tmp_path / "snapshot.json"
+        RuntimeSnapshotStore(path).update(**self.LOOP_KEYS)
+        written = json.loads(path.read_text(encoding="utf-8"))
+        for key, value in self.LOOP_KEYS.items():
+            assert written[key] == value, f"{key} did not survive: {written.get(key)!r}"
+
+    def test_the_keys_are_declared_with_defaults_a_reader_can_trust(self):
+        """An older snapshot on disk has none of these; it must still parse and read as zero."""
+        snapshot = RuntimeSnapshot()
+        assert snapshot.loop_detected == 0
+        assert snapshot.loop_ladder_top == ""
+        assert snapshot.loop_acted == {}
+        assert snapshot.loop_skipped_rungs == []
+
+    def test_an_old_snapshot_without_them_still_reads(self, tmp_path):
+        path = tmp_path / "snapshot.json"
+        path.write_text(json.dumps({"agent_state": "IDLE", "page": "HOME"}), encoding="utf-8")
+        read = RuntimeSnapshotStore(path).read()
+        assert read.page == "HOME"
+        assert read.loop_ladder_top == ""
+
+    def test_the_ledger_row_carries_the_run_boundary(self):
+        """A trend needs the field the rest of the project already groups by."""
+        import inspect
+
+        from winter_agent_v2 import runtime as runtime_module
+
+        source = inspect.getsource(runtime_module.LiveRuntime._append_loop_ledger)
+        for needed in ('"episode_id"', '"recorded_at"', '"role_id"', '"loop_ladder_top"'):
+            assert needed in source, f"the ledger row lost {needed}"
 
 
 def test_the_snapshot_carries_the_two_fairness_fields():

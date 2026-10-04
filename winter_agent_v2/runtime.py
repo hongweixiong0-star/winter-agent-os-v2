@@ -1175,10 +1175,16 @@ class LiveRuntime:
         """Publish the run's loop-detector ledger, once, at the run's single exit.
 
         A report and nothing else: it reads the watch's own counters and writes them to the
-        runtime status and to one line of the run's log.  Nothing here reads a value back into a
-        decision, because a summary that could change what the run did would be a second
-        decision layer wearing a report's name -- the same reason ``LoopDetector``'s timeline is
-        declared "telemetry, not truth".
+        runtime status, to one self-describing row of ``learning/loop_watch.jsonl``, and to one
+        line of the run's log.  Nothing here reads a value back into a decision, because a
+        summary that could change what the run did would be a second decision layer wearing a
+        report's name -- the same reason ``LoopDetector``'s timeline is declared "telemetry, not
+        truth".
+
+        Why three destinations rather than one, measured 2026-10-04: the status is the current
+        moment, the log line is rewritten every round, and the nine status keys were being
+        discarded in silence because ``RuntimeSnapshot`` had no field for them.  A durable
+        ledger is what makes a *trend* question answerable at all.
 
         Everything is guarded: this runs on the way out of a cycle, including cycles that ended
         in a device loss, and a diagnostics line must never be what fails an exit.
@@ -1205,12 +1211,24 @@ class LiveRuntime:
             )
         except Exception:  # noqa: BLE001 - see the docstring
             pass
-        if not detected:
+        # One append-only row per run, including runs with nothing to report.  A ledger that
+        # only kept the interesting runs could not answer "how often", and the pre-registered
+        # criteria are trend questions ("is the ladder stuck at defer_goal", "did HERO's
+        # consecutive-False run shorten") -- which is the same reason ``auto_uptime.jsonl``
+        # exists: measured 2026-09-30, the snapshot only ever describes the current moment, so
+        # every claim about a trend was a narrative.
+        #
+        # The worker's own log line is NOT a durable home: ``latest.log`` is rewritten per round
+        # (control_panel.py's two ``write_text`` calls) and the worker's stdout never reaches the
+        # appending ``panel.log``.  Measured 2026-10-04: the first live ``[loop]`` line was gone
+        # from disk within one restart, leaving only a quote of it.
+        self._append_loop_ledger(summary, reason)
+        broken = int(summary.get("LOOP_WATCH_BROKEN", 0) or 0)
+        if not detected and not broken:
             return
         # One line per run that had anything to say, so a reader of the worker log can see the
         # detector working without grepping a JSONL ledger.  ``LOOP_WATCH_BROKEN`` rides along
         # because a refusal is the one failure that otherwise looks exactly like "no loops here".
-        broken = int(summary.get("LOOP_WATCH_BROKEN", 0) or 0)
         print(
             f"[loop] {reason}: detected {detected} "
             f"({', '.join(f'{k}={v}' for k, v in sorted((summary.get('LOOP_PATTERNS') or {}).items())) or 'no pattern'}), "
@@ -1220,6 +1238,55 @@ class LiveRuntime:
             + (f", BROKEN {broken}" if broken else ""),
             flush=True,
         )
+
+    def _loop_ledger_path(self) -> Path | None:
+        """Where this run's loop row goes, or ``None`` when there is no evidence root.
+
+        Anchored the same way ``_gate`` is: on the episode store, because that artifact is what
+        proves this loop is the one producing production evidence.  A caller with no episode
+        store has no data root to write into, and gets ``None`` rather than a row filed under
+        someone else's project.
+        """
+        if self.episode_store is None:
+            return None
+        try:
+            return Path(self.episode_store.path).resolve().parents[1] / "learning/loop_watch.jsonl"
+        except (AttributeError, IndexError, OSError):
+            return None
+
+    def _append_loop_ledger(self, summary: dict, reason: str) -> None:
+        """Append one self-describing row for this run.  Guarded, like its caller.
+
+        The row carries ``episode_id`` because that is the run boundary the rest of the project
+        already groups by, and ``recorded_at`` so a trend needs no second source of time.  Every
+        key is written even when zero: a ledger whose empty cases are omitted cannot be summed.
+        """
+        path = self._loop_ledger_path()
+        if path is None:
+            return
+        capture = getattr(self.capture_dir, "name", "")
+        row = {
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
+            "episode_id": capture,
+            "role_id": getattr(self, "role_id", "") or "",
+            "stop_reason": str(reason or ""),
+            "step_goal": getattr(self, "_committed_goal", "") or "",
+            "loop_detected": int(summary.get("LOOP_DETECTED", 0) or 0),
+            "loop_false_positive": int(summary.get("LOOP_FALSE_POSITIVE", 0) or 0),
+            "loop_deferred": int(summary.get("LOOP_DEFERRED", 0) or 0),
+            "loop_recovered": int(summary.get("LOOP_RECOVERED", 0) or 0),
+            "loop_patterns": dict(summary.get("LOOP_PATTERNS") or {}),
+            "loop_ladder_top": str(summary.get("LOOP_LADDER_TOP") or ""),
+            "loop_acted": dict(summary.get("LOOP_WATCH_ACTED") or {}),
+            "loop_skipped_rungs": list(summary.get("LOOP_WATCH_SKIPPED_RUNGS") or []),
+            "loop_broken": int(summary.get("LOOP_WATCH_BROKEN", 0) or 0),
+        }
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open("a", encoding="utf-8") as stream:
+                stream.write(json.dumps(row, ensure_ascii=False) + "\n")
+        except (OSError, TypeError, ValueError):
+            pass
 
     def _yield_to_next_goal(self, goal, deferrals: list[Deferral], decision, why: str) -> bool:
         """Hold one goal back for the rest of this run so the next one can be tried.

@@ -79,6 +79,28 @@ class RuntimeSnapshot:
     fairness_written_at: str = ""
     fairness_write_skipped: str = ""
     capability_discovery: list[dict[str, Any]] = field(default_factory=list)
+    # LOOP_WATCH_V1's per-run ledger.  Declared here for **the third time for the same trap**:
+    # ``update`` filters unknown keys, so ``LiveRuntime._publish_loop_watch``'s nine writes
+    # disappeared without an error and the two pre-registered criteria that say "read
+    # ``loop_ladder_top`` from the runtime status" were unmeasurable as written.
+    #
+    # Measured 2026-10-04, and the measurement is the point: the keys were absent from
+    # ``learning/runtime_snapshot.json`` *while the ``[loop]`` line was printing*, so the
+    # publish looked healthy from the outside.  ``deferred_goals`` (2026-09-18) and the two
+    # fairness fields (2026-10-03) are the two earlier occurrences, and each one was fixed by
+    # declaring the field it needed -- which is exactly why a third occurrence was possible:
+    # **naming today's fields cannot stop tomorrow's.**  The general guard is
+    # ``tests/test_a_ledger_that_stopped_being_written_says_so.py``'s scan over every
+    # production call site, added with these fields.
+    loop_detected: int = 0
+    loop_false_positive: int = 0
+    loop_deferred: int = 0
+    loop_recovered: int = 0
+    loop_patterns: dict[str, Any] = field(default_factory=dict)
+    loop_ladder_top: str = ""
+    loop_acted: dict[str, Any] = field(default_factory=dict)
+    loop_skipped_rungs: list[str] = field(default_factory=list)
+    loop_broken: int = 0
     updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 

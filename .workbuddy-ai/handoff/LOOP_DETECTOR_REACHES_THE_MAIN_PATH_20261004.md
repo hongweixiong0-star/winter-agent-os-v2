@@ -359,6 +359,8 @@ rows 4047  runs 335  detections 177
   `loop_ladder_top` / `loop_detected` / `loop_acted` —— 它会不会长期停在 `defer_goal`（饱和 vs 恢复）；
   `loop_watch_ms` 的真实分布；以及 `HERO_RECRUIT_ADVANCED` 的连续 False 串是否变短
   （注意：§8.2 之前这一条**不能**只归功于 Fix A，因为窗口那一层同时在影响它）。
+  **⚠️ 这一句在上线后被证伪了：`learning/runtime_snapshot.json` 里当时根本没有 `loop_*` 键。
+  见 §十一 —— 判据 3/5 当时**无法测量**，读 `learning/loop_watch.jsonl` 才是它真正的地方。**
 - **`session_host.py:380` 不要顺手改**：`goal_progress = (outcome == SUCCESS)` 改成 `None` 会
   **降低** streak 爬升，是一次有真实副作用的行为变更，必须和 B 一起评估。
 - **判据 3 仍未满足**：训练/建造链的 `goal_progress=True` 至今一次没出现过。前作 §三 的三个问题
@@ -411,3 +413,78 @@ pytest tests/test_loop_main_path_wiring.py tests/test_loop_detector_boundary.py 
 CapabilityGate.load('.')                    -> 12 goals, 2 over threshold
 CapabilityGate.load('.', episodes=last400)   -> 25 goals, 7 over threshold
 ```
+
+---
+
+## 十一、上线后的更正：判据 3/5 当时是**不可测**的（2026-10-04，同日晚）
+
+§六 与 §九 都把判据 3/5 的读法写成「从 `learning/runtime_snapshot.json` 读 `loop_ladder_top`」。
+Fix A 上线（`08886209`）之后发现**这句读不出来**，而失败方式是无声的：
+
+```
+learning/runtime_snapshot.json   mtime 2026-10-04 13:44:34   （晚于 Fix A 上线）
+                                 total keys: 35
+                                 loop_* keys: NONE
+```
+
+mtime 晚于上线 ⇒ 运行中的面板**确实**在调 `_publish_loop_watch`、**确实**在打 `[loop]` 行；
+同一个文件里却一个 `loop_*` 键都没有。原因不在调用方：
+
+```python
+# runtime_snapshot.py  RuntimeSnapshotStore.update
+data.update(changes)
+RuntimeSnapshot(**{k: v for k, v in data.items()
+                   if k in RuntimeSnapshot.__dataclass_fields__})   # ← 未声明的键在此静默出局
+```
+
+`RuntimeSnapshot` 当时 35 个字段，**没有任何一个是 `loop_*`**。
+「发布到运行时状态」这一半是**静默空操作**，而外部观察到的现象是健康的
+（`[loop]` 行照常打印）。这是同一毛病在本项目的**第三次**：
+`deferred_goals`（2026-09-18）、`fairness_written_at`/`fairness_write_skipped`（2026-10-03）。
+
+**同时暴露的第二个问题：`[loop]` 行本身也不是可用的账。**
+`learning/control_panel/latest.log` 每轮被 `write_text` 重写，worker 的 stdout 从不进追加的
+`panel.log`（实测：`[utility] chose` 在 `latest.log` 出现 2 次、在 `panel.log` **0** 次）。
+第一条真实 `[loop]` 行在一个重启内就从磁盘上消失，只剩引用。
+
+**本次修法（三条一起，缺一条就还会复发）**
+
+1. `RuntimeSnapshot` 声明 9 个 `loop_*` 字段（35 → 44）。
+2. `LiveRuntime._append_loop_ledger()` 每次运行追加一行到 `learning/loop_watch.jsonl`，
+   **空运行也写**（一个只记"有意思的运行"的账无法回答"多频繁"，而判据 3/5 都是趋势问题）。
+   行含运行边界：`episode_id` / `recorded_at` / `role_id` / `step_goal`。
+3. 通用守卫 `tests/test_a_ledger_that_stopped_being_written_says_so.py`：
+   扫描 `winter_agent_v2/`、`tools/` 下**每个** `self._runtime(**changes)` 与
+   `runtime_store.update(...)`，任何未声明键都要报出来。
+   —— **点名今天的字段治不了明天的。**
+
+**判据 3/5 现在的正确读法**
+
+```bash
+# 每运行一行的持久账（追加，不会被重写）
+tail -n 20 learning/loop_watch.jsonl
+# 运行状态里的当前值（现在真的有了）
+python -c "import json;d=json.load(open(r'learning/runtime_snapshot.json',encoding='utf-8'));print({k:v for k,v in d.items() if k.startswith('loop_')})"
+```
+
+**验收（在 pin 树内）**
+
+```bash
+pytest tests/test_a_ledger_that_stopped_being_written_says_so.py \
+       tests/test_runtime_snapshot.py tests/test_loop_main_path_wiring.py \
+       tests/test_loop_detector_boundary.py tests/test_live_runtime.py \
+       tests/test_auto_uptime_ledger.py tests/test_worker_exit_semantics.py \
+       tests/test_auto_subprocess_recovery.py tests/test_loop_production_wiring.py -q -p no:randomly
+#   -> 130 passed, 86 subtests passed
+
+python tools/check_wiring.py        # -> problems: 2（仍是既有那两条，无新增）
+
+# 通用守卫的牙（只回退两个生产文件、保留新测试）
+git checkout -- winter_agent_v2/runtime.py winter_agent_v2/runtime_snapshot.py
+pytest tests/test_a_ledger_that_stopped_being_written_says_so.py -q
+#   -> 7 failed, 6 passed   失败原文：these writes are accepted by ``update``
+#                            and then dropped without an error
+```
+
+**部署说明**：`winter_agent_v2/runtime_snapshot.py` **不在** `CONTROL_PLANE_PATHS`，
+且 worker 每轮重导入包 ⇒ **本次不需要重启面板**。
