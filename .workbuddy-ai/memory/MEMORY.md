@@ -6652,14 +6652,28 @@ panel.log 自己写着（21:09:35）            磁盘保护：已清理 30 张�
 
 **读数**（`canonical_revision` 实测）：
 
-| 树 | head | dirty | 脏在哪 |
-|---|---|---|---|
-| dev（DATA_ROOT） | 98f008c79c4f | **782** | `config/v2.json` + `dataset/candidate/auto_collected/*.png` |
-| pin（生产） | 98f008c79c4f | **886** | 同上 + `dataset/candidate/.gitkeep` |
+| 树 | head | dirty |
+|---|---|---|
+| dev（DATA_ROOT） | 98f008c79c4f | **783** |
+| pin（生产） | 98f008c79c4f | **886** |
 
-`dataset/candidate/auto_collected/` 里 `git ls-files` 只数到 **1** 个文件（`.gitkeep`），
-其余全是 `??` —— 也就是说那 780 多个是 **AUTO 自己采集出来的 UI 模板**，是运行产物，不是人编的资产。
-而 `dataset/candidate/` 在 `VERSION_RELEVANT_PREFIXES` 里，`auto_collected/` 不在 `EXCLUDED_DIRECTORIES` 里。
+**第一次写这一节时我把构成搞错了**（当时写成"几乎全是 `auto_collected` 的 UI 模板"），
+正确分解是下面这张表 —— 所以**要修的根本不是我当时写的那个目录**：
+
+| dirty | 路径 | 谁写的 |
+|---|---|---|
+| **420** | `knowledge/perception/candidates` | 在线学习漏斗（`ui_collection` / `learning_funnel`） |
+| **121** | `knowledge/perception/pages` | `page_knowledge` 学到的页面 |
+| **110** | `dataset/candidate/autogen` | `pipeline_autogen` 自动生成 / 修复的模板 |
+| **65** | `dataset/candidate/auto_collected` | `ui_collection` 从客户端采集的模板 |
+| 28 | `dataset/candidate/bear_rally` | **开发者工具**注册的模板（不属于本类） |
+| 16 | `dataset/candidate/{formation_badges,formation,daily_task}` | 写入者未定 |
+| 1 | `config/v2.json` | **受版本管理的配置，必须继续相关** |
+
+前四组 = 716 / 783 = **91%**。它们全在 `VERSION_RELEVANT_PREFIXES` 里，且全不在
+`EXCLUDED_DIRECTORIES` 里；四个目录的写入者都是**运行时自己** —— 和
+`tests/conftest.py` 里那张"测试可以学进去的路径"表逐个列出的四个常量完全吻合
+（那是项目自己早就写下的分类，只是没人把它接到这个名单上）。
 
 **这正是 `version_identity` 自己的文档明令禁止的形状**：「一个日志被追加就变的版本身份不是身份」。
 也和 2026-09-21 那次 `knowledge/preload/` 事故是同一个成员资格错误（那次代价：6.5 小时、
@@ -6676,7 +6690,52 @@ panel.log 自己写着（21:09:35）            磁盘保护：已清理 30 张�
 实测：episode 一路是 `335d2ee7` 直到 13:17:49Z，13:19:32Z 就出现了 `98f008c7`（= 当时 HEAD），
 告警自己就没了。**所以不要把它当假警报去"修"** —— 先量，再判。
 
-**处置**：登记为第七批，未修。修法是照 `knowledge/preload/` 的先例把
-`dataset/candidate/auto_collected/` 加进 `EXCLUDED_DIRECTORIES`（`config/v2.json` 若确认由运行时写，
-则进 `EXCLUDED_FILES`）。**但这个名单本身动过一次就出过 6.5 小时的事故**，
-所以它得单独一批、带 A/B，不能顺手改。
+**处置**：当天晚些时候作为第七批**已修**，见 §68。
+
+## 68. 围栏不该因运行时自己的产物而拒绝一轮（2026-10-04 已修）
+
+修的依据不是我的判断，是**项目自己早就写下的规则和测试**：
+
+`tests/test_startup_version_fence.py::test_a_run_product_written_during_startup_does_not_fail_the_fence`
+的标题就是判据 —— 「围栏必须只对**代码**触发，不对运行时自己的产出触发」。
+它一直通过，**只因为它举的两个例子（`learning/`、`dataset/raw/`）恰好已经在排除名单里**。
+规则对那两个例子成立，对别的什么都不成立。
+
+**代价，有据可查**：`learning/control_panel/crashes/` 里 4 条 2026-10-03 的记录，
+`child_exit_code: 3`（就是围栏的 `return 3`），每条被记成 `WORKER_CRASH`，
+`retry_state` 计数随之 +1。原因：某次学习写盘落在了围栏的启动窗口（约 1–2 秒）里。
+
+**修法**：往 `EXCLUDED_DIRECTORIES` 加四个目录
+（`knowledge/perception/`、`dataset/candidate/autogen/`、`dataset/candidate/auto_collected/`），
+照 `knowledge/preload/` 的先例，并**刻意不扩到邻居**：
+`template_manifest.json` / `bear_rally/` / `knowledge/ui/page_transitions.json` 由开发者工具或手工写，
+必须继续移动版本 —— 这条边界由新测试钉住，谁以后图省事去排整个 `dataset/candidate/`，
+会先红在测试上。
+
+**读数**（同一把尺子，修前 → 修后）：
+
+| 树 | 修前 dirty | 修后 dirty |
+|---|---|---|
+| dev | 783 | **68** |
+| pin | 886 | **171** |
+
+**关键的一点，别被 171 吓到**：修后剩下的每一条**都是静止的**
+（`bear_rally` 最新 09-27、`formation_badges` 09-28、`knowledge/skills/candidate` 09-10、
+`knowledge/external/capabilities` 09-12 ……）。
+指纹的 digest 是对**内容**取的，内容不动 → digest 不动 → **围栏不会因为这些而触发**。
+运行期间真正在动的只有那四个目录（20–60 文件/天），现在已排除。所以 171 是"脏"，不是"漂"。
+
+**活体证据（这一批最重要的一条读数）**：75 秒观察窗内，
+AUTO 写出 9 条新 episode（10,286 → 10,295），
+`knowledge/perception` **有 2 个文件在 5 分钟内被改写**（最新 23:13，就在窗口里），
+`dataset/candidate/autogen` 有 1 个 —— 而版本 token **一位都没变**
+（`e1e172673f755ab9f5b51161f53ef86cc49c0816+97ded1e14653e451`，两次采样完全相同）。
+旧名单下这次写盘就会改 digest，正是能让那一轮围栏拒绝的东西。
+
+**一条顺手的交叉验证，值得记住**：面板 `pump.json` 里的 `runtime_loaded_revision`
+与我独立算出的生产树 `canonical_revision` **逐字节相同** —— 说明"冻结"那条路是可信的，
+以后可以用它当读数而不是靠推理。
+
+**纪律（这一批我违反了一次又自己纠回来）**：
+MEMORY 的 §67 我第一版把构成写错了（把 `auto_collected` 当成主项）。
+错因不是测量错，是**先写结论再补分解**。以后凡"某某占满/几乎全是"，必须先把分解表打出来再写那句话。

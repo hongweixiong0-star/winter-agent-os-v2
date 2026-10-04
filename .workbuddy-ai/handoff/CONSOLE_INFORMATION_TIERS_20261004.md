@@ -2316,3 +2316,100 @@ digest 每采一次模板就变。所以 `state_truth.version_active()` 的
 **修法（第七批）**：照 `knowledge/preload/` 的先例把 `dataset/candidate/auto_collected/` 加进
 `EXCLUDED_DIRECTORIES`；`config/v2.json` 若确认由运行时写则进 `EXCLUDED_FILES`。
 必须单独一批、带 A/B。
+
+**→ 本节已被 §二十二 取代**：上面那条修法和那个目录都不是对的，见下。
+
+## 二十二、第七批：围栏不该因运行时自己的产出而拒绝一轮（2026-10-04 已落生产）
+
+### 22.1 先更正 §二十一 里我写错的东西
+
+§21.2 的分解**写错了**。我当时先写了结论句（"几乎全是 `dataset/candidate/auto_collected`"），
+再补分解表 —— 分解表一打出来就不是那样：
+
+| dirty | 路径 | 谁写的 |
+|---|---|---|
+| **420** | `knowledge/perception/candidates` | 在线学习漏斗（`ui_collection` / `learning_funnel`） |
+| **121** | `knowledge/perception/pages` | `page_knowledge` 学到的页面 |
+| **110** | `dataset/candidate/autogen` | `pipeline_autogen` 生成 / 修复 |
+| **65** | `dataset/candidate/auto_collected` | `ui_collection` 采集 |
+| 28 | `dataset/candidate/bear_rally` | **开发者工具**注册（不属于本类） |
+| 16 | `dataset/candidate/{formation_badges,formation,daily_task}` | 写入者未定 |
+| 1 | `config/v2.json` | **受版本管理的配置，必须继续相关** |
+
+前四组 716/783 = **91%**；`auto_collected` 只占 65。**所以 §21.2 提的修法（只排 `auto_collected`）
+即使做了也只解决 8%。** 纪律：凡"几乎全是 / 占满"，先把分解表打出来再落笔。
+
+### 22.2 修的依据不是我的判断，是项目自己写下的判据
+
+`tests/test_startup_version_fence.py::test_a_run_product_written_during_startup_does_not_fail_the_fence`
+的标题就是规则：「围栏必须只对**代码**触发，不对运行时自己的产出触发」。
+它一直通过 —— **只因为它举的两个例子（`learning/`、`dataset/raw/`）恰好已经在排除名单里**。
+规则对那两个例子成立，对别的什么都不成立。
+
+而且这个分类项目**早就写好了**，只是没接到这个名单上：`tests/conftest.py` 里那张
+"测试可以学进去的路径"表，逐个列了 `ui_collection.CANDIDATE_ROOT` / `TEMPLATE_DIR`、
+`page_knowledge.PAGE_ROOT`、`pipeline_autogen` 的目录 —— 和我上面那张表完全吻合。
+
+### 22.3 代价，有据可查
+
+`learning/control_panel/crashes/` 里 4 条 2026-10-03 的记录，`child_exit_code: 3`
+（就是围栏的 `return 3`），每条被记成 `WORKER_CRASH`，`retry_state` 计数随之 +1。
+原因：某次学习写盘落在围栏的启动窗口（约 1–2 秒）里。围栏窗口极短，但这类写盘
+每天 20–60 次，于是每天会打中一两次。
+
+### 22.4 修法与边界
+
+`EXCLUDED_DIRECTORIES` 加四目录，照 `knowledge/preload/` 先例，
+并**刻意不扩到邻居**：`dataset/candidate/template_manifest.json`、`dataset/candidate/bear_rally/`、
+`knowledge/ui/page_transitions.json` 由开发者工具或手工写，必须继续移动版本。
+这条边界由新测试 `test_the_developer_written_neighbours_still_move_the_version` 钉住 ——
+谁以后图省事去排整个 `dataset/candidate/`，会先红在测试上。
+
+### 22.5 读数（同一把尺子，修前 → 修后）
+
+| 树 | 修前 | 修后 |
+|---|---|---|
+| dev | 783 | **68** |
+| pin | 886 | **171** |
+
+**别被 171 吓到**：剩下的每一条都是**静止**的（`bear_rally` 最新 09-27、`formation_badges` 09-28、
+`knowledge/skills/candidate` 09-10、`knowledge/external/capabilities` 09-12）。
+digest 是对**内容**取的，内容不动 → digest 不动 → 围栏不会因它们触发。
+运行期间真正在动的只有那四组，现已排除。**171 是"脏"，不是"漂"。**
+
+### 22.6 活体证据（本批最重要的一条读数）
+
+75 秒观察窗内：
+- AUTO 写出 **9 条新 episode**（10,286 → 10,295），最新一条已经在 `e1e17267` 上；
+- `knowledge/perception` **有 2 个文件在 5 分钟内被改写**（最新 23:13，就在窗口里）；
+- `dataset/candidate/autogen` 有 1 个；
+- 而版本 token **一位未变**：两次采样都是
+  `e1e172673f755ab9f5b51161f53ef86cc49c0816+97ded1e14653e451`。
+
+旧名单下这次写盘就会改 digest —— 正是能让那一轮围栏拒绝的东西。
+**这不是单元测试的推论，是运行中同时观测到"写盘发生了"和"指纹没动"。**
+
+### 22.7 顺手的一条交叉验证，值得长期记住
+
+面板 `pump.json` 的 `runtime_loaded_revision` 与我**独立算出**的生产树 `canonical_revision`
+逐字节相同（`e1e17267...+97ded1e14653e451`）。说明"冻结"那条路可信 ——
+以后可以用它当读数，而不是靠推理。
+
+### 22.8 落地与验证
+
+`e1e17267`（3 文件 +123 行，全是新增）→ repin `CLEAN_OUTSIDE_DATA` → `MAINLINE_OK`
+（pin = manifest = mainline = mirror）。`needs_reload=True`，唯一命中 `version_identity.py`，
+故重启面板：27432 + 28668，23:10:36，均 Responding。
+
+四把尺子：
+1. `CODE_COMMIT=e1e17267… WORKTREE_CLEAN=true`，`runtime_loaded_at` 23:10:38；
+2. 加载字节 == 提交字节：两项 **True**（`e86fe8fa…` / `3962e15f…`）；
+3. 接线 **19/19、mismatched 0**；生产树定向回归 **117 通过 / 0 失败**；启动后 **0 异常**；
+4. 截图 `_panel_window_20261004T2314_e1e17267.png` —— 干预卡仍只报真正那一项
+   （`WORKBUDDY_QUEUE_STUCK`），说明第六批的卡片在本次改动后**没有被扰动**。
+
+过期标记：重启瞬间它还在（是**旧窗口**发现我这次提交后写的），随后**由新窗口自己清掉**，
+没有手工删 —— 与第四批、第六批同一条判据。
+
+**A/B**：`test_capability_gate.py` 9 红。回退 `version_identity.py` 到 HEAD 重跑，
+**同样 9 红** ⇒ 既有，不是本次引入；改回后 md5 逐字节校验通过。
