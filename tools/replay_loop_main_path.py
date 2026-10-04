@@ -66,7 +66,9 @@ if str(CODE_ROOT) not in sys.path:
     sys.path.insert(0, str(CODE_ROOT))
 
 from config import paths  # noqa: E402
+from winter_agent_v2 import loop_watch  # noqa: E402
 from winter_agent_v2.loop_detector import (  # noqa: E402
+    RUNG_DEFER_GOAL,
     LoopDetector, LoopSignature, progress_from_outcome, relevant_state_hash,
 )
 
@@ -204,6 +206,92 @@ def report(result: dict, top: int = 8) -> None:
     print()
 
 
+def per_run_replay(loaded) -> dict:
+    """One detector per *run*, which is the one thing a 60 MB pass cannot show.
+
+    The live runtime builds a ``LoopWatch`` at the top of ``run`` and drops it at ``finish``, so
+    the detector's window -- and, far more importantly, its per-action rung index -- live for
+    exactly one run.  A single detector over a 60 MB tail is not that, and the rung breakdown
+    changes completely: an action key repeats across runs that a per-run detector never sees
+    together, and ``_yield_to_next_goal`` answers ``False`` for a Goal that run has already held
+    back.  So this pass is the one that says what the ladder would *do*.
+
+    The remedy column is not restated here: it comes from ``loop_watch.resolve``, the same
+    projection the runtime drives.  An instrument that re-implemented the projection would be a
+    second opinion about what a rung means, and the two would disagree after the first edit.
+    """
+    detectors: dict[tuple[str, str], LoopDetector] = {}
+    runs: set[str] = set()
+    detections = 0
+    rungs: Counter = Counter()
+    intents: Counter = Counter()
+    fired: Counter = Counter()
+    rows_per_goal: Counter = Counter()
+    would_yield: Counter = Counter()
+
+    for row in loaded:
+        after = row.get("state_after")
+        after = after if isinstance(after, dict) else (row.get("state_before") or {})
+        run = str(row.get("episode_id") or "")
+        goal = str(row.get("goal_id") or "")
+        runs.add(run)
+        if goal:
+            rows_per_goal[goal] += 1
+        sig = LoopSignature(
+            role_id=str(row.get("role_id") or ""), page=str(after.get("page") or ""),
+            goal_id=goal, skill_id=str(row.get("skill") or ""),
+            semantic_target=action_target(row), state_hash=relevant_state_hash(after),
+            verifier_outcome=str(row.get("result") or ""), progress=row.get("goal_progress"),
+        )
+        detector = detectors.setdefault((run, sig.role_id), LoopDetector())
+        verdict = detector.observe(sig)
+        if not verdict.detected:
+            continue
+        detections += 1
+        rungs[verdict.rung] += 1
+        fired[goal] += 1
+        intent, _skipped = loop_watch.resolve(verdict.rung)
+        intents[intent] += 1
+        if verdict.rung == RUNG_DEFER_GOAL:
+            # What the run would actually *do*: ``_yield_to_next_goal`` refuses a Goal it has
+            # already yielded this run, so the count of detections at this rung is an upper
+            # bound on the yields, and the difference between the two is the whole reason this
+            # pass exists.
+            would_yield[(run, goal)] += 1
+
+    return {
+        "label": "C  the fact, TRUE target, one detector per RUN  (what the live path does)",
+        "runs": len(runs),
+        "detectors": len(detectors),
+        "detections": detections,
+        "rungs": dict(rungs),
+        "intents": dict(intents),
+        "per_goal": dict(fired),
+        "rows_per_goal": dict(rows_per_goal),
+        "yield_sites": {f"{run}/{goal}": n for (run, goal), n in would_yield.items()},
+        "goals_yielded": sorted({goal for (_run, goal) in would_yield}),
+        "runs_yielded": len({run for (run, _goal) in would_yield}),
+    }
+
+
+def report_per_run(result: dict, top: int = 8) -> None:
+    print(f"--- {result['label']} ---")
+    print(f"  runs             : {result['runs']}   detectors: {result['detectors']}")
+    print(f"  detections       : {result['detections']}")
+    print(f"  rungs            : {result['rungs']}")
+    print(f"  what the run would do (from loop_watch.resolve): {result['intents']}")
+    print("  goals that fired :")
+    if not result["per_goal"]:
+        print("      (none)")
+    for goal, n in sorted(result["per_goal"].items(), key=lambda kv: -kv[1])[:top]:
+        print(f"      {goal:<34} {n:>4}  (rows {result['rows_per_goal'].get(goal, 0)})")
+    print(f"  Goals handed back : {result['goals_yielded']}  "
+          f"in {result['runs_yielded']} run(s)")
+    for site, n in sorted(result["yield_sites"].items(), key=lambda kv: -kv[1]):
+        print(f"      {site:<60} {n:>4} detection(s) at defer_goal")
+    print()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="replay the main path's hexad")
     parser.add_argument("--ledger", type=Path, default=paths.LOG_ROOT / "episodes.jsonl")
@@ -237,11 +325,13 @@ def main(argv: list[str] | None = None) -> int:
         replay(loaded, goal_rule, true_target=True, per_role=True,
                label="B  the fact, TRUE target, one detector per role"),
     ]
+    live = per_run_replay(loaded)
     if args.json:
-        print(json.dumps(runs, ensure_ascii=False, indent=2))
+        print(json.dumps({"detector": runs, "per_run": live}, ensure_ascii=False, indent=2))
         return 0
     for result in runs:
         report(result)
+    report_per_run(live)
 
     a_old, b_old, a_true, b_true, b_role = runs
     print("contamination, measured rather than argued:")

@@ -83,6 +83,9 @@ from .goal_library import (
     GoalLibrary, GoalStateStore, action_relevant_goal_ids,
     newly_completed_goal_ids, progress_moved, route_for,
 )
+from .loop_watch import (
+    INTENT_GO_HOME, INTENT_WIDEN, INTENT_YIELD_GOAL, LoopWatch,
+)
 from .global_scheduler_state import GlobalSchedulerStateStore
 from .task_completion import TaskCompletionStore
 from .capability_gate import DEFERRED, CapabilityGate, Deferral
@@ -1167,6 +1170,56 @@ class LiveRuntime:
             return
         self._printed_deferrals.add(line)
         print(f"[schedule] {line}", flush=True)
+
+    def _publish_loop_watch(self, reason: str) -> None:
+        """Publish the run's loop-detector ledger, once, at the run's single exit.
+
+        A report and nothing else: it reads the watch's own counters and writes them to the
+        runtime status and to one line of the run's log.  Nothing here reads a value back into a
+        decision, because a summary that could change what the run did would be a second
+        decision layer wearing a report's name -- the same reason ``LoopDetector``'s timeline is
+        declared "telemetry, not truth".
+
+        Everything is guarded: this runs on the way out of a cycle, including cycles that ended
+        in a device loss, and a diagnostics line must never be what fails an exit.
+        """
+        watch = getattr(self, "_loop_watch", None)
+        if watch is None:
+            return
+        try:
+            summary = watch.summary()
+        except Exception:  # noqa: BLE001 - a broken report must not become a broken exit
+            return
+        detected = int(summary.get("LOOP_DETECTED", 0) or 0)
+        try:
+            self._runtime(
+                loop_detected=detected,
+                loop_false_positive=int(summary.get("LOOP_FALSE_POSITIVE", 0) or 0),
+                loop_deferred=int(summary.get("LOOP_DEFERRED", 0) or 0),
+                loop_recovered=int(summary.get("LOOP_RECOVERED", 0) or 0),
+                loop_patterns=dict(summary.get("LOOP_PATTERNS") or {}),
+                loop_ladder_top=str(summary.get("LOOP_LADDER_TOP") or ""),
+                loop_acted=dict(summary.get("LOOP_WATCH_ACTED") or {}),
+                loop_skipped_rungs=list(summary.get("LOOP_WATCH_SKIPPED_RUNGS") or []),
+                loop_broken=int(summary.get("LOOP_WATCH_BROKEN", 0) or 0),
+            )
+        except Exception:  # noqa: BLE001 - see the docstring
+            pass
+        if not detected:
+            return
+        # One line per run that had anything to say, so a reader of the worker log can see the
+        # detector working without grepping a JSONL ledger.  ``LOOP_WATCH_BROKEN`` rides along
+        # because a refusal is the one failure that otherwise looks exactly like "no loops here".
+        broken = int(summary.get("LOOP_WATCH_BROKEN", 0) or 0)
+        print(
+            f"[loop] {reason}: detected {detected} "
+            f"({', '.join(f'{k}={v}' for k, v in sorted((summary.get('LOOP_PATTERNS') or {}).items())) or 'no pattern'}), "
+            f"ladder top {summary.get('LOOP_LADDER_TOP') or '(none)'}, "
+            f"acted {summary.get('LOOP_WATCH_ACTED') or '{}'}, "
+            f"skipped {summary.get('LOOP_WATCH_SKIPPED_RUNGS') or '[]'}"
+            + (f", BROKEN {broken}" if broken else ""),
+            flush=True,
+        )
 
     def _yield_to_next_goal(self, goal, deferrals: list[Deferral], decision, why: str) -> bool:
         """Hold one goal back for the rest of this run so the next one can be tried.
@@ -8485,6 +8538,16 @@ class LiveRuntime:
             self._save_ui_candidates()
             self._save_page_candidates()
             self._save_fairness()
+            # LOOP_WATCH_V1: publish the detector's own counters once per run, so "did anything
+            # look for a loop on this run, and did anything come of it" is answerable from the
+            # run's artifacts instead of from a claim.  This only *publishes* the detector's
+            # ledger; it reads nothing back and decides nothing -- a summary that could change
+            # what the run did would be a second decision layer wearing a report's name.
+            #
+            # ``LOOP_LADDER_TOP`` is the field the pre-registered criterion names: if it sits at
+            # ``defer_goal`` run after run, the ladder is saturating rather than recovering, and
+            # that has to be visible here rather than inferred from a stop reason.
+            self._publish_loop_watch(reason)
             return LiveRun(tuple(steps), reason, tuple(item.as_row() for item in deferrals))
 
         self.capture_dir.mkdir(parents=True, exist_ok=True)
@@ -8628,6 +8691,27 @@ class LiveRuntime:
         # answerable from the artifacts.  They stay on the board -- see ``observation_ticket`` on
         # why an unpriced goal would be worse -- and are refused at selection instead.
         self._unrouted_goals: set[str] = set()
+        # LOOP_WATCH_V1 (operator directive: 「把 Loop Detector 作为 Generic Session Engine 的
+        # 公共能力」).  ``LoopDetector`` was fed from one call site only -- inside
+        # ``SessionEngine._run_one_step`` -- so the eight session-routed Goals had a loop
+        # detector and every other Goal walked this ordinary loop with none.  Measured on the
+        # 24 h to 2026-10-04T03:16Z: 58.7% of this path's *successful* steps moved their Goal
+        # not at all, and ``HERO_RECRUIT_ADVANCED`` issued 171 consecutive verifier-passing
+        # steps with zero Goal progress -- the exact input the detector exists for, never once
+        # shown to it.
+        #
+        # One per RUN, and never module-level: a shared detector would carry this run's ledger
+        # into the next one, which is the same reason ``LoopDetector`` keeps its counters on the
+        # instance.  This object does not decide what a loop is -- it owns a real
+        # ``LoopDetector`` and projects its ladder onto surfaces this loop already has; see
+        # ``winter_agent_v2/loop_watch.py`` for the projection table and for why the rung that
+        # needs an adapter has no surface here.
+        #
+        # The detector is fed ``progress`` -- the *Goal*-level fact computed below -- and never
+        # the step's outcome.  That distinction is the whole fix: a step can pass its verifier
+        # while the Goal stands still, and handing over the outcome instead is what left those
+        # 1216 verifier-passing non-progressing steps looking like honest work.
+        self._loop_watch = LoopWatch()
         # The last stamina the run believes, seeded from the store so a misread in *this* run
         # can still be judged against what the previous run read.  See
         # ``_reject_a_dropped_digit``.
@@ -8730,7 +8814,24 @@ class LiveRuntime:
                     print(f"[global-role] {reason}; no further input will be sent", flush=True)
                     return finish(reason)
             phase_started = time.monotonic()
-            before = self._observe(before_path, latency=latency, phase="before")
+            # LOOP_WATCH_V1: the remedy the previous step's detection asked for.  This is the
+            # earliest point at which the run can act on a detection at all -- a detection is
+            # produced *after* a step has been issued and verified, and there is no honest way
+            # to un-issue it -- and the only fact available here is which Goal the run is still
+            # pursuing, so the claim is matched on that.  See ``loop_watch.LoopWatch.take`` for
+            # why that generosity is the right trade.
+            #
+            # ``watch_goal`` is captured *before* this iteration re-selects, so the decision
+            # point below can tell "the same Goal again" from "the board moved on".
+            watch_goal = self._committed_goal
+            watch = self._loop_watch.take(goal_id=watch_goal)
+            # ``widen_observe`` is the one rung whose remedy is a *look*, and the runtime
+            # already has exactly one widened look (``_observe``'s own docstring names
+            # LOOP_DETECTOR_V1 as its second caller).  Driven from here it replaces this
+            # iteration's ordinary observation instead of adding one, so a detected loop pays
+            # for a wider read and not for an extra step.
+            before = self._observe(before_path, latency=latency, phase="before",
+                                   widen=watch.intent == INTENT_WIDEN)
             latency["reobserve_ms"] = (time.monotonic() - phase_started) * 1000
             if pending_training_focus_retry is not None:
                 pending = pending_training_focus_retry
@@ -8893,6 +8994,43 @@ class LiveRuntime:
             bootstrap_decision = self._bootstrap_decision(best_goal, before)
             decision = bootstrap_decision or (leave if leave is not None else self.brain.decide(before, self.registry))
             decision = self._stop_instead_of_looking_again(before, decision, best_goal)
+            # LOOP_WATCH_V1: carry out the rung, but only when the Goal the loop was detected
+            # on is the Goal this iteration is still on.  Both remedies below already exist in
+            # this run -- one is the ``OPEN_HOME`` decision ``_deferral_replan`` issues for its
+            # own reason, the other is ``_yield_to_next_goal``, which six other call sites
+            # already use -- which is the whole point of a *projection*: the ladder names the
+            # remedies, and this path carries out the ones it has.
+            #
+            # Nothing here can end the run.  The strongest ending available is one Goal going
+            # back to the Scheduler, which is a new *caller* of an existing decision rather than
+            # a new kind of stop -- the operator's 「不得停止整个 AUTO」 clause, kept as a property
+            # of the code by ``tests/test_loop_main_path_wiring.py``.
+            loop_watch_rung = ""
+            if watch.intent and best_goal is not None and best_goal.goal_id == watch.goal_id:
+                loop_watch_rung = watch.rung
+                if watch.intent == INTENT_GO_HOME:
+                    home = self.registry.get("OPEN_HOME")
+                    if home is not None and home.ready(before):
+                        self._loop_watch.note_acted(watch.intent)
+                        self._narrate_once(
+                            f"loop {watch.rung} on {best_goal.goal_id}: {watch.reason}"
+                        )
+                        if decision.skill != "OPEN_HOME":
+                            # Leave and re-approach from a known page.  The run's own OPEN_HOME
+                            # skill dispatched as an ordinary decision -- the same surface
+                            # ``_deferral_replan`` uses, and the same verifier proves it.
+                            decision = Decision(
+                                "OPEN_HOME", f"loop_recovery_{watch.rung}",
+                                before.confidence, "home_opened",
+                            )
+                elif watch.intent == INTENT_YIELD_GOAL:
+                    self._loop_watch.note_acted(watch.intent)
+                    # ``True`` means a *new* Goal was held back, so going round again is real
+                    # work.  ``False`` means this Goal was already yielded this run, and the run
+                    # keeps the behaviour it had rather than spinning on the same refusal.
+                    if self._yield_to_next_goal(best_goal, deferrals, decision,
+                                                f"loop detector: {watch.reason}"):
+                        continue
             global_credited_goal_ids: tuple[str, ...] = ()
             if self._multi_role_enabled and self._role_identity_confirmed:
                 active_role_id = self._calendar_role_id()
@@ -9931,6 +10069,50 @@ class LiveRuntime:
                     row.no_progress_streak = 0
                 elif attached_progress is False:
                     row.no_progress_streak += 1
+            # LOOP_WATCH_V1: hand this step to the detector, with the *Goal*-level fact and
+            # never the step's outcome.  This is the one place on this loop where both halves of
+            # the signature exist at once -- the run's own ``progress`` (three-state, where
+            # ``None`` means "not observable" and must never be flattened into "no progress")
+            # and the after-frame the loop has already read.
+            #
+            # Timed apart from ``episode_write_ms`` so the one claim that matters about a hot
+            # path can be checked rather than asserted -- that handing this over did not make a
+            # step slower (§17ms 的教训：改完要量，不要声称).
+            #
+            # Both facts are read defensively (``getattr`` rather than a bare attribute chain)
+            # because they are evaluated *here*, in the run, and not inside ``observe_step``'s
+            # own guard: an exception raised while building the arguments would escape a guard
+            # that only covers the call.  A diagnostic that can kill a step is worse than no
+            # diagnostic, and an execution object without an ``action`` is exactly what a
+            # refusal or a dry run produces.
+            loop_target = ""
+            loop_outcome = "FAILURE"
+            if tick.execution is not None:
+                action = getattr(tick.execution, "action", None)
+                # The action actually issued, which is also the ledger's ``control``: one fact
+                # under two spellings, and the offline replay reads the ledger's.
+                loop_target = str(getattr(action, "target", "") or "")
+                # Spelled the way ``_record_episode`` spells ``result`` on this path, so the
+                # live signature and the recorded one cannot drift apart.
+                if getattr(tick.execution, "executed", False) and verification.ok:
+                    loop_outcome = "SUCCESS"
+            loop_started = time.monotonic()
+            loop_verdict = self._loop_watch.observe_step(
+                role_id=self.role_id,
+                goal_id=step_goal or "",
+                skill_id=decision.skill,
+                semantic_target=loop_target,
+                after=after,
+                outcome=loop_outcome,
+                progress=progress,
+            )
+            latency["loop_watch_ms"] = (time.monotonic() - loop_started) * 1000
+            loop_fields: dict[str, Any] = {
+                "loop_watch_rung": loop_watch_rung, "loop_watch_intent": watch.intent,
+            }
+            if loop_verdict is not None and loop_verdict.detected:
+                loop_fields.update(loop_rung=loop_verdict.rung, loop_pattern=loop_verdict.pattern,
+                                   loop_repeats=loop_verdict.repeats)
             phase_started = time.monotonic()
             self._record_episode(
                 decision=tick.decision, before=before, execution=tick.execution,
@@ -9955,6 +10137,7 @@ class LiveRuntime:
             if self.latency_trace_path is not None:
                 action_latency.append(self.latency_trace_path, {
                     **latency,
+                    **loop_fields,
                     "episode_id": self.capture_dir.name,
                     "step_id": index,
                     "repo_revision": self.code_revision,
