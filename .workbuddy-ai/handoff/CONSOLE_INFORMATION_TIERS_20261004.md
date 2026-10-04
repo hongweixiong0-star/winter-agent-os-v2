@@ -1919,3 +1919,94 @@ Start-ScheduledTask -TaskName 'WinterAgentV2Panel'
   实测现场已经看到 `event_goal_state.json` 25.2 天、`capability_catalog.json` 7.8 天都算过期，
   需要判一次"这些源是不是本来就该有这个 TTL"，方法与 §16.4 相同（grep 出该事实的全部读数，
   再逐处问它喂哪块屏）。
+
+---
+
+## 十八、记录提交本身怎么落地的，以及为什么这批**不**重启
+
+### 18.1 提交
+
+`d02baa94`（`docs(handoff): …`）：只动 `.workbuddy-ai/` 下三份文档，
+**1092 行新增 / 0 行删除**，且逐个文件核对过范围 ——
+
+| 文件 | 新增 | 说明 |
+|---|---|---|
+| `handoff/CONSOLE_INFORMATION_TIERS_20261004.md` | 708 | §十六 / §十七 |
+| `memory/2026-10-04.md` | 300 | 当日流水（本批新增文件） |
+| `memory/MEMORY.md` | 84 | §61 / §62 |
+
+`git diff --cached --numstat` 与目录级 diff 都只给出这三行，没有夹带运行态。
+
+### 18.2 部署链（与代码批同一条链，一步不少）
+
+```
+repin_production --to d02baa94   -> HEAD=d02baa94  status rows=1173  outside_data_dirs=0
+                                    manifest expected_commit dc346334 -> d02baa94
+repin --check-only               -> CLEAN_OUTSIDE_DATA
+check_mainline.py                -> MAINLINE_OK（1/2/3 全 OK；判据 3 时镜像尚滞后一个提交，
+                                    这正是允许的方向）
+镜像 git merge --ff-only          -> Updating dc346334..d02baa94，Fast-forward，不产生提交
+```
+
+复核（**去 CR 口径**）：三份文件对"提交前备份"与"提交 blob"各验一次，全部相等 ——
+
+```
+report  65ad6bc4a7e9
+MEMORY  1a4a075f80ef
+daily   54cf1b577d89
+```
+
+### 18.3 **这批不重启、也不放标记**，而且这是有判据的决定
+
+判据是**已加载的字节**，不是"HEAD 动了没有"：
+
+```
+touched_control_plane(changed_paths_since(root, dc346334…))
+  dev(mirror)  变更 75 个 -> 控制面命中 ()
+  pin(prod)    变更 65 个 -> 控制面命中 ()
+```
+
+`d02baa94` 只动文档 ⇒ **重启不会让屏上任何一个像素改变**；此时放
+`CONTROL_PLANE_RELOAD_REQUIRED.json` 就是**假**标记。
+
+同时确认没有任何东西拿启动日志的 `CODE_COMMIT` 与 HEAD 相等做断言：
+
+- `verify_pin()` 比的是 `HEAD` vs `manifest.expected_commit` —— repin 已经把 manifest 推到了
+  `d02baa94`，所以它对得上；它不看日志。
+- 全仓 `CODE_COMMIT` 的出现只有三处：`launch_pinned_production.py`（写）、
+  `control_panel.py:8877`（注释）、`measure_auto_uptime.py`（读，但只把那一行当**时间**边界，
+  不比 sha）。
+
+⇒ **`CODE_COMMIT=dc346334` 与 `HEAD=d02baa94` 并存不是异常。** 面板加载的就是 `dc346334` 的代码
+字节，而 `d02baa94` 的**代码字节**与它完全相同（差的只有文档）。
+
+**留给下一个接管者的一句话**：看到这个组合，先跑
+`touched_control_plane(changed_paths_since(root, <日志里的那个 sha>))`；
+回 `()` 就不要重启 —— 重启只会把"尺子 1 说真话"换成"尺子 1 说一个刚重启过的数"，
+代价是打断一次正在跑的 AUTO episode。
+
+### 18.4 换行符：复核"内容有没有丢"必须用去 CR 口径
+
+dev 的 `MEMORY.md` 与当日日志在 merge 前是 **LF**（我写的），merge 后 git 按
+`core.autocrlf` 写成了 **CRLF**：
+
+```
+MEMORY.md  495929 -> 502442  (+6513 = 它的行数)
+当日日志    19387 ->  19687  (+300  = 它的行数)
+```
+
+直接比 raw sha256 会得到一个**假的** MISMATCH。去 CR 口径下三份全等（18.2）。
+这与 MEMORY **§59** 是同一条判据：文件同步与哈希链都要比**去 CR 后的 sha256**，
+`git cat-file blob` 给的是存储字节（LF），盘上字节是 crlf。
+
+### 18.5 证据图为什么不进提交
+
+面板截图**不进 git** —— `06_DECISIONS.md` 的设计决定，`.gitignore` 覆盖
+`learning/control_panel/**`。所以"尺子 4"交付的是一个**可复现的路径**
+（`_capture_panel_window.py` → `learning/control_panel/_panel_window.png`），不是一个提交物。
+本批仍另存了一份带提交号的自描述副本
+`learning/control_panel/_panel_window_20261004T2003_dc346334.png`（393,991 B，与
+批次 4 的 `_panel_window_view.png` 296,637 B 并存），让这次的读数活过下一次截图 ——
+只新增，不覆盖、不删除。
+
+**本批到此收尾**：代码 `dc346334`、记录 `d02baa94`，两道都上线，四把尺子都有读数。
