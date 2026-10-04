@@ -1211,3 +1211,711 @@ AttributeError: 'types.SimpleNamespace' object has no attribute '_show_header_ce
 （穿着 异常 却坐在条子外 = MISMATCH）。行数 18 → 19（`clock` 以前是读完再 `continue`）。
 `tests/test_console_shows_only_what_it_can_fill.py` 新增两条守卫**直接跑这个工具自己的桩**，
 于是"下一次给刷新加协作者"会在当天挂一条测试，而不是等到某人下次手跑工具。
+
+---
+
+## 十六、第五批：§六 里那一条"预载/本地模型非正常"，以及它背后一个事实的三处读数（2026-10-04 续）
+
+前四批把 §六 的表逐页落地。这一批起手是去处理 §六 里**最后一条没有对应实现**的例外行：
+
+| 触发 | 浮上来的内容 | 起手时的状态 |
+|---|---|---|
+| 预载 / 本地模型非正常 | 对应顶栏格**与详情行**浮到 L1 | 顶栏格已落地（第四批）；详情行没有 |
+| 任一"花钱 / 不可逆"操作在进行 | 策略页 🔒 行 + 资源策略浮 L1 | **信号在项目里不存在**（§五 的结论） |
+
+查下去之后，结论和"补一条规则"完全不是一回事。
+
+### 16.1 先否掉一条：这一条**不该**写成规则（而且原因可测）
+
+"本地模型非正常 → 详情行浮 L1"的直觉做法，是给持有那六行的 `header_evidence` 折叠加一条
+`escalate` 规则。**实测否掉了它**，因为那一块里唯一能算"非正常"的读数，恰恰是错的读数：
+
+```
+local_gui_model_truth() 的全部返回（实测 2026-10-04）：
+  服务在线                     -> LIVE_OBSERVED -> health_of = 正常（收起来）
+  没应答 / 还没探测过           -> UNKNOWN       -> 未确认（按它自己的文档「不是故障」）
+  local_planner.enabled=false  -> PERSISTED     -> 降级   <- 唯一一种"非正常"
+```
+
+第三种是**操作者自己关掉模型**的读数。为它开一个块就是狼来了。也就是说：
+**这一行的"详情半边"没有"错误"可触发，只有"操作者自己的选择"可触发** ——
+写一条只会在错的时候响的规则，比不写更坏。
+
+于是这一半的做法是**记录，不是实现**：`INERT_FOLDS["header_evidence"]` 的重写。
+
+### 16.2 顺手修掉一条**错的理由**（比"没实现"更值得修）
+
+`INERT_FOLDS["header_evidence"]` 原来写的理由是：
+
+> 六行是顶栏几个格的原始依据。顶栏本身在 L1 常驻，这一块只是同一件事展开一层
+> ——**它永远不会比顶栏先出问题**。
+
+这是一个**顺序论证**，而 §六 问的不是顺序，是"操作者在栏上读到「本地模型降级」之后，
+还有没有地方可去"。两句话不等值：前者可以用一个"顶栏格子也坏了"的假设驳掉，
+后者才是这条规则存在的理由。所以重写成**实测版**（三种返回逐一列出 + "唯一算非正常的那种
+是操作者自己关掉的"），并写明它与 `policy_resource`（花钱信号不存在）、`dev_queue`（积压阈值
+不存在）是同一类结论。
+
+### 16.3 顺手修掉一条**错的守卫注释**（"尚未实现"其实早就实现了）
+
+`tests/test_console_shows_only_what_it_can_fill.py` 的 `SIX_TABLE_OPENERS` 里有一条：
+
+```python
+"boot",              # 预载非正常 —— 尚未实现（报告 §十）
+```
+
+两句都不成立，实测：
+
+- **没有叫 `boot` 的折叠**（33 个 `_fold(...)` 调用里没有它）；它是个占位符；
+- 预载这一行**已经被覆盖**了：持有预载详情的事实卡所在的那块（`facts`），它的 `annotate=`
+  读的正是 `stale_among(..., auto_running=)` **对 `learning/knowledge_bootstrap/STATE.json` 的答案**，
+  而那个文件在 `source_freshness.SOURCES` 里（`used_by='总览·自动开发 / 自动开发·能力学习'`）。
+  也就是说：**AUTO 在跑、心跳却停了的那一刻，事实卡表头就会带上过期标注**。
+
+那为什么加的是 `annotate` 而不是 `escalate`？因为同一块还要盯文件，而本项目有一条守卫钉死的
+规矩：**一块只用一种规则**（`test_the_block_that_opens_and_the_block_that_marks_are_not_the_same_rule`，
+它自己的注释写着"合成一条是当初犯过的具体的错"）。为省一次点击去破这条不变量不划算 ——
+何况操作者已经有三个信号：浮起来的顶栏格、「需要关注」里点名那个文件、被标注的表头。
+
+**所以这一行改的是注释，不是代码**：把"尚未实现"改成事实（被 `facts` 的标注覆盖，
+以及为什么是"标注"而不是"打开"）。
+
+### 16.4 真正该修的东西：一个事实，三处读数，错的那处喂给**另一块屏**
+
+在核对 `facts` 那块到底盯没盯这个文件时，撞见了本批真正的问题。预载心跳"多久算过期"
+在代码里有**三处读数**：
+
+```
+state_truth.bootstrap()           age > 3 * 600                                 = 1800 s
+control_panel 系统页              age > 3 * QueuePump.PRELOAD_EVERY * INTERVAL   = 1800 s  (20 × 30)
+source_freshness 的 SOURCES 表    21600                                         = 6 h
+```
+
+第三处**看着就是抄的**：它上下两行（`local_gui_model_calls.jsonl`、`local_planner_steps.jsonl`）
+也都是 `21600`。
+
+要紧的不是"三处不一致"，而是**第三处喂的是哪块屏**：`source_freshness` 是
+「需要关注」卡与事实卡表头过期标注的输入。于是这台机器上出现了**两块屏互相否定**：
+
+```
+1801s ~ 21600s（5.5 小时）之间：
+   顶栏            预载 降级           （state_truth，1800s）
+   「需要关注」卡   没有问题            （source_freshness，21600s）
+   「干预卡」      不需要你干预          （同上，因为它读的就是上面那份 lines）
+```
+
+逐龄实测（修复前 / 修复后）：
+
+| 心跳龄 | `state_truth`(1800) | 旧表(21600) | 新表(1800) |
+|---|---|---|---|
+| 1800s | fresh | fresh | fresh |
+| **1801s** | **STALE** | **fresh** ← | STALE |
+| 3600s | STALE | fresh ← | STALE |
+| 21600s | STALE | fresh ← | STALE |
+| 21601s | STALE | STALE | STALE |
+
+### 16.5 修法：单一定义 + 保留"拼法" + 一条守卫断言两者相等
+
+```python
+# capability_bootstrap.py，紧挨着它所描述的那个文件（STATE_PATH）
+HEARTBEAT_SECONDS_PER_BEAT = 600          # = QueuePump.PRELOAD_EVERY(20) × QueuePump.INTERVAL(30)
+HEARTBEAT_BUDGET_SECONDS   = 3 * HEARTBEAT_SECONDS_PER_BEAT
+```
+
+- `source_freshness` 与 `state_truth` **读**这两个常量（不再各写一个数）；
+- 面板系统页那处**保留自己拼出来的写法**（`3 * PRELOAD_EVERY * INTERVAL`），因为**拼法就是论点** ——
+  它一眼能看出数字凭什么成立；代价是它成为第二份读数，于是守卫钉住它：
+  `ThePreloadHeartbeatHasOneBudgetTests` 断言
+  (a) 表里的预算 == 常量、(b) 预算 == 3 × 一拍、(c) 预算 < 4h（"心跳"不许有一下午的预算）、
+  (d) 面板的拼法 == 常量、(e) 常量的"一拍" == 泵真实的 `PRELOAD_EVERY × INTERVAL`。
+
+**收紧的反面判据（防狼来了）**：预算从 6h 收到 30min，会不会让面板开始误报？
+实测现场数字背书：心跳龄 0.13h ≈ 470s，而写入节奏是 600s 一次 —— **收紧后依然 FRESH**；
+并且 `stale_among` 本来就有 AUTO 闸门（AUTO 停了不算故障）。两条一起，才不会把"更严"
+当成"更好"。
+
+### 16.6 第二个窟窿：顶栏的 AUTO 闸门（同一个根因的另一半）
+
+`state_truth.bootstrap()` 是**只看年龄**判 STALE 的，它不知道 AUTO 在不在跑。而第四批给顶栏
+写的显隐规则是"不健康就浮回来"，也没有 AUTO 闸门。两者相乘得到一个可复现的假警报：
+
+```
+停止 AUTO 31 分钟  ->  心跳超 1800s  ->  预载格浮回顶栏并显示「降级」
+                                       而同一块屏上的干预卡正在写
+                                       「AUTO 未在运行（这是你的选择，不是故障）」
+```
+
+**判据与修法**：把"只有 AUTO 的 worker 会写的那一格"声明出来，并用同一个 AUTO 判定闸住它：
+
+```python
+HEADER_CELLS_WRITTEN_BY_AUTO = {
+    "dot_boot": "预载控制器只在 AUTO 的 worker 里跑：AUTO 停了，它就不再有写入者",
+}
+```
+
+三条边界都是刻意的，也都有守卫：
+
+- **只有 `dot_boot` 在表里**。`dot_model` 是窗口用 HTTP 够到的**服务**，不是 AUTO 的 worker 写的，
+  所以它的沉默是关于服务的事实，**不闸**（`test_the_gate_names_exactly_the_cells_auto_writes`）；
+- **只闸 `降级`/`未确认`，永不闸 `异常`**。冲突与故障不是"写入者停了"能解释的
+  （`test_a_conflict_is_never_explained_away_by_a_stopped_writer`）；
+- **`None`（审计里根本没有这个来源）永远胜出**，闸门管不着它 —— 否则一个坏掉的读取器
+  会长得像一台健康的机器（同一条测试）。
+
+AUTO 判定**只取一次**（`_refresh_truth` 开头 `self._auto_running = ...`），
+干预卡与顶栏闸门读同一个值；守卫数了 `self.process.poll()` 在 `_refresh_truth` 里**只出现 1 次**
+（两份就是"顶栏叫它故障、卡片说这是你的选择"的来源）。
+
+### 16.7 第三个：`非正常` 曾经有两个定义
+
+`_escalate_watchdog` 与 `_escalate_workbuddy` 各自写了一份 `colour in ("bad", "warn")`。
+提成模块级 `unhealthy_word(value)`（与 `failure_priority`、`progress_is_stalled` 同规格），
+并用一条**读 AST 的守卫**断言剩下的那一份就在这个函数里面
+（文档字符串里提到同名字符串不算 —— 注释是历史，不是副本，同 `_string_literals` 的豁免）。
+
+### 16.8 顺带：第四批留下的三个红（**我自己上一批的**，已修）
+
+跑受影响测试集时挂了 3 条，全在 `test_the_console_only_shows_numbers_it_measured.py`。
+查 `git log -S "def _goal_row(self, cells"` → 引入者就是**第四批的 `940f8d4f`**。
+
+两个真实的错，都不是"测试写死了"这种解释能带过的：
+
+1. **`_BoardStub.__getattr__` 返回的是"未绑定"的函数**（`getattr(cls, name)`），
+   于是 `_refresh_goal_board` 调用的每个辅助函数，**第一个参数收到的都是这个桩**。
+   以前无害，是因为那些辅助函数不接参数；第四批把 `_goal_row` 提出来并加了 `cells` 参数，
+   调用就变成 `_goal_row(self={...})`，`cells` 永远绑不上。
+   修法：**只绑实例方法**，并且**跳过 `classmethod`/`staticmethod` 描述符** ——
+   `_blocked_cell` 是 `classmethod`，把它也绑一次就是这个错的镜像版本。
+2. **`rows[0][7]` 是按位置取列**。第四批把 L1 列提到前面之后，第 7 列从"阻塞原因"变成了"类别"，
+   于是断言在**一个不同的列上继续通过**（报错信息体现为在"发展"这个值上找能力名）。
+   修法：`_column(panel, "blocked")` 从 `GOAL_COLUMNS` 里读下标 ——
+   一条声明同时驱动表头与每一行，测试就该按名字取列，不该记位置。
+
+**为什么上一批没发现**：第四批的验收跑的是另一批文件（那次报 135 passed），没带这个文件。
+这是"验收集合"的问题，不是运气问题 —— 已记进 §17.5。
+
+### 16.9 本批改了什么 / 没改什么
+
+**改了**（6 个文件，+351 / −30）：
+
+| 文件 | 改了什么 |
+|---|---|
+| `winter_agent_v2/capability_bootstrap.py` | 新增 `HEARTBEAT_SECONDS_PER_BEAT` / `HEARTBEAT_BUDGET_SECONDS`（单一定义） |
+| `winter_agent_v2/source_freshness.py` | 那一行改读常量（21600 → 1800），不再抄邻居 |
+| `winter_agent_v2/state_truth.py` | `3 * 600` → 常量（删掉未命名的字面量） |
+| `tools/control_panel.py` | `HEADER_CELLS_WRITTEN_BY_AUTO` + `auto_running` 闸门 + `unhealthy_word` + `_auto_running` 取一次；`header_evidence` 的 INERT 理由重写 |
+| `tests/test_console_shows_only_what_it_can_fill.py` | 66 → 75 条；新增两个守卫类 + `SIX_TABLE_OPENERS` 注释纠正 |
+| `tests/test_the_console_only_shows_numbers_it_measured.py` | 桩绑定修正 + 按名取列 + `import types` |
+
+**故意没改**（每条都有判据，不是漏掉）：
+
+- **本地模型的"详情行"不写规则** —— 唯一能触发它的读数是操作者自己的选择（§16.1）；记录在 INERT。
+- **不给 `facts` 加 `escalate`** —— 会破"一块一种规则"，而 §六 那条已被 AUTO 闸门的标注覆盖（§16.3）。
+- **`health_of` 会扫 `note` 文本**（`已停用` 那条 note 里含"降级"二字 → 判成降级）。这是真的粗，
+  但实测：27 个真实值里**去掉 note 与保留 note 的判定完全一致（0 处不同）** ——
+  今天改它是一次在真实数据上**验证不出效果**的改动，而它动的是全局词表。记录，不动（§17.6）。
+- **`WorkBuddy 异常` 没动** —— 见 §17.6，是既存条件，且原因已经被它自己写出来。
+
+---
+
+## 十七、第五批落地记录（2026-10-04，五步各带证据）
+
+提交 `dc346334`（`fix(console): the bar and the 需要关注 card disagreed about one heartbeat for 5.5 hours`）。
+
+### 17.1 第 0 步先跑判据（上一批的教训）
+
+`check_mainline.py` 在**动手之前**跑：`MAINLINE_OK`（三条全过，pin/主线/镜像都在 `b899d4a3`）。
+上一批是把这条判据放在 commit **之后**，所以"我在 `main` 上提交了"是**事后发现**的。
+这一次它变成**事前拦住**：提交落在 pin worktree
+（`E:\无尽冬日智能体_worktrees\winter-prod-pinned\无尽冬日智能体`），
+`main` 只做 `merge --ff-only`（不产生提交）。
+
+同步两棵树的文件用的是**剥掉 `\r` 的 sha256**，不是 sha1/size：
+
+```
+tools/control_panel.py                                    92bd62c4611f62d2…
+winter_agent_v2/state_truth.py                            bbfb0883c2a83331…
+winter_agent_v2/source_freshness.py                       3a84dcdbc553109b…
+winter_agent_v2/capability_bootstrap.py                   21a6a0dc188b6a71…
+tests/test_console_shows_only_what_it_can_fill.py           3bf16b82884157ce…
+tests/test_the_console_only_shows_numbers_it_measured.py   4bbb59fc0dd5068e…
+ALL EQUAL (CR-stripped): True
+```
+
+顺带清掉一处**换行符不一致**：`source_freshness.py` 与
+`test_the_console_only_shows_numbers_it_measured.py` 在盘上是**纯 LF**，而这两棵树其余文件都是 CRLF
+（`git ls-files --eol` 报 `i/lf w/lf`）。规范成 CRLF，并用"剥 CR 后哈希不变"证明只是换行符。
+
+### 17.2 repin 与主线
+
+```
+repin_production.py --to dc346334                -> RESULT: CLEAN_OUTSIDE_DATA   (outside_data_dirs=0)
+repin_production.py --to dc346334 --check-only   -> RESULT: CLEAN_OUTSIDE_DATA
+check_mainline.py                                -> MAINLINE_OK  (pin/主线/镜像都 = dc346334)
+```
+
+### 17.3 三把尺子 + 一张画
+
+**尺子 1（窗口自报，两个写入点）**：
+
+```
+desktop_startup.log 尾行  [2026-10-04T20:03:40+08:00] CODE_COMMIT=dc3463348ac73af8100935f93e81a13b4ee96bdd WORKTREE_CLEAN=true
+                          launcher=E:\无尽冬日智能体_worktrees\winter-prod-pinned\无尽冬日智能体\tools\launch_pinned_production.py
+pump.json                 runtime_loaded_revision = dc3463348ac73af8100935f93e81a13b4ee96bdd+beed547a172351c7
+                          runtime_loaded_at       = 2026-10-04T12:03:42Z  （= 本地 20:03:42，就是这次重启）
+```
+
+`launcher=` 这一行是重点：它直接写出是哪棵树的 `launch_pinned_production.py`。
+这条是**踩坑之后才加进读法里的**（见 §17.4）。
+
+**尺子 2（加载的字节 == 提交里的字节，全程同一把尺）**：
+
+```
+窗口记录的 (pump.json)      c29bb88587b6d338cd27557de30edffbc7766cf114c80ebb45125ed5a7f5c85b
+pin 树 磁盘原始字节(CRLF)    c29bb885…  MATCH=True    <- 这一对证明"生效"
+dev 树 磁盘原始字节(CRLF)    c29bb885…  MATCH=True
+磁盘剥掉 \r                 92bd62c4611f62d2aa0eedb302e5dc6836126a77ab18cd57411cf11302be66ec
+提交 dc346334 的 blob(LF)   92bd62c4…  MATCH=True    <- 这一对证明"提交里就是这份内容"
+```
+
+**尺子 3（行为）**：
+
+```
+tools/gui_wiring_verify.py            末行 mismatched: 0    (wired and matching 19/19, unconfirmed 0)
+生产树 pytest（--basetemp 在仓库外）    297 passed, 6 subtests passed
+desktop_startup.log 中最后一次 CODE_COMMIT 之后的 Traceback 数   0
+                                     （整文件 99 条 —— 按最后一个 CODE_COMMIT 切开才数得对）
+```
+
+**尺子 4（一张画）**：`_capture_panel_window.py` → `learning/control_panel/_panel_window.png`。
+截图里可以直接读到的三件事：
+
+1. **顶栏是 7 格**：`V2正常 MAA工作中 MuMu正常 游戏正常 AUTO工作中 WorkBuddy异常 时间20:05:43` ——
+   本地模型 / 预载**不在条上**（健康 → 收起来），这正是 §六 那张 9→6 的表在跑；
+2. **「需不需要干预」在 L1 常驻**，并且**把花钱那行印出来了**：
+   「此刻会不会花钱 / 不可逆操作：真钱：永久禁止 🔒 · 已禁用 Goal 7 个（自动选择已排除）」；
+3. **预载没有误报**：需要关注卡点的是 `event_goal_state.json`（25.2 天）一类的长 TTL 源，
+   **没有**刚被收紧到 30 分钟的预载心跳 —— 这是 §16.5 那条"收紧要有现场数字背书"的现场证据。
+
+### 17.4 卡点：我把生产面板从**开发树**启动了一次（已纠正，判据已记入 MEMORY §62）
+
+第一次重启我用的是 `tools/panel_restart.py --restart --force`（在开发树上调用）。
+它没有 pin 校验，`ROOT` 取的是**脚本所在的那棵树**，所以它把生产面板从
+`E:\无尽冬日智能体`（镜像 `main`）启动起来了。两棵树内容当时恰好相同，所以功能上看不出来；
+但"生产跑的就是被 pin 的那个提交"这条性质，被交给了运气。
+
+判据不是 pid 文件，而是 **worker 的命令行**：
+
+```
+我误启的那次      E:\无尽冬日智能体\tools\run_live.py                       <- 开发树，错
+部署后（正确）    ...\winter-prod-pinned\无尽冬日智能体\tools\run_live.py    <- pin 树，对
+```
+
+而且 `panel_restart.py` 自己的 docstring 就写了另一半代价：从这个宿主的一次工具调用里
+spawn 出来的子进程会在这次调用结束时被整棵回收。实测就是那样 —— 下一次调用 `--status`
+还看到它活着（pid 17096，AUTO_RECOVERING），再下一次 `--stop` 就已经"nothing to stop"，
+`panel.pid` 被 unlink，进程表里一个不剩。
+
+**正确的生产重启路径是计划任务**：
+
+```
+Start-ScheduledTask -TaskName 'WinterAgentV2Panel'
+  -> action: E:\无尽冬日智能体\.venv\Scripts\pythonw.exe
+             "C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\tools\launch_pinned_production.py"
+     （该 C: 路径与 E:\无尽冬日智能体_worktrees\... 是同一棵树，用 st_ino / realpath 判过）
+  -> desktop_startup.log 尾行 launcher= 指向 pin 树，CODE_COMMIT=dc346334
+```
+
+### 17.5 卡点：上一批的"验收集合"漏了三个红（已修，机制已加）
+
+第四批的验收跑的是另一批文件，`test_the_console_only_shows_numbers_it_measured.py` 不在里面，
+所以 `_goal_row(cells)` 那次签名变更带来的三个红**活过了一整批**。
+本批的 A/B 是：
+
+```
+改动后  tests/test_global_dual_role_scheduler.py tests/test_runtime_bootstrap_integration.py
+        -> 8 failed
+备份 6 个文件 -> git checkout -- 回到 HEAD -> 重跑同样两条
+        -> 同样的 8 failed        <- 既存，不是本批
+恢复 -> md5 六个文件逐个 OK
+```
+
+顺带把"改坏了还是本来就红"这条判据本身需要的顺序固定下来：
+**先备份 → 再回退 → 重跑 → 恢复 → 逐个 md5 校验**。少了最后一步，就分不清
+"我恢复成功了"和"我留下了一份被回退的代码"。
+
+### 17.6 记录而不改（三条，都写了理由）
+
+1. **本地模型的"详情行"没有可触发状态**（§16.1）—— 写在 `INERT_FOLDS`。
+2. **`health_of` 会解析 `note` 文本**：`local_gui_model_truth` 的"已停用"分支，note 里含"降级"
+   二字，于是**故意关掉模型**会被判成降级。实测 27 个真实值：**去掉 note 与保留 note 判定全同
+   （0 处不同）**。今天改它 = 在真实数据上验证不出效果，却动全局词表 → 记录，不动。
+3. **`WorkBuddy 异常` 是既存条件**：`gateway_health=CONFLICT`，note 写着
+   `AUTH_REJECTED；连续 3 次失败，已退避 120.0 秒；没有成功通信记录`；端口 8080 **在监听**，
+   所以是凭据不被接受，不是进程死了。第四批的截图里它**同样**是异常（同一次会话，19:30），
+   即与本次重启无关。它属于 L3（内部开发平台），不阻塞游戏；且修它要动凭据环境 ——
+   按操作者的授权边界，这属于"报告卡点"，不属于"自己决定"。
+
+**下一批的候选**（按 §六 剩余空缺排序）：
+
+- `queues` / `dev_queue` 的**积压阈值**：§六 写了「积压超阈值浮 L1」，而项目里
+  没有声明过的积压阈值（`_compact` 回的是状态词，不是条数）。要么给队列一个真的计数口径，
+  要么把 §六 这一行的"阈值"改成项目已有的判据（`WORKBUDDY_QUEUE_STUCK`）。
+- **`source_freshness.SOURCES` 里其余长 TTL 源**是否也有"抄邻居"的痕迹：
+  实测现场已经看到 `event_goal_state.json` 25.2 天、`capability_catalog.json` 7.8 天都算过期，
+  需要判一次"这些源是不是本来就该有这个 TTL"，方法与 §16.4 相同（grep 出该事实的全部读数，
+  再逐处问它喂哪块屏）。
+
+---
+
+## 十六、第五批：§六 里那一条"预载/本地模型非正常"，以及它背后一个事实的三处读数（2026-10-04 续）
+
+前四批把 §六 的表逐页落地。这一批起手是去处理 §六 里**最后一条没有对应实现**的例外行：
+
+| 触发 | 浮上来的内容 | 起手时的状态 |
+|---|---|---|
+| 预载 / 本地模型非正常 | 对应顶栏格**与详情行**浮到 L1 | 顶栏格已落地（第四批）；详情行没有 |
+| 任一"花钱 / 不可逆"操作在进行 | 策略页 🔒 行 + 资源策略浮 L1 | **信号在项目里不存在**（§五 的结论） |
+
+查下去之后，结论和"补一条规则"完全不是一回事。
+
+### 16.1 先否掉一条：这一条**不该**写成规则（而且原因可测）
+
+"本地模型非正常 → 详情行浮 L1"的直觉做法，是给持有那六行的 `header_evidence` 折叠加一条
+`escalate` 规则。**实测否掉了它**，因为那一块里唯一能算"非正常"的读数，恰恰是错的读数：
+
+```
+local_gui_model_truth() 的全部返回（实测 2026-10-04）：
+  服务在线                     -> LIVE_OBSERVED -> health_of = 正常（收起来）
+  没应答 / 还没探测过           -> UNKNOWN       -> 未确认（按它自己的文档「不是故障」）
+  local_planner.enabled=false  -> PERSISTED     -> 降级   <- 唯一一种"非正常"
+```
+
+第三种是**操作者自己关掉模型**的读数。为它开一个块就是狼来了。也就是说：
+**这一行的"详情半边"没有"错误"可触发，只有"操作者自己的选择"可触发** ——
+写一条只会在错的时候响的规则，比不写更坏。
+
+于是这一半的做法是**记录，不是实现**：`INERT_FOLDS["header_evidence"]` 的重写。
+
+### 16.2 顺手修掉一条**错的理由**（比"没实现"更值得修）
+
+`INERT_FOLDS["header_evidence"]` 原来写的理由是：
+
+> 六行是顶栏几个格的原始依据。顶栏本身在 L1 常驻，这一块只是同一件事展开一层
+> ——**它永远不会比顶栏先出问题**。
+
+这是一个**顺序论证**，而 §六 问的不是顺序，是"操作者在栏上读到「本地模型降级」之后，
+还有没有地方可去"。两句话不等值：前者可以用一个"顶栏格子也坏了"的假设驳掉，
+后者才是这条规则存在的理由。所以重写成**实测版**（三种返回逐一列出 + "唯一算非正常的那种
+是操作者自己关掉的"），并写明它与 `policy_resource`（花钱信号不存在）、`dev_queue`（积压阈值
+不存在）是同一类结论。
+
+### 16.3 顺手修掉一条**错的守卫注释**（"尚未实现"其实早就实现了）
+
+`tests/test_console_shows_only_what_it_can_fill.py` 的 `SIX_TABLE_OPENERS` 里有一条：
+
+```python
+"boot",              # 预载非正常 —— 尚未实现（报告 §十）
+```
+
+两句都不成立，实测：
+
+- **没有叫 `boot` 的折叠**（33 个 `_fold(...)` 调用里没有它）；它是个占位符；
+- 预载这一行**已经被覆盖**了：持有预载详情的事实卡所在的那块（`facts`），它的 `annotate=`
+  读的正是 `stale_among(..., auto_running=)` **对 `learning/knowledge_bootstrap/STATE.json` 的答案**，
+  而那个文件在 `source_freshness.SOURCES` 里（`used_by='总览·自动开发 / 自动开发·能力学习'`）。
+  也就是说：**AUTO 在跑、心跳却停了的那一刻，事实卡表头就会带上过期标注**。
+
+那为什么加的是 `annotate` 而不是 `escalate`？因为同一块还要盯文件，而本项目有一条守卫钉死的
+规矩：**一块只用一种规则**（`test_the_block_that_opens_and_the_block_that_marks_are_not_the_same_rule`，
+它自己的注释写着"合成一条是当初犯过的具体的错"）。为省一次点击去破这条不变量不划算 ——
+何况操作者已经有三个信号：浮起来的顶栏格、「需要关注」里点名那个文件、被标注的表头。
+
+**所以这一行改的是注释，不是代码**：把"尚未实现"改成事实（被 `facts` 的标注覆盖，
+以及为什么是"标注"而不是"打开"）。
+
+### 16.4 真正该修的东西：一个事实，三处读数，错的那处喂给**另一块屏**
+
+在核对 `facts` 那块到底盯没盯这个文件时，撞见了本批真正的问题。预载心跳"多久算过期"
+在代码里有**三处读数**：
+
+```
+state_truth.bootstrap()           age > 3 * 600                                 = 1800 s
+control_panel 系统页              age > 3 * QueuePump.PRELOAD_EVERY * INTERVAL   = 1800 s  (20 × 30)
+source_freshness 的 SOURCES 表    21600                                         = 6 h
+```
+
+第三处**看着就是抄的**：它上下两行（`local_gui_model_calls.jsonl`、`local_planner_steps.jsonl`）
+也都是 `21600`。
+
+要紧的不是"三处不一致"，而是**第三处喂的是哪块屏**：`source_freshness` 是
+「需要关注」卡与事实卡表头过期标注的输入。于是这台机器上出现了**两块屏互相否定**：
+
+```
+1801s ~ 21600s（5.5 小时）之间：
+   顶栏            预载 降级           （state_truth，1800s）
+   「需要关注」卡   没有问题            （source_freshness，21600s）
+   「干预卡」      不需要你干预          （同上，因为它读的就是上面那份 lines）
+```
+
+逐龄实测（修复前 / 修复后）：
+
+| 心跳龄 | `state_truth`(1800) | 旧表(21600) | 新表(1800) |
+|---|---|---|---|
+| 1800s | fresh | fresh | fresh |
+| **1801s** | **STALE** | **fresh** ← | STALE |
+| 3600s | STALE | fresh ← | STALE |
+| 21600s | STALE | fresh ← | STALE |
+| 21601s | STALE | STALE | STALE |
+
+### 16.5 修法：单一定义 + 保留"拼法" + 一条守卫断言两者相等
+
+```python
+# capability_bootstrap.py，紧挨着它所描述的那个文件（STATE_PATH）
+HEARTBEAT_SECONDS_PER_BEAT = 600          # = QueuePump.PRELOAD_EVERY(20) × QueuePump.INTERVAL(30)
+HEARTBEAT_BUDGET_SECONDS   = 3 * HEARTBEAT_SECONDS_PER_BEAT
+```
+
+- `source_freshness` 与 `state_truth` **读**这两个常量（不再各写一个数）；
+- 面板系统页那处**保留自己拼出来的写法**（`3 * PRELOAD_EVERY * INTERVAL`），因为**拼法就是论点** ——
+  它一眼能看出数字凭什么成立；代价是它成为第二份读数，于是守卫钉住它：
+  `ThePreloadHeartbeatHasOneBudgetTests` 断言
+  (a) 表里的预算 == 常量、(b) 预算 == 3 × 一拍、(c) 预算 < 4h（"心跳"不许有一下午的预算）、
+  (d) 面板的拼法 == 常量、(e) 常量的"一拍" == 泵真实的 `PRELOAD_EVERY × INTERVAL`。
+
+**收紧的反面判据（防狼来了）**：预算从 6h 收到 30min，会不会让面板开始误报？
+实测现场数字背书：心跳龄 0.13h ≈ 470s，而写入节奏是 600s 一次 —— **收紧后依然 FRESH**；
+并且 `stale_among` 本来就有 AUTO 闸门（AUTO 停了不算故障）。两条一起，才不会把"更严"
+当成"更好"。
+
+### 16.6 第二个窟窿：顶栏的 AUTO 闸门（同一个根因的另一半）
+
+`state_truth.bootstrap()` 是**只看年龄**判 STALE 的，它不知道 AUTO 在不在跑。而第四批给顶栏
+写的显隐规则是"不健康就浮回来"，也没有 AUTO 闸门。两者相乘得到一个可复现的假警报：
+
+```
+停止 AUTO 31 分钟  ->  心跳超 1800s  ->  预载格浮回顶栏并显示「降级」
+                                       而同一块屏上的干预卡正在写
+                                       「AUTO 未在运行（这是你的选择，不是故障）」
+```
+
+**判据与修法**：把"只有 AUTO 的 worker 会写的那一格"声明出来，并用同一个 AUTO 判定闸住它：
+
+```python
+HEADER_CELLS_WRITTEN_BY_AUTO = {
+    "dot_boot": "预载控制器只在 AUTO 的 worker 里跑：AUTO 停了，它就不再有写入者",
+}
+```
+
+三条边界都是刻意的，也都有守卫：
+
+- **只有 `dot_boot` 在表里**。`dot_model` 是窗口用 HTTP 够到的**服务**，不是 AUTO 的 worker 写的，
+  所以它的沉默是关于服务的事实，**不闸**（`test_the_gate_names_exactly_the_cells_auto_writes`）；
+- **只闸 `降级`/`未确认`，永不闸 `异常`**。冲突与故障不是"写入者停了"能解释的
+  （`test_a_conflict_is_never_explained_away_by_a_stopped_writer`）；
+- **`None`（审计里根本没有这个来源）永远胜出**，闸门管不着它 —— 否则一个坏掉的读取器
+  会长得像一台健康的机器（同一条测试）。
+
+AUTO 判定**只取一次**（`_refresh_truth` 开头 `self._auto_running = ...`），
+干预卡与顶栏闸门读同一个值；守卫数了 `self.process.poll()` 在 `_refresh_truth` 里**只出现 1 次**
+（两份就是"顶栏叫它故障、卡片说这是你的选择"的来源）。
+
+### 16.7 第三个：`非正常` 曾经有两个定义
+
+`_escalate_watchdog` 与 `_escalate_workbuddy` 各自写了一份 `colour in ("bad", "warn")`。
+提成模块级 `unhealthy_word(value)`（与 `failure_priority`、`progress_is_stalled` 同规格），
+并用一条**读 AST 的守卫**断言剩下的那一份就在这个函数里面
+（文档字符串里提到同名字符串不算 —— 注释是历史，不是副本，同 `_string_literals` 的豁免）。
+
+### 16.8 顺带：第四批留下的三个红（**我自己上一批的**，已修）
+
+跑受影响测试集时挂了 3 条，全在 `test_the_console_only_shows_numbers_it_measured.py`。
+查 `git log -S "def _goal_row(self, cells"` → 引入者就是**第四批的 `940f8d4f`**。
+
+两个真实的错，都不是"测试写死了"这种解释能带过的：
+
+1. **`_BoardStub.__getattr__` 返回的是"未绑定"的函数**（`getattr(cls, name)`），
+   于是 `_refresh_goal_board` 调用的每个辅助函数，**第一个参数收到的都是这个桩**。
+   以前无害，是因为那些辅助函数不接参数；第四批把 `_goal_row` 提出来并加了 `cells` 参数，
+   调用就变成 `_goal_row(self={...})`，`cells` 永远绑不上。
+   修法：**只绑实例方法**，并且**跳过 `classmethod`/`staticmethod` 描述符** ——
+   `_blocked_cell` 是 `classmethod`，把它也绑一次就是这个错的镜像版本。
+2. **`rows[0][7]` 是按位置取列**。第四批把 L1 列提到前面之后，第 7 列从"阻塞原因"变成了"类别"，
+   于是断言在**一个不同的列上继续通过**（报错信息体现为在"发展"这个值上找能力名）。
+   修法：`_column(panel, "blocked")` 从 `GOAL_COLUMNS` 里读下标 ——
+   一条声明同时驱动表头与每一行，测试就该按名字取列，不该记位置。
+
+**为什么上一批没发现**：第四批的验收跑的是另一批文件（那次报 135 passed），没带这个文件。
+这是"验收集合"的问题，不是运气问题 —— 已记进 §17.5。
+
+### 16.9 本批改了什么 / 没改什么
+
+**改了**（6 个文件，+351 / −30）：
+
+| 文件 | 改了什么 |
+|---|---|
+| `winter_agent_v2/capability_bootstrap.py` | 新增 `HEARTBEAT_SECONDS_PER_BEAT` / `HEARTBEAT_BUDGET_SECONDS`（单一定义） |
+| `winter_agent_v2/source_freshness.py` | 那一行改读常量（21600 → 1800），不再抄邻居 |
+| `winter_agent_v2/state_truth.py` | `3 * 600` → 常量（删掉未命名的字面量） |
+| `tools/control_panel.py` | `HEADER_CELLS_WRITTEN_BY_AUTO` + `auto_running` 闸门 + `unhealthy_word` + `_auto_running` 取一次；`header_evidence` 的 INERT 理由重写 |
+| `tests/test_console_shows_only_what_it_can_fill.py` | 66 → 75 条；新增两个守卫类 + `SIX_TABLE_OPENERS` 注释纠正 |
+| `tests/test_the_console_only_shows_numbers_it_measured.py` | 桩绑定修正 + 按名取列 + `import types` |
+
+**故意没改**（每条都有判据，不是漏掉）：
+
+- **本地模型的"详情行"不写规则** —— 唯一能触发它的读数是操作者自己的选择（§16.1）；记录在 INERT。
+- **不给 `facts` 加 `escalate`** —— 会破"一块一种规则"，而 §六 那条已被 AUTO 闸门的标注覆盖（§16.3）。
+- **`health_of` 会扫 `note` 文本**（`已停用` 那条 note 里含"降级"二字 → 判成降级）。这是真的粗，
+  但实测：27 个真实值里**去掉 note 与保留 note 的判定完全一致（0 处不同）** ——
+  今天改它是一次在真实数据上**验证不出效果**的改动，而它动的是全局词表。记录，不动（§17.6）。
+- **`WorkBuddy 异常` 没动** —— 见 §17.6，是既存条件，且原因已经被它自己写出来。
+
+---
+
+## 十七、第五批落地记录（2026-10-04，五步各带证据）
+
+提交 `dc346334`（`fix(console): the bar and the 需要关注 card disagreed about one heartbeat for 5.5 hours`）。
+
+### 17.1 第 0 步先跑判据（上一批的教训）
+
+`check_mainline.py` 在**动手之前**跑：`MAINLINE_OK`（三条全过，pin/主线/镜像都在 `b899d4a3`）。
+上一批是把这条判据放在 commit **之后**，所以"我在 `main` 上提交了"是**事后发现**的。
+这一次它变成**事前拦住**：提交落在 pin worktree
+（`E:\无尽冬日智能体_worktrees\winter-prod-pinned\无尽冬日智能体`），
+`main` 只做 `merge --ff-only`（不产生提交）。
+
+同步两棵树的文件用的是**剥掉 `\r` 的 sha256**，不是 sha1/size：
+
+```
+tools/control_panel.py                                    92bd62c4611f62d2…
+winter_agent_v2/state_truth.py                            bbfb0883c2a83331…
+winter_agent_v2/source_freshness.py                       3a84dcdbc553109b…
+winter_agent_v2/capability_bootstrap.py                   21a6a0dc188b6a71…
+tests/test_console_shows_only_what_it_can_fill.py           3bf16b82884157ce…
+tests/test_the_console_only_shows_numbers_it_measured.py   4bbb59fc0dd5068e…
+ALL EQUAL (CR-stripped): True
+```
+
+顺带清掉一处**换行符不一致**：`source_freshness.py` 与
+`test_the_console_only_shows_numbers_it_measured.py` 在盘上是**纯 LF**，而这两棵树其余文件都是 CRLF
+（`git ls-files --eol` 报 `i/lf w/lf`）。规范成 CRLF，并用"剥 CR 后哈希不变"证明只是换行符。
+
+### 17.2 repin 与主线
+
+```
+repin_production.py --to dc346334                -> RESULT: CLEAN_OUTSIDE_DATA   (outside_data_dirs=0)
+repin_production.py --to dc346334 --check-only   -> RESULT: CLEAN_OUTSIDE_DATA
+check_mainline.py                                -> MAINLINE_OK  (pin/主线/镜像都 = dc346334)
+```
+
+### 17.3 三把尺子 + 一张画
+
+**尺子 1（窗口自报，两个写入点）**：
+
+```
+desktop_startup.log 尾行  [2026-10-04T20:03:40+08:00] CODE_COMMIT=dc3463348ac73af8100935f93e81a13b4ee96bdd WORKTREE_CLEAN=true
+                          launcher=E:\无尽冬日智能体_worktrees\winter-prod-pinned\无尽冬日智能体\tools\launch_pinned_production.py
+pump.json                 runtime_loaded_revision = dc3463348ac73af8100935f93e81a13b4ee96bdd+beed547a172351c7
+                          runtime_loaded_at       = 2026-10-04T12:03:42Z  （= 本地 20:03:42，就是这次重启）
+```
+
+`launcher=` 这一行是重点：它直接写出是哪棵树的 `launch_pinned_production.py`。
+这条是**踩坑之后才加进读法里的**（见 §17.4）。
+
+**尺子 2（加载的字节 == 提交里的字节，全程同一把尺）**：
+
+```
+窗口记录的 (pump.json)      c29bb88587b6d338cd27557de30edffbc7766cf114c80ebb45125ed5a7f5c85b
+pin 树 磁盘原始字节(CRLF)    c29bb885…  MATCH=True    <- 这一对证明"生效"
+dev 树 磁盘原始字节(CRLF)    c29bb885…  MATCH=True
+磁盘剥掉 \r                 92bd62c4611f62d2aa0eedb302e5dc6836126a77ab18cd57411cf11302be66ec
+提交 dc346334 的 blob(LF)   92bd62c4…  MATCH=True    <- 这一对证明"提交里就是这份内容"
+```
+
+**尺子 3（行为）**：
+
+```
+tools/gui_wiring_verify.py            末行 mismatched: 0    (wired and matching 19/19, unconfirmed 0)
+生产树 pytest（--basetemp 在仓库外）    297 passed, 6 subtests passed
+desktop_startup.log 中最后一次 CODE_COMMIT 之后的 Traceback 数   0
+                                     （整文件 99 条 —— 按最后一个 CODE_COMMIT 切开才数得对）
+```
+
+**尺子 4（一张画）**：`_capture_panel_window.py` → `learning/control_panel/_panel_window.png`。
+截图里可以直接读到的三件事：
+
+1. **顶栏是 7 格**：`V2正常 MAA工作中 MuMu正常 游戏正常 AUTO工作中 WorkBuddy异常 时间20:05:43` ——
+   本地模型 / 预载**不在条上**（健康 → 收起来），这正是 §六 那张 9→6 的表在跑；
+2. **「需不需要干预」在 L1 常驻**，并且**把花钱那行印出来了**：
+   「此刻会不会花钱 / 不可逆操作：真钱：永久禁止 🔒 · 已禁用 Goal 7 个（自动选择已排除）」；
+3. **预载没有误报**：需要关注卡点的是 `event_goal_state.json`（25.2 天）一类的长 TTL 源，
+   **没有**刚被收紧到 30 分钟的预载心跳 —— 这是 §16.5 那条"收紧要有现场数字背书"的现场证据。
+
+### 17.4 卡点：我把生产面板从**开发树**启动了一次（已纠正，判据已记入 MEMORY §62）
+
+第一次重启我用的是 `tools/panel_restart.py --restart --force`（在开发树上调用）。
+它没有 pin 校验，`ROOT` 取的是**脚本所在的那棵树**，所以它把生产面板从
+`E:\无尽冬日智能体`（镜像 `main`）启动起来了。两棵树内容当时恰好相同，所以功能上看不出来；
+但"生产跑的就是被 pin 的那个提交"这条性质，被交给了运气。
+
+判据不是 pid 文件，而是 **worker 的命令行**：
+
+```
+我误启的那次      E:\无尽冬日智能体\tools\run_live.py                       <- 开发树，错
+部署后（正确）    ...\winter-prod-pinned\无尽冬日智能体\tools\run_live.py    <- pin 树，对
+```
+
+而且 `panel_restart.py` 自己的 docstring 就写了另一半代价：从这个宿主的一次工具调用里
+spawn 出来的子进程会在这次调用结束时被整棵回收。实测就是那样 —— 下一次调用 `--status`
+还看到它活着（pid 17096，AUTO_RECOVERING），再下一次 `--stop` 就已经"nothing to stop"，
+`panel.pid` 被 unlink，进程表里一个不剩。
+
+**正确的生产重启路径是计划任务**：
+
+```
+Start-ScheduledTask -TaskName 'WinterAgentV2Panel'
+  -> action: E:\无尽冬日智能体\.venv\Scripts\pythonw.exe
+             "C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\tools\launch_pinned_production.py"
+     （该 C: 路径与 E:\无尽冬日智能体_worktrees\... 是同一棵树，用 st_ino / realpath 判过）
+  -> desktop_startup.log 尾行 launcher= 指向 pin 树，CODE_COMMIT=dc346334
+```
+
+### 17.5 卡点：上一批的"验收集合"漏了三个红（已修，机制已加）
+
+第四批的验收跑的是另一批文件，`test_the_console_only_shows_numbers_it_measured.py` 不在里面，
+所以 `_goal_row(cells)` 那次签名变更带来的三个红**活过了一整批**。
+本批的 A/B 是：
+
+```
+改动后  tests/test_global_dual_role_scheduler.py tests/test_runtime_bootstrap_integration.py
+        -> 8 failed
+备份 6 个文件 -> git checkout -- 回到 HEAD -> 重跑同样两条
+        -> 同样的 8 failed        <- 既存，不是本批
+恢复 -> md5 六个文件逐个 OK
+```
+
+顺带把"改坏了还是本来就红"这条判据本身需要的顺序固定下来：
+**先备份 → 再回退 → 重跑 → 恢复 → 逐个 md5 校验**。少了最后一步，就分不清
+"我恢复成功了"和"我留下了一份被回退的代码"。
+
+### 17.6 记录而不改（三条，都写了理由）
+
+1. **本地模型的"详情行"没有可触发状态**（§16.1）—— 写在 `INERT_FOLDS`。
+2. **`health_of` 会解析 `note` 文本**：`local_gui_model_truth` 的"已停用"分支，note 里含"降级"
+   二字，于是**故意关掉模型**会被判成降级。实测 27 个真实值：**去掉 note 与保留 note 判定全同
+   （0 处不同）**。今天改它 = 在真实数据上验证不出效果，却动全局词表 → 记录，不动。
+3. **`WorkBuddy 异常` 是既存条件**：`gateway_health=CONFLICT`，note 写着
+   `AUTH_REJECTED；连续 3 次失败，已退避 120.0 秒；没有成功通信记录`；端口 8080 **在监听**，
+   所以是凭据不被接受，不是进程死了。第四批的截图里它**同样**是异常（同一次会话，19:30），
+   即与本次重启无关。它属于 L3（内部开发平台），不阻塞游戏；且修它要动凭据环境 ——
+   按操作者的授权边界，这属于"报告卡点"，不属于"自己决定"。
+
+**下一批的候选**（按 §六 剩余空缺排序）：
+
+- `queues` / `dev_queue` 的**积压阈值**：§六 写了「积压超阈值浮 L1」，而项目里
+  没有声明过的积压阈值（`_compact` 回的是状态词，不是条数）。要么给队列一个真的计数口径，
+  要么把 §六 这一行的"阈值"改成项目已有的判据（`WORKBUDDY_QUEUE_STUCK`）。
+- **`source_freshness.SOURCES` 里其余长 TTL 源**是否也有"抄邻居"的痕迹：
+  实测现场已经看到 `event_goal_state.json` 25.2 天、`capability_catalog.json` 7.8 天都算过期，
+  需要判一次"这些源是不是本来就该有这个 TTL"，方法与 §16.4 相同（grep 出该事实的全部读数，
+  再逐处问它喂哪块屏）。

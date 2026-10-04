@@ -6427,3 +6427,87 @@ unexpected_worker_exits = 22
 
 推广：**任何以"当前内容"为输入的读数（页面高度、行数、宽度、耗时），都不能跨运行比。**
 跨运行的差值只在一件事上可信 —— 内容真的没变（比如同一个文件的字节数、同一个提交的哈希）。
+
+## §61 一个事实三处读数：危险的那一份，是喂给"另一块屏"的那一份（2026-10-04）
+
+同一个事实在代码里出现三次，这件事本身不稀奇。稀奇的是**哪一份错了没有规律**。
+
+预载心跳（`learning/knowledge_bootstrap/STATE.json`）的"多久算过期"实测有三处读数：
+
+```
+state_truth.bootstrap()        age > 3 * 600                                = 1800 s
+control_panel 系统页           age > 3 * QueuePump.PRELOAD_EVERY * INTERVAL  = 1800 s   (20 × 30)
+source_freshness 的 SOURCES 表 21600                                        = 6 h
+```
+
+前两处是同一套算法（一个没命名，一个由常量拼出来），第三处**看着像个手误** —— 它上下两行
+（`local_gui_model_calls.jsonl`、`local_planner_steps.jsonl`）都是 `21600`，显然是抄的。
+
+**但结论不能停在"三处不一致，统一一下"**，因为三处喂的是不同的面：
+
+- `state_truth` 喂的是**顶栏那一格**；
+- `source_freshness` 喂的是**「需要关注」卡与事实卡表头的过期标注**；
+- 面板那处喂的是**系统页自己的一行字**。
+
+所以错误的那一份决定的不只是"阈值偏了"，而是**两块屏在同一台机器上给出相反的答案**：
+1801s ~ 21600s 这 5.5 小时里，顶栏写「预载 降级」，而下面那张卡写「没有问题」。
+修复前后逐龄实测：
+
+```
+      age   state_truth(1800)   OLD 表(21600)   NEW 表(1800)
+    1800s              fresh            fresh           fresh
+    1801s              STALE            fresh  <--      STALE
+    21600s             STALE            fresh  <--      STALE
+    21601s             STALE            STALE           STALE
+```
+
+**判据与做法**：
+
+1. **先 grep 出这个事实出现的所有地方，再逐处问"它喂哪块屏"** —— 不是问"它算的参数对不对"。
+   光比数字会得出"三处不一致"，比完喂给谁才知道**错的是用户看得到的那一层**。
+2. **单一定义放在"它描述的那个文件"旁边**：心跳预算属于心跳的写入者
+   （`capability_bootstrap`，它已经持有 `STATE_PATH`），`source_freshness` 与 `state_truth` 去读它。
+3. **保留面板那份"自己拼出来的写法"**（`3 * PRELOAD_EVERY * INTERVAL`），因为**拼法就是论点** ——
+   它一眼能看出数字凭什么成立。代价是它成了第二份读数，所以用守卫断言两处相等；
+   这正是本项目允许"一个事实两处声明"的唯一条件（同 `OVERVIEW_FACT_TIERS`）。
+4. **顺手修的边界要有反面判据**：把预算从 6h 收到 30min 会不会变"狼来了"？
+   实测现场：心跳龄 0.13h ≈ 470s，而在跑的节奏是 600s 一次 —— 收紧后依然 FRESH，
+   且 `stale_among` 本来就有 AUTO 闸门。**收紧要有现场数字背书，不能只凭"更严更好"。**
+
+## §62 `panel_restart.py --start` 不是生产启动路径（2026-10-04）
+
+"重启面板"在这个项目里有**两条路**，长得像，结果不同：
+
+| 路 | 谁在跑 | 有没有 pin 校验 |
+|---|---|---|
+| `python tools/panel_restart.py --start` | **脚本所在的那棵树**的 `tools/control_panel.py` | **没有** |
+| 计划任务 `WinterAgentV2Panel` | pin 树的 `tools/launch_pinned_production.py`（→ 校验 commit + 数据挂载 + 代码净） | 有 |
+
+`panel_restart.py` 的 `ROOT = Path(__file__).resolve().parents[1]`，所以**从开发树调用它，
+就把生产面板从开发树（镜像 `main`）启动起来了**。今天两棵树内容恰好相同（镜像刚快进），
+所以看不出问题；但这等于把"生产跑的就是被 pin 的那个提交"这条性质交给了运气。
+
+而且它自己的 docstring 就写了另一半代价：**从这个宿主的一次工具调用里 spawn 出来的子进程，
+会在这次调用结束时被整棵回收**。实测链路：
+
+```
+--restart --force   -> "nothing to stop"（旧面板已不在）→ 启动 24044/17096 链，报"panel is up"
+--status（下一次调用）-> recorded pid 17096 alive=True，AUTO_RECOVERING，workers=1
+--stop --force      -> "nothing to stop"，panel.pid 已被 unlink，进程表里一个都不剩
+```
+
+**判据：不要看 pid 文件，去看 worker 的命令行** —— 它指哪棵树，生产就在哪棵树：
+
+```
+部署前（batch 4 的窗口）  ...\winter-prod-pinned\无尽冬日智能体\tools\run_live.py
+我误启的那次               E:\无尽冬日智能体\tools\run_live.py          <- 开发树，错
+部署后（计划任务）         ...\winter-prod-pinned\无尽冬日智能体\tools\run_live.py
+```
+
+**正确动作**：确认没有面板在跑（进程表 + pid 文件），然后 `Start-ScheduledTask -TaskName
+'WinterAgentV2Panel'`，再读 `desktop_startup.log` 尾行的 `CODE_COMMIT=` **与 `launcher=` 一行**
+—— `launcher=` 会直接写出是哪棵树的 `launch_pinned_production.py`，那才是"这次是在生产上跑的"。
+
+顺带一条：计划任务里的路径写的是 `C:\Users\xhw\.codex\worktrees\winter-prod-pinned\...`，
+和 `E:\无尽冬日智能体_worktrees\winter-prod-pinned\...` 是**同一棵树**（见 skill
+`winter-repin-target-lineage` 里 `st_ino`/`realpath` 那条判据），不要按"看着像另一棵树"去判。
