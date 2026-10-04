@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import types
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -267,7 +268,7 @@ class TheBlockerColumnCarriesAReasonTests:
         })
         monkeypatch.setattr(panel, "ROOT", tmp_path)
         rows = _capture_goal_rows(panel)
-        blocked_cell = rows[0][7]
+        blocked_cell = rows[0][_column(panel, "blocked")]
         assert "READ_DAILY_PROGRESS" in blocked_cell
         assert blocked_cell != "—"
 
@@ -342,7 +343,28 @@ class _BoardStub:
         object.__setattr__(self, "goal_board_meta", _Var())
 
     def __getattr__(self, name):
-        return getattr(object.__getattribute__(self, "_panel_cls"), name)
+        """The real class's attribute, **bound to this stub** when it is an instance method.
+
+        It used to be handed back unbound, which made the stub stand in for the *class* rather than
+        for the object: every helper ``_refresh_goal_board`` called received this stub as its first
+        parameter.  That was invisible while those helpers took no arguments, and it broke the day
+        ``_goal_row`` was extracted with a ``cells`` parameter -- the call became
+        ``_goal_row(self={...})`` and ``cells`` was never bound, so three tests went red for a
+        reason that had nothing to do with the panel.
+
+        ``classmethod`` and ``staticmethod`` descriptors are left alone: reading them off the class
+        already gives the function bound the way they asked for.  Binding those a second time is the
+        mirror-image bug -- ``_blocked_cell`` is a ``classmethod``, and wrapping it here would pass
+        this stub in as its ``goal``.
+        """
+        panel_cls = object.__getattribute__(self, "_panel_cls")
+        attr = getattr(panel_cls, name)
+        raw = vars(panel_cls).get(name)
+        if isinstance(raw, (classmethod, staticmethod)):
+            return attr
+        if callable(attr):
+            return types.MethodType(attr, self)
+        return attr
 
     def get_children(self):
         return []
@@ -358,3 +380,14 @@ def _capture_goal_rows(panel) -> list[tuple]:
     stub = _BoardStub(panel.ControlPanel)
     panel.ControlPanel._refresh_goal_board(stub)
     return stub.rows
+
+
+def _column(panel, key: str) -> int:
+    """A column's index, read from the declaration that drives both headings and rows.
+
+    Never a literal.  The board reorders whenever §六 moves a column's tier, and an index written
+    down here goes on passing while asserting about a *different* column -- which is precisely what
+    happened to the blocker assertion above when batch 4 moved the L1 columns to the front and
+    ``rows[0][7]`` silently became 类别.
+    """
+    return [name for name, _label, _width, _tier in panel.GOAL_COLUMNS].index(key)

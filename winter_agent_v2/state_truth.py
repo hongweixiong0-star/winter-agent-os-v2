@@ -1843,10 +1843,15 @@ class TruthAudit:
         stamp = str(payload.get("written_at") or "")
         status, age = self._stamp(STATE_PATH_BOOTSTRAP, stamp)
         state = str(payload.get("status") or "")
-        from .capability_bootstrap import BOOTSTRAP_STATE_ZH
+        from .capability_bootstrap import BOOTSTRAP_STATE_ZH, HEARTBEAT_BUDGET_SECONDS
 
         label = BOOTSTRAP_STATE_ZH.get(state, state or "?")
-        if age is not None and age > 3 * 600:
+        # The budget comes from the module that owns the heartbeat rather than from the literal
+        # ``3 * 600`` that used to stand here: that literal, the same rule spelled out on the
+        # panel's 系统 page, and ``source_freshness``'s table disagreed by a factor of twelve, so
+        # for five and a half hours the top bar could read 预载降级 while the 需要关注 card, built
+        # from this very value's *file*, read 没有问题.
+        if age is not None and age > HEARTBEAT_BUDGET_SECONDS:
             status = STALE
         return TruthValue(
             name="bootstrap",

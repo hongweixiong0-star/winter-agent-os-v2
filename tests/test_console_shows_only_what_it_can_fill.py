@@ -857,10 +857,19 @@ class AFoldedBlockCannotHideAnAbnormalityTests:
             f"give them a rule, or name them in INERT_FOLDS with the reason"
         )
 
-    # §六's exception table, as *declared*: every row that says a block opens itself.  The two
-    # rows with no implementation yet (队列积压 / 预载非正常) are named here rather than left out,
-    # so the gap is written next to the rule instead of existing only as a missing badge -- and so
-    # that implementing one of them forces an edit here rather than sliding in unnoticed.
+    # §六's exception table, as *declared*: every row that says a block opens itself.  The one row
+    # with no implementation yet (队列积压) is named here rather than left out, so the gap is
+    # written next to the rule instead of existing only as a missing badge -- and so that
+    # implementing it forces an edit here rather than sliding in unnoticed.
+    #
+    # This set used to carry a second placeholder, ``"boot"``, labelled 「预载非正常 —— 尚未实现」.
+    # Both halves of that entry were wrong, and 2026-10-04 measured it: there is no fold named
+    # ``boot`` anywhere, and 预载's row is **already covered** by ``facts``'s annotation -- which
+    # reads ``stale_among(..., auto_running=)`` for exactly this file, so the 事实卡 header names the
+    # heartbeat the moment it ages out while AUTO is running.  It is a *mark* rather than an opener
+    # because that block also watches a file, and the assertion below pins 「one block, one kind of
+    # rule」; opening it would have traded a hard-won invariant for one saved click, while the
+    # operator already gets three signals (the floating cell, the 需要关注 line, the marked header).
     SIX_TABLE_OPENERS = frozenset({
         "watchdog",          # unexpected_worker_exits > 0 · watchdog_restart_count 增长
         "runtime_watchdog",  # the same rule, on the 系统 page's own block
@@ -871,7 +880,7 @@ class AFoldedBlockCannotHideAnAbnormalityTests:
         "dev_failures",      # 最近失败分类「次数超阈值」-- 用项目自己的 P0 分桶
         "preview",           # 总览「游戏实时画面 L2 → 卡住时 L1」-- 判据是进度行那条「无目标进展」
         "queues",            # 队列积压 —— 故意不实现：面板没有声明过的积压阈值（见 INERT_FOLDS）
-        "boot",              # 预载非正常 —— 尚未实现（报告 §十）
+        # 预载非正常 needs no entry: it is served by ``facts``'s annotation, not by an opener.
     })
 
     def test_the_block_that_opens_and_the_block_that_marks_are_not_the_same_rule(self):
@@ -1574,6 +1583,176 @@ class TheWiringVerifierCanStillRunTheRealRefreshTests:
                 f"strip*, and a stub that modelled hiding as an empty string would agree with a "
                 f"window that only blanked the text"
             )
+
+
+class TheAutoVerdictIsTakenOnceAndGatesOnlyTheCellsAutoWritesTests:
+    """停止 AUTO 不能变成一条告警 -- §六's own 狼来了 note, applied to the top bar.
+
+    Measured on the real root (2026-10-04), before this gate existed: ``state_truth.bootstrap()``
+    grades STALE on **age alone**, so 停止 for 31 minutes put 预载降级 *on the bar* while the 干预卡
+    two blocks up was printing 「AUTO 未在运行（这是你的选择，不是故障）」.  One screen, two opposite
+    answers to one question -- the P0-3 class the tier table exists to prevent.
+
+    Five checks, each closing a way the fix could be *declared* instead of built.
+    """
+
+    def _val(self, name, status, value="x", note=""):
+        from winter_agent_v2.state_truth import TruthValue
+
+        return TruthValue(name=name, value=value, status=status, note=note)
+
+    def test_a_stale_cell_whose_only_writer_is_auto_stays_off_while_auto_is_stopped(self):
+        panel = _module_panel()
+        from winter_agent_v2.state_truth import STALE
+
+        boot = self._val("bootstrap", STALE, value="学习中 · 等待验证 3")
+        assert panel.header_cell_is_visible("dot_boot", boot, auto_running=True) is True, (
+            "AUTO 在跑、心跳却停了 is precisely the fault §六 asks to surface -- if the gate hid "
+            "this too it would be a mute button rather than a gate"
+        )
+        assert panel.header_cell_is_visible("dot_boot", boot, auto_running=False) is False, (
+            "没有写入者就没有新数据: the same split ``source_freshness.stale_among`` already makes "
+            "for files, and the reason 停止 must not read as 降级"
+        )
+
+    def test_the_gate_names_exactly_the_cells_auto_writes(self):
+        panel = _module_panel()
+        from winter_agent_v2.state_truth import STALE
+
+        assert panel.header_cell_is_visible(
+            "dot_model", self._val("local_model", STALE), auto_running=False) is True, (
+            "the model is a service reached over HTTP, not something AUTO's worker writes: its "
+            "silence is a fact about the service and must keep its seat"
+        )
+        assert set(panel.HEADER_CELLS_WRITTEN_BY_AUTO) <= set(panel.HEADER_FOLD_TO_L1), (
+            "the gate can only apply to a cell that was already removable -- otherwise it would be "
+            "hiding an L1 cell, which no reading may do"
+        )
+        for key, reason in panel.HEADER_CELLS_WRITTEN_BY_AUTO.items():
+            assert len(reason) >= 15, f"{key} must say why its writer is AUTO, not just that it is"
+
+    def test_a_conflict_is_never_explained_away_by_a_stopped_writer(self):
+        panel = _module_panel()
+        from winter_agent_v2.state_truth import CONFLICT
+
+        bad = self._val("bootstrap", CONFLICT, value="冲突")
+        assert panel.header_cell_is_visible("dot_boot", bad, auto_running=False) is True, (
+            "异常 is not something a stopped writer can explain; only 降级/未确认 are gated"
+        )
+        assert panel.header_cell_is_visible("dot_boot", None, auto_running=False) is True, (
+            "「the audit has no such source」 is not explained by AUTO being down either -- and "
+            "hiding it would let a broken reader look like a healthy system"
+        )
+
+    def test_the_auto_verdict_is_taken_once_and_shared(self):
+        source = _panel_source()
+        start = source.index("    def _refresh_truth")
+        body = source[start:source.index("\n    def ", start + 10)]
+        assert ("self._auto_running = self.process is not None "
+                "and self.process.poll() is None") in body, (
+            "the verdict must be taken inside the refresh, from the worker process this window "
+            "started -- never from a status file a dead worker may have left behind"
+        )
+        assert body.count("self.process.poll()") == 1, (
+            f"the 干预卡's 「AUTO 未在运行（这是你的选择，不是故障）」 and the top bar's gate must be "
+            f"one reading; found {body.count('self.process.poll()')} copies, and two copies is how "
+            f"the bar comes to call a fault what the card calls your choice"
+        )
+
+    def test_no_rule_re_answers_what_not_normal_means(self):
+        """「非正常」 must have one definition, and the guard reads the *code*, not the prose.
+
+        Two rules each carried their own ``colour in ("bad", "warn")`` before this pass, and a third
+        was about to.  The needle appears a second time inside ``unhealthy_word``'s own docstring --
+        which is history, not a copy, and is exempt for the same reason ``_string_literals`` exempts
+        comments.
+        """
+        tree = ast.parse(_panel_source())
+        owners = []
+        for func in ast.walk(tree):
+            if not isinstance(func, ast.FunctionDef):
+                continue
+            for node in ast.walk(func):
+                if not isinstance(node, ast.Compare):
+                    continue
+                words = {c.value for c in node.comparators
+                         if isinstance(c, (ast.Tuple, ast.List))
+                         for c in c.elts if isinstance(c, ast.Constant)}
+                if {"bad", "warn"} <= words:
+                    owners.append(func.name)
+        assert owners == ["unhealthy_word"], (
+            f"「非正常」 is answered in {owners}; one definition (``unhealthy_word``) is what stops "
+            f"two blocks from grading the same value differently"
+        )
+
+
+class ThePreloadHeartbeatHasOneBudgetTests:
+    """One file, one budget -- and it had three readings until this pass.
+
+    Measured 2026-10-04: ``state_truth.bootstrap()`` graded STALE on the literal ``3 * 600``, the
+    panel's 系统 page spelled the same rule ``3 * QueuePump.PRELOAD_EVERY * QueuePump.INTERVAL``,
+    and ``source_freshness``'s table declared ``21600`` for the same file -- a value its two
+    neighbours in the table also carry, i.e. inherited rather than chosen.
+
+    The cost was not academic.  ``source_freshness`` is what feeds the 需要关注 card and the 事实卡
+    header, so for five and a half hours after the controller died the top bar said 预载降级 while
+    the card said 没有问题: one screen, two answers, and the honest one invisible.
+    """
+
+    KEY = "learning/knowledge_bootstrap/STATE.json"
+
+    def _budget(self):
+        from winter_agent_v2 import source_freshness as sf
+
+        row = next(s for s in sf.SOURCES if s.key == self.KEY)
+        return row.ttl_seconds
+
+    def test_the_table_uses_the_writers_own_budget_not_a_neighbours(self):
+        from winter_agent_v2.capability_bootstrap import HEARTBEAT_BUDGET_SECONDS
+
+        assert self._budget() == HEARTBEAT_BUDGET_SECONDS, (
+            "the heartbeat's budget is a property of its writer's cadence; a number copied from the "
+            "rows beneath it makes the 需要关注 card call a dead controller healthy"
+        )
+
+    def test_it_is_three_missed_beats_and_not_an_afternoon(self):
+        from winter_agent_v2.capability_bootstrap import (
+            HEARTBEAT_BUDGET_SECONDS, HEARTBEAT_SECONDS_PER_BEAT)
+
+        assert HEARTBEAT_BUDGET_SECONDS == 3 * HEARTBEAT_SECONDS_PER_BEAT, (
+            "one missed beat is a slow round, three is a stopped controller -- the two named "
+            "constants must keep that relation, or the number stops being an argument"
+        )
+        assert self._budget() < 4 * 3600, (
+            "a *heartbeat* is not allowed a multi-hour budget: every controller cycle writes it, "
+            "including the refusals, so silence is evidence about the process"
+        )
+
+    def test_the_panels_own_derivation_still_equals_the_shared_number(self):
+        """The panel spells the rule out of its two cadence constants rather than importing it.
+
+        That spelling is the *argument* for the number, so it is worth keeping -- and worth a guard,
+        because a spelling that drifts from the shared constant is exactly the defect above.
+        """
+        from winter_agent_v2.capability_bootstrap import HEARTBEAT_BUDGET_SECONDS
+
+        panel = _module_panel()
+        derived = 3 * panel.QueuePump.PRELOAD_EVERY * panel.QueuePump.INTERVAL
+        assert derived == HEARTBEAT_BUDGET_SECONDS, (
+            f"the panel derives {derived}s from PRELOAD_EVERY × INTERVAL while the library declares "
+            f"{HEARTBEAT_BUDGET_SECONDS}s; one of the two cadences moved"
+        )
+
+    def test_the_beat_period_is_what_the_pump_actually_runs(self):
+        """``HEARTBEAT_SECONDS_PER_BEAT`` is a *copy* of the pump's cadence, so it is guarded too."""
+        from winter_agent_v2.capability_bootstrap import HEARTBEAT_SECONDS_PER_BEAT
+
+        panel = _module_panel()
+        assert (panel.QueuePump.PRELOAD_EVERY * panel.QueuePump.INTERVAL
+                == HEARTBEAT_SECONDS_PER_BEAT), (
+            "the library's beat period must equal the one cycle per PRELOAD_EVERY × INTERVAL the "
+            "pump actually runs, or every budget derived from it is fiction"
+        )
 
 
 if __name__ == "__main__":  # pragma: no cover

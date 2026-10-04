@@ -31,6 +31,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Mapping
 
+# The one budget this table does not choose for itself.  A heartbeat's budget is a property of the
+# writer's cadence, and that writer declares it -- see ``HEARTBEAT_BUDGET_SECONDS``.
+from .capability_bootstrap import HEARTBEAT_BUDGET_SECONDS
+
 FRESH = "FRESH"
 STALE = "STALE"
 MISSING = "MISSING"
@@ -69,7 +73,12 @@ SOURCES: tuple[Source, ...] = (
     Source("learning/executor_backend.jsonl", "执行器后端台账", 3600, "总览·执行器实测"),
     Source("learning/auto_uptime.jsonl", "运行时长台账", 3600, "总览·无人值守"),
     Source("learning/role_identity.json", "角色身份", 86400, "总览·当前角色"),
-    Source("learning/knowledge_bootstrap/STATE.json", "预载控制器心跳", 21600, "总览·自动开发 / 自动开发·能力学习"),
+    # Not 21600 like its neighbours: this file is a *heartbeat*, written every 600 s by every
+    # controller cycle including the refusals, so its budget is three missed beats rather than an
+    # afternoon.  Imported from the module that owns the file so the top bar and this table cannot
+    # disagree -- see ``HEARTBEAT_BUDGET_SECONDS`` for the five-and-a-half-hour window that cost.
+    Source("learning/knowledge_bootstrap/STATE.json", "预载控制器心跳",
+           HEARTBEAT_BUDGET_SECONDS, "总览·自动开发 / 自动开发·能力学习"),
     Source("learning/local_gui_model_calls.jsonl", "本地模型调用台账", 21600, "系统·顶部状态依据"),
     Source("learning/local_planner_steps.jsonl", "本地模型规划台账", 21600, "系统·顶部状态依据"),
     Source("learning/fishing_state.json", "钓鱼状态", 86400, "运行·活动·钓鱼"),

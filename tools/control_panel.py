@@ -1559,15 +1559,40 @@ HEADER_ALWAYS: tuple[str, ...] = tuple(
 # The colour classes ``state_truth.health_of`` returns for the words that mean "nothing to report".
 # Three of six: 降级/未确认/异常 all stay on the strip.
 HEADER_HEALTHY_COLOURS: tuple[str, ...] = ("good", "work", "idle")
+#: The cells whose **only writer is a running AUTO**, so their age while it is deliberately stopped
+#: is the design rather than a fault.
+#:
+#: Same split ``source_freshness.stale_among`` already makes for files -- 「没有写入者就没有新数据」 --
+#: and it is needed here for a reason measured on the real root (2026-10-04): ``state_truth.bootstrap()``
+#: grades STALE on *age alone*, so 停止 AUTO for 31 minutes and 预载 comes back 降级 **on the bar**,
+#: while the 干预卡 on the same screen is printing 「AUTO 未在运行（这是你的选择，不是故障）」.  One
+#: screen, two opposite answers to one question -- the P0-3 class this table exists to prevent.
+#:
+#: Only ``dot_boot`` is listed.  ``dot_model`` is deliberately **not**: the model is a service the
+#: window reaches over HTTP, not something AUTO's worker writes, so its silence is a fact about the
+#: service and keeps its seat -- exactly as it did before this tiering.
+HEADER_CELLS_WRITTEN_BY_AUTO: dict[str, str] = {
+    "dot_boot": "预载控制器只在 AUTO 的 worker 里跑：AUTO 停了，它就不再有写入者",
+}
 
 
-def header_cell_is_visible(key: str, value: Any) -> bool:
+def header_cell_is_visible(key: str, value: Any, *, auto_running: bool = True) -> bool:
     """Whether one top-bar cell has earned its seat on the strip, per §六's tier table.
 
     Decided from the raw ``TruthValue`` -- the same object the cell is painted from -- rather than
     from the painted word, because two readings of one value is how a cell ends up hidden while its
     own text says 异常.  ``None`` (the audit has no such source at all) is visible for the same
     reason 未确认 is: "no answer" must not be indistinguishable from "fine".
+
+    ``auto_running`` is the caller's verdict, passed in rather than read here for the same reason
+    ``source_freshness.stale_among`` takes it as a parameter: the panel owns that answer, and a cell
+    whose only writer is AUTO's own worker must not raise an alarm for having no writer.  Two
+    deliberate limits on the gate:
+
+    * ``None`` still wins over it -- a source the audit cannot find is not explained by AUTO being
+      down, and hiding it would let a broken reader look like a healthy system;
+    * only 降级/未确认 are gated, never 异常 -- a conflict or a fault is not something a stopped
+      writer can explain away.
     """
     if key not in HEADER_FOLD_TO_L1:
         return True
@@ -1575,7 +1600,14 @@ def header_cell_is_visible(key: str, value: Any) -> bool:
         return True
     from winter_agent_v2.state_truth import health_of
 
-    return health_of(value)[1] not in HEADER_HEALTHY_COLOURS
+    _word, colour = health_of(value)
+    if colour in HEADER_HEALTHY_COLOURS:
+        return False
+    if colour == "bad":
+        return True
+    if not auto_running and key in HEADER_CELLS_WRITTEN_BY_AUTO:
+        return False
+    return True
 
 # The tab labels, and **only** the tabs that exist.  Key = the page's internal name (what
 # ``_tab`` and every deep link use); value = the text the operator reads.  This is a
@@ -1660,8 +1692,17 @@ INERT_FOLDS: dict[str, str] = {
     "arbitration": "十一行是同一个 Scheduler 的内部记账（两个角色各剩多少、切换指标、"
                    "最近十次选择）。它们只在解释「为什么不动」时有用，而那时看门狗块和"
                    "「需要关注」已经先浮上来了；给「切换质量」编阈值就是第二个意见。",
-    "header_evidence": "六行是顶栏几个格的原始依据。顶栏本身在 L1 常驻，这一块只是同一件事"
-                       "展开一层——它永远不会比顶栏先出问题。",
+    "header_evidence": "六行是顶栏几个格的原始依据。**这一块今天没有任何一个读数能让它该打开** ——"
+                       "而这是实测的，不是顺序论证。这里原来写的是「它永远不会比顶栏先出问题」，"
+                       "那是回避了 §六 真正问的问题：操作者在栏上读到「本地模型降级」之后，还有"
+                       "没有地方可去？实测 2026-10-04，``local_gui_model_truth`` 只有三种返回："
+                       "服务在线（正常）、服务没应答或还没探测过（未确认 —— 按它自己的文档「不是"
+                       "故障」，因为 UNKNOWN 会 defer 而 AUTO 继续跑）、以及 local_planner."
+                       "enabled=false（已停用）。只有第三种算「非正常」，而它恰恰是操作者自己关掉"
+                       "模型的读数 —— 为它开一个块就是狼来了。所以 §六 那一行的顶栏半边已经落地"
+                       "（格子会浮回来），详情半边在此**记录为「没有可用的触发源」**，而不是写一条"
+                       "只会在错的时候触发的规则：同 ``policy_resource``（花钱信号不存在）与"
+                       "``dev_queue``（积压阈值不存在）。",
     "sys_logs": "日志文本框与四个「打开目录」按钮：要看的时候才看，按定义不会自己变成"
                 "一条告警。",
     # The five added with the 能力 and 自动开发 pages.  Same rule: a block with no rule of its own
@@ -1731,6 +1772,32 @@ def progress_is_stalled(rows: Any) -> bool:
     actions = sum(1 for row in rows if row.get("verifier_ok") is True)
     progress = sum(1 for row in rows if row.get("goal_progress") is True)
     return bool(actions) and not progress
+
+
+def unhealthy_word(value: Any) -> str:
+    """The word for a ``TruthValue`` that is **not** 正常, or ``""`` when there is nothing to say.
+
+    One definition of 非正常 for the fold rules, extracted for the same reason as
+    ``failure_priority`` and ``progress_is_stalled``: two rules need this judgement
+    (``_escalate_watchdog`` and ``_escalate_workbuddy``) and two copies would be two opinions about
+    which readings count as a fault.  Both rules carried their own ``colour in ("bad", "warn")``
+    before this pass; the guard below asserts the inline form is gone rather than merely not having
+    disagreed yet.
+
+    Two readings deliberately return ``""``:
+
+    * ``None`` -- no such source at all.  The window's own reach is not a fault of the thing
+      watched, and the top-bar cell already prints 未确认 for it, so the fact is at L1 already.
+    * ``未确认``/``等待`` -- same argument.  This is the line ``_escalate_workbuddy`` drew first
+      (「the probe did not answer, which is a fact about the panel's own reach」), now shared
+      instead of re-argued per rule.
+    """
+    if value is None:
+        return ""
+    from winter_agent_v2.state_truth import health_of
+
+    word, colour = health_of(value)
+    return word if colour in ("bad", "warn") else ""
 
 
 def run_fold_rule(rule: Callable[[], str] | None) -> str:
@@ -5258,14 +5325,11 @@ class ControlPanel:
         ``unknown`` deliberately does **not** open this block.  It means the probe did not answer,
         which is a fact about the panel's own reach rather than about the development platform,
         and the top-bar cell already prints 未确认 for it -- so the fact is visible in L1 anyway.
+        That judgement now lives in ``unhealthy_word``, shared with the watchdog rule.
         """
-        value = getattr(self, "_gateway_value", None)
-        if value is not None:
-            from winter_agent_v2.state_truth import health_of
-
-            word, colour = health_of(value)
-            if colour in ("bad", "warn"):
-                return f"WorkBuddy 网关{word}"
+        word = unhealthy_word(getattr(self, "_gateway_value", None))
+        if word:
+            return f"WorkBuddy 网关{word}"
         stuck = sorted(kind for kind in getattr(self, "_attention_kinds", ())
                        if str(kind).startswith("WORKBUDDY_"))
         if stuck:
@@ -5385,12 +5449,9 @@ class ControlPanel:
         fields actually hold.
         """
         value = getattr(self, "_watchdog_value", None)
-        if value is not None:
-            from winter_agent_v2.state_truth import health_of
-
-            word, colour = health_of(value)
-            if colour in ("bad", "warn"):
-                return f"看门狗{word}"
+        word = unhealthy_word(value)
+        if word:
+            return f"看门狗{word}"
         exits_grew = self._worker_exits_since_window()
         if exits_grew:
             return (f"窗口打开以来有 {exits_grew} 次意外的 Worker 退出"
@@ -6963,7 +7024,14 @@ class ControlPanel:
         say it does not know.  So this prints the role *with its status* (``上次已知`` /
         ``未知``), and prints a ``STATE_CONFLICT`` line the moment two artifacts disagree,
         rather than letting the window pick whichever it read last.
+
+        The AUTO verdict is taken **first, once**, because two separate decisions depend on it and
+        both must give the same answer: the 干预卡's 「AUTO 未在运行（这是你的选择）」 line, and the
+        top bar's gate on the cell whose only writer is AUTO's worker.  It is derived from the
+        worker process this window started, never from a status file a dead worker may have left
+        behind.
         """
+        self._auto_running = self.process is not None and self.process.poll() is None
         try:
             probe = self.probes.truth()
         except Exception:  # noqa: BLE001 - a panel must not die for a missing probe
@@ -7089,7 +7157,7 @@ class ControlPanel:
         # rather than recomputing is what keeps this cell from becoming a second opinion.
         self.values["intervene"].set(intervention_of(
             problems=lines,
-            auto_running=self.process is not None and self.process.poll() is None,
+            auto_running=self._auto_running,
             policy=read_policy_state(POLICY_STATE_PATH),
         ))
         # Each fact card now says how old the file it derived its figure from is.  This is the
@@ -7147,11 +7215,17 @@ class ControlPanel:
         self._show_header_cell(key, value)
 
     def _show_header_cell(self, key: str, value: Any) -> None:
-        """Seat or unseat one top-bar cell, from the verdict that was just painted into it."""
+        """Seat or unseat one top-bar cell, from the verdict that was just painted into it.
+
+        Reads ``self._auto_running`` rather than re-deriving it, so the gate and the 干预卡's
+        「AUTO 未在运行（这是你的选择，不是故障）」 cannot be answered from two readings of one
+        fact -- which is the whole point of the gate existing.
+        """
         cell = getattr(self, "_indicator_cells", {}).get(key)
         if cell is None or key not in HEADER_FOLD_TO_L1:
             return
-        if header_cell_is_visible(key, value):
+        if header_cell_is_visible(key, value,
+                                  auto_running=getattr(self, "_auto_running", False)):
             cell.grid()
         else:
             cell.grid_remove()
@@ -7218,6 +7292,9 @@ class ControlPanel:
         beat = f"心跳 {int(age)}s 前" if age >= 0 else "心跳时间不可读"
         # Three preload intervals: below that a stale file means the window is not
         # running this code, which is the exact "代码支持自动预装但控制器没运行" case.
+        # Spelled out of the two constants that make it true rather than imported as
+        # ``capability_bootstrap.HEARTBEAT_BUDGET_SECONDS``, because the derivation is the argument
+        # -- and a guard asserts the two agree, so the spelling cannot drift from the shared number.
         if age > 3 * QueuePump.PRELOAD_EVERY * QueuePump.INTERVAL:
             beat = f"⚠ 心跳过期（{int(age / 60)} 分钟）——面板可能未运行新代码"
 

@@ -2108,6 +2108,24 @@ def work_order_brief(plan: BootstrapPlan) -> str:
 # production episode stream.
 
 STATE_PATH = "learning/knowledge_bootstrap/STATE.json"
+#: How long a silence in ``STATE.json`` stops meaning 「resting」 and starts meaning 「the
+#: controller is not running」.
+#:
+#: Every :meth:`KnowledgeBootstrapController.cycle` writes the file, **including the paths that
+#: refuse to work** -- 「a refusal is persisted too」, which is why a silent file is evidence about
+#: the process rather than about the decision.  The panel runs one cycle every ``PRELOAD_EVERY`` ×
+#: ``QueuePump.INTERVAL`` = 20 × 30 s = 600 s, so three beats is the budget: one missed beat is a
+#: slow round, three is a stopped controller.
+#:
+#: Declared in the library layer, next to the file it is about, because on 2026-10-04 this one fact
+#: had **three** readings: the rule as ``3 * 600`` inside ``state_truth.bootstrap()``, the same rule
+#: spelled ``3 * QueuePump.PRELOAD_EVERY * QueuePump.INTERVAL`` on the panel's 系统 page, and
+#: ``21600`` in ``source_freshness``'s table -- a row that had plainly inherited its value from the
+#: two rows beneath it.  The cost was five and a half hours during which the top bar said 预载降级
+#: while the 需要关注 card said 没有问题: one screen, two answers, and the honest one invisible.
+#: A guard asserts the panel's derivation still equals this number.
+HEARTBEAT_SECONDS_PER_BEAT = 600
+HEARTBEAT_BUDGET_SECONDS = 3 * HEARTBEAT_SECONDS_PER_BEAT
 
 DECISION_PRELOADED = "PRELOADED"
 DECISION_RESEARCH_QUEUED = "RESEARCH_QUEUED"
