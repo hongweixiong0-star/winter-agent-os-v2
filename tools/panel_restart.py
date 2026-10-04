@@ -51,7 +51,11 @@ PANEL_SCRIPT = ROOT / "tools/control_panel.py"
 PID_PATH = ROOT / "learning/control_panel/panel.pid"
 PEEK_LOG = ROOT / "learning/control_panel/panel_launch.log"
 SNAPSHOT = ROOT / "learning/runtime_snapshot.json"
-VENV_PYTHONW = Path(r"E:\无尽冬日智能体\.venv\Scripts\pythonw.exe")
+#: ``ROOT`` above is *this* checkout, which for a branch worktree is not the checkout that
+#: owns ``.venv`` -- no worktree carries its own virtualenv.  Taken from ``config/paths.py``
+#: instead of re-spelled here, because the panel launcher is the one place where starting
+#: the wrong interpreter is fatal (and because the same literal used to be typed 81 times).
+from config.paths import VENV_PYTHONW  # noqa: E402  - needs ``ROOT`` on sys.path first
 GATEWAY_PASSWORD_ENV = "CODEBUDDY_GATEWAY_PASSWORD"
 
 # A snapshot older than this says nothing about now, so it must not be used to

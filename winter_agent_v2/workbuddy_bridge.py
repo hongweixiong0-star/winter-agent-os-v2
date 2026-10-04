@@ -77,6 +77,13 @@ from typing import Any, Iterable, Mapping, Sequence
 
 # Fixed on purpose.  An escalation is always about *this* project; letting a
 # caller point the agent somewhere else would let V2 edit an unrelated tree.
+#
+# This is the one literal path the 2026-10-04 consolidation deliberately left behind.
+# ``tests/test_workbuddy_bridge.py::CredentialHygieneTest`` forbids the token naming the
+# settings directory from appearing anywhere in this module's executable code, so that no
+# credential can ever be read out of a tracked file.  Importing the shared roots module
+# would smuggle that token straight back in, so the literal stays here and any future
+# relocation has to edit this line by hand.
 PROJECT_ROOT = Path(r"E:\无尽冬日智能体")
 
 ENV_BASE_URL = "WORKBUDDY_GATEWAY_URL"
