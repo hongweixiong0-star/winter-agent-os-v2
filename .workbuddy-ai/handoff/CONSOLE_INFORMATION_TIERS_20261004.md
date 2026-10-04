@@ -856,3 +856,86 @@ harness 的 `__getattr__` 会**从类上重建缺失的名字**，而 `pump` / `
   - `gui: watchdog separates current health from a lifetime counter`
   - `gui: both watchdog blocks grade the watchdog with one rule`
   - 余下 2 个 problem（`training` / `proof`）与本批无关，是既有项
+
+## 十三、第三批落地记录（2026-10-04，五步各带证据）
+
+| 步 | 动作 | 证据 |
+|---|---|---|
+| 1 | commit | `24ecfc2b` — `feat(console): two §六 thresholds had been written down and never built…`；`6 files changed, 612 insertions(+), 65 deletions(-)` |
+| 2 | repin | `repin_production.py --to 24ecfc2b` → `RESULT: CLEAN_OUTSIDE_DATA`；`[AFTER_CHECKOUT] outside_data_dirs=0`（`[AFTER_RESET] outside_data_dirs=6` 是预期的"索引新、工作树旧"那 6 个文件） |
+| 3 | 重启面板 | pid 17552 → **25560**（venv pythonw，18:48:39）；`panel_restart.py --stop --force` 报 `workers left after the kill: 0` |
+| 4 | 验证生效 | 见下 |
+| 5 | 清过期标记 | 标记由**旧窗口自己**写下、由**新窗口自己**retire，现已不存在 |
+
+### 步 4：这次用三把独立的尺子，而不是一把
+
+**(a) 窗口自报的提交** —— 两个互不依赖的写入点，结论一致：
+
+```
+learning/control_panel/pump.json:
+  runtime_loaded_revision = 24ecfc2b3d0fdcecc3f8d2e43c8da2a9c3a2442c+528f87d2d1a85421
+  runtime_loaded_at       = 2026-10-04T10:48:42Z   (= 本地 18:48:42，正是新窗口)
+
+learning/control_panel/desktop_startup.log:
+  [2026-10-04T18:48:40] CODE_COMMIT=24ecfc2b… WORKTREE_CLEAN=true DATA_ROOT=E:\无尽冬日智能体
+```
+
+**(b) 加载的字节 == 提交里的字节** —— 必须用**同一把尺子**，否则会和我上一批一样自己吓自己：
+
+```
+1. 窗口记录的                     = 961329dfb55c61598f22f5cefe118e1217bfd507536772331c3383f7e109ed4e
+2. 磁盘上的原始字节（CRLF）        = 961329df…            <- 等于 1 ✔
+3. 磁盘上剥掉 CR 之后              = 23d9e2ce58867812579becd8e47ef5e49035fd1b8dd4b548982a93b4db2d0cb5
+4. 提交 24ecfc2b 里的 blob         = 23d9e2ce…            <- 等于 3 ✔
+-> 窗口加载的字节就是提交里的字节：True
+```
+
+工作树是 CRLF、blob 是 LF，所以**直接比原始字节必然不等** ——
+**"不等"在换错尺子时是假信号**，链条要全程用同一把。
+
+**(c) 行为** —— 三个互相独立的读数：
+
+```
+tools/gui_wiring_verify.py         -> wired and matching : 18/18，mismatched 0
+   其中 watchdog 行显示：正常 · 状态 GOAL_RUNNING · 历史累计重启 28 · 异常退出 22
+   （§57 那个修正的**现场可见证据**：健康与历史累计被分开放）
+   其中 dot_wb 显示：异常   <- 正是唯一该浮上来的那块，与 §十二.4 的实测一致
+
+生产树 pytest（test_console_shows_only_what_it_can_fill + test_check_mainline）
+                                   -> 65 passed（53 守卫 + 12 主线；+3 正是本批新增）
+tools/check_wiring.py（生产树）      -> 两条控制台检查 OK；余 2 problem 是既有的 training/proof
+
+重启之后的日志跨度里                    -> Traceback 0 条
+```
+
+`learning/runtime_snapshot.json`：`agent_state = GOAL_RUNNING`，`updated_at = 10:50:17Z`（本地 18:50），
+`unexpected_worker_exits = 22` / `watchdog_restart_count = 28`（**与重启前一致，所以增长型规则保持安静**）。
+
+### 步 5：为什么没有手工删标记
+
+面板重启前，**旧窗口（24af0c0b）自己发现磁盘变成了 24ecfc2b、而 `tools/control_panel.py`
+是控制面文件**，于是按设计写下 `learning/CONTROL_PLANE_RELOAD_REQUIRED.json`（814 B，18:48）。
+新窗口起来后，自己的 `_check_control_plane_reload` 算出 `not stale`，走
+`control_plane_signal().clear("superseded_claim_resolved")` 把它 retire 掉。
+
+**这是机制在自己擦自己的过期声明，比人手删更可信** —— 手工删只能证明"我现在删干净了"，
+而这条路证明的是**写下它的那条路径同时也具备撤回它的能力**（`24af0c0b` 修的就是"只有写、没有撤"）。
+
+### 一处路径疑点，已查清（不是缺陷）
+
+`Get-CimInstance` 显示面板命令行是 `C:\Users\xhw\.codex\worktrees\winter-prod-pinned\…`，
+而 repin 的目标是 `E:\无尽冬日智能体_worktrees\winter-prod-pinned\…`。**两个不同的路径**，
+`Get-Module` 层面的 `LinkType` 还报空，看起来像"面板跑在另一个树上"。
+
+查清结论：**同一个文件**。判据是三条独立事实：
+
+```
+两边的 git HEAD              = 都是 24ecfc2b（且 git-common-dir 都是 E:/无尽冬日智能体/.git）
+两边 control_panel.py 大小/时间 = 519437 字节 / Oct 4 18:47（repin 刚跑完的那一刻）
+两边 Get-FileHash            = 相等（Same file as E: tree? True）
+```
+
+即 `C:\…\.codex\worktrees\…` 是一条指向 E 盘工作树的联接链，`C:\无尽冬日智能体_worktrees`
+这一层已经不存在了（联接目标字符串是残留元数据，实际解析仍落到 E 盘）。
+**判据必须是"同一个文件的哈希相等"，不是"LinkType 看起来像不像联接"** ——
+`Attributes` 那一栏在这里撒了谎。
