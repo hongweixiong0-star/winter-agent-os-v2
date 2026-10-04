@@ -22,7 +22,7 @@ from __future__ import annotations
 import ast
 import json
 import types
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -340,6 +340,135 @@ class TheFreshnessTableOnlyEscalatesWhileSomethingShouldBeWritingTests:
             assert source.used_by, f"{source.key} is listed but no page shows it"
             assert source.ttl_seconds > 0, f"{source.key} has no budget, so it can never be fresh"
 
+    def _write_json(self, root: Path, relative: str, payload: dict,
+                    *, age_seconds: float) -> None:
+        import os
+
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        stamp = NOW.timestamp() - age_seconds
+        os.utime(path, (stamp, stamp))
+
+    def test_every_row_declares_which_writer_keeps_it_fresh(self):
+        """The writer is what decides whether an age is an alarm, so no row may inherit the
+        default: a new row that forgot would silently take the loop's gate and start escalating
+        a file nothing was ever going to write."""
+        text = Path(sf.__file__).read_text(encoding="utf-8")
+        rows = text[text.index("SOURCES: tuple[Source, ...] = ("):].split("\n    Source(")[1:]
+        assert len(rows) == len(sf.SOURCES), "the table and the source file disagree"
+        for row, source in zip(rows, sf.SOURCES):
+            assert "writer=" in row, f"{source.key} does not declare its writer"
+            assert source.writer in sf.WRITERS, f"{source.key} names an unknown writer"
+
+    def test_a_builder_written_file_is_named_but_cannot_ask_for_attention(self, tmp_path):
+        """``capability_catalog.json`` is rebuilt by hand, and its own history already holds a gap
+        longer than its budget.  §六 wants the file named; nothing wants it counted."""
+        self._write(tmp_path, "knowledge/game/capability_catalog.json", age_seconds=10 * 86400)
+        ages = sf.all_ages(tmp_path, now=NOW)
+        assert sf.stale_among(ages, auto_running=True) == ()
+        assert [age.key for age in sf.statement_among(ages)] ==             ["knowledge/game/capability_catalog.json"]
+        lines = sf.statement_lines(tmp_path, now=NOW)
+        assert lines and "没有按时钟运行的写入者" in lines[0]
+
+    def test_a_loop_written_file_still_escalates_while_auto_runs(self, tmp_path):
+        self._write(tmp_path, "learning/runtime_snapshot.json", age_seconds=7200)
+        self._write(tmp_path, "knowledge/game/capability_catalog.json", age_seconds=10 * 86400)
+        assert [age.key for age in sf.stale_while_running(tmp_path, auto_running=True, now=NOW)] == \
+            ["learning/runtime_snapshot.json"], "the loop's own file is the alarm"
+        assert sf.stale_while_running(tmp_path, auto_running=False, now=NOW) == ()
+
+    def test_the_two_halves_partition_every_aged_file_that_has_a_consumer(self, tmp_path):
+        """No aged file may fall between them -- it would vanish from the console -- and none may
+        fall in both, which would print it twice."""
+        for key, age in (("learning/runtime_snapshot.json", 7200),
+                         ("knowledge/game/capability_catalog.json", 10 * 86400),
+                         ("learning/workbuddy_model_stats.jsonl", 4 * 86400),
+                         ("learning/local_gui_model_calls.jsonl", 4 * 86400),
+                         ("learning/fishing_state.json", 4 * 86400),
+                         ("learning/goal_coverage.json", 40 * 86400)):
+            self._write(tmp_path, key, age_seconds=float(age))
+        ages = sf.all_ages(tmp_path, now=NOW)
+        aged = {age.key for age in ages.values()
+                if age.status == sf.STALE and age.source.used_by}
+        due = {age.key for age in sf.stale_among(ages, auto_running=True)}
+        stated = {age.key for age in sf.statement_among(ages)}
+        assert due | stated == aged, "an aged file fell between the two answers"
+        assert due & stated == set(), "an aged file was given both answers"
+
+    def test_a_call_ledger_measures_use_and_not_health(self, tmp_path):
+        """``mtime`` on a file appended per model call answers "how long since anything needed
+        this".  Measured on the live tree: 174 rows at 12.5 a day, last three outcomes succeeded."""
+        self._write(tmp_path, "learning/workbuddy_model_stats.jsonl", age_seconds=4 * 86400)
+        ages = sf.all_ages(tmp_path, now=NOW)
+        assert sf.stale_among(ages, auto_running=True) == ()
+        assert "按调用追加" in sf.statement_lines(tmp_path, now=NOW)[0]
+
+    def test_a_window_written_file_is_left_alone_once_its_window_closes(self, tmp_path):
+        """The fishing record declares its own deadline, and the live file's age equals the time
+        since that deadline passed to the minute: it had been written as recently as the event
+        allowed, so its silence is the off-season rather than a stopped writer."""
+        self._write_json(tmp_path, "learning/fishing_state.json",
+                         {"roles": {"ROLE_A": {"role_id": "1",
+                                               "event_end_at": (NOW - timedelta(days=2)).isoformat()}}},
+                         age_seconds=2 * 86400)
+        ages = sf.all_ages(tmp_path, now=NOW)
+        assert ages["learning/fishing_state.json"].window_open is False
+        assert sf.stale_among(ages, auto_running=True) == ()
+        assert "窗口已经结束" in sf.statement_lines(tmp_path, now=NOW)[0]
+
+    def test_a_window_written_file_is_an_alarm_while_its_window_is_open(self, tmp_path):
+        """The complement has to hold, or the rule is a silencer rather than a distinction: with the
+        window open and a writer due, a record that has not moved is exactly §六's fault."""
+        self._write_json(tmp_path, "learning/fishing_state.json",
+                         {"roles": {"ROLE_A": {"role_id": "1",
+                                               "event_end_at": (NOW + timedelta(days=1)).isoformat()}}},
+                         age_seconds=3 * 86400)
+        ages = sf.all_ages(tmp_path, now=NOW)
+        assert ages["learning/fishing_state.json"].window_open is True
+        assert [age.key for age in sf.stale_among(ages, auto_running=True)] == \
+            ["learning/fishing_state.json"]
+        assert sf.stale_among(ages, auto_running=False) == (), "a stopped AUTO has no writer either"
+
+    def test_the_recorded_flag_cannot_open_the_window(self, tmp_path):
+        """``event_live_open`` says what was true when the record was written; the live file still
+        reads ``true`` 2.85 days after its own deadline passed.  The deadline is the fact."""
+        self._write_json(tmp_path, "learning/fishing_state.json",
+                         {"roles": {"ROLE_A": {"role_id": "1", "event_live_open": True,
+                                               "event_end_at": (NOW - timedelta(days=3)).isoformat()}}},
+                         age_seconds=3 * 86400)
+        assert sf.age_of(tmp_path, "learning/fishing_state.json", now=NOW).window_open is False
+
+    def test_the_card_names_a_statement_without_counting_it(self, tmp_path, monkeypatch):
+        """One reading, three answers: the card prints both, the verdict counts only the first, and
+        the real fault keeps its seat in the 原因 line."""
+        import importlib.util
+
+        self._write(tmp_path, "learning/runtime_snapshot.json", age_seconds=7200)
+        self._write(tmp_path, "knowledge/game/capability_catalog.json", age_seconds=10 * 86400)
+        spec = importlib.util.spec_from_file_location("cp_attention_under_test", PANEL_PATH)
+        panel = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(panel)
+        monkeypatch.setattr(panel, "ROOT", tmp_path)
+
+        class _Stub:
+            process = None
+
+            def __getattr__(self, name):
+                attr = getattr(panel.ControlPanel, name)
+                return types.MethodType(attr, self) if callable(attr) else attr
+
+        stub = _Stub()
+        stub.process = type("P", (), {"poll": lambda self: None})()
+        display, counted, notices = stub._attention_with_sources(["⚠ STATE_CONFLICT：真的那一个"])
+        assert len(display) == 3
+        assert "capability_catalog" in " ".join(display), "a statement must still be named"
+        assert "capability_catalog" in " ".join(notices)
+        assert "capability_catalog" not in " ".join(counted)
+        assert "STATE_CONFLICT" in " ".join(counted)
+        assert "runtime_snapshot" in " ".join(counted), "a stopped writer is still counted"
+
 
 # --------------------------------------------------------------------------------------
 # R2 -- one name, one owner
@@ -426,6 +555,36 @@ class TheInterventionCellAnswersHonestlyTests:
         early_return = body[:body.index("        role = report.by_name")]
         assert 'self.values["intervene"].set(' in early_return
         assert "审计不可用" in early_return
+
+        early_return = body[:body.index("        role = report.by_name")]
+        assert 'self.values["intervene"].set(' in early_return
+        assert "审计不可用" in early_return
+
+    def test_the_count_is_what_the_operator_could_act_on(self):
+        """Measured 2026-10-04: two permanent entries were counted *and* printed as the 原因, and
+        the real fault never reached the line."""
+        text = _module_function("intervention_of")(
+            problems=["⚠ STATE_CONFLICT：a"],
+            notices=["⚠ 数据源已过期：knowledge/game/capability_catalog.json（7.8 天前）· x"],
+            auto_running=True, policy=None,
+        )
+        assert "（1 项）" in text
+        assert "STATE_CONFLICT" in text, "the actionable item keeps the 原因 seat"
+
+    def test_statements_alone_do_not_ask_for_attention(self):
+        text = _module_function("intervention_of")(
+            problems=[],
+            notices=["⚠ 数据源已过期：a", "⚠ 数据源已过期：b"],
+            auto_running=True, policy=None,
+        )
+        assert "不需要你干预" in text
+        assert "2 个数据源" in text
+
+    def test_the_notices_argument_is_optional(self):
+        """The cell is also called with one list, and that call must still mean what it meant."""
+        text = _module_function("intervention_of")(
+            problems=["⚠ x"], auto_running=True, policy=None)
+        assert "（1 项）" in text
 
 
 class EveryPageBuildsOnARealTkRootTests:

@@ -673,6 +673,23 @@ class FishingState:
             self.roles[key] = RoleFishingState(role_key=key)
         return self.roles[key]
 
+    def window_open(self, now: datetime | None = None) -> bool:
+        """Is any role's declared event window still open?
+
+        The answer is computed from the deadline rather than read from the record's
+        ``event_live_open`` flag, because that flag is a *memory* of the moment the record was
+        written: the live ``learning/fishing_state.json`` still reads ``true`` 2.85 days after its
+        own ``event_end_at`` passed (measured 2026-10-04).  A role with no deadline cannot answer
+        and counts as closed -- silence about a window is not evidence that one is open.
+
+        Asked by ``source_freshness`` to decide whether a silent fishing record is a fault
+        (a window open with nobody writing to it) or just the off-season (a closed window, which is
+        exactly what the record's age would be anyway).
+        """
+        moment = now or datetime.now(timezone.utc)
+        return any(role.event_end_at is not None and role.event_end_at > moment
+                   for role in self.roles.values())
+
     # ---------------------------------------------------------------- recording
     def observe(self, role_key: str, *, bait_current: int | None = None,
                 bait_cap: int | None = None, next_bait_at: datetime | str | None = None,

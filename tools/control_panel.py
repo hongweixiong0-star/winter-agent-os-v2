@@ -3379,7 +3379,8 @@ def overview_kpis(root: Path | None = None, *, registry: Any = None, view: dict[
             for key in CATALOG_META}
 
 
-def intervention_of(*, problems: list, auto_running: bool, policy: Any = None) -> str:
+def intervention_of(*, problems: list, notices: list | None = None,
+                    auto_running: bool, policy: Any = None) -> str:
     """The one cell that answers 需要我干预吗, and what the operator would do about it.
 
     Operator's audit (2026-10-04, second layer §五A) found this slot **missing**: the console
@@ -3395,11 +3396,24 @@ def intervention_of(*, problems: list, auto_running: bool, policy: Any = None) -
       already renders -- so "花钱" is answered from a declared verdict rather than from a
       plausible-looking zero.  Where the file is silent the cell says 未声明 instead of
       implying nothing can be spent.
+
+    ``problems`` is what the operator could act on; ``notices`` is what they cannot -- an old file
+    whose writer was never due (see ``source_freshness.WRITER_UNSCHEDULED``).  Both are printed by
+    the 需要关注 card above and both come from its one freshness reading, but only the first is
+    counted here.  Measured 2026-10-04: with the two merged, this cell read
+    「需要你看一眼（3 项）」 about a hand-recorded 25-day-old file and a builder-written catalog,
+    and the two names it printed as the 原因 were those same two -- the real fault never reached
+    the line at all.
     """
     problems = [str(item) for item in problems if str(item).strip()]
+    notices = [str(item) for item in (notices or []) if str(item).strip()]
     if problems:
         verdict = f"需要你看一眼（{len(problems)} 项）"
         reason = "；".join(problems[:2])
+    elif notices:
+        verdict = "不需要你干预"
+        reason = (f"没有冲突、没有卡住；{len(notices)} 个数据源超过预算，"
+                  "但它们的写入者本来就不到时候：看得到年龄，不构成要你处理的事")
     else:
         verdict = "不需要你干预"
         reason = ("没有冲突、没有过期数据源、没有卡住；"
@@ -5177,13 +5191,21 @@ class ControlPanel:
     # reaches the one card the operator is told to watch.
 
     def _freshness(self) -> tuple:
-        """``(all ages, keys of sources that aged out while a writer should have run)``.
+        """``(all ages, sources that stopped while a writer was due, sources that are merely old)``.
 
         The second element is deliberately *not* "every old file": ``stale_among`` returns
         nothing at all when AUTO is down, because when nothing is running nothing writes these
         files and their age is the design, not a fault.  Reporting them would be the "狼来了"
         failure the operator named, and it would train them to ignore the one notice that
         matters.
+
+        The third element is the rest of that partition, and it exists because the same argument
+        holds *inside* a running system: a file a builder wrote, a ledger appended per model call,
+        and a record whose event window has closed were all never going to be refreshed by
+        anything, so their age cannot be a reason to ask the operator for attention either.
+        Measured 2026-10-04: five such rows were on this card, two of them had pushed the real
+        fault out of its 原因 line, and the verdict read 「需要你看一眼（3 项）」 for conditions no
+        intervention could change.
 
         Only the *ages* are memoised.  Caching the AUTO verdict alongside them would freeze it
         for the whole window, so pressing 开始 would not raise the alarm for up to
@@ -5197,8 +5219,9 @@ class ControlPanel:
             ages = source_freshness.all_ages(ROOT)
             self._freshness_ages, self._freshness_at = ages, now
         running = self.process is not None and self.process.poll() is None
-        ends = {age.key for age in source_freshness.stale_among(ages, auto_running=running)}
-        return ages, ends
+        due = {age.key for age in source_freshness.stale_among(ages, auto_running=running)}
+        stated = {age.key for age in source_freshness.statement_among(ages)}
+        return ages, due, stated
 
     def _source_age_note(self, key: str) -> str:
         """``""`` when the source is current, otherwise a suffix naming how old it is.
@@ -5213,21 +5236,33 @@ class ControlPanel:
         (always worth saying) and "something stopped writing" (only a fault if a writer should
         have been running).
         """
-        ages, _ = self._freshness()
+        ages, _due, _stated = self._freshness()
         age = ages.get(key)
         if age is None or age.fresh:
             return ""
         return f"　（{age.source.label}{age.age_text()}，已过期）"
 
-    def _attention_with_sources(self, lines: list) -> list:
-        """Prepend the stale-source lines the operator must see, then the truth conflicts."""
-        ages, ends = self._freshness()
-        if not ends:
-            return lines
-        worst = sorted((ages[k] for k in ends), key=lambda a: -(a.age_seconds or 0.0))
-        head = [f"⚠ 数据源已过期：{a.source.key}（{a.age_text()}）· 用于 {a.source.used_by}"
-                for a in worst[:2]]
-        return head + list(lines)
+    def _attention_with_sources(self, lines: list) -> tuple:
+        """``(the lines the card prints, the subset that asks for the operator, the statements)``.
+
+        One freshness reading, three answers derived from it, because the card and the verdict under
+        it must not hold different opinions.  Only a source whose writer *was due* becomes a
+        problem: a file nothing was ever going to rewrite is still named -- §六 asks for the file to
+        be named where the operator can see it, and the cells it feeds carry its age either way --
+        but it cannot inflate the count that answers 「需要我干预吗」, and it may not push a real
+        fault out of the 原因 line, which is exactly what two permanent entries were doing when this
+        was measured.
+        """
+        from winter_agent_v2 import source_freshness
+
+        ages, due, stated = self._freshness()
+
+        def worst(keys: set) -> list:
+            return sorted((ages[k] for k in keys), key=lambda a: -(a.age_seconds or 0.0))
+
+        alarms = [f"⚠ {source_freshness.describe_line(a)}" for a in worst(due)[:2]]
+        notices = [f"⚠ {source_freshness.describe_line(a)}" for a in worst(stated)[:3]]
+        return alarms + list(lines) + notices, alarms + list(lines), notices
 
     # -- tiers: an abnormal block may not stay folded -------------------------------------
     #
@@ -5293,11 +5328,18 @@ class ControlPanel:
     def _stale_source_note(self, *keys: str) -> Callable[[], str]:
         """Mark a block whose files have stopped being written -- **without** opening it.
 
-        Reads ``_freshness()``'s second element rather than the raw ages on purpose: that element
-        is ``source_freshness.stale_among``'s answer, so the TTL rule *and* the AUTO gate stay
-        owned by the one module that documents them.  Reporting whenever a file was merely old
-        would fire every time the operator paused AUTO, which is the "狼来了" failure the audit
-        warned about -- an old file is only a fault while a writer should have been running.
+        Reads ``_freshness()``'s two verdicts rather than the raw ages on purpose, so the TTL rule,
+        the per-row writer rule *and* the AUTO gate stay owned by the one module that documents
+        them.  Reporting whenever a file was merely old would fire every time the operator paused
+        AUTO, which is the "狼来了" failure the audit warned about -- an old file is only a fault
+        while a writer should have been running.
+
+        The **union** of the two, because this is ``annotate``: §六 asks the *cells* that read an
+        over-budget file to admit it, and that admission is a statement about the file, not an alarm
+        about the system.  The two verdicts partition the aged rows, so while AUTO runs this badges
+        exactly what it badged before -- the difference is that a builder-written file no longer has
+        to stop the operator's card to say so.  With AUTO stopped the loop's own files are in
+        neither, which is the point of the gate.
 
         This is ``annotate``, not ``escalate``: §六's stale-source row surfaces the *cells* that
         use the file and names the file in 需要关注, both of which are already done elsewhere
@@ -5305,7 +5347,8 @@ class ControlPanel:
         the mistake described on ``Fold``.
         """
         def check() -> str:
-            ages, ends = self._freshness()
+            ages, due, stated = self._freshness()
+            ends = due | stated
             hit = [key for key in keys if key in ends]
             if not hit:
                 return ""
@@ -7145,7 +7188,7 @@ class ControlPanel:
         # that simply stopped being written contradicts nothing.  It is also why this card
         # can no longer print 暂无需要关注的问题 while a source is dead -- measured
         # 2026-10-04, it said "nothing to watch" beside a 24.9-day-old goal_coverage.json.
-        lines = self._attention_with_sources(lines)
+        lines, counted, notices = self._attention_with_sources(lines)
         if lines:
             self.values["attention"].set("\n".join(lines))
         else:
@@ -7156,7 +7199,8 @@ class ControlPanel:
         # The verdict, from the very lines the card above is printing.  Passing them in
         # rather than recomputing is what keeps this cell from becoming a second opinion.
         self.values["intervene"].set(intervention_of(
-            problems=lines,
+            problems=counted,
+            notices=notices,
             auto_running=self._auto_running,
             policy=read_policy_state(POLICY_STATE_PATH),
         ))
