@@ -39,13 +39,23 @@ def _panel_source() -> str:
 
 def _module_function(qualname: str):
     """Call a module-level function out of the panel script without importing Tk."""
+    return getattr(_module_panel(), qualname)
+
+
+def _module_panel():
+    """The panel module itself, executed but never ``main()``-ed.
+
+    Executing it is safe on this host (``import tkinter`` succeeds without a display); building a
+    *window* is what needs a real root, and that is what ``EveryPageBuildsOnARealTkRootTests``
+    withholds a skip for.
+    """
     import importlib.util
 
     spec = importlib.util.spec_from_file_location("cp_fill_under_test", PANEL_PATH)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
-    return getattr(module, qualname)
+    return module
 
 
 def _string_literals(source: str) -> set:
@@ -427,6 +437,30 @@ class EveryPageBuildsOnARealTkRootTests:
     PAGE_BUILDERS = ("_overview", "_goals", "_strategy", "_event_goal",
                      "_capabilities", "_auto_development", "_system")
 
+    _TK_ROOT = None
+
+    def _root(self):
+        """One Tk root for the whole class, made once and **never destroyed between tests**.
+
+        This is not tidiness, it is a repaired guard.  Measured: with a ``Tk()``/``destroy()``
+        pair per test, three runs of this file gave *one skip* in the first and none in the other
+        two -- ``test_the_overview_folds_what_the_audit_folded`` silently declined to run, on a
+        host where Tk works.  A guard that skips one run in three is a guard that is not guarding;
+        and because ``pytest.skip`` reads as "environment", the failure mode is invisible.
+
+        The churn was the cause, so the churn is what is removed.  The skip below now means what
+        it says -- this host has no display -- and cannot be produced by test ordering.
+        """
+        tk = pytest.importorskip("tkinter")
+        if type(self)._TK_ROOT is None:
+            try:
+                root = tk.Tk()
+            except tk.TclError:  # pragma: no cover - no display on this host
+                pytest.skip("no Tk display available")
+            root.withdraw()
+            type(self)._TK_ROOT = root
+        return tk, type(self)._TK_ROOT
+
     def _harness(self, panel, tk, root, root_dir):
         import types
         import inspect
@@ -492,12 +526,7 @@ class EveryPageBuildsOnARealTkRootTests:
     def test_all_seven_pages_build(self, tmp_path, monkeypatch):
         import importlib.util
 
-        tk = pytest.importorskip("tkinter")
-        try:
-            root = tk.Tk()
-        except tk.TclError:  # pragma: no cover - no display on this host
-            pytest.skip("no Tk display available")
-        root.withdraw()
+        tk, root = self._root()
 
         spec = importlib.util.spec_from_file_location("cp_pages_under_test", PANEL_PATH)
         panel = importlib.util.module_from_spec(spec)
@@ -506,16 +535,13 @@ class EveryPageBuildsOnARealTkRootTests:
         monkeypatch.setattr(panel, "ROOT", tmp_path)
 
         harness = self._harness(panel, tk, root, tmp_path)
-        try:
-            built = []
-            for name in self.PAGE_BUILDERS:
-                getattr(harness, name)()          # the failure under test is raised here
-                built.append(name)
-            root.update_idletasks()
-            assert built == list(self.PAGE_BUILDERS)
-            assert harness._tab_names == ["总览", "目标", "策略", "活动", "能力", "自动开发", "系统"]
-        finally:
-            root.destroy()
+        built = []
+        for name in self.PAGE_BUILDERS:
+            getattr(harness, name)()          # the failure under test is raised here
+            built.append(name)
+        root.update_idletasks()
+        assert built == list(self.PAGE_BUILDERS)
+        assert harness._tab_names == ["总览", "目标", "策略", "活动", "能力", "自动开发", "系统"]
 
     def test_the_overview_really_has_its_grid_row_zero(self, tmp_path, monkeypatch):
         """The specific edit that broke and no test noticed: ``_overview`` must create its tab
@@ -528,6 +554,402 @@ class EveryPageBuildsOnARealTkRootTests:
         assert first.strip().startswith("tab = self._tab("), (
             f"_overview must open by creating its tab, not by using it: {first.strip()!r}"
         )
+
+    def _build_overview(self, tmp_path, monkeypatch):
+        import importlib.util
+
+        tk, root = self._root()
+        spec = importlib.util.spec_from_file_location("cp_overview_under_test", PANEL_PATH)
+        panel = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(panel)
+        monkeypatch.setattr(panel, "ROOT", tmp_path)
+        harness = self._harness(panel, tk, root, tmp_path)
+        harness._overview()
+        root.update_idletasks()
+        return panel, harness, root
+
+    def test_the_overview_folds_what_the_audit_folded(self, tmp_path, monkeypatch):
+        """The tier map as the real page builds it, not as the table describes it.
+
+        Two things are being pinned, and the second is the one that matters:
+
+        * each block's tier -- so a later edit cannot quietly promote a block into L1 or demote
+          the verdict card out of it;
+        * **nothing at all is open on first paint.**  That is the operator's complaint measured
+          rather than asserted from a table: he said the page showed too much, and the test says
+          the page now opens with every L2/L3 block shut by itself.
+        """
+        panel, harness, root = self._build_overview(tmp_path, monkeypatch)
+        assert {key: fold.level for key, fold in harness._folds.items()} == {
+            "today": panel.L2, "decision": panel.L2, "queues": panel.L2, "facts": panel.L2,
+            "kpi": panel.L3, "workbuddy": panel.L3, "watchdog": panel.L3,
+            "stats": panel.L3, "events": panel.L3,
+        }
+        open_on_first_paint = [key for key, fold in harness._folds.items() if fold.expanded]
+        assert open_on_first_paint == [], (
+            f"{open_on_first_paint} are open before the operator touches anything"
+        )
+        # The two blocks the audit named as permanent L1 must not be folds at all: a block that
+        # says "a fault exists" may not be the one that can be collapsed.
+        assert "attention" not in harness._folds
+        assert "intervene" not in harness._folds
+
+    def test_every_fold_only_watches_sources_the_freshness_table_knows(self, tmp_path, monkeypatch):
+        """The runtime half of the KPI check: ``sources`` are evaluated values, so this is where
+        a fold that watches an unknown file can actually be caught."""
+        panel, harness, root = self._build_overview(tmp_path, monkeypatch)
+        assert harness._folds, "the overview must declare folds"
+        known = {source.key for source in sf.SOURCES}
+        for key, fold in harness._folds.items():
+            unknown = sorted(set(fold.sources) - known)
+            assert unknown == [], f"fold {key} watches {unknown}, which has no freshness row"
+
+
+# --------------------------------------------------------------------------------------
+# The information tiers: a folded block may not stay folded while it is abnormal
+# --------------------------------------------------------------------------------------
+
+
+class _FakeWidget:
+    """Just enough of a Tk widget for ``Fold.paint``: packed, or not, and a text."""
+
+    def __init__(self):
+        self.packed = False
+        self.text = ""
+
+    def pack(self, **_kwargs):
+        self.packed = True
+
+    def pack_forget(self):
+        self.packed = False
+
+    def configure(self, **kwargs):
+        self.text = kwargs.get("text", self.text)
+
+    def bind(self, *_args, **_kwargs):
+        pass
+
+
+class _FakeVar:
+    def __init__(self):
+        self.value = ""
+
+    def set(self, value):
+        self.value = value
+
+    def get(self):
+        return self.value
+
+
+class AFoldedBlockCannotHideAnAbnormalityTests:
+    """The operator's rule, in three parts, each of which alone is gameable.
+
+    He asked for the console to show less, with the explicit exception that a block must surface
+    itself 「在超过阈值 / 状态异常 / 需要用户决策时」.  A fold that cannot open itself is therefore
+    not styling -- it is the mechanism by which a fault becomes invisible, so each half is pinned:
+
+    * every fold the window declares either carries a rule or is named in ``INERT_FOLDS``, so
+      "this one cannot open itself" is a decision somebody wrote down;
+    * a rule that fires opens its block with no click;
+    * a fired rule leaves its reason in the header **whether the block is open or shut** -- that
+      third one is what makes it safe to let an abnormal L3 block be folded at all.
+    """
+
+    def _panel(self):
+        return _module_panel()
+
+    def _stub(self, panel):
+        import types
+
+        class _Stub:
+            def __init__(self):
+                self._folds = {}
+
+            def __getattr__(self, name):
+                attr = getattr(panel.ControlPanel, name)
+                return types.MethodType(attr, self) if callable(attr) else attr
+
+        return _Stub()
+
+    def _fold(self, panel, stub, key, level, escalate=None, annotate=None):
+        widget = _FakeWidget()
+        fold = panel.Fold(key=key, title=key, level=level, outer=widget, body=widget,
+                          toggle=widget, badge=_FakeVar(), escalate=escalate,
+                          annotate=annotate, sources=())
+        stub._folds[key] = fold
+        fold.paint()
+        return fold
+
+    def test_a_block_with_a_reason_opens_itself(self):
+        panel = self._panel()
+        stub = self._stub(panel)
+        fold = self._fold(panel, stub, "kpi", panel.L3, escalate=lambda: "能力目录已停更")
+        assert fold.expanded is False, "an L3 block starts folded"
+        stub._sync_folds()
+        assert fold.expanded is True, "the rule firing must not need a click"
+        assert fold.badge.get() == "⚠ 能力目录已停更"
+
+    def test_a_marked_block_stays_folded_but_says_why(self):
+        """``annotate`` is not a weaker ``escalate``: it is a different answer to a different
+        question, and collapsing the two was a real defect in the first version of this change.
+
+        Measured on live data: with one merged rule, ``capability_catalog.json`` (7.7 days old,
+        7-day budget) auto-opened both the KPI block and the 事实卡 block **permanently** -- so the
+        两个折叠白做了, and an alarm that is always up is the "狼来了" failure ``source_freshness``
+        warns about in its own docstring.  §六's stale-source row asks for the *cells* to read
+        待重新观测 and 需要关注 to name the file, which both already do.
+        """
+        panel = self._panel()
+        stub = self._stub(panel)
+        fold = self._fold(panel, stub, "kpi", panel.L3,
+                          annotate=lambda: "能力目录已停更（7.7 天前），这一块的数字不是当前读数")
+        stub._sync_folds()
+        assert fold.expanded is False, "a stale source must not open the block"
+        assert "7.7 天前" in fold.badge.get(), "but it must say so in the header"
+        assert fold.auto_opened is False
+
+    def test_only_the_rule_that_opens_can_shut(self):
+        """A marked (never opened) block must not be closed by the clearing of a rule that never
+        opened it -- otherwise a block the operator opened by hand is yanked shut by a source
+        going fresh."""
+        panel = self._panel()
+        stub = self._stub(panel)
+        state = {"note": "过期"}
+        fold = self._fold(panel, stub, "facts", panel.L2, annotate=lambda: state["note"])
+        stub._sync_folds()
+        stub._toggle_fold("facts")                 # the operator opens it deliberately
+        assert fold.expanded is True and fold.auto_opened is False
+        state["note"] = ""
+        stub._sync_folds()
+        assert fold.expanded is True, "the source going fresh must not shut a block the user opened"
+        assert fold.badge.get() == ""
+
+    def test_a_block_shuts_itself_when_the_reason_clears(self):
+        panel = self._panel()
+        stub = self._stub(panel)
+        state = {"reason": "坏了"}
+        fold = self._fold(panel, stub, "kpi", panel.L3, escalate=lambda: state["reason"])
+        stub._sync_folds()
+        assert fold.expanded is True
+        state["reason"] = ""
+        stub._sync_folds()
+        assert fold.expanded is False, "an alarm that healed must stop taking the screen"
+        assert fold.badge.get() == ""
+
+    def test_a_block_the_operator_opened_is_not_yanked_shut(self):
+        """The alarm closes only what the alarm opened."""
+        panel = self._panel()
+        stub = self._stub(panel)
+        fold = self._fold(panel, stub, "queues", panel.L2, escalate=lambda: "")
+        stub._toggle_fold("queues")
+        assert fold.expanded is True and fold.auto_opened is False
+        stub._sync_folds()
+        assert fold.expanded is True, "the window must not argue with the person using it"
+
+    def test_a_shut_block_still_carries_its_reason(self):
+        """The load-bearing one: folded is allowed, *hidden* is not."""
+        panel = self._panel()
+        stub = self._stub(panel)
+        fold = self._fold(panel, stub, "watchdog", panel.L3, escalate=lambda: "看门狗异常")
+        stub._sync_folds()
+        stub._toggle_fold("watchdog")          # the operator closes it by hand
+        assert fold.expanded is False
+        stub._sync_folds()                     # ...and the next tick leaves it shut
+        assert fold.expanded is False, "a hand-shut block stays shut for the same fault"
+        assert fold.badge.get() == "⚠ 看门狗异常", (
+            "shutting a block must not remove the statement that it is abnormal"
+        )
+
+    def test_a_new_fault_reopens_a_block_the_operator_had_shut(self):
+        """They silenced the previous fault, not the next one."""
+        panel = self._panel()
+        stub = self._stub(panel)
+        state = {"reason": "第一个故障"}
+        fold = self._fold(panel, stub, "kpi", panel.L3, escalate=lambda: state["reason"])
+        stub._sync_folds()
+        stub._toggle_fold("kpi")
+        assert fold.expanded is False
+        state["reason"] = "第二个故障"
+        stub._sync_folds()
+        assert fold.expanded is True, "a different fault gets its own chance to surface"
+
+    def test_a_rule_that_raises_is_not_an_all_clear(self):
+        """A broken verdict is an abnormal block whose state is unknown, so it must not read as
+        "nothing to see" -- that would make the one failure that hides faults the quiet one."""
+
+        def boom():
+            raise RuntimeError("predicate broke")
+
+        panel = self._panel()
+        stub = self._stub(panel)
+        fold = self._fold(panel, stub, "facts", panel.L2, escalate=boom)
+        stub._sync_folds()
+        assert fold.expanded is True
+        assert "异常判定失败" in fold.badge.get()
+        assert "RuntimeError" in fold.badge.get()
+
+    # -- the declaration itself --------------------------------------------------------
+
+    def _declared_folds(self) -> dict:
+        """Every ``self._fold(...)`` call in the panel: key, tier, and whether it carries a rule.
+
+        Walked with AST rather than grepped, so the comments that *explain* a fold are not
+        mistaken for one, and a fold added to any page -- not just 总览 -- is found.
+
+        Both the key and the tier must be spelled out at the call site as a literal or as one of
+        the module's own tier constants.  A tier computed at runtime is rejected on purpose: the
+        whole point of ``FOLD_DEFAULT_OPEN`` is that a block cannot choose its own default, and a
+        tier nobody can read off the call site is how that rule gets worked around.
+        """
+        panel = self._panel()
+
+        def spelled(node) -> str | None:
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                return node.value
+            if isinstance(node, ast.Name):
+                value = getattr(panel, node.id, None)
+                return value if isinstance(value, str) else None
+            return None
+
+        found: dict = {}
+        for node in ast.walk(ast.parse(_panel_source())):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if not (isinstance(func, ast.Attribute) and func.attr == "_fold"):
+                continue
+            kwargs = {kw.arg: kw.value for kw in node.keywords}
+            key, level = spelled(kwargs.get("key")), spelled(kwargs.get("level"))
+            assert key, "a fold must name its key literally"
+            assert level in (panel.L1, panel.L2, panel.L3), (
+                f"{key} must declare one of L1/L2/L3 at the call site, not a computed tier"
+            )
+            found[key] = {
+                "level": level,
+                "escalated": "escalate" in kwargs,
+                "annotated": "annotate" in kwargs,
+                "has_sources": "sources" in kwargs,
+            }
+        return found
+
+    def test_every_fold_can_say_something_or_is_declared_inert(self):
+        panel = self._panel()
+        declared = self._declared_folds()
+        assert declared, "the panel must declare at least one fold"
+        missing = sorted(key for key, spec in declared.items()
+                         if not spec["escalated"] and not spec["annotated"]
+                         and key not in panel.INERT_FOLDS)
+        assert missing == [], (
+            f"{missing} fold and can never say anything about themselves, and nothing says why: "
+            f"give them a rule, or name them in INERT_FOLDS with the reason"
+        )
+
+    def test_the_block_that_opens_and_the_block_that_marks_are_not_the_same_rule(self):
+        """Pins the split itself, because merging the two is the specific error that was made and
+        the two rules look identical from a distance.
+
+        The four blocks with an *opening* rule are exactly the four §六 names for it
+        (看门狗 / WorkBuddy / 队列 / 预载 非正常，或队列有活跃 Job).  Everything else that watches a
+        file only *marks* its header.
+        """
+        panel = self._panel()
+        declared = self._declared_folds()
+        opening = sorted(key for key, spec in declared.items() if spec["escalated"])
+        assert opening == ["watchdog", "workbuddy"], (
+            "only the blocks §六 lists may float themselves to L1; found " f"{opening}"
+        )
+        marking = sorted(key for key, spec in declared.items() if spec["annotated"])
+        assert marking == ["facts", "kpi"], (
+            "the stale-source row marks the cells and names the file, it does not open the "
+            f"block; found {marking}"
+        )
+        assert not (set(opening) & set(marking)), "one block, one kind of rule"
+
+    def test_every_kpi_card_declares_which_file_it_derives_from(self):
+        """The audit's 「8 个 KPI 卡没有任何年龄标注」, closed: a card either names the file whose age
+        it can cite, or is listed with the reason it has no file -- the same shape as the activity
+        page's optional keys, so an unageable card is a written decision rather than a gap."""
+        panel = self._panel()
+        cards = set(panel.CATALOG_META)
+        covered = set(panel.CATALOG_FRESHNESS) | set(panel.CATALOG_UNFRESHNESSED)
+        assert covered == cards, (
+            f"KPI cards with no entry: {sorted(cards - covered)}; "
+            f"entries with no card: {sorted(covered - cards)}"
+        )
+        assert not (set(panel.CATALOG_FRESHNESS) & set(panel.CATALOG_UNFRESHNESSED)), (
+            "a card either has a file to age or it does not"
+        )
+        known = {source.key for source in sf.SOURCES}
+        unknown = sorted(set(panel.CATALOG_FRESHNESS.values()) - known)
+        assert unknown == [], f"KPI cards cite {unknown}, which have no freshness row"
+
+    def test_the_kpi_source_line_really_gains_the_age(self):
+        """The wiring, not the declaration: the age must reach the label the operator reads.
+
+        Measured, because the obvious place to put it is wrong -- the KPI labels are set *after*
+        ``_refresh_truth`` in the tick, so an age appended there is overwritten by the static
+        label a few lines later and nothing looks broken.
+        """
+        source = _panel_source()
+        assert "_source_age_note(CATALOG_FRESHNESS.get(key" in source, (
+            "the KPI source line must append the age of the file the card counted"
+        )
+        # ...and it must be in the block that sets the KPI labels, i.e. after that set.
+        setter = source.index('var.set(kpi.get(key, {}).get("value", NO_DATA))')
+        aged = source.index("_source_age_note(CATALOG_FRESHNESS.get(key")
+        assert aged > setter, (
+            "the age must be appended where the label is written, not earlier where it is "
+            "overwritten"
+        )
+
+    def test_the_inert_list_names_no_fold_that_no_longer_exists(self):
+        """The other direction, because a stale exemption quietly re-permits the defect."""
+        panel = self._panel()
+        declared = set(self._declared_folds())
+        stale = sorted(set(panel.INERT_FOLDS) - declared)
+        assert stale == [], f"INERT_FOLDS exempts {stale}, which is not a fold any more"
+
+    def test_each_inert_entry_states_a_reason(self):
+        panel = self._panel()
+        for key, reason in panel.INERT_FOLDS.items():
+            assert len(reason.strip()) >= 15, f"{key} is exempt with no reason worth the name"
+
+    def test_the_kpi_fold_names_only_sources_the_table_knows(self):
+        """A fold whose ``sources`` name a file the freshness table has no row for could never
+        escalate -- it would look guarded while being permanently unable to open itself.
+
+        Only the *declaration* is checked here.  The sources each fold actually ends up watching
+        are evaluated values (``KPI_FOLD_SOURCES``, a tuple built from ``OVERVIEW_FACTS``), so the
+        runtime check lives where those values exist: ``EveryPageBuildsOnARealTkRootTests``.
+        """
+        panel = self._panel()
+        known = {source.key for source in sf.SOURCES}
+        unknown = sorted(set(panel.KPI_FOLD_SOURCES) - known)
+        assert unknown == [], f"the KPI fold watches {unknown}, which has no freshness row"
+
+    def test_why_idle_is_the_one_fact_card_that_stays_open(self):
+        """§六 put 现在为什么不动 at L1 -- it is the answer to 「有没有卡住」 -- and it lives in a
+        four-card block whose other three members are L2.  Splitting it out is what lets the rest
+        fold without hiding an L1 fact, so the split is pinned rather than left implicit."""
+        panel = self._panel()
+        cards = {row[1] for row in panel.OVERVIEW_FACTS}
+        assert set(panel.OVERVIEW_FACT_TIERS) == cards, (
+            "every fact card needs a tier and every tier needs a card, or one is untiered"
+        )
+        staying = sorted(key for key, level in panel.OVERVIEW_FACT_TIERS.items()
+                         if level == panel.L1)
+        assert staying == ["why_idle"], (
+            "exactly one fact card is L1 and it is why_idle; "
+            f"found {staying}"
+        )
+
+    def test_the_tier_of_a_block_is_keyed_by_tier_not_by_block(self):
+        """A block must not be able to privately choose a different default from its tier."""
+        panel = self._panel()
+        assert panel.FOLD_DEFAULT_OPEN == {panel.L1: True, panel.L2: False, panel.L3: False}
+        for spec in self._declared_folds().values():
+            assert spec["level"] in panel.FOLD_DEFAULT_OPEN
 
 
 if __name__ == "__main__":  # pragma: no cover

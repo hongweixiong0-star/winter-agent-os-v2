@@ -1905,6 +1905,26 @@ def main() -> int:
           and '"confidence_decision"' in _panel_source
           and '"confidence_frame"' in _panel_source
           and '"confidence": NO_DATA' not in _panel_source)
+    # 2026-10-04, second pass.  The operator said the console showed too much, and the answer was
+    # tiers with one hard rule: a folded block that is abnormal must surface itself and say why.
+    # So this checks the rule's two halves rather than the existence of a collapse widget -- a
+    # window can fold perfectly and hide a fault perfectly in the same gesture.
+    #
+    # ``escalate`` and ``annotate`` are both required rather than one of them, because merging the
+    # two was a real defect: with a single rule, every block whose file went stale opened itself
+    # and stayed open (the capability catalog is 7.7 days old on a 7-day budget, written by
+    # development work rather than by AUTO, so "stale" is its steady state).  The badge line is
+    # pinned *outside* the open/shut branch on purpose: that placement is what makes "folded"
+    # different from "hidden".
+    check("gui: a folded block that is abnormal opens itself, and says why either way",
+          "def _fold(" in _panel_source
+          and "def _sync_folds(" in _panel_source
+          and "def _toggle_fold(" in _panel_source
+          and "run_fold_rule(" in _panel_source
+          and "annotate=annotate" in _panel_source
+          and "INERT_FOLDS" in _panel_source
+          and "FOLD_DEFAULT_OPEN" in _panel_source
+          and 'fold.badge.set(f"⚠ {said}"' in _panel_source)
     check("gui: debug furniture is off until asked for",
           "vision_debug" in _panel_source
           and "视觉调试" in _panel_source

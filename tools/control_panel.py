@@ -1571,6 +1571,117 @@ UNKNOWN_STOP = "未知（原因未分类）"
 # age -- a memo that never expires would freeze exactly the number it exists to report.
 FRESHNESS_TTL_SECONDS = 30.0
 
+# -- information tiers: what stays, what opens on request, what folds -------------------
+#
+# The operator's 2026-10-04 directive, *translated* (master rules §28).  He said the console
+# showed too much; he did not ask for anything to be removed.  So nothing below is deleted --
+# every block still gets built, still gets refreshed, and is one click away.  What changes is
+# which of them the eye has to cross to reach the handful of facts that decide whether he acts.
+#
+# L3 does not mean "unimportant".  It means "does not change what you do next **while it is
+# healthy**" -- which is exactly why L3 is the tier that must open itself the moment it is not.
+L1, L2, L3 = "L1", "L2", "L3"
+#: Open on first paint?  Keyed by tier, not per block, so a block cannot privately choose a
+#: different default from the tier the 2026-10-04 audit assigned it.
+FOLD_DEFAULT_OPEN: dict[str, bool] = {L1: True, L2: False, L3: False}
+
+#: Folds with **no** rule at all -- neither one that opens them nor one that marks their header --
+#: each with the reason it does not need one.
+#:
+#: Same shape as the activity page's ``OPTIONAL_EVENT_KEYS``, and for the same reason: a folded
+#: block that can never say anything about itself is not automatically a defect, but it has to be
+#: a decision somebody wrote down rather than an omission nobody noticed.  ``_sync_folds`` is the
+#: acting half of this table and a guard test is the checking half -- every registered fold must
+#: escalate, annotate, or be named here.
+INERT_FOLDS: dict[str, str] = {
+    "queues": "七格是游戏自身队列状态的只读投影（``_compact`` 回的是状态词，不是条数），"
+              "面板没有任何积压阈值，编一个就是第二个意见。真正有「卡住」判据的"
+              "WorkBuddy 队列是上面那一块，它自己有规则。",
+    "events": "最近事件是日志摘要：按定义它永远是过去，不会有「异常」这个状态，"
+              "浮上来只会挤掉真正需要看的东西。",
+    "stats": "本次启动统计是这个窗口自己跑了多少轮，不是系统状态，也没有可比较的阈值。",
+    "today": "与运行·目标页同源；「没有目标进展」的告警已经由常驻的进度行承担"
+             "（``_progress_line`` 会加 ⚠ 前缀），再浮一次就是同一件事说两遍。",
+    "decision": "六行都是**当前决策**的展开（为什么 / 前置 / 判定 / 下一步 / 风险 / 置信度），"
+                "而它现在的答案已经在常驻的三行里（当前 Goal / Skill / 状态）；"
+                "要报的故障由「需要关注」与干预卡承担。给「风险」编一个严重度解析器"
+                "就是第二个意见。",
+}
+
+
+def run_fold_rule(rule: Callable[[], str] | None) -> str:
+    """Evaluate one fold rule, and treat "could not run" as a verdict rather than as silence.
+
+    Deliberately a **module-level function**, not a method and not a ``staticmethod``.  It was a
+    ``staticmethod`` for one commit, and a test stub that binds every callable it finds with
+    ``MethodType`` then handed it two arguments -- so the guard died inside the harness rather than
+    in the panel.  That is a binding-convention dependency in a helper that needs no binding at
+    all, and the cure is to own nothing: this touches no ``self``, so nothing can mis-bind it.
+
+    The behaviour matters more than the placement.  A rule that raises must not read as an
+    all-clear: the whole point of the badge is that an abnormal block cannot be hidden, and a
+    broken verdict is precisely an abnormal block whose state is unknown.
+    """
+    if rule is None:
+        return ""
+    try:
+        return rule() or ""
+    except Exception as exc:  # noqa: BLE001 - see the docstring
+        return f"异常判定失败（{type(exc).__name__}）"
+
+
+class Fold:
+    """One collapsible block, plus the two rules that keep it from hiding something.
+
+    ``escalate`` and ``annotate`` are deliberately **two** rules, not one, because §六's exception
+    table draws exactly this line and collapsing them was a mistake worth writing down:
+
+    * ``escalate`` -- the block itself must float to L1 and opens with no click.  Reserved for the
+      rows that say so: 看门狗 / WorkBuddy / 队列 / 预载 非正常，或队列有活跃 Job。
+    * ``annotate`` -- the block's numbers are no longer current, so its header must say so, but
+      the block stays folded.  This is the stale-source row, whose "浮上来的内容" is 「那些格子
+      显示『待重新观测』，并在『需要关注』里点名」 -- the *cells* and the L1 card, not the block.
+
+    Merging them (v1 of this change did) auto-opens every block whose file went stale, which on
+    real data meant two L3 blocks sitting open permanently: ``capability_catalog.json`` is on a
+    7-day budget written by development work, not by AUTO, so "stale" is its steady state.  That
+    would have made folding pointless for exactly the blocks the operator complained about -- and
+    would have taught him that an alarm is background noise, which is the failure mode
+    ``source_freshness`` warns about in its own docstring.
+    """
+
+    __slots__ = ("key", "title", "level", "outer", "body", "toggle", "badge",
+                 "escalate", "annotate", "sources", "expanded", "auto_opened", "user_closed",
+                 "last_reason", "_painted")
+
+    def __init__(self, *, key: str, title: str, level: str, outer: Any, body: Any,
+                 toggle: Any, badge: Any, escalate: Callable[[], str] | None,
+                 annotate: Callable[[], str] | None = None,
+                 sources: tuple[str, ...] = ()) -> None:
+        self.key, self.title, self.level = key, title, level
+        self.outer, self.body, self.toggle, self.badge = outer, body, toggle, badge
+        self.escalate, self.annotate = escalate, annotate
+        self.sources = tuple(sources)
+        self.expanded = bool(FOLD_DEFAULT_OPEN.get(level, False))
+        self.auto_opened = False
+        self.user_closed = False
+        self.last_reason = ""
+        self._painted: bool | None = None
+
+    def paint(self) -> None:
+        """Make the widgets match ``expanded``.  Cheap to call on every tick: the comparison
+        below is why a collapsed block is not re-packed 40 times a minute."""
+        if self._painted == self.expanded:
+            return
+        self._painted = self.expanded
+        if self.expanded:
+            self.body.pack(fill="x", pady=(8, 0))
+            self.toggle.configure(text=f"▾  {self.title}")
+        else:
+            self.body.pack_forget()
+            self.toggle.configure(text=f"▸  {self.title}")
+
+
 CATALOG_PATH = ROOT / "knowledge/game/capability_catalog.json"
 EPISODES_PATH = ROOT / "learning/episodes.jsonl"
 # How much of the tail of ``episodes.jsonl`` a UI-tick reader may touch.  An episode
@@ -1667,6 +1778,53 @@ OVERVIEW_FACTS: tuple[tuple[str, str, str, str], ...] = (
     ("能力覆盖", "coverage",
      "knowledge/game/capability_catalog.json", "knowledge/game/capability_catalog.json"),
 )
+
+#: Which fact card stays and which folds, keyed by the card's **value key**.
+#:
+#: ``why_idle`` is L1 on its own: it is the answer to 「有没有卡住」, which §六 of the audit
+#: listed as L1, and it happens to live in a block whose other three members are L2.  Splitting
+#: it out is what lets the other three fold without hiding an L1 fact.
+#:
+#: This is a second list beside ``OVERVIEW_FACTS``, which is the R3 shape -- two declarations of
+#: one fact.  It is allowed here for the same reason ``source_freshness.SOURCES`` is allowed to
+#: be a second list beside these labels: a guard test asserts the key sets are *equal*, so the
+#: two cannot disagree, rather than merely not having disagreed yet.
+OVERVIEW_FACT_TIERS: dict[str, str] = {
+    "why_idle": L1,
+    "executor_mix": L2,
+    "bootstrap": L2,
+    "coverage": L2,
+}
+
+#: Which file each of the 8 KPI cards derives from, so a card's own source line can carry that
+#: file's age -- the gap the audit named (「总览 8 个 KPI 卡 ... 没有任何年龄标注」) and which the
+#: previous pass closed only for the four fact cards.  Card key -> freshness-table key.
+#:
+#: Declared rather than read out of ``CATALOG_META``'s prose, because pulling a path out of that
+#: sentence by substring match is the R3 defect wearing a regex, and a guard test asserts the keys
+#: here plus ``CATALOG_UNFRESHNESSED`` below cover ``CATALOG_META`` exactly.
+CATALOG_FRESHNESS: dict[str, str] = {
+    "observed": "knowledge/game/capability_catalog.json",
+    "implemented": "knowledge/game/capability_catalog.json",
+    "tried": "knowledge/game/capability_catalog.json",
+    "verified": "knowledge/game/capability_catalog.json",
+    "never": "knowledge/game/capability_catalog.json",
+    "blocked": "knowledge/game/capability_catalog.json",
+    "queue": "learning/workbuddy_escalations.jsonl",
+}
+
+#: The KPI cards with no file to age, and why.  ``stable`` counts ``SkillState.STABLE`` off the
+#: registry object the panel already holds, not off a file -- so there is nothing whose age could
+#: be stated, and inventing a freshness row for a file nothing writes would be a claim about a
+#: missing writer rather than a measurement.
+CATALOG_UNFRESHNESSED: dict[str, str] = {
+    "stable": "读的是进程内 registry 对象的 SkillState.STABLE，不是文件，没有可报的年龄。",
+}
+
+#: The files the KPI fold watches, **derived** from ``CATALOG_FRESHNESS`` above rather than typed
+#: a second time -- so the fold cannot watch a different set of files from the ones its cards
+#: print the age of.
+KPI_FOLD_SOURCES: tuple[str, ...] = tuple(dict.fromkeys(CATALOG_FRESHNESS.values()))
 
 _CACHE_LOCK = threading.Lock()
 _CATALOG_CACHE: tuple[float, dict[str, Any]] | None = None
@@ -4819,6 +4977,157 @@ class ControlPanel:
                 for a in worst[:2]]
         return head + list(lines)
 
+    # -- tiers: an abnormal block may not stay folded -------------------------------------
+    #
+    # The operator's rule is that an L3 block folds **except** when it is over a threshold, in an
+    # abnormal state, or waiting on a decision -- and then it must surface by itself.  ``_fold``
+    # is the declaration, ``_sync_folds`` is the acting half, and the guard is that a block with
+    # an active reason always carries the reason in its header even when it is shut.
+
+    def _fold(self, parent: Any, *, key: str, title: str, level: str,
+              sources: tuple[str, ...] = (), escalate: Callable[[], str] | None = None,
+              annotate: Callable[[], str] | None = None,
+              style: str = "Card.TFrame", padding: tuple[int, int] = (12, 10),
+              badge_wrap: int = 560, grid: dict | None = None,
+              pack: dict | None = None) -> Any:
+        """Declare one collapsible block and return **the frame to draw its content into**.
+
+        Returning the body rather than the container is what keeps this from being a second
+        layout system: every existing ``pack``/``grid`` call inside a block is unchanged, because
+        the frame they receive is the same kind of frame they received before.  The container is
+        placed through ``grid=``/``pack=`` here so a call site stays a single statement and the
+        geometry stays visible where the block is declared.
+        """
+        background = PANEL2 if "Card2" in style else PANEL
+        outer = ttk.Frame(parent, style=style, padding=padding)
+        head = ttk.Frame(outer, style=style)
+        head.pack(fill="x")
+        toggle = ttk.Label(head, text="", style="Section.TLabel", background=background,
+                           cursor="hand2")
+        toggle.pack(side="left")
+        badge = tk.StringVar(value="")
+        ttk.Label(head, textvariable=badge, background=background, foreground=BAD,
+                  font=("Microsoft YaHei UI", 8), wraplength=badge_wrap,
+                  justify="right").pack(side="right")
+        body = ttk.Frame(outer, style=style)
+        fold = Fold(key=key, title=title, level=level, outer=outer, body=body, toggle=toggle,
+                    badge=badge, escalate=escalate, annotate=annotate, sources=sources)
+        toggle.bind("<Button-1>", lambda _event: self._toggle_fold(key))
+        folds = getattr(self, "_folds", None)
+        if folds is None:
+            folds = {}
+            self._folds = folds
+        folds[key] = fold
+        fold.paint()
+        if grid is not None:
+            outer.grid(**grid)
+        if pack is not None:
+            outer.pack(**pack)
+        return body
+
+    def _toggle_fold(self, key: str) -> None:
+        """The operator opened or shut a block by hand; remember that it was their call."""
+        fold = getattr(self, "_folds", {}).get(key)
+        if fold is None:
+            return
+        fold.expanded = not fold.expanded
+        fold.auto_opened = False
+        # A hand-shut block stays shut for **this** fault -- re-opening it on the next tick would
+        # be the window arguing with the person using it.  The header keeps the reason either
+        # way, so nothing is hidden, and ``_sync_folds`` gives a *new* fault a fresh chance.
+        fold.user_closed = not fold.expanded
+        fold.paint()
+
+    def _stale_source_note(self, *keys: str) -> Callable[[], str]:
+        """Mark a block whose files have stopped being written -- **without** opening it.
+
+        Reads ``_freshness()``'s second element rather than the raw ages on purpose: that element
+        is ``source_freshness.stale_among``'s answer, so the TTL rule *and* the AUTO gate stay
+        owned by the one module that documents them.  Reporting whenever a file was merely old
+        would fire every time the operator paused AUTO, which is the "狼来了" failure the audit
+        warned about -- an old file is only a fault while a writer should have been running.
+
+        This is ``annotate``, not ``escalate``: §六's stale-source row surfaces the *cells* that
+        use the file and names the file in 需要关注, both of which are already done elsewhere
+        (``_source_age_note`` and ``_attention_with_sources``).  Opening the block as well was
+        the mistake described on ``Fold``.
+        """
+        def check() -> str:
+            ages, ends = self._freshness()
+            hit = [key for key in keys if key in ends]
+            if not hit:
+                return ""
+            worst = max((ages[key] for key in hit), key=lambda age: -(age.age_seconds or 0.0))
+            return (f"{worst.source.label} 已停更（{worst.age_text()}），"
+                    f"这一块的数字不是当前读数")
+        return check
+
+    def _escalate_workbuddy(self) -> str:
+        """Gateway unhealthy, or the queue has something nobody consumed.
+
+        Both halves are read, not invented: the first is ``health_of`` on the same
+        ``gateway_health`` value the top-bar cell is painted from -- so this badge and that cell
+        cannot grade the gateway differently -- and the second reuses the audit's own
+        ``WORKBUDDY_QUEUE_STUCK`` anomaly rather than a row count with a threshold of my choosing.
+
+        ``unknown`` deliberately does **not** open this block.  It means the probe did not answer,
+        which is a fact about the panel's own reach rather than about the development platform,
+        and the top-bar cell already prints 未确认 for it -- so the fact is visible in L1 anyway.
+        """
+        value = getattr(self, "_gateway_value", None)
+        if value is not None:
+            from winter_agent_v2.state_truth import health_of
+
+            word, colour = health_of(value)
+            if colour in ("bad", "warn"):
+                return f"WorkBuddy 网关{word}"
+        stuck = sorted(kind for kind in getattr(self, "_attention_kinds", ())
+                       if str(kind).startswith("WORKBUDDY_"))
+        if stuck:
+            return f"{stuck[0]}：队列里有东西一直没被消费"
+        return ""
+
+    def _escalate_watchdog(self) -> str:
+        """One source, two surfaces: the V2 top-bar dot is painted from this very value, so a
+        restart storm cannot make the dot say 异常 while this block stays folded."""
+        value = getattr(self, "_watchdog_value", None)
+        if value is None:
+            return ""
+        from winter_agent_v2.state_truth import health_of
+
+        word, colour = health_of(value)
+        return f"看门狗{word}" if colour in ("bad", "warn") else ""
+
+    def _sync_folds(self) -> None:
+        """Open what must float, mark what went stale, shut what healed, and never hide a reason.
+
+        Four behaviours, all four of them guardable:
+
+        * a block with an ``escalate`` reason opens itself -- no click needed;
+        * a block with only an ``annotate`` note stays folded but **says so in its header**, which
+          is the difference between "folded" and "hidden";
+        * a block the alarm opened shuts itself again once the reason clears -- but a block the
+          operator opened deliberately is not yanked shut;
+        * the reason goes in the header regardless of state.
+        """
+        for fold in getattr(self, "_folds", {}).values():
+            reason = run_fold_rule(fold.escalate)   # may open the block
+            note = "" if reason else run_fold_rule(fold.annotate)  # header only
+            said = reason or note
+            if said != fold.last_reason:
+                # A *new* fault gets its own chance to surface, even if the operator shut this
+                # block earlier: they silenced the previous fault, not this one.
+                fold.user_closed = False
+                fold.last_reason = said
+            if reason and not fold.expanded and not fold.user_closed:
+                fold.expanded = True
+                fold.auto_opened = True
+            elif not reason and fold.expanded and fold.auto_opened:
+                fold.expanded = False
+                fold.auto_opened = False
+            fold.badge.set(f"⚠ {said}" if said else "")
+            fold.paint()
+
     def _overview(self) -> None:
         tab = self._tab("总览", scroll=True); tab.rowconfigure(0, weight=1); tab.columnconfigure(1, weight=1)
         left = ttk.Frame(tab, style="Card.TFrame", padding=14, width=215); left.grid(row=0, column=0, sticky="nsew", padx=(0, 8)); left.grid_propagate(False)
@@ -4839,10 +5148,15 @@ class ControlPanel:
         ttk.Label(left, textvariable=self.values["device"], background=PANEL,
                   wraplength=195, justify="left").pack(anchor="w")
         ttk.Label(left, textvariable=self.values["march"], style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(3, 16))
-        ttk.Separator(left).pack(fill="x", pady=(0, 12)); ttk.Label(left, text="今日 Goal 摘要", style="Section.TLabel", background=PANEL).pack(anchor="w", pady=(0, 8))
+        ttk.Separator(left).pack(fill="x", pady=(0, 12))
+        # L2 (§六): the same six figures the 运行·目标 page already owns, so they fold.  It
+        # carries no rule of its own, and that is a decision written into ``INERT_FOLDS``
+        # rather than an omission nobody noticed.
+        today_body = self._fold(left, key="today", title="今日 Goal 摘要", level=L2,
+                                pack=dict(fill="x"), padding=(0, 0), badge_wrap=150)
         self.today: dict[str, tk.StringVar] = {}
         for task in ("活动低保", "情报", "体力", "训练", "科研", "建筑"):
-            row = ttk.Frame(left, style="Card.TFrame"); row.pack(fill="x", pady=3)
+            row = ttk.Frame(today_body, style="Card.TFrame"); row.pack(fill="x", pady=3)
             ttk.Label(row, text=task, background=PANEL).pack(side="left")
             self.today[task] = tk.StringVar(value=PENDING)
             ttk.Label(row, textvariable=self.today[task], style="Muted.TLabel", background=PANEL).pack(side="right")
@@ -4873,14 +5187,26 @@ class ControlPanel:
         ttk.Label(right, textvariable=self.values["backend"], style="Value.TLabel", background=PANEL, wraplength=235, justify="left").pack(anchor="w")
         ttk.Label(right, textvariable=self.values["backend_detail"], style="Muted.TLabel", background=PANEL, wraplength=235, justify="left").pack(anchor="w")
         ttk.Label(right, text="V2 决定做什么 · MAA 负责执行 · Verifier 判定成功", style="Muted.TLabel", background=PANEL, wraplength=235, justify="left").pack(anchor="w", pady=(2, 0))
-        for label, key, style in (("当前 Goal", "task_cn", "Value.TLabel"), ("当前 Universal Skill", "skill", "Muted.TLabel"),
-                                  ("当前状态", "runtime_state", "Value.TLabel"), ("为什么执行", "reason", "TLabel"),
+        # Three lines stay open: 现在在干什么.  The six below them are the *expansion* of that
+        # answer (§六 L2), and 本次启动统计 is a session counter (L3).  The split is why the
+        # column no longer asks the eye to cross nine label/value pairs to reach the three that
+        # decide anything.
+        for label, key, style in (("当前 Goal", "task_cn", "Value.TLabel"),
+                                  ("当前 Universal Skill", "skill", "Muted.TLabel"),
+                                  ("当前状态", "runtime_state", "Value.TLabel")):
+            ttk.Label(right, text=label, style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(10, 1))
+            ttk.Label(right, textvariable=self.values[key], style=style, background=PANEL, wraplength=235, justify="left").pack(anchor="w")
+        detail = self._fold(right, key="decision", title="决策依据", level=L2,
+                            pack=dict(fill="x", pady=(10, 0)), badge_wrap=210)
+        for label, key, style in (("为什么执行", "reason", "TLabel"),
                                   ("Preconditions", "preconditions", "TLabel"), ("Verifier", "verifier", "TLabel"),
                                   ("下一步", "next", "TLabel"), ("风险", "risk", "TLabel"),
                                   ("决策置信度", "confidence_decision", "Value.TLabel")):
-            ttk.Label(right, text=label, style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(10, 1))
-            ttk.Label(right, textvariable=self.values[key], style=style, background=PANEL, wraplength=235, justify="left").pack(anchor="w")
-        ttk.Label(right, textvariable=self.values["stats"], style="Muted.TLabel", background=PANEL, wraplength=235).pack(anchor="w", side="bottom")
+            ttk.Label(detail, text=label, style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(10, 1))
+            ttk.Label(detail, textvariable=self.values[key], style=style, background=PANEL, wraplength=235, justify="left").pack(anchor="w")
+        stats_body = self._fold(right, key="stats", title="本次启动统计", level=L3,
+                                pack=dict(fill="x", side="bottom"), badge_wrap=210)
+        ttk.Label(stats_body, textvariable=self.values["stats"], style="Muted.TLabel", background=PANEL, wraplength=235).pack(anchor="w")
         # Row 1: coverage and verification progress, first thing the eye lands on.
         # Row 1, above everything else: the one question the 2026-10-04 audit found nowhere in
         # the window -- 需要我干预吗.  It sits first because it is the only cell whose answer
@@ -4895,7 +5221,17 @@ class ControlPanel:
         ttk.Label(verdict, text="state_truth 需要的关注项 + 数据源新鲜度 · config/policy_state.json",
                   style="Muted.TLabel", background=PANEL, font=("Microsoft YaHei UI", 7),
                   wraplength=1150, justify="left").pack(anchor="w", pady=(4, 0))
-        kpis = ttk.Frame(tab, style="Card.TFrame", padding=10); kpis.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        # L3: eight derived resource counts, whose only source is a 7-day-budget catalog.  Folded
+        # because they do not change what the operator does next while the catalog is current.
+        #
+        # ``annotate``, not ``escalate``: when the catalog goes stale this block must *say* so,
+        # and the 需要关注 card must name the file -- but it must not open itself.  See ``Fold``
+        # for the measurement that settled this (on real data it would sit open permanently).
+        kpis = self._fold(tab, key="kpi", title="资源与覆盖 KPI", level=L3,
+                          sources=KPI_FOLD_SOURCES,
+                          annotate=self._stale_source_note(*KPI_FOLD_SOURCES),
+                          grid=dict(row=2, column=0, columnspan=3, sticky="ew", pady=(10, 0)),
+                          padding=(10, 10))
         self.kpi_source: dict[str, tk.StringVar] = {}
         for i, (key, meta) in enumerate(CATALOG_META.items()):
             card = ttk.Frame(kpis, style="Card2.TFrame", padding=(12, 7)); card.grid(row=0, column=i, sticky="ew", padx=4); kpis.columnconfigure(i, weight=1)
@@ -4904,11 +5240,15 @@ class ControlPanel:
             ttk.Label(card, textvariable=self.kpi[key], style="Value.TLabel", background=PANEL2).pack(anchor="w")
             self.kpi_source[key] = tk.StringVar(value=meta[1])
             ttk.Label(card, textvariable=self.kpi_source[key], style="Muted.TLabel", background=PANEL2, wraplength=140, justify="left", font=("Microsoft YaHei UI", 7)).pack(anchor="w")
-        # Row 2: what the development platform is doing right now.
-        wb = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10)); wb.grid(row=3, column=0, columnspan=3, sticky="ew", pady=(10, 0))
-        head = ttk.Frame(wb, style="Card.TFrame"); head.pack(fill="x")
-        ttk.Label(head, text="WorkBuddy 自动开发", style="Section.TLabel", background=PANEL).pack(side="left")
-        ttk.Label(head, textvariable=self.values["wb_gateway"], style="Muted.TLabel", background=PANEL).pack(side="right")
+        # Row 2: what the development platform is doing right now.  L3 (§六), with its own rule:
+        # an unhealthy gateway or an unconsumed queue opens it.  The gateway line moved inside the
+        # block because it is the second-level detail of this heading -- the top bar's WorkBuddy
+        # cell is where "is it reachable" is answered from L1.
+        wb = self._fold(tab, key="workbuddy", title="WorkBuddy 自动开发", level=L3,
+                        sources=("learning/workbuddy_escalations.jsonl",),
+                        escalate=self._escalate_workbuddy,
+                        grid=dict(row=3, column=0, columnspan=3, sticky="ew", pady=(10, 0)))
+        ttk.Label(wb, textvariable=self.values["wb_gateway"], style="Muted.TLabel", background=PANEL).pack(anchor="w")
         grid = ttk.Frame(wb, style="Card.TFrame"); grid.pack(fill="x", pady=(6, 0))
         for index, (label, key) in enumerate((("状态", "wb_state"), ("当前 Capability", "wb_capability"),
                                               ("Escalation Reason", "wb_reason"), ("Job ID", "wb_job"),
@@ -4921,7 +5261,13 @@ class ControlPanel:
         result = ttk.Frame(grid, style="Card.TFrame"); result.grid(row=2, column=0, columnspan=4, sticky="ew", pady=(6, 0))
         ttk.Label(result, text="最近结果", style="Muted.TLabel", background=PANEL).pack(anchor="w")
         ttk.Label(result, textvariable=self.values["wb_result"], background=PANEL, wraplength=1150, justify="left").pack(anchor="w")
-        cards = ttk.Frame(tab, style="Card.TFrame", padding=10); cards.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        # L2: seven read-only projections of the game's own queues.  Folded, because they are long
+        # stable and the eye should not cross them to reach the verdict above.  No rule of its own
+        # -- ``_compact`` returns a status *word*, not a count, so any "backlog" threshold here
+        # would be mine rather than the system's; the reason is written into ``INERT_FOLDS``.
+        cards = self._fold(tab, key="queues", title="生产队列", level=L2,
+                           grid=dict(row=4, column=0, columnspan=3, sticky="ew", pady=(10, 0)),
+                           padding=(10, 10))
         self.queues: dict[str, tk.StringVar] = {}
         for i, name in enumerate(("行军", "建筑", "科技", "训练", "Intel", "联盟", "活动")):
             card = ttk.Frame(cards, style="Card2.TFrame", padding=(14, 8)); card.grid(row=0, column=i, sticky="ew", padx=4); cards.columnconfigure(i, weight=1)
@@ -4933,49 +5279,81 @@ class ControlPanel:
         # is a `state_truth` value, so the panel cannot hold a second opinion about any of
         # them, and any line that cannot be confirmed says 未确认 / 未知 rather than a
         # plausible-looking stale number.
-        facts = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10))
-        facts.grid(row=5, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        #
+        # Split across two tiers by ``OVERVIEW_FACT_TIERS``: 现在为什么不动 is the answer to
+        # 「有没有卡住」 and stays open at L1; the other three are L2.  One loop over the one
+        # declaration, dispatching on the tier, so the labels are still typed exactly once and
+        # the two guards on this declaration stay meaningful.
+        head_facts = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10))
+        head_facts.grid(row=5, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        head_facts.columnconfigure(0, weight=1)
+        fact_sources = tuple(row[3] for row in OVERVIEW_FACTS
+                             if OVERVIEW_FACT_TIERS.get(row[1]) != L1)
+        facts = self._fold(tab, key="facts", title="事实卡（逐项来源）", level=L2,
+                           sources=fact_sources,
+                           annotate=self._stale_source_note(*fact_sources),
+                           grid=dict(row=6, column=0, columnspan=3, sticky="ew", pady=(10, 0)))
         facts.columnconfigure(0, weight=1); facts.columnconfigure(1, weight=1)
         # The source line under each card carries the age of the file it names, set on the tick
         # by ``_refresh_truth``.  All four of these figures are *derived* -- which is exactly
         # the surface that made a 24.9-day-old source look like a current reading.
         self.fact_source: dict[str, tk.StringVar] = {}
+        folded = 0
         for column, (title, key, source, source_key) in enumerate(OVERVIEW_FACTS):
-            cell = ttk.Frame(facts, style="Card2.TFrame", padding=(12, 8))
-            cell.grid(row=column // 2, column=column % 2, sticky="nsew", padx=4, pady=4)
+            if OVERVIEW_FACT_TIERS.get(key) == L1:
+                cell_parent, wraplength = head_facts, 1150
+                where = dict(row=0, column=column, sticky="nsew", padx=4)
+            else:
+                cell_parent, wraplength = facts, 560
+                where = dict(row=folded // 2, column=folded % 2, sticky="nsew", padx=4, pady=4)
+                folded += 1
+            cell = ttk.Frame(cell_parent, style="Card2.TFrame", padding=(12, 8))
+            cell.grid(**where)
             ttk.Label(cell, text=title, style="Section.TLabel", background=PANEL2).pack(anchor="w")
             ttk.Label(cell, textvariable=self.values[key], background=PANEL2,
-                      wraplength=560, justify="left").pack(anchor="w", pady=(4, 0))
+                      wraplength=wraplength, justify="left").pack(anchor="w", pady=(4, 0))
             self.fact_source[key] = tk.StringVar(value=source)
             ttk.Label(cell, textvariable=self.fact_source[key], style="Muted.TLabel",
-                      background=PANEL2, font=("Microsoft YaHei UI", 7), wraplength=560,
+                      background=PANEL2, font=("Microsoft YaHei UI", 7), wraplength=wraplength,
                       justify="left").pack(anchor="w", pady=(4, 0))
 
         lower = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10))
-        lower.grid(row=6, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        lower.grid(row=7, column=0, columnspan=3, sticky="ew", pady=(10, 0))
         lower.columnconfigure(0, weight=1); lower.columnconfigure(1, weight=1)
-        for column, (title, key, source) in enumerate((
-            ("需要关注", "attention",
-             "state_truth：STATE_CONFLICT / 角色未知 / 队列卡住 / 无目标进展 / MAA 降级"),
-            ("看门狗与版本", "watchdog",
-             "learning/runtime_snapshot.json · config/control_panel_state.json"),
-        )):
-            cell = ttk.Frame(lower, style="Card2.TFrame", padding=(12, 8))
-            cell.grid(row=0, column=column, sticky="nsew", padx=4)
-            ttk.Label(cell, text=title, style="Section.TLabel", background=PANEL2).pack(anchor="w")
-            ttk.Label(cell, textvariable=self.values[key], background=PANEL2,
-                      wraplength=560, justify="left").pack(anchor="w", pady=(4, 0))
-            ttk.Label(cell, text=source, style="Muted.TLabel", background=PANEL2,
-                      font=("Microsoft YaHei UI", 7), wraplength=560,
-                      justify="left").pack(anchor="w", pady=(4, 0))
+        # 需要关注 is the one block that is L1 *and* built like a plain card: it is where the
+        # window says a fault exists, so it cannot be the thing that folds -- folding it would
+        # let the window hide exactly what the fold rule exists to surface.  The audit's
+        # exception table lists it as permanent L1 for the same reason.
+        attention_cell = ttk.Frame(lower, style="Card2.TFrame", padding=(12, 8))
+        attention_cell.grid(row=0, column=0, sticky="nsew", padx=4)
+        ttk.Label(attention_cell, text="需要关注", style="Section.TLabel", background=PANEL2).pack(anchor="w")
+        ttk.Label(attention_cell, textvariable=self.values["attention"], background=PANEL2,
+                  wraplength=560, justify="left").pack(anchor="w", pady=(4, 0))
+        ttk.Label(attention_cell,
+                  text="state_truth：STATE_CONFLICT / 角色未知 / 队列卡住 / 无目标进展 / MAA 降级",
+                  style="Muted.TLabel", background=PANEL2,
+                  font=("Microsoft YaHei UI", 7), wraplength=560,
+                  justify="left").pack(anchor="w", pady=(4, 0))
+        # L3, and the one block here whose rule is an indicator's own grade: the V2 top-bar dot is
+        # painted from the very same ``watchdog`` value, so a restart storm cannot leave the dot
+        # red while this stays folded.
+        watchdog_cell = self._fold(lower, key="watchdog", title="看门狗与版本", level=L3,
+                                   style="Card2.TFrame", padding=(12, 8), badge_wrap=260,
+                                   escalate=self._escalate_watchdog,
+                                   grid=dict(row=0, column=1, sticky="nsew", padx=4))
+        ttk.Label(watchdog_cell, textvariable=self.values["watchdog"], background=PANEL2,
+                  wraplength=560, justify="left").pack(anchor="w")
+        ttk.Label(watchdog_cell, text="learning/runtime_snapshot.json · config/control_panel_state.json",
+                  style="Muted.TLabel", background=PANEL2, font=("Microsoft YaHei UI", 7),
+                  wraplength=560, justify="left").pack(anchor="w", pady=(4, 0))
 
         # 动作成功 ≠ 目标取得进展.  The operator's own distinction, shown where the eye
         # lands rather than buried in a per-step log.
         ttk.Label(tab, textvariable=self.values["progress"], background=PANEL,
-                  wraplength=1150, justify="left").grid(row=7, column=0, columnspan=3,
+                  wraplength=1150, justify="left").grid(row=8, column=0, columnspan=3,
                                                         sticky="w", pady=(8, 0))
 
-        bottom = ttk.Frame(tab, style="Card.TFrame", padding=10); bottom.grid(row=8, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        bottom = ttk.Frame(tab, style="Card.TFrame", padding=10); bottom.grid(row=9, column=0, columnspan=3, sticky="ew", pady=(10, 0))
         controls = ttk.Frame(bottom, style="Card.TFrame"); controls.pack(side="left")
         self.start_button = ttk.Button(controls, text="开始自动运行", style="Accent.TButton", command=self.start); self.start_button.pack(side="left", padx=(0, 4))
         self.pause_button = ttk.Button(controls, text="暂停", command=self.pause, state="disabled"); self.pause_button.pack(side="left", padx=3)
@@ -4988,8 +5366,11 @@ class ControlPanel:
         self.vision_debug = tk.BooleanVar(value=False)
         ttk.Checkbutton(controls, text="视觉调试", variable=self.vision_debug,
                         command=self._render_preview).pack(side="left", padx=(8, 3))
-        event = ttk.Frame(bottom, style="Card.TFrame"); event.pack(side="left", fill="both", expand=True, padx=(18, 0))
-        ttk.Label(event, text="最近事件", style="Muted.TLabel", background=PANEL).pack(anchor="w")
+        # L3: a log digest.  The controls stay where they are -- they are how the operator acts
+        # on the verdict two rows up, so they never fold.
+        event = self._fold(bottom, key="events", title="最近事件", level=L3,
+                           pack=dict(side="left", fill="both", expand=True, padx=(18, 0)),
+                           badge_wrap=300)
         self.event_text = tk.StringVar(value="控制台已启动，等待真实状态。")
         ttk.Label(event, textvariable=self.event_text, background=PANEL, wraplength=640).pack(anchor="w")
 
@@ -6054,6 +6435,11 @@ class ControlPanel:
         self._report_device_owner()
         self._refresh_learning()
         self._refresh_truth()
+        # Immediately after the audit, because every fold rule reads what that just computed.
+        # Outside ``_refresh_truth`` rather than inside it so the early return -- the audit
+        # unavailable path -- does not skip it: a window that cannot audit must still shut the
+        # blocks it can no longer justify, and must still paint the ones it can.
+        self._sync_folds()
         self._maybe_validate()
         label, detail = workbuddy_cell(view, gateway)
         # The header grades the gateway; the job's last known state is detail (P0-3).  This
@@ -6109,8 +6495,13 @@ class ControlPanel:
         for key, var in self.kpi.items():
             var.set(kpi.get(key, {}).get("value", NO_DATA))
         if hasattr(self, "kpi_source"):
+            # The age of the file each card counted, appended to the card's own source line -- the
+            # gap the audit named and the previous pass closed only for the four fact cards.  Set
+            # here rather than in ``_refresh_truth`` because this block runs *after* it, so an age
+            # written there would be overwritten a few lines later by the static label.
             for key, var in self.kpi_source.items():
-                var.set(kpi.get(key, {}).get("source", PENDING))
+                note = self._source_age_note(CATALOG_FRESHNESS.get(key, ""))
+                var.set(kpi.get(key, {}).get("source", PENDING) + note)
 
     def _refresh_truth(self) -> None:
         """The role cell and the conflict banner, from the audit -- never from a literal.
@@ -6136,6 +6527,12 @@ class ControlPanel:
             # The verdict cell must not keep a stale 不需要 while the audit it derived that
             # from is unavailable -- "I could not check" and "nothing is wrong" are opposites.
             self.values["intervene"].set("结论：未知（审计不可用，无法判断是否需要你干预）")
+            # And the fold badges must not keep last tick's faults either.  Cleared rather than
+            # pinned because a failed read cannot manufacture an alarm -- inventing one here
+            # would be worse than staying quiet, and the 干预卡 above already carries the
+            # "无法判断" statement that a missing audit deserves.
+            self._attention_kinds = set()
+            self._watchdog_value = None
             return
 
         role = report.by_name("current_role")
@@ -6205,8 +6602,16 @@ class ControlPanel:
         watch = report.by_name("watchdog")
         if watch is not None:
             self.values["watchdog"].set(f"{watch.value}\n{watch.note}".strip())
+        # The same value the V2 top-bar dot is painted from, kept for the fold rules below so a
+        # block and its indicator cannot grade one source differently.
+        self._watchdog_value = watch
 
         attention = report.needs_attention()
+        # The audit's own *kinds*, kept for the folds.  Read from ``attention`` before
+        # ``_attention_with_sources`` prepends the freshness lines, because those are statements
+        # about files and already have their own rule (``_escalate_on_sources``); matching on
+        # them here would let a stale file open the WorkBuddy block.
+        self._attention_kinds = {str(item.get("kind") or "") for item in attention}
         lines = [f"⚠ {a['kind']}：{str(a['detail'])[:110]}" for a in attention[:4]]
         # Stale sources go first because they are the one class of fault the audit cannot
         # see: ``needs_attention`` grades *contradictions between artifacts*, and a file
