@@ -176,8 +176,31 @@ check_wiring.py     : problems: 2（与本次改动前的基线逐字节相同�
 pytest check_mainline: 10 passed
 ```
 
-生产启动、`CODE_COMMIT`、AUTO 恢复与"提交没丢"的对比，见下节收尾记录
-（重启在生产 pin worktree 上完成，本文件随后同步）。
+生产启动、`CODE_COMMIT`、AUTO 恢复与"提交没丢"的实际记录：
+
+| 验证项 | 结果 |
+|---|---|
+| 启动日志 | `[2026-10-04T11:42:35+08:00] CODE_COMMIT=c6cadfb6d13487815c05b60f876a9ec39f36d0fd WORKTREE_CLEAN=true DATA_ROOT=E:\无尽冬日智能体` |
+| 面板 | `recorded pid 28556 alive=True`，`panel alive: True pids=[28556]` |
+| AUTO | `AUTO_RUNNING`，`workers: 1`（worker 26560，从 pin 树 `tools/run_live.py` 启动） |
+| 本地模型 | `state=HEALTHY action=REUSE port_pid=21252 spawned=false consecutive_failures=0`（**复用**，没有第二次加载） |
+| 主线判定 | `check_mainline.py` → `MAINLINE_OK`，退出码 0 |
+| 接线检查 | `check_wiring.py` → `problems: 2`（与基线逐字节相同，新增红 **0**） |
+| 新工具测试 | `pytest tests/test_check_mainline.py` → **10 passed** |
+| **没丢提交** | 对着调和前的 `git bundle`（27 条 ref）逐条校验：**只有 4 条前移**（`main`、`codex/production-pin-recovery`、主仓 HEAD、pin worktree HEAD），**全部满足祖先关系**；其余 23 条一字未动；`refs/stash` 完好；`git bundle verify` → `The bundle records a complete history` |
+
+> 本次踩到一个"判据过严造成的假阳性"：最初报 `!! 对象丢失 d6e5ef93…`
+> 是因为对一条 **tree** 类型的 ref 用了 `^{commit}`。**过严的判据也是假阳性**，
+> 会把真实的结论淹没。
+
+**提交链（本次全部）**
+
+```
+c6cadfb6  feat(mainline): one mainline, written down and checkable
+ca336ddb  merge(mainline): reconcile main and production; production is the single mainline
+23360c0a  feat(panel): the local model had no owner, so an outage could run for a day unreported
+```
+
 
 ---
 

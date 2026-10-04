@@ -4589,3 +4589,1141 @@ completed_goal_ids 命中 16 次（该目标历史上从未有过）
   新增测试会让其后所有结果平移（实测后移 7 位 = 新增 7 个测试），按位置比会得到
   84 处"差异"的假警报；正确判据是：F 总数相同 + 前缀逐位相同 + 位移量 = 新增测试数。
   注意本项目 pytest 的**汇总行常被沙箱吞掉**，只能用进度字符指纹。
+
+- **"完成即离场"的目标必须能被记账，否则调度器分不清"答完了"和"从没问过"**（2026-10-03 实测）。
+  机制：`COMPLETE` ∈ `NOT_ACTIONABLE` ⇒ `priority=-inf` ⇒ `goal_utility.rank` 丢行 ⇒
+  目标从 board 上消失。项目里已有两个同形缺陷：
+  `DISCOVER_QUICK_PANEL_TASKS`（1291 次被选、54/54 步成功、`goal_progress` None 54/54）
+  与 `DISCOVER_EVENT_CALENDAR`（在 EVENT 页 209/209 次决策中 0 次在 board 上，
+  因为 `OPEN_EVENT_CALENDAR_TAB` 把 `regular_events_hub` 换成 `CALENDAR_GRID`，
+  而前者是 EVENT 页上唯一能产出该目标的分支条件 ⇒ **打开日历就是让它自己消失的动作**）。
+  修法都是：在 COMPLETE 行的 `evidence` 里写 `served_by`，形状照抄，不新造机制。
+- **给自己加价之前，先确认这个目标还在 board 上**（2026-10-03）。
+  本轮 `page_residency` 已给 `DISCOVER_EVENT_CALENDAR` +40（习惯页 EVENT 51%）仍然被赶走，
+  这才证明病根不在排序层。**先分清"被压过"与"被排除"**，否则会完全修错方向：
+  前者调权重，后者改代码。
+- **真机验收样本不足时要明说，不能用"指标为 0"冒充"修好了"**（2026-10-03）。
+  `79cb572c` 上 `HOME→EVENT`/`EVENT→HOME` 均为 0，看似完美，但 18 步全花在 MAP/BEAST 链上、
+  根本没碰到日历，而部署前写下的判据是 ≥150 步 ⇒ 只能记为"尚未确立"。
+
+- **`COMPLETE ∈ NOT_ACTIONABLE` ⇒ `priority=-inf`，这是设计而不是缺陷**（2026-10-03 实测踩坑）。
+  我据此写过"目标自我抹除"的错误诊断：重放真实帧后 `discover` 返回 27 个目标、
+  该 COMPLETE 行**就在里面**（第 7 位）。**"完成的行不参与调度"≠"board 看不见它"**，
+  排序与记账是两件事。⇒ **判断一行是否"被排除"必须先重放 `discover` 看它在不在，
+  不能用"它从没被 chosen"反推。**
+- **"客户端宣告了、点得着、但已知流程到不了" = 真正的 UNKNOWN 黑洞**（2026-10-03 实测）。
+  实例：`ACTIVITY_STRIP` 上有 `CANYON_CLASH` / `STATE_VS_STATE`（有 `tap_norm`、
+  `details_observed=null`、`read_entries=0`），但它们**不在日历网格的 5 行里**，
+  打开网格永远碰不到 ⇒ `advertised_but_unread_activities` 永远非空
+  ⇒ `calendar_scan_due` 永远 True ⇒ 该目标每 **0.4 分钟**（中位）被重选一次。
+  ⇒ 遇到"某个 due/pending 判据永不为假"时，**先查它依赖的数据在客户端是否真的可达**，
+  而不是去放松判据（该判据的 docstring 已记录两个被既有测试否掉的错误版本）。
+- **"某目标被选中却没进展"类诊断，第一步必须算分母**（2026-10-03 教训）。
+  我把"被赶走 3 次"当发现，漏了"它自己继续 210 次"（227 次到达里），
+  于是把一条健康的链（3108 步、1239 步 `gp=True`）判成了"自我抹除"。
+  ⇒ **先量 `A→B` 与 `B→A` 的完整计数，再看形状。**
+- **错误结论必须留纠正记录**（2026-10-03）。在被推翻的 handoff 顶部加横幅 +
+  指向正确文档，比删掉更好：下一个人会先读到旧那份并照它施工。
+  提交 `14ce8122` 就是干这个的。
+
+- **"读方存在、写方缺失"是一类会被绿色测试掩盖的缺陷**（2026-10-03 实测）。
+  `calendar_scan_due` 靠 `advertised_but_unread_activities` 收敛，而后者靠
+  `ACTIVITY_STRIP.read_entries` 消债；`git grep read_entries` 显示
+  **只有读方（`event_schedule.py:464`）和一个测试里的写方**，
+  `git log -S read_entries -- winter_agent_v2/` 也只有引入它的那一个提交
+  （其测试用**直接改 JSON** 模拟"已打开"）。
+  ⇒ **该机制在真机上从未运行过**，而所有测试都绿。
+  ⇒ **判据类代码要问："让它变假的那条数据，谁写？"写方不存在 ⇒ 必然永真。**
+- **客户端"多区域同一屏"时，判据只能覆盖它实际读到的区域**（2026-10-03）。
+  `常规活动` 一屏三区：顶部 `ACTIVITY_STRIP`（y_norm 0.06–0.20）、大时钟、下方日历网格。
+  `最强王国` / `峡谷会战` **只在横条上、从不作为网格行**
+  （`event_calendar.read_regular_event_activity_strip` 的 docstring 2026-10-02 就写明了）。
+  ⇒ 打开网格永远碰不到它们；"读日历"与"读横条"是两条不同的路径。
+  ⇒ 修法必须同时尊重横条的两条约束：**不带时间窗**（`start`/`end` 保持 `None`，
+  预览不能变战斗时钟）、**`tap_norm` 是当帧几何、随 token 过期**。
+- **Safety 挡住动作 ≠ 可以不记账**（宪法第 7 条的应用点，2026-10-03 记录）。
+  若"打开横条活动"被 Risk Gate 判为不可逆而挡住，则**不能同时不写 `read_entries`**——
+  那会把"挡住一次"变成"永远 due"，比不做更糟。
+  ⇒ 正确形态是"记录已观测到该活动详情（只读）"与"执行不可逆动作"分开。
+
+- **"识别 → 持久化 → 记账"三环要逐环查，只查最后一环会修错地方**（2026-10-03 连续踩坑）。
+  实例：`ACTIVITY_STRIP` 活动的 `details_observed` 永远是 `null`，
+  表象是 `read_entries`（消债的唯一机制）**只有读方没有写方**——**字面为真但不是根因**。
+  实测（用项目自己的 `ocr.OCRService(RapidOCRBackend())` 读真机帧）：
+  20 个 token 里，判据要的 7 个时间标签
+  （`活动详情/活动时间/开始时间/结束时间/报名时间/战斗时间/开放时间`）**一个都不在**
+  ⇒ `read_event_detail` 先返回 `recognized=False`
+  ⇒ 根本走不到持久化分支 ⇒ **补写方也不会收敛**。
+  ⇒ **排查这类"某状态永远不变"的问题，先问"谁写它"，再问"写它的上游条件满足吗"。**
+- **客户端详情页的"时间"可能是倒计时而不是时间标签**（2026-10-03 实测 `峡谷会战`）。
+  画面有 `战斗开始倒计时 07:53:19`、`参赛人数 30/30`、赛区名、页签 `1/2`、
+  右栏 `教学/奖励/商店/战鼓/记录`，**但没有 `活动时间` 这类字样**。
+  ⇒ **当"已读"标记（证明人到了那个页面）用倒计时是安全的；
+  当活动时间（`start`/`end`）用是不安全的** ——
+  `event_calendar` 的规则是 "a preview must never become a battle clock"，
+  且每个活动的倒计时语义不同，要逐个登记。**这两件事必须分开。**
+- **"因为页面危险就拒绝进入"会把"挡住一次"变成"永远 due"**（2026-10-03，宪法第 7 条）。
+  活动详情页上可能有 `商店` / `编队` 等可消费控件；
+  正确形态是"记录已观测到该详情（只读）"与"执行该页上的消费动作"**分离**。
+  ⇒ Risk Gate 只能挡**不可逆动作**，不能挡**观察**。
+- **本机不抢设备的抓帧方法**（2026-10-03 验证）：
+  设备租约被生产 AUTO 持有时，用项目自带的
+  `.venv/Scripts/python.exe tools/probe_live_operation.py --drift-only --frames N --every S`
+  —— 它的 docstring 明写 *without touching anything*，仍走项目自己的 Executor/MAA/租约。
+  产物在 `dataset/truth_audit/live_ops/<op_id>/`（含 `drift_*.png` 与 `live.json`，
+  `live.json` 里每帧带 `page` 识别结果）。**不要为此自写抓帧脚本。**
+
+- **本机仓库是 8 个 worktree 共享的，`main` 不是本会话私有的**（2026-10-03 实测）。
+  `git worktree list` 里除本工作区外还有 7 个 `codex/*` worktree。
+  ⇒ **在 `main` 上推进 HEAD 会被别的进程回写**（本会话实测两次"提交消失"，
+  两次都在对象库与 `reflog` 里完好，都快进恢复了）。
+  ⇒ **提交规范**：用**会话专用分支** + `git update-ref refs/heads/<branch> <sha>`，
+  **不要移动 HEAD**；部署只用**显式 SHA**（`repin_production.py --to <sha>`）；
+  收尾用 `git rev-parse refs/heads/<branch>` 复核，不信 `git log -1`。
+  ⇒ 排查"提交消失"的标准动作见 `.workbuddy-ai/handoff/REPO_TOPOLOGY_8_WORKTREES_20261003.md`。
+- **本机不抢设备的真机观察方法**（2026-10-03 验证，见下条补充）：
+  `tools/probe_live_operation.py --drift-only --frames N --every S`
+  （docstring 明写不碰设备）；产物含每帧的 `page` 识别结果。
+  配合 `ocr.OCRService(o.RapidOCRBackend()).recognize(Path(...))` 可**离线**读帧，
+  用来检验某个判据在真机上是否成立——**不需要点击，也不需要停生产**。
+
+- **"页面身份"的正确判据项目里已有：`ocr.py:1050-1066` 的标题尺度**（2026-10-03 实测）。
+  判据 = `event_goal.event_id_for_label(label)` 有值 **且** `box_h/frame_h >= 0.03`；
+  注释已写明理由："小活动页签是导航，不是当前活动"。
+  真机复现（`峡谷会战` 详情页）：`最强王国` h_ratio **0.0203**（小页签，否）/
+  `峡谷会战` h_ratio **0.0367**（大标题，是）⇒ **天然分开两个活动**。
+  ⇒ **不要用"横条选中态"当身份**：实测两标签"最亮 20% 均值" 253.2 vs 252.9，差 0.3
+  （噪声），肉眼看到的白底高亮**测不出来**。
+  ⇒ **肉眼事实必须先测量再写进判据**；本轮两次凭感觉的结论都被自己的测量推翻。
+- **`read_event_detail` 的三个分支全在查文本形状，从不问"这是哪个活动的页面"**
+  （2026-10-03 实测）。分支：`活动详情` / 日期范围+（`活动时间`/`开始时间`/`结束时间`/
+  `报名时间`/`战斗时间`/`开放时间`）/ 日期范围+`前往`+候选标题。
+  实测同一帧：`event_label=None` → `recognized=False`，**给 `峡谷会战` 也 → False**
+  （`event_label` 只在判据通过后用于取名）。
+  ⇒ **`runtime.py:2072` 传 `None` 而 `ocr.py:1098` 传真标签，是"两处调用一处接线"。**
+  修法是补一个身份分支（只定身份、不产 `start`/`end`），
+  并在 `read_event_detail` 内部自算身份，让两个调用点同时受益。
+- **反向验证要趁样本在手就做**（2026-10-03）。
+  从生产账本按 `state_before.page==EVENT` + `events.calendar` 有值 + 无 `regular_events_hub`
+  筛出 **235 张真实网格页帧**（截图仍在磁盘），取 6 张跑同一判据 ⇒ **0/6 命中**。
+  与详情页 1/1 命中形成双向证据，两侧都有余量（不是擦边）。
+  ⚠ 详情页样本仅 1 个 ⇒ 部署后**必须在真机确认第二个活动详情页**，不能假设只修好了一个。
+
+- **`ocr.py` 的活动页判据只能抄一半：尺度可以，标签集合不行**（2026-10-03 实测）。
+  `ocr.py:1064` = `height/frame_h >= 0.03` **OR** `label in EVENT_PAGE_TITLE_LABELS`
+  （`ocr.py:607`，含 `最强王国`/`军备竞赛`/`军备竞演`）。
+  在 `峡谷会战` 详情页上**完整判据命中 5 个标签**：`最强王国`（集合）、
+  `峡谷会战` 0.0367、`自` 0.0430、`07:53:19` 0.0312、`编队` 0.0352（都过尺度）。
+  ⇒ **布尔判断（这是不是活动页）用完整判据；给页面命名只能用尺度那一半**。
+  ⇒ `event_calendar._heading_scale_activity` 只用尺度，并有测试断言它**永不读那个集合** ——
+  因为下一个人很可能"把判据补全"，那会把一页归给五个标签。
+- **倒计时 ≠ 活动时间**（2026-10-03，第七轮实测）。
+  `read_event_detail` 在 `峡谷会战` 详情页上：`countdown_raw=07:53:19`、
+  `current_open_state=SCHEDULED_NOT_OPEN`（都由倒计时推出，允许），
+  而**所有 `start`/`end` 字段保持 `None`**（客户端没印日期范围，不允许）。
+  ⇒ 页面身份判据只能回答"这是谁的活动页"，**永远不能回答"什么时候开"**。
+- **本会话四轮"先看再改"后才动手，这是节奏不是拖延**（2026-10-03）。
+  改排序 → 治了另一个乒乓；改记账 → 治的是账本不是活锁；
+  假设"识别已足够" → 实际断在识别。**连续错三次之后才学会先量真机帧。**
+
+- **"详情页被读到"必须能落到一个可写的记账位置，否则整条链白做**（2026-10-03 补完第二环）。
+  `record_calendar_snapshot` 只能给**网格行**记 `details_observed`；
+  而横条活动**没有网格行** ⇒ 它的观察无处可去 ⇒
+  `ACTIVITY_STRIP.read_entries`（读方本来就在看的地方）长期为空。
+  修法：`EVENT_DETAIL` 分支里 `matched is None` 且 `calendar_origin != GRID_ENTRY` 时，
+  把 `event_id` 追加进 `read_entries`（去重，不覆盖 strip 的其它键）。
+  ⇒ 真机确证：角色 `1061663148` 的 `read_entries=['CANYON_CLASH']`、
+  `EVENT_DETAIL.strip_activity_credited='CANYON_CLASH'`，
+  **欠债从 3 个降到 2 个，被读过的那个从列表里消失**。
+  ⇒ 必测四条：读一个只消一个 / credit 持久化在 strip 上 /
+  重复读不追加第二行（否则无界增长）/ **网格活动仍只记自己的行、绝不记到 strip**。
+- **"读到一个活动的详情"是观察，不是支付**（宪法第 7 条的落点）。
+  活动详情页上有 `商店` / `编队` 等可消费控件，
+  **但不能因为拒绝了一次消费就拒绝记账** —— 那会把"挡住一次"变成"永远 due"，
+  正是这一行要结束的循环。⇒ 记账只写"页面被看过"，所有时间窗字段一律不动。
+- **旧数据会伪装成"修复没生效"**（2026-10-03 实测）。
+  角色 `1063040265` 的 `EVENT_DETAIL` 没有 `strip_activity_credited`，
+  看起来像记账失败 —— 实际那条读数的 `observed_at` 早于部署时间，
+  **旧代码本来就没有记账分支**。⇒ 判断"新代码是否生效"必须**比 `observed_at` 与部署时间**，
+  否则会把时序误判成缺陷。
+- **断言与实测不符却显示 PASS，比失败更危险**（2026-10-03 自罚）。
+  我写了一条"另一个活动仍欠债"的断言，而测试数据里那个本来就已读过 ⇒
+  该断言什么都没验却显示通过。**它看起来在验证"只消一个"，实际是假的。**
+  ⇒ 收敛类检查必须包含一条**"从两个欠债开始、只读一个、另一个仍在"**的真判据。
+
+- **"每次观测整体替换该 kind 的快照"会静默丢弃就地写入的字段**（2026-10-03 实测，本会话自己犯）。
+  `event_schedule.record_calendar_snapshot` 结尾是 `scope[kind] = snapshot`
+  ⇒ 每次观测**整体替换**该 kind 的快照。
+  我把 credit 写进 `scope["ACTIVITY_STRIP"]` 这个 dict，
+  **下一次读 strip（每次访问日历都会发生）就把它丢了**，债务复活。
+  症状极具迷惑性：角色 A 还留着 credit（因为此后没再读过），角色 B 没有；
+  `EVENT_DETAIL.strip_activity_credited` 有值而 `read_entries` 整个键不存在 —— **两个字段互相矛盾**。
+  ⇒ **凡是不属于"客户端画了什么"的字段（新读数无法重推的），
+  必须放在会被前向合并的位置**，不能就地写入某个会被整体替换的 dict。
+  ⇒ **这类 bug 测试看不见**（记完 detail 直接读债务，中间没有替换步骤），
+  **只能靠读真实存储、核对两个字段是否自洽来发现**。
+- **验收"记账生效"要读真实存储，而不是看测试通过**（2026-10-03）。
+  本会话连着两轮出现"测试全过 + 真机字段矛盾"，
+  是**读 `learning/timed_event_schedule.json` 逐字段对账**发现的。
+  ⇒ 每次记账类改动后，固定核对：
+  `EVENT_DETAIL.strip_activity_credited` 与 `ACTIVITY_STRIP.read_entries` 是否一致。
+- **欠债要清空，需要每个欠债活动各被读一次——而"谁该被读"目前无人负责**（2026-10-03）。
+  `DISCOVER_EVENT_CALENDAR` 在 HOME/MAP 上 `base=1000`，第二名 300–480，
+  **247 次被选全部压倒性获胜**（连 `repeat_failure=-60` 都压不下去）。
+  但它获胜后发的是"去 EVENT 打开日历"，**与哪个活动欠债无关**；
+  `brain` 在 EVENT 上看到的是 hub/grid，**从不点横条上的具体活动**。
+  量化：全量 **10061 步里点在横条带（y_norm 0.06–0.20）的 = 0 步** ⇒
+  **`tap_norm` 一直被读、从未被用**；那两个有详情读数的活动是**客户端恰好停在那里**。
+  ⇒ **前两环修好不等于收敛**。评估一条链是否闭合，要问"**最后一步由谁触发**"，
+  不只看每个环节能否工作。
+- **横条顺序会变，别按位置点**（2026-10-03 实测）：
+  同角色下 `CANYON_CLASH` x=0.174、`STATE_VS_STATE` x=0.223。
+  ⇒ "点第一个/最左那个"会点错；**必须由事件身份驱动**。
+
+- **报告任何比例之前，先确认分子分母用的是同一套键**（2026-10-03，同一天内栽两次）。
+  第一次：从"某目标从没被 `chosen`"反推"它在 board 上被排除"—— 而 COMPLETE 行正常工作时
+  就是不会被 chosen。第二次：用 `tab_signature` 的**名字**去比 strip entries 的 **event_id**，
+  算出"98% 的帧不一致、读取器漏了活动"，实际两侧都是 `display_name` 时差集只有
+  `日历`（一个本来就不该在 strip entries 里的页签）。
+  ⇒ **两次都是"自信的数字 + 字段不对应"**。
+  ⇒ 破绽检查：**一个每条 entry 都 0.999 置信度的读取器，不可能漏掉它看到的 98%** ——
+  数字荒唐到该立刻怀疑口径，而不是立刻相信它。
+- **`tab_signature` 里只有一个活动名 ≠ 该活动的详情页开着**（2026-10-03 实测）。
+  `('联盟总动员',)` 的 EVENT 帧有 545 帧，**全部是 `RETURN_EVENT_CALENDAR`**（从详情页返回），
+  OCR 读其中一帧证明它是**日历网格**（`星期三..星期二`/`10/01..10/06`/`冰封的宝藏`/`寻宝特训`），
+  `联盟总动员` h_ratio=0.0227 只是横条页签。
+  ⇒ **`tab_signature` 表的是横条当前选中项，不是"当前打开的是哪个活动的页面"。**
+- **"读了 N 次都没消债"要区分"没读到"与"读错了地方"**（2026-10-03）。
+  `ALLIANCE_MOBILIZATION` 的债务是真债：**它的详情页从未被任何东西打开过**
+  （545 帧全是"返回"，没有一个是"进入"）。
+  而另外两个活动之所以被记账，是因为**客户端恰好停在那页**。
+  ⇒ **前两环修好不等于收敛**：评估一条链要问"最后一步由谁触发"，
+  以及"这个对象**真的被打开过**吗"。
+
+- **动手量真机之前，先查项目知识库是否已经登记了这件事**（2026-10-03 教训）。
+  `ALLIANCE_MOBILIZATION` 问"点开它安全吗"，答案在
+  `knowledge/events/event_registry.json` 的 `unwired_steps` 里已经写着
+  **"a safe event-specific flow are not connected"**，
+  `participation_conditions` 要求先读资格与成本，
+  `prepare` 写着 "on a live encounter, capture ... before enabling actions"；
+  `knowledge/game/alliance.json` 记为 `CONFIRMED/0.88` 且 `action=dynamic`、
+  `verification=event_task_state`（正是那个没接的验证器）。
+  而且它连 `observed_ui_labels[0].role="navigation_tab_only"` 都写了 ——
+  **与我后来在真机上量到的（h_ratio 0.0227 的小页签）完全一致。**
+  ⇒ **我连续三轮在真机上量一个知识库能直接回答的问题。**
+  ⇒ 真机量仍必要（知识库会过期），但**量之前先问"项目是否已经知道"**。
+- **账本不记录归一化坐标，所以"点过某个位置没有"这类查询毫无意义**（2026-10-03）。
+  动作走 `TAP_SEMANTIC` 语义目标（生产宪法第 2 条），
+  我查"payload 里 y∈[0.06,0.20] 的步数 = 0"并据此说"横条从没被点过" ——
+  **那个 0 只是因为坐标根本不写进账本**。正确口径是统计**语义目标**：
+  `EVENT_CALENDAR_NEXT_DETAIL` 1370 / `REGULAR_EVENT_ENTRY` 406 /
+  `EVENT_CALENDAR_TAB` 371 / `REGULAR_EVENT_TABS_SCROLL_CURRENT` 183，
+  **没有任何"打开横条上某个具体活动"的 target** —— 这个结论才站得住。
+  ⇒ **判断"某个动作发生过没有"之前，先确认账本记不记那个字段。**
+- **"缺一个动作"与"缺一整条流程"是两回事，别按前者去修**（2026-10-03）。
+  给 `brain` 加"横条欠债就点它"会用**未验证的假设**（点开=纯导航）
+  驱动一个**已知有成本**的活动 ⇒ 用安全性换活锁，是倒退。
+  正确形态与前两环同形：**把"能不能安全地读它"与"它有没有被读"分开**。
+  一个没接通流程的活动不该让整个扫描永远 due，**但也不能删掉它** ——
+  按 UNKNOWN 宪法，它是"已知页面上的新入口"，该被安全探索并记录。
+
+- **选"最高价值缺口"要按"零进展的被选次数"排，不是按"我已诊断得最深"排**
+  （2026-10-03 自罚，本会话最贵的排序错误）。
+  全量 10128 步的有效率：
+  `DISCOVER_EVENT_CALENDAR` n=3589 **t=1619 (45%，全项目最高)**、
+  `CLEAR_INTEL` n=1343 **t=2 (0.1%)**、
+  `KEEP_TRAINING_PRODUCTIVE` n=492 **t=0**、
+  `KEEP_BUILDING_PRODUCTIVE` n=349 **t=0**、`AUTO_DISCOVERY` n=121 **t=0** …
+  **5 个"被选 ≥38 次而真进展为 0"的目标合计约 1046 步 ≈ 全量 10% 的生产时间。**
+  ⇒ 我连续五轮在修**最不失败**的那个目标，而 0% 的那批在旁边。
+  ⇒ **开工先看这张有效率表**（`goal_id` × `n` × `goal_progress is True`），
+  它比任何单个目标的深挖都更能指出该修哪里。
+- **"没有习惯页"可能是如实的，不是阈值问题**（2026-10-03 实测）。
+  `goal_utility._residency_table()` 里 `KEEP_TRAINING_PRODUCTIVE` = `NOT RESIDENT`
+  ⇒ `page_residency` 对它返回 0 **是正确的**：
+  它 76% 的步骤是 `training_goal_requires_home → OPEN_HOME`，
+  从不在任何页上训练。**一个从不做自己事的链，本来就没有"待着"的页。**
+- **一个从未成功过的第二步，不能靠"多调度它"变好**（2026-10-03）。
+  `OPEN_INFANTRY_TRAINING` 全账本执行 **2 次，2 次都 FAILURE**（`expected=training_page_opened`）。
+  训练链 492 次里 401 次在 MAP、只有 3 次在 HOME。
+  ⇒ 先让第二步在真机上能用，再谈它被不被调度；**顺序反了就是白做**。
+
+- **"点了但启动错了对象"是一类真缺陷，验证器判 FAILURE 是对的**（2026-10-03 实测）。
+  生产账本 07:13 的连续两帧：
+  ```
+  07:13:04 goal=SHIELD_CAMP_TRAINING troop_type=INFANTRY status=AVAILABLE
+            train_button_basis=BUTTON_CAPTION → tap BTN_START_TRAINING
+            ⇒ TRAINING_START_NOT_PROVEN
+  07:13:13 troop_type=INFANTRY status=IN_PROGRESS timer=11:25:08
+  ```
+  **训练确实启动了、点击也不是问题** —— 它启动的是 `INFANTRY`，
+  而目标是 `SHIELD_CAMP_TRAINING`（盾兵）。
+  `train_button_basis=BUTTON_CAPTION` 说明**按钮位置取自当前打开的兵营页签的标题**，
+  所以点的是"客户端此刻显示的兵"，不是目标要的兵。
+  ⇒ **目标必须来自 `goal.troop_type` 与其对应的兵营页签。**
+  ⇒ **`verify_training_started`（was_available + troop_type 相等 + IN_PROGRESS + timer + 队列忙）
+  面对这种帧判 FAILURE 是正确的，放松它等于把真缺陷记成成功。**
+- **全局有效率表（`goal_id` × 被选次数 × `goal_progress is True`）比深挖更能选对目标**
+  （2026-10-03 自罚，本会话最贵的排序错误）。
+  全量 10128 步：`DISCOVER_EVENT_CALENDAR` n=3589 **t=1619 (45%)**、
+  `CLEAR_INTEL` n=1343 **t=2**、`KEEP_TRAINING_PRODUCTIVE` n=492 **t=0**、
+  `KEEP_BUILDING_PRODUCTIVE` n=349 **t=0**、`AUTO_DISCOVERY` n=121 **t=0** …
+  **5 个"被选 ≥38 次而真进展为 0"的目标合计约 1046 步 ≈ 全量 10% 的生产时间。**
+  ⇒ 我连续五轮在修**有效率最高**的那个目标，而 0% 的那批在旁边。
+  ⇒ **开工先看这张表。**
+- **一个从不做自己事的目标，本来就没有"习惯页"**（2026-10-03）。
+  `page_residency` 判 `KEEP_TRAINING_PRODUCTIVE` 为 `NOT RESIDENT` 是**正确的**：
+  它 76% 的步骤是 `training_goal_requires_home → OPEN_HOME`，从不在任何页上训练。
+  ⇒ **驻留项返回 0 不是阈值太严，是如实测量。**
+
+- **"动作成功、状态后到"会被误记成失败；"画面没变"不等于"什么都没发生"**（2026-10-03 实测）。
+  `TRAIN_TROOPS` 5 次 `TRAINING_START_NOT_PROVEN` 的 `verifier_evidence` **五次完全一致**：
+  ```
+  was_available True   type_ok True     ← after 帧的营是对的（帧新、页对）
+  status_ok   False    timer_ok False   queue_busy False   ← 只是状态还没刷新
+  ```
+  **5 次里 3 次训练真的成功**（下一步 `IN_PROGRESS` + timer，间隔 4–10 秒）。
+  `runtime.py:9696` 的 settle 重试靠 **`frame_changed`** 决定，
+  而**训练启动不改变页面**（只刷新队列徽标）⇒ `frame_changed=False`，
+  但 `settle_limit` 把总等待截到 `settle_seconds`（默认 1.5s），
+  **远小于实测的 4–10 秒**。
+  ⇒ **"画面没变"≠"什么都没发生"**，拿画面变化当"状态已刷新"的信号是错的。
+  ⇒ **修法是等久一点再读，不是放松验证条件** ——
+  放松任一条件就等于把"启动了别的兵种"也记成成功。
+- **下结论前先查映射表**（2026-10-03 自罚）。
+  我写"它启动的是 INFANTRY 而目标是盾兵"，**没查 `TROOP_TO_CAMP` 就下了结论**；
+  实际 `LABEL_TO_TROOP['盾兵营']='INFANTRY'`、`TROOP_TO_CAMP['INFANTRY']='SHIELD_CAMP'`
+  ⇒ **INFANTRY 就是盾兵**，三者全对。全 TRAINING 页 86 帧
+  `troop_type` 与 `camp_open_label` **不一致 0 帧**。
+  ⇒ **看到一个"看起来不对"的字段，先查它到别的字段的映射，再判断。**
+
+- **"像素变了"与"结构化字段可读了"是两个不同步的信号**（2026-10-03 实测，本会话最精确的一条）。
+  `TRAIN_TROOPS` 点下按钮后训练**确实启动**，但：
+  ```
+  队列徽标（像素）              已刷新，Probe 实测变化率 0.11–0.25，峰值在 y_norm 0.656–0.664
+  status / timer（结构化字段）  未刷新，仍读出 AVAILABLE / null
+  ```
+  `FrameChangeProbe.changed()` 因此答 `changed=True`（**它判断正确**），
+  `runtime.py:9696` 的 `if not frame_changed` 于是**不重试**，
+  而 `TRAIN_TROOPS` 的 settle 预算只有 `NETWORK_ACTION` 0.2+0.5 = **0.7 秒**
+  （实测需要 4–10 秒）⇒ 观察时字段还没跟上 ⇒ 记 `TRAINING_START_NOT_PROVEN`
+  （5 次里 3 次下一步就 `IN_PROGRESS`）。
+  ⇒ **拿画面变化代理"状态可读"是错的**。
+  ⇒ ❌ 放松 `verify_training_started` 的 5 个条件（会把"启动了别的兵种"记成成功）
+  ⇒ ❌ 改 Probe 的 ROI/阈值（它判断正确）
+  ⇒ ✅ 让"结构化字段可读"成为**独立等待条件**
+- **账本不持久化 `latency.settle_*_ms`**（2026-10-03 读到全是 0/null）
+  ⇒ 排查 settle 时序**不能靠账本的 latency 字段**，要用
+  `settle_policy.choose(skill)` 的代码值 + 对现存帧直接测量。
+- **同一根因的两个缺陷不要合并**（2026-10-03）：
+  5 次 `TRAINING_START_NOT_PROVEN` 里 **3 次训练真的成功、2 次真的没启动**
+  （`status` 仍 `AVAILABLE`/`timer` null）。修读取时序只让前者被记上，
+  **不会**让后者开始。混在一起两边都修不好。
+
+- **动手挖机制之前，先量"它发生了多少次 / 占多少"**（2026-10-03，本会话最贵的顺序错误）。
+  我在 `TRAIN_TROOPS` 的"读太早"上挖了两轮机制（settle 预算、FrameChangeProbe ROI、
+  像素与字段不同步），**却一次没问过它有多大** ——
+  量完发现：**27 次里 22 次成功（81%）**，5 次失败。
+  **81% 成功率不是"能力坏了"的样子**，修好也只是 81%→100%。
+  而真正的大头在别处：`KEEP_TRAINING_PRODUCTIVE` 被选 **492 次、gp_true=0**，
+  而 `TRAIN_TROOPS` 全项目只被选 **27 次** ——
+  **能力是好的，通往它的路不通。**
+  ⇒ **先量规模，再决定值不值得挖。** 否则会在小缺陷上做深度分析，
+  同时放着 10 倍大的那个不管。
+- **共享预算不能为一个成员单独放宽**（2026-10-03）。
+  `settle_policy._NETWORK` 有 10 个技能共享 `NETWORK_ACTION`（0.2+0.5=0.7 秒），
+  其中只有 `TRAIN_TROOPS` 有"状态异步刷新"问题（`CLAIM_FREE_STAMINA` 8 次 0 失败）。
+  **为修一个成员而放宽共享预算，会拖慢其余九个。**
+
+- **"技能被提供"≠"技能被执行"**（2026-10-03 当场栽了两次）。
+  `KEEP_TRAINING_PRODUCTIVE` 赢的 204 次里，`available_skills` 有 53 次是
+  `OPEN_INFANTRY_TRAINING` —— **但账本里它只跑了 3 次，且 3 次都失败。**
+  我据 `available_skills` 推出"它选了训练技能"，据此写了一整节错误结论。
+  ⇒ **决策日志的 `skills` 字段是"能做什么"，账本的 `skill` 字段才是"做了什么"。**
+  ⇒ 谈"某目标是否会做 X"必须查**执行记录**，不是 board 行。
+- **"谁常被选中"不等于"谁抢走了别人的回合"**（2026-10-03 纠正）。
+  实测两者同场的 701 次决策：`CLEAR_INTEL` 赢 26 / `KEEP_TRAINING` 赢 **94**，
+  且价格差多数对 `CLEAR_INTEL` 有利 ⇒ **训练链是真的赢，不是抢**。
+  ⇒ **要证明"抢"，必须同时量同场胜负**，不能从"它常被选中"倒推。
+- **换页后目标是否重算，是"页错"类缺陷的落点**（2026-10-03 待查）。
+  `goal_library` 把 `KEEP_TRAINING_PRODUCTIVE` 路由到 `"HOME"`，
+  `brain.py` 答 `training_goal_requires_home` —— **两者一致**，
+  所以它 76% 的动作是 `OPEN_HOME`（全部在 MAP 上）、在 HOME 上只占 **1.6%**，
+  **页是执行途中丢的，不是选择时错的**。
+  ⇒ 下一步读 `_sync_brain_goal` 与换页后的目标重算逻辑。
+
+- **目标只在"它需要被路由到的那一页"上可被发现 = 自我封闭**（2026-10-03 实测）。
+  `goal_library.py:2339`：
+  `if legacy_camp is None and world.training and world.training.get("status"):`
+  而 `world.training.status` **只在训练页存在**（HOME 的 176 个带 `training` 的帧里
+  只有 19 帧有 `status`，其余是 `camp_focus_*`/`train_tap_norm` 等导航字段）
+  ⇒ `KEEP_TRAINING_PRODUCTIVE` **HOME 上 0 次出现 / 2833 帧只被选 4 次**。
+  ⇒ **查"某目标为什么不工作"时，先查它在哪一页能被发现** ——
+  只看它被选时的动作，会把"发现不了"误读成"调度不对"。
+- **追"最大缺口"之前先确认它是现行路径还是遗留路径**（2026-10-03 教训）。
+  `KEEP_TRAINING_PRODUCTIVE` 被选 492 次、gp_true **0**，看起来是最大缺口；
+  但 `goal_library.py:50` 写明它已被 per-camp 取代、"survives only as the label for a legacy"，
+  而真正在用的是：
+  ```
+  MARKSMAN_CAMP_TRAINING  n=90  gp_true=10  HOME 77
+  LANCER_CAMP_TRAINING     n=75  gp_true=7   HOME 63
+  SHIELD_CAMP_TRAINING     n=75  gp_true=8   HOME 63
+  ```
+  **240 次被选、25 次真进展、多数在 HOME 上** —— **训练能力是活的**。
+  且两者**从不同框发现、206 次同场里 per-camp 出现 0 次** ⇒ 从不竞争。
+  ⇒ **我追了两轮的"大头"，恰恰是应该退休的那条路。**
+  ⇒ **看代码注释里有没有 "legacy / superseded / survives only as" 字样**，
+  它会直接告诉你该修哪条。
+
+- **三方乒乓：三个目标轮流替彼此移动页面，10.8% 的生产时间纯是路费**（2026-10-03 实测）。
+  ```
+  CLEAR_INTEL(HOME) --OPEN_MAP--> MAP
+     下一步 178 训练链 OPEN_HOME / 91 建筑链 OPEN_HOME / 35 自己 OPEN_INTEL（仅 10%）
+  KEEP_BUILDING(MAP) --OPEN_HOME--> HOME
+     下一步  85 CLEAR_INTEL OPEN_MAP（直接推回 MAP）
+  KEEP_TRAINING(MAP) --OPEN_HOME--> HOME
+     下一步 366 DISCOVER_QUICK_PANEL_TASKS OPEN_QUICK_PANEL（面板扫描接管页面）
+  ```
+  三步环 `HOME→MAP→HOME` / `MAP→HOME→MAP` / `HOME→HOME→MAP` 占 **1113/10266 = 10.8%**。
+  环内四目标产出：`CLEAR_INTEL` 1359/2、`DISCOVER_QUICK_PANEL_TASKS` 1115/48、
+  `KEEP_TRAINING_PRODUCTIVE` 497/0、`KEEP_BUILDING_PRODUCTIVE` 356/0。
+  ⇒ **与"两方乒乓"同型但没有主人** ——
+  **每一次到达都是正确的，而"驻留加分"无从表达"谁该留下"**，
+  所以 `page_residency`（只奖励"已在此页"）治不了它。
+  ⇒ **修法方向是"承诺"而不是"加分"**：谁付了这次导航，谁就该在到达后拿到下一步。
+- **"存在条件与可用条件互斥"= 自我封闭**（2026-10-03，`KEEP_TRAINING_PRODUCTIVE`）。
+  `goal_library:2339` 要求 `world.training.status` ⇒ **只在训练页可被发现**；
+  而训练页 86 步里它被选 **0 次**（7 个别的目标被选）⇒ 到不了 ⇒ 发现不了。
+  全账本唯一进训练页的方式是 per-camp 目标带过去的。
+  ⇒ 且它 492 次 `gp_true=0`，而 per-camp 已能产出（240 次 / 25 次真进展），
+  `goal_library:50` 写明 per-camp 已取代它 ⇒ **它不该被"修活"，而该被"退休"**。
+  ⇒ **看代码注释里的 `legacy` / `superseded` / `survives only as` 字样**，
+  它会直接告诉你该修哪条、哪条别碰。
+
+- **动手造机制前，先查项目是否已有同名/同义机制**（2026-10-03，差一点重复造轮子）。
+  `runtime._committed_goal` 名字就叫"committed"，但它答的是另一个问题：
+  自己的注释（`runtime.py:733-736`）写明是
+  **"在页面自身发现不到任何目标时，episode 记在谁名下"**（采集路线开搜索结果后每一步），
+  消费方全是记账/续作：`_step_goal` 兜底归因、`8210` 传 session 归属、
+  `6059`/`6487` 判日历续作。**没有一个是"继续做"。**
+  且它 `8758` 每 tick 从 `best_goal` 覆盖 ⇒ 结构上无法表达跨跳步的所有权。
+  ⇒ **同名不同义**是最危险的重复造轮子形式，**光看函数名查不出来，要读它的注释与消费方**。
+- **"到达后谁拥有这一页"的可行性可先量再设计**（2026-10-03）。
+  若导航后页面几乎不动，就没有"到达"可言。
+  实测全量：**1323 个 `OPEN_MAP`/`OPEN_HOME` 步中 1282 次（97%）下一页真的换了页**
+  ⇒ 跳步真的发生，窗口**恰好一个 tick 宽**且完全确定
+  ⇒ 最小修法可行：**发出导航的目标就是付了路费的人，跳步后那个 tick 是它唯一能花掉所有权的地方**。
+  ⇒ 仍未定：**所有权值多久**（一步会饿死需要两步的目标；无界会让目标占着做不了事的页）。
+  **这种"时长/边界"绝不能猜** —— 它直接决定饥饿还是占位。
+
+## 通则：连通域的外接矩形会撒谎——"稳定区"要先过 fill / texture / 非整帧三关（2026-10-04）
+
+用"逐像素中位数 + 帧间稳定比例 ≥0.80 + 连通域"从 40GB 截图里找稳定 UI 时，
+第一版在 EVENT 页给出一个**整帧**候选 `[0,0,720,1280]`、score 0.947，
+**长得很像"发现了一块大控件"，实际是纯假阳性。**
+
+- 查证：该连通域 **fill = area/(w*h) 只有 0.141**。
+- 掩膜可视化说明真相：整帧绝大部分像素**不稳定**，只有文字/图标**轮廓线**与上下黑边稳定；
+  这些散布的稳定行被形态学 `close` **串成一条贯穿整帧的链** ⇒ 外接矩形 = 整个屏幕。
+- 独立复算：EVENT 帧间平均绝对差 **62.9**，**是八个页面里变化最大的**
+  ⇒ 与"画面没动"**完全相反**。（我中途一度误判成"agent 卡住了"，被自己的复算否掉。）
+
+**三道防伪（补上后 49 → 29 个框，整帧假候选清零）：**
+`fill >= 0.35`（外接矩形必须名副其实）/ `median[component].std() >= 3.0`（纯色黑边不是模板）/
+非整帧（`w>=0.9W 且 h>=0.9H` 直接丢）。
+
+⇒ **连通域的形状与它的外接矩形是两件事；报 bbox 之前必须报 fill。**
+⇒ 同族：这与已记的「外接矩形/汇总数字 ≠ 你想要的那个量」是同一条铁律的又一平面
+（此前是「汇总数字 ≠ FAILED 行数」）。**凡是把集合压成一个标量的地方，都要回头验形状。**
+
+## 通则：证据路径会随文件搬迁失效——账本记的是"当时的路径"（2026-10-04）
+
+`learning/episodes.jsonl` 里 19884 条截图引用，全部指向 **C 盘 worktree 老路径**
+（`C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\dataset\raw\control_panel\...`）。
+40GB 搬到 E 盘后，**第一版采样器 `is_file()` 只剩 18 张能解析，只采到 18 帧**
+（目标 100）。修法：按 `control_panel` 之后的后缀重映射到
+`E:/无尽冬日智能体/dataset/raw/` ⇒ 立刻拿到 19884 张可解析。
+
+⇒ **"路径解析失败"极易被误读成"文件被删了"**，实际是文件搬了家、引用没搬。
+⇒ 反过来说：**只要账本里存的是绝对路径，任何搬迁都会静默让历史证据"消失"**，
+而所有测试、所有汇总量都不会变 —— 因为没人去 `is_file()`。
+⇒ 排查"证据不见了"的标准动作：先看 `is_file()` 的通过率，再决定是"真没了"还是"搬家了"。
+
+**同轮第二个坑（同类：把两个不同的时间系当同一个）**：
+采集目录名是**本地日期**，文件名尾部时间戳是 **UTC**（差 8 小时）。
+例：目录 `20261001_002133_197416` 内文件是 `..._20260930T162223628353.png`。
+⇒ 统计"覆盖几天 / 哪一天"必须按**目录前缀**，不能按文件名时间戳，否则整批日期平移一天。
+
+## 判据：宽框的 IoU 是退化指标——"找到了没有"必须配同尺寸随机基线（2026-10-04）
+
+用外部检测器（ScreenParser / YOLO 系）在我们的帧上评估"某块 UI 找到了没有"时，
+**IoU 阈值对全宽/全高区域是退化的**：一个 `720×123` 的框随机落在同一条水平带上，
+几乎必然压到右侧那排 App Icon，IoU 天然就高。
+
+实测（40GB 截图，100 帧，ScreenParser YOLO11-L，conf 0.10）：
+- 朴素口径 `IoU≥0.3` = **10/21** 个帧差区域"被找到"，看着还行。
+- 同页面同尺寸随机落 300 框的基线 = **5.9/21（概率 0.282）**。
+- 顶部状态栏 `[0,0,720,123]`：实测 IoU **0.197**，随机**中位** 0.472、随机 max 0.937
+  ⇒ 实测落在自身随机分布的 **1 百分位，比随机还差**。
+- 底部导航栏 `[0,1160,720,120]`：0.252 vs 随机中位 0.318 ⇒ 0.34 百分位，**等于随机**。
+- 小图标（≈70×70）：实测 0.810–0.986，随机中位 0.21–0.32 ⇒ 7 个在 **~100 百分位**，真命中。
+
+⇒ **规则：凡是拿 IoU 判"大块区域有没有被找到"，必须同时给出同尺寸随机框的 IoU 分布与百分位。**
+只报 `IoU≥0.3 的个数`会把随机命中算成真命中。
+⇒ 同族（本项目已记过三次）：**"汇总数字 ≠ FAILED 行数"、"外接矩形撒谎"、这次"IoU 欺骗宽框"**
+—— 都是**用标量概括几何/集合，而标量恰好对某一类形状退化**。
+⇒ 通用动作：**报一个标量之前，先问"什么情况下这个标量会天然很大"。**
+
+## 判据：域内对照的样本，GT 必须真的含被测类（2026-10-04，第一版对照白做）
+
+用外部模型评估域外数据时，标准动作是"先在该模型的训练域上跑一遍确认它能"。
+**但对照样本必须真的包含被测类，否则对照等于没测。**
+
+实测：ScreenParser 在我们的安卓手游帧上 `Status Bar`/`Navigation Bar`/`Tab Bar`/`Side Bar`/
+`Toolbar` **100 帧 0 检出**。第一版对照取训练集前 3 张网页 —— 结果"chrome 也没检出"，
+我差点据此说"模型本来就吐不出这些类"。**但那 3 张的 GT 里本来就没有 chrome**
+（GT chrome 集合为空），所以那个对照对这个问题**零信息量**。
+
+第二版：扫训练集找**自身 GT 含 chrome 类**的页面，取到 4 张 ⇒
+`Navigation Bar` 命中 2/2、1/1，`Toolbar` 命中 1/1，1 张漏 ⇒ **4/5 框命中**。
+⇒ **模型有能力输出这些类；游戏帧上 0 检出是域差，不是模型缺陷。** 结论方向完全相反。
+
+⇒ **规则：做"能力对照"时先检查对照样本的标签里有没有那个类。**
+没有就该继续找样本，而不是把"没检出"当作能力缺失的证据。
+⇒ 附带：`ultralytics 8.4.172` 上模型卡写的 `YOLO("org/name")` 会直接
+`FileNotFoundError`（`check_file` 不解析裸 HF slug），**下载 `best.pt` 后本地加载**即可。
+
+## 判据：改「AI 指挥中心 / 面板」之前，先确认跑的是哪一份（2026-10-04）
+
+用户口中的「无尽冬日 AI 指挥中心」= `tools/control_panel.py`（Tk 面板）。
+**但 E 盘工作区这份不是正在运行的那份。** 实测进程：
+
+```
+pythonw.exe  840 MB  C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\tools\launch_pinned_production.py
+```
+
+即生产跑在 **pinned worktree**（分支 `codex/production-pin-recovery`），
+E 盘 `E:\无尽冬日智能体` 是另一个 checkout。两边 `tools/control_panel.py` 的 HEAD **不同**
+（worktree 多一处截图保留策略修复 `screenshot_ttl_days=3`），且 worktree 工作区还有未提交改动。
+
+⇒ **三步走，跳过任何一步都会白做或毁掉生产改动**：
+1. 先查进程命令行确认真实运行目录（`Get-CimInstance Win32_Process` 看 CommandLine），
+   **不要默认 E 盘**；
+2. 移植用 `git diff HEAD -- <file>` 生成 patch + 目标里 `git apply --3way`，
+   **绝不直接 cp 覆盖**（会抹掉 worktree 独有的生产修复）；
+3. 改完**必须重启面板进程**才生效（Python 已加载旧模块）。
+   注意 `close()` 会 `_kill_worker_tree()` 连带停掉 AUTO 一轮 ⇒ 挑 AUTO 空闲时重启。
+
+⇒ 同类推论：凡是要改"正在跑的东西"，先确认进程实际加载的路径，
+再决定改哪里、怎么改、要不要重启。
+
+## 判据：mtime 缓存对一个被持续 append 的日志是失效的（2026-10-04）
+
+`episode_scan()` 用 mtime 做缓存键，看起来有缓存、实测**永不命中**：
+AUTO 每几秒就往 `learning/episodes.jsonl` 追加一行 ⇒ mtime 每次都变。
+缓存键必须带 **size**，并且做成**按字节 offset 增量**（只解析新增部分），
+不能"变了就整文件重扫"。
+
+⇒ 通用动作：给"日志/流水文件"做缓存时，先问"这个文件是追加写还是整体重写"。
+追加写 ⇒ mtime 键无效，必须 size+offset 增量；
+且首次全量那一次要丢到**后台线程**，不能落在 UI tick 上（153 MB 实测 549 ms）。
+
+## 存储与路径硬规则（2026-10-04 操作者迁移指令，全文见 00_MASTER_RULES.md §26）
+
+**规则**：worktree 根 = `E:\无尽冬日智能体_worktrees\`；数据根 = `E:\无尽冬日智能体\`；
+C 盘不得有 worktree/数据/生产运行时输出实体；任何 C 盘写入视为违规并立即报告。
+
+**四条经核实的事实（照指令原文写会说错话）**
+
+1. **C 盘从来没有实体 worktree。** `C:\Users\xhw\.codex\worktrees` 是 NTFS **装入点**
+   （`fsutil` tag `0xa0000003`，替换名 `\??\E:\无尽冬日智能体_worktrees`）；
+   子项 `IsReparsePoint=False` ⇒ 只是透视。`C:\无尽冬日智能体_worktrees` 不存在。
+   ⇒ 指令里"物理移动 worktree""删 C 盘旧 worktree 释放空间"**没有实体可搬，释放 ≈ 0**；
+   该 junction **必须保留**（Codex 靠它定位），它是指针不是数据，不算违规。
+2. **指令写的 `E:\worktrees\` 与实际的 `E:\无尽冬日智能体_worktrees\` 不一致**；操作者裁定
+   "视为已达标，只做规范化" ⇒ 正式根 = 后者。**写文档时不得把 `E:\worktrees\` 当事实。**
+3. 7 个 worktree 里**只有生产 `winter-prod-pinned` 的数据目录是 Junction**（→ 主仓），
+   其余 6 个是**物理副本**。
+4. `git status` 的脏条目数 ≠ 真实差异：生产 worktree 报 `837 ?? / 247 M / 50 D`，
+   但 `git diff HEAD` 只有 **62 个文件**；抽查 `dataset/README.md` 工作树 blob 与 HEAD
+   **哈希全等** ⇒ **235 个 ` M` 是 stat 缓存假阳性**（autocrlf CRLF 归一 + 生产反复重写改 mtime）。
+   **未提交改动量必须用 `git diff HEAD` 口径。**
+
+**唯一事实源 = `config/paths.py`**（2026-10-04 新建）。机制：生产的 `config/` 是 junction 指回主仓，
+`Path.resolve()` 跟随它 ⇒ `paths.py` 在主仓与生产 worktree 两侧**解析结果完全一致**
+（实测均得 `E:\无尽冬日智能体`）。判别主仓 vs worktree 用"`.git` 是目录还是文件"，无需硬编码。
+
+**一处刻意的例外（不要"修"）**：`winter_agent_v2/workbuddy_bridge.py` 的 `PROJECT_ROOT` 保留字面量。
+`tests/test_workbuddy_bridge.py::CredentialHygieneTest` 断言该模块可执行代码**不得出现 "config" 子串**
+（凭据不得来自被跟踪文件）。第一版改成 `from config.paths import ...` ⇒ 测试红 ⇒ 已回退。
+⇒ **教训：收敛到单源时若撞上一条故意的安全守卫，回退并写明原因，不要绕开守卫。**
+
+**排查面板"跑在哪个解释器"的正确判据（2026-10-04 踩过）**：venv 的 `Scripts\pythonw.exe` 是
+**263 KB 的 venv 启动器桩**（base 的 `pythonw.exe` 只有 104 KB，sha256 不同），
+它派生出的子进程**命令行会显示 base 的 exe 路径**，但进程内 `sys.executable` 仍是 venv 路径。
+⇒ **不能用进程命令行里的 exe 路径判断解释器**，要看面板日志的
+`运行环境预检通过：<解释器>`（该行由 `runtime_python_path()` 产生）或直接跑探针。
+
+---
+
+## §27 线程/进程分层硬规则（操作者 2026-10-04 下达）
+
+**主线程只做三件事：UI、调度、派发。**
+
+| 任务类型 | 归属 |
+|---|---|
+| I/O 类任务 | 后台线程 或 asyncio |
+| CPU 类任务 | 独立进程 |
+| 大任务 | 独立子进程 |
+
+**为什么写成规则而不是惯例**：面板卡顿的根因就是主线程在做 I/O。
+`tools/control_panel.py` 的 `_refresh_runtime_snapshot` 用 `root.after(1500, ...)` 每
+**1.5 s** 在主线程跑一次，其中 `_check_control_plane_reload` → `canonical_revision(ROOT)`
+实测 **1.03 s**（`git rev-parse` + 对每个 version-relevant 脏路径做内容 sha256）⇒
+**UI 线程约 2/3 时间在 git 里**。py-spy 佐证：`_check_control_plane_reload` 占 12.5% 样本、
+GUI 主循环 57.4%、后台 truth 线程 42.4%（两者是不同线程，不可相加）。
+
+**落地范式（`ControlPlaneProbe`，可作为后续所有 I/O 的模板）**：
+- 后台 daemon 线程按固定 `interval` 重算，把结果作为**不可变 NamedTuple** 用引用替换发布；
+- 主线程只 `latest()` 读快照 + 做**副作用**（写 marker、判断安全点、委托重启）；
+- 探针**只计算不行动**——行动碰进程和 Tk，必须留在主线程；
+- 未拿到首个答案时 UI 显示"后台检查中"，**绝不阻塞等待**；
+- 线程 `stop()` 挂到 `close()`，与既有 `self.probes.stop()` / `self.pump.stop()` 同风格；
+- 接受"答案最多 `interval` 秒旧"：被检出的事件是"某次提交动了本窗口 import 的文件"，
+  下一步动作是安全点重启，不需要秒级。
+
+**证据链要求（这类优化的验收方式）**：
+1. 先量：py-spy `record` 取样本加权热点 + 直接给可疑调用计时，**不要凭直觉猜热点**；
+2. 主线程侧的验收 = **把 I/O 入口 monkeypatch 成会抛异常的桩**，
+   函数仍必须产出答案（`tests/test_control_plane_reload.py::test_the_ui_side_check_runs_no_git_and_no_hashing`）；
+3. 语义等价必须用 A/B 判据，不是"看着对"：
+   同一进程内用 `git show HEAD:<file>` **exec 成独立模块** + **冻结数据副本**，
+   逐字段 diff 整份 `report()`（`_tail_jsonl`/`_all_episodes`/`_all_executor` 三个访问器另测）⇒
+   本次得 `report() identical: True`。
+
+**同一天修掉的三处同类缺陷（"每次调用都重建的缓存 = 永远冷的缓存"）**：
+1. `state_truth._tail_jsonl` 实例缓存 × `_poll_truth` 每轮新建 `TruthAudit` ⇒ 永远冷；
+   且**无上限**读 162 MB。改为模块级缓存 + 有界 tail：3 行 tail 冷 15 ms / 热 10 µs。
+2. `escalation_queue.EscalationLedger.snapshot()` 每 tick 新建实例 ⇒ 每次重读 7.4 MB / 15 304 行
+   并重折叠（`evidence_appended` 分支是 O(K²)，单键 1500 条 ⇒ 单次折叠复制 2 113 555 个元素）。
+   改为模块级 size+mtime 缓存：冷 183 ms → 热 **0.010 ms**。
+3. `control_panel._check_control_plane_reload` 见上。
+
+**两条具体的、会让人写错代码的教训**：
+- **不要用"字节上限"兜底"要读多少"**。第一版给 tail 加了 64 MB 上限，`count=5000`
+  （行均 15.5 KB，真需 ~75 MB）静默只返回 **4254** 行，而面板把这个长度当分母打印
+  （`f"{len(scoped)}/{total}"`）⇒ 悄悄少读不是"答案短一点"，是**屏幕上数字错**。
+  改为按"已读窗口的行密度"估计需要多少，估计不准就继续长，直到 `count+1` 个换行或读到文件头。
+  另：**不要用 `window*4` 之类的固定倍数成长**——64 MB 处差 739 行，×4 直接跳到 256 MB 并
+  被 size 截成整个 162 MB 文件。用 `max(need, window + sample)`。
+- **size 变化不能区分"追加"与"重写"**。同一路径被截断后重写成**更大**的文件时，
+  增量读会从旧 offset 切到无关内容中间，把半行解析成"行"。
+  判据 = **`st_ino` + 文件头 64 字节指纹**（NTFS 实测：`write_text` 原地重写 ino 不变、头变；
+  `os.replace` 轮换 ino 变）。任何增量/缓存读都要带这个守卫。
+
+**内存同样是"卡顿"（8 核 16 线程笔记本）**：把 5000 行 episode 全解析驻留 = **206 MB**
+（实测）；改为只留每行的 `role_id` 字符串 + 尾部 256 行完整 payload = **12 MB**，
+且 `len()` 与 `[-200:]/[-40:]/[-8:]/[-5:]` 全部逐字段一致。**"单核 100%"在 16 线程机器上
+只是整机 ~6%，但常驻内存是实打实的代价——优化要看这两个数，不能只看 CPU%。**
+
+---
+
+## §28 选 repin / 合入目标前，先验谱系；不要用提交标题判断"是否重复"（2026-10-04）
+
+**背景**：面板三处修复要落到生产。第一版判断是「落到主仓 `E:\无尽冬日智能体`，操作者提交后
+`repin_production --to <新SHA>`」。**这个判断是错的，而且错得会伤生产**：两条线已严重分叉，
+**主仓是落后的那一条**。若照原计划 repin，等于回滚 **38 个提交 / 3421 行**。
+
+### 三条判据（可复现，必须都跑）
+
+```bash
+git merge-base --is-ancestor <A> <B>; echo $?        # 0=是祖先；1=互不为祖先（真分叉）
+git rev-list --count <merge-base>..<tip>             # 这条线自基点走了多少步
+git diff --stat <A> <B> -- tools/ winter_agent_v2/ tests/ scripts/
+```
+
+实测（2026-10-04）：
+
+| 线 | 相对 merge-base `05042268` | 代码差异 |
+|---|---|---|
+| `codex/production-pin-recovery` → `50410444` | **38 个提交** | **+5855 / −107**（37 文件） |
+| `main` → `ff19040c` | **1 个提交** | `tools/control_panel.py` +301/−35 |
+
+`git diff --stat 50410444 ff19040c -- <代码目录>` = **24 files, +30 / −3421**。
+被回滚的里面有 `92fe5155`（截图排空速率）、`21961b6b`（证据 30 天生命周期，
+针对实测 50 051 文件 / 33 GB）、`50410444`（closure card 的 TTL 闸门 + 有界 tail）。
+
+### 三个陷阱
+
+1. **两条线的提交标题可以完全相同 ⇒ 不能用标题判断"主线已经有了、不必再改"。**
+   `main` 的 `ff19040c` 与生产线的 `b314adb1` 标题**一模一样**
+   （`perf(panel): stop the 1.5 s tick re-reading the 150 MB episode log`），
+   连 `--stat` 都是 `+301/−35`。主线拿到的很可能就是这个修复的**副本**，不是新东西。
+   ⇒ 判"是否重复"要看**祖先关系**，不是标题。
+2. **"我要改的那几个文件两侧 blob 相同"只证明补丁基线一致，不证明目标仓库没有落后。**
+   本次 `state_truth.py` / `escalation_queue.py` / `tests/test_control_plane_reload.py`
+   在两侧 blob 完全相同（补丁可无损移植），但主仓整体仍落后 38 个提交。
+   **移植可行性 ≠ 部署目标正确性，这是两个独立问题，要分开判。**
+3. **`git diff` 会把装入点（junction）里的数据脏一起列出来**，看起来像"差异巨大"。
+   必须限定路径（`-- tools/ winter_agent_v2/ tests/ scripts/`），否则 66 个文件的
+   `git diff --stat` 里绝大部分是 `config/knowledge/learning/dataset` 的数据。
+
+### 操作铁律：暂存 ＝ 代码脏 ＝ `verify_pin()` raise
+
+`verify_pin()` 只放行 `config/knowledge/learning/dataset` 四个数据目录；
+**代码脏直接 `raise PinError`**。所以"把修复暂存在生产工作树等提交"必然制造一个
+**重启不友好窗口**：窗口内面板一旦退出/崩溃，下一次启动会 `PinError` 起不来。
+`PRODUCTION_LAUNCH.log` 里有真实失败例（`2026-10-04T08:54:17`）。
+⇒ **顺序只能是「先 `git commit`，再重启」**，并且要把这句话明确写给操作者。
+
+### 环境坑：pytest 收尾会撞宿主的批量删除闸门
+
+pytest 会话收尾时 `shutil.rmtree(TEST_RUNTIME_ROOT)` 一次删 **89** 个文件，
+超过宿主阈值 **50** ⇒ `[safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED]`，
+进程在**打印汇总行之前**被打断，现象是"跑完了却看不到 `N passed`"。
+**症状容易被误读成测试挂了。** 解法：`--basetemp=<仓库外的目录>`（pytest 便不再回收旧临时根）。
+判据用 `${PIPESTATUS[0]}` 取退出码，别用 `&& echo`。
+
+### 顺带确认的拓扑事实（判据比 `cmd dir /AL` 可靠）
+
+生产工作树的 `config` / `knowledge` / `learning` / `dataset` 是**装入点（junction）**
+指向 `E:\无尽冬日智能体\…`；用 Python 判：`os.lstat(p).st_reparse_tag == 0xA0000003`，
+或比 `os.stat(p).st_ino`（两侧相同）。`os.path.realpath()` 会把 junction 解析掉。
+⇒ **代码根是嵌套目录** `…\winter-prod-pinned\无尽冬日智能体`，
+**数据根就是主仓** `E:\无尽冬日智能体`（与 `PRODUCTION_PIN.json` 的 `data_root` 一致）。
+所以：**改主仓的数据 = 改生产的数据；改主仓的代码 ≠ 改生产的代码。**
+`tools/control_panel.py` 的 `ROOT = Path(__file__).resolve().parents[1]` 因此指向**生产代码根**，
+面板监视的是生产树而不是主仓。
+
+### 遗留的大问题（比这三处修复更大）
+
+主仓落后生产分支 38 个提交这件事本身没有解决；生产分支自己的提交
+`a403e829 docs(handoff): eight worktrees share main, which is why HEAD kept moving backwards`
+已经把原因写明了：**八个 worktree 共用 main，所以 main 的 HEAD 一直往回走**。
+
+---
+
+## §29 生产重启的正确路径与安全窗口（2026-10-04 实测走通）
+
+**只有一条正确的重启路径**（第三条是陷阱）：
+
+```bat
+rem 安全窗口判据：workers=0 且 runtime state ∈ {IDLE, SAFE_STOP, PAUSED, FATAL_STOPPED}
+python tools\panel_restart.py --status
+python tools\panel_restart.py --stop     rem 它自己会拒绝"轮次在飞"，不要 --force
+schtasks /Run /TN "WinterAgentV2Panel"   rem 唯一正确入口
+```
+
+- **`panel_restart.py --start` 不能用**：它硬编码 `pythonw tools/control_panel.py`，
+  **绕过 `verify_pin()`**，面板跑在"这个脚本所在的那棵树"里（通常是开发树），
+  `desktop_startup.log` **不写 `CODE_COMMIT=`** ⇒ 加载版本不可归因；
+  且它活不过发起它的那一轮（宿主回收分离子进程树）。
+- `--stop` 的安全判定 = `panel_workers(pids)` 非空 **或** `runtime_claim()` 非空就拒绝。
+  `runtime_claim()` 只在 snapshot 状态 ∉ {IDLE, SAFE_STOP, FATAL_STOPPED, PAUSED}
+  **且** `runtime_thread_alive` 时才说谎话。**注意 worker 存在本身就足以拒绝**。
+- 实测窗口形状：连续运行模式下大部分时间是 `GOAL_RUNNING`/`AUTO_RUNNING`，
+  每 12 s 采一次要等到**第 14 次采样**才出现 `workers=0 / IDLE`。**不要以为可以随时重启。**
+  操作者对窗口的要求是"挑 AUTO 空闲时"，而**空闲 ≠ 没有轮次在飞**，要两个字段都看。
+
+**启动成功的三层读数（缺一条就不算起来了）**：
+
+1. `learning/control_panel/desktop_startup.log` 新增一行
+   `CODE_COMMIT=<新SHA> WORKTREE_CLEAN=true DATA_ROOT=…`，且 `launcher=` 指向 pin 树
+2. worker 命令行指向 pin 树：`…\winter-prod-pinned\无尽冬日智能体\tools\run_live.py`
+3. `panel.pid` 进程 alive=True，`pump.json` 心跳新鲜；`panel.log` 出现
+   `运行环境预检通过` + `自动运行已启动`
+
+**启动期的正常"慢"**：新面板 `__init__` 里会跑一次 retention 排空
+（`_enforce_retention` → `prune_runtime_screenshots`），截图目录有 2.7 万文件时
+MainThread 会停在 `stat`/`is_file` 上一段时间，然后才进 `mainloop`。
+**这不是卡死**——判据是 `py-spy dump` 的 MainThread 最终到达 `mainloop (tkinter)`。
+
+### 控制面重载标记：判"真/假"看条件，不看文件
+
+```
+touched_control_plane(changed_paths_since(<生产代码根>, <面板已加载的提交>))
+```
+
+- **空** ⇒ 盘上那张标记是**过期假陈述**，可归档后清除（两张都用过这条）；
+- **非空** ⇒ 是**真信号**（跑着的面板确实需要被替换），**别动它**。
+
+这张文件没有自动清理者（`tools/control_panel.py` 只写不 `clear()`），所以它会随条件在
+"真/假"之间来回。实测同一天出现两张：08:54 那张假（脏文件已回退）、
+09:14 那张真（暂存修复让三个 `CONTROL_PLANE_PATHS` 变脏）。
+
+### 已量好的下一个 UI 热点（未修）
+
+**`closure_card` 冷调用 = 4040 ms，每 60 s 一次（`CLOSURE_TTL_SECONDS`），落在 UI 线程**
+（热调用 0.15 ms ⇒ TTL 闸门本身是好的）。4 s 花在 `closure.rows(LEDGER)`（7.5 MB 全量读 + 解析）、
+`closure.heads()`（`git log` 子进程）、以及对**每个 key** 都跑一遍 `closure.build(...)`。
+⇒ 表现是**每 60 s 一次 4 秒界面冻结**。按 §27 的分层规则（I/O → 后台线程）应与
+`ControlPlaneProbe` 同样处理：搬后台线程发布快照，UI 只读。
+
+### 用 py-spy 验收"主线程真的不再做 I/O"的正确口径
+
+`py-spy record --pid <面板> --duration 30 --rate 50 --format raw` 后，对折叠栈做两件事：
+
+1. 按**符号计数**：目标符号应降到 **0 个样本**（本次 `_check_control_plane_reload` 从 12.5% → 0）；
+2. 按**线程名**确认归属：`py-spy dump` 应能看到新线程（`"control-plane-probe"`）处于 `idle`，
+   而 MainThread 的栈里**不含** git / sha256 / 大文件 `read_text`。
+
+注意 `canonical_revision` 不会归零——它搬到后台探针后仍有 ~4% 样本
+（每 30 s 一次 × ~1 s ≈ 3.3%，对得上），**这是设计而非回归**：验收看的是"它在哪个线程"，
+不是"它还在不在"。
+
+## §30 面板卡顿第二批：闭环卡片下线 + episodes 增量索引（2026-10-04，commit de371b32）
+
+§29 末尾那条"已量好的下一个 UI 热点（未修）"（`closure_card` 冷调用 3104–4040 ms、每 60 s 一次、
+落在 UI 线程）本轮已修。三处改动，互相独立，可分别验收。
+
+### 1) `closure_card` 搬后台线程：TTL 不是"不卡"的替代品
+
+- `CLOSURE_TTL_SECONDS` / `_CLOSURE_CACHE` **删掉**。TTL 只回答"结果还新不新"，躲不开
+  "这一次谁来算"——旧设计的失效方式正是"缓存知道答案还新鲜，却仍在 UI 线程重算"。
+- 新增 `ClosureCardProbe`（daemon 线程名 **`closure-card-probe`**），与 `ControlPlaneProbe` 同型：
+  只**计算并发布**快照（`refresh_once()`），UI 侧 `closure_card()` 只 `latest()`，**永不计算**。
+- 首帧诚实性：未出第一张卡时返回 `CLOSURE_WARMING`（`pending: True`），渲染成"计算中"。
+  **不能**渲染成"闭环尚未开始"——那是用渲染器的事实去断言系统的事实。
+- 失败卡的节奏（本轮新增）：`closure_card_now` 从不抛，失败以 `ok: False` 返回，所以节奏看**返回值**而不是异常。
+  - 被捕获的异常 ⇒ 标记 `transient: True` ⇒ **10 s** 重试（`CLOSURE_RETRY_SECONDS`）；
+  - 空账本（"没有带 Job 的升级记录"）也是 `ok: False` 但**没有** `transient` ⇒ 保持 60 s。
+    它是一条**答案**，不是失败；按 10 s 重读只是把空闲态多读 6 倍却无新信息。
+  - 判据可复现：`tests/test_a_failed_closure_card_is_retried_sooner_than_an_empty_one.py`。
+
+### 2) `closure.build` 是 O(N²)：195 条链只为留 1 条
+
+实测 `closure.build × 195 keys` = **2602 ms**，占 3104 ms 卡片的绝大部分
+（195 keys × 15,330 行 × 3 次扫 + ~300 万次 `json.dumps`），而其中 127 条有 job_id 的链全被丢掉。
+新增 `ordered_keys(ledger, current_key=…)`：**复现**卡片原有的排序
+（`(key != current_key, submitted_at is None, submitted_at)`）但只取排序需要的两个字段，
+不建任何链 ⇒ 只 `build` 一条 ⇒ **~13 ms**。
+- 注意：`ordered_keys` 是**复现**既有排序（"最早提交者胜"），不是**纠正**它——
+  "窗口该显示哪条链"是产品决定，不能顺手改。
+
+### 3) episodes 读取器：按字节偏移增量，而不是 tail
+
+- `new_live_episodes` / `failures_since` 每次都把 `episodes.jsonl`（158 MB / 10,147 行）全读 + 全 `json.loads`，
+  只留寥寥几行。新增 `winter_agent_v2/jsonl_index.py`：**解析一次，之后只读追加的字节**。
+- **为什么不能只读 tail**：没有任何东西**强制** `recorded_at` 有序。若某次追加的行是乱序的，
+  tail 会**静默跳过**它——而 `episodes.jsonl` 是给 `LIVE_VERIFIED` 发证的门，漏一行就是少一份证据。
+- **四种文件变化必须同时区分**（这是本模块的核心知识）：
+  | 变化 | 表现 | 识别手段 |
+  |---|---|---|
+  | 追加 | 同 inode、长度增 | 从 `offset` 续读 |
+  | 原地重写 | **同 inode、同长度** | 头 64 字节指纹变；同长度时靠 **mtime** 兜底 |
+  | 轮转 `os.replace` | **inode 变** | `(st_dev, st_ino)` 变 |
+  | 截断 | 长度 < `offset` | `st_size < state.offset` |
+  身份 = `(st_dev, st_ino, 头部 64 B 指纹, 已消费区末 64 B 指纹) + mtime_ns`。
+- **`offset` 永不越过一个非 `\n` 字节**；尾部残行**返回而不入库**，所以正在写的行会**收敛**而不是被消费两次。
+- 投影（NamedTuple）只取需要的字段，且**比较原始值**：`row.get("skill") != skill` 与
+  `str(row.get("skill") or "") != skill` 在 `skill` 不是字符串时结论不同——投影里**不能**做 `str()`/`or ""` 归一。
+- `settle_validations` 每趟读两遍大流；两处都改成**懒读**，只在真需要它的分支里读。
+- **合起来的效果**：一次排空连续问 8 条记录 **~14,688 ms → 78 ms（≈188×）**。
+
+### 4) 量到的数字（生产解释器，本机）
+
+| 读取器 | 前 | 后 |
+|---|---|---|
+| `closure_card` 冷 | 3104 ms（A/B 里 4153 ms） | **864 ms**（且已离开 UI 线程） |
+| `closure.build` × 195 | 2602 ms | **~13 ms**（一条链） |
+| `new_live_episodes`（6 h，冷） | 1836 ms | 80.9 ms，之后每条 **9.8 ms** |
+| 一次排空问 8 条记录 | ~14,688 ms | **78 ms** |
+| `failures_since`（6 h） | 1566 ms | **13.3 ms** |
+| 索引第二次调用（158 MB） | — | **0.22–0.34 ms** |
+| 追加 191 字节后读了多少字节 | — | **192** |
+
+### 5) 两个自己抓到的"静默错误"（写这个模块时犯的）
+
+1. **消费后没刷新 `consumed_tail`** ⇒ 下一次调用把**每一个文件**都判成 stale 并从 0 重建。
+   症状是"看起来能用但毫无增量"，不是报错。修复：`_consume` 之后**再**读 `consumed_tail`。
+2. **把残行持久化** ⇒ 它的字节被**消费两次**。修复：残行只**返回**给调用方，不进 `entries`。
+
+教训通则：**增量索引的两个静默失效点是"没更新快照指纹"和"边界字节被算两次"**——
+两者都不报错，只会让结果**多**或**旧**。所以测试要专门钉：追加后只读追加的字节（`assert consumed == [len(blob)]`）、
+尾部无换行的行、以及"行落定后不被计两次"。
+
+### 6) A/B 等价验证的可复用做法（`ast` 提取）
+
+要证明"重写后行为不变"，把**旧实现从 git 里取出来、放进新模块的命名空间**执行：
+
+```
+git show HEAD:<file> → ast.parse → ast.get_source_segment → exec 进新模块的命名空间
+```
+
+新旧共用同一批 helper，只有**读取策略**不同 ⇒ 可以做逐条对照。
+本次结果：`JsonlIndex` vs 全量读（10,155 行、sha256 相同、字节覆盖 **100.0000%**）、
+`splitlines()` vs `b"\n"`、新旧 `new_live_episodes`/`failures_since` 60 例、
+新旧 `closure.build` 全部 195 个 key、`ordered_keys()[0]` == 旧排序冠军、
+旧 `closure_card` == 新 `closure_card_now` 逐字段——**全部 0 mismatch**。
+
+### 7) `splitlines()` 和 `b"\n"` 不一样（潜在，未爆）
+
+`str.splitlines()` 还会在 `\x0b \x0c \x1c \x1d \x1e \x85 U+2028 U+2029` 断行。
+实测这份 158 MB 日志：`b"\n"` 与 `splitlines()` **都是 10,147 行，差 0**；
+另有 **19,385 个裸 `\x85` 字节**，全部**位于 JSON 字符串内部**（JS 风格转义）⇒ 差异合法但**潜在**。
+结论：读 JSONL 一律用 `b"\n"`，别用 `splitlines()`；并保留一条"含 U+0085 的行仍是一行"的测试。
+
+### 8) 顺带确认：本项目早就有"行索引"先例
+
+`learning/.episodes.jsonl.index.json` 是 `winter_agent_v2/learning.py` 写的行索引旁挂文件
+（字段 `version / file_size / modified_ns / line_count / ends_with_newline`）。
+所以"给大 JSONL 建偏移索引"不是新发明，§新模块与既有做法同源；下次改动前先看它。
+
+## §31 判据：在 pin 树里跑**全域**测试套件不是有效口径（2026-10-04）
+
+**现象**：91 个 import 了改动模块的测试文件，在 pin 树（`winter-prod-pinned`）里跑出
+**117 failed / 11 errors / 1508 passed**；其中 `tests/test_suite_isolation.py` 4 failed。
+单看数字会误判成"改坏了一大片"。
+
+**根因（结构性，与改动无关）**：
+
+```
+tests/conftest.py:  ROOT = Path(__file__).resolve().parents[1]      # = 代码树（pin 树）
+classify_production_write(text):
+    if not text.startswith(str(ROOT)): return None
+    relative = Path(text).resolve().relative_to(ROOT)   # ← 这里
+```
+
+pin 树的 `config/knowledge/learning/dataset` 是 **junction 指向实时数据根**（`E:\无尽冬日智能体`）,
+于是 `Path(text).resolve()` **逃出 ROOT** ⇒ `relative_to` 抛 `ValueError` ⇒ 被
+`except (OSError, ValueError): return None` 吃掉 ⇒ **守卫永远不拒绝**。
+即：**守卫的前提是"ROOT 树里没有指向外部的 junction"，pin 树恰好相反。**
+
+**决定性判据（一条就够，可复现）**：同一个 `tests/test_suite_isolation.py`
+
+- 开发树（`E:\无尽冬日智能体`，ROOT=实时根、守卫生效）：**18 passed**
+- pin 树：**4 failed**
+
+同解释器、同文件、差异只有树 ⇒ 失败归因于树，不归因于代码。
+
+**第二类无关失败：实时证据已被清理**。测试要读
+`dataset/raw/control_panel/runtime_auto/2026-09-21_.../*.png` 这类**实时证据截图**，
+而跑着的 AUTO 的磁盘保护每轮都 `已清理 30 张过期或超额运行截图`（`panel.log` 每分钟一次）
+⇒ 截图已不存在 ⇒ `FileNotFoundError` / `stage()` 返回 `None`。
+**推论：任何依赖 `dataset/raw/**` 历史截图的测试，在长途运行的机器上都会自然变红。**
+
+**泄漏面其实很小（重要，别高估污染）**：`_REDIRECTS` 机制在 pin 树里**仍然有效**——
+session 级 autouse fixture 把模块常量重指到 `TEST_RUNTIME_ROOT`，并从实时根 `_seed` 复制读内容。
+所以**只有刻意不被重定向覆盖的路径**（守卫测试自己的探针）会写进实时树。本轮实测只有 2 个 2 字节文件：
+`learning/_probe.json`、`learning/_isolation_probe_should_not_exist.json`
+（分别由 `test_suite_isolation.py:222` 与 `:215` 写入），已移到
+`E:\无尽冬日智能体_panelperf_scratch\recycled\`（用 **移动**而不是删除，保留可回放）。
+
+**正确口径**：
+
+1. 验"这次改动有没有引入回归" → 用**聚焦组**（覆盖改动模块的那几个文件），
+   本次 `escalation_queue + jsonl_index + queue_pump + current_trace_selector + closure_git_runs_hidden + 闭环探针`
+   = **172 passed / 1 failed**，唯一那条是 §28 已记的既有红
+   `test_queue_pump.py::VersionActivationTest::test_a_developed_trace_waits_for_validation_instead_of_settling`
+   （`'NO_IMPROVEMENT' != 'VERSION_ACTIVATION_PENDING'`，其 harness 从不写 `after_version`，
+   `_activate_pending_versions` 早退）。
+2. 全域只在**开发树**（ROOT=实时根）跑才有意义；在 pin 树跑全域得到的是"环境红"。
+3. 判定失败归属时先 `grep` 全部 traceback 里有没有你改动的符号——
+   本轮 **0 条**提到 `jsonl_index / closure_card_now / ClosureCardProbe / ordered_keys / group_ledger / EpisodeFields`。
+4. 收集期就可能被打断：`tests/test_last_step_execution.py` 在**模块级** glob 一张已被清理的截图 ⇒
+   `IndexError` ⇒ pytest 报 `Interrupted: 1 error during collection` 并**整轮退出**。
+   跑全域要加 `--continue-on-collection-errors`。
+
+## §32 `panel_restart.py --stop` 的退出码不可信——按 rc 判断会把生产停成停机（2026-10-04 实测踩到）
+
+**事故**：10:30:29 在真窗口内 `--stop` **成功杀掉了面板**
+（输出齐了：`stopping panel tree at pid 10876` → `workers left after the kill: 0` →
+`panel pids still alive: none`），但**进程退出码是 1**。我的重启脚本以 `rc == 0` 作为
+"可以启动"的前提 ⇒ **没有执行 `schtasks /Run`** ⇒ **生产从 10:30:29 一直停到 10:31:27**（我手动补启动）。
+
+**根因**：`cmd_stop` 在报告完 `still` 之后还有两步**尾动作**，然后才 `return 0 if not still else 1`：
+
+```python
+PID_PATH.unlink(missing_ok=True)      # ← 宿主的批量删除闸门在这里抛 SystemExit
+_ensure_gateway_after_stop()          # ← 于是它根本没跑
+return 0 if not still else 1          # ← 永远到不了
+```
+
+宿主的 `sitecustomize.py` 在**一回合内删除数 > 50** 时抛 `SystemExit(1)` 并打印
+`[safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED] {"count":473,"threshold":50,…}`——
+本轮实测就打在 `panel.pid` 这一次 `unlink` 上（前面的 `git worktree remove`、pytest 收尾等已经攒够了数）。
+⇒ **函数在 `return` 之前被 `SystemExit` 打断**。危害加倍：`_ensure_gateway_after_stop()` 被跳过。
+
+**正确口径（三条都照做）**：
+
+1. **不要用 `--stop` 的 rc 判断"停没停"。** 停稳的判据是
+   `--status` 里 `panel alive : False`（或 `panel.pid` 不存在 / heartbeat 不新鲜）。
+2. **重启要无条件尝试启动**：`--stop; schtasks /Run /TN "WinterAgentV2Panel"`，
+   **不要写 `if rc == 0`**。（`schtasks /Run` 在任务已 Running 时被 `IgnoreNew` 忽略，重复调用无害。）
+3. **通则**：任何"做完重活之后还要 `unlink` 收尾"的脚本，其**退出码都可能被宿主的删除闸门污染**；
+   判"做没做成"要读**业务结果**，不要读退出码。
+
+**顺带修正 §29 的一个印象**：连续运行模式下真窗口**并不稀有**——每轮之间有 **~23–36 s** 的
+`workers=0 / state=IDLE`（本轮 50 次采样命中 **16** 次）。
+注意 `runtime_claim()` 在**轮次之间**会读到"上一轮 worker 写下的 `AUTO_RUNNING` 快照 +
+`runtime_thread_alive=True`"而**误报"轮次在飞"**（快照 90 s 内都不算 stale，所以窗口内恒为误报）；
+但 `cmd_stop` 的拒绝是用 `panel_workers()`（**进程**是否存在）判的，所以窗口内 `--stop` **能成功**。
+⇒ 用 `--status` 的 `workers` 字段当门是对的；用 `runtime` 状态字段当门会**永远等不到**。
+`--status` 每次约 3–4 s（要起 PowerShell），采样间隔 4 s 足够。
+
+
+---
+
+## §33 通则：一个"窗口结束不了"的故障报告，只是半个探针（2026-10-04，代价是 24 小时）
+
+**事实**：本机规划模型 `llama-server.exe`（UI-Venus-2-9B @ 18080）死了约 **24 小时**
+（`E:/winter_models/llama.cpp/server.log` 停在 2026-10-03 10:21，端口无监听，`http_code=000`）。
+这 24 小时里面板的 `_poll_local_model` 每 15 秒问一次 `/health`，**一次没漏**，把"连不上"
+诚实地写进 `self._local_model`，窗口上那一格判成 **等待** —— 而**没有任何一层被允许对它做任何事**。
+计划任务全机只有一个（`WinterAgentV2Panel`），**没有任何东西监督这个模型**。
+每轮 AUTO 都打印 `LOCAL_GUI_MODEL_UNAVAILABLE ... (TimeoutError)` 然后照常往下走。
+
+⇒ **通则**：探针正确 ≠ 故障可见。**报告一个窗口结束不了的故障，只是半个探针。**
+一个服务只要"必须常驻"，就必须**有拥有者**；判据是"谁能把它拉起来"，不是"谁在看着它"。
+
+**实现**（`winter_agent_v2/gui_model_service.py`，镜像 `GatewayService` 的形状：全副作用可注入、
+`measure→decide→act→record` 一趟做完）。四个决定，每个都有一个更便宜的错误答案：
+
+1. **认领，绝不重载**：`/health` 答话 ⇒ `ACT_REUSE`，永不重启。一块 8 GB 卡上两个 5.9 GB
+   服务端比故障更糟。`port_owner()` 报出 pid 写进记录，记录因此能说清"**这是谁的**模型"。
+2. **启动由阶梯节流，不由轮询决定**：`launch_gui_model_server` 阻塞最多 180 s 等 `/health`
+   （人手动跑要那个结论），**面板线程绝不能等** —— 网关/设备探针会排队三分半，窗口停止刷新。
+   ⇒ 生成 fire-and-forget + 持久化字段 `launch_in_flight_until` 让**下一次**轮询报 `STARTING`
+   而不是再起一个。`START_BACKOFF = 60/120/300/600` 只增不减，每档不短于 120 s 宽限期。
+3. **"没探到" ≠ "挂了"**：探针没答话时交给 `ensure()` 的是 `None`，不是捏造的故障。
+   网关自己的历史是这条区分的证据（把可达性从配置里推出来曾把健康网关**连重启 51 次**）。
+4. **这里没有任何东西会抛进探针线程**：探针炸了、生成炸了，都只是记录 —— 那个线程同时还在
+   驱动网关和设备探针。
+
+**踩到的坑（值得单独记）**：状态分类一开始写成
+`starting = bool(record["spawned"]) and waiting > 0 and failures == 0` ——
+**这是个永远不成立的条件**（刚生成完的那一次 `failures` 已经 +1 了），
+于是 `STARTING` 与 `BACKOFF` 分不开、宽限期形同虚设。
+**修法**：引入显式持久化字段 `launch_in_flight_until`，
+`state = STARTING if now < launch_in_flight_until else BACKOFF`。
+⇒ **通则：用一个读写双方都看得懂的字段表达状态，不要用两个字段的组合去暗示它。**
+
+**给新常驻服务上名单**：`winter_agent_v2/control_plane_reload.py::CONTROL_PLANE_PATHS`。
+判据是那个常量**自己写的**那条："一个模块属于这里，当**这个窗口**在它自己的进程里跑它"。
+`PanelProbes._ensure_gui_model` 跑在窗口自己的探针线程上 ⇒ 属于。
+它的过期会是**静默**的：窗口会继续认领一个它看不见的服务端，或在 8 GB 卡上起第二个 5.9 GB 的。
+
+**真机验收记录**：`state=HEALTHY / action=REUSE / port_pid=21252 / spawned=false`，
+`tasklist` 只有一个 `llama-server.exe`（5.7 GB），
+`latest.log`: `[planner] UI-Venus-2-9B at http://127.0.0.1:18080 -> reachable`。
+无 `gui_model_launcher.log`（正确：什么都没生成）。
+
+---
+
+## §34 判据：`LoopDetector` 的输入从来不是那个事实（2026-10-04，0 vs 191）
+
+**同一批真实数据**（`learning/episodes.jsonl` 尾部 60 MB / **3963 步**），
+**只换 `progress` 这一个字段**：
+
+| 规则 | 触发次数 |
+|---|---|
+| A 今天线上：`progress_from_outcome(result)`（SUCCESS ⇒ True） | **0** |
+| B 该行自己已经算好的测量值：`goal_progress`（来自 `goal_utility`/`goal_library.progress_moved`） | **191**（AAA 181 / SAME_ACTION_NO_PROGRESS 6 / ABAB 4）|
+
+A 抓到而 B 漏掉的：**无**（B 严格更全）。复现：`_panelperf_scratch/replay_loop_honest_progress.py`（只读）。
+
+**为什么是 0 —— 三道门每道都关着：**
+
+1. **检测器只在会话里跑。** 全仓 `SessionEngine()` 只有**一个**调用点（`runtime.py:8302`，
+   在 `_run_goal_session` 内）；`runtime.py` 对 `LoopDetector`/`LoopSignature` 的引用数 = **0**。
+   会话覆盖 8 个有 `GOAL_ROUTES` 路由的目标，实测只占 **30/2101 = 1.4%** 的行。
+   **循环发生在另外 98.6% 上（普通原子路径），那条路上没有检测器。**
+2. **会话里的 `progress` 是"结果"冒充"进度"。** `session_engine.py:1093/1102`：
+   `progress = declared if declared is not None else progress_from_outcome(outcome)`。
+   而全仓 **33 处 `StepVerdict(` 构造、0 处传 `progress=`** ⇒ `progress` 恒等于 `result`。
+   实测会话行 30 行：7×SUCCESS→True / 23×FAILURE→False，**没有一行 SUCCESS+False**。
+   而 `no_progress_block` 要求 `all(s.progress is False)`
+   ⇒ **"每一步都成功"的循环，在检测器眼里是诚实劳动。**
+   （同一个错误在落盘处也写了一遍：`session_host.py:380`
+   `goal_progress = (outcome in ("SUCCESS","PROGRESS"))`，注释原文还写着 "…is progress, honestly not"。）
+3. **主路径的事实已经算得很干净，只是没有载体。** `runtime.py:9920-9946` 已经在算
+   `goal_progress_by_id = {id: progress_moved(self._goal_meters, goals_after, id)}`（三态，
+   `None` = 这一轮没观测到，**不是**"没进步"）。主路径 2071 行里
+   **SUCCESS+False = 1216 行（58.7%）**。这就是循环的燃料，检测器一滴没喝到。
+
+**最干净的一个例子**：`HERO_RECRUIT_ADVANCED` —— **171 步连续 `goal_progress=False` 而
+`result` 全是 SUCCESS**。教科书 `SAME_ACTION_NO_PROGRESS`，输入完美对齐判据（每步 `progress is False`），
+检测器一次没看见（它不在那条路上）。回放判据 B：**171 步触发 127 次**。
+
+**第二个缺陷：streak 是"连续"量，循环是"周期"量。**
+`goal_utility.repeat_failure_penalty`（-60 封顶）确实在跑（日志里有
+`[utility] chose KEEP_BUILDING_PRODUCTIVE (480; repeat-failure -60.0, …)`），
+但**实时**账本 `learning/roles/1063040265/goal_fairness.json`（49 目标）：
+
+| 目标 | selected | no_progress_streak |
+|---|---|---|
+| CLEAR_INTEL | 1263 | **1142** |
+| DISCOVER_QUICK_PANEL_TASKS | 829 | **0** |
+| DISCOVER_EVENT_CALENDAR | 797 | **0** |
+| CLAIM_EXPLORATION_IDLE | 326 | **0** |
+| DAILY_ACTIVITY_TARGET | 130 | **0** |
+| KEEP_TRAINING_PRODUCTIVE | 564 | 329 |
+| KEEP_BUILDING_PRODUCTIVE | 261 | 174 |
+
+**streak 为 0 的四个恰好就是刷屏的那几个。** 原因：`DISCOVER_QUICK_PANEL_TASKS`
+534 行里 **325 True / 1 False / 208 None** —— 每轮真读到一个新行（一个 True），
+紧接着一堆 False，**一个 True 就把计数器清零**。一次相邻的进步抵消二十次空转。
+
+**顺带记一条路径陷阱**：**顶层 `learning/goal_fairness.json` 是过期的**
+（只有 3 个目标，`last_selected_at` 停在 2026-09-30）。**实时**账本在
+`learning/roles/<role_id>/goal_fairness.json`（`runtime.py:1644` 设的 `_fairness_store_path`）。
+按顶层文件下的任何结论都是错的 —— 这是"常量定义的路径 ≠ 实例实际使用的路径"的又一例。
+
+**修复**（判据已预登记，**未实施**）：见
+`.workbuddy-ai/handoff/LOOP_DETECTOR_INPUT_IS_NOT_THE_FACT_20261004.md`。
+两条互不替代：A 把检测器接到主路径（必须复用引擎的梯子编排，**不得**复制成第二套判据；
+`tests/test_loop_detector_boundary.py` 只钉住了"`session_engine` 里 `state.loop.observe(` 恰好 1 处"，
+没有禁止 `runtime.py` 用同一个 `LoopDetector`，但"第二个调用点就是第二个'什么叫循环'的定义"这条设计原话必须被尊重）；
+B 让 `no_progress_streak` 记"率"而不是"连续"（**必须保持 `None` 不动 streak 的既有语义**）。
+**下一步第一件事**：主路径上"只记录不执行"跑一轮 AUTO，先看它报什么、有没有假阳性 —— **先观测，再动作**。
+## §35 通则：两条线"只差历史、不差内容"时，唯一正确方向是让**活的那条**当主线、让另一条快进（2026-10-04）
+
+**症状**：主仓 `main`（`ff19040c`）与生产分支（`23360c0a`）不是同一个 commit，
+`main` 1 领先 / 41 落后，merge-base `05042268`。看起来像"41 个生产提交从未被主仓看过"。
+
+**判据一：`main` 那 1 个独有提交是不是新东西。**
+`git patch-id --stable` 对 `ff19040c` 与生产线的 `b314adb1` 给出**同一个 id**
+（`7a3fb91a2184ceb82e1974311cf9cf8e7718ad8d`）⇒ 同一个改动；再看它在不在生产里 ⇒ 在。
+**结论：`main` 相对生产没有任何独有内容。** 不要用提交标题判断重复，用 stable patch-id。
+
+**判据二：合并的实际代价。**
+在生产分支上 `git merge --no-commit --no-ff ff19040c` → 0 冲突，
+合并树 `6d922d19…` 与 `23360c0a` 的树**逐字节相同** ⇒ 代价是 **0 个文件变化**，
+不需要重切数据挂载，不会碰活数据。
+
+**方向选择（这一步最容易做错）**：
+两条线**内容相同、只差历史**时，把"活的那条"确立为唯一主线，让另一条**快进**上去。
+**不要**反过来让生产落后于主仓——
+(a) 生产是活的，回退生产等于停机事故；
+(b) 会在生产历史里插入一个 41 提交宽度的分叉，把"生产 pin 从哪条线拉"重新变成需要考古的问题。
+
+**做法**：在活的分支上做一次**空合并**（`--no-ff`，两父提交），得到一个同时是两边后代的合并提交，
+然后让镜像快进到它。**一边的提交都不能丢，这件事是可证的**：
+用调和前的 `git bundle create --all` 逐条比对 ref——只有预期的 ref 前移，且全部满足祖先关系，
+其余 ref 一字未动。
+
+**主仓工作区的第三个教训**：工作区内容**不等于任何提交**。
+判定"某个文件是不是本地独有工作"的唯一正确判据是
+**它的内容能不能在任何 ref 里找到**（`git rev-list --all --objects | grep <blob>`），
+不是它跟某个提交的 diff 有多大。实测 47 条差异路径分四类：
+19 条已等于主线（其中 17 条竟是"未跟踪"）、9 条等于旧 `main`、14 条磁盘上不存在、
+5 条两地皆无——而那 5 条里只有 2 条是真独有，另外 3 条的多出部分全是主线里**更新形式的同一件事**
+（老式 `_CLOSURE_CACHE` vs 新 `ClosureCardProbe`）。**升级它们不损失任何东西，但要先留档原文。**
+
+**硬规则（已写进 `.workbuddy-ai/handoff/00_MASTER_RULES.md` §27）**：
+唯一主线 = `codex/production-pin-recovery`；生产 pin 只从这条线拉且**永远用显式 SHA**
+（`PRODUCTION_PIN.json.production_branch` 只是描述字段，没有任何代码读它）；
+以后所有开发都落在这条线；`main` 是**只读镜像，只允许快进**；
+允许再分叉的条件只有"一次性实验、不在 pin worktree 里做、收尾二选一（在主线重做 / 明确放弃）"。
+
+**机器判据**：`python tools/check_mainline.py` —— 三条可失败的事实
+（pin HEAD == 清单 `expected_commit`；`expected_commit` 在主线上；镜像 `main` 在主线上），
+`RESULT: MAINLINE_OK` 且退出码 0。
+**故意不检查**"pin 是不是主线最新提交"：那是有意的动作（回滚、定位），不是缺陷；
+把正确的行为判成失败，会教会读者忽略这个工具。
+**也故意不接进启动路径**：`launch_pinned_production.verify_pin` 已经拦住了唯一必须拦住生产的那一条，
+往启动路径上再加断言，等于让一个诊断有权力停掉生产。
+
+**顺带修好的索引错误**（同一类，值得记住）：主仓索引里有 8 条"已删除"记录，
+而文件**在磁盘上、且在两边提交里都有** —— 索引失效不是删除。
+判据：`git status` 的 `D` 只说明"不在索引里"，要 `[ -e <path> ]` 才能断言文件没了。
