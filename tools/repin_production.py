@@ -19,8 +19,22 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-WORKTREE_HOME = Path(r"C:\Users\xhw\.codex\worktrees\winter-prod-pinned")
-WT = WORKTREE_HOME / "无尽冬日智能体"
+if str(ROOT) not in sys.path:  # run as a script, from either worktree
+    sys.path.insert(0, str(ROOT))
+
+from config import paths  # noqa: E402
+
+#: Where the pin lives, **derived, never a drive literal** (§26.3), by the same two lines
+#: ``tools/check_mainline.py`` uses -- so the tool that moves the pin and the check that
+#: audits it cannot disagree about where "the pin" is.  They were two definitions until
+#: 2026-10-04 and only agreed by accident: this file still named
+#: ``C:\Users\xhw\.codex\worktrees\...``, which resolves today solely because the 2026-10-03
+#: move to E: left a compatibility junction behind.  A literal that works by accident is a
+#: literal that stops working the day the junction goes -- and the failure would be this tool
+#: repinning one directory while production runs from another.
+WORKTREE_ROOT = paths.MAIN_REPO.parent / f"{paths.MAIN_REPO.name}_worktrees"
+WORKTREE_HOME = WORKTREE_ROOT / "winter-prod-pinned"
+WT = WORKTREE_HOME / paths.MAIN_REPO.name
 MANIFEST = WORKTREE_HOME / "PRODUCTION_PIN.json"
 DATA = ("config", "knowledge", "learning", "dataset")
 # Untracked evidence dirs are pre-existing and not part of the code sync.

@@ -109,6 +109,45 @@ def test_the_pin_home_is_derived_from_the_data_root_and_not_a_drive_literal():
     assert cm.PIN_WORKTREE.name == cm.MIRROR_WORKTREE.name
 
 
+# ------------------------------------------------- where "the pin" is, said once and not twice
+
+
+def test_the_repin_tool_and_the_mainline_check_agree_about_where_the_pin_lives():
+    """Two tools act on the pin; one declaration of where it is.
+
+    Measured 2026-10-04, while repinning by hand: ``tools/repin_production.py`` named the pin
+    with a drive literal (``C:\\Users\\xhw\\.codex\\worktrees\\...``) while
+    ``tools/check_mainline.py`` derived it from the data root.  They agreed **by accident** --
+    the 2026-10-03 move to E: left a compatibility junction at the old path, so the literal
+    still resolved to the right directory.  Had it not, the tool that moves the pin and the
+    check that audits it would have been looking at two different directories, and the check
+    would have reported the pin as correct while production ran something else.
+
+    Asserted by resolving both, not by comparing strings: the junction means the two spellings
+    may differ while the directories must not.
+    """
+    import tools.repin_production as rp
+
+    assert rp.WT.resolve() == cm.PIN_WORKTREE.resolve()
+    assert rp.MANIFEST.resolve() == (cm.PIN_HOME / cm.MANIFEST_NAME).resolve()
+
+
+def test_neither_tool_names_a_drive_literal():
+    """§26.3, machine-checked: a literal that works by accident is one junction away from
+    failing.  Read from the AST rather than the text, so a drive letter inside a comment or a
+    docstring -- which is how the old path is *explained* above -- is not a defect."""
+    import ast
+
+    for name in ("repin_production.py", "check_mainline.py"):
+        source = (ROOT / "tools" / name).read_text(encoding="utf-8")
+        literals = [
+            node.value for node in ast.walk(ast.parse(source))
+            if isinstance(node, ast.Constant) and isinstance(node.value, str)
+            and len(node.value) > 2 and node.value[1] == ":" and node.value[2] in "\\/"
+        ]
+        assert not literals, f"{name} hardcodes a drive path: {literals}"
+
+
 @pytest.mark.parametrize("branch", [cm.MAINLINE_BRANCH, cm.MIRROR_BRANCH])
 def test_the_two_checked_branches_are_named_exactly(branch: str):
     assert branch in ("codex/production-pin-recovery", "main")
