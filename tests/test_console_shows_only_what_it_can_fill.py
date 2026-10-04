@@ -852,8 +852,12 @@ class AFoldedBlockCannotHideAnAbnormalityTests:
     SIX_TABLE_OPENERS = frozenset({
         "watchdog",          # unexpected_worker_exits > 0 · watchdog_restart_count 增长
         "runtime_watchdog",  # the same rule, on the 系统 page's own block
+        "cap_runtime",       # the same field again, on the 能力 page -- one source, one standard
         "workbuddy",         # 网关非正常，或队列有活跃 Job
-        "queues",            # 队列积压 —— 尚未实现（报告 §十）
+        "dev_wb",            # the same source again, on the 自动开发 page
+        "dev_loop",          # 自主开发闭环「L1 当有断点」
+        "dev_failures",      # 最近失败分类「次数超阈值」-- 用项目自己的 P0 分桶
+        "queues",            # 队列积压 —— 故意不实现：面板没有声明过的积压阈值（见 INERT_FOLDS）
         "boot",              # 预载非正常 —— 尚未实现（报告 §十）
     })
 
@@ -1010,6 +1014,66 @@ class AFoldedBlockCannotHideAnAbnormalityTests:
             f"found {staying}"
         )
 
+    def test_a_breakpoint_opens_the_development_loop_and_a_clean_pass_does_not(self):
+        """§六: 「自主开发闭环 **L1 当有断点**，否则 L3」.  The "when" has three exclusions and each
+        one is a way this could become a permanently open block -- the failure mode MEMORY §57 is
+        about -- so all four states are pinned rather than just the happy one.
+        """
+        import types
+
+        panel = self._panel()
+        stub = types.SimpleNamespace()
+        rule = types.MethodType(panel.ControlPanel._escalate_dev_loop, stub)
+
+        stub._closure_card = None
+        assert rule() == "", "no card at all is a fresh install, not a breakpoint"
+        stub._closure_card = {"ok": False, "reason": "台账里还没有一轮"}
+        assert rule() == "", "a loop that never ran has no breakpoint to be stuck at"
+        stub._closure_card = {"ok": True, "breakpoint": ""}
+        assert rule() == "", "a card with no breakpoint is a PASS -- the one state that must fold"
+        stub._closure_card = {"ok": True, "breakpoint": "VERSION_ACTIVE：等待真机校准"}
+        said = rule()
+        assert "VERSION_ACTIVE" in said, f"a real breakpoint must name itself: {said!r}"
+
+    def test_the_failure_rule_opens_only_on_a_p0_and_uses_the_projects_own_threshold(self):
+        """§六's 「失败次数 ≥ 阈值」 is implementable *without inventing a number* only because the
+        project already buckets failures P0/P1/P2.  This pins both halves: the rule reads that
+        bucketing rather than a constant of its own, and a P1 does not open the block.
+        """
+        import types
+        from collections import Counter
+
+        panel = self._panel()
+        stub = types.SimpleNamespace()
+        rule = types.MethodType(panel.ControlPanel._escalate_dev_failures, stub)
+
+        # ``_module_panel()`` re-executes the script, so patching this module attribute is local to
+        # this test rather than leaking into the others.
+        assert panel.failure_priority(10) == "P0" and panel.failure_priority(9) == "P1"
+        assert _panel_source().count("count >= 10") == 1, (
+            "the P0 cut-off may appear exactly once -- inside failure_priority -- or the 优先级 "
+            "column and the rule that opens this block can disagree about what P0 means"
+        )
+
+        panel.live_failure_counts = lambda: Counter({"技能未绑定": 3})
+        assert rule() == "", "3 occurrences is a P1; §六 says the threshold, and P1 is not it"
+        panel.live_failure_counts = lambda: Counter({"技能未绑定": 3, "模板缺失": 11})
+        said = rule()
+        assert "模板缺失" in said and "11" in said, f"the worst P0 must be named: {said!r}"
+
+    def test_the_two_blocks_that_show_worker_exits_share_one_reading(self):
+        """A block on the 系统 page and a block on the 能力 page watch the same field.  §57 was the
+        lesson that reading it literally goes wrong; this is the guard that the *correction* is
+        shared too, so the next page that shows it cannot quietly get the old behaviour back."""
+        source = _panel_source()
+        for name in ("_escalate_watchdog", "_escalate_capability_runtime"):
+            start = source.index(f"    def {name}")
+            end = source.find("\n    def ", start + 1)
+            body = source[start:end if end != -1 else len(source)]
+            assert "_worker_exits_since_window()" in body, (
+                f"{name} must read the shared helper, not the raw cumulative counters"
+            )
+
     def test_the_tier_of_a_block_is_keyed_by_tier_not_by_block(self):
         """A block must not be able to privately choose a different default from its tier."""
         panel = self._panel()
@@ -1036,6 +1100,11 @@ class AFoldedBlockCannotHideAnAbnormalityTests:
             _unexpected_exits=22, _exits_baseline=22,
             _restart_count=28, _restart_baseline=28,
         )
+        # The baseline arithmetic now lives in the shared helper the 能力 page's rule also calls,
+        # so the stub needs both halves -- which is itself the point of extracting it: one
+        # implementation of "growth since this window opened" instead of two.
+        stub._worker_exits_since_window = types.MethodType(
+            panel.ControlPanel._worker_exits_since_window, stub)
         rule = types.MethodType(panel.ControlPanel._escalate_watchdog, stub)
 
         assert rule() == "", (
@@ -1057,19 +1126,29 @@ class AFoldedBlockCannotHideAnAbnormalityTests:
         without breaking the behaviour test, by writing ``if exits:`` -- which is the same defect
         in a different spelling.
 
-        Scoped to the method body rather than the whole module, so an unrelated comment that
+        Scoped to the method bodies rather than the whole module, so an unrelated comment that
         happens to contain the phrase cannot fail this, and a *real* re-introduction inside the
-        rule cannot hide behind one.
+        rule cannot hide behind one.  Both the rule and the shared helper are checked, because
+        moving the arithmetic into a helper is exactly how such a pin can be quietly defeated.
         """
         source = _panel_source()
-        start = source.index("    def _escalate_watchdog")
-        end = source.find("\n    def ", start + 1)
-        body = source[start:end if end != -1 else len(source)]
-        assert "_exits_baseline" in body and "exits > exits_base" in body, (
+
+        def body_of(name: str) -> str:
+            start = source.index(f"    def {name}")
+            end = source.find("\n    def ", start + 1)
+            return source[start:end if end != -1 else len(source)]
+
+        helper = body_of("_worker_exits_since_window")
+        assert "_exits_baseline" in helper and "now - base" in helper, (
             "the unexpected-exit half must be read against the window's own baseline; §六's "
             "literal '> 0' measures the machine's history, not the present"
         )
-        assert "if unexpected:" not in body, (
+        rule = body_of("_escalate_watchdog")
+        assert "_worker_exits_since_window()" in rule, (
+            "the watchdog rule must read that helper rather than the raw counters, or the 能力 "
+            "page's rule could drift to a different standard for the same field"
+        )
+        assert "if unexpected:" not in rule and "if exits:" not in rule, (
             "that spelling is the literal again: it fires on any non-zero total"
         )
 

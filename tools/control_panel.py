@@ -1618,7 +1618,34 @@ INERT_FOLDS: dict[str, str] = {
                        "展开一层——它永远不会比顶栏先出问题。",
     "sys_logs": "日志文本框与四个「打开目录」按钮：要看的时候才看，按定义不会自己变成"
                 "一条告警。",
+    # The five added with the 能力 and 自动开发 pages.  Same rule: a block with no rule of its own
+    # says here why it has none.
+    "cap_catalog": "覆盖表是「游戏里有什么、验证到哪一步」的清单。它的异常形态是**单行**"
+                   "（某个能力被阻塞），而那一行就在这张表里、行内的 Blocked 列自己写着原因；"
+                   "为「有几行是 Blocked」编一个阈值，就把「哪一行」这件唯一有用的事换成了计数。",
+    "cap_registry": "Skill 执行注册表回答「谁能把动作做出来」——实现层的问题。操作者要问的"
+                    "「这事到底做没做」由上面那张覆盖表和四张卡回答，这一块永远不该抢先。",
+    "dev_queue": "队列状态条与条件分桶回答同一个问题（「排了什么、为什么」），而 §六 里"
+                 "「积压超阈值浮 L1」的那半**故意没实现**：面板里没有声明过的积压阈值，"
+                 "编一个就是第二个意见（同 ``queues`` 的理由）。真正有判据的「卡住」是"
+                 "``WORKBUDDY_QUEUE_STUCK``，由 WorkBuddy 块承担。",
+    "dev_pump": "消费泵与设备所有权只用来解释「为什么不动」，而它们只在已经卡住的时候有用 ——"
+                "真卡住时 ``WORKBUDDY_QUEUE_STUCK`` 与闭环断点已经先浮上来了。",
+    "dev_jobs": "Job 历史与模型战绩是两本账：审计**过去**某一轮怎么跑的时候才看，"
+                "不决定下一步做什么。",
 }
+
+
+def failure_priority(count: int) -> str:
+    """The severity bucket for a failure seen ``count`` times.
+
+    A named function rather than the literal, because two places now need the same judgement:
+    the 自动开发 page prints it as a column, and the fold rule opens the block on it.  A second
+    copy of ``10`` would be a second opinion about what P0 means -- and the reason §六's
+    「失败次数 ≥ 阈值」 row could be implemented *at all* without inventing a number is that this
+    bucketing already existed; the threshold is the project's, not the fold's.
+    """
+    return "P0" if count >= 10 else ("P1" if count >= 3 else "P2")
 
 
 def run_fold_rule(rule: Callable[[], str] | None) -> str:
@@ -5099,6 +5126,70 @@ class ControlPanel:
             return f"{stuck[0]}：队列里有东西一直没被消费"
         return ""
 
+    def _worker_exits_since_window(self) -> int:
+        """How many workers died *while this window was open* -- the only reading the counters
+        support, since both are cumulative for the machine.
+
+        Extracted so the watchdog block and the 能力 page's runtime-quality block cannot end up
+        grading the same field by two different standards; §57 is the record of what the literal
+        ``> 0`` did here.
+        """
+        base = getattr(self, "_exits_baseline", None)
+        now = getattr(self, "_unexpected_exits", None)
+        if base is None or now is None:
+            return 0
+        return max(0, now - base)
+
+    def _escalate_capability_runtime(self) -> str:
+        """§六's row for the 能力 page: ``runtime_quality`` 四格 is L3, "``unexpected_worker_exits``
+        非 0 必须浮上来".
+
+        Same correction as the watchdog block's (MEMORY §57): the field is cumulative, so
+        「非 0」 was implemented as *growth since the window opened*.  The two rules share
+        ``_worker_exits_since_window`` rather than each reading the baselines.
+        """
+        grew = self._worker_exits_since_window()
+        if grew:
+            return f"窗口打开以来有 {grew} 次意外的 Worker 退出"
+        return ""
+
+    def _escalate_dev_loop(self) -> str:
+        """§六: 「自主开发闭环 **L1 当有断点**，否则 L3」.
+
+        Graded from ``closure_card``'s own ``ok`` / ``breakpoint`` fields rather than from the
+        sentence the block prints.  That distinction is not fussiness: a rule that parses a
+        *display* string breaks the moment the wording improves, and this project already has a
+        written rule about display strings not being parseable input.
+
+        Two states deliberately do **not** open the block.  ``ok`` false means the loop has not
+        produced a card at all -- on a fresh install that is the normal state, and opening it
+        would be the wolf-cry this whole mechanism exists to avoid.  A card with no ``breakpoint``
+        is a PASS, which is the one case that must stay folded.
+        """
+        card = getattr(self, "_closure_card", None)
+        if not card or not card.get("ok"):
+            return ""
+        breakpoint = str(card.get("breakpoint") or "").strip()
+        return f"闭环卡在：{breakpoint}" if breakpoint else ""
+
+    def _escalate_dev_failures(self) -> str:
+        """§六: 「最近失败分类 **L2**（次数超阈值浮 L1）」, with the threshold taken from
+        ``failure_priority`` -- the project's own P0/P1/P2 bucketing -- rather than invented.
+
+        ``live_failure_counts`` is the cached scan the page already uses, so asking here costs
+        nothing per tick (it re-parses the episode log only when the log changes).
+        """
+        try:
+            counts = live_failure_counts()
+        except Exception:  # noqa: BLE001 - a missing ledger is not an alarm
+            return ""
+        worst = [(count, failure) for failure, count in counts.items()
+                 if failure_priority(count) == "P0"]
+        if not worst:
+            return ""
+        count, failure = max(worst)
+        return f"{human_reason(failure)} 已出现 {count} 次（P0）"
+
     def _escalate_watchdog(self) -> str:
         """The one watchdog rule, used by **both** blocks that show the watchdog.
 
@@ -5136,11 +5227,10 @@ class ControlPanel:
             word, colour = health_of(value)
             if colour in ("bad", "warn"):
                 return f"看门狗{word}"
-        exits_base = getattr(self, "_exits_baseline", None)
-        exits = getattr(self, "_unexpected_exits", None)
-        if exits_base is not None and exits is not None and exits > exits_base:
-            return (f"窗口打开以来有 {exits - exits_base} 次意外的 Worker 退出"
-                    f"（累计 {exits}）")
+        exits_grew = self._worker_exits_since_window()
+        if exits_grew:
+            return (f"窗口打开以来有 {exits_grew} 次意外的 Worker 退出"
+                    f"（累计 {getattr(self, '_unexpected_exits', 0)}）")
         restarts_base = getattr(self, "_restart_baseline", None)
         restarts = getattr(self, "_restart_count", None)
         if restarts_base is not None and restarts is not None and restarts > restarts_base:
@@ -5972,32 +6062,49 @@ class ControlPanel:
             card = ttk.Frame(summary, style="Card2.TFrame", padding=12); card.grid(row=0, column=index, sticky="ew", padx=4); summary.columnconfigure(index, weight=1)
             ttk.Label(card, text=label, style="Muted.TLabel", background=PANEL2).pack(anchor="w")
             ttk.Label(card, textvariable=self.capability_summary[key], style="Value.TLabel", background=PANEL2).pack(anchor="w")
+        # **The four cards stay open, which is a deliberate change from §六.**  §六 assigns 覆盖度
+        # L2 on the grounds that it is 「要不要开发的依据」 --也就是一个 L1 式的理由 —— and this page has
+        # no other L1 candidate: folding everything §六 lists would make the page open as four shut
+        # bars, which is the failure mode ``test_no_page_opens_as_a_stack_of_shut_headers`` exists to
+        # catch.  The cards are four numbers, so leaving them open costs height rather than attention.
         # The vocabulary is printed, not implied: the whole point of section 5 is that
         # a reader can tell 未读取 from 未知 from Blocked without guessing.
         ttk.Label(tab, text="状态词义：未读取＝没人读过它（不是未知）· 待刷新＝只有未带 recorded_at 的导入记录，不能作为证据 · "
                             "可执行＝已实现且可派发 · 执行中＝正在跑 · Blocked＝有具名阻塞原因 · Live Tried / Live Verified＝真机证据。",
                   style="Muted.TLabel", wraplength=1250, justify="left").pack(anchor="w", pady=(6, 0))
-        head = ttk.Frame(tab); head.pack(fill="x", pady=(10, 4))
-        ttk.Label(head, text="Capability 覆盖表", style="Section.TLabel").pack(side="left")
+        catalog_body = self._fold(tab, key="cap_catalog", title="Capability 覆盖表", level=L2,
+                                  pack={"fill": "both", "expand": True, "pady": (10, 0)})
+        head = ttk.Frame(catalog_body); head.pack(fill="x", pady=(0, 4))
+        ttk.Label(head, text="游戏里有什么、验证到哪一步（capability_catalog.json）", style="Muted.TLabel",
+                  background=PANEL).pack(side="left")
         self.show_all_capabilities = tk.BooleanVar(value=False)
         ttk.Checkbutton(head, text="显示全部（默认只看已实现 / 已尝试 / 被阻塞）", variable=self.show_all_capabilities,
                         command=self._refresh_capabilities).pack(side="right")
-        self.capability_tree = ttk.Treeview(tab, columns=("id", "code", "category", "lifecycle", "state", "backend", "live", "rate", "blocked"),
+        self.capability_tree = ttk.Treeview(catalog_body, columns=("id", "code", "category", "lifecycle", "state", "backend", "live", "rate", "blocked"),
                                             show="headings", height=10)
         for key, title, width in (("id", "Capability ID", 105), ("code", "能力", 235), ("category", "分类", 165),
                                   ("lifecycle", "生命周期", 95), ("state", "可用性", 90), ("backend", "首选后端", 70),
                                   ("live", "真机成功/尝试", 95), ("rate", "成功率", 70), ("blocked", "阻塞原因", 260)):
             self.capability_tree.heading(key, text=title); self.capability_tree.column(key, width=width, anchor="w")
-        self.capability_tree.pack(fill="both", expand=True, pady=(0, 10))
-        ttk.Label(tab, text="Skill 执行注册表", style="Section.TLabel").pack(anchor="w", pady=(0, 4))
-        self.skill_tree = ttk.Treeview(tab, columns=("layer", "skill", "verifier", "risk", "state", "live", "claims", "meaning"),
+        self.capability_tree.pack(fill="both", expand=True)
+        # L3: the executor registry.  It answers "谁能把动作做出来", which is an implementation
+        # question -- the covering table above already answers the operator's one ("这事到底做没做").
+        registry_body = self._fold(tab, key="cap_registry", title="Skill 执行注册表", level=L3,
+                                   pack={"fill": "both", "expand": True, "pady": (10, 0)})
+        ttk.Label(registry_body, text="谁能把动作做出来（v2_registry）", style="Muted.TLabel",
+                  background=PANEL).pack(anchor="w", pady=(0, 4))
+        self.skill_tree = ttk.Treeview(registry_body, columns=("layer", "skill", "verifier", "risk", "state", "live", "claims", "meaning"),
                                        show="headings", height=8)
         for key, title, width in (("layer", "层级", 90), ("skill", "Skill", 200), ("verifier", "Verifier", 130),
                                   ("risk", "风险", 55), ("state", "阶段", 90), ("live", "真机验证/尝试", 95),
                                   ("claims", "无时间戳声明", 100), ("meaning", "说明", 330)):
             self.skill_tree.heading(key, text=title); self.skill_tree.column(key, width=width, anchor="w")
-        self.skill_tree.pack(fill="both", expand=True, pady=(0, 8))
-        runtime_quality = ttk.Frame(tab, style="Card.TFrame", padding=8); runtime_quality.pack(fill="x", pady=(8, 0))
+        self.skill_tree.pack(fill="both", expand=True)
+        # L3, and it opens itself: §六 asks for 「unexpected_worker_exits 非 0 必须浮上来」, implemented
+        # as growth since the window opened (MEMORY §57 -- the field is cumulative).
+        runtime_quality = self._fold(tab, key="cap_runtime", title="运行时质量（4 格）", level=L3,
+                                     escalate=self._escalate_capability_runtime,
+                                     pack={"fill": "x", "pady": (10, 0)})
         self.runtime_quality_vars = {key: tk.StringVar(value=NO_DATA) for key in ("success24", "recovery", "exit", "latency")}
         for index, (key, label) in enumerate((("success24", "24h Skill Success"), ("recovery", "Recovery Success"), ("exit", "Unexpected Worker Exit"), ("latency", "Average Realtime Latency"))):
             ttk.Label(runtime_quality, text=label, style="Muted.TLabel", background=PANEL).grid(row=0, column=index, sticky="w", padx=8)
@@ -6116,24 +6223,31 @@ class ControlPanel:
         # which is the question the operator had to read logs to answer.  The eight cells are
         # the eight things the operator listed, and each is graded from its *own* chain steps
         # by ``unattended_closure`` rather than from a single green tick for the pipeline.
-        loop = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10)); loop.pack(fill="x", pady=(0, 10))
-        loop_head = ttk.Frame(loop, style="Card.TFrame"); loop_head.pack(fill="x")
-        ttk.Label(loop_head, text="自主开发闭环", style="Section.TLabel", background=PANEL).pack(side="left")
-        ttk.Label(loop_head, text="由 unattended_closure 按 trace_id 联结台账/Episode/提交 得出",
-                  style="Muted.TLabel", background=PANEL).pack(side="right")
+        # L3 + it opens itself: §六 puts 自主开发闭环 at 「L1 当有断点，否则 L3」, and the fold
+        # mechanism's opening rule *is* that "when".  The page title and the block header stay on
+        # screen either way, so a folded loop is still named rather than hidden.
+        loop = self._fold(tab, key="dev_loop", title="自主开发闭环", level=L3,
+                          escalate=self._escalate_dev_loop,
+                          pack={"fill": "x", "pady": (0, 10)})
+        ttk.Label(loop, text="由 unattended_closure 按 trace_id 联结台账/Episode/提交 得出",
+                  style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(0, 4))
         ttk.Label(loop, textvariable=self.values["loop_card"], background=PANEL,
-                  wraplength=1150, justify="left").pack(anchor="w", pady=(6, 0))
+                  wraplength=1150, justify="left").pack(anchor="w")
         for label, key in (("当前 trace", "loop_trace"), ("当前断点", "loop_break"),
                            ("网关验收 Soak", "soak"), ("一致性", "consistency")):
             row = ttk.Frame(loop, style="Card.TFrame"); row.pack(fill="x", pady=(4, 0))
             ttk.Label(row, text=label, style="Muted.TLabel", background=PANEL, width=14).pack(side="left")
             ttk.Label(row, textvariable=self.values[key], background=PANEL,
                       wraplength=1000, justify="left").pack(side="left")
-        status = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10)); status.pack(fill="x")
-        head = ttk.Frame(status, style="Card.TFrame"); head.pack(fill="x")
-        ttk.Label(head, text="WorkBuddy 状态", style="Section.TLabel", background=PANEL).pack(side="left")
-        ttk.Label(head, textvariable=self.values["wb_gateway"], style="Muted.TLabel", background=PANEL).pack(side="right")
-        grid = ttk.Frame(status, style="Card.TFrame"); grid.pack(fill="x", pady=(6, 0))
+        # L3: the development platform's own eight cells.  §六 calls these 内部平台细节 -- and it
+        # gives the block an opening rule, which this one takes from the *same* method the 总览
+        # block uses, because §六's exception belongs to the gateway rather than to a page: an
+        # unreachable gateway must not be folded away on one surface and open on another.
+        status = self._fold(tab, key="dev_wb", title="WorkBuddy 状态（内部平台）", level=L3,
+                            escalate=self._escalate_workbuddy, pack={"fill": "x"})
+        ttk.Label(status, textvariable=self.values["wb_gateway"], style="Muted.TLabel",
+                  background=PANEL).pack(anchor="w", pady=(0, 4))
+        grid = ttk.Frame(status, style="Card.TFrame"); grid.pack(fill="x")
         for index, (label, key) in enumerate((("状态", "wb_state"), ("当前 Capability", "wb_capability"),
                                               ("Escalation Reason", "wb_reason"), ("Job ID", "wb_job"),
                                               ("当前模型", "wb_model"), ("运行时间", "wb_duration"),
@@ -6145,28 +6259,34 @@ class ControlPanel:
         result = ttk.Frame(grid, style="Card.TFrame"); result.grid(row=2, column=0, columnspan=4, sticky="ew", pady=(6, 0))
         ttk.Label(result, text="最近结果", style="Muted.TLabel", background=PANEL).pack(anchor="w")
         ttk.Label(result, textvariable=self.values["wb_result"], background=PANEL, wraplength=1150, justify="left").pack(anchor="w")
-        # The queue's clock, shown because "the consumer is running" is a fact the
-        # operator asked to be able to check rather than assume: a pending row here
-        # means either the window runs no pump or the pump is not reaching the queue.
-        pump_row = ttk.Frame(grid, style="Card.TFrame"); pump_row.grid(row=3, column=0, columnspan=4, sticky="ew", pady=(6, 0))
-        ttk.Label(pump_row, text="队列消费泵（面板常驻）", style="Muted.TLabel", background=PANEL).pack(anchor="w")
-        ttk.Label(pump_row, textvariable=self.values["wb_pump"], background=PANEL, wraplength=1150, justify="left").pack(anchor="w")
-        # §21's device row: who owns MuMu at this moment.  Read from the lease file, never
-        # hardcoded, and 恢复AUTO is a real answer -- an expired lease means gameplay is
-        # about to take the device back, which is not the same as a broken AUTO.
-        lease_row = ttk.Frame(grid, style="Card.TFrame"); lease_row.grid(row=4, column=0, columnspan=4, sticky="ew", pady=(6, 0))
-        ttk.Label(lease_row, text="设备所有权（Single UI Owner）", style="Muted.TLabel", background=PANEL).pack(anchor="w")
-        ttk.Label(lease_row, textvariable=self.values["lease"], background=PANEL, wraplength=1150, justify="left").pack(anchor="w")
         # The operator's §十四 row: knowledge preload, as a state rather than a promise.
         # Every value comes from real artifacts (the controller's STATE.json, the
         # catalog, the knowledge files, the ledger), so this row cannot say "learning"
         # while nothing is learning -- which is the failure mode the operator named.
-        learn_row = ttk.Frame(grid, style="Card.TFrame"); learn_row.grid(row=5, column=0, columnspan=4, sticky="ew", pady=(6, 0))
+        learn_row = ttk.Frame(grid, style="Card.TFrame"); learn_row.grid(row=3, column=0, columnspan=4, sticky="ew", pady=(6, 0))
         ttk.Label(learn_row, text="能力学习 / 预装（Knowledge → Capability Preload）", style="Muted.TLabel", background=PANEL).pack(anchor="w")
         ttk.Label(learn_row, textvariable=self.values["learn"], background=PANEL, wraplength=1150, justify="left").pack(anchor="w")
-        queue = ttk.Frame(tab, style="Card.TFrame", padding=(12, 8)); queue.pack(fill="x", pady=(10, 0))
+        # L2: "why is nothing moving" -- the pump's clock and who owns the device.  These used to be
+        # two more rows inside the WorkBuddy grid; §六 puts them at L2 while the eight cells are L3,
+        # so they are a separate block rather than rows of one.  §21's device row is read from the
+        # lease file and 恢复AUTO is a real answer, never hardcoded.
+        pump = self._fold(tab, key="dev_pump", title="队列消费泵 / 设备所有权", level=L2,
+                          pack={"fill": "x", "pady": (10, 0)})
+        for label, key in (("队列消费泵（面板常驻）", "wb_pump"),
+                           ("设备所有权（Single UI Owner）", "lease")):
+            ttk.Label(pump, text=label, style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(4, 0))
+            ttk.Label(pump, textvariable=self.values[key], background=PANEL,
+                      wraplength=1150, justify="left").pack(anchor="w")
+        # L2, and one block rather than two: §六's row is 「队列状态条 + 升级条件分桶 **L2**（积压超阈值浮 L1）」
+        # -- the two strips answer one question ("what is queued and why"), which is why they were
+        # adjacent when both were open.  **The 积压 half is deliberately not implemented**: the panel
+        # has no declared backlog threshold, and ``INERT_FOLDS`` already records that inventing one
+        # would be a second opinion -- the real "stuck" judgement belongs to ``WORKBUDDY_QUEUE_STUCK``
+        # on the WorkBuddy block above.  So this block has no rule of its own, on purpose.
+        queue = self._fold(tab, key="dev_queue", title="Development Escalation Queue · 升级条件分桶",
+                           level=L2, pack={"fill": "x", "pady": (10, 0)})
         qhead = ttk.Frame(queue, style="Card.TFrame"); qhead.pack(fill="x")
-        ttk.Label(qhead, text="Development Escalation Queue", style="Section.TLabel", background=PANEL).pack(side="left")
+        ttk.Label(qhead, text="队列状态", style="Muted.TLabel", background=PANEL).pack(side="left")
         ttk.Label(qhead, textvariable=self.values["wb_queue_line"], style="Muted.TLabel", background=PANEL).pack(side="right")
         strip = ttk.Frame(queue, style="Card.TFrame"); strip.pack(fill="x", pady=(6, 0))
         self.escalation_state_vars: dict[str, tk.StringVar] = {}
@@ -6175,40 +6295,46 @@ class ControlPanel:
             ttk.Label(card, text=STATE_ZH.get(state, state), style="Muted.TLabel", background=PANEL2).pack(anchor="w")
             self.escalation_state_vars[state] = tk.StringVar(value="0")
             ttk.Label(card, textvariable=self.escalation_state_vars[state], style="Value.TLabel", background=PANEL2).pack(anchor="w")
-        cond = ttk.Frame(tab, style="Card.TFrame", padding=(12, 8)); cond.pack(fill="x", pady=(10, 0))
-        chead = ttk.Frame(cond, style="Card.TFrame"); chead.pack(fill="x")
-        ttk.Label(chead, text="Capability Gap · 升级条件分桶", style="Section.TLabel", background=PANEL).pack(side="left")
+        chead = ttk.Frame(queue, style="Card.TFrame"); chead.pack(fill="x", pady=(10, 0))
+        ttk.Label(chead, text="Capability Gap · 升级条件分桶", style="Muted.TLabel", background=PANEL).pack(side="left")
         ttk.Label(chead, text="按 escalation_queue.classify_condition 分类当前真机失败", style="Muted.TLabel", background=PANEL).pack(side="right")
-        cstrip = ttk.Frame(cond, style="Card.TFrame"); cstrip.pack(fill="x", pady=(6, 0))
+        cstrip = ttk.Frame(queue, style="Card.TFrame"); cstrip.pack(fill="x", pady=(6, 0))
         self.bucket_vars: dict[str, tk.StringVar] = {}
         for index, condition in enumerate((*AUTO_ESCALATION_CONDITIONS, "（不升级）")):
             card = ttk.Frame(cstrip, style="Card2.TFrame", padding=(10, 5)); card.grid(row=0, column=index, sticky="ew", padx=3); cstrip.columnconfigure(index, weight=1)
             ttk.Label(card, text=CONDITION_ZH.get(condition, condition), style="Muted.TLabel", background=PANEL2).pack(anchor="w")
             self.bucket_vars[condition] = tk.StringVar(value=NO_DATA)
             ttk.Label(card, textvariable=self.bucket_vars[condition], style="Value.TLabel", background=PANEL2).pack(anchor="w")
-        ttk.Label(tab, text="Job 历史", style="Section.TLabel").pack(anchor="w", pady=(12, 4))
-        self.job_tree = ttk.Treeview(tab, columns=("time", "capability", "reason", "state", "model", "outcome", "changed", "duration"),
+        # L2 + it opens itself.  §六: 「最近失败分类 **L2**（次数超阈值浮 L1）」, and the threshold is
+        # the project's own P0 bucket via ``failure_priority`` rather than a number invented here --
+        # so the 优先级 column below and the rule that opens this block cannot disagree about what
+        # P0 means, and this rule needed no new constant to be implementable.
+        failures = self._fold(tab, key="dev_failures", title="最近失败分类（真机 episode）", level=L2,
+                              escalate=self._escalate_dev_failures,
+                              pack={"fill": "both", "expand": True, "pady": (12, 0)})
+        self.failure_tree = ttk.Treeview(failures, columns=("type", "count", "priority", "last"), show="headings", height=6)
+        for key, title, width in (("type", "问题", 260), ("count", "次数", 60), ("priority", "优先级", 70), ("last", "最近出现", 160)):
+            self.failure_tree.heading(key, text=title); self.failure_tree.column(key, width=width, anchor="w")
+        self.failure_tree.pack(fill="both", expand=True)
+        # L3: two ledgers, read when auditing a past decision rather than to decide the next one.
+        # They share a block because they answer the same follow-up -- "那一轮用谁跑的、结果如何" --
+        # which is also why they used to sit side by side.
+        jobs = self._fold(tab, key="dev_jobs", title="Job 历史 / 模型战绩", level=L3,
+                          pack={"fill": "both", "expand": True, "pady": (12, 0)})
+        self.job_tree = ttk.Treeview(jobs, columns=("time", "capability", "reason", "state", "model", "outcome", "changed", "duration"),
                                      show="headings", height=6)
         for key, title, width in (("time", "时间", 150), ("capability", "Capability", 210), ("reason", "Escalation Reason", 150),
                                   ("state", "状态", 80), ("model", "模型", 130), ("outcome", "结果", 110),
                                   ("changed", "代码", 70), ("duration", "耗时", 80)):
             self.job_tree.heading(key, text=title); self.job_tree.column(key, width=width, anchor="w")
-        self.job_tree.pack(fill="x", pady=(0, 10))
-        pair = ttk.Frame(tab); pair.pack(fill="both", expand=True)
-        left = ttk.Frame(pair, style="Card.TFrame", padding=8); left.pack(side="left", fill="both", expand=True, padx=(0, 5))
-        ttk.Label(left, text="模型战绩（WorkBuddy 内部算力，只读）", style="Muted.TLabel", background=PANEL).pack(anchor="w")
-        self.model_tree = ttk.Treeview(left, columns=("model", "task", "jobs", "success", "live", "duration", "cost"),
+        self.job_tree.pack(fill="x")
+        ttk.Label(jobs, text="模型战绩（WorkBuddy 内部算力，只读）", style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(8, 0))
+        self.model_tree = ttk.Treeview(jobs, columns=("model", "task", "jobs", "success", "live", "duration", "cost"),
                                        show="headings", height=6)
         for key, title, width in (("model", "模型", 130), ("task", "任务类型", 130), ("jobs", "样本", 55),
                                   ("success", "成功率", 70), ("live", "Live 改进", 80), ("duration", "平均耗时", 90), ("cost", "成本", 110)):
             self.model_tree.heading(key, text=title); self.model_tree.column(key, width=width, anchor="w")
         self.model_tree.pack(fill="both", expand=True, pady=(4, 0))
-        right = ttk.Frame(pair, style="Card.TFrame", padding=8); right.pack(side="left", fill="both", expand=True, padx=(5, 0))
-        ttk.Label(right, text="最近失败分类（真机 episode）", style="Muted.TLabel", background=PANEL).pack(anchor="w")
-        self.failure_tree = ttk.Treeview(right, columns=("type", "count", "priority", "last"), show="headings", height=6)
-        for key, title, width in (("type", "问题", 260), ("count", "次数", 60), ("priority", "优先级", 70), ("last", "最近出现", 160)):
-            self.failure_tree.heading(key, text=title); self.failure_tree.column(key, width=width, anchor="w")
-        self.failure_tree.pack(fill="both", expand=True, pady=(4, 0))
         self.dev_note = tk.StringVar(value=PENDING)
         ttk.Label(tab, textvariable=self.dev_note, style="Muted.TLabel", wraplength=1250, justify="left").pack(anchor="w", pady=(8, 0))
         ttk.Button(tab, text="打开升级台账", command=lambda: self._open(ROOT / "learning/workbuddy_escalations.jsonl")).pack(anchor="w", pady=(6, 0))
@@ -6245,7 +6371,7 @@ class ControlPanel:
                                                       row["live"], row["duration"], row["cost"]))
         for row in self.failure_tree.get_children(): self.failure_tree.delete(row)
         for failure, count in live_failure_counts().most_common(12):
-            priority = "P0" if count >= 10 else ("P1" if count >= 3 else "P2")
+            priority = failure_priority(count)
             self.failure_tree.insert("", "end", values=(human_reason(failure), count, priority, ""))
         gap = capability_gap_view()
         summary = gap.get("summary") or {}
@@ -6923,6 +7049,10 @@ class ControlPanel:
         # ``unattended_closure`` so the window cannot disagree with the tool an operator
         # would otherwise have to run by hand.
         card = closure_card(ROOT)
+        # Kept as data, not only as the sentence below: ``_escalate_dev_loop`` grades ``ok`` and
+        # ``breakpoint`` from here, because a rule that parses the rendered line breaks the moment
+        # the wording improves.
+        self._closure_card = card
         self.values["loop_card"].set(render_loop_card(card))
         if card.get("ok"):
             self.values["loop_trace"].set(

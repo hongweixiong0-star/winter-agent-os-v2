@@ -6322,3 +6322,41 @@ unexpected_worker_exits = 22
 ① 它会归零吗？归零点是什么？ ② 不归零的话，读数就是"历史"，任何"大于零"的阈值都等于"永远为真"。
 **并且：用真实的那两个数写测试**（这里是 22 / 28），不要用 0 / 1 / 2 —— 整齐的假数
 恰好绕过了这个 bug。
+
+## §58 测量脚本调真实方法前，先清点路径上有哪些方法会"写"（2026-10-04）
+
+给 `_measure_console_tiers.py` 加了"用真实数据根评估新规则"那一节，脚本当场崩在
+`AttributeError: pump`。原因是 harness 的 `__getattr__` 会**从类上重建缺失的名字**，
+而 `pump` / `_pump_prev` / `probes` / `control_plane_probe` 都是 `__init__` 里的
+**实例**属性，`inspect.getattr_static(ControlPanel, …)` 找不到。
+
+按"缺什么补什么"往下修，会连补四个 —— 而**第四个是致命的**：
+
+1. `pump` → 补真的 `QueuePump()`。它没 `start()`，`alive()` 返回 `False`，
+   而 `_narrate_pump` 见到死时钟的下一句就是 `self.pump.revive()` ——
+   `start()` 起守护线程，**去消费真实生产队列、写 `pump.json`**。
+2. `control_plane_probe` → 补真的 probe。脏树（测量时必然是脏树，它量的就是还没提交的改动）
+   会走 `stale` 分支：`control_plane_signal().request(...)`，
+   `MARKER_ROOT = Path(control_plane_reload.__file__).resolve().parents[1]` **就是真实仓库**，
+   于是**一个测量脚本会写下一张"请正在运行的面板重启自己"的实时标记**，
+   还会调 `_start_control_plane_reload`。`control_plane_reload` 自己的注释里早就记着这个坑：
+   "Measured 2026-09-30 by the P0 write guard: three `write_text(...)` issued by the pytest process,
+   into the shared data root, whenever the working tree was dirty."
+
+**规则**：harness 调真实构建者之前，先**把这条调用路径上会写的方法逐个点出来，显式覆盖掉**。
+只把协作者（probe / pump 对象）换成安全的**不够** —— 写操作在 harness 调的那个**方法**里，不在协作者里。
+本次的落法：`_IdlePump`（`alive()` 恒 `True`，`revive()` 直接 `AssertionError`）+
+`_check_control_plane_reload` 覆盖成 no-op 并写明理由。
+
+**附带一条**：`_IdlePump.alive()` 返回 `True` 是**假设**，不是读数 —— 假设要写在读者看得见的地方
+（类 docstring 里写清"这里报 True 是为了让叙述不产生写操作"），别让它看起来像一条测量结果。
+
+**验证方式**：跑完测量后查那张标记文件不存在（`ls learning/CONTROL_PLANE_RELOAD_REQUIRED.json` → No such file），
+而不是相信"我覆盖过了"。
+
+**为什么 pytest 里没炸，测量里就炸**：那张"把写操作改道"的表在 `tests/conftest.py` 里
+（`("winter_agent_v2.control_plane_reload", "MARKER_ROOT", ".", False)`，
+连同 `POLICY_STATE_PATH` / `_ESCALATION_LEDGER_PATH` / `device_lease.DEFAULT_ROOT`），
+**只在 pytest 会话里生效**。任何**脱离 pytest 的独立驱动脚本**（本仓库根目录那一堆 `_xxx.py`）
+拿到的是**真实根**，于是它同时绕过了这四条重定向 —— 面板、策略状态、升级台账、设备锁，各自的写操作都会落到生产上。
+**写独立测量脚本时，这四条要自己重定向，或者显式覆盖调用它们的那些方法。**

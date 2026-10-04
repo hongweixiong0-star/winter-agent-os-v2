@@ -732,3 +732,127 @@ learning/runtime_snapshot.json:
 **教训（写入 MEMORY §57）**：指令里点名了一个字段，就先去查**这个字段实际装的是什么**，
 再决定阈值怎么写。"字段名读起来像现在"和"字段里装的是历史"是两件事，
 而后者只有在**真实数据**上跑一次才会露出来。
+
+## 十二、第三批：能力页 / 自动开发页归层，以及 §六 里两条"写了但从没实现"的阈值（2026-10-04 续）
+
+### 1. 本批做了什么
+
+按操作者的顺序（先归类 → 报告 → 不等确认 → 改 UI），继续逐页落地 §六。
+本批两页 + 两条阈值 + 三个守卫。
+
+| 页面 | 折叠键 | 层级 | 规则 |
+|---|---|---|---|
+| 能力 | `cap_catalog` | L2 | 无（`INERT_FOLDS` 记录理由：覆盖表是参考表，不是"现在出事了"） |
+| 能力 | `cap_registry` | L3 | 无（同上，Skill 执行注册表同理） |
+| 能力 | `cap_runtime` | L3 | **有** — §六「`unexpected_worker_exits` 非 0 必须浮上来」 |
+| 自动开发 | `dev_loop` | L3 | **有** — §六「闭环断点必须浮上来」 |
+| 自动开发 | `dev_wb` | L3 | **有** — 复用总览那条 `_escalate_workbuddy`（同一个方法，不是第二份判断） |
+| 自动开发 | `dev_pump` | L2 | 无（泵 + 设备所有权两行，从 WB 网格里按 §六 拆出来） |
+| 自动开发 | `dev_queue` | L2 | 无（状态条 + 条件条合并） |
+| 自动开发 | `dev_failures` | L2 | **有** — §六「失败次数 ≥ 阈值」 |
+| 自动开发 | `dev_jobs` | L3 | 无（Job 历史 + 模型战绩合并成一块） |
+
+**§六 里两条一直只写在纸上、从没实现的阈值，本批实现了，而且都没有编数字**：
+失败阈值复用项目自己那个 P0 分桶（`failure_priority`：`>=10` → `P0`，`>=3` → `P1`，否则 `P2`），
+断点判据复用 `closure_card` 自己已有的字段（`ok` / `breakpoint`）。
+**"不编第二个意见"和"把 §六 落地"不是矛盾的 —— 前提是先去仓库里找那个已经存在的判断标准。**
+
+### 2. 一处**故意偏离 §六**的地方（有守卫撑腰）
+
+§六 把"覆盖度"归 L2。机械照做的话，能力页**打开时会是三根关着的横条**（+ 一张参考表），
+也就是说读者第一屏什么都看不到。所以那**四张摘要卡保持常开**。
+
+这不是偷懒，是那条新守卫要求的：`test_no_page_opens_as_a_stack_of_shut_headers`
+（一页不能以"一排关着的标题"开场）。**当 §六 的机械读法和结构守卫冲突时，
+守卫赢 —— 而且这次是守卫先存在，才让我看见照抄会出事。**
+
+### 3. 实测：一页少占多少屏
+
+（真实 Tk root，用的是窗口自己的构建函数，不是另画一版）
+
+| 页面 | 按分层打开 | 全部展开 | 分层省下 | 占比 |
+|---|---|---|---|---|
+| 总览 | 1065 px | 1996 px | 931 px | 47% |
+| 系统 | 341 px | 1193 px | 852 px | 71% |
+| **能力** | **345 px** | **875 px** | **530 px** | **61%** |
+| **自动开发** | **477 px** | **1619 px** | **1142 px** | **71%** |
+
+### 4. 实测：新规则在真实数据上会不会"狼来了"
+
+这是折叠机制存在的全部意义所在 —— **一条在稳态数据上也会打开的规则，比没有规则更坏**。
+所以用**真实数据根**跑了一遍：
+
+```
+[6] 真实数据根，AUTO 视为运行中
+    L3  workbuddy  open=True   ⚠ WorkBuddy 网关异常
+    -> 1 of 9 blocks open unasked; 8 folded
+    -- 本批三条新规则，同样真实数据 --
+    L3  cap_runtime    open=False
+    L3  dev_loop       open=False
+    L3  dev_wb         open=True   ⚠ WorkBuddy 网关异常
+    L2  dev_failures   open=False
+```
+
+**四条里只有一条开着，而它开得对**（网关此刻确实异常）。
+`cap_runtime` / `dev_loop` / `dev_failures` 在真实数据上全部保持关闭。
+
+`dev_loop` 的四种排除态单独验过：
+
+```
+无闭环卡                 -> open=False  badge=''
+闭环从没跑过             -> open=False  badge=''
+闭环干净 PASS            -> open=False  badge=''
+真断点（VERSION_ACTIVE）  -> open=True   badge='⚠ 闭环卡在：VERSION_ACTIVE：等待真机校准'
+```
+
+**注意"闭环从没跑过"与"无闭环卡"都**不**打开**：读不到证据 ≠ 有证据证明卡住了。
+把这两件事混起来，就是让每个新建的窗口开局先喊一次警。
+
+### 5. `> 0` 那个修正，现在有两处共用一套读数
+
+`_worker_exits_since_window()` 是被抽出来的**唯一**读数（`max(0, now - base)`），
+`_escalate_watchdog` 与 `_escalate_capability_runtime` 都调它。
+**理由是这一页和那一页显示同一个字段** —— 两份算术就是两个标准，迟早会漂开。
+守卫 `test_the_two_blocks_that_show_worker_exits_share_one_reading` 盯住这一点，
+`tools/check_wiring.py` 也盯住另一条同形的：`_panel_source.count("escalate=self._escalate_watchdog") == 2`
+（看门狗两处共用一个判断）。
+
+### 6. 一处**差点由测量脚本引发的生产事故**（已记 MEMORY §58）
+
+给测量脚本加"用真实数据根评估新规则"那一节时，脚本崩在 `AttributeError: pump`。
+harness 的 `__getattr__` 会**从类上重建缺失的名字**，而 `pump` / `_pump_prev` / `probes` /
+`control_plane_probe` 全是 `__init__` 里的**实例**属性，`getattr_static` 找不到。
+
+按"缺什么补什么"往下修会连补四个，而**第四个是致命的**：
+
+- 补真 `QueuePump()` → 它没 `start()`、`alive()` 为 `False` →
+  `_narrate_pump` 见死时钟就 `revive()` → **起守护线程去消费真实生产队列**。
+- 补真 `control_plane_probe` → 脏树（测量时必然是脏树）走 `stale` 分支 →
+  `control_plane_signal().request(...)`，而 `MARKER_ROOT = Path(control_plane_reload.__file__).resolve().parents[1]`
+  **就是真实仓库** → **一个测量脚本会写下"请正在运行的面板重启自己"的实时标记**，还会调 `_start_control_plane_reload`。
+
+**为什么 pytest 里从没炸过**：把写操作改道的那张表在 `tests/conftest.py` 里
+（`MARKER_ROOT` / `POLICY_STATE_PATH` / `_ESCALATION_LEDGER_PATH` / `device_lease.DEFAULT_ROOT`），
+**只在 pytest 会话里生效**。根目录那一堆独立 `_xxx.py` 驱动脚本拿到的是**真实根**，四条重定向全部绕过。
+
+**落法**：`_IdlePump`（`alive()` 恒 `True`，`revive()` 直接 `AssertionError`）
++ `_check_control_plane_reload` 覆盖成 no-op 并写明理由。
+**验证方式是查那张标记文件确实不存在**（`ls learning/CONTROL_PLANE_RELOAD_REQUIRED.json` → No such file），
+不是相信"我覆盖过了"。
+
+### 7. 守卫与检查
+
+- `tests/test_console_shows_only_what_it_can_fill.py` → **53 passed**（50 → 53：新增 3，改 2）
+  - 新增 `test_a_breakpoint_opens_the_development_loop_and_a_clean_pass_does_not`（四种态）
+  - 新增 `test_the_failure_rule_opens_only_on_a_p0_and_uses_the_projects_own_threshold`
+    （`failure_priority(10)=="P0"`、`(9)=="P1"`、`_panel_source().count("count >= 10") == 1` ——
+    那个字面量全仓库只能出现一次）
+  - 新增 `test_the_two_blocks_that_show_worker_exits_share_one_reading`
+  - 改 `test_a_cumulative_counter_is_read_as_growth_not_as_a_total`（算术搬进 helper，桩要绑 helper）
+  - 改 `test_the_watchdog_rule_does_not_compare_a_cumulative_counter_to_zero`（helper 钉算术、规则钉调用）
+  - `SIX_TABLE_OPENERS` 扩到声明的全套开启者：`{watchdog, runtime_watchdog, cap_runtime,
+    workbuddy, dev_wb, dev_loop, dev_failures}`，`queues` / `boot` 标注为"故意不实现"
+- `tools/check_wiring.py`：两条与控制台相关的检查通过
+  - `gui: watchdog separates current health from a lifetime counter`
+  - `gui: both watchdog blocks grade the watchdog with one rule`
+  - 余下 2 个 problem（`training` / `proof`）与本批无关，是既有项

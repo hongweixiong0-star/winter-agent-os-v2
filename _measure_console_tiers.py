@@ -29,6 +29,30 @@ def load_panel():
     return module
 
 
+class _IdlePump:
+    """A pump stand-in that cannot consume anything -- the point of the class is a *non*-action.
+
+    ``_narrate_pump`` asks the pump two questions: what it has consumed (``state``) and whether its
+    clock is alive (``alive``).  A real ``QueuePump()`` answers the first correctly and the second
+    with ``False``, and the narration's very next move on a dead clock is ``self.pump.revive()`` --
+    which calls ``start()`` and spawns a daemon thread that would consume the **real** production
+    queue and write ``pump.json``, from inside a measurement.  So the harness may not use a real pump
+    here, however convenient: measuring the fold rules must not become a second consumer.
+
+    ``alive()`` therefore reports ``True``.  That is an assumption this harness makes and states,
+    not a reading -- and it is the assumption under which the narration does nothing but read.
+    """
+
+    def state(self) -> dict:
+        return {}
+
+    def alive(self) -> bool:
+        return True
+
+    def revive(self) -> bool:  # pragma: no cover - unreachable while ``alive`` is True
+        raise AssertionError("measuring must never revive a real pump")
+
+
 def harness(panel, tk_root, tmp: Path):
     class _Harness:
         def __init__(self):
@@ -56,6 +80,17 @@ def harness(panel, tk_root, tmp: Path):
             self._other_instance = 0
             self.process = None
             self.runtime_store = panel.RuntimeSnapshotStore(tmp / "learning/runtime_snapshot.json")
+            # Both are *instance* attributes: ``__getattr__`` below rebuilds missing names from the
+            # class, and neither ``pump`` nor ``_pump_prev`` exists on ``ControlPanel``, so the
+            # narration died on ``AttributeError: pump`` and took the whole measurement with it.
+            # ``_IdlePump`` rather than the real ``QueuePump`` -- see its docstring; a real one would
+            # have been revived into consuming the production queue.
+            self.pump = _IdlePump()
+            self._pump_prev: dict = {}
+            # Read-only soak artifacts, built the way the real panel builds them.  No device: the
+            # harness owns no ADB connection, and ``PanelProbes`` starts no thread until ``start()``
+            # is called, so this reads and nothing else.
+            self.probes = panel.PanelProbes(ROOT, device=None)
 
         def _save_panel_state(self, *a, **k):
             raise AssertionError("measuring must not persist anything")
@@ -65,6 +100,18 @@ def harness(panel, tk_root, tmp: Path):
 
         def _render_preview(self, *a, **k):
             pass
+
+        def _check_control_plane_reload(self, *a, **k):
+            # A no-op, and this is the sharpest of the three suppressions here, because the real
+            # method does not merely read -- it *writes shared, cross-process state*.  On a clean
+            # tree it clears the live reload marker; on a dirty tree it writes one asking the
+            # running window to restart itself, then may call ``_start_control_plane_reload``.
+            # This measurement runs on a dirty tree *by definition* -- it is measuring edits that
+            # are not committed yet -- so building a real ``control_plane_probe`` here would have
+            # had a measuring script ask the production panel to restart.  Nothing about measuring
+            # a fold rule needs that marker touched, so the harness answers "nothing to say" and
+            # leaves the cell as declared.
+            return
 
         def _schedule_preview_render(self, *a, **k):
             pass
@@ -190,6 +237,19 @@ def main() -> int:
     print(f"    -> {opened} of {len(real._folds)} blocks open unasked; "
           f"{len(real._folds) - opened} folded")
 
+    # The same question for the three rules added with the 能力 / 自动开发 pages, because a rule that
+    # fires on steady-state data is the wolf-cry this whole mechanism exists to avoid.  The pages are
+    # built and ``_narrate_pump`` is run, so ``_closure_card`` is the real one the window would have
+    # -- a reading taken with an empty card would prove nothing about the breakpoint rule.
+    real._capabilities()
+    real._auto_development()
+    real._narrate_pump()
+    real._sync_folds()
+    print(f"    -- and the three new opening rules, on real data --")
+    for key in ("cap_runtime", "dev_loop", "dev_wb", "dev_failures"):
+        fold = real._folds[key]
+        print(f"    {fold.level}  {key:<14} open={str(fold.expanded):<5} {fold.badge.get()}")
+
     # The 系统 page, measured the same way.  It is the page §六 leaves with a single L1 *row* and
     # no L1 fold at all, which is the shape most likely to open as a column of shut bars -- so the
     # number that matters here is how much of the page is still readable before any click.
@@ -249,6 +309,64 @@ def main() -> int:
     healed = (h._folds["runtime_watchdog"].expanded, h._folds["runtime_watchdog"].badge.get())
     print(f"    back to 22 exits / 28 restarts       -> expanded={healed[0]}  badge={healed[1]!r}"
           f"   (the alarm closed itself)")
+
+    # The two remaining block-structured pages, measured the same way and with the same caveat as
+    # 总览: ``_tab(..., scroll=True)`` hands back the scroll area's inner frame, so the page height
+    # has to be read off the canvas's child rather than off the notebook tab.
+    print(f"\n[9] 能力 / 自动开发, folded with the same primitive")
+    for page_name, builder, keys in (
+        ("能力", "_capabilities", ("cap_catalog", "cap_registry", "cap_runtime")),
+        ("自动开发", "_auto_development",
+         ("dev_loop", "dev_wb", "dev_pump", "dev_queue", "dev_failures", "dev_jobs")),
+    ):
+        getattr(h, builder)()
+        tk_root.update_idletasks()
+        tab_frame = h.tabs.winfo_children()[-1]
+        canvas = next(child for child in tab_frame.winfo_children()
+                      if child.winfo_class() == "Canvas")
+        body = canvas.winfo_children()[0]
+
+        def height() -> int:
+            tk_root.update_idletasks()
+            return int(body.winfo_reqheight())
+
+        print(f"    -- {page_name} --")
+        for key in keys:
+            fold = h._folds[key]
+            rule = "has a rule" if fold.escalate is not None else "INERT (declared, see the reason)"
+            print(f"       {fold.level}  {key:<14} {fold.title:<28} open={str(fold.expanded):<5} {rule}")
+        as_declared = height()
+        state = {key: h._folds[key].expanded for key in keys}
+        for key in keys:
+            h._folds[key].expanded = True
+            h._folds[key].paint()
+        all_open = height()
+        for key in keys:
+            h._folds[key].expanded = state[key]
+            h._folds[key].paint()
+        assert height() == as_declared, f"{page_name}: state was not restored"
+        print(f"       folds as declared : {as_declared:>5} px")
+        print(f"       every fold open   : {all_open:>5} px")
+        print(f"       the tiers hide    : {all_open - as_declared:>5} px"
+              f"  ({100 * (all_open - as_declared) / max(all_open, 1):.0f}% of the all-open page)")
+
+    print(f"\n[10] the two new opening rules, on their own exclusions")
+    h._closure_card = None
+    h._sync_folds()
+    print(f"    no closure card at all            -> dev_loop open={h._folds['dev_loop'].expanded}"
+          f"  badge={h._folds['dev_loop'].badge.get()!r}")
+    h._closure_card = {"ok": False, "reason": "台账里还没有一轮"}
+    h._sync_folds()
+    print(f"    a loop that never ran             -> dev_loop open={h._folds['dev_loop'].expanded}"
+          f"  badge={h._folds['dev_loop'].badge.get()!r}")
+    h._closure_card = {"ok": True, "breakpoint": ""}
+    h._sync_folds()
+    print(f"    a clean PASS                      -> dev_loop open={h._folds['dev_loop'].expanded}"
+          f"  badge={h._folds['dev_loop'].badge.get()!r}")
+    h._closure_card = {"ok": True, "breakpoint": "VERSION_ACTIVE：等待真机校准"}
+    h._sync_folds()
+    print(f"    a real breakpoint                 -> dev_loop open={h._folds['dev_loop'].expanded}"
+          f"  badge={h._folds['dev_loop'].badge.get()!r}")
 
     tk_root.destroy()
     return 0
