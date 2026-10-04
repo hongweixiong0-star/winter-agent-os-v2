@@ -103,6 +103,68 @@ def test_run_products_do_not_drift_the_version(repo: Path):
     assert canonical_revision(repo).dirty == 0
 
 
+def test_the_products_the_loop_writes_do_not_drift_the_version(repo: Path):
+    """The 2026-10-04 measurement, as a fixture: 716 of 783 dirty paths were these stores.
+
+    Each is written by the runtime itself while AUTO runs -- ``ui_collection`` learns element
+    candidates and harvests templates, ``page_knowledge`` learns pages, ``pipeline_autogen``
+    generates and repairs nodes.  Before this list was extended they made the version change
+    20-60 times a day with nobody editing anything, which is precisely what this module's
+    docstring forbids: an identity that moves when the loop writes a file is not an identity.
+
+    ``test_run_products_do_not_drift_the_version`` above covers ``learning/`` and
+    ``dataset/raw/``; it passed the whole time these four stores drifted, because it only ever
+    exercised the two examples that were already excluded.
+    """
+    baseline = canonical_revision(repo).token
+
+    for relative in (
+        "knowledge/perception/pages/unknown__abc123/page.png",
+        "knowledge/perception/pages/INDEX.json",
+        "knowledge/perception/candidates/alliance__abc123/element.png",
+        "dataset/candidate/autogen/btn_open_home__autogen_1a2b3c4d.png",
+        "dataset/candidate/auto_collected/auto__home_btn__5d380ee2a4.png",
+        "dataset/candidate/auto_collected/experience_crops/bc537a5925de201f.png",
+    ):
+        target = repo / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(b"\x89PNG fake")
+
+    assert canonical_revision(repo).token == baseline
+    assert canonical_revision(repo).dirty == 0
+
+
+def test_the_developer_written_neighbours_still_move_the_version(repo: Path):
+    """The exclusion must stay a decision about *who writes it*, not a directory convenience.
+
+    The three stores above sit inside ``dataset/candidate/`` and ``knowledge/`` next to files a
+    developer really does edit.  Excluding a parent instead of the store would silence a real
+    content change, so the boundary is pinned here: each of these still moves the token, and
+    this test is what fails loudly if someone later excludes ``dataset/candidate/`` or
+    ``knowledge/`` wholesale.
+    """
+    for relative in (
+        "dataset/candidate/template_manifest.json",   # the registration tool's index
+        "dataset/candidate/bear_rally/bear_join.png",  # written by tools/register_* templates
+        "knowledge/ui/page_transitions.json",          # a tracked table the loop extends
+    ):
+        baseline = canonical_revision(repo).token
+
+        target = repo / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(b"first")
+        first = canonical_revision(repo).token
+
+        target.write_bytes(b"second")
+        second = canonical_revision(repo).token
+
+        assert first != baseline, f"creating {relative} must move the version"
+        assert second != first, f"editing {relative} must move the version"
+
+        target.unlink()
+        assert canonical_revision(repo).token == baseline, relative
+
+
 def test_the_policy_names_what_the_runtime_loads_and_not_the_gui(repo: Path):
     """Whitelist by meaning, not by directory convenience."""
     for path in ("winter_agent_v2/runtime.py", "tools/run_live.py", "config/v2.json",

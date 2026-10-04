@@ -119,8 +119,40 @@ EXCLUDED_FILES: tuple[str, ...] = (
 #: created when a capability is first examined and rewritten every time an answer comes back.
 #: A record that did not exist when the job started is not a change to the code under test.
 #: Kept as a directory rather than a file list because the set of capabilities is 194 and open.
+#:
+#: Extended 2026-10-04 with the three stores the *live loop* learns into.  Each had been missed
+#: for the same reason ``knowledge/preload/`` once was -- it sits beside a tracked corpus under an
+#: included prefix, so the subtree looked like knowledge rather than like output.  The cost was
+#: measured *before* this list was touched, because the last time this list changed it took 6.5
+#: hours of device time with it.
+#:
+#: Measured on the production tree that day: ``canonical_revision`` read **dirty=783**, and 716 of
+#: those paths were these stores -- ``knowledge/perception/candidates`` (420),
+#: ``knowledge/perception/pages`` (121), ``dataset/candidate/autogen`` (110),
+#: ``dataset/candidate/auto_collected`` (65) -- growing at 20-60 files a day while AUTO ran.  Their
+#: writers are the runtime itself: ``ui_collection.CANDIDATE_ROOT`` / ``TEMPLATE_DIR``,
+#: ``page_knowledge.PAGE_ROOT``, ``pipeline_autogen.DEFAULT_TEMPLATE_DIR``.  That is the same test
+#: ``tests/conftest.py`` already applies when it decides which paths a test may learn into.
+#:
+#: What the drift cost, on the record: ``tools/run_live.py`` refused four cycles on 2026-10-03
+#: (``child_exit_code: 3``, each recorded as a WORKER_CRASH) because a learning pass wrote one of
+#: these files inside the fence's startup window.  The fence's contract is that it fires on *code*
+#: and not on the runtime's own output -- ``test_a_run_product_written_during_startup_does_not_fail
+#: _the_fence`` states exactly that, and it passed only because ``learning/`` and ``dataset/raw/``
+#: were already excluded.  These stores were not on the list, so the rule held for the two
+#: examples the test uses and for nothing else.
+#:
+#: Deliberately *not* extended to their neighbours, so the boundary stays falsifiable rather than
+#: convenient: ``dataset/candidate/template_manifest.json`` and ``dataset/candidate/bear_rally/``
+#: are written by a developer's registration tool instead of by the loop, and
+#: ``knowledge/ui/page_transitions.json`` is a tracked table the loop merely extends.  All three
+#: still move the version, and two tests pin that they must.
 EXCLUDED_DIRECTORIES: tuple[str, ...] = (
     "knowledge/preload/",     # per-capability research records, written by capability_bootstrap
+    "knowledge/perception/",  # page/element candidates the live loop learns (ui_collection writes
+                              # candidates, page_knowledge writes pages); a product of the loop
+    "dataset/candidate/autogen/",         # templates pipeline_autogen generates and repairs
+    "dataset/candidate/auto_collected/",  # templates ui_collection harvests off the client
 )
 
 

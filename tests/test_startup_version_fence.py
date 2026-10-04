@@ -72,6 +72,35 @@ def test_a_run_product_written_during_startup_does_not_fail_the_fence(repo: Path
     assert ok is True, "an episode or a screenshot appearing must not abort a live cycle"
 
 
+def test_the_loops_own_learning_stores_do_not_fail_the_fence(repo: Path):
+    """The rule above, applied to the stores the live loop actually learns into.
+
+    ``test_a_run_product_written_during_startup_does_not_fail_the_fence`` states the rule -- the
+    fence fires on *code*, not on the runtime's own output -- but it only ever exercised
+    ``learning/`` and ``dataset/raw/``.  So the rule held for those two examples and for nothing
+    else: the stores below were not excluded, and ``tools/run_live.py`` refused four cycles on
+    2026-10-03 (``child_exit_code: 3``, each one recorded as a WORKER_CRASH) because a learning
+    pass wrote one of them inside this window.
+
+    A page learned mid-startup cannot change what this process imported, so it must not refuse.
+    """
+    vi.freeze_process_revision(repo)
+
+    for relative in (
+        "knowledge/perception/pages/unknown__abc123/page.png",
+        "knowledge/perception/candidates/alliance__abc123/element.png",
+        "dataset/candidate/autogen/btn_open_home__autogen_1a2b3c4d.png",
+        "dataset/candidate/auto_collected/auto__home_btn__5d380ee2a4.png",
+    ):
+        target = repo / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(b"\x89PNG fake")
+
+    ok, frozen, current = vi.startup_fence(repo)
+    assert ok is True, "a learning pass must not abort a live cycle"
+    assert frozen.token == current.token
+
+
 def test_the_entry_point_refuses_before_it_reaches_the_runtime(repo: Path):
     """Structural, because the ordering is the guarantee.
 
