@@ -1898,13 +1898,24 @@ def main() -> int:
           "GATEWAY_BACKOFF" in _panel_source
           and "self._gateway_next_at" in _panel_source
           and "30.0, 60.0, 120.0, 300.0" in _panel_source)
-    check("truth: an activity record is graded by its own window, and history is not current",
+    check("truth: an activity record is graded by its own window, and an expired one is not "
+          "rendered as today's numbers",
           "def events(" in _truth_source
           and "def legacy_event_row(" in _truth_source
           and "planner_usable" in _truth_source
+          # The row must carry its own expiry verdict, so no reader re-derives the rule.
+          and '"expired":' in _truth_source
           and "当前活动尚未实时确认" in _truth_source
           and "legacy_event_row_for(" in _panel_source
-          and "历史参考（不参与当前 Planner）" in _panel_source)
+          # 2026-10-04: this check used to require the literal prefix
+          # "历史参考（不参与当前 Planner）".  The operator retired that on their own
+          # instruction -- "界面上如果数据已过期，应该显示待重新观测或隐藏，而不是继续展示 25
+          # 天前的模板" -- because a prefix left the 595 h old figures on screen as the only
+          # figures the page had.  The assertion follows the requirement, and it is
+          # *stronger* than the one it replaces: the panel must now read the row's own
+          # verdict and must not render an expired record's values at all.
+          and 'row.get("expired")' in _panel_source
+          and "待重新观测" in _panel_source)
     check("truth: the role headline refuses a value that is not current",
           "def headline(" in _truth_source
           and "def last_known(" in _truth_source

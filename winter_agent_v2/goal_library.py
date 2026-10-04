@@ -2797,7 +2797,8 @@ class GoalStateStore:
     def __init__(self, path: Path) -> None:
         self.path = path
 
-    def write(self, world: WorldState, goals: Iterable[GoalState], *, role_id: str = "") -> None:
+    def write(self, world: WorldState, goals: Iterable[GoalState], *, role_id: str = "",
+              blockers: Mapping[str, Any] | None = None) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         current = {
             "observed_at": world.timestamp,
@@ -2805,6 +2806,19 @@ class GoalStateStore:
             "page": world.page.value,
             "confidence": world.confidence,
             "goals": [self._serialize(goal) for goal in goals],
+            # Why each Goal may not be selected, keyed by Goal id, in
+            # ``CapabilityGate.Deferral.as_row()``'s own shape.
+            #
+            # Measured 2026-10-04: the desktop Goal board's 阻塞原因 column read
+            # ``goal["blocked_reason"]``, and that key is not among ``GoalState``'s 15
+            # fields nor anywhere in ``_serialize`` -- so all 33 rows displayed "—" while
+            # the gate was holding specific reasons for three of them
+            # (``DAILY_ACTIVITY_TARGET`` -> ``READ_DAILY_PROGRESS: repair budget exhausted
+            # (2/2) ...``).  The reason existed; the link did not.  It is recorded *here*,
+            # next to the Goals it explains, because the runtime already has the gate built
+            # for this cycle -- whereas re-deriving it in the window would parse the episode
+            # tail on every refresh and give the window a second opinion to disagree with.
+            "blockers": dict(blockers or {}),
         }
         try:
             existing = json.loads(self.path.read_text(encoding="utf-8"))

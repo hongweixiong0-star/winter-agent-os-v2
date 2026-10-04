@@ -1009,6 +1009,40 @@ class LiveRuntime:
                 self.capability_gate = CapabilityGate.load(Path(self.episode_store.path).resolve().parents[1])
         return self.capability_gate
 
+    def _goal_blockers(self, goals: Iterable[Any]) -> dict[str, dict[str, Any]]:
+        """Why each Goal may not be selected, in the gate's own words, or ``{}``.
+
+        Measured 2026-10-04: the desktop Goal board's 阻塞原因 column read
+        ``goal["blocked_reason"]`` -- a key that is not among ``GoalState``'s 15 fields and
+        that ``GoalStateStore._serialize`` never writes -- so every one of the 33 rows showed
+        "—".  At that same moment ``CapabilityGate`` held specific reasons for three of them,
+        including ``DAILY_ACTIVITY_TARGET -> READ_DAILY_PROGRESS: repair budget exhausted
+        (2/2)``.  **The reason existed; only the link was missing**, which is why this is a
+        data-link repair and not a new mechanism: nothing here decides anything, it copies
+        the gate's own ``as_row()`` into the board the operator reads.
+
+        Called at the one moment the gate is already built for this cycle (``_gate()`` is
+        cached per run and built by ranking regardless), so this adds no parse.  Guarded
+        like its caller: a diagnostics map must never be what fails a board write.
+        """
+        try:
+            gate = self._gate()
+        except Exception:  # noqa: BLE001 - see the docstring
+            return {}
+        out: dict[str, dict[str, Any]] = {}
+        for goal in goals:
+            try:
+                found = gate.blocks(goal)
+            except Exception:  # noqa: BLE001
+                continue
+            if found is None:
+                continue
+            try:
+                out[goal.goal_id] = dict(found.as_row())
+            except Exception:  # noqa: BLE001
+                continue
+        return out
+
     def _validation_route_scope_active(self) -> bool:
         return self.execution_mode == 'DEVELOPMENT_VALIDATION' and bool(
             self.validation_focus_route or getattr(self, 'validation_scope', {}))
@@ -2419,7 +2453,8 @@ class LiveRuntime:
                 self._stamina_route(goal, self._gate())
         if self.goal_store is not None:
             try:
-                self.goal_store.write(world, goals, role_id=role_id)
+                self.goal_store.write(world, goals, role_id=role_id,
+                                      blockers=self._goal_blockers(goals))
             except (OSError, TypeError, ValueError):
                 pass
         if self.task_completion_store is not None and role_id:

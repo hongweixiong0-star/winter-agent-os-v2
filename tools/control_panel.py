@@ -4953,6 +4953,103 @@ class ControlPanel:
         ttk.Label(tab, textvariable=self.goal_board_meta, style="Muted.TLabel").pack(anchor="w", pady=(8, 0))
         self._refresh_goal_board()
 
+    @staticmethod
+    def _goal_confidence_cell(goal: dict) -> str:
+        """The Goal's **own** confidence, or an explicit ``未计算``.
+
+        Measured 2026-10-04, and this is the whole defect: every row of 今日目标 read
+        ``99%``.  The cell rendered ``snapshot["confidence"]`` -- one number for the whole
+        frame, the page-recognition confidence -- inside a column headed 置信度 that sits
+        under a table of *Goals*.  A per-Goal confidence is not computed anywhere:
+        ``GoalState`` has no such field (its 15 fields are goal_id/status/completion/…/
+        distance) and ``GoalStateStore`` writes none, so all 33 Goals carried
+        ``confidence: null`` and the frame's number stood in for every one of them.
+
+        The operator's rule for this is "不要显示假的 99%".  So the honest cell when the
+        Goal has no confidence of its own is ``未计算``, not a number borrowed from a
+        different question.  The page's own confidence is still shown, once, in the line
+        under the table -- where it is labelled as belonging to the frame.
+        """
+        value = goal.get("confidence")
+        if value is None:
+            return "未计算"
+        try:
+            return f"{float(value):.0%}"
+        except (TypeError, ValueError):
+            return "未计算"
+
+    #: The frame's own reasons for holding a Goal back, in words.  A code that is not in
+    #: here is shown as its own code rather than guessed at: an unrecognised reason is
+    #: information, and inventing Chinese for it would destroy the one thing it carries.
+    GOAL_BLOCK_ZH = {
+        "this_camp_is_training": "该兵营正在训练中（队列未空）",
+        "camp_queue_busy": "兵营队列忙",
+        "queue_busy": "队列忙，已有工作在进行",
+        "timer_running": "计时器未到",
+        "no_batch_available": "没有可执行批次",
+        "no_free_march": "没有空闲行军位",
+    }
+
+    @classmethod
+    def _blocked_cell(cls, goal: dict, blockers: dict) -> str:
+        """The real reason this Goal is held back, or an explicit "not blocked".
+
+        Measured 2026-10-04: this cell rendered ``goal.get("blocked_reason")``, and
+        ``blocked_reason`` is **not a field of ``GoalState``** (its 15 fields are
+        goal_id/status/completion/…/distance) and is not written by ``GoalStateStore``
+        either -- so all 33 rows showed "—" while real reasons existed for seven of them.
+        The operator's report was exactly this: "检查阻塞原因为什么很多是空的".
+
+        The reasons come from two places, because there are two kinds of not-running:
+
+        * an **expired-history / no-progress** deferral is the scheduler's own decision, and
+          it arrives in ``goal_state.json["blockers"]`` from ``CapabilityGate`` (recorded by
+          the runtime, not re-derived here);
+        * a **busy queue** is the frame's own reading: the library already marks those Goals
+          ``BLOCKED`` with ``evidence.reason`` / ``evidence.condition`` / ``retry_after``.
+          ``SHIELD_CAMP_TRAINING`` was ``this_camp_is_training`` and
+          ``KEEP_RESEARCH_PRODUCTIVE`` was ``queue_busy`` with a 15-day timer.
+
+        And an unblocked Goal no longer shows "—", because "—" reads as "unknown".  Nothing
+        is holding an actionable Goal back; the reason it has not run is that the scheduler
+        selected something else.  That is a different statement, and the honest one.
+        """
+        row = blockers.get(goal.get("goal_id")) if isinstance(blockers, dict) else None
+        row = row if isinstance(row, dict) else {}
+        reason = str(row.get("reason") or "").strip()
+        if not reason:
+            status = str(goal.get("status") or "")
+            # The frame's own reason is read **only for a Goal the library itself marked
+            # BLOCKED**.  A ``condition`` on a READY Goal is the precondition that *is* met
+            # (``fresh_fishing_read``, ``camp_queue_idle``), and rendering that as a blocker
+            # would invent a wall where there is none -- measured 2026-10-04.
+            if status == "BLOCKED":
+                evidence = goal.get("evidence") if isinstance(goal.get("evidence"), dict) else {}
+                why = str(evidence.get("reason") or evidence.get("condition") or "").strip()
+                if why:
+                    retry = str(goal.get("retry_after") or evidence.get("timer") or "").strip()
+                    text = cls.GOAL_BLOCK_ZH.get(why, why)
+                    return f"{text} · 剩余 {retry}" if retry else text
+                return "已判为阻塞，但这一次的读数没有带原因（证据为空）"
+            if status in ("READY", "DISCOVERED"):
+                return "就绪 · 未被阻塞（未选中＝调度顺序，不是被拦）"
+            return "—"
+        capability = str(row.get("capability") or "").strip()
+        state = str(row.get("state") or "").strip()
+        until = str(row.get("until") or "").strip()
+        try:
+            streak = int(row.get("streak") or 0)
+        except (TypeError, ValueError):
+            streak = 0
+        parts = [f"{capability}：" if capability else "", reason]
+        if streak:
+            parts.append(f"（连续 {streak} 个 episode 无进展）")
+        if state:
+            parts.append(f" · [{state}]")
+        if until:
+            parts.append(f" · 至 {until}")
+        return "".join(parts)
+
     def _refresh_goal_board(self) -> None:
         if not hasattr(self, "goal_board"):
             return
@@ -4965,8 +5062,13 @@ class ControlPanel:
         names = {"CLEAR_INTEL":"清空情报", "AVOID_STAMINA_WASTE":"避免体力溢出", "KEEP_TRAINING_PRODUCTIVE":"保持训练", "KEEP_RESEARCH_PRODUCTIVE":"保持研究", "KEEP_BUILDING_PRODUCTIVE":"保持建筑", "EVENT_MINIMUM_GUARANTEE":"活动低保"}
         statuses = {"READY":"待执行", "IN_PROGRESS":"进行中", "COMPLETE":"✓ 完成", "BLOCKED":"暂时阻塞", "UNKNOWN":"未知（引擎未判定）", "DISCOVERED":"已发现"}
         goals = snapshot.get("goals", [])
+        # The runtime's own deferral map, written beside the Goals it explains.  Absent on a
+        # snapshot written by an older runtime, in which case every cell says so honestly
+        # rather than inventing a reason.
+        blockers = snapshot.get("blockers")
+        blockers = blockers if isinstance(blockers, dict) else {}
         if not goals:
-            self.goal_board.insert("", "end", values=("等待下一次可验证 Goal", "运行时", "—", PENDING, "—", "—", "观察 WorldState", "当前页面信息不足", "GoalLibrary / Scheduler", f"{float(snapshot.get('confidence',0)):.0%}"))
+            self.goal_board.insert("", "end", values=("等待下一次可验证 Goal", "运行时", "—", PENDING, "—", "—", "观察 WorldState", "当前页面信息不足", "GoalLibrary / Scheduler", "未计算"))
         for goal in goals:
             remaining = goal.get("remaining_seconds")
             deadline = "—" if remaining is None else f"{int(remaining)//3600:02d}:{int(remaining)%3600//60:02d}"
@@ -4980,12 +5082,15 @@ class ControlPanel:
             skills = ", ".join(goal.get("available_skills", ())) or "待发现"
             self.goal_board.insert("", "end", values=(names.get(goal_id, goal_id), category, priority,
                 statuses.get(goal.get("status"), goal.get("status")), progress, deadline,
-                (goal.get("available_skills") or ["待规划"])[0], goal.get("blocked_reason") or "—", skills,
-                f"{float(snapshot.get('confidence',0)):.0%}"))
+                (goal.get("available_skills") or ["待规划"])[0], self._blocked_cell(goal, blockers), skills,
+                self._goal_confidence_cell(goal)))
             left_key = {"EVENT_MINIMUM_GUARANTEE": "活动低保", "CLEAR_INTEL": "情报", "AVOID_STAMINA_WASTE": "体力",
                         "KEEP_TRAINING_PRODUCTIVE": "训练", "KEEP_RESEARCH_PRODUCTIVE": "科研", "KEEP_BUILDING_PRODUCTIVE": "建筑"}.get(goal_id)
             if left_key in getattr(self, "today", {}): self.today[left_key].set(statuses.get(goal.get("status"), goal.get("status")))
-        self.goal_board_meta.set(f"识别页面：{snapshot.get('page','UNKNOWN')} · 置信度：{float(snapshot.get('confidence',0)):.0%} · 时间：{snapshot.get('observed_at','—')}")
+        self.goal_board_meta.set(
+            f"识别页面：{snapshot.get('page','UNKNOWN')} · 整帧识别置信度：{float(snapshot.get('confidence',0)):.0%}"
+            f"（这是页面识别，不是每个目标的置信度）· 时间：{snapshot.get('observed_at','—')}"
+        )
 
     def _event_goal(self) -> None:
         tab = self._tab("活动", scroll=True)
@@ -5232,11 +5337,17 @@ class ControlPanel:
 
         Operator P0-1, 2026-09-18: this page showed 最强王国·击败野兽 as the running
         activity while its own fields said 数据来源 HISTORY / 最后验证 待验证 / 置信度 0%,
-        verified nine days earlier with its recorded countdown long expired.  A history
-        record now fills the history row only; the current row says it has not been
-        confirmed live, and every number belonging to the old record is prefixed so it
-        cannot be read as today's plan.  The classification is the audit's own
-        (legacy_event_row_for), not a second opinion computed here.
+        verified nine days earlier with its recorded countdown long expired.  The
+        classification is the audit's own (``legacy_event_row_for``), not a second opinion
+        computed here.
+
+        Operator, 2026-10-04, second round: the fix above marked the row as history but still
+        printed the *numbers*, prefixed.  Reported as "界面上如果数据已过期，应该显示待重新
+        观测或隐藏，而不是继续展示 25 天前的模板".  A prefix is not a hiding place, and by
+        then the record was 595 h old.  An expired row now shows 待重新观测 in every value
+        cell; only provenance survives, and its age is stated next to it.  The record also
+        carries its own ``expired`` verdict, so this page does not re-derive the expiry rule
+        and cannot disagree with the audit about the same file.
         """
         from winter_agent_v2.state_truth import legacy_event_row_for
 
@@ -5250,51 +5361,71 @@ class ControlPanel:
 
         raw = row.get("raw") or {}
         live = bool(row.get("planner_usable"))
-        prefix = "" if live else "历史参考（不参与当前 Planner）："
+        expired = bool(row.get("expired")) or not live
+        age = row.get("age_seconds")
+        age_text = "" if age is None else f"{float(age) / 3600.0:.0f} 小时前"
         remaining = row.get("remaining_seconds_at_verification")
 
+        # A stale record has no part of today's answer, so its numbers are not rendered at
+        # all.  Until 2026-10-04 this branch showed them behind a 历史参考（不参与当前
+        # Planner）prefix, and the operator reported exactly that as the defect: "继续展示
+        # 25 天前的模板".  A prefix is not a hiding place -- those figures were still the only
+        # figures on the page, and they were 25 days old.  Every value cell now reads
+        # 待重新观测.  What stays is provenance (which file, recorded when, how old), because
+        # "which reading is this" is the one question a stale row can still answer truthfully.
+        REOBSERVE = "待重新观测"
+
         def number(key: str, default: str = "暂无数据") -> str:
+            if expired:
+                return REOBSERVE
             value = raw.get(key)
             if value is None:
-                return prefix + default
+                return default
             try:
-                return prefix + f"{int(value):,}"
+                return f"{int(value):,}"
             except (TypeError, ValueError):
-                return prefix + str(value)
+                return str(value)
 
-        confidence = row.get("confidence")
+        def text(key: str, default: str) -> str:
+            return REOBSERVE if expired else str(raw.get(key) or default)
+
         values = {
             # Only a current row may carry a name under this heading.
             "name": row.get("event_name") if live else "当前活动尚未实时确认",
             "current": number("current_points"),
-            "phase": (raw.get("event_phase") or "待识别") if live else "—",
+            "phase": text("event_phase", "待识别"),
             "source": row.get("source") or "",
-            "last_verified": row.get("observed_at") or "待验证",
-            "confidence": "—" if confidence is None else f"{float(confidence):.0%}",
-            "tier": (raw.get("target_tier") or "低保目标档") if live else "—",
+            "last_verified": (str(row.get("observed_at") or "待验证")
+                              + (f"（{age_text}，已过期）" if expired and age_text else "")),
+            # ``0.0`` from the classifier is the verdict "this is not a live observation",
+            # not a percentage, and this row has no confidence of its own to show.  The
+            # frame's confidence is labelled once in the Goal board's meta line.
+            "confidence": ("—" if (row.get("confidence") is None or not live)
+                           else f"{float(row['confidence']):.0%}"),
+            "tier": text("target_tier", "低保目标档"),
             "target": number("target_points"),
             "missing": number("points_missing"),
-            "remaining": ("—" if remaining is None else
+            "remaining": ("—" if (remaining is None or expired) else
                           f"{int(remaining) // 3600:02d}:{int(remaining) % 3600 // 60:02d}:{int(remaining) % 60:02d}"),
             "status": (
                 ("✓ 今日低保完成" if raw.get("minimum_guarantee_complete") else "⚠ 未完成")
                 if live else
-                f"⚠ 历史记录；今日活动待检查 —— {row.get('note') or ''}"
+                f"⚠ {REOBSERVE} —— {row.get('note') or ''}"
             ),
-            "plan": (raw.get("plan") or "暂无数据") if live else "—（历史计划不参与当前执行）",
-            "resource": number("resource_spent") if raw.get("resource_spent") else "暂无数据",
-            "estimated_cost": (raw.get("estimated_cost") or "待计算") if live else "—",
-            "estimated_completion": (raw.get("estimated_completion") or "待计算") if live else "—",
+            "plan": text("plan", "暂无数据"),
+            "resource": number("resource_spent"),
+            "estimated_cost": text("estimated_cost", "待计算"),
+            "estimated_completion": text("estimated_completion", "待计算"),
             "verified": number("verified_points_gain"),
-            "rewards": ("全部目标档位已领取" if raw.get("all_target_rewards_claimed")
-                        else "仍有奖励待领取") if live else "—（不参与当前执行）",
+            "rewards": (("全部目标档位已领取" if raw.get("all_target_rewards_claimed")
+                         else "仍有奖励待领取") if live else REOBSERVE),
         }
         for key, value in values.items():
             self.event_goal_vars[key].set(value)
         if hasattr(self, "queues") and "活动" in self.queues:
             self.queues["活动"].set(
                 ("低保完成" if raw.get("minimum_guarantee_complete") else
-                 f"缺 {int(raw.get('points_missing', 0)):,}") if live else "未实时确认"
+                 f"缺 {int(raw.get('points_missing', 0)):,}") if live else REOBSERVE
             )
 
     def _capabilities(self) -> None:

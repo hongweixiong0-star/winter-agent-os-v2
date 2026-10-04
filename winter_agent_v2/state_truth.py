@@ -144,7 +144,10 @@ FRESH_RUNTIME_SECONDS = 120.0
 LIVE_OBSERVED_SECONDS = 6 * 3600.0
 PERSISTED_SECONDS = 7 * 24 * 3600.0
 # How long an activity record may describe "now".  Its own countdown overrides this: a
-# record with 28 795 s left was already describing a closed window nine days later.
+# record with 28 795 s left was already describing a closed window nine days later.  This
+# is also the record's **TTL** -- the ceiling that expires it on its own -- because nothing
+# in the tree ever rewrites ``learning/event_goal_state.json`` (measured 2026-10-04: the
+# file was 595 h old and had no writer anywhere in ``winter_agent_v2/`` or ``tools/``).
 EVENT_CURRENT_SECONDS = 6 * 3600.0
 
 
@@ -1202,12 +1205,26 @@ class TruthAudit:
                 name="event_state", value="", status=UNKNOWN, source=EVENT_STATE,
                 note="没有活动状态文件；「没有活动」与「没读到活动」必须区分",
             )
-        stamp = str(payload.get("updated_at") or payload.get("recorded_at") or "")
-        status, age = self._stamp(EVENT_STATE, stamp)
+        # One classification, two readers: ``legacy_event_row`` owns the rule (the record's
+        # own countdown first, then the TTL).  This method used to carry a **second copy**
+        # of it that read ``updated_at``/``recorded_at`` while the record actually writes
+        # ``verified_at`` -- so the stamp was empty, ``_age`` returned None, and ``_grade``
+        # turned "no date at all" into **PERSISTED**, which reads as "saved, fine".
+        #
+        # Measured 2026-10-04: the 运行状态 table showed ``event_state = PERSISTED,
+        # age=None`` for a record that was **599 h old**.  A missing field must never become
+        # a benign status -- that is the same defect as the panel printing a stale activity
+        # as today's plan, one layer down.
+        row = legacy_event_row(payload, now=self.now)
+        stamp = str(row.get("observed_at") or payload.get("verified_at") or "")
         return TruthValue(
             name="event_state",
             value=", ".join(f"{k}={v}" for k, v in list(payload.items())[:4]),
-            status=status, source=EVENT_STATE, observed_at=stamp, age_seconds=age,
+            status=STALE if row.get("expired") else LIVE_OBSERVED,
+            source=EVENT_STATE,
+            observed_at=stamp,
+            age_seconds=row.get("age_seconds"),
+            note=str(row.get("note") or ""),
         )
 
     def events(self) -> TruthValue:
@@ -2094,17 +2111,32 @@ def legacy_event_row(
     except (TypeError, ValueError):
         remaining = None
     window_closed = age is not None and remaining is not None and age > remaining
+    # Two independent expiry rules, and the first one to fire wins.  The record's *own*
+    # countdown is the sharp one; the age ceiling is the only rule available to a record
+    # that saved no countdown, and it is what makes a record expire on its own.
+    #
+    # Why an explicit ceiling exists at all, measured 2026-10-04: ``event_goal_state.json``
+    # was 595 h old and **no process had ever refreshed it** -- it is a hand-recorded live
+    # observation (``source`` LIVE_CLIENT, its ``resource_spent`` is Chinese prose), and a
+    # tree-wide search finds no writer for the path anywhere in ``winter_agent_v2/`` or
+    # ``tools/``.  Waiting for a refresh that does not exist is not a plan, so the record
+    # has to expire by itself.
+    past_ttl = age is not None and age > EVENT_CURRENT_SECONDS
+    expired = bool(window_closed or past_ttl or age is None)
     if window_closed:
         status, why = HISTORY, (
             f"记录的活动窗口早已结束：记录时剩余 {int(remaining)} 秒，"
             f"而这条记录已过去 {age / 3600:.0f} 小时"
         )
-    elif age is not None and age <= EVENT_CURRENT_SECONDS:
+    elif past_ttl:
+        status, why = HISTORY, (
+            f"记录已过期（TTL {EVENT_CURRENT_SECONDS / 3600:.0f} 小时）："
+            f"这条记录已过去 {age / 3600:.0f} 小时，且没有任何进程刷新过它"
+        )
+    elif age is not None:
         status, why = LIVE_OBSERVED, "记录的验证时间在本活动的新鲜度预算内"
     else:
-        status, why = (HISTORY if verified else UNKNOWN), (
-            "验证时间早于新鲜度预算，且无法证明窗口仍开着" if verified else "没有验证时间"
-        )
+        status, why = UNKNOWN, "没有验证时间"
     return {
         "event_id": str(legacy.get("event_id") or ""),
         "event_name": str(legacy.get("name") or ""),
@@ -2117,6 +2149,11 @@ def legacy_event_row(
         "started_at": "",
         "ends_at": "",
         "remaining_seconds_at_verification": remaining,
+        # The expiry verdict travels with the row so that no reader has to re-derive it --
+        # which is how the window and the audit come to disagree about the same file.  The
+        # window renders ``待重新观测`` straight off ``expired``.
+        "expired": expired,
+        "ttl_seconds": EVENT_CURRENT_SECONDS,
         "progress": {
             "current": legacy.get("current_points"),
             "target": legacy.get("target_points"),
