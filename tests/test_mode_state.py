@@ -8,6 +8,7 @@ so the interesting assertions are the ones that expect ``ModeRefused``.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -318,7 +319,7 @@ def test_the_console_reports_the_seven_required_lines(tmp_path):
     """§9 lists exactly seven; the user must see who has the machine and for how long."""
     path = _state_file(tmp_path)
     _enter_manual(path, seconds=1800.0, reason="真机验证巨熊页签")
-    fields = ms.console_fields(path)
+    fields = ms.console_fields(path, pid_path=tmp_path / "no-such-panel.pid")
     for key in ("当前模式", "机器状态", "切换发起方", "切换理由", "已持续", "预计剩余", "回切条件"):
         assert key in fields, key
     assert fields["当前模式"] == ms.MODE_MANUAL
@@ -326,12 +327,47 @@ def test_the_console_reports_the_seven_required_lines(tmp_path):
     assert "巨熊页签" in fields["切换理由"]
 
 
-def test_the_console_says_the_system_is_running_in_auto(tmp_path):
+def _panel_pid_file(tmp_path, pid: int | None) -> Path:
+    written = tmp_path / "panel.pid"
+    written.write_text("" if pid is None else str(pid), encoding="utf-8")
+    return written
+
+
+def test_the_console_says_the_system_is_running_only_when_the_panel_really_is(tmp_path):
+    """2026-10-06: 机器状态 used to be derived from the mode alone.
+
+    Measured that day: the record said AUTO and the console printed 机器状态：系统运行中 while the
+    panel had been down 53 minutes with zero workers.  The mode says who the machine belongs to,
+    never whether anything is running, so this now reads the panel's own pid file.
+    """
     path = _state_file(tmp_path)
     ms.switch(ms.MODE_AUTO, initiator=ms.BY_USER, reason="user takes it back", path=path)
-    fields = ms.console_fields(path)
-    assert fields["当前模式"] == ms.MODE_AUTO
-    assert fields["机器状态"] == "系统运行中"
+
+    live = ms.console_fields(path, pid_path=_panel_pid_file(tmp_path, os.getpid()))
+    assert live["机器状态"] == "系统运行中"
+    assert "不一致" not in live
+
+    dead = ms.console_fields(path, pid_path=_panel_pid_file(tmp_path, 999_999_999))
+    assert dead["机器状态"] == "系统未运行（AUTO 已停）"
+    assert "不一致" in dead, (
+        "mode=Auto with nothing running is a state the specification does not describe; the "
+        "console has to name it rather than paper over it"
+    )
+
+    unknown = ms.console_fields(path, pid_path=tmp_path / "absent.pid")
+    assert unknown["机器状态"] == "系统状态未知", (
+        "'no record' and 'process dead' lead to opposite decisions, so neither may be guessed"
+    )
+    assert unknown["循环存活"].startswith(ms.LOOP_UNKNOWN)
+
+
+def test_a_manual_session_does_not_claim_to_know_about_the_panel(tmp_path):
+    """In Manual the machine is WorkBuddy's, so liveness of the AUTO panel is not the answer."""
+    path = _state_file(tmp_path)
+    _enter_manual(path, seconds=None)
+    fields = ms.console_fields(path, pid_path=_panel_pid_file(tmp_path, os.getpid()))
+    assert fields["机器状态"] == "WorkBuddy 开发中"
+    assert "不一致" not in fields
 
 
 # -- CLI: the explicit entry points §14.6 asks for ------------------------------

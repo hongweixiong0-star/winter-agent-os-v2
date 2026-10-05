@@ -68,6 +68,15 @@ WRAP_UP_STEPS: tuple[str, ...] = ("committed", "repinned", "production_check_onl
 
 DEFAULT_PATH = Path("learning/MODE_STATE.json")
 
+#: The panel writes its own pid here, and ``tools/panel_restart.py`` owns that file.  Read, never
+#: written, from this module.
+PANEL_PID_PATH = Path("learning/control_panel/panel.pid")
+
+#: §9's 机器状态 has three truthful answers, not two.  See :func:`loop_liveness`.
+LOOP_RUNNING = "RUNNING"
+LOOP_STOPPED = "STOPPED"
+LOOP_UNKNOWN = "UNKNOWN"
+
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
@@ -451,17 +460,61 @@ def _human(seconds: float | None) -> str:
     return f"{secs} 秒"
 
 
-def console_fields(path: Path | str = DEFAULT_PATH, now: datetime | None = None) -> dict[str, str]:
-    """The seven lines §9 requires, derived from the record and nothing else."""
+def loop_liveness(pid_path: Path | str = PANEL_PID_PATH) -> tuple[str, str]:
+    """``(verdict, reason)`` for "is the AUTO loop actually up?", which §9's 机器状态 needs.
+
+    The mode says who the machine *belongs to*; it says nothing about whether anything is running.
+    Reporting a mode as though it were a live system is the bug this exists to stop: on
+    2026-10-06 the record said AUTO and the console printed ``机器状态：系统运行中`` while the
+    panel had been down for 53 minutes with zero workers.
+
+    The pid is judged with the **same primitive the tool that owns the file uses** --
+    ``tools/panel_restart.py`` imports ``winter_agent_v2.winproc`` for exactly this -- so this is
+    not a second definition of "alive", it is the same question asked from the other side.
+
+    Three answers, not two: with no record the honest answer is ``UNKNOWN``, because "nothing
+    wrote a pid" and "the process is dead" lead to opposite decisions and a boolean would have to
+    guess between them.
+    """
+    path = Path(pid_path)
+    if not path.is_file():
+        return LOOP_UNKNOWN, f"无面板记录（{path} 不存在）"
+    try:
+        recorded = int((path.read_text(encoding="utf-8").strip() or "0"))
+    except (OSError, ValueError) as error:
+        return LOOP_UNKNOWN, f"面板记录无法解析：{error}"
+    if recorded <= 0:
+        return LOOP_STOPPED, "面板记录为空 pid"
+    try:
+        from . import winproc
+        return (LOOP_RUNNING, f"面板进程 {recorded} 存活") if winproc.alive(recorded) \
+            else (LOOP_STOPPED, f"面板进程 {recorded} 已不在")
+    except Exception:  # noqa: BLE001 - a liveness probe must never take the console down
+        return LOOP_UNKNOWN, f"无法判定面板进程 {recorded} 是否存活"
+
+
+def console_fields(path: Path | str = DEFAULT_PATH, now: datetime | None = None,
+                   pid_path: Path | str = PANEL_PID_PATH) -> dict[str, str]:
+    """The seven lines §9 requires, derived from the record and the panel's own pid file."""
     state = load(path)
     moment = now or _now()
+    liveness, why = loop_liveness(pid_path)
     if state.mode == MODE_MANUAL:
         machine = "WorkBuddy 开发中"
         back = state.completion_criteria or "（未登记完成标准）"
         if state.decision_due(moment):
             back = "已达预计时长，必须决策：暂停回切 或 申请延长（§5）"
     else:
-        machine = "系统运行中"
+        # 2026-10-06: this used to print 系统运行中 whenever the mode was AUTO.  It now says what
+        # the panel's own pid file says, and names the disagreement instead of hiding it -- "the
+        # mode is Auto" and "Auto is running" are two different facts and only one of them was
+        # being checked.
+        if liveness == LOOP_RUNNING:
+            machine = "系统运行中"
+        elif liveness == LOOP_STOPPED:
+            machine = "系统未运行（AUTO 已停）"
+        else:
+            machine = "系统状态未知"
         back = "用户指令（§4 触发 2：WorkBuddy 不得自主切回 Manual）" if state.user_latch \
             else "无需回切：当前已是 Auto"
 
@@ -474,7 +527,13 @@ def console_fields(path: Path | str = DEFAULT_PATH, now: datetime | None = None)
         "已持续": _human(state.elapsed_seconds(moment)),
         "预计剩余": _human(remaining) if remaining is not None else "（未登记预计时长）",
         "回切条件": back,
+        "循环存活": f"{liveness}（{why}）",
     }
+    if state.mode == MODE_AUTO and liveness != LOOP_RUNNING:
+        fields["不一致"] = (
+            f"模式是 Auto 但 AUTO 并未运行（{why}）。§7 的收尾只负责把模式交还，"
+            "不负责把循环拉起来；要真跑需要显式启动面板。"
+        )
     if state.overdue(moment):
         fields["警告"] = (
             f"Manual 已超过预计时长 {OVERDUE_MULTIPLIER:g} 倍（§13）—— 控制台须高亮；"
@@ -515,6 +574,8 @@ def autonomous_switch_check(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Auto/Manual machine-ownership mode (docs/MODE_SYSTEM.md)")
     parser.add_argument("--state", default=str(DEFAULT_PATH))
+    parser.add_argument("--pid-path", default=str(PANEL_PID_PATH),
+                        help="the panel's own pid file; §9's 机器状态 is read from it")
     parser.add_argument("--status", action="store_true", help="print the §9 console fields")
     parser.add_argument("--to-manual", action="store_true")
     parser.add_argument("--to-auto", action="store_true")
@@ -534,7 +595,7 @@ def main(argv: list[str] | None = None) -> int:
     path = Path(args.state)
     try:
         if args.status or not (args.to_manual or args.to_auto or args.decide or args.wrap_up):
-            for key, value in console_fields(path).items():
+            for key, value in console_fields(path, pid_path=args.pid_path).items():
                 print(f"{key}：{value}")
             return 0
         if args.decide:
