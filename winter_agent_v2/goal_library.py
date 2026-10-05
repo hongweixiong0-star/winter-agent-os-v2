@@ -952,7 +952,44 @@ def _append_quick_panel_task_goals(goals: list[GoalState], world: WorldState) ->
     panel = world.quick_panel or {}
     if world.page is Page.HOME and panel.get("open") is False:
         handle = panel.get("handle") or {}
-        if (isinstance(handle, Mapping) and handle.get("state") == "COLLAPSED"
+        # 2026-10-06: opening the panel is not always *useful*, even when it is possible.
+        #
+        # The row taps (``OPEN_TASK_FROM_QUICK_PANEL_*``) close the panel and reveal the selected
+        # building's action bar -- 详情 / 升级 / 城镇防御 -- and the panel is drawn over exactly that
+        # bar.  Measured from the frames of one run (``20261006_011043_659372``):
+        #   ``step_002_after``  the row tap had just closed the panel; the bar with 升级 was visible
+        #   ``step_003_after``  this goal re-opened the panel; that bar was gone, covered
+        # so the building goal had to tap its row a second time to get its own control back --
+        # two row taps and one wasted open per upgrade, and up to 80% of a run's actions when the
+        # two alternated.  2026-10-05 hit the same overlap from the other side and answered it with
+        # ``SCROLL_QUICK_PANEL_BACK`` ("the barracks action bar is under the pane"); compensating
+        # with a reverse gesture is what turned one-way starvation into a two-way oscillation.
+        #
+        # The precondition reads the **current frame** rather than remembering who closed the panel.
+        # ``upgrade_tap_norm`` is present exactly when the 升级 control was readable on this frame:
+        # measured over 11,611 recorded states it never once co-occurs with an open panel (107 + 195
+        # + 58 rows carry it, all with the panel closed or unknown).  So its presence means "a
+        # revealed control is on screen right now", which is precisely what opening would cover --
+        # the feasibility invariant, localised.
+        #
+        # Liveness is why this is a deferral and not a suppression: ``OPEN_QUICK_PANEL`` appears
+        # nowhere else in this module, so this goal is the *only* thing that can open the panel,
+        # while at least four goals need a panel row (``OPEN_TASK_FROM_QUICK_PANEL_BUILDING`` /
+        # ``_HERO_RECRUIT`` / ``_HERO_RECRUIT_EPIC`` / ``_PET_TREASURE``).  Suppressing it, or
+        # lowering the 260, would starve all four (§36/§38).  When no control is revealed the row is
+        # emitted at 260 exactly as before, and once the other goal has spent its control the key
+        # stops being read and the panel opens again.
+        #
+        # No row is emitted while deferred, which is this function's existing idiom for "not on the
+        # board right now" -- the branch already returns without a row when the handle is not
+        # collapsed.  Deliberately not a COMPLETE row: COMPLETE is what this goal emits when it was
+        # actually served, and reusing it for "postponed" would misreport coverage.
+        revealed_control = (world.building or {}).get("upgrade_tap_norm")
+        would_cover_a_revealed_control = (
+            isinstance(revealed_control, (list, tuple)) and len(revealed_control) == 2
+        )
+        if (not would_cover_a_revealed_control
+                and isinstance(handle, Mapping) and handle.get("state") == "COLLAPSED"
                 and isinstance(handle.get("point_norm"), (list, tuple))):
             goals.append(GoalState(
                 "DISCOVER_QUICK_PANEL_TASKS", GoalStatus.READY, reward_value=260,
