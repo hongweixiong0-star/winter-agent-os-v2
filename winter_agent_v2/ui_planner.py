@@ -66,6 +66,7 @@ from . import context_budget
 from . import local_gui_model
 from . import ui_venus_online
 from . import unknown_advisor
+from . import venus_screen_budget
 from .context_budget import HISTORY_TARGET
 
 #: How many steps the advisor remembers.  Twice the packet's target, so the budget ladder has a
@@ -792,7 +793,10 @@ class ManagedAdvisor:
         root: Path | str,
         fallback: Any = None,
         max_steps_per_run: int = 12,
-        max_steps_per_screen: int = 2,
+        # §48's number, from the one place that holds it.  The within-run half of the rule is this
+        # counter; the half that has to outlive the run is ``venus_screen_budget``, and they must
+        # not drift apart, so the default points at the module that owns the cross-run half.
+        max_steps_per_screen: int = venus_screen_budget.BUDGET_PER_SCREEN,
         last_action: str | None = None,
         last_result: str | None = None,
         budget: context_budget.ContextBudgetManager | None = None,
@@ -846,7 +850,7 @@ class ManagedAdvisor:
         if request_id:
             self._requests[request_id] = question
 
-        if self.take_guard(page_key):
+        if self.take_guard(page_key, request_id):
             return self._delegate_take(request, registry)
 
         elements = elements_from_request(question)
@@ -919,6 +923,13 @@ class ManagedAdvisor:
         if trace["trace_id"] not in self._observed_traces:
             self._trace_stage("UNKNOWN_OBSERVED", trace)
             self._observed_traces.add(trace["trace_id"])
+        # Counted before the call, and counted whether or not it succeeds.  A failed call still
+        # spent the screen's budget -- the ledger shows a screen whose 70 attempts were 66 outright
+        # call failures, and if failures were free the loop §48 forbids would simply run on them.
+        # Recorded here rather than inside ``take_guard``: the guard is also consulted by paths that
+        # never reach the model, and those must not spend the budget.
+        venus_screen_budget.record(trace.get("request_id") or request_id,
+                                   path=self._screen_budget_path())
         self._trace_stage("VENUS_CALLED", trace, element_count=len(elements))
         call = self.client.ask_json(
             system=SYSTEM_PROMPT, user=render_packet(packet), purpose="ui_plan",
@@ -1041,13 +1052,45 @@ class ManagedAdvisor:
         return list(self.fallback.pending()) if self.fallback is not None else []
 
     # ----------------------------------------------------------- helpers
-    def take_guard(self, page_key: str) -> bool:
-        """Whether this step is out of budget.  Bounded on purpose (section 3, path D)."""
+    def _screen_budget_path(self) -> Path:
+        """Where this planner's cross-run attempt table lives.
+
+        Derived from ``self.root`` like every other store here (``_online_ledger`` does the same),
+        rather than left at the module default.  A module-level default would make the budget a
+        process-global: tests would spend the real repo's budget and a second run would see the
+        first one's attempts, which is both untestable and wrong -- the table belongs to the tree
+        the run is operating on.
+        """
+        return Path(self.root) / venus_screen_budget.STORE_PATH
+
+    def take_guard(self, page_key: str, request_id: str = "") -> bool:
+        """Whether this step is out of budget.  Bounded on purpose (section 3, path D).
+
+        Three bounds now.  The first two were already here and they work within a run; the third is
+        the half that used to reset every cycle, because ``runtime.py`` builds this advisor fresh
+        per run ("a factory (called for a fresh advisor with fresh per-run budgets)") and
+        ``_per_screen`` is an in-memory dict.
+
+        Measured 2026-10-06 in ``learning/ui_venus_online.jsonl``: 228 ``VENUS_CALLED`` rows across
+        13 ``request_id``s, one screen asked **84** times -- about 42 runs at two per run -- with
+        ``UNKNOWN_RESOLUTION_RATE`` 0.0.  §48 says a screen gets about two attempts and *then*
+        Recovery → Cooldown → Next Goal; only the "two attempts" half existed.
+
+        Keyed on ``request_id`` rather than ``page_key``, matching the identity
+        ``unknown_advisor.ask`` suppresses on and finer than a page, so a page carrying several
+        distinct unknowns is not over-suppressed.  An empty id answers "not my business" rather
+        than refusing, so an id-less caller behaves exactly as before.
+        """
         if self.steps >= self.max_steps_per_run:
             self.last_outcome = {"decision": "", "error": "PLANNER_RUN_BUDGET_SPENT"}
             return True
         if self._per_screen.get(page_key, 0) >= self.max_steps_per_screen:
             self.last_outcome = {"decision": "", "error": "PLANNER_SCREEN_BUDGET_SPENT"}
+            return True
+        may_ask, why = venus_screen_budget.allow(request_id, path=self._screen_budget_path())
+        if not may_ask:
+            self.last_outcome = {"decision": "", "error": "PLANNER_SCREEN_COOLDOWN_ACTIVE",
+                                 "screen_budget": why}
             return True
         return False
 
