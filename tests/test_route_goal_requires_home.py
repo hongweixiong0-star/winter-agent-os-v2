@@ -35,6 +35,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from winter_agent_v2.brain import RuleBrain  # noqa: E402
+from winter_agent_v2.goal_library import ROUTE_DOMAINS  # noqa: E402
 from winter_agent_v2.models import Page, WorldState  # noqa: E402
 from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
 from winter_agent_v2.skills import v2_registry  # noqa: E402
@@ -111,15 +112,26 @@ class RouteGoalFromMapTest(unittest.TestCase):
 
         ``OPEN_HOME``'s control is the 回城 door on the HUD and the search panel is drawn over it, so
         "comes home from the map" is the whole membership condition; there is nothing else to decide.
+
+        Updated 2026-10-05: **the universe must not be typed here either.**  "Discovered rather than
+        typed" was only true inside the tuple below, and that tuple was missing ``EVENT`` -- which is
+        precisely the branch added last, and precisely the one that then kept the missing guard for
+        three days: measured, 54 ``SEMANTIC_TARGET_NOT_VERIFIED`` refusals of ``OPEN_HOME``, every
+        one of them carrying that branch's own reason.  The project already publishes the domain list
+        (``goal_library.ROUTE_DOMAINS``, the domains ``run_live --goal`` accepts); it has held
+        ``EVENT`` all along.  So the scan now runs over that, and the assertion below stops anyone
+        from quietly re-typing it.
         """
-        routes = ("MAIL", "TRAIN", "RESEARCH", "EXPLORATION", "DAILY", "ALLIANCE", "HOME",
-                  "FISHING", "BUILDING", "INTEL", "GATHER_RESOURCE", "BEAST_HUNT", "TRAIN_TROOPS")
+        routes = tuple(sorted(set(ROUTE_DOMAINS) | {"TRAIN_TROOPS"}))
+        self.assertTrue(set(ROUTE_DOMAINS) <= set(routes),
+                        "the universe must be the project's own domain list, not a typed copy")
         comers = [route for route in routes
                   if decide(route, WorldState(page=Page.MAP, confidence=0.99)).skill == "OPEN_HOME"]
         # A scan that found nobody would pass the loop below vacuously -- the failure mode this
         # repository keeps hitting when it tests a set it built itself.
         self.assertIn("FISHING", comers)
         self.assertIn("BUILDING", comers)
+        self.assertIn("EVENT", comers)
         for route in comers:
             with self.subTest(route=route):
                 decision = decide(route, WorldState(page=Page.MAP, resource_search_open=True,

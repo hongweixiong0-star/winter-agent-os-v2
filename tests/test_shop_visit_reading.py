@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from winter_agent_v2.shop_visit import (  # noqa: E402
+    decide_alliance,
     decide_mystery,
     decide_wandering,
     discount_percent,
@@ -891,3 +892,248 @@ def test_the_body_ladder_never_reaches_into_the_bottom_tab_strip():
 
     # An anchor that is already inside the band yields nothing at all, so nothing is tapped.
     assert v._body_ladder(card(1250), 1280) == ()
+
+
+# --------------------------------------------------------------- the alliance shop
+# The operator's 联盟商店 rule is a rule about a NAME, and it deliberately has no refresh step.
+@pytest.mark.parametrize("name,want", [
+    ("10点统帅经验", "BUY"),          # the rule's target
+    ("100点统帅经验", "BUY"),         # same item, bigger bundle -- still 统帅经验
+    ("50,000点英雄经验", "SKIP"),     # the measured near-miss on the live client
+    ("1小时训练加速", "SKIP"),        # the item the 2026-10-05 live probe actually read
+    ("专精能源石", "SKIP"),
+    ("1,300", "SKIP"),                # a bare number is never a name
+    (None, "ASK"),                    # an unreadable name is asked about, never assumed
+])
+def test_the_alliance_policy_table(name, want):
+    assert decide_alliance(name)[0] == want
+
+
+def test_the_two_experience_bottles_are_not_the_same_rule():
+    """统帅经验 and 英雄经验 are one character apart and must never be conflated.
+
+    Measured on the live client 2026-10-05: the Exp bottle in the store reads 英雄经验
+    (``1,000点英雄经验`` / ``50,000点英雄经验``) while the item both the 游荡商人 and 联盟商店
+    rules want is 统帅经验 (``10点统帅经验``).  Reading one as the other spends diamonds on the
+    one item the operator's policy forbids -- and a substring rule keyed on ``经验`` would do
+    exactly that, so this pins the distinction rather than trusting the constant to stay right.
+    """
+    assert decide_alliance("50,000点英雄经验")[0] == "SKIP"
+    assert decide_alliance("10点统帅经验")[0] == "BUY"
+    assert "英雄经验" not in "10点统帅经验"
+    assert "统帅经验" not in "50,000点英雄经验"
+
+
+# The ALLIANCE page's eight tile labels, at the y the live frame puts them
+# (dataset/evidence/shop_observe_alliance_20261005T062243/10_alliance_page_raw.png).
+ALLIANCE_PAGE_TOKENS = [
+    tok("联盟", 128, 41), tok("[ioi]花港觀魚", 354, 123), tok("盟主：", 349, 182),
+    tok("已满级", 381, 385), tok("10月5日·周一", 119, 456),
+    tok("联盟战争", 246, 669), tok("联盟宝箱", 584, 671),
+    tok("联盟领地", 246, 804), tok("据点争夺", 584, 804),
+    tok("联盟商店", 246, 938), tok("联盟科技", 585, 938),
+    tok("实力排行", 246, 1072), tok("联盟互助", 584, 1072),
+    tok("成员", 197, 1250), tok("激励", 360, 1251), tok("设置", 524, 1251),
+]
+
+# The 联盟商店 page's own furniture, at the y the live frame puts it
+# (dataset/evidence/shop_observe_alliance_20261005T062243/20_alliance_shop_page_raw.png).
+ALLIANCE_SHOP_TOKENS = [
+    tok("联盟商店", 161, 42), tok("81,403", 630, 43),
+    tok("下次刷新：", 284, 151), tok("17:35:59", 441, 151),
+    tok("剩余：1", 139, 381), tok("15,600", 159, 433),
+    tok("剩余：5", 580, 382), tok("4,000", 603, 434),
+    tok("今日", 185, 1241), tok("本周", 534, 1246),
+]
+
+
+def _visitor_without_a_device():
+    from winter_agent_v2.shop_visit import ShopVisitor
+
+    class V(ShopVisitor):
+        def __init__(self):   # both predicates are pure functions of the token list
+            pass
+
+    return V()
+
+
+def test_the_alliance_page_is_recognised_from_its_own_tile_names():
+    v = _visitor_without_a_device()
+    assert v.on_alliance_page(ALLIANCE_PAGE_TOKENS, 1280)
+
+
+def test_four_readable_tiles_are_enough_but_one_is_not():
+    """OCR rarely reads all eight tiles, so the bar is 4 -- but a single stray name is not proof."""
+    v = _visitor_without_a_device()
+    eight = ALLIANCE_PAGE_TOKENS
+    for keep in (4, 5, 8):
+        names = [t for t in eight if "联盟" in t["text"] or "据点" in t["text"]]
+        subset = [t for t in eight if t not in names[:max(0, len(names) - keep)]]
+        assert v.on_alliance_page(subset, 1280), f"{keep} tiles should still be enough"
+    assert not v.on_alliance_page([tok("联盟商店", 246, 938)], 1280)
+
+
+def test_the_alliance_shop_page_requires_both_its_header_and_its_banner():
+    """``联盟商店`` alone is a substring trap: the ALLIANCE page carries the same four characters.
+
+    The trap is real, not hypothetical -- the ALLIANCE page's third-row tile is *named*
+    联盟商店.  So the page predicate also demands the self-refresh banner, which that page does
+    not have, and it reads the header only inside the top 12%.
+    """
+    v = _visitor_without_a_device()
+    assert v.on_alliance_shop_page(ALLIANCE_SHOP_TOKENS, 1280)
+
+    # The ALLIANCE page carries 联盟商店 -- but at y=938, and with no 下次刷新.
+    assert not v.on_alliance_shop_page(ALLIANCE_PAGE_TOKENS, 1280)
+
+    # Drop the banner and the header alone must not be enough.
+    no_banner = [t for t in ALLIANCE_SHOP_TOKENS if "下次刷新" not in t["text"]]
+    assert not v.on_alliance_shop_page(no_banner, 1280)
+
+    # And the two predicates must not both fire on either page.
+    assert not v.on_alliance_page(ALLIANCE_SHOP_TOKENS, 1280)
+    assert v.on_alliance_page(ALLIANCE_PAGE_TOKENS, 1280)
+
+
+def test_the_alliance_pass_offers_no_refresh_step_because_the_rule_has_none():
+    """The operator's 联盟商店 policy says 无需刷新, and the page agrees: it self-refreshes.
+
+    Measured 2026-10-05: the page carries ``下次刷新：`` + a countdown (17:35:59 on 今日,
+    6天17:27:17 on 本周) instead of a control to tap.  So the API deliberately has no refresh
+    flag -- a flag would have nothing legal to act on, and adding one anyway is how a policy
+    quietly grows an unauthorised action.
+    """
+    import inspect
+
+    from winter_agent_v2.shop_visit import visit_alliance
+
+    params = inspect.signature(visit_alliance).parameters
+    assert "do_refresh" not in params
+    assert "max_refreshes" not in params
+    assert "max_swipes" in params, "the list is longer than one screen; the sweep must be tunable"
+
+
+# --------------------------------------------------------------- the ghost overlay
+# The worst failure this module can have is a reading that is wrong but well-formed.
+def test_no_read_only_path_can_leave_a_purchase_overlay_armed():
+    """Every spending branch must have a non-spending ``else`` that dismisses.
+
+    The branch used to be ``if BUY and execute_buys: confirm() / elif verdict != "BUY":
+    dismiss()``, which left the overlay open on exactly one combination -- **BUY with no
+    ``--buy``** -- and that combination is the normal case for a read-only pass.  Measured
+    2026-10-05 on 联盟商店 (shop_visit_alliance_20261005T063527): of nine slots, seven decided
+    BUY, so the pass read one overlay over and over and reported it as seven different cards
+    (two of the saved frames are byte-identical).  This guard is structural on purpose: it fails
+    for any *future* pass written with the same shape, not just the three that exist today.
+    """
+    import ast
+    import inspect as _inspect
+
+    from winter_agent_v2 import shop_visit
+
+    offenders = []
+    for node in ast.walk(ast.parse(_inspect.getsource(shop_visit))):
+        if not isinstance(node, ast.If):
+            continue
+        test = ast.unparse(node.test)
+        if "execute_buys" not in test or "BUY" not in test:
+            continue
+        else_src = "\n".join(ast.unparse(statement) for statement in node.orelse)
+        if "_dismiss_dialog" not in else_src:
+            offenders.append((node.lineno, test, "no dismiss in the else branch at all"))
+            continue
+        # A dismiss that is *there* is not enough -- it must be unconditional.  The original
+        # defect was written as ``elif card.verdict != "BUY": dismiss()``, and an ``elif`` in
+        # Python is just a nested ``if`` inside ``orelse``, so a naive "does the else branch
+        # mention a dismiss" check passes on the buggy code.  It did: mutation-testing this guard
+        # on 2026-10-05 by restoring the ``elif`` left the guard green, which is what turned the
+        # check below into one on the *shape* of the branch rather than on its contents.
+        for statement in node.orelse:
+            for inner in ast.walk(statement):
+                if isinstance(inner, ast.If) and "verdict" in ast.unparse(inner.test):
+                    offenders.append((inner.lineno, ast.unparse(inner.test),
+                                      "the dismiss is conditional on the verdict"))
+    assert not offenders, f"these branches can leave an overlay armed: {offenders}"
+
+
+def test_open_purchase_closes_a_leftover_overlay_before_it_reads_anything(monkeypatch):
+    """The primitive refuses to read an overlay this card did not open.
+
+    Replays the measured 2026-10-05 state: an earlier card's 确定购买 is still armed when the
+    next card is inspected.  The card's own readings (name and price) are only trustworthy if
+    they came from an overlay this card opened, so the leftover must be closed *first* -- before
+    a single tap is aimed at the page behind it.  The ordering assertion is the point: closing
+    afterwards would still have produced a wrong reading.
+    """
+    from winter_agent_v2 import shop_visit as S
+
+    monkeypatch.setattr(S.time, "sleep", lambda *_a, **_k: None)
+    events: list = []
+
+    class V(S.ShopVisitor):
+        def __init__(self):
+            self.log = lambda *a, **k: None
+            self.trace = []
+            self._tap_refused = 0
+            self.tag_prefix = ""
+            self.leftover = True          # a previous card's overlay is still on screen
+
+        def _page(self):
+            img = np.full((1280, 720, 3), (60, 70, 90), np.uint8)
+            if self.leftover:
+                img[795:866, 222:498] = (247, 152, 30)     # the measured button, still armed
+            return img
+
+        def _frame(self):
+            return self._page()
+
+        def see(self, tag, save=True):
+            self.trace.append({"step": tag, "tokens": []})
+            toks = ([{"text": "确定购买", "centre": (361, 433)}] if self.leftover else [])
+            return self._page(), toks
+
+        def _tap_xy(self, xy):
+            events.append(("tap", int(xy[0]), int(xy[1])))
+
+        def _dismiss_dialog(self, on_page=None):
+            events.append("dismiss")
+            self.leftover = False       # the client's own ✕ closed it
+
+    card = S.Card(row=1, col=0, rest=1, price_text="26,000", price_xy=(140, 710),
+                  tap_xy=(140, 665), price_is_diamond=False)
+    ok, img, _toks = V().open_purchase(card)
+
+    assert events, "the leftover overlay was never closed"
+    assert events[0] == "dismiss", f"a tap was aimed at the page behind a live dialog: {events}"
+    assert not ok and img is None, "a leftover dialog must never be reported as this card's own"
+    assert any(e == "dismiss" for e in events)
+
+
+def test_every_recovery_path_in_confirm_checks_the_right_page():
+    """A refused purchase must report a failure, not crash on a page assertion.
+
+    ``confirm`` closes the dialog on three recovery paths -- amount mismatch, missing button,
+    button disagrees.  All three called ``_dismiss_dialog()`` with no argument, which means
+    "assert the *store* page came back".  On 联盟商店 that raises
+    ``LEFT_THE_PAGE_WHILE_DISMISSING`` in the middle of a **safely refused** purchase: the
+    careful behaviour (stop the spend) would have been reported as a crash.  No read-only pass
+    can surface this, because a read-only pass never reaches ``confirm`` at all -- it would have
+    appeared for the first time the moment a purchase was refused, which is the worst moment to
+    discover it.
+    """
+    import ast
+    import inspect as _inspect
+
+    from winter_agent_v2 import shop_visit
+
+    fn = next(node for node in ast.walk(ast.parse(_inspect.getsource(shop_visit)))
+              if isinstance(node, ast.FunctionDef) and node.name == "confirm")
+    calls = [node for node in ast.walk(fn)
+             if isinstance(node, ast.Call)
+             and isinstance(node.func, ast.Attribute)
+             and node.func.attr == "_dismiss_dialog"]
+    assert calls, "confirm no longer closes its dialog anywhere -- re-check this test"
+    bare = [node.lineno for node in calls if not node.args and not node.keywords]
+    assert not bare, (
+        f"_dismiss_dialog is called with no page predicate at lines {bare}; on any page that is "
+        "not the store that raises instead of returning a clean failure")

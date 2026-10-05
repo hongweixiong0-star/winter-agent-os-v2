@@ -64,7 +64,16 @@ def test_polar_created_requires_explicit_identity_and_own_countdown():
 def test_polar_search_uses_client_tab_and_never_join_or_map_pan():
     adapter=BearSessionAdapter(target='POLAR_TERROR')
     adapter.configure({'stamina_sink':True})
-    world=WorldState(page=Page.MAP,resource_search_open=True,resource_selected_tab='MEAT')
+    # A real search panel always names its own tabs.  Measured 2026-10-05 over 139
+    # SELECT_GIANT_BEAST_TAB episodes: all 33 that dispatched carried
+    # resource_tab_kinds ('BEAST','GIANT_BEAST',...) with a giant-tab centre, and all 106 that
+    # could not dispatch named no GIANT_BEAST tab at all.  This fixture used to name none,
+    # which is not a frame the client draws, so it was asserting a routing decision on a state
+    # that never occurs.  The declining side is pinned in
+    # tests/test_the_giant_tab_is_selected_only_when_drawn.py.
+    world=WorldState(page=Page.MAP,resource_search_open=True,resource_selected_tab='MEAT',
+                     resource_tab_kinds=('BEAST','GIANT_BEAST','MEAT'),
+                     resource_giant_beast_tab_norm=(0.31,0.42))
     domain=SimpleNamespace(world=world,idle_marches=1)
     assert adapter._polar_step(domain).skill_id=='SELECT_GIANT_BEAST_TAB'
     world=replace(world,resource_selected_tab='GIANT_BEAST')

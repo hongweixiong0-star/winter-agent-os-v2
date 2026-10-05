@@ -54,6 +54,28 @@ HOME_MARKERS = ("探险", "英雄", "背包", "联盟", "野外")
 WANDERING_MARKERS = ("免费刷新", "下次刷新")
 MYSTERY_MARKERS = ("刷新",)
 
+# -- the alliance shop does NOT live behind the 商店 nav -------------------------------
+# 联盟商店 is reached from the ALLIANCE page, which is a different branch of the bottom
+# navigation entirely -- so the store-entry routine cannot be reused and the tab strip that
+# holds 游荡商人/神秘商店/竞技商店/统帅市 is not involved at all.  The two hops were measured
+# separately; each method below carries its own measurement.
+NAV_ALLIANCE = "联盟"                  # exact text on the HOME bottom nav (5th of 6 items)
+ALLIANCE_ENTRY = "联盟商店"             # the tile label on the ALLIANCE page
+# The ALLIANCE page is a 2-column grid of eight labelled tiles.  Their names are the page's
+# signature: measured 2026-10-05 from the saved live frame
+# knowledge/perception/candidates/alliance_btn_shop__1ba620d5/context.png (720x1280), where all
+# eight read cleanly, so the page is recognised from text and needs no template.
+ALLIANCE_TILES = ("联盟战争", "联盟宝箱", "联盟领地", "据点争夺",
+                  "联盟商店", "联盟科技", "实力排行", "联盟互助")
+ALLIANCE_TILES_MIN = 4                 # 4 of 8 readable names is proof; OCR rarely gets all 8
+# The shop behind that tile is its own page, and it is NOT a store tab: its bottom strip holds
+# 今日 / 本周 (two different stocks), measured 2026-10-05.  It also carries a self-refresh
+# banner -- 下次刷新：+ a countdown -- which is why the operator's 联盟商店 rule needs no
+# refresh step at all: the shop re-rolls itself on a timer.
+ALLIANCE_SHOP_TABS = ("今日", "本周")
+ALLIANCE_SHOP_SELF_REFRESH = "下次刷新"
+ALLIANCE_HEADER_BAND = 0.12            # the page's own 联盟商店 header sits at y=42/1280
+
 DIALOG_TITLE = "确定购买"          # the purchase overlay, opened by tapping the card body
 # Step two.  Tapping 确定购买's price button opens the client's own spend question
 # (「购买确认」/「您是否要花费16钻石?」) with a second orange button; the goods only move on that
@@ -553,6 +575,26 @@ def decide_mystery(name: str | None, discount: str | None) -> tuple[str, str]:
     return "SKIP", f"{MYSTERY_NAME} 但折扣={pct}%（不是{MYSTERY_DISCOUNT}%）"
 
 
+def decide_alliance(name: str | None) -> tuple[str, str]:
+    """联盟商店's rule, exactly as the operator stated it: 名称含「统帅经验」-> 买, 其他跳过。
+
+    This reuses ``COMMANDER_EXP``, the constant the 游荡商人 rule already keys on, because the
+    client prints the same string -- and that reuse is load-bearing.  The live client carries
+    *two* similarly named experience bottles: 英雄经验 ("50,000点英雄经验", measured 2026-10-05)
+    and 统帅经验 ("10点统帅经验").  英雄经验 does **not** contain 统帅经验, so a rule written
+    against the operator's words skips it without a special case.  Two rules that look alike are
+    not alike; neither is two items whose icons look alike.
+
+    No refresh branch exists here: the operator's 联盟商店 policy has none, and this shop has no
+    refresh control to spend on.
+    """
+    if name is None:
+        return "ASK", "no_name_readable"
+    if COMMANDER_EXP in name:
+        return "BUY", f"名称含「{COMMANDER_EXP}」({name})"
+    return "SKIP", f"规则外商品({name})"
+
+
 def top_bar_numbers(tokens: list[dict], height: int) -> list[tuple[int, int, str]]:
     """The top bar's large comma-grouped numbers, left to right, de-duplicated.
 
@@ -675,6 +717,38 @@ class ShopVisitor:
     def on_home(self, toks: list[dict], h: int) -> bool:
         return sum(bool(self._at(toks, m, band=0.86, h=h)) for m in HOME_MARKERS) >= 3
 
+    def on_alliance_page(self, toks: list[dict], h: int) -> bool:
+        """Is this the ALLIANCE page?  Counted from its own tile labels, not from a template.
+
+        The eight tiles are a stable, high-contrast block of text, so the page identifies
+        itself from OCR alone -- the same discipline ``on_home`` uses.  Note the band: the
+        bottom bar on this page holds 成员/激励/设置, so a stray 联盟 in the *bottom* strip
+        would mean we are somewhere else (HOME, whose nav has 联盟) and must not count here.
+        """
+        body = [t for t in toks if t["centre"][1] < 0.90 * h]
+        return sum(1 for m in ALLIANCE_TILES
+                   if any(m in t["text"] for t in body)) >= ALLIANCE_TILES_MIN
+
+    def on_alliance_shop_page(self, toks: list[dict], h: int) -> bool:
+        """Is this the 联盟商店 page (the one behind the ALLIANCE tile)?
+
+        Two independent markers, both measured 2026-10-05 on frame
+        ``20_alliance_shop_page_raw.png``, and both required:
+
+          * the page's own header reads **联盟商店** at y=42, i.e. inside the top 12% -- while
+            the ALLIANCE page's *tile* of the same name sits at y=938, so the band keeps the
+            two apart;
+          * the self-refresh banner reads **下次刷新：** at y=151, which no other observed page
+            carries.
+
+        Requiring both is what stops this from becoming a substring trap: ``联盟商店`` alone
+        appears on the ALLIANCE page too.
+        """
+        header = any("联盟商店" in t["text"]
+                     for t in toks if t["centre"][1] < ALLIANCE_HEADER_BAND * h)
+        banner = any(ALLIANCE_SHOP_SELF_REFRESH in t["text"] for t in toks)
+        return header and banner
+
     def _clear_exit_prompt(self, toks: list[dict]) -> bool:
         """The client raises 「确认退出游戏吗？」 when back presses stack up.  Cancel it."""
         if "退出游戏" not in " ".join(t["text"] for t in toks):
@@ -755,6 +829,94 @@ class ShopVisitor:
                 "HOME" if self.on_home(toks, h) else "unknown page",
                 [t["text"] for t in toks][:24]))
 
+    def enter_alliance(self) -> tuple[np.ndarray, list[dict]]:
+        """Reach the ALLIANCE page from wherever the client happens to be.
+
+        Same shape as ``enter`` and for the same measured reason: every action is followed by a
+        check, and the loop is allowed one more check than it is backs, because the frame an
+        action produced is evidence and discarding it is exactly how the 商店 entry lost a pass
+        on 2026-10-05.
+
+        One extra rule here that the store entry does not need: the store page's bottom bar has
+        no 联盟 item, so being on the store page means the 联盟 nav cannot be tapped from here
+        and the page must be left first.  Pressing back off the store lands on HOME, which does
+        carry it.
+        """
+        img, toks = self.see("A0_entry")
+        h, w = img.shape[:2]
+        for attempt in range(MAX_BACK_ON_ENTRY + 1):
+            if self._clear_spend_dialogs(toks):
+                img, toks = self.see(f"A0_after_leftover{attempt}")
+                continue
+            if self.on_alliance_page(toks, h):
+                self.log(f"   reached the ALLIANCE page ({self._any(toks, ALLIANCE_TILES)})")
+                return img, toks
+            if self.on_store_page(toks, h):
+                self._back("on the store page, whose bottom bar has no 联盟")
+                img, toks = self.see(f"A1_left_store{attempt}")
+                continue
+            if self._clear_exit_prompt(toks):
+                img, toks = self.see(f"A0_after_exit{attempt}")
+                continue
+            nav = self._at(toks, NAV_ALLIANCE, band=0.86, h=h)
+            if nav is not None:
+                self.log(f"   tapping the HOME nav 联盟 at {list(map(int, nav['centre']))}"
+                         f"  (frame {w}x{h}, attempt {attempt})")
+                self._tap_xy(nav["centre"])
+                img, toks = self.see(f"A2_alliance_in{attempt}")
+                if self.on_alliance_page(toks, h):
+                    self.log(f"   reached the ALLIANCE page"
+                             f" ({self._any(toks, ALLIANCE_TILES)})")
+                    return img, toks
+                self.log("   tapped 联盟 but the alliance page did not appear")
+                continue
+            if self.on_home(toks, h) and attempt >= MAX_BACK_ON_ENTRY:
+                break
+            if attempt < MAX_BACK_ON_ENTRY:
+                self._back(f"no 联盟 nav visible (attempt {attempt})")
+                img, toks = self.see(f"A1_before_alliance{attempt}")
+        raise RuntimeError(
+            "ALLIANCE_ENTRY_FAILED at {}: visible {}".format(
+                "HOME" if self.on_home(toks, h) else "unknown page",
+                [t["text"] for t in toks][:24]))
+
+    def open_alliance_shop(self) -> tuple[np.ndarray, list[dict]]:
+        """Tap the ALLIANCE page's 联盟商店 tile, and say what came up.
+
+        The tile is *read from a fresh frame*, never remembered.  The prior measurement lives in
+        ``knowledge/perception/candidates/alliance_btn_shop__1ba620d5/metadata.yaml``: on a
+        720x1280 frame the label box is ``x_norm 0.2361, y_norm 0.7039, w_norm 0.2111,
+        h_norm 0.0578``, i.e. rectangle (170,901)-(322,975), centre **(246, 938)**, with the row's
+        red dot measured at (335,884).  That is a prior to *check*, not a coordinate to fire at,
+        so the tap target is the freshly OCR'd label and the value above is only used by the
+        observer to confirm the two agree.
+
+        Finding the label is allowed more than one frame: the page fades in its tile grid, and a
+        capture taken mid-fade has no labels to read -- the same failure ``select_tab`` records.
+        """
+        node = None
+        for attempt in range(3):
+            img, toks = self.see(f"A3_at_{ALLIANCE_ENTRY}", save=attempt == 2)
+            node = self._at(toks, ALLIANCE_ENTRY, exact=False)
+            if node is not None:
+                break
+            time.sleep(0.9)
+        if node is None:
+            raise RuntimeError(f"ALLIANCE_SHOP_TILE_NOT_FOUND:{ALLIANCE_ENTRY}")
+        self.log(f"   tapping {ALLIANCE_ENTRY} at {list(map(int, node['centre']))}")
+        self._tap_xy(node["centre"])
+        img, toks = self.see("A4_alliance_shop_page")
+        if self.on_alliance_page(toks, img.shape[0]):
+            raise RuntimeError("ALLIANCE_SHOP_DID_NOT_OPEN: the tile grid is still on screen")
+        if not self.on_alliance_shop_page(toks, img.shape[0]):
+            # Not fatal on its own -- the header can be mid-fade -- but it must not pass silently,
+            # because everything downstream reads this frame as the shop's stock.
+            self.log("   WARNING: the 联盟商店 page's own markers did not read on this frame")
+        else:
+            self.log(f"   on the 联盟商店 page (tabs {self._any(toks, ALLIANCE_SHOP_TABS)},"
+                     f" self-refresh banner present)")
+        return img, toks
+
     def select_tab(self, tab: str) -> tuple[np.ndarray, list[dict]]:
         # The tab is found by its own text, and finding it is allowed to take more than one frame:
         # the strip slides in when the store page appears, and a capture taken mid-slide has no
@@ -828,7 +990,9 @@ class ShopVisitor:
         keep = tuple(dy for dy in ladder if card.tap_xy[1] + dy < band_top)
         return keep
 
-    def open_purchase(self, card: Card) -> tuple[bool, np.ndarray | None, list[dict]]:
+    def open_purchase(self, card: Card,
+                      on_page: Callable[[list[dict], int], bool] | None = None
+                      ) -> tuple[bool, np.ndarray | None, list[dict]]:
         """Open the 确定购买 overlay by tapping the card body.
 
         The card's tappable zones were re-measured properly on 2026-10-05 with
@@ -857,6 +1021,20 @@ class ShopVisitor:
         """
         img: np.ndarray | None = None
         toks: list[dict] = []
+        # Refuse to read an overlay this card did not open.
+        #
+        # If an orange price button is ALREADY on screen before anything is tapped, an earlier
+        # card's overlay is still up -- and proceeding would attribute that card's item and its
+        # price to *this* card.  The reading would look completely well-formed, which is what
+        # makes it dangerous: measured 2026-10-05 (evidence
+        # shop_visit_alliance_20261005T063527), where r0c2's overlay survived into r1c0, r1c1 and
+        # r1c2 and all three reported r0c2's own 100点统帅经验; two of the frames are byte-identical.
+        # The caller-side fix is to always dismiss, and this is the primitive-side one: a leftover
+        # is closed here, so no caller's branch shape can reintroduce the ghost.
+        if orange_price_button(self._frame()) is not None:
+            self.log(f"      r{card.row}c{card.col}: an overlay is ALREADY open before any tap"
+                     " -- closing the leftover so it cannot be read as this card's")
+            self._dismiss_dialog(on_page)
         # The frame height is needed to clamp the ladder off the tab strip; this capture does no
         # OCR, so it is cheap, and it is taken before any tap rather than after.
         h_img = self._frame().shape[0]
@@ -906,7 +1084,8 @@ class ShopVisitor:
                     card.tap_xy = moved
         return False, None, toks
 
-    def inspect(self, card: Card) -> dict:
+    def inspect(self, card: Card,
+                on_page: Callable[[list[dict], int], bool] | None = None) -> dict:
         """Read one card from its purchase overlay: name, description, price, currency.
 
         The overlay is used as the *reader* as well as the purchase step, for three measured
@@ -915,14 +1094,17 @@ class ShopVisitor:
         the price with the live currency icon, so the decision is made on current pixels rather
         than on a card list the shop may already have re-rolled; and its ✕ closes it without
         touching anything else.
+
+        ``on_page`` is the predicate describing the page this card was listed on; it is handed to
+        ``_dismiss_dialog`` so the overlay's disappearance is verified against the right page.
         """
-        ok, img, toks = self.open_purchase(card)
+        ok, img, toks = self.open_purchase(card, on_page)
         if not ok or img is None:
             return {"ok": False, "why": "PURCHASE_OVERLAY_NOT_OPENED"}
         name, desc = item_name_from_dialog(toks)
         button_box = orange_price_button(img)
         if button_box is None:
-            self._dismiss_dialog()
+            self._dismiss_dialog(on_page)
             return {"ok": False, "why": "PRICE_BUTTON_NOT_FOUND"}
         # The price is read off the button itself (white glyphs re-drawn as black on white), and
         # the tap is the button's own centre -- which is what a person does, and it keeps the
@@ -938,7 +1120,7 @@ class ShopVisitor:
                                  key=lambda t: len(re.sub(r"\D", "", t["text"])))["text"].strip()
                 how = "whole_frame_inside_button"
         if price_text is None:
-            self._dismiss_dialog()
+            self._dismiss_dialog(on_page)
             return {"ok": False, "why": "PRICE_UNREADABLE_ON_BUTTON"}
         bx, by = button_box["centre"]
         diamond, ev = price_is_diamond(img, bx, by)
@@ -946,7 +1128,8 @@ class ShopVisitor:
                 "price_xy": (int(bx), int(by)), "price_is_diamond": diamond, "currency": ev,
                 "price_source": how, "price_evidence": price_ev, "price_button": button_box}
 
-    def confirm(self, card: Card, inspected: dict) -> tuple[bool, str]:
+    def confirm(self, card: Card, inspected: dict,
+                on_page: Callable[[list[dict], int], bool] | None = None) -> tuple[bool, str]:
         """Spend.  This is TWO taps, not one.
 
         Measured 2026-10-05 (``r0_41_buy_r1c2_done.png``): tapping 确定购买's orange price button
@@ -958,6 +1141,13 @@ class ShopVisitor:
         The second dialog restates the amount, so it doubles as the last gate: it is tapped only
         when the client's own sentence names **exactly** the price this decision was made on.  An
         amount that cannot be read is not confirmed -- a spend that cannot be checked is not made.
+
+        ``on_page`` names the page the card came from and is handed to every recovery path, so a
+        refused purchase closes its dialog and returns a clean failure.  All three of those paths
+        used to assume the store, which on 联盟商店 would have raised
+        ``LEFT_THE_PAGE_WHILE_DISMISSING`` in the middle of a *safely refused* purchase -- a
+        crash standing in for the failure report.  The read-only passes could not surface it,
+        because a read-only pass never calls ``confirm`` at all.
         """
         xy = inspected["price_xy"]
         self.log(f"      confirming with the price button at {list(xy)}"
@@ -974,7 +1164,7 @@ class ShopVisitor:
         if want is None or want not in quoted:
             self.log(f"      购买确认 quotes {quoted} but the decision was made on {want};"
                      " refusing and closing")
-            self._dismiss_dialog()
+            self._dismiss_dialog(on_page)
             return False, f"CONFIRM_AMOUNT_NOT_MATCHED({quoted} != {want})"
         # The second button is located by its own paint, never by finding its digits.  Searching
         # for a numeric token inside the button box is what failed on 2026-10-05 04:13: the
@@ -986,7 +1176,7 @@ class ShopVisitor:
         # This dialog carries exactly one orange button, so the paint is unambiguous here.
         box = orange_price_button(img)
         if box is None:
-            self._dismiss_dialog()
+            self._dismiss_dialog(on_page)
             return False, "CONFIRM_BUTTON_NOT_FOUND"
         # The button's own number is corroboration, not a second gate: a *disagreement* stops the
         # spend, but a number that cannot be read does not, because the client's sentence already
@@ -995,7 +1185,7 @@ class ShopVisitor:
         if says is not None and _num_of(says) != want:
             self.log(f"      购买确认's button says {says} but the dialog quotes {want};"
                      " refusing and closing")
-            self._dismiss_dialog()
+            self._dismiss_dialog(on_page)
             return False, f"CONFIRM_BUTTON_DISAGREES({says} != {want})"
         self.log(f"      购买确认: the client asks for {want}; tapping its own button"
                  f" at {box['centre']} (button reads {says})")
@@ -1006,8 +1196,16 @@ class ShopVisitor:
             return False, "CONFIRM_DIALOG_STILL_OPEN"
         return True, "CONFIRMED"
 
-    def _dismiss_dialog(self) -> None:
-        """Close the purchase overlay by its own ✕.  The orange price button is never a candidate."""
+    def _dismiss_dialog(self, on_page: Callable[[list[dict], int], bool] | None = None) -> None:
+        """Close the purchase overlay by its own ✕.  The orange price button is never a candidate.
+
+        ``on_page`` states which page the overlay was opened *from*, so its disappearance can be
+        checked against the right page.  It defaults to the store, which is where every caller
+        lived until 联盟商店 arrived; the alliance shop is not the store, so a hard-coded
+        ``on_store_page`` here would raise ``LEFT_THE_STORE_WHILE_DISMISSING`` on a perfectly
+        well-behaved alliance pass -- an assertion that is right about the shape of the check and
+        wrong about which page it is checking.
+        """
         _, toks = self.see("50_dismiss_probe", save=False)
         close = next((t for t in toks if t["text"].strip() in ("X", "x", "✕", "×", "╳")), None)
         if close is not None:
@@ -1019,8 +1217,9 @@ class ShopVisitor:
         if DIALOG_TITLE in " ".join(t["text"] for t in toks):
             raise RuntimeError("PURCHASE_OVERLAY_WOULD_NOT_CLOSE")
         h = img.shape[0]
-        if not self.on_store_page(toks, h):
-            raise RuntimeError("LEFT_THE_STORE_WHILE_DISMISSING")
+        back_on = on_page or self.on_store_page
+        if not back_on(toks, h):
+            raise RuntimeError("LEFT_THE_PAGE_WHILE_DISMISSING")
 
     def free_refresh(self) -> bool:
         """Refresh only when the control literally says 免费刷新.  神秘商店's control reads
@@ -1237,7 +1436,27 @@ def visit(ad, out_dir: Path, *, do_refresh: bool = False, execute_buys: bool = F
                 report["purchases"].append({"card": card.to_dict(), "ok": ok, "why": why})
                 bought += 1 if ok else 0
                 log(f"      purchase: {'OK' if ok else 'FAILED'} ({why})")
-            elif card.verdict != "BUY":
+            else:
+                # Every path that does NOT spend must still close the overlay it opened.
+                #
+                # This used to read ``elif card.verdict != "BUY"``, which left the overlay open
+                # on exactly one combination: a **BUY verdict in a read-only pass** (no
+                # ``--buy``).  Measured 2026-10-05 on 联盟商店 (evidence
+                # shop_visit_alliance_20261005T063527): card r0c2 decided BUY, its 确定购买
+                # overlay stayed up, and the *next* card's inspection found an orange button
+                # already on screen -- so it returned the frame it found and reported r0c2's own
+                # name and price as r1c0's, then r1c1's.  Byte-identical frames prove it
+                # (s0_40_card_r0c2_buy0_0.png == s0_40_card_r1c0_buy0_0.png).  Worse, the taps
+                # aimed at those later cards landed *inside the open dialog*, and one hit its
+                # quantity "+" : r1c2 was read as the same item at 20,000 instead of 4,000, i.e.
+                # the decision was made against an amount a stray tap had set.  The pass also
+                # ended with the dialog still armed on screen.  The measured cost: that roll has
+                # 3 统帅经验 slots and the bug reported 6, so three non-统帅经验 items would have
+                # been bought as if they were.
+                #
+                # A stale overlay is the single worst failure mode this module has, because it
+                # makes a wrong reading look like a right one.  Closing on ``else`` removes the
+                # combination instead of documenting it.
                 v._dismiss_dialog()
             round_report.append(card.to_dict())
         report["cards"].append({"round": round_no, "cards": round_report})
@@ -1338,7 +1557,9 @@ def visit_mystery(ad, out_dir: Path, *, do_refresh: bool = False, execute_buys: 
                 card.reason = f"{card.reason} -> {why}"
                 report["purchases"].append({"card": card.to_dict(), "ok": ok, "why": why})
                 log(f"      purchase: {'OK' if ok else 'FAILED'} ({why})")
-            elif card.verdict != "BUY":
+            else:
+                # A BUY verdict in a read-only pass must still close its overlay -- see the
+                # measured stale-overlay failure written up in ``visit``.
                 v._dismiss_dialog()
             round_report.append(card.to_dict())
         report["cards"].append({"round": round_no, "cards": round_report})
@@ -1351,6 +1572,125 @@ def visit_mystery(ad, out_dir: Path, *, do_refresh: bool = False, execute_buys: 
 
     img, toks = v.see("30_final")
     report["wallet_after"], report["gold_after"] = wallets(toks)
+    report["backs_used"] = v._back_used
+    report["tap_refused"] = getattr(v, "_tap_refused", 0)
+    report["touch_balance"] = ad.touch_balance
+    report["steps"] = [s["step"] for s in v.trace]
+    (out_dir / "visit.json").write_text(json.dumps(report, ensure_ascii=False, indent=1),
+                                        encoding="utf-8")
+    return report
+
+
+def visit_alliance(ad, out_dir: Path, *, execute_buys: bool = False, max_swipes: int = 2,
+                   tab: str | None = None, log: Callable[[str], None] = print) -> dict[str, Any]:
+    """One full VISIT_ALLIANCE_SHOP pass.  Reads every slot; buys only a 名称含统帅经验 line.
+
+    Three measured differences from the two store passes, each of which would break a copy-paste
+    of ``visit_mystery``:
+
+      * **The page is not the store.**  There is no 游荡商人/神秘商店 tab strip and no 免费刷新
+        control; the bottom strip holds **今日 / 本周**, i.e. two different stocks, and the shop
+        re-rolls itself on a timer (banner ``下次刷新：`` + countdown).  That banner is precisely
+        why the operator's 联盟商店 rule has no refresh step.
+      * **The list is longer than the screen.**  Measured 2026-10-05: the unscrolled frame shows
+        three complete rows (anchor y 381/665/948) and *clips* a fourth; one swipe up reveals it
+        (anchor y=1101) and a second swipe changes nothing.  A name-based rule therefore cannot
+        be evaluated from one screen, so the pass sweeps.  Which rows are "new" is derived from
+        the frame at run time (anchors below the deepest one already seen) and never from a
+        stored coordinate -- and the sweep terminates on its own when a swipe reveals nothing.
+      * **The top bar carries one number, not two.**  The store's 钻石 slot (x~451) is not
+        rendered on this page; the single number sits at x~630.  So ``coin_before``/``coin_after``
+        carry the only wallet this page shows.  *Which* currency that is was NOT settled in the
+        read-only pass (a purchase is what would settle it), so it is reported, not asserted.
+
+    The verdict comes from each card's own 确定购买 overlay, because -- like every other shop
+    page measured so far -- the cards print icon + 剩余 + price and **no item name**.  The
+    operator's rule is about a name, so the list alone can never evaluate it.
+    """
+    v = ShopVisitor(ad, out_dir, log=log)
+    report: dict[str, Any] = {"skill": "VISIT_ALLIANCE_SHOP", "cards": [], "tab": tab,
+                              "top_bar_before": None, "top_bar_after": None,
+                              "coin_before": None, "coin_after": None,
+                              "execute_buys": execute_buys, "purchases": [], "asks": [],
+                              "unreadable": [], "swipes": 0, "rounds": []}
+    img, toks = v.enter_alliance()
+    img, toks = v.open_alliance_shop()
+    h0, w0 = img.shape[:2]
+    on_page = v.on_alliance_shop_page
+
+    if tab and tab != ALLIANCE_SHOP_TABS[0]:
+        node = v._at(toks, tab, band=TAB_BAND, h=h0)
+        if node is None:
+            raise RuntimeError(f"ALLIANCE_TAB_NOT_FOUND:{tab}")
+        v.log(f"   selecting the {tab} tab at {list(map(int, node['centre']))}")
+        v._tap_xy(node["centre"])
+        img, toks = v.see(f"A5_tab_{tab}")
+
+    report["top_bar_before"] = top_bar_numbers(toks, h0)
+    report["coin_before"] = report["top_bar_before"][-1][2] if report["top_bar_before"] else None
+
+    seen_y: list[int] = []
+    floor = 0
+    for round_no in range(int(max_swipes) + 1):
+        v.tag_prefix = f"s{round_no}_"
+        cards = read_cards(img, toks)
+        todo = cards if round_no == 0 else [c for c in cards if c.tap_xy[1] > floor]
+        log(f"   round {round_no}: {len(cards)} slot(s) on screen,"
+            f" {len(todo)} not yet inspected (floor y>{floor})")
+        round_report = []
+        for card in sorted(todo, key=lambda c: (c.tap_xy[1], c.tap_xy[0])):
+            if card.rest <= 0:
+                card.verdict, card.reason = "SKIP", "sold out"
+                round_report.append(card.to_dict())
+                log(f"   [y{card.tap_xy[1]}c{card.col}] 剩余=0 -> SKIP (sold out)")
+                continue
+            got = v.inspect(card, on_page=on_page)
+            if not got.get("ok"):
+                card.inspect_why = got.get("why")
+                card.verdict, card.reason = "NOT_EXECUTED", f"overlay not usable ({got.get('why')})"
+                log(f"   [y{card.tap_xy[1]}c{card.col}] overlay 打不开 ({got.get('why')})"
+                    " -> NOT_EXECUTED，什么都没点")
+                report["unreadable"].append(card.to_dict())
+                round_report.append(card.to_dict())
+                continue
+            card.name, card.description = got["name"], got["desc"]
+            card.price_text, card.price_is_diamond = got["price"], got["price_is_diamond"]
+            card.verdict, card.reason = decide_alliance(card.name)
+            log(f"   [y{card.tap_xy[1]}c{card.col}] 浮层名={card.name!r}"
+                f" 价={card.price_text}{' diamond' if card.price_is_diamond else ''}"
+                f" -> {card.verdict}  ({card.reason})")
+            if card.verdict == "ASK":
+                report["asks"].append(card.to_dict())
+            if card.verdict == "BUY" and execute_buys:
+                ok, why = v.confirm(card, got, on_page=on_page)
+                card.reason = f"{card.reason} -> {why}"
+                report["purchases"].append({"card": card.to_dict(), "ok": ok, "why": why})
+                log(f"      purchase: {'OK' if ok else 'FAILED'} ({why})")
+            else:
+                # Same stale-overlay fix as ``visit``.  It matters most here: on the measured
+                # 今日 roll 3 of the 9 slots decide BUY, and before the fix the pass reported 6 --
+                # i.e. three items that are not 统帅经验 (1小时研究加速 @ 26,000,
+                # 5分钟训练加速 @ 1,300, 5分钟治疗加速 @ 2,200) would have been bought as if they
+                # were.  See the write-up in ``visit`` for the frames.
+                v._dismiss_dialog(on_page=on_page)
+            round_report.append(card.to_dict())
+        report["cards"].extend(round_report)
+        report["rounds"].append({"round": round_no, "on_screen": len(cards),
+                                 "inspected": len(todo)})
+        seen_y.extend(c.tap_xy[1] for c in cards)
+        floor = max(seen_y) + 40 if seen_y else 0
+        if round_no >= int(max_swipes) or not todo:
+            break
+        # Swipe inside the grid, above the 今日/本周 strip, so no control is ever touched.
+        log(f"   swiping up inside the grid (floor for the next round: y>{floor})")
+        ad.swipe(w0 // 2, 1050, w0 // 2, 420, 420)
+        time.sleep(1.8)
+        report["swipes"] += 1
+        img, toks = v.see(f"A6_after_swipe{round_no}")
+
+    img, toks = v.see("A9_final")
+    report["top_bar_after"] = top_bar_numbers(toks, h0)
+    report["coin_after"] = report["top_bar_after"][-1][2] if report["top_bar_after"] else None
     report["backs_used"] = v._back_used
     report["tap_refused"] = getattr(v, "_tap_refused", 0)
     report["touch_balance"] = ad.touch_balance

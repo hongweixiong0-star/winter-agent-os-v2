@@ -494,6 +494,16 @@ class FishingSessionAdapter(SessionAdapter):
             return SessionStep(0, STEP_PRINTED_TAP, target=FISHING_HOME_WORD,
                                reason="enter one normal fishing level",
                                tags={"stage": STAGE_ENTERING})
+        if FISHING_ENTRY_WORD not in (domain.text or ""):
+            # Ask the frame before pressing.  Every other branch in this method already does --
+            # ``domain.on_home``, ``domain.popup_word``, ``domain.result_page`` are all readings
+            # of what the client drew -- and this one planned a tap on a word without checking.
+            # Measured 2026-10-05 over the retained ledger: 42 of 47 ``OBSERVE_FISHING_STATE``
+            # executions ended ``SESSION_TAP_WORD_ABSENT:钓鱼锦标赛`` with ``executed=False``,
+            # roughly every 30-60 minutes, over 10-02..10-05, and never advanced the goal.
+            # ``None`` is the engine's own WAITING -- its comment calls it "a real state, not a
+            # failure" -- so this drops the step that could not land instead of inventing one.
+            return None
         return SessionStep(0, STEP_PRINTED_TAP, target=FISHING_ENTRY_WORD,
                            reason="open the fishing tournament the client prints")
 
@@ -884,6 +894,18 @@ class BearSessionAdapter(SessionAdapter):
                     return SessionStep(0,STEP_PRINTED_TAP,target=label,reason='open current polar target card')
             return SessionStep(0,STEP_OBSERVE_ONLY,reason='await current polar search result')
         if world.page is Page.MAP and world.resource_search_open:
+            if world.resource_giant_beast_tab_norm is None:
+                # The panel is open but this frame does not draw the 冰原巨兽 tab, so the skill
+                # that selects it has no target to ground.  Measured 2026-10-05 over the
+                # retained ledger: 106 episodes under AVOID_STAMINA_WASTE ended with
+                # ``action={}`` and ``MAP -> None`` -- nothing executed, no after-frame --
+                # signed SEMANTIC_TARGET_NOT_VERIFIED, roughly every 30-60 minutes and never a
+                # goal progress.  Every other branch in this method reads what the client drew
+                # (``words``, ``resource_selected_tab``, ``card``); this one did not.
+                # Looking again rather than falling through is deliberate: the next branch
+                # opens SEARCH_RESOURCE, a different panel.
+                return SessionStep(0, STEP_OBSERVE_ONLY,
+                                   reason='await the giant-beast tab on the open search panel')
             return SessionStep(0,STEP_SKILL,skill_id='SELECT_GIANT_BEAST_TAB',reason='select live giant search label')
         if self._polar_search_sent:
             card = world.beast_search_result or {}

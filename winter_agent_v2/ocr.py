@@ -2385,6 +2385,28 @@ RESOURCE_TAB_LABEL_TO_KIND: dict[str, str] = {
     "铁矿": "IRON",
 }
 
+#: OCR readings of the labels above that were observed on live frames but are not the label
+#: itself, mapped back to the label they were reading.
+#:
+#: Measured 2026-10-05, and this table is a census rather than a guess: over 17 live frames of
+#: the search panel (every ``GIANT_BEAST_TAB_NOT_PROVEN`` step's after-frame plus the skill's
+#: successful before-frames), the only band token that sat one character away from a key was
+#: ``冰原巨善`` -- ``兽`` read as ``善`` -- **14 times**, at confidence **0.91-0.94**.  That is
+#: well above the reader's 0.7 floor, so it is a substitution, not a weak read; everything else
+#: that missed the table (``大型养殖场``, player names, ``生``) has no key within one character.
+#:
+#: Cost of not having this: the tab drops out of the strip, ``selected_tab_from_live_labels``
+#: can no longer bind the selection bracket to a label and answers ``None``, the bracket
+#: fallback then reads the wrong cell, and the verifier reports ``GIANT_BEAST_TAB_NOT_PROVEN``
+#: for a tap that had actually selected the tab.  Verified on the real frame: the same call
+#: returns ``None`` with today's labels and ``GIANT_BEAST`` with this label restored.
+#:
+#: A variant is added only with its own count from such a census, so this stays a record of what
+#: the client's rendering plus this OCR actually produce, not a place to paper over misses.
+RESOURCE_TAB_LABEL_VARIANTS: dict[str, str] = {
+    "冰原巨善": "冰原巨兽",
+}
+
 
 # --- the 快捷面板 -----------------------------------------------------------
 # The left-edge triangle opens a panel drawn *over* the current page.  It repeats
@@ -3800,7 +3822,8 @@ def read_resource_tab_labels(
     for token in tokens:
         if token.confidence < min_confidence or not token.box:
             continue
-        kind = RESOURCE_TAB_LABEL_TO_KIND.get(token.text.strip())
+        text = token.text.strip()
+        kind = RESOURCE_TAB_LABEL_TO_KIND.get(RESOURCE_TAB_LABEL_VARIANTS.get(text, text))
         if kind is None or kind in found:
             continue
         xs = [point[0] for point in token.box]

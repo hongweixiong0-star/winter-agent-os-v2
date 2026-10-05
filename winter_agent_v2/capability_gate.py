@@ -41,7 +41,7 @@ so a broken path is neither retried in a soft loop nor starved forever.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
@@ -94,7 +94,18 @@ _SKILL_CAPABILITY_CACHE: dict[str, str] = {}
 
 @dataclass(frozen=True)
 class Deferral:
-    """One goal path the scheduler must not select, with the evidence for it."""
+    """One goal path the scheduler must not select, with the evidence for it.
+
+    ``until`` is **the moment this deferral stops applying** -- the single meaning the
+    board renders as "至".  It is not the escalation ledger's ``cooldown_until``: for a
+    capability whose repair budget is spent, the gate re-admits the goal on a probe
+    window measured from the goal's *own* newest attempt, so the ledger's deadline can
+    be days in the past while the path is still held.  Measured 2026-10-05: the board
+    printed ``至 2026-09-23`` for ``DAILY_ACTIVITY_TARGET`` while that goal had run 28
+    minutes earlier and would be admitted again 180 minutes after it.  Reporting the
+    ledger field made a working probe look like a permanent stall -- see
+    ``blocks()``, which now fills this with the deadline it actually applies.
+    """
 
     goal_id: str
     state: str
@@ -602,22 +613,24 @@ class CapabilityGate:
             return None
         return max(blocked, key=lambda item: _severity(item.state))
 
-    def _probe_lapsed(
+    def _probe_anchor(
         self,
         goal_id: str,
-        now: datetime,
-        window_minutes: int,
         *,
         fallback_anchor: datetime | None = None,
         capability_scope: frozenset[str] = frozenset(),
-    ) -> bool:
-        """Has this path's probe window expired?
+    ) -> datetime | None:
+        """The moment this path's probe timer starts from, or ``None`` if it has none.
 
         A no-progress deferral with no recorded attempt does not lapse: nothing has
         been measured. For a capability blocked by an exhausted repair budget, use the
         ledger's cooldown or settlement deadline until the current code version has its
         first production attempt. Otherwise a version change can erase the current
         episode tail and leave an expired blocker permanent.
+
+        This is one function rather than two callers each deriving it, because
+        ``blocks()`` has to publish the same anchor it judges with: two derivations is
+        exactly how the board and the gate start disagreeing (measured 2026-10-05).
         """
         _streak, last, last_skill, _evidence = _streak_record(self.streaks.get(goal_id, ()))
         anchor = last or fallback_anchor
@@ -630,6 +643,23 @@ class CapabilityGate:
             last_capability = self._capability_of_skill(last_skill)
             if last_capability not in capability_scope:
                 anchor = fallback_anchor
+        return anchor
+
+    def _probe_lapsed(
+        self,
+        goal_id: str,
+        now: datetime,
+        window_minutes: int,
+        *,
+        fallback_anchor: datetime | None = None,
+        capability_scope: frozenset[str] = frozenset(),
+    ) -> bool:
+        """Has this path's probe window expired?"""
+        anchor = self._probe_anchor(
+            goal_id,
+            fallback_anchor=fallback_anchor,
+            capability_scope=capability_scope,
+        )
         if anchor is None:
             return False
         return (now - anchor).total_seconds() / 60.0 >= window_minutes
@@ -739,6 +769,12 @@ class CapabilityGate:
         exact Goal despite historical no-progress evidence. This only lifts that
         local retry cooldown; capability blockers, pending reloads and the normal
         runtime authorization checks still apply. Production passes no Goal ID.
+
+        The returned row's ``until`` is the deadline **this** decision applies -- the
+        probe window measured from the anchor ``_probe_anchor`` chose. The escalation
+        ledger's own ``cooldown_until`` is only one of the two possible anchors and can
+        be days stale, so publishing it verbatim made the board describe a working
+        probe as a permanent stall (measured 2026-10-05).
         """
         moment = now or datetime.now(timezone.utc)
         found = self._capability_deferral(goal.goal_id)
@@ -758,34 +794,30 @@ class CapabilityGate:
             if found.state == COOLDOWN and not self.reload_pending:
                 return found
             window = self.blocked_probe_minutes
+        scope = (
+            frozenset(self.compositions.get(goal.goal_id).capabilities)
+            if found.source == SOURCE_QUEUE
+            and self.compositions.get(goal.goal_id) is not None
+            else frozenset()
+        )
+        anchor = self._probe_anchor(
+            goal.goal_id, fallback_anchor=found.until, capability_scope=scope,
+        )
         if not self.reload_pending and self._probe_lapsed(
             goal.goal_id,
             moment,
             window,
-            fallback_anchor=found.until if found else None,
-            capability_scope=(
-                frozenset(self.compositions.get(goal.goal_id).capabilities)
-                if found is not None and found.source == SOURCE_QUEUE
-                and self.compositions.get(goal.goal_id) is not None
-                else frozenset()
-            ),
+            fallback_anchor=found.until,
+            capability_scope=scope,
         ):
             return None
-        if self.reload_pending:
-            found = Deferral(
-                goal_id=found.goal_id,
-                state=found.state,
-                reason=found.reason + "; a runtime reload is pending",
-                capability=found.capability,
-                source=found.source,
-                failure_signature=found.failure_signature,
-                until=found.until,
-                probe_minutes=window,
-                streak=found.streak,
-                last_attempt=found.last_attempt,
-                last_skill=found.last_skill,
-            )
-        return found
+        horizon = anchor + timedelta(minutes=window) if anchor is not None else None
+        reason = (
+            found.reason + "; a runtime reload is pending"
+            if self.reload_pending
+            else found.reason
+        )
+        return replace(found, reason=reason, until=horizon, probe_minutes=window)
 
     def allows(self, goal: GoalState, *, now: datetime | None = None) -> bool:
         return self.blocks(goal, now=now) is None

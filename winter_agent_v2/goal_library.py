@@ -1098,6 +1098,81 @@ def _append_quick_panel_task_goals(goals: list[GoalState], world: WorldState) ->
         ))
 
 
+def _strip_read_entries(role_id: str) -> tuple[Mapping[str, Any], ...]:
+    """The ids a role's activity strip recorded as **opened**.  Failure yields ``()``.
+
+    Reads the project's existing ``ACTIVITY_STRIP`` snapshot rather than keeping a second
+    list of "what we have looked at".  A missing or unreadable record is not an error here:
+    the caller then simply behaves as it did before, which is the safe direction.
+    """
+    if not role_id:
+        return ()
+    try:
+        from .event_schedule import latest_calendar_snapshot
+
+        snapshot = latest_calendar_snapshot(role_id, kind="ACTIVITY_STRIP")
+    except Exception:  # noqa: BLE001 - a missing record must never stop the board
+        return ()
+    if not isinstance(snapshot, Mapping):
+        return ()
+    entries = snapshot.get("read_entries")
+    return tuple(entry for entry in (entries or ()) if isinstance(entry, Mapping))
+
+
+def _activity_detail_already_on_file(
+    activity: "event_goal.Activity",
+    *,
+    calendar_rows: Iterable[Mapping[str, Any]],
+    strip_read_entries: Iterable[Mapping[str, Any]],
+) -> bool:
+    """Has this activity's **own page** already been opened and recorded?
+
+    Two of the project's own records answer it, and neither is a second truth: the calendar
+    grid row for this event (``details_observed``), and the roles' activity strip
+    ``read_entries`` (the ids whose detail was opened).
+
+    Measured 2026-10-05 on the live board: of the 20 ``SCHEDULED_*`` tickets, 6 carried a
+    grid row with ``details_observed=True`` and 3 more were in a role's ``read_entries`` --
+    and **every one of them still declared "this event's own page once opened" as its
+    outstanding observation**.  So the ticket asked again for a fact already on file, and
+    ``capability_bootstrap`` called the goal ``MISSING_OBSERVATION``.  §55 requires the real
+    reason for "why was this not done", and "go and look" stops being an answer once the
+    looking has already happened.
+    """
+    ids = {str(activity.event_id or "")}
+    ids.update(str(alias or "") for alias in getattr(activity, "aliases", ()) or ())
+    ids.discard("")
+    if not ids:
+        return False
+    for row in calendar_rows:
+        if isinstance(row, Mapping) and str(row.get("event_id") or "") in ids:
+            if row.get("details_observed") is True:
+                return True
+    for entry in strip_read_entries:
+        if str(entry.get("event_id") or "") in ids:
+            return True
+    return False
+
+
+def _frame_shows_calendar_grid(world: "WorldState | None") -> bool:
+    """Is the frame the agent is standing on the calendar **grid**?
+
+    ``Page.EVENT`` covers two mutually exclusive sub-states -- the regular-events hub and the
+    calendar grid.  Measured 2026-10-05 over 9387 recorded frames: 7724 neither, **1173 hub,
+    490 grid**, and never both.  The distinction matters because ``READ_EVENT_CALENDAR``'s
+    verifier is satisfiable only on the grid: replaying it over every captured grid frame
+    passes 979/979, while all 40 production executions -- every one of them standing on the
+    hub -- failed 40/40.
+    """
+    if world is None:
+        return False
+    events = getattr(world, "events", None)
+    if not isinstance(events, Mapping):
+        return False
+    calendar = events.get("calendar")
+    return isinstance(calendar, Mapping) and calendar.get("recognized") is True
+
+
 class GoalLibrary:
     """Turns observed state into goals. It is knowledge, not another scheduler."""
 
@@ -1505,7 +1580,9 @@ class GoalLibrary:
             goals, world, role_id=role_id, calendar_snapshot=calendar_snapshot
         )
         self._append_alliance_mobilization_goals(goals, world, role_id=role_id)
-        self._append_known_activities(goals, calendar_snapshot=calendar_snapshot)
+        self._append_known_activities(
+            goals, role_id=role_id, world=world, calendar_snapshot=calendar_snapshot
+        )
         self._append_fishing_goals(
             goals, role_id=role_id, fishing_pressures=fishing_pressures
         )
@@ -2096,7 +2173,9 @@ class GoalLibrary:
 
     @staticmethod
     def _append_known_activities(
-        goals: list[GoalState], *, calendar_snapshot: Mapping[str, Any] | None = None
+        goals: list[GoalState], *, role_id: str = "",
+        world: WorldState | None = None,
+        calendar_snapshot: Mapping[str, Any] | None = None,
     ) -> None:
         """Put the activities this project already knows about on the board, open or not (§二/§三).
 
@@ -2115,8 +2194,17 @@ class GoalLibrary:
         * ``available_skills=()`` keeps the dormant record out of ordinary dispatch. When a live
           page makes the event actionable, its existing task goal (for example
           ``EVENT_MINIMUM_GUARANTEE`` or ``PARTICIPATE_BEAR``) owns execution and de-duplicates
-          this registration by ``event_id``.
+          this registration by ``event_id``.  A ticket whose own page is **already on file**
+          (grid row ``details_observed``, or the role's strip ``read_entries``) also carries no
+          skills: it has nothing left it could go and read.  So does a ticket whose **frame is
+          not the calendar grid** -- the read it carries is verifiable only there (40/40 failed
+          on the hub, 979/979 passed on the grid), and handing over an action that cannot run
+          is the infinite retry §0 forbids.
         * the status is the window's, so the artifact says which of the six semantics applies.
+        * a ticket whose page has already been observed does **not** declare
+          ``required_observation`` -- it waits on the client with ``condition="waiting_window"``
+          instead, which is §55's ``WAIT_UNTIL``.  "Go and look" is not the reason once the
+          looking has happened (measured 2026-10-05: 9 of 20 tickets).
         * ``evidence["prepare"]`` carries what §三 asks to have ready and ``evidence["knowledge"]``
           the files it lives in.  Preparing is not a page entry, so it is not a skill.
 
@@ -2129,26 +2217,51 @@ class GoalLibrary:
         calendar_rows = [row for row in (snapshot.get("entries") or ()) if isinstance(row, Mapping)]
         observed_ids = {str(row.get("event_id") or "") for row in calendar_rows}
         static_ids = {activity.event_id for activity in event_goal.known_activities()}
+        strip_read_entries = _strip_read_entries(role_id)
+        on_calendar_grid = _frame_shows_calendar_grid(world)
         for activity in event_goal.known_activities():
             current_ids = {activity.event_id, *activity.aliases}
             if not activity.event_id or current_ids.intersection(reported):
                 continue
             window = activity.window()
             registered = _registered_activity_flow(activity)
-            goals.append(GoalState(
-                f"SCHEDULED_{activity.event_id}",
-                _WINDOW_STATUS[window],
-                completion=1.0 if window is event_goal.WindowState.EXPIRED else 0.0,
-                available_skills=_ACTIVITY_OBSERVATION_SKILLS,
-                evidence={
-                    **activity.plan(),
-                    **registered,
-                    "calendar_observation": next((dict(row) for row in calendar_rows
-                                                   if str(row.get("event_id") or "") == activity.event_id), None),
-                    "calendar_observed_at": snapshot.get("observed_at"),
-                    "calendar_role_id": snapshot.get("role_id"),
-                    "window": window.value,
-                    "live_reading": False,
+            already_observed = _activity_detail_already_on_file(
+                activity,
+                calendar_rows=calendar_rows,
+                strip_read_entries=strip_read_entries,
+            )
+            evidence = {
+                **activity.plan(),
+                **registered,
+                "calendar_observation": next((dict(row) for row in calendar_rows
+                                               if str(row.get("event_id") or "") == activity.event_id), None),
+                "calendar_observed_at": snapshot.get("observed_at"),
+                "calendar_role_id": snapshot.get("role_id"),
+                "window": window.value,
+                "live_reading": False,
+                "dispatch_rule": "use the registered event flow only after the current client identifies the event and its live conditions",
+                "fallback": "match a registered generic event flow, then use the current UI planner when a step is missing",
+            }
+            if already_observed:
+                # The page this ticket asks for has already been opened and recorded, so asking
+                # for it again is asking for a fact already on file -- and §55 wants the real
+                # reason, not a repeat of the last one.  ``waiting_window`` is the project's
+                # existing name for "the client has not printed this window yet" (the alliance
+                # provider uses it two hundred lines above; ``capability_bootstrap`` maps it to
+                # ``WAIT_UNTIL`` and ``task_completion`` to ``EVENT_NOT_OPEN``), so no new
+                # vocabulary is introduced.
+                #
+                # ``available_skills=()`` is what this function's own docstring always said the
+                # dormant record should carry; it had drifted to the read-only observation skill,
+                # which then ran 40 times from the regular-events hub and could not pass once
+                # (measured 2026-10-05; see .workbuddy-ai/handoff/ACTIVITY_TICKET_ASKS_THE_WRONG_PAGE_20261005.md).
+                evidence.update({
+                    "availability_state": "LIVE_DETAIL_ALREADY_OBSERVED",
+                    "required_observation": None,
+                    "condition": "waiting_window",
+                })
+            else:
+                evidence.update({
                     "availability_state": "AWAITING_LIVE_CLIENT_READING",
                     # The row already says it is waiting for a live reading; this is the field the
                     # observation ticket reads, and without it "waiting" priced at -inf and nothing
@@ -2157,11 +2270,22 @@ class GoalLibrary:
                         "this event's own page once opened: whether its window is open and what its "
                         "live participation conditions are"
                     ),
-                    "dispatch_rule": "use the registered event flow only after the current client identifies the event and its live conditions",
-                    "fallback": "match a registered generic event flow, then use the current UI planner when a step is missing",
-                },
+                })
+            goals.append(GoalState(
+                f"SCHEDULED_{activity.event_id}",
+                _WINDOW_STATUS[window],
+                completion=1.0 if window is event_goal.WindowState.EXPIRED else 0.0,
+                # Offered only where it can run: on the hub its verifier failed 40/40, on the
+                # grid it passes 979/979 (see _frame_shows_calendar_grid).  Withholding it is
+                # §5's ExecutionReadiness changing, not the Goal losing its place on the board.
+                available_skills=(
+                    () if (already_observed or not on_calendar_grid)
+                    else _ACTIVITY_OBSERVATION_SKILLS
+                ),
+                evidence=evidence,
                 distance=1.0,
             ))
+
         # New localized names discovered in a calendar remain visible as role-scoped candidates.
         # They carry no guessed mechanics, timing or executable action until a live page supplies
         # those facts; exact IDs are deduplicated with any live event goal already on the board.
@@ -2169,24 +2293,34 @@ class GoalLibrary:
             event_id = str(row.get("event_id") or "")
             if not event_id or event_id in static_ids or event_id in reported:
                 continue
-            goals.append(GoalState(
-                f"SCHEDULED_{event_id}", GoalStatus.UNKNOWN,
-                available_skills=_ACTIVITY_OBSERVATION_SKILLS,
-                evidence={
-                    "event_id": event_id,
-                    "name": row.get("display_name"),
-                    "activity_goal_id": f"SCHEDULED_{event_id}",
-                    "registered_goal_ids": ["DISCOVER_EVENT_CALENDAR", "EVENT_MINIMUM_GUARANTEE"],
-                    "registered_skill_ids": _registered_event_candidate_skills(),
-                    "unregistered_skill_ids": _unregistered_event_candidate_skills(),
-                    "flow_registration_state": "PARTIAL_GENERIC_FALLBACK_REGISTERED_WAITING_FOR_LIVE_CONDITIONS",
-                    "calendar_observation": dict(row),
-                    "calendar_observed_at": snapshot.get("observed_at"),
-                    "calendar_role_id": snapshot.get("role_id"),
+            row_detail_observed = row.get("details_observed") is True
+            row_evidence = {
+                "event_id": event_id,
+                "name": row.get("display_name"),
+                "activity_goal_id": f"SCHEDULED_{event_id}",
+                "registered_goal_ids": ["DISCOVER_EVENT_CALENDAR", "EVENT_MINIMUM_GUARANTEE"],
+                "registered_skill_ids": _registered_event_candidate_skills(),
+                "unregistered_skill_ids": _unregistered_event_candidate_skills(),
+                "flow_registration_state": "PARTIAL_GENERIC_FALLBACK_REGISTERED_WAITING_FOR_LIVE_CONDITIONS",
+                "calendar_observation": dict(row),
+                "calendar_observed_at": snapshot.get("observed_at"),
+                "calendar_role_id": snapshot.get("role_id"),
+                "start": None,
+                "end": None,
+                "participation_conditions": "UNKNOWN",
+            }
+            if row_detail_observed:
+                # This row's own detail was already opened and recorded -- the same fact the
+                # registered tickets above consult, and the same reason it must stop being
+                # called an outstanding observation (see _activity_detail_already_on_file).
+                row_evidence.update({
+                    "availability_state": "LIVE_DETAIL_ALREADY_OBSERVED",
+                    "required_observation": None,
+                    "condition": "waiting_window",
+                })
+            else:
+                row_evidence.update({
                     "availability_state": "CALENDAR_PREVIEW_ONLY",
-                    "start": None,
-                    "end": None,
-                    "participation_conditions": "UNKNOWN",
                     # Same declaration as the registered rows, and for the same measured reason: the
                     # calendar preview cannot say whether the window is open or what participating
                     # costs, and those are the facts the ticket exists to go and read.
@@ -2195,7 +2329,14 @@ class GoalLibrary:
                         "is open, what participating in it costs, and its current points"
                     ),
                     "fallback": "match a registered generic event flow after live page and conditions are observed",
-                },
+                })
+            goals.append(GoalState(
+                f"SCHEDULED_{event_id}", GoalStatus.UNKNOWN,
+                available_skills=(
+                    () if (row_detail_observed or not on_calendar_grid)
+                    else _ACTIVITY_OBSERVATION_SKILLS
+                ),
+                evidence=row_evidence,
                 distance=1.0,
             ))
 
@@ -2669,6 +2810,21 @@ def progress_moved(
     is a hard-coded constant; see its docstring for the measured reason.  A goal with a
     working ``distance`` keeps using it unchanged, and a goal with neither is still
     ``None`` -- unobserved, not stalled.
+
+    **The scale guard has to hold in both directions, and it did not.**  The remembered
+    number and the current one must be the same *kind*, so the writer records the kind next
+    to the value.  The first version of that guard was applied on the branch where the
+    current frame *had* an evidence-derived meter, and returned ``None`` there if the
+    remembered value was a distance.  The opposite transition -- a distance on the current
+    frame against a remembered count -- fell through to ``now.distance < previous`` with no
+    check at all.  Measured 2026-10-05 on ``CLEAR_INTEL``, whose row alternates between
+    "board read, seven intel left" (``-7.0``) and "visit ticket, no count" (``1.0``): the
+    comparison was ``1.0 < -7.0``, which is ``False``, and ``False`` is counted as a step
+    where the action landed and the goal did not move.  ``False`` increments
+    ``no_progress_streak``, so the goal was deferred -- ``3 consecutive production episodes
+    passed their verifier and advanced no part of this goal`` -- for a run in which the
+    board was being read.  ``None`` is the honest answer for that comparison and is *not*
+    counted against the goal.  Both directions now consult the kind.
     """
     now = next((goal for goal in after if goal.goal_id == goal_id), None)
     if now is None:
@@ -2677,6 +2833,13 @@ def progress_moved(
     if previous is None:
         return None
     reading = _observation_meter(now)
+    # Read for **both** branches, and that is the fix rather than a tidy-up.  The guard
+    # below exists to keep ``reading`` and ``previous`` the same kind of number, and the
+    # first version consulted it only on the branch where a reading happened to be present,
+    # so the other branch fell straight through to a cross-scale comparison.  A guard
+    # checked in one direction is not a guard; see the measured counterexample in the
+    # docstring.
+    kind = _METER_KINDS.get(goal_id)
     if reading is not None:
         # Compare like with like.  The remembered value has to be the same kind of number,
         # or "progress" would be an artefact of switching scales mid-run.
@@ -2691,7 +2854,6 @@ def progress_moved(
         # So the writer records the scale alongside the number.  A remembered value with no
         # matching kind was written by the other meter and the honest answer is ``None`` --
         # not measured, which the caller already documents as distinct from "no progress".
-        kind = _METER_KINDS.get(goal_id)
         if kind != "observation":
             return None
         # The two meters run in opposite directions, which is why one shared comparison
@@ -2702,6 +2864,27 @@ def progress_moved(
         # the exact failure this meter exists to remove, and it was caught by running the
         # two states rather than by reading the comparison.
         return reading > previous
+    if kind == "observation":
+        # The mirror case, and it was the live defect.  This frame carries no meter -- the
+        # goal is off its page -- while the remembered number came from an evidence-derived
+        # meter.  ``now.distance`` is the only number left, and comparing it with that
+        # remembered value is the very cross-scale comparison this guard exists to stop.
+        #
+        # Measured on ``CLEAR_INTEL``, which alternates between the two shapes by
+        # construction: on a frame that read the intel board the row carries ``untried_pins``
+        # and the meter is ``-untried`` (``-7.0`` for a board with seven intel left); on every
+        # other frame the row is the sweep's visit ticket, which carries no count at all, so
+        # the meter falls back to the literal ``distance=1.0``.  The old code then evaluated
+        # ``1.0 < -7.0``, got ``False``, and recorded a hard "the action landed, the goal did
+        # not move" for a step that had just read the board.  ``False`` increments
+        # ``no_progress_streak`` (``runtime.py:9734``), so the goal accumulated the streak
+        # that deferred it: three consecutive episodes, reason ``advanced no part of this
+        # goal``, while the reads were in fact happening.
+        #
+        # ``None`` is the honest verdict, and the difference is not cosmetic: ``None`` is
+        # documented above as "not observable", which is *not* counted against the goal,
+        # whereas ``False`` is.
+        return None
     return now.distance < previous
 
 

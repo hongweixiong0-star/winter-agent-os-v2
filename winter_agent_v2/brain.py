@@ -732,6 +732,23 @@ class RuleBrain:
                     world.confidence, "event_calendar_open",
                 )
             if world.page is Page.MAP:
+                if world.resource_search_open:
+                    # The bottom sheet a search panel opens covers the bar the return-to-city
+                    # control is drawn on, so naming OPEN_HOME on this frame names a tap that
+                    # cannot resolve -- and that is exactly what happened: measured 2026-10-05,
+                    # every one of the 54 SEMANTIC_TARGET_NOT_VERIFIED refusals of OPEN_HOME
+                    # carried *this* branch's own reason
+                    # (event_route_goal_needs_the_city_hud_for_an_activity_entry), the frames
+                    # show the panel over the bar, and the template's own match is absent on
+                    # them (frame-level probe: failures 0/12 with a 12/12 positive control).
+                    #
+                    # Every sibling branch that goes home from MAP already closes the panel
+                    # first (mail, daily, alliance, building, research, training, exploration,
+                    # current-goal).  This branch was the one that did not.
+                    return Decision(
+                        "BACK", "close_resource_search_before_the_city_hud",
+                        world.confidence, "resource_search_closed",
+                    )
                 return Decision(
                     "OPEN_HOME", "event_route_goal_needs_the_city_hud_for_an_activity_entry",
                     world.confidence, "home_opened",

@@ -104,7 +104,10 @@
       "save_draw": true,
       "stdout_level": "error",
       "observed": {
-        "screencap_ms": {"ADB_exec_out_screencap_p": 246.2, "MAA_EmulatorExtras": 12.1},
+        "screencap_ms": {
+          "ADB_exec_out_screencap_p": 246.2,
+          "MAA_EmulatorExtras": 12.1
+        },
         "measurement": "tools/probe_maa_api2.py, live MuMu 127.0.0.1:7555, 5 samples each, 2026-09-14"
       }
     }
@@ -117,8 +120,8 @@
     "quantization": "Q4_K_M",
     "multimodal": true,
     "context": 32768,
-  "output_reserve": 4096,
-  "history_steps": 16,
+    "output_reserve": 4096,
+    "history_steps": 16,
     "endpoint": "http://127.0.0.1:18080",
     "think": false,
     "think_note": "UI-Venus-2 reasons before it answers, and with the pass left on it spends the whole token budget in reasoning_content and returns an empty content field. GUI planning wants the decision, not the deliberation, so the template is asked to skip it -- which is also the model card's own guidance for grounding tasks. tools/probe_gui_model_multimodal.py measures both settings.",
@@ -139,10 +142,11 @@
   },
   "retention": {
     "max_screenshots": 500,
-    "screenshot_ttl_days": 14,
+    "screenshot_ttl_days": 3,
     "auto_prune": true,
     "max_log_size_bytes": 10485760,
-    "episode_limit": 10000
+    "episode_limit": 10000,
+    "referenced_ttl_days": 30
   },
   "role_session": {
     "note": "ROLE SESSION PRODUCTION V2 (operator directive 2026-09-30). One account keeps the device until its own batch is mostly done; another role's merely higher ordinary score is no longer a switching condition. min_role_dwell_seconds and switch_margin are retained but DEMOTED: dwell is a minimum-protection floor (time passing is not a licence to switch) and the margin only decides worth AFTER the session gate has allowed a move. Limited-time work is unaffected -- HARD_EVENT_PREEMPT still outranks all of this.",

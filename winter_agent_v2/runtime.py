@@ -2371,6 +2371,79 @@ class LiveRuntime:
             event_schedule.record_calendar_snapshot(role_id=role, observation=calendar,
                 observed_at=stamp, evidence_ref=str(frame or ""))
 
+    def _untried_intel_of(self, detected) -> list:
+        """The detected pins this run has not already tapped.
+
+        ``40`` px, because that is the radius the tap itself was measured with: the same pin
+        re-detected on the next frame lands a few pixels off, not on a new pin.
+        """
+        return [
+            pin for pin in detected
+            if all((pin.x - tx) ** 2 + (pin.y - ty) ** 2 > 40 ** 2
+                   for tx, ty in self._tapped_intel_pins)
+        ]
+
+    def _stamp_intel_pin_counts(self, world: WorldState, frame: Path | str | None) -> WorldState:
+        """Return ``world`` with the intel board's pin counts stamped, or ``world`` unchanged.
+
+        **Both frames need this, and only one used to get it.**  The counts were stamped at the
+        top of the step, onto the frame that becomes ``before``, and the comment there is about
+        planning: the same frame and candidate list must serve the decision and the execution.
+        That is right for planning and wrong for accounting, because ``goals_after`` is read
+        from the **after** frame -- so an after row that *was* the board carried no
+        ``untried_pins``, and described itself as a frame with no count instead of as a board.
+
+        Measured 2026-10-05 over ``learning/episodes.jsonl``, banded by ``repo_revision``, the
+        effect is **one** of the two transitions it looks like it should have:
+
+        * ``other page -> board`` (``MAP -> INTEL`` 214 rows, ``POPUP -> INTEL`` 141, over all
+          bands): the remembered value came from a visit ticket (kind ``distance``) and the
+          current row had ``reading is None``, so the comparison fell *past* the scale guard to
+          ``now.distance < previous`` -- ``1.0 < 1.0``, ``False``, in every band that recorded
+          this shape up to and including ``ea349eba``.  Stamped, the row carries ``-untried``,
+          so ``reading is not None`` and the guard's first branch applies: the two scales
+          differ, and ``None`` is the honest answer.  First observed at ``1132f9de``.
+        * ``board -> other page`` was **already** ``None`` before this change, because the scale
+          guard reaches that direction on its own -- ``False`` at ``31ec1e2a``, ``None`` at
+          ``2cc1da6c``.  The stamp does not touch it.  An earlier version of this docstring
+          credited it here, which was wrong: the two fixes are in opposite directions and only
+          one of them is this one.
+
+        ``board -> board`` -- a pin tapped while staying on the board -- is where a consumed pin
+        would read as ``True`` (``-7.0 > -8.0``).  It is **reasoned, not measured**: the ledger's
+        1681 ``CLEAR_INTEL`` steps cover 29 distinct page pairs and none is ``INTEL -> INTEL``,
+        so a tap has always left the board in practice.
+
+        Putting the stamp where goals are recorded rather than at each call site keeps it out of
+        reach of a forgotten call site: ``before``, ``after``, ``refresh`` and ``recovery`` all
+        reach ``_record_goals``, while ``goals_after`` is assigned in four places.
+
+        Idempotent, and deliberately so: the caller stamps ``before`` for its own planning and
+        this stamps the same frame again from the same path and the same ``_tapped_intel_pins``,
+        so it recomputes an identical value rather than introducing a second opinion.  The cost
+        is one contour pass, and only on a frame that is the board itself -- the two gates below
+        are the same ones the planning copy uses, and ``mission_type`` means a card is showing
+        rather than the board, so a count taken there would not be a count of the board.
+
+        **This reaches the goals, not the ledger's ``state_after``.**  The stamp lands on this
+        module's own ``world`` binding inside ``_record_goals``, and ``WorldState`` is frozen,
+        so the caller's ``after`` keeps the reader's dict and ``_record_episode`` serialises
+        that.  ``state_before.intel`` can therefore carry ``untried_pins`` while
+        ``state_after.intel`` does not, within one recorded transition.  That asymmetry is
+        pre-existing and unchanged here, and it is why a check that went looking for the stamp
+        in ``state_after`` read this fix as having done nothing at all.
+        """
+        if frame is None:
+            return world
+        if world.page is not Page.INTEL or world.intel.get("mission_type"):
+            return world
+        detected = intel_pin_centers(Path(frame))
+        return replace(world, intel={
+            **world.intel,
+            "untried_pins": len(self._untried_intel_of(detected)),
+            "detected_pins": len(detected),
+        })
+
     def _record_goals(self, world: WorldState, frame: Path | str | None = None):
         """Discover this frame's goals, persist the board, and hand them back.
 
@@ -2381,7 +2454,15 @@ class LiveRuntime:
         This is also the one place observation is both consumed and recorded -- the frame in
         hand IS the observation, so a second call site that discovered again from the same
         world would only be a second chance for the two answers to disagree.
+
+        The intel board's pin counts are stamped first, and here rather than at the call sites,
+        so that every frame this records -- before, after, refresh, recovery -- carries the
+        reading the goal layer builds its row from.  The stamp lands on this method's own
+        binding, so it reaches the goals it returns and **not** the caller's ``after`` that
+        ``_record_episode`` serialises; ``_stamp_intel_pin_counts`` carries both the measured
+        effect and that limit, which is the difference between the goal rows and the ledger row.
         """
+        world = self._stamp_intel_pin_counts(world, frame)
         self._record_observations(world, frame=frame)
         self._record_calendar_observation(world, frame)
         role_id = self._calendar_role_id()
@@ -8991,14 +9072,17 @@ class LiveRuntime:
             # Use the same frame and candidate list for planning and execution.
             # Exhausting this run's attempts is not an empty/complete board and
             # must not become a fabricated semantic-target failure (0ba).
+            #
+            # This copy is for **planning**: ``before`` is what the brain decides on and what
+            # the pin list at the end of the step is drawn from, so the counts have to be on
+            # it before the decision.  It is not the copy the goal accounting reads --
+            # ``_record_goals`` stamps the frame it is handed, so the after row carries the
+            # counts too.  The two are the same computation over the same path and the same
+            # ``_tapped_intel_pins``; see ``_stamp_intel_pin_counts``.
             untried_intel_pins = []
             if before.page is Page.INTEL and not before.intel.get("mission_type"):
                 detected_pins = intel_pin_centers(before_path)
-                untried_intel_pins = [
-                    pin for pin in detected_pins
-                    if all((pin.x - tx) ** 2 + (pin.y - ty) ** 2 > 40 ** 2
-                           for tx, ty in self._tapped_intel_pins)
-                ]
+                untried_intel_pins = self._untried_intel_of(detected_pins)
                 before = replace(before, intel={
                     **before.intel,
                     "untried_pins": len(untried_intel_pins),
