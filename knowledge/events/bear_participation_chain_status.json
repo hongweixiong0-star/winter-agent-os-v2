@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0",
+  "topic": "BEAR_PARTICIPATION_CHAIN_STATUS",
+  "written_at": "2026-10-05T21:25:00+08:00",
+  "written_by": "session 2026-10-05 (bear work)",
+  "question": "两个角色打巨熊，到底缺什么？",
+  "one_line": "链路本身是通的；缺的是「在窗口那一分钟里，agent 恰好站在联盟战争集结页」。这不是引擎缺陷，是一段还没有被真机覆盖的时序。",
+
+  "verified_working_20261005": {
+    "reach_the_page": {
+      "goal": "DISCOVER_BEAR_RALLY_LIST",
+      "skill": "OPEN_BEAR_RALLY_LIST",
+      "episodes": 4,
+      "result": "ALL SUCCESS",
+      "context": "ALLIANCE/HOME, bear_entry_visible=True, decision_reason=current_alliance_war_entry_allows_live_rally_list_discovery_only",
+      "entry_badge": "ABSENT from red_dots on all four -- the badge was not what admitted it",
+      "source": "learning/episodes.jsonl"
+    },
+    "read_the_rows": {
+      "observed": "target_text='等级1变异巨熊' target_type=BEAR state=JOINABLE joinable=True capacity=12/15 join_norm=[0.8889,0.302]",
+      "role": "1063040265",
+      "at": "2026-10-05T12:39:34Z",
+      "source": "learning/episodes.jsonl"
+    },
+    "join_mechanism": {
+      "status": "LIVE_VERIFIED 2026-09-27T23:41",
+      "path": "RALLY_JOIN_BADGE -> 绿+ -> PAGE_FORMATION -> slot2 -> 出征 -> 『您的部队已抵达集结地点』",
+      "proof": "capacity +110,890; 1/15 -> 3/15",
+      "source": "knowledge/rally/rally_engine_rules.json#city_rally_badge"
+    },
+    "bear_status_is_read_from_a_rally_row": {
+      "writer": "winter_agent_v2/ocr.py:4855 -- events['bear'] set only when a rally row has target_type=BEAR and remaining_seconds>0",
+      "proof": "2026-10-05T12:39:52Z events.bear = {status: ACTIVE, remaining_seconds: 73, source: LIVE_CLIENT_RALLY_ROW}"
+    }
+  },
+
+  "the_gap": {
+    "statement": "PARTICIPATE_BEAR is generated only when world.events['bear'] already exists (goal_library.py:1531), and that field is only written while the agent is standing on a page that prints the bear. So the goal that would drive participation cannot be created by the page visit that would reveal the window.",
+    "consequence": "The agent participates only if it happens to be on the alliance war / rally list page during the window. It has never been.",
+    "evidence": {
+      "board_20261005T1302Z": "SCHEDULED_BEAR_HUNT present (EXPIRED); PARTICIPATE_BEAR absent from the board",
+      "episodes": "zero episodes carry goal_id=PARTICIPATE_BEAR",
+      "window": "one window observed all day (12:39Z, 67-73s remaining)"
+    },
+    "not_the_cause": [
+      "the reader (rows parse correctly when a bear is printed)",
+      "the join mechanism (live-verified 2026-09-27)",
+      "role 1061663148's ability (it has never been on that page while a bear was present -- three frames verified by OCR contained no bear at all; its only beast label was 等级7霜鳞避役)"
+    ]
+  },
+
+  "role_status_20261005": {
+    "1063040265": {
+      "verdict": "READY",
+      "detail": "4 bear rows read, all joinable; OCR ground truth: client printed a bear in 2 of 3 verified frames"
+    },
+    "1061663148": {
+      "verdict": "NO_BEAR_ON_THOSE_FRAMES",
+      "detail": "13 rally rows, none naming a bear; OCR ground truth: client printed a bear in 0 of 3 verified frames. Never on the page with a bear present, so its ability is unmeasured rather than absent."
+    },
+    "1171757165": {
+      "verdict": "NOT_IN_SCOPE",
+      "detail": "recorded as BEAR_HUNT's measured role in knowledge/events/bear_hunt_time_20260928.json; the operator named two roles, so it is not reported by tools/bear_two_role_readiness.py"
+    }
+  },
+
+  "user_policy_that_does_not_change": {
+    "manual_join_required": true,
+    "auto_join_supported_for_bear": false,
+    "note": "BEAR_AUTO_JOIN's wording 『开启后自动加入冰原巨兽集结』 belongs to ICEFIELD_BEAST, not 巨熊行动",
+    "source": "knowledge/events/bear_rally_rules.json"
+  },
+
+  "next_step": {
+    "order": [
+      "1. decide how the agent may periodically read the rally list during a plausible window without violating the red-dot entry gate or §七.1's 不要反复寻找尚未出现的入口",
+      "2. when a window is open, run: tools/bear_two_role_readiness.py --verify-frames 3 (WINDOW OPEN NOW + bear_rows_marked_joinable)",
+      "3. confirm one real JOIN per role via JOINED_STATE (role name visible in the rally member list)"
+    ],
+    "command": "E:\\无尽冬日智能体\\.venv\\Scripts\\python.exe tools\\bear_two_role_readiness.py --verify-frames 3"
+  },
+
+  "sources": [
+    "learning/episodes.jsonl",
+    "learning/goal_state.json",
+    "knowledge/game/bear.json",
+    "knowledge/events/bear_rally_rules.json",
+    "knowledge/rally/rally_engine_rules.json",
+    "knowledge/ui/entry_badges.json",
+    ".workbuddy-ai/handoff/ACTIVITY_TICKET_ASKS_THE_WRONG_PAGE_20261005.md"
+  ]
+}
