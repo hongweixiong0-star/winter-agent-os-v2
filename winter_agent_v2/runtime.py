@@ -4810,10 +4810,12 @@ class LiveRuntime:
         if isinstance(minimum, Mapping):
             raw_event_id = str(minimum.get("event_id") or "")
             if raw_event_id:
-                from .event_goal import known_activities
+                # Identity lookup, not a plan: a frame may print a DISCOVERED event's name, and it
+                # must still resolve to that id.  Plans come from ``known_activities()``.
+                from .event_goal import registry_activities
 
                 activity = next((
-                    item for item in known_activities()
+                    item for item in registry_activities()
                     if raw_event_id == item.event_id or raw_event_id in item.aliases
                 ), None)
                 if activity is not None:

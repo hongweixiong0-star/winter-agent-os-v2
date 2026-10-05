@@ -198,7 +198,18 @@ ACTIVITY_REGISTRY = Path(__file__).resolve().parents[1] / "knowledge/events/even
 #: timer, or other positive condition.  Filtering them out here made "not yet verified" look like
 #: "does not exist", which prevented the already-registered generic flow/Qwen fallback from ever
 #: seeing a newly discovered event.
+#:
+#: This vocabulary is deliberate and is used by the identity lookups (a frame naming a discovered
+#: event must still resolve to its id).  What the **board** may plan against is narrower --
+#: see ``_PLANNABLE_GATES`` below.
 _KNOWN_GATES = frozenset({"DISCOVERED", "REVIEWED", "VERIFIED"})
+
+#: The gates a *plan* may be built from.  "A DISCOVERED lead is not a plan": the registry's own
+#: ``gate`` answers whether an entry has been reviewed or verified, and only those carry the
+#: participation rule, next-open condition and preparation §二 requires before the goal layer may
+#: put a ticket on the board.  DISCOVERED rows keep their identity (so a frame still resolves) and
+#: stay visible in the registry, they simply do not get a plan of their own.
+_PLANNABLE_GATES = frozenset({"REVIEWED", "VERIFIED"})
 
 
 class WindowState(str, Enum):
@@ -286,6 +297,18 @@ class Activity:
         if start is not None:
             return WindowState.OPEN if moment >= start else WindowState.SCHEDULED_NOT_OPEN
         if not self.time_is_known:
+            # No trustworthy start/end on file, so the clock cannot answer this -- but the record's
+            # own most recent occurrence can, and it is the only other thing that knows whether the
+            # instance the operator saw has finished.  ``bear_hunt_live_2026-09-09.json`` records
+            # ``occurrence.state = EXPIRED`` for exactly this reason ("the 2026-09-09 occurrence ended
+            # and went on cooldown"); reporting UNKNOWN instead discarded that measurement and left
+            # the ticket unable to say it was over, which §七.3 asks it to say.
+            #
+            # A record whose occurrence is UNKNOWN still answers UNKNOWN: §二 forbids inventing a
+            # window, and "nobody has recorded an occurrence" is not "it ended".
+            recorded = str((self.occurrence or {}).get("state") or "").strip().upper()
+            if recorded == "EXPIRED":
+                return WindowState.EXPIRED
             return WindowState.UNKNOWN
         return WindowState.UNKNOWN
 
@@ -300,7 +323,12 @@ class Activity:
             "registration_state": "REGISTERED",
             "registered_tasks": list(self.tasks),
             "generic_flow": self.generic_flow,
-            "current_occurrence_state": "UNKNOWN",
+            # The occurrence the operator actually saw, not a constant.  §七.3 keeps the knowledge
+            # for the next instance; the ticket still has to say which instance it is describing.
+            "current_occurrence_state": str(
+                (self.occurrence or {}).get("state") or "UNKNOWN"
+            ).upper(),
+            "occurrence": dict(self.occurrence or {}),
             "execution_readiness": "AWAITING_LIVE_CLIENT_READING",
             "cadence": self.cadence,
             "applies_to_roles": dict(self.applies_to_roles),
@@ -316,11 +344,31 @@ class Activity:
 
 
 def known_activities(path: Path | str | None = None) -> tuple[Activity, ...]:
-    """Every named activity in the canonical registry, including DISCOVERED candidates.
+    """Every named activity a **plan** may be built from, from the canonical registry.
+
+    The registry's own ``gate`` decides it: only REVIEWED/VERIFIED entries carry the participation
+    rule, the next-open condition and the preparation list §二 requires of a plan, so only those
+    are returned.  A DISCOVERED row is a lead, not a plan -- it keeps its identity in the registry
+    and in ``registry_activities()`` (so a frame that prints its name still resolves), it just does
+    not get a ticket of its own.
 
     Unreadable or malformed registry -> no activities, never an exception: a knowledge file that a
     run cannot parse is a gap in the plan, not a reason for the run to die.  Same trade the rest of
     this project makes with the template manifest and the UI dictionary.
+    """
+    return tuple(
+        activity for activity in registry_activities(path)
+        if activity.gate in _PLANNABLE_GATES
+    )
+
+
+def registry_activities(path: Path | str | None = None) -> tuple[Activity, ...]:
+    """Every named activity in the canonical registry, **including DISCOVERED candidates**.
+
+    This is the identity vocabulary rather than the plan: a frame that prints ``联盟总动员`` must
+    still resolve to ``ALLIANCE_MOBILIZATION`` even though that entry is only a DISCOVERED lead.
+    Callers that build work should use ``known_activities()``; callers that read a label or ask
+    "is this a known event at all" want this one.
     """
     target = Path(path) if path is not None else ACTIVITY_REGISTRY
     try:
@@ -365,7 +413,7 @@ def _event_label_index() -> dict[str, str]:
     can use the new code/data revision.
     """
     labels: dict[str, str] = {}
-    for activity in known_activities():
+    for activity in registry_activities():
         for label in (activity.name, *activity.aliases):
             key = " ".join(str(label).strip().casefold().split())
             if key:
