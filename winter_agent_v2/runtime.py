@@ -345,6 +345,39 @@ ROUTE_ENTRY_HINTS: dict[str, tuple[str, ...]] = {
 }
 
 
+#: The species-specific beast-selection semantics, and the animal the frame must be *naming* for
+#: each to be answered from the frame's own label instead of from a sprite.
+#:
+#: Why this table exists, measured 2026-10-05 on ``SELECT_BEAST_TARGET_MAMMOTH``: 35 rows, **0
+#: successes**, and not one of them carried an after-frame -- duration 0.062-0.11 s, which is no
+#: observation at all, because **no tap was ever sent**.  The skill declares
+#: ``TARGET_BEAST_MAMMOTH_5``, a sprite template, and that template matched none of the 35 frames;
+#: the resolver then fell through to the navigation advisor, whose own gate is
+#: ``skill_id.startswith("OPEN_") or skill_id.startswith("TAP_FOCUSED_TRAINING_CAMP_")``, so it
+#: answered ``UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION`` and the step ended without acting.
+#:
+#: The frame was carrying the answer the whole time.  ``state_before.beast`` on those rows:
+#:
+#:     {"visible_target": "MAMMOTH", "level": 5, "available": true, "source": "BEAST_LABEL",
+#:      "label_text": "猛犸象", "label_confidence": 0.9868, "table_level": 5,
+#:      "level_matches_table": true, "tap_norm": [0.516, 0.586]}
+#:
+#: -- the client printed the animal's own name, at 0.9868, and the box of that name is the point
+#: this route taps.  Its sibling ``SELECT_BEAST_TARGET_LABELLED`` has always worked that way (its
+#: ``BEAST_ON_MAP`` target is read from ``frame.beast["tap_norm"]``); the species-specific skills
+#: were written against one sprite per animal and never got the same treatment.
+#:
+#: The species stays a guard rather than being dropped, and ``MUSK_OX`` is listed although
+#: ``SELECT_BEAST_TARGET`` has never been selected (0 rows in the ledger): the brain picks a
+#: species-specific skill from the observation it read, while the frame handed to the resolver is
+#: the *dispatch-time* frame, and a label naming a different animal there must not be tapped by
+#: the skill that names this one.
+BEAST_LABEL_TARGET_SPECIES: dict[str, str] = {
+    "TARGET_BEAST_MAMMOTH_5": "MAMMOTH",
+    "TARGET_BEAST_MUSK_OX_9": "MUSK_OX",
+}
+
+
 class LiveRuntime:
     """Bounded production loop built around the one V2 Scheduler.
 
@@ -5860,6 +5893,31 @@ class LiveRuntime:
                     if 0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0:
                         return (x_norm, y_norm)
             return None
+        _beast_species = BEAST_LABEL_TARGET_SPECIES.get(semantic)
+        if _beast_species is not None:
+            # The animal the client printed beside itself, tapped where this frame measured that
+            # printed name -- the evidence ``BEAST_ON_MAP`` consumes, restricted to the species
+            # this semantic names.  ``BEAST_LABEL_TARGET_SPECIES`` carries the measurement that
+            # made this necessary (35 rows, no tap ever sent, because the sprite never matched).
+            #
+            # Deliberately **not** pre-empting.  ``visible_target`` is set from the sprite template
+            # as well as from the label (vision.py reads both spans for the same field), so a frame
+            # the sprite *does* match must still reach the template fallback below.  This branch
+            # therefore returns only when the label itself answers, and otherwise falls through
+            # untouched instead of refusing -- which is why it is the one branch here with no
+            # ``return None`` in it.
+            beast = frame.beast if isinstance(frame.beast, Mapping) else {}
+            if (frame.page is Page.MAP
+                    and beast.get("source") == "BEAST_LABEL"
+                    and beast.get("visible_target") == _beast_species):
+                point = beast.get("tap_norm")
+                if isinstance(point, (tuple, list)) and len(point) == 2:
+                    try:
+                        x_norm, y_norm = float(point[0]), float(point[1])
+                    except (TypeError, ValueError):
+                        x_norm, y_norm = None, None
+                    if x_norm is not None and 0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0:
+                        return (x_norm, y_norm)
         match = self._semantic.find(frame_path, semantic) if frame_path is not None else None
         if match:
             return match.center_norm
