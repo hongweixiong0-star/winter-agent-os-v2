@@ -131,6 +131,122 @@ runner_up_gap 分布（重启后 35 条决策）：中位 142.2 · 最小 −10.
 那问题是"它该被标记为已服务"而不是"它不该赢"）。
 
 
+## §67 Design Review（2026-10-06，只读测量完成，**实现待 Manual 一轮**）
+
+### 测出来的三个事实
+
+**F1 · 双态机（`goal_library.py:953-992`）**
+
+```python
+if page is HOME and panel.open is False:
+    if handle.state == "COLLAPSED" and handle.point_norm:
+        → DISCOVER_QUICK_PANEL_TASKS  READY  reward_value=260  skills=("OPEN_QUICK_PANEL",)  distance=0.5
+if page is HOME and panel.open is True:
+    → DISCOVER_QUICK_PANEL_TASKS  COMPLETE  served_by="OPEN_QUICK_PANEL"  distance=0.0
+```
+
+`base=260` **就是第 958 行的字面量 `reward_value=260`**，没有别的来源。
+
+**F2 · 这个标记是 2026-10-03 加的，而且当时就量到过规模**（`goal_library.py:967-974` 原文）：
+> "Without this row the goal *leaves the board* at exactly the frame that answers it… Measured
+> 2026-10-03 on the live ledger: **1291 selections (the most-selected goal in the project)**,
+> 54/54 recent steps succeeded, `goal_progress` None 54/54."
+
+**但 `served_by` 只在"面板开着"那一刻成立。** 别的目标一动作把面板关掉，
+它的 `open is False` 分支立刻重新武装成 260 —— **记录"答过了"，却没有阻止"再问一次"。**
+
+**F3 · 它是唯一会开面板的目标（这条否掉了捷径）**
+`OPEN_QUICK_PANEL` 在 `goal_library.py` 只出现两次，**都在它自己的定义里**（959 的 skills、990 的 served_by）。
+而至少 4 个目标依赖面板行：`OPEN_TASK_FROM_QUICK_PANEL_BUILDING` / `_HERO_RECRUIT` /
+`_HERO_RECRUIT_EPIC` / `_PET_TREASURE`。
+
+> **所以 `DISCOVER_QUICK_PANEL_TASKS` 不是空转目标，它是唯一开启者。
+> 「降它优先级 / 压住它」= 让那 4 个目标全部饿死。**
+> 这一条把"数值调参"整条路砍掉了 —— 它撞 `PRINCIPLES §36/§38`（安全与活性必须同时证明）。
+
+### CHOSEN_IMPLEMENTATION（候选，**尚未实现**）
+
+**在"面板关闭"分支上加归属判定，而不是改数值。**
+
+```
+DISCOVER 的 READY 行 → 仅在「面板不是刚被别的目标的行点击关掉的」时才发出
+```
+
+即：**记录最近一次面板关闭是被哪个技能/目标造成的**；若是
+`OPEN_TASK_FROM_QUICK_PANEL_BUILDING`（或同类行点击）造成的，则在 dwell 窗口内不发 260 的 READY 行。
+窗口过后照常重新武装 —— **唯一开启者的职责不受影响**（F3 的活性约束由此满足）。
+
+这是搜索来源 ① 的 **feasibility invariant**（动作后的共享状态要满足约束）与来源 ⑤ 的
+**成本归属**（"track which agent spent which credit on which resource"）的合并版；
+dwell 取自 ①②③ 共同处方，取值须 **> 一次环延迟**（实测相邻决策间隔中位 8.6 s、p90 51 s）。
+
+### LIVENESS_RISK / SAFETY_RISK
+
+| 风险 | 判定 |
+|---|---|
+| 压住 DISCOVER 导致面板永不开 | **不会**：只在"刚被别的目标的行点击关掉"之后短暂不发；窗口过后照常，且它仍是唯一开启者 |
+| dwell 设太长 → 面板类目标整体变慢 | 真实风险。取值必须来自实测（p90 51 s 是上界参考），且要能被 §36 的模拟场景验证 |
+| 把"行点击"归类错 → 该发的不发 | 需要一份"哪些技能会关掉面板"的显式清单；**这份清单本身要能被测试钉住** |
+
+### 仍未量、实现前必须量的两件
+
+1. **面板到底是被谁关掉的。** 实测：17:11:10 `OPEN_TASK_FROM_QUICK_PANEL_BUILDING` →
+   17:11:15 `OPEN_QUICK_PANEL`，中间 5 秒内客户端已回到 HOME 且 handle 折叠。
+   **那 5 秒里发生了什么（是行点击本身收起面板，还是某个 BACK）没有帧证据** ——
+   去 `dataset/raw/control_panel/runtime_auto/` 找那两步的 before/after 帧即可判定。
+   **在归属判定做出来之前写下"谁关的"，就是猜。**
+2. **`KEEP_BUILDING_PRODUCTIVE` 自己动一步后 base 从 ~10x 掉到 80.1 的原因**
+   （skills 也从 3 个掉到只剩 `TRY_ORDINARY_CONTROL`）—— 这是它失去第 1 位的直接原因，
+   与"面板被谁关的"是**两个**问题，不能混为一谈。
+
+### 帧证据（补上"不量就是猜"的那一条，2026-10-06）
+
+`dataset/raw/control_panel/runtime_auto/20261006_011043_659372/` 里那两步的真实帧：
+
+| 帧 | 内容 |
+|---|---|
+| `step_002_after…` | 建筑点完快捷面板行之后：**面板已关闭**，`8 城墙` 被选中，**行动条 `详情 / 升级 / 城镇防御` 露出来**（教程手势正指着 `升级`） |
+| `step_003_after…` | DISCOVER 重开面板之后：**左侧面板打开，而那条 `详情 / 升级 / 城镇防御` 行动条消失了 —— 被面板盖住** |
+
+**所以不是"两个目标争用"这么抽象，是一件很具体的事：**
+
+> `OPEN_TASK_FROM_QUICK_PANEL_BUILDING` 关掉面板、**露出**建筑的 `升级` 控件；
+> `DISCOVER_QUICK_PANEL_TASKS` 随即因为"面板关了"以 260 重新武装并**重开面板 —— 正好盖住那个控件**；
+> 于是建筑目标必须**再点一次行**才能把它拿回来。
+> **一次升级 = 2 次点行 + 1 次白开面板**，最坏一轮 80% 的动作都花在这里。
+
+**这同时把三处"实例"收成一个根因**：2026-10-05 加 `SCROLL_QUICK_PANEL_BACK` 时的注释写的是
+"the barracks action bar is **under the pane**" —— **同一件重叠，当时用"反向手势"补偿，
+而不是加一个前置条件。** 于是它把"单向饿死"变成了"双向振荡"。
+
+### 因此修法可以更简单、也更安全：**帧级前置条件**，不需要跨步记忆
+
+不需要记"是谁关的面板"（我上一版的候选），因为**当前帧自己就能回答问题**：
+`OPEN_TASK_FROM_QUICK_PANEL_*` 之后的那一帧上，建筑已被选中且带 `upgrade_tap_norm`
+（真机 episode 里实测 `[0.5007, 0.7191]`）。于是：
+
+```
+DISCOVER_QUICK_PANEL_TASKS 的 READY 行（reward_value=260）
+  仅在「面板关着」**且「当前帧没有露出的行动条会被面板盖住」**时才发出
+```
+
+这正是搜索来源 ① 的 **feasibility invariant** 的本地化形式：
+**"开面板"这个动作在"别的目标刚露出一个会被它盖住的控件"时是不可行的。**
+好处是它**读当前帧**（与宪法 A §24 同向：判断来自当前帧，不是记忆），
+**不需要新状态**，而且**不影响 F3 的活性约束** —— 没有行动条时它照常以 260 重新武装，
+仍是唯一开启者。
+
+**仍未定**：怎么从帧判定"有露出的行动条"。`world.building.get("upgrade_tap_norm")` 是一个现成信号，
+但它是否**只**在"露出的行动条"上成立、还是也会在别的选中态上成立，**必须先量**
+（数一遍：带 `upgrade_tap_norm` 的帧里，有多少是"面板关着且行动条可见"）。
+**不量就写，就会像我上一版那样用一个量错的对象去做门控。**
+
+
+- **死区（按 `runner_up_gap`）**：废止，理由见上（量错了对象）。
+- **调 260**：废止，撞 F3 的活性约束。
+- **本候选（归属 + dwell）**：方向对，但**依赖上面"仍未量"第 1 条**。**没有那一步就是猜。**
+
+
 ## 已废止的首选修法（留档，**勿采用**）
 
 搜索产物当初写的是：
@@ -142,6 +258,8 @@ runner_up_gap 分布（重启后 35 条决策）：中位 142.2 · 最小 −10.
 "第 1 名与第 3 名之间的距离"（第 2 名始终是 `CLAIM_EXPLORATION_IDLE`）。
 实测切换时该分差中位 142.2 —— **按它加死区会挡住所有正常切换，却完全不碰这个缺陷。**
 
-**"最短驻留"这一半仍然有效**（来源 ①②③ 都开这一味），但它必须接在
-**"目标处于多步序列中间"这个显式状态**上，而不是接在一个分差阈值上。
-见上一节的"修法方向"。
+**"最短驻留"这一半仍然有效**（来源 ①②③ 都开这一味），但它**不需要**挂在一个
+跨步的"谁关掉了面板"记忆上 —— 帧证据（见上）表明**当前帧本身就能判定**，
+所以采纳的形式是 **帧级前置条件**（"别的目标刚露出的控件会被面板盖住时，不开面板"），
+详见 `§67 Design Review` 两节（先"CHOSEN_IMPLEMENTATION"的归属版，
+再看被帧证据简化后的"帧级前置条件"版 —— **以后者为准，前者只作思路留档**）。
