@@ -263,3 +263,44 @@ DISCOVER_QUICK_PANEL_TASKS 的 READY 行（reward_value=260）
 所以采纳的形式是 **帧级前置条件**（"别的目标刚露出的控件会被面板盖住时，不开面板"），
 详见 `§67 Design Review` 两节（先"CHOSEN_IMPLEMENTATION"的归属版，
 再看被帧证据简化后的"帧级前置条件"版 —— **以后者为准，前者只作思路留档**）。
+
+---
+
+## 真机验证（2026-10-06 01:22–01:27，提交 `4026fcd0`）
+
+**启动**：`schtasks /Run /TN "WinterAgentV2Panel"`，
+`CODE_COMMIT=4026fcd01a72d7552f7f6b96b31576c5d298c638`（= pin HEAD）· `WORKTREE_CLEAN=true`。
+
+**修复前的形态**：点行 → DISCOVER 重开面板（盖住刚露出的控件）→ **再点一次行** → 开升级。
+
+**修复后（窗口 26 个动作）**：
+
+```
+17:26:22  DISCOVER_QUICK_PANEL_TASKS  OPEN_QUICK_PANEL                      SUCCESS   ← 开启者开面板（一次）
+17:26:30  KEEP_BUILDING_PRODUCTIVE    OPEN_TASK_FROM_QUICK_PANEL_BUILDING   SUCCESS   ← 点它的行
+17:26:34  KEEP_BUILDING_PRODUCTIVE    OPEN_BUILDING_UPGRADE                SUCCESS   ← 直接开升级
+```
+
+**一次开面板、一次点行、直接到动作；顺序也对了**（面板在点行**之前**开，不再在点行之后重开）。
+17:26:30 之后窗口内没有任何面板动作 —— **没有交替**。
+
+| 指标 | 修复前 | 修复后 |
+|---|---|---|
+| 面板类动作占全部动作 | 30.2% | **11.5%**（3/26） |
+| 最坏单轮 | 80–83%（6 个动作里 5 个） | 未再出现 |
+| 一次升级需要的点行次数 | 2 次 | **1 次** |
+
+**诚实标注**：这是**一个**窗口（26 个动作）。它命中的正是被修的具体场景，被修的行为
+（点行之后不再重开面板）**直接可见**；但"长期不再交替"需要更长观察才敢断言。
+另外账本期间被保留策略裁剪过（10491 → 10012 行），所以上面的比例是按**窗口内**算的，不是累计计数。
+
+## 待办
+
+1. **`SCROLL_QUICK_PANEL_BACK` 现在可能是多余的**：它 2026-10-05 的存在理由是
+   "the barracks action bar is under the pane"，即**同一件重叠**。本修复从源头挡住了重开，
+   那个反向手势也许不再被需要。**但删它需要自己的证据**（证明它不再被选中、或删掉后无回归），
+   所以本轮**没动**。
+2. **`BUILDING_UPGRADE`（花钱）仍 0 行**：从未被尝试。与本修复无关，需要单独一轮。
+3. **三个先存失败**（已用「stash 回基线重跑」证明与本修复无关）：
+   `test_panel_routine_discovery` 断言 `KEEP_BUILDING_PRODUCTIVE` 不在一个它现在已在的集合里
+   （一条**过期的性格化断言**，值得单独修）；两个 `test_quick_panel` 用例在比较 token/坐标集合。
