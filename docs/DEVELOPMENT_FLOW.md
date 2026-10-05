@@ -322,7 +322,7 @@ UI-Venus = 临时大脑
 
 > 2026-10-06，主线 `codex/production-pin-recovery`。以下结论都是**量出来的**，不是估的。
 
-## 第 1 步：有没有单步探索能力 —— **没有**
+## 第 1 步：有没有单步探索能力 —— **原来没有；`066dcce0` 之后有了**
 
 **实测**：`tools/` 下 **325 个 `.py`**，其中 **161 个**是一次性探针
 （`cq_*` / `probe_*` / `observe_*` / `device_*l4*` / `bear_*` / `fishing_explore*`）。
@@ -338,6 +338,42 @@ UI-Venus = 临时大脑
 **旁证（很有说服力）**：2026-10-05 那一整轮会话里，为了"走到巨熊页签"我**自己新写了 5 个临时脚本**
 （`_bear_read_under_lease.py`、`_bear_reach_tab.py`、`_bear_open_tab.py`、`_bear_tab_template_tap.py`、
 `_bear_strip_walk.py`）。**每一次"想单步看一眼"的代价都是再写一个脚本** —— 这正是第 2 步要消掉的成本。
+
+## 第 2 步：探索工具 —— **已做**（提交 `066dcce0`）
+
+`tools/explore_step.py`：**一次调用 = 一个动作 + 一次观察 + 一条证据。**
+
+```
+explore_step.py --purpose ... --scope ... --observe
+explore_step.py --purpose ... --scope ... --tap 0.669 0.173
+explore_step.py --purpose ... --scope ... --tap-text 取消
+explore_step.py --purpose ... --scope ... --swipe 0.72 0.09 0.21 0.09 --duration-ms 420
+explore_step.py --purpose ... --scope ... --back
+```
+
+**设备通路一行新代码都没有**：输入走项目自己的 `Executor` + 自己的 MAA adapter + 自己的
+`DeviceLease`（与 `tools/probe_live_operation.py` 同三个对象），因为坐标闸门记着"全树只有两个
+代码点能 tap，这个数字不得增长"。`HIGH_RISK_WORDS` 是 **import** 的（那个模块写着"两份风险词表
+就是两套风险规则"），`--tap-text` 的定位走 `ui_collection.grounding_regions`（与既有探针的
+`find_label` 同一个调用）。
+
+**新增的是纪律被命令行强制、而不是靠记**：`--purpose` / `--scope` **必填**、一次只允许一个动作、
+**非 Manual 模式直接拒绝**（§二 把探索归 Manual，§五 禁止在 Runtime 执行期做）。
+
+**真机验证过**（不只是单测）：`--observe` 读到城市 HUD 并落证据行；`--tap-text 背包` 在 MAA 上
+`executed=True`、页面 `HOME -> ALLIANCE`；`--back` 把客户端恢复到 `ALLIANCE -> HOME`，
+**没让它留在改动后的状态**。证据行落在 `learning/exploration_log.jsonl`，帧落在
+`dataset/exploration/<run_id>/`。`tests/test_the_exploration_step_tool.py` 9 passed；
+坐标闸门仍 `0 violations, 0 rulings`。
+
+**用它自己的过程中抓到两个缺陷，都留了记录**：
+
+1. `lease.acquire()` 返回 `(record, reason)` **元组** —— 我第一版对结果做真值判断，元组恒真，
+   **会把"拿不到租约"读成成功**。
+2. 风险闸门一开始对所有输入生效，于是**下一次调用（一个用来恢复客户端的 `--back`）因为联盟 HUD 上有
+   "加速"二字被拒绝** —— 等于工具没法离开一个页面，却没换来任何安全。现在是**按动作分档**：
+   导航永不筛；裸坐标按整帧筛（它说不出下面是什么）；具名文字按**它自己的词**筛。
+   §32 那句"这是暂时不能做，还是整个都不该做"同样适用于**守卫**，不只是过滤器。
 
 ## 第 3 步：有没有 UI 知识库 —— **有，而且字段比规范要求的多；但缺三样、且结构与规范不同**
 
