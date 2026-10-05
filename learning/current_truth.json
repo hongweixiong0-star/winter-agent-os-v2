@@ -1,1004 +1,900 @@
 {
   "schema_version": "1.1",
-  "generated_at_utc": "2026-09-29T16:10:12.253385+00:00",
+  "generated_at_utc": "2026-10-05T12:33:47.530995+00:00",
   "source_of_truth": "learning/episodes.jsonl + registry + runtime_snapshot.json + capability coverage",
   "episodes": {
-    "total": 10059,
-    "success": 8982,
-    "failure": 1077,
+    "total": 10421,
+    "success": 9060,
+    "failure": 1354,
     "blocked": 0,
     "in_progress": 0,
-    "success_rate_over_decided": 89.3,
-    "success_rate_over_total": 89.3,
+    "success_rate_over_decided": 87.0,
+    "success_rate_over_total": 86.9,
     "modes": {
-      "PRODUCTION": 10059
+      "PRODUCTION": 10421
     },
     "result_case_anomaly": 0
   },
   "top_failures": [
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 372,
-      "affected_skills": 21,
+      "count": 544,
+      "affected_skills": 19,
       "top_skills": [
         [
           "TRY_ORDINARY_CONTROL",
-          113
+          173
         ],
         [
-          "EXPLORATION_IDLE_CLAIM",
-          41
-        ],
-        [
-          "OPEN_HOME",
-          26
-        ]
-      ],
-      "last_seen": "2026-09-29T09:00:52.257620+00:00"
-    },
-    {
-      "failure_type": "SAFE_BACK_NOT_PROVEN",
-      "count": 108,
-      "affected_skills": 1,
-      "top_skills": [
-        [
-          "BACK",
-          108
-        ]
-      ],
-      "last_seen": "2026-09-28T16:56:23.329887+00:00"
-    },
-    {
-      "failure_type": "POPUP_CLOSE_NOT_PROVEN",
-      "count": 88,
-      "affected_skills": 3,
-      "top_skills": [
-        [
-          "CLOSE_POPUP",
+          "OPEN_TASK_FROM_QUICK_PANEL_BUILDING",
           83
         ],
         [
-          "DISMISS_REAL_MONEY_OFFER",
-          4
-        ],
-        [
-          "DISMISS_SHARED_REWARD",
-          1
+          "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT",
+          79
         ]
       ],
-      "last_seen": "2026-09-26T00:53:02.373448+00:00"
-    },
-    {
-      "failure_type": "BEAST_DISPATCH_NOT_PROVEN",
-      "count": 86,
-      "affected_skills": 1,
-      "top_skills": [
-        [
-          "DISPATCH_BEAST",
-          86
-        ]
-      ],
-      "last_seen": "2026-09-26T05:02:04.090563+00:00"
-    },
-    {
-      "failure_type": "ORDINARY_CONTROL_ALREADY_USED_THIS_RUN",
-      "count": 62,
-      "affected_skills": 2,
-      "top_skills": [
-        [
-          "TRY_ORDINARY_CONTROL",
-          47
-        ],
-        [
-          "EXPLORATION_IDLE_CLAIM",
-          15
-        ]
-      ],
-      "last_seen": "2026-09-26T01:18:16.582326+00:00"
+      "last_seen": "2026-10-05T12:32:28.656270+00:00"
     },
     {
       "failure_type": "NO_EXECUTION",
-      "count": 50,
-      "affected_skills": 1,
+      "count": 217,
+      "affected_skills": 4,
       "top_skills": [
+        [
+          "SELECT_GIANT_BEAST_TAB",
+          97
+        ],
         [
           "SAFE_STOP",
-          50
+          74
+        ],
+        [
+          "PRINTED_TAP",
+          42
         ]
       ],
-      "last_seen": "2026-09-24T22:08:14.331423+00:00"
+      "last_seen": "2026-10-05T10:50:35.639673+00:00"
     },
     {
-      "failure_type": "POWER_DETAILS_NOT_PROVEN",
-      "count": 41,
+      "failure_type": "REGULAR_EVENT_TABS_SCROLL_NOT_PROVEN",
+      "count": 124,
       "affected_skills": 1,
       "top_skills": [
         [
-          "OPEN_POWER_DETAILS",
-          41
+          "SCROLL_REGULAR_EVENT_TABS",
+          124
         ]
       ],
-      "last_seen": "2026-09-24T16:40:45.748435+00:00"
+      "last_seen": "2026-10-04T15:44:49.294876+00:00"
+    },
+    {
+      "failure_type": "BUILDING_UPGRADE_PANEL_NOT_PROVEN",
+      "count": 106,
+      "affected_skills": 1,
+      "top_skills": [
+        [
+          "OPEN_BUILDING_UPGRADE",
+          106
+        ]
+      ],
+      "last_seen": "2026-10-05T11:57:51.563753+00:00"
+    },
+    {
+      "failure_type": "GIANT_BEAST_TAB_NOT_PROVEN",
+      "count": 49,
+      "affected_skills": 1,
+      "top_skills": [
+        [
+          "SELECT_GIANT_BEAST_TAB",
+          49
+        ]
+      ],
+      "last_seen": "2026-10-05T07:32:41.316687+00:00"
+    },
+    {
+      "failure_type": "BEAST_TARGET_SELECTION_NOT_PROVEN",
+      "count": 49,
+      "affected_skills": 2,
+      "top_skills": [
+        [
+          "SELECT_BEAST_TARGET_LABELLED",
+          38
+        ],
+        [
+          "SELECT_BEAST_TARGET_MAMMOTH",
+          11
+        ]
+      ],
+      "last_seen": "2026-10-05T12:24:57.514435+00:00"
+    },
+    {
+      "failure_type": "EVENT_CALENDAR_READ_NOT_PROVEN",
+      "count": 40,
+      "affected_skills": 1,
+      "top_skills": [
+        [
+          "READ_EVENT_CALENDAR",
+          40
+        ]
+      ],
+      "last_seen": "2026-10-04T15:29:38.889973+00:00"
+    },
+    {
+      "failure_type": "FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN",
+      "count": 33,
+      "affected_skills": 3,
+      "top_skills": [
+        [
+          "TAP_FOCUSED_TRAINING_CAMP_LANCER",
+          11
+        ],
+        [
+          "TAP_FOCUSED_TRAINING_CAMP_SHIELD",
+          11
+        ],
+        [
+          "TAP_FOCUSED_TRAINING_CAMP_MARKSMAN",
+          11
+        ]
+      ],
+      "last_seen": "2026-10-05T10:11:27.314619+00:00"
+    },
+    {
+      "failure_type": "GIANT_BEAST_SEARCH_NOT_PROVEN",
+      "count": 28,
+      "affected_skills": 1,
+      "top_skills": [
+        [
+          "SUBMIT_GIANT_BEAST_SEARCH",
+          28
+        ]
+      ],
+      "last_seen": "2026-10-05T12:30:59.076692+00:00"
+    },
+    {
+      "failure_type": "OPEN_DAILY_NOT_PROVEN",
+      "count": 27,
+      "affected_skills": 1,
+      "top_skills": [
+        [
+          "OPEN_DAILY",
+          27
+        ]
+      ],
+      "last_seen": "2026-10-05T10:50:26.378687+00:00"
+    },
+    {
+      "failure_type": "PANEL_BUILDING_QUEUE_NOT_PROVEN",
+      "count": 24,
+      "affected_skills": 1,
+      "top_skills": [
+        [
+          "OPEN_TASK_FROM_QUICK_PANEL_BUILDING",
+          24
+        ]
+      ],
+      "last_seen": "2026-10-05T11:34:16.997667+00:00"
     },
     {
       "failure_type": "QUICK_PANEL_SCROLL_NOT_PROVEN",
-      "count": 41,
+      "count": 21,
       "affected_skills": 1,
       "top_skills": [
         [
           "SCROLL_QUICK_PANEL_TASKS",
-          41
+          21
         ]
       ],
-      "last_seen": "2026-09-28T10:05:45.556705+00:00"
-    },
-    {
-      "failure_type": "RESEARCH_NODE_DETAIL_NOT_PROVEN",
-      "count": 35,
-      "affected_skills": 1,
-      "top_skills": [
-        [
-          "SELECT_RESEARCH_NODE",
-          35
-        ]
-      ],
-      "last_seen": "2026-09-27T09:16:00.880076+00:00"
-    },
-    {
-      "failure_type": "FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN",
-      "count": 26,
-      "affected_skills": 3,
-      "top_skills": [
-        [
-          "TAP_FOCUSED_TRAINING_CAMP_SHIELD",
-          10
-        ],
-        [
-          "TAP_FOCUSED_TRAINING_CAMP_MARKSMAN",
-          8
-        ],
-        [
-          "TAP_FOCUSED_TRAINING_CAMP_LANCER",
-          8
-        ]
-      ],
-      "last_seen": "2026-09-29T11:34:57.206864+00:00"
-    },
-    {
-      "failure_type": "OPEN_INTEL_NOT_PROVEN",
-      "count": 14,
-      "affected_skills": 1,
-      "top_skills": [
-        [
-          "OPEN_INTEL",
-          14
-        ]
-      ],
-      "last_seen": "2026-09-27T14:27:40.920691+00:00"
-    },
-    {
-      "failure_type": "FOREIGN_LAYER_NOT_LEFT",
-      "count": 13,
-      "affected_skills": 1,
-      "top_skills": [
-        [
-          "LEAVE_FOREIGN_LAYER",
-          13
-        ]
-      ],
-      "last_seen": "2026-09-28T07:25:53.394745+00:00"
+      "last_seen": "2026-10-05T11:15:13.609526+00:00"
     }
   ],
   "skills": {
-    "SCAN_MAP_FOR_BEAST": {
-      "attempts": 405,
-      "success": 404,
-      "failure": 1,
+    "OPEN_EVENT_CALENDAR_TAB": {
+      "attempts": 371,
+      "success": 350,
+      "failure": 21,
       "other": 0,
-      "last_seen": "2026-09-28T16:20:56.554897+00:00",
-      "success_rate": 99.8
-    },
-    "SEARCH_RESOURCE": {
-      "attempts": 488,
-      "success": 465,
-      "failure": 23,
-      "other": 0,
-      "last_seen": "2026-09-29T12:03:48.993537+00:00",
-      "success_rate": 95.3
-    },
-    "OPEN_INTEL": {
-      "attempts": 606,
-      "success": 567,
-      "failure": 39,
-      "other": 0,
-      "last_seen": "2026-09-29T11:57:32.550696+00:00",
-      "success_rate": 93.6
-    },
-    "OPEN_HOME": {
-      "attempts": 650,
-      "success": 615,
-      "failure": 35,
-      "other": 0,
-      "last_seen": "2026-09-29T12:24:50.345618+00:00",
-      "success_rate": 94.6
+      "last_seen": "2026-10-04T16:04:15.886687+00:00",
+      "success_rate": 94.3
     },
     "BACK": {
-      "attempts": 1708,
-      "success": 1600,
-      "failure": 108,
-      "other": 0,
-      "last_seen": "2026-09-29T11:44:37.375370+00:00",
-      "success_rate": 93.7
-    },
-    "OPEN_POWER_OVERVIEW": {
-      "attempts": 119,
-      "success": 119,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-25T04:44:39.204332+00:00",
-      "success_rate": 100.0
-    },
-    "OPEN_POWER_DETAILS": {
-      "attempts": 138,
-      "success": 83,
-      "failure": 55,
-      "other": 0,
-      "last_seen": "2026-09-25T04:44:51.718315+00:00",
-      "success_rate": 60.1
-    },
-    "NAVIGATE_INFANTRY_CAMP": {
-      "attempts": 60,
-      "success": 56,
-      "failure": 4,
-      "other": 0,
-      "last_seen": "2026-09-25T02:10:26.140666+00:00",
-      "success_rate": 93.3
-    },
-    "OPEN_MAP": {
-      "attempts": 758,
-      "success": 753,
-      "failure": 5,
-      "other": 0,
-      "last_seen": "2026-09-29T12:24:17.113529+00:00",
-      "success_rate": 99.3
-    },
-    "OPEN_EXPLORATION": {
-      "attempts": 102,
-      "success": 100,
+      "attempts": 1152,
+      "success": 1150,
       "failure": 2,
       "other": 0,
-      "last_seen": "2026-09-29T11:43:35.210682+00:00",
-      "success_rate": 98.0
+      "last_seen": "2026-10-05T12:33:31.136734+00:00",
+      "success_rate": 99.8
     },
-    "EXPLORATION_IDLE_CLAIM": {
-      "attempts": 125,
-      "success": 57,
-      "failure": 68,
-      "other": 0,
-      "last_seen": "2026-09-29T11:43:51.962178+00:00",
-      "success_rate": 45.6
-    },
-    "SAFE_STOP": {
-      "attempts": 50,
-      "success": 0,
-      "failure": 50,
-      "other": 0,
-      "last_seen": "2026-09-24T22:08:14.331423+00:00",
-      "success_rate": 0.0
-    },
-    "SELECT_INTEL_PIN": {
-      "attempts": 412,
-      "success": 405,
-      "failure": 7,
-      "other": 0,
-      "last_seen": "2026-09-29T02:02:46.984586+00:00",
-      "success_rate": 98.3
-    },
-    "OPEN_DAILY": {
-      "attempts": 82,
-      "success": 81,
-      "failure": 1,
-      "other": 0,
-      "last_seen": "2026-09-29T12:07:47.220360+00:00",
-      "success_rate": 98.8
-    },
-    "SELECT_DAILY_TAB": {
-      "attempts": 28,
-      "success": 26,
-      "failure": 2,
-      "other": 0,
-      "last_seen": "2026-09-23T09:39:00.365651+00:00",
-      "success_rate": 92.9
-    },
-    "OPEN_MAIL": {
-      "attempts": 157,
-      "success": 157,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-29T11:15:34.861826+00:00",
-      "success_rate": 100.0
-    },
-    "NAVIGATE_RESEARCH_LAB": {
-      "attempts": 22,
-      "success": 21,
-      "failure": 1,
-      "other": 0,
-      "last_seen": "2026-09-25T04:42:13.953604+00:00",
-      "success_rate": 95.5
-    },
-    "OPEN_RESEARCH": {
-      "attempts": 162,
-      "success": 156,
-      "failure": 6,
-      "other": 0,
-      "last_seen": "2026-09-26T15:28:03.749476+00:00",
-      "success_rate": 96.3
-    },
-    "OPEN_ALLIANCE": {
-      "attempts": 75,
-      "success": 74,
-      "failure": 1,
-      "other": 0,
-      "last_seen": "2026-09-28T11:02:23.761230+00:00",
-      "success_rate": 98.7
-    },
-    "OPEN_ALLIANCE_GIFTS": {
-      "attempts": 66,
-      "success": 66,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-23T12:56:34.936906+00:00",
-      "success_rate": 100.0
-    },
-    "LEAVE_FOREIGN_LAYER": {
-      "attempts": 72,
-      "success": 42,
-      "failure": 30,
-      "other": 0,
-      "last_seen": "2026-09-28T11:05:26.904028+00:00",
-      "success_rate": 58.3
-    },
-    "OPEN_INTEL_HERO_JOURNEY_TARGET": {
-      "attempts": 48,
-      "success": 48,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-29T02:01:02.273618+00:00",
-      "success_rate": 100.0
-    },
-    "INTEL_HERO_START_MARCH": {
-      "attempts": 48,
-      "success": 48,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-29T00:51:56.029927+00:00",
-      "success_rate": 100.0
-    },
-    "INTEL_HERO_DISPATCH": {
-      "attempts": 54,
-      "success": 54,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-29T02:01:31.884058+00:00",
-      "success_rate": 100.0
-    },
-    "INTEL_CLAIM_REWARDS": {
-      "attempts": 165,
-      "success": 165,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-29T02:03:47.296420+00:00",
-      "success_rate": 100.0
-    },
-    "DISMISS_INTEL_GENERIC_REWARD": {
-      "attempts": 181,
-      "success": 177,
-      "failure": 4,
-      "other": 0,
-      "last_seen": "2026-09-29T08:13:53.878483+00:00",
-      "success_rate": 97.8
-    },
-    "OPEN_INTEL_BEAST_TARGET": {
-      "attempts": 92,
-      "success": 82,
-      "failure": 10,
-      "other": 0,
-      "last_seen": "2026-09-29T00:53:07.903873+00:00",
-      "success_rate": 89.1
-    },
-    "INTEL_BEAST_START_MARCH": {
-      "attempts": 73,
-      "success": 73,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-29T00:53:12.379433+00:00",
-      "success_rate": 100.0
-    },
-    "DISPATCH_INTEL_BEAST": {
-      "attempts": 89,
-      "success": 88,
-      "failure": 1,
-      "other": 0,
-      "last_seen": "2026-09-29T00:53:41.624605+00:00",
-      "success_rate": 98.9
-    },
-    "EXECUTE_INTEL_RESCUE_SURVIVORS": {
-      "attempts": 33,
-      "success": 32,
-      "failure": 1,
-      "other": 0,
-      "last_seen": "2026-09-29T02:03:19.236760+00:00",
-      "success_rate": 97.0
-    },
-    "SELECT_BEAST_TARGET_LABELLED": {
-      "attempts": 29,
-      "success": 24,
-      "failure": 5,
-      "other": 0,
-      "last_seen": "2026-09-29T01:08:28.085611+00:00",
-      "success_rate": 82.8
-    },
-    "SUBMIT_BEAST_SEARCH": {
-      "attempts": 117,
-      "success": 116,
-      "failure": 1,
-      "other": 0,
-      "last_seen": "2026-09-29T12:04:39.496646+00:00",
-      "success_rate": 99.1
-    },
-    "ATTACK_BEAST_CARD": {
-      "attempts": 88,
-      "success": 85,
+    "OPEN_EVENT_CALENDAR_FROM_MAP": {
+      "attempts": 143,
+      "success": 140,
       "failure": 3,
       "other": 0,
-      "last_seen": "2026-09-26T05:10:33.648109+00:00",
-      "success_rate": 96.6
+      "last_seen": "2026-10-04T15:29:23.651088+00:00",
+      "success_rate": 97.9
     },
-    "DISPATCH_BEAST": {
-      "attempts": 86,
-      "success": 0,
-      "failure": 86,
+    "OPEN_EVENT_CALENDAR_FROM_HOME": {
+      "attempts": 465,
+      "success": 460,
+      "failure": 5,
       "other": 0,
-      "last_seen": "2026-09-26T05:02:04.090563+00:00",
-      "success_rate": 0.0
+      "last_seen": "2026-10-04T16:04:08.032299+00:00",
+      "success_rate": 98.9
     },
-    "DAILY_CLAIM_REWARDS": {
-      "attempts": 28,
-      "success": 28,
+    "TRY_ORDINARY_CONTROL": {
+      "attempts": 276,
+      "success": 102,
+      "failure": 174,
+      "other": 0,
+      "last_seen": "2026-10-05T11:53:34.380504+00:00",
+      "success_rate": 37.0
+    },
+    "OPEN_QUICK_PANEL": {
+      "attempts": 1565,
+      "success": 1565,
       "failure": 0,
       "other": 0,
-      "last_seen": "2026-09-29T12:08:07.032090+00:00",
+      "last_seen": "2026-10-05T12:21:23.165514+00:00",
       "success_rate": 100.0
     },
-    "DISMISS_DAILY_GENERIC_REWARD": {
-      "attempts": 46,
-      "success": 42,
-      "failure": 4,
-      "other": 0,
-      "last_seen": "2026-09-29T12:08:20.975372+00:00",
-      "success_rate": 91.3
-    },
-    "DISMISS_MAIL_GENERIC_REWARD": {
-      "attempts": 41,
-      "success": 41,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-24T10:30:46.217620+00:00",
-      "success_rate": 100.0
-    },
-    "SELECT_MAIL_ALLIANCE_TAB": {
-      "attempts": 14,
+    "OPEN_COMPLETED_TRAINING_CAMP_LANCER": {
+      "attempts": 17,
       "success": 14,
+      "failure": 3,
+      "other": 0,
+      "last_seen": "2026-10-05T07:35:51.412627+00:00",
+      "success_rate": 82.4
+    },
+    "TAP_FOCUSED_TRAINING_CAMP_LANCER": {
+      "attempts": 22,
+      "success": 11,
+      "failure": 11,
+      "other": 0,
+      "last_seen": "2026-10-05T07:36:06.069137+00:00",
+      "success_rate": 50.0
+    },
+    "OPEN_INFANTRY_TRAINING": {
+      "attempts": 115,
+      "success": 49,
+      "failure": 66,
+      "other": 0,
+      "last_seen": "2026-10-05T10:11:36.450632+00:00",
+      "success_rate": 42.6
+    },
+    "OPEN_MAIL": {
+      "attempts": 64,
+      "success": 64,
       "failure": 0,
       "other": 0,
-      "last_seen": "2026-09-29T11:15:49.516798+00:00",
+      "last_seen": "2026-10-05T11:58:05.756796+00:00",
       "success_rate": 100.0
     },
     "MAIL_CLAIM_REWARDS": {
-      "attempts": 101,
-      "success": 101,
+      "attempts": 81,
+      "success": 81,
       "failure": 0,
       "other": 0,
-      "last_seen": "2026-09-29T11:16:09.547707+00:00",
-      "success_rate": 100.0
-    },
-    "OPEN_STAMINA_SOURCES": {
-      "attempts": 21,
-      "success": 20,
-      "failure": 1,
-      "other": 0,
-      "last_seen": "2026-09-29T12:35:21.360960+00:00",
-      "success_rate": 95.2
-    },
-    "CLAIM_FREE_STAMINA": {
-      "attempts": 9,
-      "success": 9,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-29T11:29:22.563693+00:00",
-      "success_rate": 100.0
-    },
-    "OPEN_INFANTRY_TRAINING": {
-      "attempts": 103,
-      "success": 96,
-      "failure": 7,
-      "other": 0,
-      "last_seen": "2026-09-29T12:00:57.581958+00:00",
-      "success_rate": 93.2
-    },
-    "SELECT_RESOURCE": {
-      "attempts": 40,
-      "success": 32,
-      "failure": 8,
-      "other": 0,
-      "last_seen": "2026-09-28T22:38:52.917970+00:00",
-      "success_rate": 80.0
-    },
-    "SUBMIT_RESOURCE_SEARCH": {
-      "attempts": 36,
-      "success": 36,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-28T22:39:35.704478+00:00",
-      "success_rate": 100.0
-    },
-    "START_GATHER": {
-      "attempts": 25,
-      "success": 25,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-28T22:27:59.598485+00:00",
-      "success_rate": 100.0
-    },
-    "DISPATCH_MARCH": {
-      "attempts": 30,
-      "success": 30,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-28T22:40:07.801645+00:00",
-      "success_rate": 100.0
-    },
-    "SELECT_TRAINING_CAMP": {
-      "attempts": 75,
-      "success": 72,
-      "failure": 3,
-      "other": 0,
-      "last_seen": "2026-09-27T10:09:28.569661+00:00",
-      "success_rate": 96.0
-    },
-    "OPEN_BEAST_SEARCH_TAB": {
-      "attempts": 14,
-      "success": 14,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-29T12:04:09.591245+00:00",
-      "success_rate": 100.0
-    },
-    "SELECT_MAIL_REPORT_TAB": {
-      "attempts": 36,
-      "success": 16,
-      "failure": 20,
-      "other": 0,
-      "last_seen": "2026-09-28T17:23:33.311795+00:00",
-      "success_rate": 44.4
-    },
-    "DISMISS_REAL_MONEY_OFFER": {
-      "attempts": 13,
-      "success": 9,
-      "failure": 4,
-      "other": 0,
-      "last_seen": "2026-09-28T15:12:39.498975+00:00",
-      "success_rate": 69.2
-    },
-    "SELECT_BEAST_TARGET_MAMMOTH": {
-      "attempts": 14,
-      "success": 0,
-      "failure": 14,
-      "other": 0,
-      "last_seen": "2026-09-29T09:00:52.257620+00:00",
-      "success_rate": 0.0
-    },
-    "CLOSE_POPUP": {
-      "attempts": 166,
-      "success": 61,
-      "failure": 105,
-      "other": 0,
-      "last_seen": "2026-09-28T15:06:13.037640+00:00",
-      "success_rate": 36.7
-    },
-    "TRY_ORDINARY_CONTROL": {
-      "attempts": 314,
-      "success": 151,
-      "failure": 163,
-      "other": 0,
-      "last_seen": "2026-09-29T12:39:37.132816+00:00",
-      "success_rate": 48.1
-    },
-    "DISMISS_SHARED_REWARD": {
-      "attempts": 45,
-      "success": 44,
-      "failure": 1,
-      "other": 0,
-      "last_seen": "2026-09-29T11:44:19.782689+00:00",
-      "success_rate": 97.8
-    },
-    "SELECT_MAIL_SYSTEM_TAB": {
-      "attempts": 9,
-      "success": 9,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-28T17:22:44.006840+00:00",
-      "success_rate": 100.0
-    },
-    "DISMISS_ALLIANCE_GENERIC_REWARD": {
-      "attempts": 1,
-      "success": 0,
-      "failure": 1,
-      "other": 0,
-      "last_seen": "2026-09-22T11:06:56.013714+00:00",
-      "success_rate": 0.0
-    },
-    "CHECK_MARCH": {
-      "attempts": 20,
-      "success": 12,
-      "failure": 8,
-      "other": 0,
-      "last_seen": "2026-09-24T23:45:36.231632+00:00",
-      "success_rate": 60.0
-    },
-    "CONFIRM_EXPLORATION_IDLE_CLAIM": {
-      "attempts": 54,
-      "success": 54,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-29T11:44:10.380591+00:00",
+      "last_seen": "2026-10-05T11:58:09.588426+00:00",
       "success_rate": 100.0
     },
     "DISMISS_EXPLORATION_GENERIC_REWARD": {
-      "attempts": 46,
-      "success": 46,
+      "attempts": 48,
+      "success": 44,
+      "failure": 4,
+      "other": 0,
+      "last_seen": "2026-10-05T08:48:43.504456+00:00",
+      "success_rate": 91.7
+    },
+    "OPEN_COMPLETED_TRAINING_CAMP_SHIELD": {
+      "attempts": 12,
+      "success": 12,
       "failure": 0,
       "other": 0,
-      "last_seen": "2026-09-28T23:46:33.536652+00:00",
+      "last_seen": "2026-10-05T10:11:16.966593+00:00",
       "success_rate": 100.0
     },
-    "SELECT_MARCH_TO_RECALL": {
-      "attempts": 11,
-      "success": 0,
+    "TAP_FOCUSED_TRAINING_CAMP_SHIELD": {
+      "attempts": 22,
+      "success": 11,
       "failure": 11,
       "other": 0,
-      "last_seen": "2026-09-27T17:15:03.776617+00:00",
-      "success_rate": 0.0
-    },
-    "TRAIN_TROOPS": {
-      "attempts": 42,
-      "success": 41,
-      "failure": 1,
-      "other": 0,
-      "last_seen": "2026-09-29T10:40:05.989748+00:00",
-      "success_rate": 97.6
-    },
-    "OPEN_TASK_FROM_QUICK_PANEL_LANCER": {
-      "attempts": 34,
-      "success": 28,
-      "failure": 6,
-      "other": 0,
-      "last_seen": "2026-09-29T12:28:18.820935+00:00",
-      "success_rate": 82.4
+      "last_seen": "2026-10-05T10:11:32.081372+00:00",
+      "success_rate": 50.0
     },
     "OPEN_TASK_FROM_QUICK_PANEL_SHIELD": {
-      "attempts": 21,
-      "success": 14,
-      "failure": 7,
-      "other": 0,
-      "last_seen": "2026-09-29T10:39:30.526773+00:00",
-      "success_rate": 66.7
-    },
-    "OPEN_INTEL_RESCUE_SURVIVORS_TARGET": {
-      "attempts": 25,
-      "success": 25,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-28T17:43:19.479759+00:00",
-      "success_rate": 100.0
-    },
-    "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN": {
-      "attempts": 20,
-      "success": 19,
-      "failure": 1,
-      "other": 0,
-      "last_seen": "2026-09-29T12:00:40.020095+00:00",
-      "success_rate": 95.0
-    },
-    "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH": {
-      "attempts": 198,
-      "success": 193,
-      "failure": 5,
-      "other": 0,
-      "last_seen": "2026-09-27T09:14:59.744892+00:00",
-      "success_rate": 97.5
-    },
-    "WAIT_FOR_CAMP_MENU": {
-      "attempts": 4,
-      "success": 4,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-22T18:18:49.305943+00:00",
-      "success_rate": 100.0
-    },
-    "COLLECT_FINISHED_TRAINING_SHIELD": {
-      "attempts": 1,
-      "success": 1,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-22T17:51:02.745936+00:00",
-      "success_rate": 100.0
-    },
-    "SELECT_INTEL_BEAST_MISSION": {
       "attempts": 3,
       "success": 3,
       "failure": 0,
       "other": 0,
-      "last_seen": "2026-09-29T00:17:33.768333+00:00",
+      "last_seen": "2026-10-03T12:23:34.007949+00:00",
       "success_rate": 100.0
     },
-    "RECONNECT_SESSION": {
+    "TRAIN_TROOPS": {
+      "attempts": 32,
+      "success": 26,
+      "failure": 6,
+      "other": 0,
+      "last_seen": "2026-10-05T10:11:41.637979+00:00",
+      "success_rate": 81.2
+    },
+    "OPEN_TASK_FROM_QUICK_PANEL_LANCER": {
+      "attempts": 3,
+      "success": 3,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-03T12:24:05.893758+00:00",
+      "success_rate": 100.0
+    },
+    "OPEN_TASK_FROM_QUICK_PANEL_BUILDING": {
+      "attempts": 365,
+      "success": 258,
+      "failure": 107,
+      "other": 0,
+      "last_seen": "2026-10-05T11:57:45.284016+00:00",
+      "success_rate": 70.7
+    },
+    "OPEN_BUILDING_UPGRADE": {
+      "attempts": 111,
+      "success": 5,
+      "failure": 106,
+      "other": 0,
+      "last_seen": "2026-10-05T11:57:51.563753+00:00",
+      "success_rate": 4.5
+    },
+    "OPEN_MAP": {
+      "attempts": 622,
+      "success": 620,
+      "failure": 2,
+      "other": 0,
+      "last_seen": "2026-10-05T12:29:38.552165+00:00",
+      "success_rate": 99.7
+    },
+    "SEARCH_RESOURCE": {
+      "attempts": 231,
+      "success": 222,
+      "failure": 9,
+      "other": 0,
+      "last_seen": "2026-10-05T12:30:11.674743+00:00",
+      "success_rate": 96.1
+    },
+    "SELECT_GIANT_BEAST_TAB": {
+      "attempts": 177,
+      "success": 31,
+      "failure": 146,
+      "other": 0,
+      "last_seen": "2026-10-05T12:30:35.008717+00:00",
+      "success_rate": 17.5
+    },
+    "OPEN_INTEL": {
+      "attempts": 313,
+      "success": 309,
+      "failure": 4,
+      "other": 0,
+      "last_seen": "2026-10-05T12:33:14.096022+00:00",
+      "success_rate": 98.7
+    },
+    "INTEL_CLAIM_REWARDS": {
+      "attempts": 128,
+      "success": 128,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T12:25:30.838337+00:00",
+      "success_rate": 100.0
+    },
+    "DISMISS_INTEL_GENERIC_REWARD": {
+      "attempts": 127,
+      "success": 127,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T12:25:40.024733+00:00",
+      "success_rate": 100.0
+    },
+    "SELECT_INTEL_BEAST_MISSION": {
+      "attempts": 7,
+      "success": 6,
+      "failure": 1,
+      "other": 0,
+      "last_seen": "2026-10-05T08:14:16.445699+00:00",
+      "success_rate": 85.7
+    },
+    "OPEN_INTEL_BEAST_TARGET": {
+      "attempts": 118,
+      "success": 104,
+      "failure": 14,
+      "other": 0,
+      "last_seen": "2026-10-05T11:54:08.573489+00:00",
+      "success_rate": 88.1
+    },
+    "INTEL_BEAST_START_MARCH": {
+      "attempts": 102,
+      "success": 101,
+      "failure": 1,
+      "other": 0,
+      "last_seen": "2026-10-05T11:54:11.646714+00:00",
+      "success_rate": 99.0
+    },
+    "DISPATCH_INTEL_BEAST": {
+      "attempts": 79,
+      "success": 77,
+      "failure": 2,
+      "other": 0,
+      "last_seen": "2026-10-05T11:54:17.951664+00:00",
+      "success_rate": 97.5
+    },
+    "SELECT_INTEL_PIN": {
+      "attempts": 310,
+      "success": 307,
+      "failure": 3,
+      "other": 0,
+      "last_seen": "2026-10-05T12:33:40.923680+00:00",
+      "success_rate": 99.0
+    },
+    "SUBMIT_BEAST_SEARCH": {
+      "attempts": 128,
+      "success": 127,
+      "failure": 1,
+      "other": 0,
+      "last_seen": "2026-10-05T07:25:42.663476+00:00",
+      "success_rate": 99.2
+    },
+    "ATTACK_BEAST_CARD": {
+      "attempts": 76,
+      "success": 76,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T05:02:13.158677+00:00",
+      "success_rate": 100.0
+    },
+    "DISPATCH_BEAST": {
+      "attempts": 76,
+      "success": 70,
+      "failure": 6,
+      "other": 0,
+      "last_seen": "2026-10-05T05:02:19.211555+00:00",
+      "success_rate": 92.1
+    },
+    "OPEN_HOME": {
+      "attempts": 538,
+      "success": 486,
+      "failure": 52,
+      "other": 0,
+      "last_seen": "2026-10-05T12:21:09.193477+00:00",
+      "success_rate": 90.3
+    },
+    "SCROLL_QUICK_PANEL_TASKS": {
+      "attempts": 268,
+      "success": 247,
+      "failure": 21,
+      "other": 0,
+      "last_seen": "2026-10-05T12:07:40.266616+00:00",
+      "success_rate": 92.2
+    },
+    "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT": {
+      "attempts": 333,
+      "success": 254,
+      "failure": 79,
+      "other": 0,
+      "last_seen": "2026-10-05T11:30:04.122334+00:00",
+      "success_rate": 76.3
+    },
+    "OPEN_EXPLORATION": {
+      "attempts": 71,
+      "success": 71,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T11:42:44.443754+00:00",
+      "success_rate": 100.0
+    },
+    "EXPLORATION_IDLE_CLAIM": {
+      "attempts": 69,
+      "success": 66,
+      "failure": 3,
+      "other": 0,
+      "last_seen": "2026-10-05T11:42:52.708695+00:00",
+      "success_rate": 95.7
+    },
+    "CONFIRM_EXPLORATION_IDLE_CLAIM": {
+      "attempts": 65,
+      "success": 65,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T11:43:00.134745+00:00",
+      "success_rate": 100.0
+    },
+    "OPEN_DAILY": {
+      "attempts": 75,
+      "success": 44,
+      "failure": 31,
+      "other": 0,
+      "last_seen": "2026-10-05T11:59:15.585570+00:00",
+      "success_rate": 58.7
+    },
+    "DAILY_CLAIM_REWARDS": {
+      "attempts": 26,
+      "success": 26,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T11:34:35.445934+00:00",
+      "success_rate": 100.0
+    },
+    "DISMISS_DAILY_GENERIC_REWARD": {
+      "attempts": 48,
+      "success": 42,
+      "failure": 6,
+      "other": 0,
+      "last_seen": "2026-10-05T11:34:38.471612+00:00",
+      "success_rate": 87.5
+    },
+    "FOLLOW_DAILY_TASK": {
+      "attempts": 23,
+      "success": 23,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T11:34:42.375694+00:00",
+      "success_rate": 100.0
+    },
+    "OPEN_INTEL_HERO_JOURNEY_TARGET": {
+      "attempts": 88,
+      "success": 88,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T11:54:50.453413+00:00",
+      "success_rate": 100.0
+    },
+    "INTEL_HERO_START_MARCH": {
+      "attempts": 69,
+      "success": 69,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T11:54:54.921317+00:00",
+      "success_rate": 100.0
+    },
+    "INTEL_HERO_DISPATCH": {
+      "attempts": 37,
+      "success": 37,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T11:55:01.233405+00:00",
+      "success_rate": 100.0
+    },
+    "SELECT_MAIL_ALLIANCE_TAB": {
+      "attempts": 19,
+      "success": 19,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T10:43:35.501482+00:00",
+      "success_rate": 100.0
+    },
+    "OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN": {
+      "attempts": 13,
+      "success": 13,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T09:47:16.060183+00:00",
+      "success_rate": 100.0
+    },
+    "TAP_FOCUSED_TRAINING_CAMP_MARKSMAN": {
+      "attempts": 22,
+      "success": 11,
+      "failure": 11,
+      "other": 0,
+      "last_seen": "2026-10-05T09:47:30.123359+00:00",
+      "success_rate": 50.0
+    },
+    "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN": {
+      "attempts": 3,
+      "success": 3,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-03T07:21:10.667426+00:00",
+      "success_rate": 100.0
+    },
+    "OPEN_ALLIANCE": {
+      "attempts": 28,
+      "success": 28,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T11:39:13.845485+00:00",
+      "success_rate": 100.0
+    },
+    "OPEN_BEAR_RALLY_LIST": {
+      "attempts": 14,
+      "success": 14,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T11:30:47.212438+00:00",
+      "success_rate": 100.0
+    },
+    "OPEN_TASK_FROM_QUICK_PANEL_PET_TREASURE": {
+      "attempts": 5,
+      "success": 5,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-04T11:06:19.201024+00:00",
+      "success_rate": 100.0
+    },
+    "OPEN_STAMINA_SOURCES": {
+      "attempts": 16,
+      "success": 16,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T11:18:46.516559+00:00",
+      "success_rate": 100.0
+    },
+    "CLAIM_FREE_STAMINA": {
+      "attempts": 11,
+      "success": 11,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T11:18:50.344633+00:00",
+      "success_rate": 100.0
+    },
+    "SELECT_BEAST_TARGET_MAMMOTH": {
+      "attempts": 46,
+      "success": 0,
+      "failure": 46,
+      "other": 0,
+      "last_seen": "2026-10-05T12:24:57.514435+00:00",
+      "success_rate": 0.0
+    },
+    "SCAN_MAP_FOR_BEAST": {
+      "attempts": 318,
+      "success": 318,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T07:26:48.333385+00:00",
+      "success_rate": 100.0
+    },
+    "SELECT_BEAST_TARGET_LABELLED": {
+      "attempts": 57,
+      "success": 19,
+      "failure": 38,
+      "other": 0,
+      "last_seen": "2026-10-05T07:33:01.728556+00:00",
+      "success_rate": 33.3
+    },
+    "DISMISS_SHARED_REWARD": {
+      "attempts": 57,
+      "success": 57,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T11:58:12.975857+00:00",
+      "success_rate": 100.0
+    },
+    "OPEN_EVENT_CALENDAR_DETAIL": {
+      "attempts": 16,
+      "success": 16,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-04T16:05:11.609156+00:00",
+      "success_rate": 100.0
+    },
+    "RETURN_EVENT_CALENDAR": {
+      "attempts": 16,
+      "success": 16,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-04T16:05:16.473694+00:00",
+      "success_rate": 100.0
+    },
+    "SCROLL_REGULAR_EVENT_TABS": {
+      "attempts": 349,
+      "success": 225,
+      "failure": 124,
+      "other": 0,
+      "last_seen": "2026-10-04T15:44:49.294876+00:00",
+      "success_rate": 64.5
+    },
+    "START_RALLY": {
+      "attempts": 1,
+      "success": 0,
+      "failure": 1,
+      "other": 0,
+      "last_seen": "2026-10-03T06:04:00.108351+00:00",
+      "success_rate": 0.0
+    },
+    "LEAVE_FOREIGN_LAYER": {
+      "attempts": 5,
+      "success": 2,
+      "failure": 3,
+      "other": 0,
+      "last_seen": "2026-10-05T08:52:41.738731+00:00",
+      "success_rate": 40.0
+    },
+    "OPEN_INTEL_RESCUE_SURVIVORS_TARGET": {
+      "attempts": 36,
+      "success": 25,
+      "failure": 11,
+      "other": 0,
+      "last_seen": "2026-10-05T10:39:40.652341+00:00",
+      "success_rate": 69.4
+    },
+    "EXECUTE_INTEL_RESCUE_SURVIVORS": {
+      "attempts": 28,
+      "success": 27,
+      "failure": 1,
+      "other": 0,
+      "last_seen": "2026-10-05T11:22:35.927617+00:00",
+      "success_rate": 96.4
+    },
+    "PRINTED_TAP": {
+      "attempts": 57,
+      "success": 15,
+      "failure": 42,
+      "other": 0,
+      "last_seen": "2026-10-05T11:19:59.169501+00:00",
+      "success_rate": 26.3
+    },
+    "SELECT_INTEL_RESCUE_SURVIVORS": {
+      "attempts": 1,
+      "success": 1,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-03T10:21:34.204579+00:00",
+      "success_rate": 100.0
+    },
+    "READ_EVENT_CALENDAR": {
+      "attempts": 40,
+      "success": 0,
+      "failure": 40,
+      "other": 0,
+      "last_seen": "2026-10-04T15:29:38.889973+00:00",
+      "success_rate": 0.0
+    },
+    "CLOSE_POPUP": {
+      "attempts": 3,
+      "success": 3,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-03T14:48:14.979906+00:00",
+      "success_rate": 100.0
+    },
+    "SELECT_TRAINING_CAMP": {
+      "attempts": 1,
+      "success": 1,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-03T14:33:14.819633+00:00",
+      "success_rate": 100.0
+    },
+    "SAFE_STOP": {
+      "attempts": 74,
+      "success": 0,
+      "failure": 74,
+      "other": 0,
+      "last_seen": "2026-10-05T10:50:35.639673+00:00",
+      "success_rate": 0.0
+    },
+    "SELECT_MAIL_SYSTEM_TAB": {
+      "attempts": 3,
+      "success": 3,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-04T18:16:37.549378+00:00",
+      "success_rate": 100.0
+    },
+    "SELECT_RESOURCE": {
       "attempts": 2,
       "success": 2,
       "failure": 0,
       "other": 0,
-      "last_seen": "2026-09-23T21:01:07.476301+00:00",
+      "last_seen": "2026-10-04T00:59:30.800947+00:00",
       "success_rate": 100.0
     },
-    "OPEN_TASK_FROM_QUICK_PANEL_BUILDING": {
+    "SUBMIT_RESOURCE_SEARCH": {
       "attempts": 19,
-      "success": 15,
-      "failure": 4,
-      "other": 0,
-      "last_seen": "2026-09-27T12:16:36.327961+00:00",
-      "success_rate": 78.9
-    },
-    "OPEN_COMPLETED_TRAINING_CAMP_SHIELD": {
-      "attempts": 85,
-      "success": 84,
+      "success": 18,
       "failure": 1,
       "other": 0,
-      "last_seen": "2026-09-29T10:33:23.031369+00:00",
-      "success_rate": 98.8
+      "last_seen": "2026-10-04T01:02:00.010056+00:00",
+      "success_rate": 94.7
     },
-    "SELECT_RESEARCH_NODE": {
-      "attempts": 43,
-      "success": 8,
-      "failure": 35,
-      "other": 0,
-      "last_seen": "2026-09-27T09:16:00.880076+00:00",
-      "success_rate": 18.6
-    },
-    "RESEARCH": {
-      "attempts": 6,
-      "success": 1,
-      "failure": 5,
-      "other": 0,
-      "last_seen": "2026-09-27T02:04:23.003949+00:00",
-      "success_rate": 16.7
-    },
-    "SELECT_INFANTRY_CAMP": {
+    "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT_EPIC": {
       "attempts": 1,
-      "success": 0,
-      "failure": 1,
+      "success": 1,
+      "failure": 0,
       "other": 0,
-      "last_seen": "2026-09-24T23:20:58.542330+00:00",
-      "success_rate": 0.0
-    },
-    "OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN": {
-      "attempts": 11,
-      "success": 10,
-      "failure": 1,
-      "other": 0,
-      "last_seen": "2026-09-29T11:19:06.511046+00:00",
-      "success_rate": 90.9
-    },
-    "OPEN_COMPLETED_TRAINING_CAMP_LANCER": {
-      "attempts": 13,
-      "success": 12,
-      "failure": 1,
-      "other": 0,
-      "last_seen": "2026-09-29T11:34:19.809729+00:00",
-      "success_rate": 92.3
-    },
-    "OPEN_EVENT_CALENDAR_FROM_HOME": {
-      "attempts": 12,
-      "success": 0,
-      "failure": 12,
-      "other": 0,
-      "last_seen": "2026-09-28T10:54:58.419699+00:00",
-      "success_rate": 0.0
-    },
-    "OPEN_EVENT_CALENDAR_TAB": {
-      "attempts": 3,
-      "success": 2,
-      "failure": 1,
-      "other": 0,
-      "last_seen": "2026-09-27T09:35:23.761592+00:00",
-      "success_rate": 66.7
-    },
-    "OPEN_EVENT_CALENDAR_DETAIL": {
-      "attempts": 5,
-      "success": 3,
-      "failure": 2,
-      "other": 0,
-      "last_seen": "2026-09-26T09:33:00.234433+00:00",
-      "success_rate": 60.0
-    },
-    "RETURN_EVENT_CALENDAR": {
-      "attempts": 4,
-      "success": 3,
-      "failure": 1,
-      "other": 0,
-      "last_seen": "2026-09-25T08:59:28.670261+00:00",
-      "success_rate": 75.0
-    },
-    "TAP_FOCUSED_TRAINING_CAMP_MARKSMAN": {
-      "attempts": 8,
-      "success": 0,
-      "failure": 8,
-      "other": 0,
-      "last_seen": "2026-09-29T11:19:44.399356+00:00",
-      "success_rate": 0.0
-    },
-    "OPEN_BUILDING_UPGRADE": {
-      "attempts": 24,
-      "success": 7,
-      "failure": 17,
-      "other": 0,
-      "last_seen": "2026-09-27T07:55:19.437775+00:00",
-      "success_rate": 29.2
-    },
-    "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT": {
-      "attempts": 9,
-      "success": 3,
-      "failure": 6,
-      "other": 0,
-      "last_seen": "2026-09-28T10:34:12.940744+00:00",
-      "success_rate": 33.3
+      "last_seen": "2026-10-04T06:28:14.649895+00:00",
+      "success_rate": 100.0
     },
     "FREE_HERO_RECRUIT_EPIC": {
       "attempts": 1,
       "success": 1,
       "failure": 0,
       "other": 0,
-      "last_seen": "2026-09-25T12:24:45.117230+00:00",
+      "last_seen": "2026-10-04T06:28:28.466894+00:00",
       "success_rate": 100.0
     },
-    "FREE_HERO_RECRUIT_ADVANCED": {
-      "attempts": 2,
-      "success": 2,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-25T12:59:52.252141+00:00",
-      "success_rate": 100.0
-    },
-    "OPEN_TASK_FROM_QUICK_PANEL_ALLIANCE_DONATION": {
-      "attempts": 1,
-      "success": 1,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-25T12:46:36.528872+00:00",
-      "success_rate": 100.0
-    },
-    "SCROLL_QUICK_PANEL_TASKS": {
-      "attempts": 109,
-      "success": 68,
-      "failure": 41,
-      "other": 0,
-      "last_seen": "2026-09-28T11:02:03.257018+00:00",
-      "success_rate": 62.4
-    },
-    "OPEN_TASK_FROM_QUICK_PANEL_PET_TREASURE": {
-      "attempts": 60,
-      "success": 60,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-28T10:53:34.708905+00:00",
-      "success_rate": 100.0
-    },
-    "OPEN_ALLIANCE_TECH_FROM_HOME": {
-      "attempts": 54,
-      "success": 54,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-28T11:02:46.114848+00:00",
-      "success_rate": 100.0
-    },
-    "TAP_FOCUSED_TRAINING_CAMP_SHIELD": {
-      "attempts": 10,
-      "success": 0,
-      "failure": 10,
-      "other": 0,
-      "last_seen": "2026-09-29T10:33:52.325737+00:00",
-      "success_rate": 0.0
-    },
-    "TAP_FOCUSED_TRAINING_CAMP_LANCER": {
-      "attempts": 8,
-      "success": 0,
-      "failure": 8,
-      "other": 0,
-      "last_seen": "2026-09-29T11:34:57.206864+00:00",
-      "success_rate": 0.0
-    },
-    "CLAIM_OFFLINE_REWARDS": {
-      "attempts": 2,
-      "success": 2,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-26T00:53:15.130008+00:00",
-      "success_rate": 100.0
-    },
-    "OPEN_QUICK_PANEL": {
-      "attempts": 462,
-      "success": 462,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-29T12:39:05.281640+00:00",
-      "success_rate": 100.0
-    },
-    "OPEN_EVENT_CALENDAR_FROM_MAP": {
-      "attempts": 4,
-      "success": 1,
-      "failure": 3,
-      "other": 0,
-      "last_seen": "2026-09-28T10:48:19.414581+00:00",
-      "success_rate": 25.0
-    },
-    "OPEN_TECH_TREE": {
-      "attempts": 40,
-      "success": 40,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-27T09:15:13.645880+00:00",
-      "success_rate": 100.0
-    },
-    "OPEN_ALLIANCE_RECOMMENDED_TECH_NODE": {
+    "SELECT_MAIL_REPORT_TAB": {
       "attempts": 4,
       "success": 4,
       "failure": 0,
       "other": 0,
-      "last_seen": "2026-09-28T10:44:04.209820+00:00",
+      "last_seen": "2026-10-05T11:23:16.474522+00:00",
       "success_rate": 100.0
     },
-    "FOLLOW_DAILY_TASK": {
-      "attempts": 7,
-      "success": 6,
-      "failure": 1,
+    "SUBMIT_GIANT_BEAST_SEARCH": {
+      "attempts": 33,
+      "success": 5,
+      "failure": 28,
       "other": 0,
-      "last_seen": "2026-09-29T12:08:48.890763+00:00",
-      "success_rate": 85.7
+      "last_seen": "2026-10-05T12:30:59.076692+00:00",
+      "success_rate": 15.2
     },
-    "ALLIANCE_TECH_CONTRIBUTE": {
-      "attempts": 2,
-      "success": 2,
+    "RECONNECT_SESSION": {
+      "attempts": 1,
+      "success": 1,
       "failure": 0,
       "other": 0,
-      "last_seen": "2026-09-28T10:44:26.775348+00:00",
+      "last_seen": "2026-10-04T21:00:29.464485+00:00",
       "success_rate": 100.0
+    },
+    "OBSERVE_ONLY": {
+      "attempts": 7,
+      "success": 0,
+      "failure": 0,
+      "other": 7,
+      "last_seen": "2026-10-05T06:21:10.216593+00:00",
+      "success_rate": null
+    },
+    "SELECT_INTEL_FIREBEAST_MISSION": {
+      "attempts": 2,
+      "success": 0,
+      "failure": 2,
+      "other": 0,
+      "last_seen": "2026-10-05T07:23:05.427409+00:00",
+      "success_rate": 0.0
+    },
+    "OPEN_BEAST_SEARCH_TAB": {
+      "attempts": 30,
+      "success": 0,
+      "failure": 30,
+      "other": 0,
+      "last_seen": "2026-10-05T12:32:28.656270+00:00",
+      "success_rate": 0.0
+    },
+    "FREE_HERO_RECRUIT_ADVANCED": {
+      "attempts": 7,
+      "success": 7,
+      "failure": 0,
+      "other": 0,
+      "last_seen": "2026-10-05T11:30:13.152765+00:00",
+      "success_rate": 100.0
+    },
+    "SELECT_QUICK_PANEL_CITY_TAB": {
+      "attempts": 1,
+      "success": 0,
+      "failure": 1,
+      "other": 0,
+      "last_seen": "2026-10-05T10:16:08.857445+00:00",
+      "success_rate": 0.0
+    },
+    "SCROLL_QUICK_PANEL_BACK": {
+      "attempts": 3,
+      "success": 2,
+      "failure": 1,
+      "other": 0,
+      "last_seen": "2026-10-05T11:59:32.959299+00:00",
+      "success_rate": 66.7
     }
   },
   "registry": {
-    "total": 147,
+    "total": 152,
     "by_state": {
+      "CANDIDATE": 101,
       "VERIFIED": 47,
-      "CANDIDATE": 96,
       "BLOCKED": 4
     },
     "by_risk": {
-      "LOW": 132,
+      "LOW": 137,
       "MEDIUM_STAMINA_SPEND": 8,
       "MEDIUM_COMBAT": 3,
       "MEDIUM_RESOURCE_SPEND": 3,
       "LOW_RESOURCE_SPEND": 1
     },
     "by_latency": {
-      "NORMAL": 128,
+      "NORMAL": 133,
       "FAST": 18,
       "REALTIME": 1
     },
@@ -1013,10 +909,10 @@
     ]
   },
   "registry_lifecycle": {
-    "registry_total": 147,
-    "live_verified_skills": 89,
-    "only_failed_skills": 9,
-    "never_executed_skills": 49,
+    "registry_total": 152,
+    "live_verified_skills": 76,
+    "only_failed_skills": 5,
+    "never_executed_skills": 71,
     "never_executed": [
       {
         "skill_id": "ALLIANCE_ALLY_GIFT_CLAIM",
@@ -1029,6 +925,10 @@
       {
         "skill_id": "ALLIANCE_HELP",
         "state": "BLOCKED"
+      },
+      {
+        "skill_id": "ALLIANCE_TECH_CONTRIBUTE",
+        "state": "VERIFIED"
       },
       {
         "skill_id": "ASSIGN_GATHER_HERO",
@@ -1051,7 +951,15 @@
         "state": "VERIFIED"
       },
       {
+        "skill_id": "CHECK_MARCH",
+        "state": "VERIFIED"
+      },
+      {
         "skill_id": "CLAIM_LOGIN_GIFT",
+        "state": "CANDIDATE"
+      },
+      {
+        "skill_id": "CLAIM_OFFLINE_REWARDS",
         "state": "CANDIDATE"
       },
       {
@@ -1075,6 +983,10 @@
         "state": "BLOCKED"
       },
       {
+        "skill_id": "COLLECT_FINISHED_TRAINING_SHIELD",
+        "state": "BLOCKED"
+      },
+      {
         "skill_id": "COLLECT_MY_REWARDS_ROW",
         "state": "CANDIDATE"
       },
@@ -1085,6 +997,10 @@
       {
         "skill_id": "DAILY_HERO_RECRUIT",
         "state": "VERIFIED"
+      },
+      {
+        "skill_id": "DISMISS_ALLIANCE_GENERIC_REWARD",
+        "state": "CANDIDATE"
       },
       {
         "skill_id": "DISMISS_BATTLEFIELD_REVIVAL",
@@ -1107,7 +1023,19 @@
         "state": "VERIFIED"
       },
       {
+        "skill_id": "DISMISS_MAIL_GENERIC_REWARD",
+        "state": "CANDIDATE"
+      },
+      {
         "skill_id": "DISMISS_MAIL_REWARD",
+        "state": "VERIFIED"
+      },
+      {
+        "skill_id": "DISMISS_REAL_MONEY_OFFER",
+        "state": "CANDIDATE"
+      },
+      {
+        "skill_id": "DISPATCH_MARCH",
         "state": "VERIFIED"
       },
       {
@@ -1119,11 +1047,27 @@
         "state": "CANDIDATE"
       },
       {
+        "skill_id": "NAVIGATE_INFANTRY_CAMP",
+        "state": "CANDIDATE"
+      },
+      {
+        "skill_id": "NAVIGATE_RESEARCH_LAB",
+        "state": "CANDIDATE"
+      },
+      {
         "skill_id": "NAVIGATE_TO",
         "state": "CANDIDATE"
       },
       {
-        "skill_id": "OPEN_BEAR_RALLY_LIST",
+        "skill_id": "OPEN_ALLIANCE_GIFTS",
+        "state": "CANDIDATE"
+      },
+      {
+        "skill_id": "OPEN_ALLIANCE_RECOMMENDED_TECH_NODE",
+        "state": "CANDIDATE"
+      },
+      {
+        "skill_id": "OPEN_ALLIANCE_TECH_FROM_HOME",
         "state": "CANDIDATE"
       },
       {
@@ -1135,7 +1079,19 @@
         "state": "CANDIDATE"
       },
       {
-        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT_EPIC",
+        "skill_id": "OPEN_POWER_DETAILS",
+        "state": "CANDIDATE"
+      },
+      {
+        "skill_id": "OPEN_POWER_OVERVIEW",
+        "state": "CANDIDATE"
+      },
+      {
+        "skill_id": "OPEN_RESEARCH",
+        "state": "CANDIDATE"
+      },
+      {
+        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_ALLIANCE_DONATION",
         "state": "CANDIDATE"
       },
       {
@@ -1143,11 +1099,23 @@
         "state": "CANDIDATE"
       },
       {
+        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH",
+        "state": "CANDIDATE"
+      },
+      {
+        "skill_id": "OPEN_TECH_TREE",
+        "state": "CANDIDATE"
+      },
+      {
+        "skill_id": "PLAY_NORMAL_FISHING_LEVEL",
+        "state": "CANDIDATE"
+      },
+      {
         "skill_id": "READ_COUNTER",
         "state": "CANDIDATE"
       },
       {
-        "skill_id": "READ_EVENT_CALENDAR",
+        "skill_id": "READ_FISHING_STATE",
         "state": "CANDIDATE"
       },
       {
@@ -1175,20 +1143,32 @@
         "state": "CANDIDATE"
       },
       {
+        "skill_id": "RESEARCH",
+        "state": "CANDIDATE"
+      },
+      {
         "skill_id": "SELECT_BEAST_TARGET",
         "state": "VERIFIED"
+      },
+      {
+        "skill_id": "SELECT_DAILY_TAB",
+        "state": "CANDIDATE"
       },
       {
         "skill_id": "SELECT_GATHER_HERO",
         "state": "CANDIDATE"
       },
       {
-        "skill_id": "SELECT_INTEL_FIREBEAST_MISSION",
-        "state": "VERIFIED"
+        "skill_id": "SELECT_INFANTRY_CAMP",
+        "state": "CANDIDATE"
       },
       {
-        "skill_id": "SELECT_INTEL_RESCUE_SURVIVORS",
-        "state": "VERIFIED"
+        "skill_id": "SELECT_MARCH_TO_RECALL",
+        "state": "CANDIDATE"
+      },
+      {
+        "skill_id": "SELECT_RESEARCH_NODE",
+        "state": "CANDIDATE"
       },
       {
         "skill_id": "SELECT_REWARD_OPTION",
@@ -1199,8 +1179,8 @@
         "state": "CANDIDATE"
       },
       {
-        "skill_id": "START_RALLY",
-        "state": "CANDIDATE"
+        "skill_id": "START_GATHER",
+        "state": "VERIFIED"
       },
       {
         "skill_id": "USE_ACTIVITY_ATTEMPT",
@@ -1213,258 +1193,212 @@
       {
         "skill_id": "WAIT",
         "state": "CANDIDATE"
+      },
+      {
+        "skill_id": "WAIT_FOR_CAMP_MENU",
+        "state": "VERIFIED"
       }
     ],
     "only_failed": [
       {
-        "skill_id": "DISPATCH_BEAST",
-        "state": "VERIFIED",
-        "failure": 86
-      },
-      {
         "skill_id": "SELECT_BEAST_TARGET_MAMMOTH",
         "state": "CANDIDATE",
-        "failure": 14
+        "failure": 46
       },
       {
-        "skill_id": "OPEN_EVENT_CALENDAR_FROM_HOME",
+        "skill_id": "READ_EVENT_CALENDAR",
         "state": "CANDIDATE",
-        "failure": 12
+        "failure": 40
       },
       {
-        "skill_id": "SELECT_MARCH_TO_RECALL",
+        "skill_id": "OPEN_BEAST_SEARCH_TAB",
         "state": "CANDIDATE",
-        "failure": 11
+        "failure": 30
       },
       {
-        "skill_id": "TAP_FOCUSED_TRAINING_CAMP_SHIELD",
-        "state": "CANDIDATE",
-        "failure": 10
+        "skill_id": "SELECT_INTEL_FIREBEAST_MISSION",
+        "state": "VERIFIED",
+        "failure": 2
       },
       {
-        "skill_id": "TAP_FOCUSED_TRAINING_CAMP_LANCER",
-        "state": "CANDIDATE",
-        "failure": 8
-      },
-      {
-        "skill_id": "TAP_FOCUSED_TRAINING_CAMP_MARKSMAN",
-        "state": "CANDIDATE",
-        "failure": 8
-      },
-      {
-        "skill_id": "DISMISS_ALLIANCE_GENERIC_REWARD",
-        "state": "CANDIDATE",
-        "failure": 1
-      },
-      {
-        "skill_id": "SELECT_INFANTRY_CAMP",
+        "skill_id": "START_RALLY",
         "state": "CANDIDATE",
         "failure": 1
       }
     ],
     "live_verified": [
       {
+        "skill_id": "OPEN_QUICK_PANEL",
+        "state": "CANDIDATE",
+        "success": 1565
+      },
+      {
         "skill_id": "BACK",
         "state": "VERIFIED",
-        "success": 1600
+        "success": 1150
       },
       {
         "skill_id": "OPEN_MAP",
         "state": "VERIFIED",
-        "success": 753
+        "success": 620
       },
       {
         "skill_id": "OPEN_HOME",
         "state": "VERIFIED",
-        "success": 615
+        "success": 486
       },
       {
-        "skill_id": "OPEN_INTEL",
-        "state": "VERIFIED",
-        "success": 567
-      },
-      {
-        "skill_id": "SEARCH_RESOURCE",
-        "state": "VERIFIED",
-        "success": 465
-      },
-      {
-        "skill_id": "OPEN_QUICK_PANEL",
+        "skill_id": "OPEN_EVENT_CALENDAR_FROM_HOME",
         "state": "CANDIDATE",
-        "success": 462
+        "success": 460
       },
       {
-        "skill_id": "SELECT_INTEL_PIN",
-        "state": "VERIFIED",
-        "success": 405
+        "skill_id": "OPEN_EVENT_CALENDAR_TAB",
+        "state": "CANDIDATE",
+        "success": 350
       },
       {
         "skill_id": "SCAN_MAP_FOR_BEAST",
         "state": "CANDIDATE",
-        "success": 404
+        "success": 318
       },
       {
-        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH",
-        "state": "CANDIDATE",
-        "success": 193
-      },
-      {
-        "skill_id": "DISMISS_INTEL_GENERIC_REWARD",
-        "state": "CANDIDATE",
-        "success": 177
-      },
-      {
-        "skill_id": "INTEL_CLAIM_REWARDS",
+        "skill_id": "OPEN_INTEL",
         "state": "VERIFIED",
-        "success": 165
+        "success": 309
       },
       {
-        "skill_id": "OPEN_MAIL",
+        "skill_id": "SELECT_INTEL_PIN",
         "state": "VERIFIED",
-        "success": 157
+        "success": 307
       },
       {
-        "skill_id": "OPEN_RESEARCH",
+        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_BUILDING",
         "state": "CANDIDATE",
-        "success": 156
+        "success": 258
       },
       {
-        "skill_id": "TRY_ORDINARY_CONTROL",
+        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT",
         "state": "CANDIDATE",
-        "success": 151
-      },
-      {
-        "skill_id": "OPEN_POWER_OVERVIEW",
-        "state": "CANDIDATE",
-        "success": 119
-      },
-      {
-        "skill_id": "SUBMIT_BEAST_SEARCH",
-        "state": "CANDIDATE",
-        "success": 116
-      },
-      {
-        "skill_id": "MAIL_CLAIM_REWARDS",
-        "state": "VERIFIED",
-        "success": 101
-      },
-      {
-        "skill_id": "OPEN_EXPLORATION",
-        "state": "VERIFIED",
-        "success": 100
-      },
-      {
-        "skill_id": "OPEN_INFANTRY_TRAINING",
-        "state": "CANDIDATE",
-        "success": 96
-      },
-      {
-        "skill_id": "DISPATCH_INTEL_BEAST",
-        "state": "VERIFIED",
-        "success": 88
-      },
-      {
-        "skill_id": "ATTACK_BEAST_CARD",
-        "state": "CANDIDATE",
-        "success": 85
-      },
-      {
-        "skill_id": "OPEN_COMPLETED_TRAINING_CAMP_SHIELD",
-        "state": "CANDIDATE",
-        "success": 84
-      },
-      {
-        "skill_id": "OPEN_POWER_DETAILS",
-        "state": "CANDIDATE",
-        "success": 83
-      },
-      {
-        "skill_id": "OPEN_INTEL_BEAST_TARGET",
-        "state": "VERIFIED",
-        "success": 82
-      },
-      {
-        "skill_id": "OPEN_DAILY",
-        "state": "CANDIDATE",
-        "success": 81
-      },
-      {
-        "skill_id": "OPEN_ALLIANCE",
-        "state": "VERIFIED",
-        "success": 74
-      },
-      {
-        "skill_id": "INTEL_BEAST_START_MARCH",
-        "state": "VERIFIED",
-        "success": 73
-      },
-      {
-        "skill_id": "SELECT_TRAINING_CAMP",
-        "state": "CANDIDATE",
-        "success": 72
+        "success": 254
       },
       {
         "skill_id": "SCROLL_QUICK_PANEL_TASKS",
         "state": "CANDIDATE",
-        "success": 68
+        "success": 247
       },
       {
-        "skill_id": "OPEN_ALLIANCE_GIFTS",
+        "skill_id": "SCROLL_REGULAR_EVENT_TABS",
         "state": "CANDIDATE",
-        "success": 66
+        "success": 225
       },
       {
-        "skill_id": "CLOSE_POPUP",
+        "skill_id": "SEARCH_RESOURCE",
         "state": "VERIFIED",
-        "success": 61
+        "success": 222
       },
       {
-        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_PET_TREASURE",
+        "skill_id": "OPEN_EVENT_CALENDAR_FROM_MAP",
         "state": "CANDIDATE",
-        "success": 60
+        "success": 140
       },
       {
-        "skill_id": "EXPLORATION_IDLE_CLAIM",
+        "skill_id": "INTEL_CLAIM_REWARDS",
         "state": "VERIFIED",
-        "success": 57
+        "success": 128
       },
       {
-        "skill_id": "NAVIGATE_INFANTRY_CAMP",
+        "skill_id": "DISMISS_INTEL_GENERIC_REWARD",
         "state": "CANDIDATE",
-        "success": 56
+        "success": 127
       },
       {
-        "skill_id": "CONFIRM_EXPLORATION_IDLE_CLAIM",
+        "skill_id": "SUBMIT_BEAST_SEARCH",
+        "state": "CANDIDATE",
+        "success": 127
+      },
+      {
+        "skill_id": "OPEN_INTEL_BEAST_TARGET",
         "state": "VERIFIED",
-        "success": 54
+        "success": 104
       },
       {
-        "skill_id": "INTEL_HERO_DISPATCH",
+        "skill_id": "TRY_ORDINARY_CONTROL",
         "state": "CANDIDATE",
-        "success": 54
+        "success": 102
       },
       {
-        "skill_id": "OPEN_ALLIANCE_TECH_FROM_HOME",
-        "state": "CANDIDATE",
-        "success": 54
-      },
-      {
-        "skill_id": "INTEL_HERO_START_MARCH",
-        "state": "CANDIDATE",
-        "success": 48
+        "skill_id": "INTEL_BEAST_START_MARCH",
+        "state": "VERIFIED",
+        "success": 101
       },
       {
         "skill_id": "OPEN_INTEL_HERO_JOURNEY_TARGET",
         "state": "CANDIDATE",
-        "success": 48
+        "success": 88
+      },
+      {
+        "skill_id": "MAIL_CLAIM_REWARDS",
+        "state": "VERIFIED",
+        "success": 81
+      },
+      {
+        "skill_id": "DISPATCH_INTEL_BEAST",
+        "state": "VERIFIED",
+        "success": 77
+      },
+      {
+        "skill_id": "ATTACK_BEAST_CARD",
+        "state": "CANDIDATE",
+        "success": 76
+      },
+      {
+        "skill_id": "OPEN_EXPLORATION",
+        "state": "VERIFIED",
+        "success": 71
+      },
+      {
+        "skill_id": "DISPATCH_BEAST",
+        "state": "VERIFIED",
+        "success": 70
+      },
+      {
+        "skill_id": "INTEL_HERO_START_MARCH",
+        "state": "CANDIDATE",
+        "success": 69
+      },
+      {
+        "skill_id": "EXPLORATION_IDLE_CLAIM",
+        "state": "VERIFIED",
+        "success": 66
+      },
+      {
+        "skill_id": "CONFIRM_EXPLORATION_IDLE_CLAIM",
+        "state": "VERIFIED",
+        "success": 65
+      },
+      {
+        "skill_id": "OPEN_MAIL",
+        "state": "VERIFIED",
+        "success": 64
+      },
+      {
+        "skill_id": "DISMISS_SHARED_REWARD",
+        "state": "CANDIDATE",
+        "success": 57
+      },
+      {
+        "skill_id": "OPEN_INFANTRY_TRAINING",
+        "state": "CANDIDATE",
+        "success": 49
       },
       {
         "skill_id": "DISMISS_EXPLORATION_GENERIC_REWARD",
         "state": "CANDIDATE",
-        "success": 46
+        "success": 44
       },
       {
-        "skill_id": "DISMISS_SHARED_REWARD",
+        "skill_id": "OPEN_DAILY",
         "state": "CANDIDATE",
         "success": 44
       },
@@ -1474,58 +1408,33 @@
         "success": 42
       },
       {
-        "skill_id": "LEAVE_FOREIGN_LAYER",
-        "state": "VERIFIED",
-        "success": 42
-      },
-      {
-        "skill_id": "DISMISS_MAIL_GENERIC_REWARD",
+        "skill_id": "INTEL_HERO_DISPATCH",
         "state": "CANDIDATE",
-        "success": 41
+        "success": 37
       },
       {
-        "skill_id": "TRAIN_TROOPS",
-        "state": "VERIFIED",
-        "success": 41
-      },
-      {
-        "skill_id": "OPEN_TECH_TREE",
+        "skill_id": "SELECT_GIANT_BEAST_TAB",
         "state": "CANDIDATE",
-        "success": 40
+        "success": 31
       },
       {
-        "skill_id": "SUBMIT_RESOURCE_SEARCH",
+        "skill_id": "OPEN_ALLIANCE",
         "state": "VERIFIED",
-        "success": 36
+        "success": 28
       },
       {
         "skill_id": "EXECUTE_INTEL_RESCUE_SURVIVORS",
         "state": "VERIFIED",
-        "success": 32
-      },
-      {
-        "skill_id": "SELECT_RESOURCE",
-        "state": "CANDIDATE",
-        "success": 32
-      },
-      {
-        "skill_id": "DISPATCH_MARCH",
-        "state": "VERIFIED",
-        "success": 30
+        "success": 27
       },
       {
         "skill_id": "DAILY_CLAIM_REWARDS",
         "state": "VERIFIED",
-        "success": 28
+        "success": 26
       },
       {
-        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_LANCER",
-        "state": "CANDIDATE",
-        "success": 28
-      },
-      {
-        "skill_id": "SELECT_DAILY_TAB",
-        "state": "CANDIDATE",
+        "skill_id": "TRAIN_TROOPS",
+        "state": "VERIFIED",
         "success": 26
       },
       {
@@ -1534,159 +1443,144 @@
         "success": 25
       },
       {
-        "skill_id": "START_GATHER",
-        "state": "VERIFIED",
-        "success": 25
+        "skill_id": "FOLLOW_DAILY_TASK",
+        "state": "CANDIDATE",
+        "success": 23
       },
       {
         "skill_id": "SELECT_BEAST_TARGET_LABELLED",
         "state": "CANDIDATE",
-        "success": 24
-      },
-      {
-        "skill_id": "NAVIGATE_RESEARCH_LAB",
-        "state": "CANDIDATE",
-        "success": 21
-      },
-      {
-        "skill_id": "OPEN_STAMINA_SOURCES",
-        "state": "CANDIDATE",
-        "success": 20
-      },
-      {
-        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN",
-        "state": "CANDIDATE",
         "success": 19
-      },
-      {
-        "skill_id": "SELECT_MAIL_REPORT_TAB",
-        "state": "VERIFIED",
-        "success": 16
-      },
-      {
-        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_BUILDING",
-        "state": "CANDIDATE",
-        "success": 15
-      },
-      {
-        "skill_id": "OPEN_BEAST_SEARCH_TAB",
-        "state": "CANDIDATE",
-        "success": 14
-      },
-      {
-        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_SHIELD",
-        "state": "CANDIDATE",
-        "success": 14
       },
       {
         "skill_id": "SELECT_MAIL_ALLIANCE_TAB",
         "state": "VERIFIED",
-        "success": 14
+        "success": 19
       },
       {
-        "skill_id": "CHECK_MARCH",
+        "skill_id": "SUBMIT_RESOURCE_SEARCH",
         "state": "VERIFIED",
-        "success": 12
-      },
-      {
-        "skill_id": "OPEN_COMPLETED_TRAINING_CAMP_LANCER",
-        "state": "CANDIDATE",
-        "success": 12
-      },
-      {
-        "skill_id": "OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN",
-        "state": "CANDIDATE",
-        "success": 10
-      },
-      {
-        "skill_id": "CLAIM_FREE_STAMINA",
-        "state": "CANDIDATE",
-        "success": 9
-      },
-      {
-        "skill_id": "DISMISS_REAL_MONEY_OFFER",
-        "state": "CANDIDATE",
-        "success": 9
-      },
-      {
-        "skill_id": "SELECT_MAIL_SYSTEM_TAB",
-        "state": "VERIFIED",
-        "success": 9
-      },
-      {
-        "skill_id": "SELECT_RESEARCH_NODE",
-        "state": "CANDIDATE",
-        "success": 8
-      },
-      {
-        "skill_id": "OPEN_BUILDING_UPGRADE",
-        "state": "CANDIDATE",
-        "success": 7
-      },
-      {
-        "skill_id": "FOLLOW_DAILY_TASK",
-        "state": "CANDIDATE",
-        "success": 6
-      },
-      {
-        "skill_id": "OPEN_ALLIANCE_RECOMMENDED_TECH_NODE",
-        "state": "CANDIDATE",
-        "success": 4
-      },
-      {
-        "skill_id": "WAIT_FOR_CAMP_MENU",
-        "state": "VERIFIED",
-        "success": 4
+        "success": 18
       },
       {
         "skill_id": "OPEN_EVENT_CALENDAR_DETAIL",
         "state": "CANDIDATE",
-        "success": 3
+        "success": 16
       },
       {
-        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT",
+        "skill_id": "OPEN_STAMINA_SOURCES",
         "state": "CANDIDATE",
-        "success": 3
+        "success": 16
       },
       {
         "skill_id": "RETURN_EVENT_CALENDAR",
         "state": "CANDIDATE",
-        "success": 3
+        "success": 16
       },
       {
-        "skill_id": "SELECT_INTEL_BEAST_MISSION",
-        "state": "VERIFIED",
-        "success": 3
-      },
-      {
-        "skill_id": "ALLIANCE_TECH_CONTRIBUTE",
-        "state": "VERIFIED",
-        "success": 2
-      },
-      {
-        "skill_id": "CLAIM_OFFLINE_REWARDS",
+        "skill_id": "OPEN_BEAR_RALLY_LIST",
         "state": "CANDIDATE",
-        "success": 2
+        "success": 14
+      },
+      {
+        "skill_id": "OPEN_COMPLETED_TRAINING_CAMP_LANCER",
+        "state": "CANDIDATE",
+        "success": 14
+      },
+      {
+        "skill_id": "OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN",
+        "state": "CANDIDATE",
+        "success": 13
+      },
+      {
+        "skill_id": "OPEN_COMPLETED_TRAINING_CAMP_SHIELD",
+        "state": "CANDIDATE",
+        "success": 12
+      },
+      {
+        "skill_id": "CLAIM_FREE_STAMINA",
+        "state": "CANDIDATE",
+        "success": 11
+      },
+      {
+        "skill_id": "TAP_FOCUSED_TRAINING_CAMP_LANCER",
+        "state": "CANDIDATE",
+        "success": 11
+      },
+      {
+        "skill_id": "TAP_FOCUSED_TRAINING_CAMP_MARKSMAN",
+        "state": "CANDIDATE",
+        "success": 11
+      },
+      {
+        "skill_id": "TAP_FOCUSED_TRAINING_CAMP_SHIELD",
+        "state": "CANDIDATE",
+        "success": 11
       },
       {
         "skill_id": "FREE_HERO_RECRUIT_ADVANCED",
         "state": "CANDIDATE",
+        "success": 7
+      },
+      {
+        "skill_id": "SELECT_INTEL_BEAST_MISSION",
+        "state": "VERIFIED",
+        "success": 6
+      },
+      {
+        "skill_id": "OPEN_BUILDING_UPGRADE",
+        "state": "CANDIDATE",
+        "success": 5
+      },
+      {
+        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_PET_TREASURE",
+        "state": "CANDIDATE",
+        "success": 5
+      },
+      {
+        "skill_id": "SUBMIT_GIANT_BEAST_SEARCH",
+        "state": "CANDIDATE",
+        "success": 5
+      },
+      {
+        "skill_id": "SELECT_MAIL_REPORT_TAB",
+        "state": "VERIFIED",
+        "success": 4
+      },
+      {
+        "skill_id": "CLOSE_POPUP",
+        "state": "VERIFIED",
+        "success": 3
+      },
+      {
+        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_LANCER",
+        "state": "CANDIDATE",
+        "success": 3
+      },
+      {
+        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN",
+        "state": "CANDIDATE",
+        "success": 3
+      },
+      {
+        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_SHIELD",
+        "state": "CANDIDATE",
+        "success": 3
+      },
+      {
+        "skill_id": "SELECT_MAIL_SYSTEM_TAB",
+        "state": "VERIFIED",
+        "success": 3
+      },
+      {
+        "skill_id": "LEAVE_FOREIGN_LAYER",
+        "state": "VERIFIED",
         "success": 2
       },
       {
-        "skill_id": "OPEN_EVENT_CALENDAR_TAB",
+        "skill_id": "SELECT_RESOURCE",
         "state": "CANDIDATE",
         "success": 2
-      },
-      {
-        "skill_id": "RECONNECT_SESSION",
-        "state": "CANDIDATE",
-        "success": 2
-      },
-      {
-        "skill_id": "COLLECT_FINISHED_TRAINING_SHIELD",
-        "state": "BLOCKED",
-        "success": 1
       },
       {
         "skill_id": "FREE_HERO_RECRUIT_EPIC",
@@ -1694,17 +1588,22 @@
         "success": 1
       },
       {
-        "skill_id": "OPEN_EVENT_CALENDAR_FROM_MAP",
+        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT_EPIC",
         "state": "CANDIDATE",
         "success": 1
       },
       {
-        "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_ALLIANCE_DONATION",
+        "skill_id": "RECONNECT_SESSION",
         "state": "CANDIDATE",
         "success": 1
       },
       {
-        "skill_id": "RESEARCH",
+        "skill_id": "SELECT_INTEL_RESCUE_SURVIVORS",
+        "state": "VERIFIED",
+        "success": 1
+      },
+      {
+        "skill_id": "SELECT_TRAINING_CAMP",
         "state": "CANDIDATE",
         "success": 1
       }
@@ -1712,11 +1611,11 @@
   },
   "dataset": {
     "raw": {
-      "files": 30014,
-      "empty_dirs": 2722
+      "files": 42366,
+      "empty_dirs": 5255
     },
     "candidate": {
-      "files": 738,
+      "files": 864,
       "empty_dirs": 0
     },
     "verified": {
@@ -1737,31 +1636,32 @@
     }
   },
   "runtime": {
-    "agent_state": "PAUSED",
-    "runtime_thread_alive": false,
-    "scheduler_loop_alive": false,
-    "last_tick_time": "2026-09-29T12:39:51.046520+00:00",
-    "last_action_time": "2026-09-29T12:39:21.801515+00:00",
-    "last_success_time": "2026-09-29T12:39:37.159591+00:00",
+    "agent_state": "GOAL_RUNNING",
+    "runtime_thread_alive": true,
+    "scheduler_loop_alive": true,
+    "last_tick_time": "2026-10-05T12:33:51.922806+00:00",
+    "last_action_time": "2026-10-05T12:33:52.419517+00:00",
+    "last_success_time": "2026-10-05T12:33:50.816596+00:00",
     "last_fatal_error": null,
-    "watchdog_restart_count": 21,
-    "unexpected_worker_exits": 15,
-    "page": "HOME",
+    "watchdog_restart_count": 31,
+    "unexpected_worker_exits": 25,
+    "page": "MARCH",
     "role_id": "1063040265",
-    "current_goal": null,
-    "current_skill": null,
-    "reason": "User manually participating; Codex and AUTO inputs paused",
+    "current_goal": "CLEAR_INTEL",
+    "current_skill": "DISPATCH_INTEL_BEAST",
+    "reason": "intel_beast_victory_assured",
     "preconditions": [],
-    "verifier": null,
-    "next_action": "Fresh role/page/queue/event observation required before resuming AUTO",
+    "verifier": "PASS",
+    "next_action": "intel_beast_march_dispatched",
     "risk": "UNKNOWN",
-    "confidence": 0.98,
+    "confidence": 0.99,
+    "frame_confidence": 0.99,
     "device": "UNKNOWN",
     "game": "UNKNOWN",
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "C:\\Users\\xhw\\.codex\\worktrees\\global-multirole-live\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260929_203820_809876\\20260929_203820_809876_step_003_before_20260929T123937162227.png",
+    "screenshot_path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261005_202847_605463\\20261005_202847_605463_step_013_before_20261005T123350819558.png",
     "march_used": null,
     "march_max": null,
     "queues": {
@@ -1770,23 +1670,32 @@
       "training": {},
       "intel": {},
       "alliance": {},
-      "events": {
-        "login_gift_entry_visible": false
-      }
+      "events": {}
     },
-    "stop_reason": "USER_MANUAL_BEAR_PARTICIPATION",
+    "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED",
     "stop_category": null,
     "deferred_goals": [
       {
         "goal_id": "KEEP_TRAINING_PRODUCTIVE",
-        "capability": "",
+        "capability": "OPEN_TRAINING_PAGE",
         "state": "DEFERRED",
-        "reason": "4 consecutive production episodes passed their verifier and advanced no part of this goal",
+        "reason": "3 consecutive production episodes advanced no part of this goal (2 passed their verifier, 0 were rejected by it, 1 issued no action)",
         "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "|NO_GOAL_PROGRESS|OPEN_HOME",
-        "streak": 4,
-        "until": "",
+        "failure_signature": "OPEN_TRAINING_PAGE|NO_GOAL_PROGRESS|OPEN_HOME",
+        "streak": 3,
+        "until": "2026-10-05T12:43:19.924029+00:00",
         "last_skill": "OPEN_HOME"
+      },
+      {
+        "goal_id": "KEEP_BUILDING_PRODUCTIVE",
+        "capability": "START_BUILD",
+        "state": "BLOCKED",
+        "reason": "repair budget exhausted (2/2) after CODE_CHANGED",
+        "source": "ESCALATION_QUEUE",
+        "failure_signature": "",
+        "streak": 0,
+        "until": "2026-10-05T14:57:51.563753+00:00",
+        "last_skill": ""
       },
       {
         "goal_id": "MAIL_ROUTINE",
@@ -1796,7 +1705,7 @@
         "source": "ESCALATION_QUEUE",
         "failure_signature": "",
         "streak": 0,
-        "until": "2026-09-28T14:20:26.922513+00:00",
+        "until": "2026-10-05T14:58:09.588426+00:00",
         "last_skill": ""
       },
       {
@@ -1807,38 +1716,467 @@
         "source": "ESCALATION_QUEUE",
         "failure_signature": "",
         "streak": 0,
-        "until": "2026-09-23T14:42:13.806048+00:00",
+        "until": "2026-10-05T14:59:15.585570+00:00",
         "last_skill": ""
       }
     ],
-    "updated_at": "2026-09-29T13:06:32.727201+00:00"
+    "fairness_written_at": "2026-10-05T12:28:08.392158+00:00",
+    "fairness_write_skipped": "ROLE_IDENTITY_UNCONFIRMED",
+    "capability_discovery": [
+      {
+        "goal_id": "AVOID_STAMINA_WASTE",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "READY_EXECUTABLE",
+        "gap_type": "CAPABILITY_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": true,
+        "verifier_exists": true,
+        "scheduler_selectable": true,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "KEEP_TRAINING_PRODUCTIVE",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "READY_EXECUTABLE",
+        "gap_type": "CAPABILITY_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": true,
+        "verifier_exists": true,
+        "scheduler_selectable": true,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "CLEAR_INTEL",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "READY_EXECUTABLE",
+        "gap_type": "CAPABILITY_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": true,
+        "verifier_exists": true,
+        "scheduler_selectable": true,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "COMPLETE",
+        "gap_type": "CAPABILITY_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": true,
+        "verifier_exists": true,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "KEEP_BUILDING_PRODUCTIVE",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "READY_EXECUTABLE",
+        "gap_type": "CAPABILITY_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": true,
+        "verifier_exists": true,
+        "scheduler_selectable": true,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "DAILY_ACTIVITY_TARGET",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "READY_EXECUTABLE",
+        "gap_type": "CAPABILITY_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": true,
+        "verifier_exists": true,
+        "scheduler_selectable": true,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "CLAIM_EXPLORATION_IDLE",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "COMPLETE",
+        "gap_type": "CAPABILITY_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": true,
+        "verifier_exists": true,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_BEAR_HUNT",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_STATE_VS_STATE",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "WAIT_UNTIL",
+        "gap_type": "CAPABILITY_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_ARMAMENT_COMPETITION",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_ALLIANCE_MOBILIZATION",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_OFFICER_PROJECT",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_DEFEAT_NEARBY_BEASTS",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_BROTHERS_IN_ARMS",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_CANYON_CLASH",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "WAIT_UNTIL",
+        "gap_type": "CAPABILITY_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_FORTRESS_CONTEST",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_ARMAMENT_FACTORY_EVENT",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_UNDERGROUND_EXPLORATION",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_FISHING_TOURNAMENT",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_ICEBOUND_TREASURE",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "WAIT_UNTIL",
+        "gap_type": "CAPABILITY_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_MOONLIGHT_FESTIVAL_SHOP",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_EXCLUSIVE_GEAR_FORGE",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_ICEBOUND_TREASURE_TRAINING",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "WAIT_UNTIL",
+        "gap_type": "CAPABILITY_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_ICEBOUND_TREASURE_MYSTERY_SHOP",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "WAIT_UNTIL",
+        "gap_type": "CAPABILITY_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_MERCENARY_GLORY",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_DISCOVERED_EVENT_4178AC2F00",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "WAIT_UNTIL",
+        "gap_type": "CAPABILITY_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_DISCOVERED_EVENT_BB2077C97D",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "WAIT_UNTIL",
+        "gap_type": "CAPABILITY_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "SCHEDULED_DISCOVERED_EVENT_E1FB4AC23A",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "WAIT_UNTIL",
+        "gap_type": "CAPABILITY_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "OBSERVE_FISHING_STATE",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": true,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "ALLIANCE_TIMED_EVENTS",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": false,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "USE_FREE_ARENA_ATTEMPTS",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": false,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      },
+      {
+        "goal_id": "LABYRINTH_DAILY",
+        "role_id": "1063040265",
+        "frame_id": "frame_6e32a6358efe",
+        "reason": "MISSING_OBSERVATION",
+        "gap_type": "OBSERVATION_GAP",
+        "provider_emits": true,
+        "route_exists": false,
+        "skill_exists": false,
+        "verifier_exists": false,
+        "scheduler_selectable": false,
+        "safe_entry_exists": false
+      }
+    ],
+    "loop_detected": 0,
+    "loop_false_positive": 0,
+    "loop_deferred": 0,
+    "loop_recovered": 0,
+    "loop_patterns": {},
+    "loop_ladder_top": "",
+    "loop_acted": {},
+    "loop_skipped_rungs": [],
+    "loop_broken": 0,
+    "updated_at": "2026-10-05T12:33:52.421022+00:00"
   },
   "evidence_integrity": {
-    "episodes_with_screenshot_references": 10059,
-    "screenshots_referenced": 19630,
+    "episodes_with_screenshot_references": 10414,
+    "screenshots_referenced": 20066,
     "screenshots_missing": 0,
     "missing_examples": [],
-    "distinct_episode_ids": 1428,
+    "distinct_episode_ids": 972,
     "cross_episode_name_collisions": 0,
     "status": "PASS"
   },
   "capability_coverage": {
     "present": true,
     "model": "Goal -> Canonical Capability -> Registered Skill -> Production Evidence",
-    "generated_at_utc": "2026-09-29T16:09:32.768303+00:00",
-    "age_days": 0.0,
+    "generated_at_utc": "2026-10-02T12:45:04.018414+00:00",
+    "age_days": 2.99,
     "summary": {
-      "total": 16,
-      "fully_live_verified": 1,
+      "total": 20,
+      "fully_live_verified": 3,
       "partial": 9,
-      "never_tried": 0,
-      "blocked": 3,
-      "degraded": 3,
+      "never_tried": 4,
+      "blocked": 4,
+      "degraded": 0,
       "missing": 0,
-      "fully_live_verified_percent": 6.2,
-      "never_tried_percent": 0.0,
-      "automation_coverage_mean": 0.5713,
-      "live_coverage_mean": 0.5765
+      "fully_live_verified_percent": 15.0,
+      "never_tried_percent": 20.0,
+      "automation_coverage_mean": 0.7083,
+      "live_coverage_mean": 0.4012
     },
     "by_goal": [
       {
@@ -1848,7 +2186,7 @@
         "design_coverage": 1.0,
         "implementation_coverage": 1.0,
         "live_coverage": 0.8333,
-        "stable_coverage": 0.6667,
+        "stable_coverage": 0.8333,
         "blocked_by": []
       },
       {
@@ -1856,48 +2194,40 @@
         "status": "PARTIAL",
         "runtime_goal_status": "RUNTIME_DISCOVERED",
         "design_coverage": 1.0,
-        "implementation_coverage": 0.6667,
+        "implementation_coverage": 1.0,
         "live_coverage": 0.6667,
-        "stable_coverage": 0.6667,
-        "blocked_by": [
-          "SPEND_STAMINA_ON_RALLY"
-        ]
+        "stable_coverage": 0.3333,
+        "blocked_by": []
       },
       {
         "goal": "KEEP_MARCHES_PRODUCTIVE",
         "status": "PARTIAL",
         "runtime_goal_status": "RUNTIME_DISCOVERED",
         "design_coverage": 1.0,
-        "implementation_coverage": 0.8571,
+        "implementation_coverage": 1.0,
         "live_coverage": 0.8571,
-        "stable_coverage": 0.1429,
-        "blocked_by": [
-          "VERIFY_GATHERING"
-        ]
+        "stable_coverage": 0.7143,
+        "blocked_by": []
       },
       {
         "goal": "KEEP_BUILDING_PRODUCTIVE",
         "status": "PARTIAL",
         "runtime_goal_status": "RUNTIME_DISCOVERED",
         "design_coverage": 1.0,
-        "implementation_coverage": 0.5,
+        "implementation_coverage": 1.0,
         "live_coverage": 0.5,
         "stable_coverage": 0.0,
-        "blocked_by": [
-          "OPEN_BUILDING_PAGE"
-        ]
+        "blocked_by": []
       },
       {
         "goal": "KEEP_RESEARCH_PRODUCTIVE",
-        "status": "PARTIAL",
+        "status": "NEVER_TRIED",
         "runtime_goal_status": "RUNTIME_DISCOVERED",
         "design_coverage": 1.0,
-        "implementation_coverage": 0.5,
-        "live_coverage": 0.5,
-        "stable_coverage": 0.5,
-        "blocked_by": [
-          "START_RESEARCH"
-        ]
+        "implementation_coverage": 1.0,
+        "live_coverage": 0.0,
+        "stable_coverage": 0.0,
+        "blocked_by": []
       },
       {
         "goal": "KEEP_TRAINING_PRODUCTIVE",
@@ -1906,17 +2236,17 @@
         "design_coverage": 1.0,
         "implementation_coverage": 1.0,
         "live_coverage": 1.0,
-        "stable_coverage": 0.5,
+        "stable_coverage": 1.0,
         "blocked_by": []
       },
       {
         "goal": "MAIL_ROUTINE",
-        "status": "DEGRADED",
+        "status": "PARTIAL",
         "runtime_goal_status": "RUNTIME_DISCOVERED",
         "design_coverage": 1.0,
         "implementation_coverage": 1.0,
-        "live_coverage": 1.0,
-        "stable_coverage": 0.0,
+        "live_coverage": 0.75,
+        "stable_coverage": 0.75,
         "blocked_by": []
       },
       {
@@ -1926,29 +2256,29 @@
         "design_coverage": 1.0,
         "implementation_coverage": 0.75,
         "live_coverage": 0.75,
-        "stable_coverage": 0.5,
+        "stable_coverage": 0.25,
         "blocked_by": [
           "READ_DAILY_PROGRESS"
         ]
       },
       {
         "goal": "CLAIM_FREE_REWARDS",
-        "status": "DEGRADED",
+        "status": "FULLY_LIVE_VERIFIED",
         "runtime_goal_status": "RUNTIME_DISCOVERED",
         "design_coverage": 1.0,
         "implementation_coverage": 1.0,
         "live_coverage": 1.0,
-        "stable_coverage": 0.0,
+        "stable_coverage": 1.0,
         "blocked_by": []
       },
       {
         "goal": "CLAIM_EXPLORATION_IDLE",
-        "status": "DEGRADED",
+        "status": "FULLY_LIVE_VERIFIED",
         "runtime_goal_status": "RUNTIME_DISCOVERED",
         "design_coverage": 1.0,
         "implementation_coverage": 1.0,
         "live_coverage": 1.0,
-        "stable_coverage": 0.3333,
+        "stable_coverage": 1.0,
         "blocked_by": []
       },
       {
@@ -1956,12 +2286,11 @@
         "status": "PARTIAL",
         "runtime_goal_status": "NOT_A_RUNTIME_GOAL",
         "design_coverage": 1.0,
-        "implementation_coverage": 0.5,
-        "live_coverage": 0.75,
+        "implementation_coverage": 0.75,
+        "live_coverage": 0.25,
         "stable_coverage": 0.25,
         "blocked_by": [
-          "ALLIANCE_HELP",
-          "ALLIANCE_TECH_CONTRIBUTE"
+          "ALLIANCE_HELP"
         ]
       },
       {
@@ -1971,7 +2300,7 @@
         "design_coverage": 1.0,
         "implementation_coverage": 0.1667,
         "live_coverage": 0.1667,
-        "stable_coverage": 0.0,
+        "stable_coverage": 0.1667,
         "blocked_by": [
           "CLAIM_EVENT_TIER",
           "OPEN_EVENT_PAGE",
@@ -1999,15 +2328,43 @@
         "status": "PARTIAL",
         "runtime_goal_status": "RUNTIME_DISCOVERED",
         "design_coverage": 1.0,
-        "implementation_coverage": 0.2,
-        "live_coverage": 0.2,
-        "stable_coverage": 0.0,
+        "implementation_coverage": 0.5,
+        "live_coverage": 0.25,
+        "stable_coverage": 0.25,
         "blocked_by": [
           "CHECK_BEAR_PHASE",
-          "JOIN_RALLY",
-          "SELECT_TROOP_PRESET",
-          "START_RALLY"
+          "SELECT_TROOP_PRESET"
         ]
+      },
+      {
+        "goal": "ALLIANCE_MOBILIZATION_ICEFIELD_BEAST",
+        "status": "NEVER_TRIED",
+        "runtime_goal_status": "RUNTIME_DISCOVERED",
+        "design_coverage": 1.0,
+        "implementation_coverage": 1.0,
+        "live_coverage": 0.0,
+        "stable_coverage": 0.0,
+        "blocked_by": []
+      },
+      {
+        "goal": "OBSERVE_FISHING_STATE",
+        "status": "NEVER_TRIED",
+        "runtime_goal_status": "RUNTIME_DISCOVERED",
+        "design_coverage": 1.0,
+        "implementation_coverage": 1.0,
+        "live_coverage": 0.0,
+        "stable_coverage": 0.0,
+        "blocked_by": []
+      },
+      {
+        "goal": "USE_NORMAL_FISHING_BAIT",
+        "status": "NEVER_TRIED",
+        "runtime_goal_status": "RUNTIME_DISCOVERED",
+        "design_coverage": 1.0,
+        "implementation_coverage": 1.0,
+        "live_coverage": 0.0,
+        "stable_coverage": 0.0,
+        "blocked_by": []
       },
       {
         "goal": "USE_FREE_ARENA_ATTEMPTS",
@@ -2038,6 +2395,20 @@
           "READ_LABYRINTH_ATTEMPTS",
           "START_LABYRINTH",
           "VERIFY_LABYRINTH_RESULT"
+        ]
+      },
+      {
+        "goal": "TRAVEL_SUPPLY",
+        "status": "BLOCKED",
+        "runtime_goal_status": "RUNTIME_DISCOVERED",
+        "design_coverage": 1.0,
+        "implementation_coverage": 0.0,
+        "live_coverage": 0.0,
+        "stable_coverage": 0.0,
+        "blocked_by": [
+          "CLAIM_FREE_TRAVEL_SUPPLY",
+          "OPEN_TRAVEL_SUPPLY_COUNTER",
+          "OPEN_TRAVEL_SUPPLY_ENTRY"
         ]
       }
     ],
