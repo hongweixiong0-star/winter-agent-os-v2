@@ -38,6 +38,12 @@ dataset/raw/**/*.png
 dataset/raw/**/*.jpg
 dataset/truth_audit/**/*.png
 dataset/truth_audit/**/*.jpg
+# Frames from tools/explore_step.py.  Same reasoning as truth_audit above: the pictures are
+# evidence and live in the data root, not in the repository.  Without this, three frames per
+# exploration invocation join the dirty set that repin's "outside the data dirs" check has to
+# step over.
+dataset/exploration/**/*.png
+dataset/exploration/**/*.jpg
 dataset/external/**/*.png
 dataset/external/**/*.jpg
 
