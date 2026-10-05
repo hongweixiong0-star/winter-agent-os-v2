@@ -272,26 +272,40 @@ def check_swipe_constants() -> list[Finding]:
     be a violation, because nothing would tie the gesture to a screen.
     """
     findings: list[Finding] = []
-    skills_src = ""
+    # skill_id -> declared page (or None for page_agnostic)
+    #
+    # 2026-10-06: this map used to be built with
+    # ``Skill\(\s*"([A-Z0-9_]+)"\s*,(.*?)\n\s*\)\s*,`` (DOTALL).  That pattern only matches a
+    # *multi-line* declaration whose closing ``)`` is preceded by a newline **and** followed by
+    # a comma, so it silently dropped two real production skills that do declare a page, and the
+    # gate then reported their authors as unresolved:
+    #
+    #   * ``SCROLL_REGULAR_EVENT_TABS`` (skills.py:287) -- written on one line, so no ``\n``
+    #     precedes its closing ``)``;
+    #   * ``SCROLL_QUICK_PANEL_TASKS`` (skills.py:1072) -- wrapped in
+    #     ``skills.append(Skill(...))``, so its closing ``)`` is followed by ``)``, not ``,``.
+    #
+    # A gate that cannot read the declaration it is meant to certify reports the *author* as
+    # wrong.  Each declaration is now sliced from its own ``Skill(`` to the next one -- the same
+    # robust anchor the owner lookup below already uses -- and the slice is per-file so a
+    # declaration at the end of ``skills.py`` cannot absorb ``skills_extra.py``'s arguments.
+    declared: dict[str, str | None] = {}
     for module in ("skills.py", "skills_extra.py"):
         path = PKG / module
-        if path.is_file():
-            skills_src += path.read_text(encoding="utf-8")
-
-    # skill_id -> declared page (or None for page_agnostic)
-    declared: dict[str, str | None] = {}
-    for match in re.finditer(
-        r'Skill\(\s*"([A-Z0-9_]+)"\s*,(.*?)\n\s*\)\s*,',
-        skills_src,
-        re.DOTALL,
-    ):
-        name, body = match.group(1), match.group(2)
-        page = re.search(r"\bNone\b\s*,\s*Action\(", body)
-        page_arg = re.search(r"(Page\.[A-Z_]+|\bNone\b)\s*,\s*\n?\s*Action\(", body)
-        if page_arg:
-            declared[name] = None if page_arg.group(1) == "None" else page_arg.group(1)
-        elif page is not None:
-            declared[name] = None
+        if not path.is_file():
+            continue
+        source = path.read_text(encoding="utf-8")
+        starts = [
+            (m.start(), m.group(1))
+            for m in re.finditer(r'Skill\(\s*"([A-Z0-9_]+)"', source)
+        ]
+        for index, (start, name) in enumerate(starts):
+            end = starts[index + 1][0] if index + 1 < len(starts) else len(source)
+            page_arg = re.search(
+                r"(Page\.[A-Z_]+|\bNone\b)\s*,\s*\n?\s*Action\(", source[start:end]
+            )
+            if page_arg:
+                declared[name] = None if page_arg.group(1) == "None" else page_arg.group(1)
 
     for module in ("skills.py", "skills_extra.py", "runtime.py"):
         path = PKG / module
@@ -304,8 +318,6 @@ def check_swipe_constants() -> list[Finding]:
             # Which skill owns this action?  The nearest preceding Skill("NAME",
             # in the same file.
             owner = None
-            for skill_match in re.finditer(r'"?([A-Z][A-Z0-9_]+)"?\s*,\s*$', ""):
-                pass
             for skill_match in list(re.finditer(r'Skill\(\s*"([A-Z0-9_]+)"', source)):
                 if skill_match.start() < match.start():
                     owner = skill_match.group(1)

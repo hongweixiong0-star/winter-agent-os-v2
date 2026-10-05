@@ -214,3 +214,88 @@ def _resolve_semantic_target(self, semantic, frame):
     assert gate._float_pair_literals(gate._code_only(documenting)) == [], (
         "a docstring quoting a removed literal is not a live literal"
     )
+
+
+#: Both shapes a page-declaring swipe skill is really written in.  The gate has to read the
+#: page out of each one; the first is on a single line and the second sits inside
+#: ``skills.append(...)``, so their closing parens are followed by ``,`` and ``)`` respectively.
+_ONE_LINE_SKILL = (
+    'SKILLS = [\n'
+    '    Skill("ONE_LINE_SCROLL", "d", Page.EVENT, '
+    'Action("SWIPE", "VEC_ONE", payload={"duration_ms": 450}), state=SkillState.CANDIDATE),\n'
+    ']\n'
+)
+_APPENDED_SKILL = (
+    'SKILLS.append(\n'
+    '    Skill(\n'
+    '        "APPENDED_SCROLL",\n'
+    '        "d",\n'
+    '        Page.HOME,\n'
+    '        Action("SWIPE", "VEC_TWO", payload={"duration_ms": 450}),\n'
+    '        state=SkillState.CANDIDATE,\n'
+    '    )\n'
+    ')\n'
+)
+
+
+def _planted_gate(tmp_path, monkeypatch, source: str):
+    """Point the gate at a throwaway package holding exactly one ``skills.py``."""
+    gate = _load_gate_module()
+    planted = tmp_path / "winter_agent_v2"
+    planted.mkdir()
+    (planted / "skills.py").write_text(source, encoding="utf-8")
+    monkeypatch.setattr(gate, "PKG", planted)
+    return gate
+
+
+def test_a_declared_page_is_read_out_of_every_declaration_shape(tmp_path, monkeypatch):
+    """2026-10-06 regression: the gate must not blame an author for its own parsing.
+
+    The declaration map used to be built with ``Skill\\\\(\\s*"NAME"\\s*,(.*?)\\n\\s*\\\\)\\s*,``
+    (DOTALL).  That only matches a **multi-line** declaration whose closing ``)`` is preceded by
+    a newline *and* followed by a comma, so it silently dropped two real production swipes and
+    reported them as ``GESTURE_OWNER_UNRESOLVED`` although both name a page:
+
+      * ``SCROLL_REGULAR_EVENT_TABS`` (skills.py:287) -- written on one line;
+      * ``SCROLL_QUICK_PANEL_TASKS`` (skills.py:1072) -- inside ``skills.append(Skill(...))``.
+
+    Planting both shapes proves the *reading* is fixed.  Asserting on the two live skill names
+    instead would pass again the moment someone renamed them while keeping the blind parser.
+    """
+    gate = _planted_gate(tmp_path, monkeypatch, _ONE_LINE_SKILL + _APPENDED_SKILL)
+
+    findings = gate.check_swipe_constants()
+
+    unresolved = [f for f in findings if f.kind == "GESTURE_OWNER_UNRESOLVED"]
+    assert not unresolved, (
+        "a page the skill really declares was not read back:\n"
+        + "\n".join(f"  {f.where}: {f.detail}" for f in unresolved)
+    )
+
+    admitted = [f.where for f in findings if f.kind == "HARDCODED_GESTURE_VECTOR_ADMITTED"]
+    assert len(admitted) == 2, admitted
+    assert any("Page.EVENT" in w for w in admitted), admitted
+    assert any("Page.HOME" in w for w in admitted), admitted
+
+
+def test_a_page_agnostic_swipe_is_still_a_violation(tmp_path, monkeypatch):
+    """The reading fix must not turn the gate off.
+
+    With the page map working again, a swipe whose skill declares **no** page has to reach the
+    ``VIOLATION`` branch -- otherwise "make the gate stop complaining" and "fix the gate" would
+    look the same from the outside.
+    """
+    gate = _planted_gate(
+        tmp_path,
+        monkeypatch,
+        'SKILLS = [\n'
+        '    Skill("FLOATING_SCROLL", "d", None, '
+        'Action("SWIPE", "VEC_ANY", payload={"duration_ms": 450}), state=SkillState.CANDIDATE),\n'
+        ']\n',
+    )
+
+    findings = gate.check_swipe_constants()
+
+    agnostic = [f for f in findings if f.kind == "PAGE_AGNOSTIC_GESTURE"]
+    assert agnostic, findings
+    assert agnostic[0].severity == "VIOLATION"
