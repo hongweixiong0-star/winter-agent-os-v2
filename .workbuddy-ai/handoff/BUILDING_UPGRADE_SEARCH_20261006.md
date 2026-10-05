@@ -98,6 +98,61 @@ return Decision("BUILDING_UPGRADE", "building_prerequisites_satisfied", ...)
 never authorizes spending"），但**点"升级"会花 61M/61M/12M/3M 并占用 4 天队列**，
 所以本轮**没有**去点，只做了只读观察。
 
+## 生产验证结果（2026-10-06 01:00–01:07，AUTO 真跑）
+
+**启动**：`schtasks /Run /TN "WinterAgentV2Panel"`。
+§27.3 第 4 步核对：
+`CODE_COMMIT=5a4f67977a3f4fe41f3b485ec38483f781217df0`（**= pin HEAD**）· `WORKTREE_CLEAN=true` ·
+预检 `MuMu OK (127.0.0.1:7555 [720,1280] 前台 com.gof.china) · MAA OK · RapidOCR OK · Runtime OK`。
+`git status -- winter_agent_v2 tools tests docs` 为空 → **跑的就是那个 SHA 的代码**，不是带本地改动的。
+
+**证据行（`learning/episodes.jsonl`）**：
+
+```
+17:05:02  role=1061663148  goal=KEEP_BUILDING_PRODUCTIVE  skill=OPEN_BUILDING_UPGRADE
+  result            = SUCCESS
+  failure_type      = null
+  verifier_ok       = true
+  verifier_evidence = {"page_before":"HOME","page_after":"BUILDING","upgrade_dialog_visible": true}
+  executor_backend  = ADB
+  observed_change   = PAGE_CHANGED
+  repo_revision     = 5a4f6797...
+  state_after.building = {..., "upgrade_dialog_visible": true}
+```
+
+`BUILDING_UPGRADE_PANEL_NOT_PROVEN` 计数 **仍是 104，没有新增**。
+`OPEN_BUILDING_UPGRADE` 行数 109 → **110**。
+
+### 归属核对：不是"104 次失败后被修好"，中间有 5 次成功、然后回归了
+
+逐行看 `state_after.building` 的**形状**，两条路一眼可分：
+
+| 时间 | rev | 形状 | 走的路 |
+|---|---|---|---|
+| 07:54 / 08:33 / 08:43 / 10:13 / 10:52（5 次 SUCCESS） | 2c08116f→b4c4b3b1 | 有 **`identity`** 键、**无** `upgradeable`、`name: null` | **分类器分支**（模板层认不出页面） |
+| 11:57 → 15:52（10 次 FAILURE） | fa015b4a / 22d9ca3d / 958fc9b3 / 297af0d1 | **无** `identity`、有 `upgradeable`、`identity_source: NO_BUILDING_NAME_TOKEN` | **已知页路径**，键**缺失** |
+| **17:05:02（SUCCESS）** | **5a4f6797** | 同上形状，但键 **`true`** | 已知页路径，**键已补回** |
+
+**所以那 10 次失败有一半是我自己造成的**：本会话早些时候我做的
+`ad7c9ade`（建筑升级面板版式识别）/`c873ab0c` 让**模板层学会了认 `BUILDING`**，
+于是跳过了分类器分支 —— 而那是当时**唯一**写 `upgrade_dialog_visible` 的地方。
+`b883d1fe` 在已知页路径上补回了它。这条"自我回归"比"104 次失败"更值得记：
+**它说明同一份证据有两条生产路径，改一条会把另一条的唯一写入点关掉。**
+
+### 仍未发生的事：`BUILDING_UPGRADE` 依然 0 行
+
+`OPEN` 成功之后，那一轮（`--max-actions 24`）转去另一个角色做别的目标
+（CALENDAR / EXPLORATION_IDLE_CLAIM…），**没有出现花钱那一步**。
+所以：**导航已被生产证明；花钱仍未被尝试**。这是下一个要盯的点，
+也是 `brain.py:2460-2463` 那句"该状态只从失败的 OPEN 产生"被改变之后的第一个观察窗口。
+
+### 顺带：模式与循环一致性（上一轮建的检查项）
+
+面板起来后控制台变成 `机器状态：系统运行中` + `循环存活：RUNNING（面板进程 16340 存活）`，
+**`不一致` 那一行消失** —— 两个事实终于对上，检查项按设计工作。
+另外模式守卫（`runtime.run()` 在租约守卫之前读模式）在 mode=AUTO 时**没有误拦**，
+这是它第一次在生产里被观察到。
+
 ## 不确定性（仍未搞清）
 
 1. `OPEN_BUILDING_UPGRADE` 现在成功之后，流程走到哪里？**需要真实 AUTO 一段才能看到。**
