@@ -7,6 +7,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+from .mode_state import MANUAL_STOP_REASON
+
 
 class AgentState(str, Enum):
     AUTO_RUNNING = "AUTO_RUNNING"
@@ -179,6 +181,22 @@ EXPECTED_NO_ACTION_STOPS = frozenset({
     "alliance_action_not_needed", "training_queue_busy", "research_queue_busy",
     "intel_available_no_claim", "intel_no_untried_pins",
     "verified_beast_target_not_visible",
+    # §1/§2 of docs/MODE_SYSTEM.md: in Manual the machine belongs to WorkBuddy, so a round
+    # that ended on this reason did exactly what it was supposed to do -- it yielded before
+    # touching anything.  "No action was warranted", not "the system broke": no step ran and
+    # nothing failed, which is the same statement as ``device_leased_for_development`` two
+    # comments above.
+    #
+    # Undeclared, it fell through to SYSTEM_FAILURE and the uptime ledger recorded
+    # ``healthy=false``; measured 2026-10-06 07:24 UTC on the real root, three rows out of
+    # three.  The operator taking their own machine back was being counted as a fault.
+    #
+    # It belongs here rather than in CAPABILITY_GAP_STOPS because nothing is missing -- the
+    # capability is intact, the machine is simply someone else's.  And it still must not
+    # *continue*: see ``control_panel.auto_halt_reason``, which names it separately, or the
+    # panel would start a fresh round, the runtime would yield on its mode guard on the
+    # first tick, and the two would spin against each other.
+    MANUAL_STOP_REASON,
 })
 CAPABILITY_GAP_STOPS = frozenset({
     "unknown_page", "goal_page_mismatch", "SKILL_NOT_ENABLED_FOR_LIVE_LOOP",
@@ -215,6 +233,16 @@ CAPABILITY_GAP_STOPS = frozenset({
     # of the remedy rather than a fault.  Listed here as well as in ``NON_FATAL_STOPS``
     # because the two tables answer different questions (this one decides the category, that
     # one decides fatality), and a reader should not have to infer either.
+    "SESSION_DOMAIN_STUCK",
+    # §1/§2 of docs/MODE_SYSTEM.md: in Manual the machine belongs to WorkBuddy, so a round
+    # that ended on this reason did exactly what it was supposed to do -- it yielded.  It is
+    # "no action was warranted", not "the system broke": no step ran, nothing failed, and
+    # the very next sentence in the spec is that AUTO must not touch the device at all.
+    #
+    # Undeclared, it fell through to SYSTEM_FAILURE and the uptime ledger recorded
+    # ``healthy=false``; measured 2026-10-06 07:24 UTC on the real root, three rows out of
+    # three.  The operator taking their own machine back was being counted as a fault.
+    #
     "SESSION_DOMAIN_STUCK",
 })
 COMPLETED_STOPS = frozenset({"MAX_ACTIONS_REACHED", "TARGET_SKILL_VERIFIED"})

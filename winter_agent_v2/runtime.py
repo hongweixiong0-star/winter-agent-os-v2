@@ -90,7 +90,12 @@ from .global_scheduler_state import GlobalSchedulerStateStore
 from .task_completion import TaskCompletionStore
 from .capability_gate import DEFERRED, CapabilityGate, Deferral
 from .device_lease import OWNER_DEVELOPMENT_VALIDATION, OWNER_GAMEPLAY, DeviceLease
-from .mode_state import DEFAULT_PATH as MODE_STATE_PATH, MODE_MANUAL, load as load_mode_state
+from .mode_state import (
+    DEFAULT_PATH as MODE_STATE_PATH,
+    MANUAL_STOP_REASON,
+    MODE_MANUAL,
+    load as load_mode_state,
+)
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
 from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_training_camp_switched, verify_intel_list_read, verify_alliance_gifts_claimed
@@ -907,7 +912,7 @@ class LiveRuntime:
             state = load_mode_state(path)
         except Exception:  # noqa: BLE001 - a broken store must not stop the loop (§11: default Auto)
             return None
-        return "manually_owned_by_workbuddy" if state.mode == MODE_MANUAL else None
+        return MANUAL_STOP_REASON if state.mode == MODE_MANUAL else None
 
     def _owns_the_lease(self, held: object) -> bool:
         """Is the lease this run is looking at *its own*?

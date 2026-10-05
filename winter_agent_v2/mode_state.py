@@ -61,6 +61,17 @@ DECISIONS: tuple[str, ...] = (DECISION_PAUSE_AND_RETURN, DECISION_EXTEND)
 #: Spec §13: past ten times the estimate the console has to shout.
 OVERDUE_MULTIPLIER = 10.0
 
+#: The stop reason a runtime cycle carries when it yielded because the machine is Manual's
+#: (§1/§2: in Manual the machine belongs entirely to WorkBuddy).
+#:
+#: It lives here, next to the two modes, because three modules must agree on this one string
+#: and disagreed: the runtime emitted it, ``runtime_snapshot`` did not declare it so it fell
+#: through to ``SYSTEM_FAILURE``, and the panel printed 「本轮被判定为系统故障：
+#: manually_owned_by_workbuddy」.  Measured 2026-10-06 07:24 UTC on the real root: three
+#: rows in ``learning/auto_uptime.jsonl``, all three ``healthy=false`` -- the operator's own
+#: choice recorded as a fault three times out of three.
+MANUAL_STOP_REASON = "manually_owned_by_workbuddy"
+
 #: Spec §7 case 1: the four things that must be true before a Manual session that touched code
 #: may hand the machine back.  "Not completed wrap-up means no switch back" is the spec's own
 #: sentence, so these are checked rather than trusted.

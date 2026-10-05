@@ -1156,6 +1156,16 @@ def auto_halt_reason(
     role_handoff = str(reason or "").startswith((
         "ROLE_SWITCH_FAILED:", "ROLE_SWITCHED_TO:", "ROLE_IDENTITY_CHANGED:",
     ))
+    # §1/§2 of docs/MODE_SYSTEM.md, checked before the healthy gate on purpose: a Manual round
+    # is *healthy* (it yielded, nothing broke) and yet must not continue.  Without this line
+    # the gate below returns "" -- start another round -- the runtime yields on its mode guard
+    # on the very first tick, and the panel and the runtime spin against each other.
+    #
+    # Measured 2026-10-06 07:24 UTC: this fell through to the last line and the log read
+    # 「本轮被判定为系统故障：manually_owned_by_workbuddy」, so the operator taking their own
+    # machine back was reported as a fault.
+    if str(reason or "").strip().lower() == mode_state.MANUAL_STOP_REASON.lower():
+        return "机器归 WorkBuddy 使用（Manual 模式）：AUTO 不进入下一轮，交还后自动恢复"
     if continuous and not stop_requested and not paused and not fatal and (healthy or role_handoff):
         return ""
     if not continuous:
