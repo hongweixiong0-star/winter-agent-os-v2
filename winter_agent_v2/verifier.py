@@ -2421,6 +2421,70 @@ def verify_quick_panel_scrolled(before: WorldState, after: WorldState) -> Verifi
     )
 
 
+def verify_quick_panel_scrolled_back(before: WorldState, after: WorldState) -> VerificationResult:
+    """Did the panel's list move back **toward its top**?
+
+    The forward verifier accepts any change in the visible rows.  This one must not, and that is
+    the whole difference: dragging the finger **down** moves the content down, so a row that stayed
+    visible moves **down the screen** (its ``y_norm`` grows) and whatever is revealed appears
+    **above** the band.  Accepting "the list changed" would credit a second downward scroll -- the
+    very thing the sweep already did and the thing this step exists to undo.
+
+    Two signatures count, both directional:
+
+    * a row present in both readings whose ``y_norm`` **grew** by at least 0.04 (the content moved
+      down under the finger);
+    * a row that was not visible and now sits **above the top of the previous band** (it was
+      revealed from above rather than from below).
+
+    Measured 2026-10-05 on the frames that decided this: the 部队训练 section is drawn directly under
+    the tab strip (建筑队列 at y 0.251) while the sweep leaves the panel at 宠物寻宝 / 我的奖励
+    (y 0.30-0.39), four sections further down the same list.
+    """
+    before_panel = before.quick_panel or {}
+    after_panel = after.quick_panel or {}
+    before_rows = {
+        str(row.get("key")): float(row["y_norm"])
+        for row in (before_panel.get("rows") or ())
+        if isinstance(row, dict) and row.get("key") and isinstance(row.get("y_norm"), (int, float))
+    }
+    after_rows = {
+        str(row.get("key")): float(row["y_norm"])
+        for row in (after_panel.get("rows") or ())
+        if isinstance(row, dict) and row.get("key") and isinstance(row.get("y_norm"), (int, float))
+    }
+    common = set(before_rows) & set(after_rows)
+    moved_down = {
+        key: round(after_rows[key] - before_rows[key], 4)
+        for key in common
+        if after_rows[key] - before_rows[key] >= 0.04
+    }
+    added = sorted(set(after_rows) - set(before_rows))
+    before_top = min(before_rows.values()) if before_rows else None
+    revealed_above = sorted(
+        key for key in added
+        if before_top is not None and after_rows[key] < before_top
+    )
+    valid_surfaces = (
+        before.page is Page.HOME and after.page is Page.HOME
+        and before_panel.get("open") is True and after_panel.get("open") is True
+    )
+    ok = valid_surfaces and bool(moved_down or revealed_above)
+    return VerificationResult(
+        ok,
+        "OK" if ok else "QUICK_PANEL_SCROLL_BACK_NOT_PROVEN",
+        {
+            "valid_surfaces": valid_surfaces,
+            "moved_down": moved_down,
+            "revealed_above": revealed_above,
+            "new_rows": added,
+            "before_top": before_top,
+            "before_rows": sorted(before_rows),
+            "after_rows": sorted(after_rows),
+        },
+    )
+
+
 def verify_alliance_donation_entry_opened(before: WorldState, after: WorldState) -> VerificationResult:
     """A donation-row tap counts only when it leaves the city for Alliance."""
     panel = before.quick_panel or {}

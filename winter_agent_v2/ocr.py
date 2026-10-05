@@ -3299,6 +3299,17 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
             y_end = round(max(0.24, min(y_values) + 0.04), 4)
             if 0.0 <= x <= 1.0 and y_start > y_end + 0.10:
                 panel["scroll_swipe_norm"] = [x, y_start, x, y_end]
+                # The same two endpoints the other way round, because the list is a list: the
+                # gesture above drags the content up and so reveals rows *below* the band, and a
+                # goal whose section sits *above* the band needs the opposite drag.  Measured
+                # 2026-10-05: the sweep (``SCROLL_QUICK_PANEL_TASKS``) uses the first one, and 59 of
+                # the 61 panel-open training failures had it earlier in the same run -- it scrolls
+                # the panel past the 部队训练 section and the training goal then cannot see it.
+                #
+                # Derived from the same reading, so it is a current-frame measurement and not a
+                # coordinate: the endpoints are this frame's own first and last row centres, and
+                # the guard above is what makes them a band rather than a guess.
+                panel["scroll_back_swipe_norm"] = [x, y_end, x, y_start]
     return panel
 
 

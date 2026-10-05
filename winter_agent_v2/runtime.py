@@ -93,7 +93,7 @@ from .device_lease import OWNER_DEVELOPMENT_VALIDATION, OWNER_GAMEPLAY, DeviceLe
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
 from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_training_camp_switched, verify_intel_list_read, verify_alliance_gifts_claimed
-from .verifier import verify_panel_building_queue_opened, verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_card_opened, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_search_submitted, verify_beast_search_tab_selected, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_left_foreign_layer, verify_login_gift_claimed, verify_login_gift_panel_open, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_panel_row_done_collected, verify_panel_row_research_bar_opened, verify_panel_row_task_bar_opened, verify_popup_closed, verify_rally_created, verify_rally_joined, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march, verify_ordinary_control_tried
+from .verifier import verify_panel_building_queue_opened, verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_card_opened, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_search_submitted, verify_beast_search_tab_selected, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_left_foreign_layer, verify_login_gift_claimed, verify_login_gift_panel_open, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_panel_row_done_collected, verify_panel_row_research_bar_opened, verify_panel_row_task_bar_opened, verify_popup_closed, verify_rally_created, verify_rally_joined, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march, verify_ordinary_control_tried, verify_quick_panel_scrolled_back
 from .runtime_snapshot import (
     AgentState, RuntimeSnapshotStore, StopCategory, is_fatal_stop, state_for_stop_reason,
 )
@@ -611,6 +611,7 @@ class LiveRuntime:
             else "HERO_RECRUIT_PAGE_NOT_PROVEN",
             {"page_before": b.page.value, "page_after": a.page.value}),
         "SCROLL_QUICK_PANEL_TASKS": verify_quick_panel_scrolled,
+        "SCROLL_QUICK_PANEL_BACK": verify_quick_panel_scrolled_back,
         "OPEN_TASK_FROM_QUICK_PANEL_MY_REWARDS": verify_ordinary_control_tried,
         # The hop that did not exist: switch the training page to another barracks when the
         # one on screen has its queue busy.  Operator §八, "一个兵营正在训练，不得阻止其他空闲
@@ -5072,6 +5073,36 @@ class LiveRuntime:
             except (OSError, TypeError, ValueError):
                 return None
             return gesture if all(0.0 <= value <= 1.0 for value in gesture) and gesture[1] > gesture[3] else None
+        if semantic == "QUICK_PANEL_SCROLL_BACK_CURRENT":
+            # The panel list's other direction, and the reason it exists is measured rather than
+            # symmetrical-for-tidiness.  ``SCROLL_QUICK_PANEL_TASKS`` drags the content up to reveal
+            # rows *below* the band; the panel then stays where the sweep left it, and a goal whose
+            # own section is *above* that band cannot see it.  Measured 2026-10-05: of the 61
+            # ``OPEN_INFANTRY_TRAINING`` failures on a panel-open frame, 59 had ``OPEN_QUICK_PANEL``
+            # -> ``SCROLL_QUICK_PANEL_TASKS`` earlier in the same run, and the training section sits
+            # directly under the tab strip while the sweep leaves the panel four sections further
+            # down.
+            #
+            # Same reading, same guard, opposite drag: ``read_quick_panel`` derives both endpoints
+            # from this frame's own first and last visible row centres, and this branch asks for the
+            # reversed pair.  Re-read here rather than taken from ``frame.quick_panel`` for the same
+            # reason the forward one does -- a gesture is a fragment of the frame it was measured
+            # from, and the frame in hand is the one it will be performed on.
+            if frame.page is not Page.HOME or frame_path is None or (frame.quick_panel or {}).get("open") is not True:
+                return None
+            ocr = self._ocr_service()
+            if ocr is None:
+                return None
+            from .ocr import read_quick_panel
+            try:
+                panel = read_quick_panel(Path(frame_path), ocr)
+                point = panel.get("scroll_back_swipe_norm") if panel.get("open") is True else None
+                if not isinstance(point, (tuple, list)) or len(point) != 4:
+                    return None
+                gesture = tuple(float(value) for value in point)
+            except (OSError, TypeError, ValueError):
+                return None
+            return gesture if all(0.0 <= value <= 1.0 for value in gesture) and gesture[1] < gesture[3] else None
         if semantic == "REGULAR_EVENT_ENTRY":
             # The 常规活动 label, read from this frame's own OCR box.
             #

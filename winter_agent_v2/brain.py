@@ -220,6 +220,10 @@ class RuleBrain:
         #: Row arrows of the 快捷面板 asked for in this run.  A tap that does not open the task page
         #: must hand the next step back to the proven power route rather than repeat itself.
         self._panel_row_attempts = 0
+        #: Backward swipes of the 快捷面板 asked for in this run, for the same reason and with
+        #: the same kind of bound: the panel's band is a reading, so a swipe whose band does not
+        #: move must not become a loop on a panel that stays where the sweep left it.
+        self._panel_scroll_back_attempts = 0
         # Which goal put this run on its route.  The route name alone cannot say: a
         # `--goal BEAST_HUNT` run and the spend goal riding the same route are
         # indistinguishable from inside the brain, and only one of them may hand over to
@@ -328,6 +332,10 @@ class RuleBrain:
         # is what this ceiling is for, and each row is now only offered while its own reading says
         # it is idle, so a row that succeeded is never offered again in the same run.
         self.MAX_PANEL_ROW_ATTEMPTS_PER_RUN = 6
+        # Bounded to three: the sweep can leave the panel several sections past the training one
+        # (measured: four), and each swipe moves about two rows, so one is not always enough --
+        # but a bound is what keeps a panel that is not scrolling from being swiped forever.
+        self.MAX_PANEL_SCROLL_BACK_ATTEMPTS_PER_RUN = 3
         self.ordinary_scan_exhausted = False
         # (``MAX_CAMP_MENU_WAITS`` stood here and was removed on 2026-09-23 with the wait it
         # bounded: the ring is drawn by the client on its own schedule, so there was never
@@ -2347,15 +2355,38 @@ class RuleBrain:
                     # read_quick_panel returns no ``camps`` section, none of the four rows it did
                     # read is a camp row, and the barracks action bar is under the pane.
                     #
-                    # The capability this records, rather than hides: the panel's own tab strip
-                    # (``QUICK_PANEL_TAB_CITY`` / ``QUICK_PANEL_TAB_WILDERNESS``) is declared in
-                    # ``knowledge/ui/semantic_dictionary.json`` from one measured frame and is read
-                    # by nothing, so there is no way to bring the training section into view.  Doing
-                    # that would serve this goal *inside* the panel; it is a capability to add, not
-                    # a guard to skip.
+                    # The cause is measured, and it is the *scroll*, not the panel's identity: the
+                    # panel is one continuous list, the sweep (``SCROLL_QUICK_PANEL_TASKS``) walks it
+                    # down to reach the rows the other goals want, and it stays where the sweep left
+                    # it.  Measured 2026-10-05 over the 61 panel-open training failures: **59 had
+                    # ``OPEN_QUICK_PANEL`` -> ``SCROLL_QUICK_PANEL_TASKS`` earlier in the same run**,
+                    # and the 部队训练 section is drawn directly under the tab strip (建筑队列 at
+                    # y 0.251) while the sweep leaves the panel at 宠物寻宝 / 我的奖励 (y 0.30-0.39),
+                    # four sections further down the same list.  An earlier fix aimed at the panel's
+                    # *tabs* was refuted by the same measurement and reverted (see
+                    # ``.workbuddy-ai/handoff/THE_PANEL_TAB_SWITCH_20261005.md``): the two tab labels
+                    # are drawn whichever tab is active, and the sections are one list.
+                    #
+                    # So the step is the reverse drag, derived from the same current-frame band
+                    # (``read_quick_panel`` returns the reversed endpoints under the same guard).
+                    # Bounded, and the fallback matters: if the band does not move, the panel is not
+                    # scrolling and the next step stops with a reason that names the cover rather
+                    # than swiping on.  That stop is the same shape as the ``close_resource_search_*``
+                    # guards on the MAP branch.
                     if (world.quick_panel or {}).get("open") is True and not _panel_draws_the_training_section(
                         world.quick_panel or {}
                     ):
+                        if (
+                            registry.get("SCROLL_QUICK_PANEL_BACK") is not None
+                            and self._panel_scroll_back_attempts < self.MAX_PANEL_SCROLL_BACK_ATTEMPTS_PER_RUN
+                        ):
+                            self._panel_scroll_back_attempts += 1
+                            return Decision(
+                                "SCROLL_QUICK_PANEL_BACK",
+                                "the_sweep_left_the_panel_below_the_training_section_so_the_band_goes_back_up",
+                                world.confidence,
+                                "quick_panel_scrolled_back",
+                            )
                         return Decision(
                             "SAFE_STOP",
                             "quick_panel_is_open_on_a_tab_without_the_training_entry_so_the_camp_bar_is_covered",

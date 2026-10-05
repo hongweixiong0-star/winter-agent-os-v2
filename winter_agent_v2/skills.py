@@ -1075,6 +1075,27 @@ def v2_registry() -> SkillRegistry:
             state=SkillState.CANDIDATE,
         )
     )
+    # The panel is one continuous list, and the sweep above walks it *down* to reach the rows the
+    # other goals want -- then leaves it there.  A goal whose own section sits above that band (the
+    # training section is drawn directly under the tab strip) had no way back.  Measured 2026-10-05:
+    # 59 of the 61 panel-open training failures had OPEN_QUICK_PANEL -> SCROLL_QUICK_PANEL_TASKS
+    # earlier in the same run.
+    #
+    # Same gesture, opposite direction, and both endpoints come from the same current-frame reading
+    # (``read_quick_panel`` returns the reversed pair under the same band guard), so this is not a
+    # coordinate and not a new measurement path.
+    skills.append(
+        Skill(
+            "SCROLL_QUICK_PANEL_BACK",
+            "Move the quick-panel list back toward its top, with the reverse of the gesture derived "
+            "from this frame's visible band",
+            Page.HOME,
+            Action("SWIPE", "QUICK_PANEL_SCROLL_BACK_CURRENT", payload={"duration_ms": 450}),
+            timeout=15.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        )
+    )
     skills.append(
         Skill(
             "COLLECT_TRAINING_BATCH",
