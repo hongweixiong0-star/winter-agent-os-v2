@@ -90,6 +90,7 @@ from .global_scheduler_state import GlobalSchedulerStateStore
 from .task_completion import TaskCompletionStore
 from .capability_gate import DEFERRED, CapabilityGate, Deferral
 from .device_lease import OWNER_DEVELOPMENT_VALIDATION, OWNER_GAMEPLAY, DeviceLease
+from .mode_state import DEFAULT_PATH as MODE_STATE_PATH, MODE_MANUAL, load as load_mode_state
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
 from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_training_camp_switched, verify_intel_list_read, verify_alliance_gifts_claimed
@@ -887,6 +888,26 @@ class LiveRuntime:
         # the same as gameplay owning the device and keeps the guard free in tests that
         # do not care about it.
         self.device_lease = device_lease
+
+    def _mode_stop_reason(self) -> str | None:
+        """Is the machine WorkBuddy's right now?  ``docs/MODE_SYSTEM.md`` §1/§2.
+
+        The specification makes the two modes mutually exclusive and says that in Manual the
+        machine belongs *entirely* to WorkBuddy.  So this is answered **before** the device lease:
+        mode is the outer authority, and when the owner is WorkBuddy, AUTO does not get to argue
+        about a lease at all.
+
+        Read fresh every cycle rather than cached, because the point of the specification is that
+        the user can take the machine at any moment and the very next tick must notice.  A missing
+        or unreadable record answers "not Manual", which is also the fail-safe direction (§11
+        defaults to Auto): a deleted file must not silently freeze the system.
+        """
+        path = getattr(self, "mode_state_path", MODE_STATE_PATH)
+        try:
+            state = load_mode_state(path)
+        except Exception:  # noqa: BLE001 - a broken store must not stop the loop (§11: default Auto)
+            return None
+        return "manually_owned_by_workbuddy" if state.mode == MODE_MANUAL else None
 
     def _owns_the_lease(self, held: object) -> bool:
         """Is the lease this run is looking at *its own*?
@@ -9054,6 +9075,21 @@ class LiveRuntime:
             # the holder is a DEVELOPMENT_VALIDATION.  Both halves are required, because
             # an AUTO cycle must still yield to a real examination -- that is the §19
             # property this guard exists for, and it stays exactly as it was.
+
+            # docs/MODE_SYSTEM.md §1/§2: the two modes are mutually exclusive, and in Manual the
+            # machine is *entirely* WorkBuddy's.  Checked before the lease because mode is the
+            # outer authority -- when the owner is WorkBuddy, AUTO does not get to argue about a
+            # lease.  Same yield shape as the lease guard below, so the console shows one kind of
+            # "paused at a safe point" whichever reason applies.
+            mode_reason = self._mode_stop_reason()
+            if mode_reason is not None:
+                self._runtime(
+                    agent_state=AgentState.PAUSED.value, runtime_thread_alive=False,
+                    scheduler_loop_alive=False, stop_reason=mode_reason,
+                    reason="WorkBuddy owns the machine (mode=MANUAL, docs/MODE_SYSTEM.md §3)",
+                    next_action="yielded at a safe point; resumes when the mode returns to Auto",
+                )
+                return finish(mode_reason)
             held = self.device_lease.holder() if self.device_lease is not None else None
             if held is not None and held.owner != OWNER_GAMEPLAY and not self._owns_the_lease(held):
                 reason = "device_leased_for_development"

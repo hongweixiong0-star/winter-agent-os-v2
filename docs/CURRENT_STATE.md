@@ -298,6 +298,27 @@
 `OPERATIONAL.md` 判据 / `FINAL_FULL.md`+`PERSISTENT_DEVELOPMENT.md` 存档）。
 `docs/MASTER_RULES.md` 与 `.workbuddy-ai/handoff/00_MASTER_RULES.md` 已改为指针。
 
+### 7.4 双模式运行（2026-10-06，操作者规范）
+
+操作者给出《Winter Agent OS V2 — 双模式运行规范》，逐字落在 `docs/MODE_SYSTEM.md`。
+
+**落地**：`winter_agent_v2/mode_state.py` —— 模式是一份**持久化记录**
+（`learning/MODE_STATE.json`），不是第二个锁；切换是对它做一次 **CAS + 单次 `os.replace`**，
+崩溃只看到旧状态或新状态。`runtime.run()` 在设备租约守卫**之前**读它：
+Manual 时以 `manually_owned_by_workbuddy` 在安全点让出。**没有这个守卫，模式记录只是一份
+说了话但不改变任何事的文档。**
+
+**两条按规范推导出的裁决**（记在 `docs/MODE_SYSTEM.md` 末节）：
+
+- **Manual 有两种，规矩相反**：用户强制的 Manual，WorkBuddy **完全不能**自己切回（"哪怕任务完成了"）；
+  WorkBuddy 自主切的 Manual，它**必须**自己切回。这条最初实现错了，靠端到端冒烟（不是单测）发现。
+- **§7 收尾门 vs §10 用户优先**：门保留（§12 把"留未提交代码""回切时生产起不来"列为硬禁止），
+  但给一条有记录的否决路径 `--force`，否决以 `OVERRIDDEN BY USER: …` 写入历史。
+
+**未做**：§6 机时分配（依赖一个不存在的"空闲判据"，且 Manual 下整体作废）、§9 面板渲染
+（数据层 `console_fields()` 已产出 §9 的七行）、§8 硬门的机器化。
+搜索产物：`.workbuddy-ai/handoff/MODE_SYSTEM_SEARCH_20261006.md`。
+
 ---
 
 ## 8. 怎么刷新本文件
