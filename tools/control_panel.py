@@ -15,7 +15,7 @@ import ctypes
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from tkinter import ttk
+from tkinter import messagebox, simpledialog, ttk
 from typing import Any, Callable, Mapping, NamedTuple
 
 from PIL import Image, ImageDraw, ImageTk
@@ -43,6 +43,7 @@ if str(TOOLS_DIR) not in sys.path:
 import panel_window  # noqa: E402
 
 from winter_agent_v2 import runtime_env
+from winter_agent_v2 import mode_state
 from winter_agent_v2 import winproc
 from winter_agent_v2 import event_schedule
 from winter_agent_v2 import learning_funnel
@@ -3477,6 +3478,12 @@ def status_defaults() -> dict[str, str]:
         # answer it before anything has been read.
         "intervene": PENDING,
         "watchdog": PENDING, "local_model": PENDING, "local_model_last": PENDING,
+        # §14.5's ownership-mode row: who owns the machine right now.  ``mode`` above is the
+        # *AUTO loop's* run state (停止/运行) and predates docs/MODE_SYSTEM.md, so the two
+        # must not share a key -- "Auto" and "AUTO is running" are different facts (§9).
+        # Starts at 未读取 rather than at "AUTO": a bar that claims ownership before it has
+        # read the record would answer the one question it exists to answer, wrongly.
+        "mode_owner": PENDING, "mode_owner_detail": PENDING,
         # Operator directive 2026-10-01 §36: the learning-effect lines.  Two rows rather than one
         # because the funnel and the KPI set answer different questions -- "where did it stop" is
         # not the same as "did the game get played".
@@ -5102,10 +5109,115 @@ class ControlPanel:
                 # so this cannot outlive the first tick.  ``grid_remove`` (not ``pack_forget``/destroy)
                 # keeps ``column=i``, so a cell that comes back lands where the table says it belongs.
                 cell.grid_remove()
+        self._build_mode_bar(shell)
         self.tabs = ttk.Notebook(shell); self.tabs.pack(fill="both", expand=True, pady=(10, 0))
         self._overview(); self._goals(); self._strategy(); self._event_goal(); self._capabilities(); self._auto_development(); self._system()
         # Opening a tab is the moment its data must be current, not the next tick.
         self.tabs.bind("<<NotebookTabChanged>>", self._on_tab_changed)
+
+    # -- §14.5: the machine-ownership row ------------------------------------------------
+    #
+    # Measured 2026-10-06, on the operator's question 「控制台怎么没看见显示和切换按钮」:
+    # ``winter_agent_v2.mode_state`` shipped with ``console_fields()`` and a full CLI, but
+    # **no module under ``tools/`` imported it**.  The data source existed and the consumer
+    # did not -- the same shape as a rule that lives only in a prompt: correct, and inert.
+    # These four methods are the missing consumer.
+
+    def _build_mode_bar(self, shell: Any) -> None:
+        """Draw the ownership row: what owns the machine right now, and the two switches."""
+        bar = ttk.Frame(shell, style="Card.TFrame", padding=(16, 10))
+        bar.pack(fill="x", pady=(8, 0))
+        left = ttk.Frame(bar, style="Card.TFrame"); left.pack(side="left", fill="x", expand=True)
+        head = ttk.Frame(left, style="Card.TFrame"); head.pack(anchor="w")
+        ttk.Label(head, text="机器归属", style="Muted.TLabel", background=PANEL).pack(side="left")
+        ttk.Label(head, textvariable=self.values["mode_owner"], style="Value.TLabel",
+                  background=PANEL).pack(side="left", padx=(8, 0))
+        ttk.Label(left, textvariable=self.values["mode_owner_detail"], style="Muted.TLabel",
+                  background=PANEL, wraplength=900, justify="left").pack(anchor="w", pady=(2, 0))
+        right = ttk.Frame(bar, style="Card.TFrame"); right.pack(side="right")
+        ttk.Button(right, text="我要用机器（切 Manual）",
+                   command=self._switch_to_manual).pack(side="left", padx=(0, 6))
+        ttk.Button(right, text="交还机器（切 Auto）", style="Accent.TButton",
+                   command=self._switch_to_auto).pack(side="left")
+        self._refresh_mode_bar()
+
+    def _refresh_mode_bar(self) -> None:
+        """Repaint the row from ``mode_state.console_fields()`` -- one reader, one source.
+
+        Wrapped because this window's standing rule is that a reading must never take the
+        page down: a corrupt ``MODE_STATE.json`` has to show as 未读取, not as a traceback
+        where the operator is looking for an answer.
+        """
+        try:
+            fields = mode_state.console_fields()
+        except Exception as exc:  # noqa: BLE001 - a display must never raise
+            self.values["mode_owner"].set(PENDING)
+            self.values["mode_owner_detail"].set(f"{PENDING}（读取失败 {type(exc).__name__}）")
+            return
+        mode = str(fields.get("当前模式") or PENDING)
+        # 机器状态 already carries the loop's real liveness, so the headline must not imply
+        # "running" purely from the mode -- that conflation is exactly the §9 lie this row
+        # exists to prevent (the record said AUTO while the panel had been down 53 minutes).
+        owner = "WorkBuddy 开发中" if mode == mode_state.MODE_MANUAL else "AUTO 轮次"
+        self.values["mode_owner"].set(f"{mode} · {owner} · 已持续 {fields.get('已持续', '—')}")
+        detail = " · ".join(
+            f"{key}：{fields[key]}"
+            for key in ("机器状态", "切换理由", "回切条件", "循环存活")
+            if fields.get(key)
+        )
+        for key in ("不一致", "警告", "收尾", "恢复"):
+            if fields.get(key):
+                detail += f"\n⚠ {key}：{fields[key]}"
+        self.values["mode_owner_detail"].set(detail)
+
+    def _switch_to_manual(self) -> None:
+        """§4 trigger 2 (the user takes the machine), plus the three things §5 will ask about.
+
+        The prompts are not a gate on the user -- §4 trigger 2 needs no justification -- but
+        the row prints 切换理由 and 完成判据 back at them, and an empty reason produces a
+        §5 decision point that cannot be argued with later.
+        """
+        reason = simpledialog.askstring(
+            "切到 Manual", "做什么？（会显示在「切换理由」）", parent=self.root)
+        if reason is None:
+            return
+        minutes = simpledialog.askfloat(
+            "切到 Manual", "预计多少分钟？（到点提示决策：暂停回切 / 申请延长）",
+            initialvalue=30.0, minvalue=1.0, parent=self.root)
+        if minutes is None:
+            return
+        done = simpledialog.askstring("切到 Manual", "什么算完成？（完成判据）", parent=self.root) or ""
+        try:
+            mode_state.switch(
+                mode_state.MODE_MANUAL, initiator=mode_state.BY_USER, reason=reason or "（未登记）",
+                expected_seconds=minutes * 60.0, completion_criteria=done,
+            )
+        except mode_state.ModeRefused as refused:
+            messagebox.showerror("切到 Manual 被拒绝", str(refused), parent=self.root)
+            return
+        self._refresh_mode_bar()
+        self._append(f"机器归属：已切到 Manual（用户）· {reason} · 预计 {minutes:g} 分钟")
+
+    def _switch_to_auto(self) -> None:
+        """§7: hand the machine back.
+
+        The wrap-up gate is enforced by ``mode_state.switch``, not by this button: the panel
+        shows rules, it does not decide them.  A refusal names the missing steps so the
+        operator can go and do them rather than being told "no".
+
+        Handing the mode back does **not** restart the loop -- §7's wrap-up owns the mode,
+        not the process -- and the row says so, because 「交还了」 reading as 「在跑了」 is
+        the §9 conflation again.
+        """
+        try:
+            mode_state.switch(mode_state.MODE_AUTO, initiator=mode_state.BY_USER,
+                              reason="用户在控制台交还机器")
+        except mode_state.ModeRefused as refused:
+            messagebox.showerror("切到 Auto 被拒绝", str(refused), parent=self.root)
+            return
+        self._refresh_mode_bar()
+        self._append("机器归属：已交还 Auto。§7 只交还模式、不拉起循环——要真跑需显式启动"
+                     "（总览页「开始自动运行」）。")
 
     def _tab(self, name: str, scroll: bool = False) -> ttk.Frame:
         f = ttk.Frame(self.tabs, padding=10); self.tabs.add(f, text=TAB_GROUP.get(name, name))
@@ -7509,6 +7621,10 @@ class ControlPanel:
         # the gateway cell -- because the measured symptom was exactly this cell showing 异常
         # from code that had already been fixed on disk.
         self._check_control_plane_reload()
+        # §14.5: who owns the machine.  Refreshed on this pass rather than only on click, so a
+        # switch made from the CLI (or by WorkBuddy) shows up here without the operator having
+        # to touch the button to find out the answer had changed under them.
+        self._refresh_mode_bar()
         if moves.get("submitted"):
             self._append(f"开发队列：已向 WorkBuddy 提交 {moves['submitted']} 个真实任务。")
         if moves.get("released"):
