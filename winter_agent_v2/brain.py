@@ -73,6 +73,38 @@ from .ocr import QUICK_PANEL_ARROW_BASIS_SCAN, QUICK_PANEL_CONTROL_ARROW, QUICK_
 _QUICK_PANEL_ROW_CLAIM_SKILL: dict[str, str] = {}
 
 
+#: The row keys that mean the quick panel is drawing its 部队训练 section.
+#:
+#: Used for one question only: may the training entry be dispatched while the panel is open?  The
+#: panel draws one tab's sections at a time, and the barracks action bar this project taps is on the
+#: city frame *under* the pane -- so an open panel on a tab that draws no training row means the
+#: control is covered and no tap can reach it.
+#:
+#: ``TRAINING`` is the section's own header row; the three camp keys are its rows and are therefore
+#: equally good evidence that the section is drawn.  Listed rather than derived because these are
+#: this project's own vocabulary and a rename should break here.
+_QUICK_PANEL_TRAINING_SECTION_KEYS = frozenset(
+    {"TRAINING", "SHIELD_CAMP", "LANCER_CAMP", "MARKSMAN_CAMP"}
+)
+
+
+def _panel_draws_the_training_section(panel: dict) -> bool:
+    """Is the quick panel, as this frame read it, drawing the 部队训练 section?
+
+    A row's ``label`` is consulted as well as its ``key``: the reader attaches the word it actually
+    saw, and ``部队训练`` is the header the client prints.  Anything not readable as a row is
+    ignored rather than counted as evidence either way.
+    """
+    for row in panel.get("rows") or ():
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("key") or "") in _QUICK_PANEL_TRAINING_SECTION_KEYS:
+            return True
+        if "训练" in str(row.get("label") or ""):
+            return True
+    return False
+
+
 class RuleBrain:
     """Strict deterministic fallback brain for P0; decides WHAT, never clicks."""
 
@@ -2259,6 +2291,77 @@ class RuleBrain:
                     #
                     # Reached only from HOME, because the training page is only drawn there;
                     # the MAP branch above still answers ``OPEN_HOME`` and is untouched.
+                    #
+                    # ------------------------------------------------------------------
+                    # 2026-10-05: THE PANEL COVERS THE CONTROL THIS SKILL TAPS, and that is now
+                    # measured rather than inferred.  The step above is right about the page it
+                    # wants; it is wrong about being able to reach it from *this* frame.
+                    #
+                    # ``OPEN_INFANTRY_TRAINING`` taps ``BTN_OPEN_TRAINING_FROM_CAMP`` -- the
+                    # 训练 control on the selected barracks' action bar, which is drawn at the
+                    # bottom-left of the city frame.  While the quick panel is open it is behind
+                    # the panel: the resolver's locator misses and the navigation advisor answers
+                    # ``UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING``.
+                    #
+                    # Measured 2026-10-05 over the skill's whole history (114 rows, 65 failures),
+                    # and the separation is total -- the panel's state is the only discriminator:
+                    #
+                    #     quick_panel.open = False    49/54 SUCCESS   (91%)
+                    #     quick_panel.open = True      0/60 SUCCESS   (0%)
+                    #
+                    # every failure with an EMPTY after_screenshot and duration 0.06-0.13 s, i.e.
+                    # no tap was ever sent, and every one carrying the reason above.  The frame
+                    # confirms it: the panel is drawn open on the 野外 tab, the camp rows live on
+                    # the 城镇 tab (``read_quick_panel`` returns no ``camps`` section here), and
+                    # the barracks action bar is under the pane.
+                    #
+                    # So the dispatch is refused while the panel is open and the frame is not
+                    # drawing the training section anywhere.  This is the same shape as the
+                    # ``close_resource_search_*`` guards on the MAP branch: a goal whose entry sits
+                    # on the city HUD must not be sent there while something is covering it.
+                    # Stopping costs one cycle and no device action, which is exactly what the
+                    # failing dispatch cost -- and unlike it, this one says why.
+                    #
+                    # The condition is deliberately NOT "the panel is open".  An earlier version of
+                    # this guard said that, and ``tests/test_unanswered_training_opens_the_training_page``
+                    # -- which pins a *deliberate* change with its own measurement -- went red, which
+                    # is the A/B working.  That file's frame draws the panel with a ``TRAINING`` row
+                    # (``{"key": "TRAINING", "label": "部队训练"}``), i.e. the panel is on the tab
+                    # where the 部队训练 section IS drawn, and on such a frame the step is right:
+                    # the branch above is waiting for exactly that reading.  What the failing frames
+                    # draw is the other tab -- 专家 / 英雄招募 / 宠物寻宝 / 我的奖励 -- where no
+                    # training word is on screen at all.
+                    #
+                    # Measured 2026-10-05, and it is the *drawn section* that separates them, not
+                    # the panel's state:
+                    #
+                    #     panel closed                             50/55 SUCCESS
+                    #     panel open, training section NOT drawn     0/61 SUCCESS
+                    #     panel open, training section drawn         no surviving row
+                    #
+                    # (the last row of that table is honest about its own gap: that shape occurs in
+                    # no frame still in the ledger, which is why the guard is written to leave it
+                    # alone rather than to decide it.)  Every failure carries an EMPTY
+                    # after_screenshot and duration 0.06-0.13 s -- no tap was sent -- so this is a
+                    # dispatch into a control that provably cannot be resolved.  The frame says why:
+                    # read_quick_panel returns no ``camps`` section, none of the four rows it did
+                    # read is a camp row, and the barracks action bar is under the pane.
+                    #
+                    # The capability this records, rather than hides: the panel's own tab strip
+                    # (``QUICK_PANEL_TAB_CITY`` / ``QUICK_PANEL_TAB_WILDERNESS``) is declared in
+                    # ``knowledge/ui/semantic_dictionary.json`` from one measured frame and is read
+                    # by nothing, so there is no way to bring the training section into view.  Doing
+                    # that would serve this goal *inside* the panel; it is a capability to add, not
+                    # a guard to skip.
+                    if (world.quick_panel or {}).get("open") is True and not _panel_draws_the_training_section(
+                        world.quick_panel or {}
+                    ):
+                        return Decision(
+                            "SAFE_STOP",
+                            "quick_panel_is_open_on_a_tab_without_the_training_entry_so_the_camp_bar_is_covered",
+                            1.0,
+                            "switch_task",
+                        )
                     if registry.get("OPEN_INFANTRY_TRAINING") is not None and world.page is Page.HOME:
                         return Decision(
                             "OPEN_INFANTRY_TRAINING",
