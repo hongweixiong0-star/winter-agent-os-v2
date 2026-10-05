@@ -1787,27 +1787,78 @@ class OCRPageClassifier:
                           rewards=rewards, beast=beast, confidence=confidence)
 
     @staticmethod
-    def _building_upgrade_sheet_evidence(tokens, *, frame_size: tuple[int, int] | None) -> bool:
-        """Recognize the upgrade sheet from positioned OCR, without guessing its identity."""
+    def _upgrade_sheet_placed(tokens, *, frame_size: tuple[int, int] | None):
+        """``[(text, (x0, y0, x1, y1))]`` in frame fractions, or ``None`` for an unusable size.
+
+        Shared by the two sheet recognisers below because they are two questions about one
+        frame, and the OCR pass is the expensive half of both.
+        """
         if not frame_size or frame_size[0] <= 0 or frame_size[1] <= 0:
-            return False
+            return None
         placed = []
         for token in tokens:
             if not token.box:
                 continue
             xs = [point[0] for point in token.box]
             ys = [point[1] for point in token.box]
-            rect = (min(xs) / frame_size[0], min(ys) / frame_size[1],
-                    max(xs) / frame_size[0], max(ys) / frame_size[1])
-            placed.append((token.text.strip(), rect))
+            placed.append((token.text.strip(), (
+                min(xs) / frame_size[0], min(ys) / frame_size[1],
+                max(xs) / frame_size[0], max(ys) / frame_size[1])))
+        return placed
 
-        def has(text: str, *, x=None, y=None) -> bool:
-            return any(
-                value == text
-                and (x is None or x[0] <= (rect[0] + rect[2]) / 2 <= x[1])
-                and (y is None or y[0] <= (rect[1] + rect[3]) / 2 <= y[1])
-                for value, rect in placed
-            )
+    @staticmethod
+    def _upgrade_sheet_text(placed, text: str, *, x=None, y=None) -> bool:
+        """Is ``text`` drawn inside the given band?  Exact string plus a position, never fuzzy."""
+        return any(
+            value == text
+            and (x is None or x[0] <= (rect[0] + rect[2]) / 2 <= x[1])
+            and (y is None or y[0] <= (rect[1] + rect[3]) / 2 <= y[1])
+            for value, rect in placed
+        )
+
+    @staticmethod
+    def _current_upgrade_sheet_layout(placed) -> bool:
+        """The upgrade sheet's own structure, saying nothing about *which* building it is for.
+
+        Measured 2026-10-05 over the recorded ``OPEN_BUILDING_UPGRADE`` after-frames (107 rows
+        at that instant: 106 failures, and the single success this change produced).  Every one
+        of them carries this layout -- the 升级效果 and 需要条件 headers, the 大熔炉 等级
+        prerequisite row, and the 升级 control in the button band -- and the only clause of the
+        Research Institute's recogniser that fails on them is the title word (城墙 there,
+        科研所 on the lab).  So the sheet is recognised here by its layout and the building is
+        named elsewhere.
+
+        The title is deliberately *not* part of this test: the layout proves the sheet, and
+        which building it belongs to stays a separate exact-table lookup
+        (``building_identity.BUILDING_IDS``) that returns UNKNOWN rather than a guess for an
+        unlisted name such as 城墙.  This proves navigation only -- it never sets
+        ``upgradeable`` and never authorizes spending.
+        """
+        return (
+            OCRPageClassifier._upgrade_sheet_text(placed, "升级效果", x=(0.35, 0.65), y=(0.18, 0.28))
+            and OCRPageClassifier._upgrade_sheet_text(placed, "需要条件", x=(0.35, 0.65), y=(0.38, 0.50))
+            and any("大熔炉" in text and "等级" in text
+                    and 0.42 <= (rect[1] + rect[3]) / 2 <= 0.54
+                    for text, rect in placed)
+            and OCRPageClassifier._upgrade_sheet_text(placed, "升级", x=(0.60, 0.90), y=(0.75, 0.84))
+        )
+
+    @staticmethod
+    def _building_upgrade_sheet_evidence(tokens, *, frame_size: tuple[int, int] | None) -> bool:
+        """Recognize a selected building's upgrade sheet, without guessing its identity.
+
+        Two layouts reach this page.  The two-column one (时间 / 属性 beside the values) is the
+        older client's; the header one (升级效果 / 需要条件) is what the Research Institute has
+        always used and -- measured 2026-10-05 on every recorded ``OPEN_BUILDING_UPGRADE``
+        after-frame (107 rows: 106 failures) -- what an ordinary selected building such as 城墙
+        is drawn with now as well.  Only the second was ever tested for, so those taps each
+        opened a correct sheet that the classifier called UNKNOWN and the verifier could not
+        credit: 106 identical ``BUILDING_UPGRADE_PANEL_NOT_PROVEN`` rows, and the first cycle
+        that ran this change recorded the capability's first success.
+        """
+        placed = OCRPageClassifier._upgrade_sheet_placed(tokens, frame_size=frame_size)
+        if placed is None:
+            return False
 
         duration = any(
             re.fullmatch(r"\d{1,3}\s*秒", text)
@@ -1823,50 +1874,29 @@ class OCRPageClassifier:
         # building.  It is useful corroboration when readable, but page identity only
         # needs the distinctive two-column upgrade sheet.  This fallback proves
         # navigation only; it never identifies the building or authorizes spending.
-        return (
-            has("时间", x=(0.04, 0.24), y=(0.56, 0.66))
-            and has("属性", x=(0.04, 0.24), y=(0.60, 0.72))
-            and has("升级", x=(0.72, 0.96), y=(0.46, 0.56))
+        two_column = (
+            OCRPageClassifier._upgrade_sheet_text(placed, "时间", x=(0.04, 0.24), y=(0.56, 0.66))
+            and OCRPageClassifier._upgrade_sheet_text(placed, "属性", x=(0.04, 0.24), y=(0.60, 0.72))
+            and OCRPageClassifier._upgrade_sheet_text(placed, "升级", x=(0.72, 0.96), y=(0.46, 0.56))
             and duration and attribute
         )
+        return two_column or OCRPageClassifier._current_upgrade_sheet_layout(placed)
 
     @staticmethod
     def _research_lab_upgrade_sheet_evidence(tokens, *, frame_size: tuple[int, int] | None) -> bool:
         """Recognize the live Research Institute upgrade panel by its own layout.
 
-        The client uses a different upgrade sheet for the Research Institute:
-        title, 升级效果, 需要条件, and the furnace prerequisite. This proves
-        page and building identity only. In particular it does not infer that
-        the upgrade button is enabled or that resource policy permits it.
+        The sheet's layout is shared with any other selected building's (see
+        ``_current_upgrade_sheet_layout``); what makes this the lab's is the title the client
+        draws above it.  This proves page and building identity only.  In particular it does
+        not infer that the upgrade button is enabled or that resource policy permits it.
         """
-        if not frame_size or frame_size[0] <= 0 or frame_size[1] <= 0:
+        placed = OCRPageClassifier._upgrade_sheet_placed(tokens, frame_size=frame_size)
+        if placed is None:
             return False
-        placed = []
-        for token in tokens:
-            if not token.box:
-                continue
-            xs = [point[0] for point in token.box]
-            ys = [point[1] for point in token.box]
-            rect = (min(xs) / frame_size[0], min(ys) / frame_size[1],
-                    max(xs) / frame_size[0], max(ys) / frame_size[1])
-            placed.append((token.text.strip(), rect))
-
-        def has(text: str, *, x=None, y=None) -> bool:
-            return any(
-                value == text
-                and (x is None or x[0] <= (rect[0] + rect[2]) / 2 <= x[1])
-                and (y is None or y[0] <= (rect[1] + rect[3]) / 2 <= y[1])
-                for value, rect in placed
-            )
-
         return (
-            has("科研所", x=(0.35, 0.65), y=(0.10, 0.20))
-            and has("升级效果", x=(0.35, 0.65), y=(0.18, 0.28))
-            and has("需要条件", x=(0.35, 0.65), y=(0.38, 0.50))
-            and any("大熔炉" in text and "等级" in text
-                    and 0.42 <= (rect[1] + rect[3]) / 2 <= 0.54
-                    for text, rect in placed)
-            and has("升级", x=(0.60, 0.90), y=(0.75, 0.84))
+            OCRPageClassifier._upgrade_sheet_text(placed, "科研所", x=(0.35, 0.65), y=(0.10, 0.20))
+            and OCRPageClassifier._current_upgrade_sheet_layout(placed)
         )
 
 

@@ -93,3 +93,103 @@ def test_building_goal_yields_instead_of_exploring_unknown_upgrade_sheet():
     )
     assert decision.skill == "SAFE_STOP"
     assert decision.reason == "building_identity_or_upgrade_conditions_unknown"
+
+
+# The second layout the same page is drawn in.  The Research Institute always used these
+# headers; measured 2026-10-05, an ordinary selected building (城墙) is drawn with them too.
+# Every one of the 107 recorded OPEN_BUILDING_UPGRADE failures carried this layout while the
+# classifier, which only knew the two-column one above, called the page UNKNOWN -- so the tap
+# was correct and the reading of the frame it produced was not.
+def header_sheet_tokens():
+    # Positions replayed from the 720x1280 production after-frame
+    # 20261005_130747_314531_step_003_after_refresh_2_20261005T050825668096.png, whose episode
+    # recorded BUILDING_UPGRADE_PANEL_NOT_PROVEN with page_after=UNKNOWN.
+    return (
+        token("城墙", (323, 180, 397, 222)),
+        token("升级效果", (304, 263, 418, 298)),
+        token("城墙耐久度", (70, 323, 208, 356)),
+        token("需要条件", (304, 537, 419, 574)),
+        token("大熔炉等级24", (126, 597, 319, 629)),
+        token("3.20亿/1410万", (125, 666, 303, 696)),
+        token("3.54亿/1410万", (124, 733, 304, 765)),
+        token("6714.63万/282万", (127, 803, 340, 829)),
+        token("2781.44万/70.5万", (127, 870, 347, 897)),
+        token("立即完成", (147, 1008, 253, 1043)),
+        token("升级", (491, 1007, 552, 1044)),
+    )
+
+
+def test_header_layout_sheet_of_an_unlisted_building_is_recognised():
+    state = OCRPageClassifier().classify(
+        OCRResult(header_sheet_tokens(), "production-replay-header-layout"),
+        frame_size=(720, 1280),
+    )
+
+    assert state.page is Page.BUILDING
+    assert state.building["upgrade_dialog_visible"] is True
+    # 城墙 is not in building_identity.BUILDING_IDS, and this must stay UNKNOWN rather than
+    # become a guess: the layout says which page this is, never which building.
+    assert state.building["identity"] == "UNKNOWN"
+    assert "upgradeable" not in state.building
+
+
+def test_the_header_layout_alone_does_not_claim_the_research_lab_identity():
+    tokens = header_sheet_tokens()
+    assert not OCRPageClassifier._research_lab_upgrade_sheet_evidence(
+        tokens, frame_size=(720, 1280)
+    ), "城墙 must not be read as the lab: the lab is that sheet *plus* its own title"
+
+    as_lab = tuple(
+        token("科研所", (323, 180, 397, 222)) if item.text == "城墙" else item
+        for item in tokens
+    )
+    assert OCRPageClassifier._research_lab_upgrade_sheet_evidence(
+        as_lab, frame_size=(720, 1280)
+    ), "the same sheet with the lab's own title is the lab"
+
+
+def test_the_header_layout_needs_all_of_its_own_structure():
+    drops = ("需要条件", "大熔炉等级24", "升级效果")
+    for dropped in drops:
+        tokens = tuple(item for item in header_sheet_tokens() if item.text != dropped)
+        state = OCRPageClassifier().classify(
+            OCRResult(tokens, f"production-replay-without-{dropped}"),
+            frame_size=(720, 1280),
+        )
+        assert state.page is Page.UNKNOWN, (
+            f"without {dropped!r} the sheet is not proven and the page must stay UNKNOWN"
+        )
+
+
+def test_the_two_layouts_are_separate_readings_not_one_loose_one():
+    header = OCRPageClassifier._upgrade_sheet_placed(
+        header_sheet_tokens(), frame_size=(720, 1280)
+    )
+    two_column = OCRPageClassifier._upgrade_sheet_placed(
+        upgrade_sheet_tokens(), frame_size=(720, 1280)
+    )
+    assert OCRPageClassifier._current_upgrade_sheet_layout(header) is True
+    assert OCRPageClassifier._current_upgrade_sheet_layout(two_column) is False
+    assert OCRPageClassifier._building_upgrade_sheet_evidence(
+        header_sheet_tokens(), frame_size=(720, 1280)
+    ) is True
+    assert OCRPageClassifier._building_upgrade_sheet_evidence(
+        upgrade_sheet_tokens(), frame_size=(720, 1280)
+    ) is True
+
+
+def test_the_header_sheet_output_satisfies_the_entry_verifier():
+    # The link the fix exists to make: the classifier's own reading of that frame is what the
+    # OPEN_BUILDING_UPGRADE verifier consumes, so it has to satisfy it without help.
+    from winter_agent_v2.runtime import LiveRuntime
+
+    after = OCRPageClassifier().classify(
+        OCRResult(header_sheet_tokens(), "production-replay-header-layout"),
+        frame_size=(720, 1280),
+    )
+    before = WorldState(
+        page=Page.HOME, building={"upgrade_tap_norm": [0.5, 0.7195]},
+    )
+    result = LiveRuntime.VERIFIED_ATOMIC["OPEN_BUILDING_UPGRADE"](before, after)
+    assert result.ok, result.reason
+    assert result.reason == "BUILDING_UPGRADE_PANEL_OPENED"
