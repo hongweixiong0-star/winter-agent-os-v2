@@ -2438,6 +2438,47 @@ class RuleBrain:
         if world.page is Page.RESOURCE_DETAIL and world.resource_available:
             return Decision("START_GATHER", "resource_available", world.confidence, "march_page_open")
         if world.page is Page.BUILDING and world.building.get("upgradeable"):
+            # ``upgradeable`` is not enough to spend on, and this is measured rather than cautious.
+            #
+            # The field has **two writers of different strength**.  ``ocr.py``'s
+            # ``_read_research_lab_upgrade_control`` sets it from the current frame's own evidence --
+            # every prerequisite row carries the client's green check and the 升级 control is the
+            # enabled blue one (basis ``CURRENT_FRAME_GREEN_REQUIREMENTS_AND_BLUE_BUTTON``).  The
+            # template layer sets it from ``match("BTN_BUILD_UPGRADE")``, i.e. "the 升级 control is
+            # drawn" -- which a greyed-out control also satisfies.  Both write the same key, and
+            # nothing downstream can tell them apart.
+            #
+            # The route's own guard (``_goal_route() == "BUILDING"``, above) only refuses when
+            # ``upgradeable`` is **absent**: "Do not let generic exploration tap its spend control
+            # when the building identity, cost, or strategy checks are still unknown."  So a frame
+            # whose identity was never read, carrying the template's weaker ``upgradeable``, came
+            # out of ``decide`` as ``BUILDING_UPGRADE`` -- reproduced 2026-10-05 on the real state
+            # from episode 01:49:05, which reads ``{"id": "UNKNOWN", "name": null, "upgradeable":
+            # true, "identity_source": "NO_BUILDING_NAME_TOKEN"}`` and answers
+            # ``BUILDING_UPGRADE / building_prerequisites_satisfied``.
+            #
+            # It has never actually spent: ``BUILDING_UPGRADE`` has **0 rows in the ledger**, because
+            # that state only arises from a *failed* ``OPEN_BUILDING_UPGRADE`` and the session ends
+            # before the brain is asked again.  That is an accident of ordering, not a guard, and it
+            # is exactly the kind of accident this project does not leave standing.
+            #
+            # So the spend now needs an identity the client actually named -- the same fact
+            # ``verify_selected_building_upgrade_panel_opened`` calls ``identity_known`` -- and
+            # ``"UNKNOWN"`` counts as unknown here even though that verifier accepts it as a non-empty
+            # string.  ``name`` alone is enough: a floating label read (``26 仓库``) names the
+            # building even when the catalogue lookup did not.
+            _building = world.building or {}
+            _named_id = str(_building.get("id") or "").strip().upper()
+            _identity_known = bool(str(_building.get("name") or "").strip()) or _named_id not in {
+                "", "UNKNOWN", "NONE",
+            }
+            if not _identity_known:
+                return Decision(
+                    "SAFE_STOP",
+                    "building_upgrade_needs_a_known_identity",
+                    1.0,
+                    "switch_task",
+                )
             return Decision("BUILDING_UPGRADE", "building_prerequisites_satisfied", world.confidence, "building_queue_started")
         if world.page is Page.RESEARCH:
             if world.research.get("status") == "IN_PROGRESS" or world.research.get("queue_available") is False:

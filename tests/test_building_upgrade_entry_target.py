@@ -218,5 +218,52 @@ class TheRealFrameTests(unittest.TestCase):
         self.assertEqual(LIVE_BUILDING["id"], UNKNOWN)
 
 
+class TheSpendNeedsAnIdentityTests(unittest.TestCase):
+    """``upgradeable`` alone must not authorize the upgrade: the field has two writers.
+
+    ``ocr.py``'s ``_read_research_lab_upgrade_control`` sets it from the current frame's own
+    evidence -- every prerequisite row green, the 升级 control the enabled blue one.  The template
+    layer sets it from ``match("BTN_BUILD_UPGRADE")``, which a greyed-out control also satisfies.
+    Both write the same key and nothing downstream can tell them apart, while the route's own guard
+    only refuses when the field is **absent**.
+
+    Measured 2026-10-05: every one of the 30 recorded ``Page.BUILDING`` + ``upgradeable`` states
+    reads ``id=UNKNOWN, name=None, identity_source=NO_BUILDING_NAME_TOKEN``, and the state from
+    episode 01:49:05 came out of ``decide`` as ``BUILDING_UPGRADE``.  It never spent --
+    ``BUILDING_UPGRADE`` has 0 rows in the ledger -- only because that state arises from a *failed*
+    ``OPEN_BUILDING_UPGRADE`` and the session ends before the brain is asked again.  An accident of
+    ordering is not a guard, so the spend now needs an identity the client actually named.
+    """
+
+    def _decide(self, building):
+        from winter_agent_v2.brain import RuleBrain
+
+        brain = RuleBrain(current_goal="BUILDING")
+        brain.goal_id = "KEEP_BUILDING_PRODUCTIVE"
+        return brain.decide(WorldState(page=Page.BUILDING, building=dict(building)), v2_registry())
+
+    def test_the_state_the_ledger_actually_holds_is_refused(self):
+        decision = self._decide({"id": "UNKNOWN", "name": None, "upgradeable": True,
+                                 "identity_source": "NO_BUILDING_NAME_TOKEN"})
+        self.assertEqual(decision.skill, "SAFE_STOP")
+        self.assertEqual(decision.reason, "building_upgrade_needs_a_known_identity")
+
+    def test_a_named_building_may_still_be_upgraded(self):
+        # A floating label read (``26 仓库``) names the building even when the catalogue lookup
+        # did not, so a name is enough.
+        decision = self._decide({"id": "UNKNOWN", "name": "仓库", "upgradeable": True})
+        self.assertEqual(decision.skill, "BUILDING_UPGRADE")
+
+    def test_a_catalogued_id_may_still_be_upgraded(self):
+        decision = self._decide({"id": "STOREHOUSE", "name": None, "upgradeable": True})
+        self.assertEqual(decision.skill, "BUILDING_UPGRADE")
+
+    def test_the_only_difference_between_refusing_and_spending_is_the_identity(self):
+        refused = self._decide({"id": "UNKNOWN", "name": None, "upgradeable": True})
+        allowed = self._decide({"id": "UNKNOWN", "name": "仓库", "upgradeable": True})
+        self.assertNotEqual(refused.skill, allowed.skill)
+        self.assertIn("identity", refused.reason)
+
+
 if __name__ == "__main__":
     unittest.main()
