@@ -393,6 +393,43 @@ Manual 模式：机器归 WorkBuddy，自由探索、搜索、验证、开发。
 | §8 | 搜索硬门的机器化 | **未实现**（缺"新功能"的可判定定义）；本轮按文档手工执行，产物见 `.workbuddy-ai/handoff/MODE_SYSTEM_SEARCH_20261006.md` |
 | §9 | 面板渲染 | **未实现**（先出数据层，面板是 9000+ 行的文件，单独一次改） |
 
+### §7 收尾四项的可执行命令（2026-10-06 实测）
+
+§7 只说"commit / repin / 验证生产能启动（`--check-only` 通过）/ 报告"，没写是哪条命令。
+实测对应关系如下，`wrap_up` 的四步就在这四条命令之后勾：
+
+```bash
+# 1) committed
+cd E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体
+git add <显式路径> && git commit -m "..."
+
+# 2) repinned       期望 RESULT: CLEAN_OUTSIDE_DATA
+python tools/repin_production.py --to $(git rev-parse HEAD)
+
+# 3) production_check_only   期望 CODE_COMMIT=<pin HEAD> WORKTREE_CLEAN=true
+#    注意：命令是 launch_pinned_production.py。仓库里**没有** tools/verify_pin.py。
+python tools/launch_pinned_production.py --check-only
+
+# 4) reported        最终回复里写：做了什么 / 验证了没有 / 还没做完什么
+
+python -m winter_agent_v2.mode_state --wrap-up committed
+python -m winter_agent_v2.mode_state --wrap-up repinned
+python -m winter_agent_v2.mode_state --wrap-up production_check_only
+python -m winter_agent_v2.mode_state --wrap-up reported
+python -m winter_agent_v2.mode_state --to-auto --by WORKBUDDY --reason "收尾完成"
+```
+
+第 3 步那处提醒值得留下：规范写的 `--check-only` 是个参数，不是命令。
+按字面去找 `tools/verify_pin.py` 会找不到文件（本轮就试过）。
+
+### 控制台入口（§9 + §14.5）
+
+```
+python -m winter_agent_v2.mode_state --status
+```
+
+输出就是 §9 要求的七行。`console_fields()` 是它的数据源；面板渲染尚未接入。
+
 ### 实现侧的裁决（规范里两处没有直说，落地时必须定）
 
 **裁决 A：`Manual` 有两种，规矩相反 —— 这是本轮最要紧的一条。**
