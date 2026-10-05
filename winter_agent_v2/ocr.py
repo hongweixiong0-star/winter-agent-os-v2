@@ -5396,6 +5396,28 @@ class HybridVision:
                 state[key] = value
         state["identity_confidence"] = read["identity_confidence"]
         state["identity_source"] = read["identity_source"]
+        if is_dialog:
+            # ``upgrade_dialog_visible`` is the proof the OPEN_BUILDING_UPGRADE verifier reads
+            # (``runtime.py:548-555``), and until now only the OCR *classifier* ever set it --
+            # in the branch that runs when the template layer could NOT name the page.  On a
+            # frame the template layer does call ``BUILDING`` that branch is skipped, so the key
+            # was simply absent and every such tap failed with BUILDING_UPGRADE_PANEL_NOT_PROVEN
+            # even though the sheet was open and its wording readable.
+            #
+            # Measured 2026-10-05 over ``learning/episodes.jsonl``: 104 rows carry that failure,
+            # the last at 15:52:05, every one with ``page_after=BUILDING`` and
+            # ``upgrade_dialog_visible=null``, and every one whose recorded ``state_after.building``
+            # had no such key at all.  Re-running that frame through the classifier returns True
+            # for the same evidence, which is what makes this a wiring gap and not a reading gap.
+            # It is the module's own recurring lesson, one page over: a lower layer passing does
+            # not mean the production entry point reaches it.
+            #
+            # Corroboration only -- the page is already BUILDING from the template layer, so this
+            # can only add evidence, never relabel a frame.  It errs safe: ``brain.py:1878`` stops
+            # generic exploration whenever the sheet is visible and the upgrade is unauthorized.
+            state["upgrade_dialog_visible"] = OCRPageClassifier._building_upgrade_sheet_evidence(
+                tokens, frame_size=read_frame_size(image_path)
+            )
         if is_dialog and state.get("id") == "RESEARCH_CENTER":
             upgrade_control = self._read_research_lab_upgrade_control(image_path, tokens)
             if upgrade_control is not None:
