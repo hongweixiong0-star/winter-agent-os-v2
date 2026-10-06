@@ -1140,6 +1140,7 @@ def summarize_runtime_result(payload: dict, exit_code: int = 0) -> dict[str, Any
 def auto_halt_reason(
     *, healthy: bool, reason: str, continuous: bool,
     stop_requested: bool, paused: bool, fatal: bool,
+    machine_is_ours: bool = True,
 ) -> str:
     """Why AUTO will not start another round, in the operator's language.
 
@@ -1164,6 +1165,18 @@ def auto_halt_reason(
     # Measured 2026-10-06 07:24 UTC: this fell through to the last line and the log read
     # 「本轮被判定为系统故障：manually_owned_by_workbuddy」, so the operator taking their own
     # machine back was reported as a fault.
+    # The machine's owner outranks this round's reason, and it is checked first.
+    #
+    # The check below already covers a round that *ends* as manually owned.  It did not cover a
+    # round that ended on anything else while the operator held the machine -- measured 2026-10-06
+    # 20:37-20:47 local: the client sat on the 燃霜矿区 activity map, for which the project has no
+    # route, so the round ended as ``ROLE_SWITCH_FAILED:... SOURCE ROLE HOME NOT CONFIRMED`` while
+    # the operator had taken the machine (mode MANUAL, initiator USER, 燃霜活动).  ``retryable_
+    # role_switch`` then respawned the runtime every 15 s, and **every spawn connects MAA to MuMu,
+    # which raises the emulator window** -- that is the flicker the operator reported, and no
+    # reason string can be trusted to stand in for "who owns the device".
+    if not machine_is_ours:
+        return "机器归 WorkBuddy 使用（Manual 模式）：AUTO 不进入下一轮，交还后自动恢复"
     if str(reason or "").strip().lower() == mode_state.MANUAL_STOP_REASON.lower():
         return "机器归 WorkBuddy 使用（Manual 模式）：AUTO 不进入下一轮，交还后自动恢复"
     if continuous and not stop_requested and not paused and not fatal and (healthy or role_handoff):
@@ -1182,6 +1195,7 @@ def auto_halt_reason(
 def should_continue_auto_cycle(
     *, healthy: bool, reason: str, continuous: bool,
     stop_requested: bool, paused: bool, fatal: bool,
+    machine_is_ours: bool = True,
 ) -> bool:
     """Keep the global scheduler alive across recoverable role handoffs.
 
@@ -1194,6 +1208,7 @@ def should_continue_auto_cycle(
     return not auto_halt_reason(
         healthy=healthy, reason=reason, continuous=continuous,
         stop_requested=stop_requested, paused=paused, fatal=fatal,
+        machine_is_ours=machine_is_ours,
     )
 
 
@@ -8964,6 +8979,15 @@ class ControlPanel:
                                   runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=summary["reason"],
                                   last_fatal_error=summary["reason"] if fatal else None)
         retryable_role_switch = reason.startswith("ROLE_SWITCH_FAILED:")
+        # Both of these exist to answer "may this loop run another round", and only one of them
+        # used to ask who owns the device.  A round touches the device the moment it starts, so the
+        # owner is the first thing to check and the reason string is the second.
+        machine_is_ours = mode_state.load().mode == mode_state.MODE_AUTO
+        if not machine_is_ours:
+            # A role-switch retry is a *device* retry: it cannot be attempted on a machine the
+            # operator is using.  Suppressing it here as well keeps ``next_cycle_delay`` from
+            # describing a wait that the halt above will never let happen.
+            retryable_role_switch = False
         # One decision, two readers.  ``auto_halt_reason`` is already documented as the single
         # source for "will AUTO continue"; the uptime ledger records that same value, so the
         # measurement can never disagree with the behaviour it measures (ACCEPTANCE §22 needs a
@@ -8971,13 +8995,13 @@ class ControlPanel:
         halt_reason = auto_halt_reason(
             healthy=summary["healthy"], reason=reason,
             continuous=self.continuous.get(), stop_requested=self.stop_requested,
-            paused=self.paused, fatal=fatal,
+            paused=self.paused, fatal=fatal, machine_is_ours=machine_is_ours,
         )
         self._record_auto_round(summary, reason, halt_reason=halt_reason)
         if should_continue_auto_cycle(
             healthy=summary["healthy"], reason=reason,
             continuous=self.continuous.get(), stop_requested=self.stop_requested,
-            paused=self.paused, fatal=fatal,
+            paused=self.paused, fatal=fatal, machine_is_ours=machine_is_ours,
         ):
             # Four different things used to collapse into one 30-second wait:
             #
