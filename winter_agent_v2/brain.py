@@ -2330,14 +2330,21 @@ class RuleBrain:
                     # Stopping costs one cycle and no device action, which is exactly what the
                     # failing dispatch cost -- and unlike it, this one says why.
                     #
-                    # The condition is deliberately NOT "the panel is open".  An earlier version of
-                    # this guard said that, and ``tests/test_unanswered_training_opens_the_training_page``
-                    # -- which pins a *deliberate* change with its own measurement -- went red, which
-                    # is the A/B working.  That file's frame draws the panel with a ``TRAINING`` row
-                    # (``{"key": "TRAINING", "label": "部队训练"}``), i.e. the panel is on the tab
-                    # where the 部队训练 section IS drawn, and on such a frame the step is right:
-                    # the branch above is waiting for exactly that reading.  What the failing frames
-                    # draw is the other tab -- 专家 / 英雄招募 / 宠物寻宝 / 我的奖励 -- where no
+                    # 2026-10-06: the boundary this used to carry was "the panel draws the 部队训练
+                    # section", and that proxy is off by one: the section being drawn says nothing
+                    # about whether the *bar underneath it* is readable.  It is not -- the panel is
+                    # drawn over it -- and the live ledger now separates the two totally:
+                    # ``quick_panel.open`` True is 0 SUCCESS in 57, False is 42 in 47.
+                    #
+                    # ``tests/test_unanswered_training_opens_the_training_page`` (2026-10-03) is
+                    # still in this tree and still pins the same intent: an unanswered training
+                    # question must reach the training page rather than a refusal.  That intent is
+                    # preserved -- and its fixture gained the bar's own reading, because the
+                    # resolver needs it and the synthetic frame had simply omitted it.  Where the
+                    # control is readable this branch behaves exactly as before.
+                    #
+                    # What the failing frames draw is the other tab
+                    # -- 专家 / 英雄招募 / 宠物寻宝 / 我的奖励 -- where no
                     # training word is on screen at all.
                     #
                     # Measured 2026-10-05, and it is the *drawn section* that separates them, not
@@ -2393,10 +2400,44 @@ class RuleBrain:
                             1.0,
                             "switch_task",
                         )
-                    if registry.get("OPEN_INFANTRY_TRAINING") is not None and world.page is Page.HOME:
+                    # 2026-10-06: the licence to dispatch is the frame's own reading of the
+                    # control, because that is what the resolver is given.  ``runtime`` answers
+                    # ``BTN_OPEN_TRAINING_FROM_CAMP`` from ``(frame.training or {}).get(
+                    # "train_tap_norm")`` and returns ``None`` without it, so a dispatch with no
+                    # reading is a provably empty step -- which is what this branch, whose own
+                    # reason says the entry is *unread*, used to emit.
+                    #
+                    # Measured over the skill's whole history (104 rows) and the separation is
+                    # total; ``quick_panel.open`` is the discriminator and the panel is drawn over
+                    # the bar:
+                    #
+                    #     quick_panel.open = False    47 rows   42 SUCCESS  (89%)
+                    #     quick_panel.open = True     57 rows    0 SUCCESS  ( 0%)
+                    #
+                    # 61 of the failures carry this branch's own reason, 56 of them on a frame
+                    # whose panel was open, and every one of those also filed an
+                    # ``ONLINE_UNKNOWN_NAVIGATION`` question -- which is why this single target
+                    # accounts for 50 of the 105 REPLAN/DEFER replies this client has ever received
+                    # and 9-12 s of model latency each, for a step that cannot tap anything.
+                    #
+                    # Why the condition is the *control* and not the panel's state: the branch
+                    # above (``an_opened_camp_bar_is_the_page_this_goal_came_for``) already covers
+                    # every frame whose bar is drawn, and it asks exactly this question in the
+                    # registry's older words (``world.training["menu_open"]``).  Asking it here
+                    # too costs nothing where the control is there and refuses only the steps that
+                    # provably cannot resolve.
+                    #
+                    # The boundary this replaces was "the panel draws the 部队训练 section" -- a
+                    # proxy for "the control is reachable" that measures the wrong thing.  On the
+                    # 56 real dispatches that carried it (panel open, section drawn) the answer was
+                    # 0 SUCCESS, every one an empty after-frame.
+                    bar_point = (world.training or {}).get("train_tap_norm")
+                    bar_readable = isinstance(bar_point, (tuple, list)) and len(bar_point) == 2
+                    if (registry.get("OPEN_INFANTRY_TRAINING") is not None
+                            and world.page is Page.HOME and bar_readable):
                         return Decision(
                             "OPEN_INFANTRY_TRAINING",
-                            "panel_open_but_training_unread_so_the_page_that_answers_it_is_the_step",
+                            "the_camp_bar_is_on_this_frame_so_the_page_that_answers_it_is_the_step",
                             world.confidence,
                             "training_page_opened",
                         )

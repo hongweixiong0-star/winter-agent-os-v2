@@ -49,6 +49,15 @@ def _brain():
     return brain
 
 
+#: The selected camp's 训练 control, as ``ocr.read_selected_building_actions`` publishes it and as
+#: ``runtime``'s resolver for ``BTN_OPEN_TRAINING_FROM_CAMP`` reads it.  On a real frame this is
+#: present whenever the step can run at all -- the resolver returns ``None`` without it, so a
+#: dispatch that lacks it taps nothing.  The fixture below had omitted it, which is what let the
+#: two files disagree on 2026-10-06: this one asserted the dispatch on a frame that no live frame
+#: in that state has ever executed (0 SUCCESS in 57 with the panel open).
+BAR_POINT = (0.1183, 0.9312)
+
+
 def _home_panel(*, camps=None):
     panel = {
         "open": True,
@@ -58,7 +67,7 @@ def _home_panel(*, camps=None):
     if camps is not None:
         panel["camps"] = camps
     return WorldState(page=Page.HOME, confidence=0.99, march_used=1, march_max=6,
-                      quick_panel=panel)
+                      quick_panel=panel, training={"train_tap_norm": BAR_POINT})
 
 
 CAMPS_READY = {"SHIELD_CAMP": {"troop_type": "INFANTRY", "label": "盾兵",

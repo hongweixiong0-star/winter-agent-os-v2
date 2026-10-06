@@ -1,10 +1,10 @@
 """A goal whose entry sits on the city HUD must not be sent there through a panel.
 
-Measured 2026-10-05, goal ``KEEP_TRAINING_PRODUCTIVE``, skill ``OPEN_INFANTRY_TRAINING`` -- the
-whole of its history, 114 rows and 65 failures, and the separation is total:
+Measured 2026-10-05 and again 2026-10-06, goal ``KEEP_TRAINING_PRODUCTIVE``, skill
+``OPEN_INFANTRY_TRAINING`` -- the whole of its history, and the separation is total:
 
-    quick_panel.open = False    49/54 SUCCESS   (91%)
-    quick_panel.open = True      0/60 SUCCESS   (0%)
+    quick_panel.open = False    47 rows   42 SUCCESS   (89%)
+    quick_panel.open = True     57 rows    0 SUCCESS   ( 0%)
 
 every failure with an **empty** ``after_screenshot`` and duration 0.06-0.13 s (no tap was sent),
 every one ``SEMANTIC_TARGET_NOT_VERIFIED`` carrying ``UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING``.
@@ -19,6 +19,18 @@ it is.  This is the same shape as the ``close_resource_search_*`` guards that we
 resource-search panel covered the 回城 door -- see
 ``test_route_goal_requires_home.test_an_open_resource_search_panel_is_closed_first`` -- and it is
 driven the same way: the decision, not the description.
+
+2026-10-06: the *second* half of this guard -- "and the panel does not draw the 部队训练 section"
+-- was replaced by the control's own reading.  The drawn section is a proxy for "the control is
+reachable" and it measures the wrong thing: the panel is drawn *over* the bar, so a drawn section
+says nothing about whether the control can be read.  The 56 real dispatches that carried that
+shape are 0 SUCCESS on the live ledger.  Asking the frame for the control is the question the
+resolver itself asks, so it can only refuse steps that could not have tapped anything.
+
+``tests/test_unanswered_training_opens_the_training_page`` still stands and still pins the same
+intent (an unanswered question reaches the training page, not a refusal).  Its fixture gained the
+bar's own reading -- which the resolver needs and the synthetic frame had omitted -- so the two
+files now agree instead of contradicting.
 """
 from __future__ import annotations
 
@@ -47,7 +59,11 @@ GOALS = ("KEEP_TRAINING_PRODUCTIVE", "SHIELD_CAMP_TRAINING",
          "LANCER_CAMP_TRAINING", "MARKSMAN_CAMP_TRAINING")
 
 COVERED_REASON = "quick_panel_is_open_on_a_tab_without_the_training_entry_so_the_camp_bar_is_covered"
-DISPATCH_REASON = "panel_open_but_training_unread_so_the_page_that_answers_it_is_the_step"
+DISPATCH_REASON = "the_camp_bar_is_on_this_frame_so_the_page_that_answers_it_is_the_step"
+
+#: The reading ``runtime``'s resolver for ``BTN_OPEN_TRAINING_FROM_CAMP`` needs.  Nothing else
+#: licenses the dispatch: without it the resolver returns ``None``, so the step can tap nothing.
+BAR_POINT = (0.1183, 0.9312)
 
 #: The rows the failing frames actually carried: the 野外 tab, no camp row among them.
 WILDERNESS_ROWS = [
@@ -64,22 +80,23 @@ WILDERNESS_ROWS = [
 TRAINING_TAB_ROWS = [{"key": "TRAINING", "label": "部队训练"}]
 
 
-def decide(goal_id, *, panel_open, rows=(), camps=None):
+def decide(goal_id, *, panel_open, rows=(), camps=None, bar=None):
     brain = RuleBrain(current_goal="TRAIN")
     brain.goal_id = goal_id
     world = WorldState(
         page=Page.HOME,
         quick_panel={"open": panel_open, "rows": list(rows), "camps": dict(camps or {})},
-        training={},
+        training={} if bar is None else {"train_tap_norm": bar},
     )
     return brain.decide(world, v2_registry())
 
 
 def test_a_closed_panel_still_dispatches_the_training_entry():
-    # The guard must not swallow the path that works: 49 of the 54 closed-panel attempts
-    # succeeded, and this is the step they took.
+    # The guard must not swallow the path that works: 42 of the 47 closed-panel attempts
+    # succeeded, and this is the step they took.  The fixture carries the bar's own reading
+    # because that is what the resolver is given and what makes the step tappable.
     for goal_id in GOALS:
-        decision = decide(goal_id, panel_open=False)
+        decision = decide(goal_id, panel_open=False, bar=BAR_POINT)
         assert decision.skill == "OPEN_INFANTRY_TRAINING", (goal_id, decision.skill)
         assert decision.reason == DISPATCH_REASON
 
@@ -138,27 +155,35 @@ def test_the_refusal_names_the_cover_and_not_the_goal():
     assert "covered" in decision.reason
 
 
-def test_a_panel_that_draws_the_training_section_still_dispatches():
-    """The other side of the boundary, and the reason the guard is not "the panel is open".
+def test_the_control_itself_is_what_licenses_the_dispatch():
+    """The boundary, restated on the thing the resolver reads.
 
-    ``test_unanswered_training_opens_the_training_page`` pins a *deliberate* change with its own
-    measurement: on a frame whose panel draws the 部队训练 row, the training page is the step that
-    answers the goal.  An earlier version of this guard refused every open panel and turned that
-    file red -- which is the A/B doing its job.  The drawn section, not the panel's state, is what
-    separates a covered control from a visible one.
+    This test replaces one that asserted "a drawn 部队训练 section is enough".  That is a proxy for
+    "the control is reachable", and it is off by one: the panel is drawn over the bar, so a drawn
+    section says nothing about whether the control underneath can be read.  The 56 real dispatches
+    that carried exactly that shape are 0 SUCCESS on the live ledger.
+
+    The control's own reading is strictly finer: it asks the question the resolver asks, so it can
+    only refuse steps that could not have tapped anything.
     """
     for goal_id in GOALS:
-        decision = decide(goal_id, panel_open=True, rows=TRAINING_TAB_ROWS)
-        assert decision.skill == "OPEN_INFANTRY_TRAINING", (goal_id, decision.skill, decision.reason)
-        assert decision.reason == DISPATCH_REASON
+        # Section drawn, control NOT read: the step cannot resolve, so it is not dispatched.
+        without = decide(goal_id, panel_open=True, rows=TRAINING_TAB_ROWS)
+        assert without.skill != "OPEN_INFANTRY_TRAINING", (goal_id, without.skill)
+        # Control read: dispatched, whatever the panel is doing.  This is the half that keeps a
+        # working path from being swallowed -- the failure mode the retired test was guarding.
+        with_bar = decide(goal_id, panel_open=True, rows=TRAINING_TAB_ROWS, bar=BAR_POINT)
+        assert with_bar.skill == "OPEN_INFANTRY_TRAINING", (goal_id, with_bar.skill, with_bar.reason)
+        assert with_bar.reason == DISPATCH_REASON
 
 
-def test_a_camp_row_is_evidence_the_section_is_drawn():
-    # Same boundary reached from the section's own rows rather than its header.
+def test_a_camp_row_alone_is_not_a_licence_either():
+    """Same rule reached from the section's own rows rather than its header."""
     decision = decide(GOALS[0], panel_open=True, rows=[
         {"key": "SHIELD_CAMP", "kind": "CAMP", "control": "DONE",
          "arrow_norm": [0.5618, 0.4273], "done_norm": [0.5618, 0.4345], "status": "COMPLETED"},
     ])
+    assert decision.skill != "OPEN_INFANTRY_TRAINING", (decision.skill, decision.reason)
     assert decision.reason != COVERED_REASON, decision.reason
 
 
