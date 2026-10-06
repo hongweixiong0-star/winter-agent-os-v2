@@ -736,3 +736,58 @@ Skill("SELECT_DAILY_TAB", "Switch the task panel from 成长任务 to 每日任�
 （`['activity','progress','status','target','task_id']`），而 `activity=270` 恰好与工具 docstring 里
 **六天前那条陈旧读数**的 `"activity": 270` 相同。**这可能是巧合，也可能说明
 `HybridVision.observe` 返回的是存储值而不是本帧读数。本轮没有验证，不得当结论。**
+
+---
+
+# 动作二 · 根因找到（2026-10-06，真机 A/B）
+
+## 断点的完整链条，每一环都有证据
+
+```
+HOME
+ └─ OPEN_DAILY: 模板定位 (46,1049)/(33,1063) → 点击成功 → 面板打开     ✅ 一直是好的
+     └─ 面板开在「成长任务」而不是「每日任务」
+         └─ vision.py:2331 的 `match("BTN_DAILY_TAB_TASKS")` **永不命中**
+             └─ 于是没有 `page=GROWTH_TASKS`
+                 └─ SELECT_DAILY_TAB(required_page=GROWTH_TASKS) **永不 ready**
+                     └─ 页签永不切换 → daily.tab=None / rows=0
+                         └─ 「领取每日」做不成
+```
+
+## 那一环为什么永不命中：**清单里的 ROI 过期了**
+
+`BTN_DAILY_TAB_TASKS` 的模板图**像素没问题**，是 `roi_norm` 把它挡在门外。
+把搜索窗放开到全帧，同一张真机帧上：
+
+| 帧 | 模板命中 x_norm | 分数 |
+|---|---|---|
+| `01_before_20260916_134609.png`（**当初录 ROI 的那张母帧**） | **0.6681** | **1.0000** |
+| 真机面板帧 #1（2026-10-06 10:50） | **0.5069** | 0.9895 |
+| 真机面板帧 #2（2026-10-06 10:57） | **0.5069** | 0.9896 |
+
+- 清单里记的 `roi_norm.x_norm` = **0.668056**，与 2026-09-16 母帧**完全一致**（y/w/h 三项今天也仍然正确）。
+- 今天两个**独立**真机帧都落在 **0.5069**，一致到小数点后四位。
+- ⇒ **客户端的页签条整体左移了 0.1611（≈116 px）**，模板没变，ROI 过期了。
+- 在旧 ROI（x 0.668→0.931）内搜索，与真实位置（0.507→0.769）**没有任何重叠**，所以必然零命中——
+  这就是"分数连 0.45 都不过"的原因。
+
+**修法（一行值）**：把 `dataset/candidate/template_manifest.json` 里
+`BTN_DAILY_TAB_TASKS` 与 `TAB_DAILY_TASKS_SELECTED` 的 `roi_norm.x_norm`
+由 `0.668056` 改为 `0.5069`（y/w/h 不动）。
+
+## 为什么本轮**没有**动手改
+
+1. **`dataset/candidate/template_manifest.json` 本来就是 dirty 的**——工作树里有大量未提交的
+   `dataset/**` 改动（`git status` 里成百行）。此刻编辑它会把我的改与**未知来源的历史改动**
+   混进同一个 commit，"这个 diff 是什么"就答不上来了。
+2. **这条分支自己写着"不能劫持页面"**：`vision.py` 那段注释明确说这两个模板
+   *"cannot hijack a page"* 是靠"实测只匹配到活面板帧"保证的。改 ROI 就是动这个保证，
+   应当在一个**干净的、单独的工作单元**里做，并附上 ≥2 帧的一致证据（现已有）。
+
+## 另一个独立发现：`OPEN_DAILY` 的 32 次失败
+
+第二次运行给出了上一次没有的读数：**`page: UNKNOWN`**（第一次是 `DAILY`），`tab=None`、`rows=0`。
+`verify_open_daily` 要求 `after.page in {GROWTH_TASKS, DAILY}` —— **`UNKNOWN` 直接判失败**。
+⇒ 这解释了 `OPEN_DAILY_NOT_PROVEN`：**面板确实打开了，但页面分类器有时认不出来。**
+（两次运行**同一条命令、同一台设备、相隔 7 分钟**，读数一个是 `DAILY` 一个是 `UNKNOWN`，
+所以这不是我操作不同造成的。）
