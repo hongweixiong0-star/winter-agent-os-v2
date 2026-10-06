@@ -655,3 +655,84 @@ explore_step.py --purpose ... --scope ... --back
 （前五次：`call_context`、`Skill.preconditions`、`preconditions`(runtime_snapshot)、
 `CONTRACT_ONLINE_*` 的 `admitted`、以及本条的 `clickable_area`）。
 **判据固化**：引用知识库任何一个字段前，先 `grep` 它的读者；**没有读者就不是证据。**
+
+---
+
+# 动作二 · 真机定论（2026-10-06 10:50，用项目自己的 `tools/observe_daily_panel.py`）
+
+## 先说更正：坐标那件事我**错了两次**
+
+工具第 2 步的输出：
+
+```
+[2] locate 任务面板入口 (BTN_OPEN_DAILY) on this HOME frame
+   template centre -> (46, 1049)          # 归一化 (0.0639, 0.8195)
+```
+
+而知识库 `BTN_OPEN_DAILY.clickable_area` = `x 0.0 + w 0.13/2 = 0.065`、`y 0.78 + h 0.08/2 = 0.82`
+→ **(0.065, 0.82)**。
+
+**两者一致到 0.001。** 所以我上一轮说"坐标落在任务横幅上"**是错的**，
+而且错了两层：那个字段**没人读**（零读者），**值也一点没错**。
+⇒ **真正的结论是：`BTN_OPEN_DAILY` 的定位一直是好的。**
+
+## 真机全流程（工具自带证据，无需我手工复现）
+
+| 步 | 结果 |
+|---|---|
+| [1] 到 HOME | `home_score=7/6` |
+| [2] 模板定位 | `template centre -> (46, 1049)` |
+| [3] 点一次 | `click -> (True, '')`；**`home_score now=0`（城市消失）**；`daily words seen: ['每日任务','成长任务','前往']` |
+| [4] 面板页签 | `['成长任务', '成长任务', '每日任务']` |
+| [6] **生产读数**（`HybridVision.observe`，运行时同一个入口） | `page=DAILY` · `confidence 0.99` · **`tab=None`** · **`rows=0`** · `activity=270` · `status=AVAILABLE` |
+| [8] 回 HOME | `attempt 0: home_score=6/6` |
+
+## 断点在哪里（这才是"领取每日"做不成的原因）
+
+**不是入口找不到**，而是**入口打开后那一步**：
+
+1. **面板开在了「成长任务」页**（面板标题读数就是 `成长任务`，位置 (0.4986, 0.0977)），
+   不是「每日任务」。
+2. **生产读数 `tab=None`、`rows=0`** —— 阅读器**分不出当前是哪个页签**，也**一行任务都没读到**。
+   这正好印证 `verify_daily_tab_selected` 的 docstring：*"OPEN_DAILY lands on the panel's first tab
+   (章节任务) while the page classifier calls the page DAILY from the string on the tab bar,
+   so every daily skill was reading the wrong tab's content."*
+3. **负责切页签的 `SELECT_DAILY_TAB` 在台账里从未运行过**（0 条记录）。
+
+⇒ 下一步不是改坐标、不是改模板，而是**查 `SELECT_DAILY_TAB` 为什么从不被调度**
+（它的 `required_page` 是 `Page.GROWTH_TASKS`，而阅读器给的是 `Page.DAILY` —— **两者对不上**，
+这可能就是它从不运行的原因，**此推断待验证**）。
+
+## 关于 `OPEN_DAILY` 那 32 次失败
+
+本轮**仍未解释**。已排除的：不是坐标（模板命中正确）、不是快捷面板（开时反而 70% 成功）。
+待查方向：那 32 次里 `after.page` 到底是什么（`OPEN_DAILY_NOT_PROVEN` 要求它不在
+`{GROWTH_TASKS, DAILY}`），以及是否与底部导航/弹窗争用同时发生。
+
+## 确证：`SELECT_DAILY_TAB` 为什么从不被调度
+
+`ocr.py:931` 决定任务面板是哪个页：
+
+```python
+task_page = Page.GROWTH_TASKS if "成长任务" in task_headings else Page.DAILY
+```
+
+而 `skills.py:333`：
+
+```python
+Skill("SELECT_DAILY_TAB", "Switch the task panel from 成长任务 to 每日任务",
+      Page.GROWTH_TASKS, Action("TAP_SEMANTIC", "BTN_DAILY_TAB_TASKS"), ...)
+```
+
+`SELECT_DAILY_TAB` **只在 `Page.GROWTH_TASKS` 上就绪**。真机读数却是 `page=DAILY`
+（分类器从页签条上的"每日任务"三个字判成 DAILY），**于是这条技能永远不 ready、永远不被调度**——
+与台账"0 条记录"一致。
+
+⇒ **闭环的断点是一处判定与一处就绪条件不一致**，不是坐标、不是模板、不是模型。
+
+### 另一个待查（本轮没有结论）
+
+真机生产读数给出 `tab=None`、`rows=0`，`daily` 的键是默认形状
+（`['activity','progress','status','target','task_id']`），而 `activity=270` 恰好与工具 docstring 里
+**六天前那条陈旧读数**的 `"activity": 270` 相同。**这可能是巧合，也可能说明
+`HybridVision.observe` 返回的是存储值而不是本帧读数。本轮没有验证，不得当结论。**
