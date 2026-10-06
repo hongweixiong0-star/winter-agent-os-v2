@@ -604,3 +604,54 @@ explore_step.py --purpose ... --scope ... --back
 1. 用 `--tap-text` 或裁剪确认左边缘 (0.02, 0.43) 那个带红点图标是不是每日入口；
 2. 若是 → 修正知识库 `BTN_OPEN_DAILY` 的 HOME 位置，并查为什么模板匹配会落到横幅上；
 3. 若不是 → 在 HOME 上继续找（可参考 `verify_open_daily` 期望的页面特征反推）。
+
+---
+
+# 更正（同日）：上一节对 `OPEN_DAILY` 失败的归因**站不住**
+
+我在上一节把「`BTN_OPEN_DAILY` 的 HOME 坐标落在任务横幅上」写成了 `OPEN_DAILY` 失败的原因，
+并说"与台账完全吻合"。**收回。** 两条证据都不支持它：
+
+1. **快捷面板不是判别量，而且方向相反**（用 `state_before.quick_panel.open` 切开全部 82 次）：
+
+   | | 次数 | 成功 |
+   |---|---|---|
+   | 面板**开** | 56 | **39（70%）** |
+   | 面板**关** | 26 | 11（42%） |
+
+   我在那张失败帧上看到面板是开的，但**面板开着反而更容易成功**——它只是最常见的状态。
+   （这是同一类错误的第 N 次：**看到某个失败里有 X，就说 X 是原因；没做基数对照。**）
+
+2. **`clickable_area` 可能根本不是承重字段**。`BTN_OPEN_DAILY` 的 `kind` 是
+   `TEMPLATE_BACKED`、`matchers: ["phash"]`、`measured: false`——
+   点击点来自**模板匹配**，不来自那个 `clickable_area` 注记。所以"坐标落在横幅上"
+   可能只是**一条过期注记**，与实际点击位置无关。**这一点本轮没有查证，因此也不能当结论。**
+
+## 站得住的只有三条
+
+1. **`--back` 在 MAP 上等于「退出游戏」**（做出来的，有帧有证据；危险，已记）。
+2. **`OPEN_DAILY` 是 50 成功 / 32 失败（61%）**，32 次失败全在 HOME，
+   其中 28 次 `OPEN_DAILY_NOT_PROVEN`。
+3. **领取那一步是好的**：`DAILY_CLAIM_REWARDS` 31/31。
+
+## 下一步（改过：先查机制，再谈坐标）
+
+`OPEN_DAILY` 是 `TEMPLATE_BACKED`，所以**第一步不是改坐标，而是查它到底怎么定位**：
+`clickable_area` 有没有读者？模板匹配失败时回落到哪？`verify_open_daily` 期望什么页面特征？
+**先把这条链读明白，再决定改哪里**——上一节跳过了这一步，直接去猜坐标，是错的。
+
+## 查证结果：`clickable_area` 无读者，点击点来自模板匹配
+
+- **`clickable_area` 在 `winter_agent_v2/` 里零读者**——只有 `tools/ui_semantic_ledger.py`
+  写它（从 `roi_norm` 抄）。它是一条**纯注记**，运行时不拿它点击。
+- 真正承重的是 **`roi_norm`**：`matchers.py` 的 `roi_norm` 是**本次模板命中的区域**，
+  `camp_ring.py:94` 明确写"matched template's own region, so no coordinate is hardcoded"。
+
+⇒ **`OPEN_DAILY` 的 32 次失败不是"存储坐标过期"**，而是**模板匹配失败**（图标没被找到）
+或命中正确但点击后页面没开。修的方向也因此改变：要看模板为什么没命中 /
+`verify_open_daily` 期望什么特征，**而不是去改一个没人读的面积注记**。
+
+⇒ 顺带记录：这是本次会话第 **6** 次撞上「有生产者、没有消费者」的字段
+（前五次：`call_context`、`Skill.preconditions`、`preconditions`(runtime_snapshot)、
+`CONTRACT_ONLINE_*` 的 `admitted`、以及本条的 `clickable_area`）。
+**判据固化**：引用知识库任何一个字段前，先 `grep` 它的读者；**没有读者就不是证据。**
