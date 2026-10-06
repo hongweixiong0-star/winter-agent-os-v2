@@ -59,7 +59,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 from uuid import uuid4
 
 from . import context_budget
@@ -453,6 +453,39 @@ def elements_from_request(request: Any) -> list[dict[str, Any]]:
             entry["executable"] = bool(box.get("element_executable"))
         elements.append(entry)
     return elements
+
+
+def _element_mix(elements: Sequence[Mapping[str, Any]]) -> dict[str, int]:
+    """Of the elements this frame offered, how many could actually be named as a control?
+
+    Why this exists (measured 2026-10-06 against ``learning/ui_venus_online.jsonl``): of 105 model
+    replies, **58 named a target and every one of them named a printed label** -- refused by
+    ``parse_plan`` as ``PLAN_TARGET_IS_NOT_A_CONTROL``, 50 of them the same element on the same
+    screen -- and the remaining 47 named nothing at all (REPLAN/DEFER/OBSERVE).  ``EXECUTE`` has
+    therefore never once been reached.
+
+    The ledger could not say *why*, and the two readings need opposite fixes:
+
+    * ``executable_count == 0`` -- the frame offered nothing tappable, so the model had no legal
+      answer and the call should not have been spent (the shape of the panel/bars guards);
+    * ``executable_count > 0`` and the model still named a label -- a prompt or salience problem.
+
+    ``element_count`` alone cannot separate them: it counts printed labels and measured controls
+    together.  ``unjudged_count`` is the third case and is deliberately not folded into either --
+    an element with no ``kind`` is neither, because ``parse_plan`` only refuses an *explicit*
+    ``executable is False``.
+    """
+    counts = {"element_count": len(elements), "executable_count": 0,
+              "text_label_count": 0, "unjudged_count": 0}
+    for entry in elements:
+        flag = entry.get("executable") if isinstance(entry, Mapping) else None
+        if flag is True:
+            counts["executable_count"] += 1
+        elif flag is False:
+            counts["text_label_count"] += 1
+        else:
+            counts["unjudged_count"] += 1
+    return counts
 
 
 def build_packet(
@@ -930,7 +963,7 @@ class ManagedAdvisor:
         # never reach the model, and those must not spend the budget.
         venus_screen_budget.record(trace.get("request_id") or request_id,
                                    path=self._screen_budget_path())
-        self._trace_stage("VENUS_CALLED", trace, element_count=len(elements))
+        self._trace_stage("VENUS_CALLED", trace, **_element_mix(elements))
         call = self.client.ask_json(
             system=SYSTEM_PROMPT, user=render_packet(packet), purpose="ui_plan",
             element_count=len(elements), image_path=frame_path or None,
@@ -961,7 +994,7 @@ class ManagedAdvisor:
         if not parsed.ok:
             self.last_outcome = {**trace, "decision": "", "error": parsed.error}
             self._trace_stage("VENUS_PROPOSAL_REJECTED", trace, error=parsed.error,
-                              latency_ms=call.latency_ms)
+                              latency_ms=call.latency_ms, **_element_mix(elements))
             self.ledger.append({
                 **trace,
                 "recorded_at": datetime.now(timezone.utc).isoformat(),
@@ -988,7 +1021,7 @@ class ManagedAdvisor:
                           action_type=plan.action_type,
                           target_element_id=plan.target_element_id,
                           proposed_semantic_target=plan.semantic_target or plan.target_text,
-                          latency_ms=call.latency_ms)
+                          latency_ms=call.latency_ms, **_element_mix(elements))
         if plan.decision != "EXECUTE":
             # OBSERVE / REPLAN / COMPLETE / DEFER / BLOCKED all mean the same thing to the
             # executor: nothing is tapped this step.  Section 8 is explicit that COMPLETE is
