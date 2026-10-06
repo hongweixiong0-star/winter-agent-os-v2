@@ -1212,6 +1212,28 @@ def should_continue_auto_cycle(
     )
 
 
+def should_foreground_emulator(
+    *, machine_is_ours: bool, already_foregrounded: bool,
+    foreground_package: str, want_package: str,
+) -> bool:
+    """May this call raise the emulator window?
+
+    ``_ensure_device`` runs from 13+ sites -- once per phase of every round -- and it used to
+    foreground unconditionally, after resetting its own one-shot flag on the way in.  The operator
+    reported the result as "重启就会频繁闪屏几十次": every phase yanked the emulator window to the
+    front whenever the game happened not to be the foreground package.
+
+    Foregrounding is not what lands a tap.  ADB input and ``screencap`` do not need window focus,
+    so a game sitting behind another window is not a device that needs repairing -- it is only
+    ever something the operator *sees*.  Two conditions therefore have to hold, and the owner is
+    the first: ``machine_is_ours`` is False whenever the operator holds the machine (MANUAL) or the
+    loop is paused, and then nothing may be raised at all.
+    """
+    if not machine_is_ours or already_foregrounded:
+        return False
+    return bool(want_package) and foreground_package != want_package
+
+
 ROLE_SWITCH_RETRY_DELAY_MS = 15_000
 
 # The runtime re-observes the same role inside its own run when the Scheduler finds no
@@ -4965,6 +4987,11 @@ class ControlPanel:
         self._last_preview_render_at = 0.0
         self.stop_requested = self.paused = False
         self._device_launch_requested = False
+        #: § 闪屏: whether this round has already raised the emulator window.  ``_ensure_device``
+        #: is called from 13+ sites -- once per phase of every round -- and each one used to
+        #: foreground unconditionally, so a game that merely sat behind another window got yanked
+        #: to the front again and again.  That is what the operator sees as the screen flickering.
+        self._foreground_done_this_round = False
         self._device_recovery_started_at = ""
         self._worker_thread: threading.Thread | None = None
         self.repeat_after_id: str | None = None
@@ -8530,15 +8557,39 @@ class ControlPanel:
                     attempt += 1
             else:
                 raise RuntimeError("DEVICE_CONNECT_TIMEOUT")
-        self._device_launch_requested = False
-        if self.device.status().foreground_package != self.config["device"]["package_name"]:
-            self.device.launch(self.config["device"]["package_name"])
+        # The emulator window is raised here and nowhere else, so it is behind an owner check and
+        # a once-per-round latch.  Both halves are fixes for the same report:
+        #
+        #  * the flag was reset on the line above *every* time, so the one-shot guard it was
+        #    supposed to be never held across phases; and
+        #  * the foreground below ran regardless of who owned the machine.
+        #
+        # Foregrounding is not what makes a tap land -- ADB input and screencap do not need window
+        # focus -- so "the game is behind another window" is not a device that needs repairing.
+        # It is only ever what the operator *sees*, and at one call per phase it reads as flicker.
+        machine_is_ours = (
+            mode_state.load().mode == mode_state.MODE_AUTO
+            and str(getattr(self, "operator_intent", "") or "").upper() != "PAUSED"
+        )
+        want_package = self.config["device"]["package_name"]
+        if should_foreground_emulator(
+            machine_is_ours=machine_is_ours,
+            already_foregrounded=self._foreground_done_this_round,
+            foreground_package=str(self.device.status().foreground_package or ""),
+            want_package=str(want_package or ""),
+        ):
+            self._foreground_done_this_round = True
+            self.device.launch(want_package)
             threading.Event().wait(3)
         # Page understanding and recovery belong to Runtime. The GUI lifecycle
         # adapter proceeds only after the client is reachable and foreground.
 
     def _run_worker(self) -> None:
         try:
+            # § 闪屏: one foreground per round, not one per phase.  Reset here rather than at the
+            # end of the round, so a round that dies early still starts the next one able to raise
+            # the window once if it really is behind.
+            self._foreground_done_this_round = False
             blocker = runtime_env_blocker()
             if blocker is not None:
                 raise RuntimeError(f"{RUNTIME_ENV_STOP_REASON}: {blocker}")

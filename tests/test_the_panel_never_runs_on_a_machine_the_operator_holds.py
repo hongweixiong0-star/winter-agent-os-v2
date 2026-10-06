@@ -78,3 +78,35 @@ def test_defaulting_to_ours_keeps_every_older_caller_working():
     """The parameter defaults to True so the existing tests and call sites keep their meaning."""
     assert panel.auto_halt_reason(healthy=True, reason="OK", continuous=True,
                                   stop_requested=False, paused=False, fatal=False) == ""
+
+
+# -- the other half of the flicker: the emulator window being raised -----------------------
+
+def _may(**overrides):
+    kwargs = dict(machine_is_ours=True, already_foregrounded=False,
+                  foreground_package="com.other.app", want_package="com.gof.china")
+    kwargs.update(overrides)
+    return panel.should_foreground_emulator(**kwargs)
+
+
+def test_the_emulator_is_never_raised_on_the_operators_machine():
+    """The reported flicker: 13+ call sites, each foregrounding, none asking who owns the device."""
+    assert _may(machine_is_ours=False) is False
+    assert _may(machine_is_ours=False, foreground_package="") is False
+
+
+def test_the_emulator_is_raised_at_most_once_per_round():
+    """One foreground per round, not one per phase -- the flag used to be reset on every call."""
+    assert _may(already_foregrounded=False) is True
+    assert _may(already_foregrounded=True) is False
+
+
+def test_a_game_already_in_front_is_left_alone():
+    assert _may(foreground_package="com.gof.china") is False
+
+
+def test_the_case_that_really_needs_it_still_works():
+    """Machine ours, window behind, first phase of the round -> raise it once."""
+    assert panel.should_foreground_emulator(
+        machine_is_ours=True, already_foregrounded=False,
+        foreground_package="com.android.launcher", want_package="com.gof.china") is True
