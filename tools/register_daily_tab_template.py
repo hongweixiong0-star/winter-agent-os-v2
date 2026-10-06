@@ -41,8 +41,18 @@ MANIFEST = ROOT / "dataset" / "candidate" / "template_manifest.json"
 OUT_DIR = ROOT / "dataset" / "candidate" / "daily_tab_20260916"
 ARCHIVE = ROOT / "dataset" / "truth_audit" / "daily_tab_20260916"
 
-BEFORE = ROOT / "dataset" / "truth_audit" / "daily_tasks_tab_20260916" / "01_before_20260916_134609.png"
-AFTER = ROOT / "dataset" / "truth_audit" / "daily_tasks_tab_20260916" / "02_after_tap_20260916_134609.png"
+#: 2026-10-06: these two frames replaced the 2026-09-16 pair, because the client moved the
+#: tab strip.  Measured with the runtime's own matcher (``SemanticROIVision.find``) by
+#: searching the whole frame: on 2026-09-16 this template sat at x_norm 0.6681 (score 1.0,
+#: the value the manifest recorded); on 2026-10-06 it sits at **0.5069** (0.9895 / 0.9896 on
+#: two independent live panel frames).  The recorded ROI was 0.668056 and the old window
+#: (0.668-0.931) did not overlap the true one (0.507-0.769) at all, so the entry could never
+#: match -> ``vision`` never returned ``Page.GROWTH_TASKS`` -> ``SELECT_DAILY_TAB`` could never
+#: become ready (0 rows in the ledger) -> the tab was never switched -> the daily skills read
+#: an empty panel.  Re-registering from these frames is what makes the correction reproducible
+#: instead of a hand-edited number that the next registration would revert.
+BEFORE = ROOT / "dataset" / "truth_audit" / "daily_tasks_tab_20261006" / "01_before_unselected.png"
+AFTER = ROOT / "dataset" / "truth_audit" / "daily_tasks_tab_20261006" / "02_after_selected.png"
 
 # Measured on the 720x1280 live frames: the 每日任务 pill spans x 481..704, y 1091..1173.
 # The label inside it (OCR) is x 538..649, y 1117..1154, so the tap centre lands on the text.
@@ -54,7 +64,12 @@ AFTER = ROOT / "dataset" / "truth_audit" / "daily_tasks_tab_20260916" / "02_afte
 # exactly those frames where the badge was absent.  This is the same defect that froze
 # `BTN_OPEN_DAILY` for eight days (a badge appearing changes the hash), so the corner is
 # excluded here and one record covers both badge states.
-BOX = (481, 1091, 670, 1173)
+#
+# 2026-10-06: the pill now spans x 365..588 (the same 223 px wide, moved left by 116), and the
+# claimable badge on the selected frame measures x 564..582 -- so the box stops at 554, which
+# keeps the same 34 px of clearance the 2026-09-16 box had (it stopped at 670 of a pill ending
+# at 704).  Width stays 189.
+BOX = (365, 1091, 554, 1173)
 
 RECORDS = (
     {
