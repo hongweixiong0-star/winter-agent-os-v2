@@ -83,7 +83,7 @@ def test_defaulting_to_ours_keeps_every_older_caller_working():
 # -- the other half of the flicker: the emulator window being raised -----------------------
 
 def _may(**overrides):
-    kwargs = dict(machine_is_ours=True, already_foregrounded=False,
+    kwargs = dict(enabled=True, machine_is_ours=True, already_foregrounded=False,
                   foreground_package="com.other.app", want_package="com.gof.china")
     kwargs.update(overrides)
     return panel.should_foreground_emulator(**kwargs)
@@ -106,7 +106,26 @@ def test_a_game_already_in_front_is_left_alone():
 
 
 def test_the_case_that_really_needs_it_still_works():
-    """Machine ours, window behind, first phase of the round -> raise it once."""
+    """Machine ours, window behind, first phase of the round, operator asked -> raise it once."""
     assert panel.should_foreground_emulator(
-        machine_is_ours=True, already_foregrounded=False,
+        enabled=True, machine_is_ours=True, already_foregrounded=False,
         foreground_package="com.android.launcher", want_package="com.gof.china") is True
+
+
+def test_the_default_is_to_never_raise_the_window():
+    """The absolute answer to "无论如何都不能闪屏": nothing automated steals focus by default.
+
+    Measured 2026-10-06: the operator saw dozens of flashes per restart.  ADB input and screencap
+    do not need window focus, so the raise bought the runtime nothing -- leaving it off costs
+    nothing and removes the whole class.
+    """
+    assert panel.foreground_emulator_enabled({}) is False
+    assert panel.foreground_emulator_enabled({"WINTER_FOREGROUND_EMULATOR": ""}) is False
+    assert panel.foreground_emulator_enabled({"WINTER_FOREGROUND_EMULATOR": "0"}) is False
+    assert _may(enabled=False) is False
+
+
+def test_the_operator_can_still_ask_for_it():
+    assert panel.foreground_emulator_enabled({"WINTER_FOREGROUND_EMULATOR": "1"}) is True
+    assert _may(enabled=True, machine_is_ours=True,
+                foreground_package="com.android.launcher") is True

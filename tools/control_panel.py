@@ -1212,8 +1212,23 @@ def should_continue_auto_cycle(
     )
 
 
+#: § 闪屏: the emulator window is raised only when the operator explicitly asks for it.
+#: Default OFF, and that default is the fix.  ADB input and ``screencap`` do not need window
+#: focus, so raising the window buys the runtime nothing -- it is purely what the operator sees,
+#: and at one call per phase of every round it is what they reported as the screen flickering
+#: dozens of times per restart.  A machine that needs the window in front for a manual check can
+#: set this; nothing automated should decide to steal focus on its own.
+FOREGROUND_EMULATOR_ENV = "WINTER_FOREGROUND_EMULATOR"
+
+
+def foreground_emulator_enabled(environ: Mapping[str, str] | None = None) -> bool:
+    """Is the operator asking AUTO to raise the emulator window?  Default: no."""
+    source = os.environ if environ is None else environ
+    return str(source.get(FOREGROUND_EMULATOR_ENV, "")).strip().lower() in ("1", "true", "yes", "on")
+
+
 def should_foreground_emulator(
-    *, machine_is_ours: bool, already_foregrounded: bool,
+    *, enabled: bool, machine_is_ours: bool, already_foregrounded: bool,
     foreground_package: str, want_package: str,
 ) -> bool:
     """May this call raise the emulator window?
@@ -1223,13 +1238,12 @@ def should_foreground_emulator(
     reported the result as "重启就会频繁闪屏几十次": every phase yanked the emulator window to the
     front whenever the game happened not to be the foreground package.
 
-    Foregrounding is not what lands a tap.  ADB input and ``screencap`` do not need window focus,
-    so a game sitting behind another window is not a device that needs repairing -- it is only
-    ever something the operator *sees*.  Two conditions therefore have to hold, and the owner is
-    the first: ``machine_is_ours`` is False whenever the operator holds the machine (MANUAL) or the
-    loop is paused, and then nothing may be raised at all.
+    Four conditions, and every one of them is a reason not to:
+    ``enabled`` (off unless asked), ``machine_is_ours`` (False while the operator holds the machine
+    or the loop is paused), ``already_foregrounded`` (at most once per round), and "the game is
+    already in front" (nothing to do).
     """
-    if not machine_is_ours or already_foregrounded:
+    if not enabled or not machine_is_ours or already_foregrounded:
         return False
     return bool(want_package) and foreground_package != want_package
 
@@ -8573,6 +8587,7 @@ class ControlPanel:
         )
         want_package = self.config["device"]["package_name"]
         if should_foreground_emulator(
+            enabled=foreground_emulator_enabled(),
             machine_is_ours=machine_is_ours,
             already_foregrounded=self._foreground_done_this_round,
             foreground_package=str(self.device.status().foreground_package or ""),
