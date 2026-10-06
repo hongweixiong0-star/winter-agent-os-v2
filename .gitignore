@@ -502,3 +502,74 @@ knowledge/skills/candidates/
 knowledge/skills/repairs/
 knowledge/offline/
 # --- /runtime-mutable state ---
+
+# ---------------------------------------------------------------------------
+# 运行时产物（2026-10-06 一次性收敛，操作者指令）
+# 判据：这些目录下产生的都是跑一次就变的东西——截图、逐次运行证据、自动采集的模板。
+# 它们曾经被跟踪，于是每次跑完 `git status` 里 `dataset/` 都显示上千行 dirty。
+# 备份在 backups/dataset_cleanup_20261006/。
+# ---------------------------------------------------------------------------
+/dataset/evidence/
+/dataset/raw/control_panel/
+/dataset/raw/autogen/
+/dataset/raw/popup_capture/
+/dataset/raw/explore/
+/dataset/raw/ui_exploration/
+/dataset/raw/rally_join/
+/dataset/raw/stamina_polar_rally/
+/dataset/raw/wiring_fishing_validation/
+/dataset/raw/wiring_training_validation/
+/dataset/raw/codex_ui_exploration_20260925/
+/dataset/raw/fishing_performance_v2/
+/dataset/candidate/autogen/
+/dataset/candidate/auto_collected/
+/dataset/candidate/bear_rally/
+/dataset/candidate/daily_task/
+/dataset/candidate/formation/
+/dataset/candidate/formation_badges/
+/dataset/candidate/template_manifest.json
+/dataset/tmp_*.png
+
+# 其余散落的运行时文件（逐条，精确）
+/dataset/candidate/templates/shop_currency/
+/dataset/raw/fishing_tournament/run_20260929T225731/
+/dataset/raw/fishing_tournament/run_20260929T230706/
+/dataset/tmp_confirm.png
+/dataset/tmp_dispatch.png
+/dataset/tmp_research_row.png
+/dataset/tmp_research_row2.png
+/dataset/tmp_role.png
+/dataset/tmp_speedup.png
+/dataset/truth_audit/global_scheduler_runtime_20260929/
+/dataset/truth_audit/gui_unknown_benchmark/
+/dataset/truth_audit/live_ops/20260924T055924_login_gift_claim/
+/dataset/truth_audit/live_ops/20260924_claim_live/
+/dataset/truth_audit/live_ops/20260924_claim_open/
+/dataset/truth_audit/live_ops/20260924_plan_observe/
+/dataset/truth_audit/live_ops/control_click_040151/
+/dataset/truth_audit/live_ops/panel_owner_race/
+/dataset/truth_audit/live_ops/panel_owner_race_after_fix/
+/dataset/truth_audit/live_panel_arrow_20260923/panel_arrow_20260922_202556.json
+/dataset/truth_audit/local_planner_live_prod/
+/dataset/truth_audit/map_beast_search_20260918/key/baseline_20260918_014520.json
+/dataset/truth_audit/map_beast_search_20260918/key/go_20260918_014947.json
+/dataset/truth_audit/map_beast_search_20260918/key/tapox_20260918_014906.json
+/dataset/truth_audit/nav_to_map_20260918/tapmap_20260922_190640.json
+/dataset/truth_audit/nav_to_map_20260918/tapmap_20260922_190809.json
+/dataset/truth_audit/nav_to_map_20260918/tapmap_20260922_191010.json
+/dataset/truth_audit/nav_to_map_20260918/tapmap_20260922_191123.json
+/dataset/truth_audit/power_route_20260917/probe_nav_map_tap1_20260917_232526.json
+/dataset/truth_audit/power_route_20260917/probe_open_intel_page_20260919_051636.json
+/dataset/truth_audit/training_quick_panel_20260925/
+/dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_after_focus_fix/
+/dataset/truth_audit/training_quick_panel_20260925/completed_camp_auto_route_capture/
+/dataset/truth_audit/training_quick_panel_20260925/next_camp_training_capture/
+/dataset/truth_audit/training_quick_panel_20260925/shield_training_start_capture/
+/dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_after_continuation/
+/dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_focus_rank_fix/
+/dataset/truth_audit/training_quick_panel_20260925/training_claim_retrain_live/
+/dataset/truth_audit/venus_learning_night_20261001/
+/dataset/truth_audit/venus_takeover_20261001/
+
+# live_ops 逐次运行的输出（该目录下部分文件已跟踪，故只忽略这一种）
+/dataset/truth_audit/live_ops/**/live.json
