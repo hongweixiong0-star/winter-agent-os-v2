@@ -1,8 +1,22 @@
 """Start (or stop) the machine's single local GUI model server.
 
-Operator directive 2026-09-30: the runtime's one local model is UI-Venus-2-9B Q4_K_M, served
-by llama.cpp, and it must be **resident** -- loading a 9B model once per AUTO round is
+Operator directive 2026-10-08: the runtime's one local model is **Qwen3.6-35B-A3B (Q3_K_M)**
+with the mainline mmproj, served by llama.cpp on ``127.0.0.1:18080`` -- it replaces
+UI-Venus-2-9B Q4_K_M.  It must be **resident**: loading a 35B MoE once per AUTO round is
 forbidden, so this is a long-lived process and the runtime only ever speaks HTTP to it.
+
+Why the profile below looks different from the UI-Venus one
+-----------------------------------------------------------
+Qwen3.6-35B-A3B is a sparse MoE (3B active of 35B), so the experts go to the CPU
+(``-cmoe``) and only the non-expert tensors are offloaded (``-ngl 99``).  Every offload
+number further down was measured for the 9B *dense* UI-Venus and is kept only as the record
+of how that model was tuned; it no longer describes this launch.  Measured 2026-10-08 on
+this machine for the profile that runs now (``-cmoe -ngl 99 -c 32768``, f16 KV,
+Q3_K_M + mmproj-F16): about 4.1 GB of 8.2 GB VRAM and about 13.8 GB of 32 GB RAM resident,
+and ``tools/probe_gui_model_multimodal.py`` reports ``screenshot_input_verified=true``.
+The Q3_K_M quant is the one that pairs with a mainline mmproj: the Ollama-format Q4_K_M
+GGUF is refused by mainline llama.cpp (``rope.dimension_sections`` length 3 where 4 is
+expected) and its vision metadata is not recognised.
 
 Why these arguments, and not someone else's
 -------------------------------------------
@@ -127,21 +141,21 @@ from winter_agent_v2.context_budget import MAX_MODEL_CONTEXT  # noqa: E402
 
 #: Where the model files were placed.  Outside the repo on purpose: ~7 GB of weights are not
 #: source, and keeping them out means no ignore rule has to be trusted to keep them uncommitted.
-MODEL_DIR = Path("E:/winter_models/ui-venus-2-9b")
+MODEL_DIR = Path("E:/winter_models/qwen3.6-35b-a3b")
 SERVER_EXE = Path("E:/winter_models/llama.cpp/llama-server.exe")
 LOG_PATH = Path("E:/winter_models/llama.cpp/server.log")
 
-WEIGHTS = MODEL_DIR / "UI-Venus-2-9B-Q4_K_M.gguf"
-MMPROJ = MODEL_DIR / "mmproj-UI-Venus-2-9B-f16.gguf"
+WEIGHTS = MODEL_DIR / "Qwen3.6-35B-A3B-Q3_K_M.gguf"
+MMPROJ = MODEL_DIR / "mmproj-F16.gguf"
 
 HOST = "127.0.0.1"
 PORT = 18080
-ALIAS = "UI-Venus-2-9B"
+ALIAS = "Qwen3.6-35B-A3B"
 
 #: Layers offloaded to the GPU.  Chosen from the offload curve in the module docstring: full
 #: offload (33) collapses to 2.3x slower, and 30 is the highest value whose p50 is still within
 #: 3% of the fastest cell while leaving real VRAM headroom.
-GPU_LAYERS = 30
+GPU_LAYERS = 99
 
 #: The context the directive fixes.  Taken from the budget module rather than written again --
 #: the manager is what reserves the reply space inside this number, so a second literal here
@@ -176,6 +190,7 @@ class ServerProfile:
             "-m", str(WEIGHTS),
             "--mmproj", str(MMPROJ),
             "-ngl", str(self.gpu_layers),
+            "-cmoe",
             "-c", str(self.context),
             "-np", "1",
             "-b", "512", "-ub", "512",

@@ -169,15 +169,15 @@ class PlannerIsOffByDefaultAndSwitchableTest(unittest.TestCase):
         # The two windows this number used to be.  Neither may come back as a production default.
         self.assertNotIn(int(planner["context"]), (8192, 16384))
         self.assertGreaterEqual(int(planner["output_reserve"]), 4096)
-        # The 2026-09-30 migration, pinned so a silent revert is a test failure.
-        self.assertEqual(planner["provider"], "UI_VENUS")
-        self.assertEqual(planner["model"], "UI-Venus-2-9B")
-        self.assertEqual(planner["quantization"], "Q4_K_M")
+        # The 2026-10-08 migration, pinned so a silent revert is a test failure.
+        self.assertEqual(planner["provider"], "QWEN_MOE")
+        self.assertEqual(planner["model"], "Qwen3.6-35B-A3B")
+        self.assertEqual(planner["quantization"], "Q3_K_M")
         self.assertTrue(planner["multimodal"])
         # And the model it replaced must not still be named as the deployed one.  Checked on
         # the field that names a model rather than on the whole section, because the section
         # legitimately *mentions* the old tag in its note as the thing it replaced.
-        self.assertNotIn("qwen", str(planner["model"]).lower())
+        self.assertNotIn("venus", str(planner["model"]).lower())
         self.assertNotIn("11434", str(planner["endpoint"]))
 
     def test_the_shipped_config_retires_the_workbuddy_channel(self):
