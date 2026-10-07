@@ -29,6 +29,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import sys
 from datetime import datetime, timedelta, timezone
@@ -307,10 +308,86 @@ def known_fast_path_model_calls() -> tuple[str, str]:
     return UNMEASURED, ("the ledger exists but pairing it with goal status per step is a separate "
                         "tool; not guessed here")
 
+#: Modules measured 2026-10-08 as imported by no production file.  Recorded rather than turned
+#: into a permanent red: a check that can never go green is a to-do list wearing a check's
+#: clothes, and the next person to run this tool learns to ignore the line.  The debt is printed
+#: in the detail either way; what the verdict alarms on is an *addition*.
+#:
+#: The set is the union measured across both checkouts: `ocr_roi` is orphaned in the pinned
+#: worktree and imported in the dev tree, so a list from one of them alone would alarm on
+#: the other.  Re-measure when the trees converge.
+#: The cause is not established for any of these and is not guessed here -- each is either a
+#: feature whose consumer has not landed yet (``game_understanding``, ``external_knowledge``,
+#: ``capability_miner``) or a leftover (``popup_capture`` is referenced by nothing at all,
+#: including tests).  Deciding which is a reading job, not a scan.
+KNOWN_PRODUCTION_ORPHANS: tuple[str, ...] = (
+    "attempt_controller",
+    "capability_miner",
+    "external_knowledge",
+    "game_understanding",
+    "ocr_roi",
+    "popup_capture",
+    "production_gate",
+    "recovery",
+)
+
+
+def no_production_orphan_module() -> tuple[str, str]:
+    """Production modules must be reachable from production code.  §三·八 第十四条.
+
+    A module no production file imports is a candidate second source of truth that nothing
+    reads.  The case that motivated this check is ``recovery.py``: it carries a whole
+    ``FailureType``/``RecoveryAction`` taxonomy that shadows ``runtime_snapshot``'s real
+    ``StopCategory`` classification, and it is imported by exactly one file -- a test.
+
+    A substring scan cannot see any of that, which is why a hand-grep concluded the opposite:
+    ``grep recovery`` returns 970 hits in production paths, every one of them the *word*
+    "recovery" in a docstring, and zero of them this module.  So the imports are read from the
+    AST and a name counts only when it appears in an ``import`` statement.  ``tests/`` and
+    build-artifact copies (``.pytest_tmp*``, ``tools/_pt_bt``) do not count as production: a
+    module kept alive only by its own test is precisely the state to report.
+
+    Known limit, stated rather than hidden: this measures "imported by at least one production
+    file", so a chain of mutually-importing orphans whose head is also an orphan reads as
+    reachable.  Closing that needs a reachability walk from the runtime entry point, which is a
+    different and larger measurement.
+    """
+    package = ROOT / "winter_agent_v2"
+    modules = sorted(p.stem for p in package.glob("*.py") if p.stem != "__init__")
+    imported: set[str] = set()
+    for base in (package, ROOT / "tools"):
+        if not base.exists():
+            continue
+        for source in base.rglob("*.py"):
+            if ("__pycache__" in source.parts or ".pytest_tmp" in str(source)
+                    or "_pt_bt" in source.parts):
+                continue
+            try:
+                tree = ast.parse(source.read_text(encoding="utf-8", errors="replace"))
+            except (SyntaxError, OSError):
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    imported.update(alias.name.split(".")[-1] for alias in node.names)
+                elif isinstance(node, ast.ImportFrom):
+                    if node.module:
+                        imported.add(node.module.split(".")[-1])
+                    imported.update(alias.name for alias in node.names)
+    measured = [name for name in modules if name not in imported]
+    known = [name for name in measured if name in KNOWN_PRODUCTION_ORPHANS]
+    fresh = [name for name in measured if name not in KNOWN_PRODUCTION_ORPHANS]
+    if fresh:
+        return FAIL, (f"{len(fresh)} module(s) newly imported by no production file: "
+                      f"{', '.join(fresh)}  (known debt: {len(known)} -- "
+                      f"{', '.join(known) or 'none'})")
+    return PASS, (f"no new orphan module ({len(modules)} production modules; "
+                  f"{len(known)} known and printed: {', '.join(known) or 'none'})")
+
 
 CHECKS = (
     ("ONE_SCHEDULER", one_scheduler),
     ("ONE_EXECUTOR", lambda: (UNMEASURED, "executor_router is the single entry; not re-verified here")),
+    ("NO_PRODUCTION_ORPHAN_MODULE", no_production_orphan_module),
     ("KNOWN_FAST_PATH_MODEL_CALLS", known_fast_path_model_calls),
     ("UNKNOWN_LEARNING_REACHABLE", unknown_learning_reachable),
     ("NO_PERMANENT_UNKNOWN_BLACKHOLE", no_permanent_unknown_blackhole),
