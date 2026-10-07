@@ -649,6 +649,27 @@ def _box_from_reply(value: Any) -> tuple[tuple[float, float, float, float] | Non
     return None, "PLAN_BOX_NOT_FOUR_NUMBERS"
 
 
+def _offered_a_usable_control(elements: Sequence[Mapping[str, Any]]) -> bool:
+    """Whether this frame offered anything a reply could legitimately have named.
+
+    The same rule as ``ElementItem.pressable`` in ``ui_venus_online``: an element is nameable
+    unless the frame **explicitly** said it cannot be pressed, or typed it as printed text.
+    Written as a function here because ``parse_plan`` reads the raw table (plain dicts) while the
+    contract module reads ``ElementItem``; ``tests/test_ui_planner_a_label_is_not_the_last_word.py``
+    pins the two predicates to each other so the second copy cannot drift from the first.
+
+    This is the question the refusal below has to ask before it refuses.  "The model named a
+    label" is only an error if there was something else it could have named.
+    """
+    for element in elements:
+        if element.get("executable") is False:
+            continue
+        if str(element.get("kind") or "").strip().upper() == "TEXT_LABEL":
+            continue
+        return True
+    return False
+
+
 def parse_plan(raw: str, *, elements: list[dict[str, Any]],
                actions: tuple[str, ...] = OFFERED_ACTIONS) -> PlanParse:
     """Read one reply, or say exactly why it cannot be used.
@@ -747,25 +768,45 @@ def parse_plan(raw: str, *, elements: list[dict[str, Any]],
             # §2: "不存在可靠交互区域时，该元素不得作为可执行 CLICK 目标提供给 Qwen".  Measured
             # 2026-09-25: this is the guard that would have refused the failing step outright -- the model
             # named 登录好礼 and the element it reached was the printed label, not the control.
+            #
+            # But the refusal is only honest when the frame **offered** something else to name.
+            # Measured 2026-10-06 by recomputing the element table for the exact frames the model
+            # was shown (a row's ``frame_hash`` is the png's own sha256, so the frame is findable):
+            # all 50 ``E16 is TEXT_LABEL`` refusals came from frames whose 18 elements were **every
+            # one** a TEXT_LABEL -- ``executable_count`` 0.  There was no legal id to name, and
+            # because the reply is refused here it never reaches the proposal channel below, so
+            # that screen can never be read at all: the permanent UNKNOWN blackhole
+            # ``PRINCIPLES §4`` forbids.  Those same frames also *required* a region by schema
+            # (``needs_box`` is true when nothing is reliable), so the box the reply carried was
+            # discarded unread.
+            #
+            # So the guard keeps its teeth exactly where it was measured to matter -- a screen that
+            # did offer a control, and the model reached for the label instead -- and yields to the
+            # proposal channel only when there was nothing else to name **and** the reply actually
+            # carries a region.  §2 is untouched either way: nothing taps a label on the model's
+            # word, and the box is re-checked against this same frame before anything moves.
+            if _offered_a_usable_control(elements) or box is None:
+                return PlanParse(
+                    error=f"PLAN_TARGET_IS_NOT_A_CONTROL: {target_id} is {element.get('kind', '?')}",
+                    raw=text[:400],
+                )
+            target_id = ""
+        else:
+            target_text = str(element.get("text") or "").strip()
+            if not target_text:
+                # Every offered element carries the client's own printed words, so this can only
+                # happen if the packet was built from something else.  Refusing beats tapping an
+                # unnamed box.
+                return PlanParse(error="PLAN_TARGET_HAS_NO_PRINTED_TEXT", raw=text[:400])
             return PlanParse(
-                error=f"PLAN_TARGET_IS_NOT_A_CONTROL: {target_id} is {element.get('kind', '?')}",
+                plan=Plan(
+                    decision=decision, action_type=action_type, target_element_id=target_id,
+                    target_text=target_text, expected_page=expected_page,
+                    expected_result=expected_result, reason=reason, goal=goal,
+                    basis=BASIS_ELEMENT, confidence=confidence,
+                ),
                 raw=text[:400],
             )
-        target_text = str(element.get("text") or "").strip()
-        if not target_text:
-            # Every offered element carries the client's own printed words, so this can only
-            # happen if the packet was built from something else.  Refusing beats tapping an
-            # unnamed box.
-            return PlanParse(error="PLAN_TARGET_HAS_NO_PRINTED_TEXT", raw=text[:400])
-        return PlanParse(
-            plan=Plan(
-                decision=decision, action_type=action_type, target_element_id=target_id,
-                target_text=target_text, expected_page=expected_page,
-                expected_result=expected_result, reason=reason, goal=goal,
-                basis=BASIS_ELEMENT, confidence=confidence,
-            ),
-            raw=text[:400],
-        )
 
     # No usable element id.  This is the screenshot-only path: the model is pointing at
     # something it can see but cannot name from the table, which used to end the step outright
