@@ -50,6 +50,16 @@ CORPUS_REL = Path("dataset/truth_audit/icon_label_controls/samples.json")
 CORPUS_FRAME_KEYS = ("frame",)
 
 
+#: The same problem, third stream.  ``unknown_requests`` is the corpus ``benchmark_gui_unknown``
+#: is built from -- every case is one of these records *plus the frame it was filed with* -- and it
+#: names that frame ``frame_path``, which neither ``REFERENCE_KEYS`` nor ``CORPUS_FRAME_KEYS``
+#: covers.  Measured 2026-10-08: all 8 records had lost their frame, so the benchmark ran 0 cases
+#: and the model comparison it exists to produce could not be made at all.  Third instance of the
+#: note at the top of this file.
+UNKNOWN_REQUESTS_DIR = Path("learning/unknown_requests")
+UNKNOWN_REQUEST_KEYS = ("frame_path", "before_frame_path", "after_frame_path")
+
+
 def _normalized(parts: tuple[str, ...]) -> set[str]:
     return {part.lower() for part in parts}
 
@@ -119,6 +129,35 @@ def corpus_evidence(root: Path, corpus: Path | None = None) -> set[Path]:
             continue
         for key in CORPUS_FRAME_KEYS:
             value = row.get(key)
+            if isinstance(value, str) and value:
+                cited.add(Path(value))
+    return cited
+
+
+def unknown_request_evidence(root: Path, directory: Path | None = None) -> set[Path]:
+    """Absolute paths of the frames the UNKNOWN corpus was filed with.
+
+    The third evidence stream, and the one that was missing.  ``benchmark_gui_unknown`` scores the
+    local model on the screens the live system genuinely could not advance; it can only do that
+    while each ``unknown_requests`` record still has its frame, and the records were unprotected
+    because they use their own key name.
+
+    Tolerant on purpose, for the same reason the other two are: this runs inside the pruning pass,
+    and a crash here would leave the disk unbounded and take AUTO down with it.
+    """
+    target = directory or (root / UNKNOWN_REQUESTS_DIR)
+    cited: set[Path] = set()
+    if not target.is_dir():
+        return cited
+    for record in target.glob("*.json"):
+        try:
+            payload = json.loads(record.read_text(encoding="utf-8", errors="replace"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        for key in UNKNOWN_REQUEST_KEYS:
+            value = payload.get(key)
             if isinstance(value, str) and value:
                 cited.add(Path(value))
     return cited
@@ -248,7 +287,10 @@ def prune_runtime_screenshots(
     repo = find_repo_root(resolved_root)
     # Both evidence streams, not just the episode one: a frame the calibration corpus cites is as
     # load-bearing as a frame an episode cites, and it lives in the same prunable tree.
-    referenced = referenced_evidence(repo, episodes_path) | corpus_evidence(repo)
+    # Three streams, and each one was added because the previous two did not cover it:
+    # production episodes, the calibration corpus, and now the UNKNOWN corpus.
+    referenced = (referenced_evidence(repo, episodes_path) | corpus_evidence(repo)
+                  | unknown_request_evidence(repo))
     images = [
         path
         for path in resolved_root.rglob("*")
