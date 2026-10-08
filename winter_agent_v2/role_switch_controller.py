@@ -268,6 +268,15 @@ class RoleSwitchController:
                 # start matching a different role.  The operator re-checks the one-to-one mapping
                 # every few weeks, so drift is a refused switch, never a wrong account.
                 evidence.append(f"identity_via=ROLE_AVATAR_TEMPLATE target={target_role_id}")
+                # Bound on this path too, and to ``None`` rather than to a guess.  Measured
+                # 2026-10-08: it was bound only in the branch below, so every switch that took the
+                # avatar fallback raised ``UnboundLocalError`` at ``record_role``, which the broad
+                # except turned into ``ROLE_SWITCH_EXCEPTION:UnboundLocalError`` -- i.e. the
+                # fallback never once worked, and the 33 switches it was written to rescue kept
+                # failing.  ``None`` is the honest value: the avatar drawer does not print the
+                # account number, and ``RoleIdentity``'s own contract is that every field is a
+                # string the client drew.
+                verified_identity = None
             else:
                 evidence.append(str(final_profile))
                 verified_identity = self._read_identity(final_profile)
@@ -299,17 +308,27 @@ class RoleSwitchController:
 
             from .state_truth import record_role
 
-            record_role(
-                self.root, verified_identity, evidence=[str(final_profile), str(home_path)],
-                observed_at=datetime.now(timezone.utc),
-                verification="LIVE_ROLE_SWITCH_PROFILE_AND_HOME_VERIFIED",
-            )
+            # The role artifact is a *panel* read -- ``RoleIdentity`` says so in its own type
+            # contract ("every field is a string the client drew") -- so it is written only when
+            # the panel was actually read.  On the avatar path the proof is the template match on
+            # the home frame this method already required to carry THIS role's avatar, and it is
+            # recorded where it belongs: in ``evidence`` and in the reason.  Manufacturing a
+            # RoleIdentity from an avatar would be a derived fact wearing a read's clothes, which
+            # is the one thing that type exists to prevent.
+            if verified_identity is not None:
+                record_role(
+                    self.root, verified_identity, evidence=[str(final_profile), str(home_path)],
+                    observed_at=datetime.now(timezone.utc),
+                    verification="LIVE_ROLE_SWITCH_PROFILE_AND_HOME_VERIFIED",
+                )
             self.state_store.commit_role_switch(
                 confirmed_role_id=target_role_id,
                 elapsed_ms=(self.monotonic() - started) * 1000.0,
             )
             return RoleSwitchResult(
-                True, role_id=target_role_id, reason="ROLE_SWITCH_LIVE_PROFILE_VERIFIED",
+                True, role_id=target_role_id,
+                reason=("ROLE_SWITCH_LIVE_PROFILE_VERIFIED" if verified_identity is not None
+                        else "ROLE_SWITCH_AVATAR_TEMPLATE_VERIFIED"),
                 evidence=tuple(evidence), elapsed_seconds=self.monotonic() - started,
             )
         except Exception as exc:  # noqa: BLE001 - a failed switch must abort, never leak stale state

@@ -506,3 +506,45 @@ def test_role_identity_mismatch_aborts_switch_and_sets_bounded_retry(tmp_path, m
     assert target.last_failure == "TARGET_PROFILE_ACCOUNT_ID_MISMATCH"
     assert state.roles["role-a"].health == "NEEDS_FRESH_OBSERVATION"
     assert state.roles["role-a"].page is None
+
+
+def test_the_avatar_fallback_switch_completes_instead_of_raising(tmp_path, monkeypatch):
+    """A failed target-profile read must still switch, and must not raise UnboundLocalError.
+
+    Measured 2026-10-08: the fallback added by f7ae5dd5 bound verified_identity only in the
+    branch where the panel WAS read, so every switch that took the avatar path raised at
+    record_role -- which the broad except turned into
+    ROLE_SWITCH_EXCEPTION:UnboundLocalError in the panel log.  The fallback therefore never
+    once worked, and the 33 consecutive switch failures it was written to rescue kept failing.
+
+    No test covered this path, which is how it shipped.  This one does: the panel read fails, the
+    confirmed-home avatar answers, the switch commits, and no RoleIdentity is manufactured --
+    that type's own contract is that every field is a string the client drew, and the avatar does
+    not draw the account number.
+    """
+    store, controller = _role_switch_fixture(tmp_path)
+    _stub_switch_navigation(monkeypatch, controller, tmp_path)
+    recorded = []
+
+    from winter_agent_v2 import state_truth
+    monkeypatch.setattr(state_truth, "record_role", lambda *args, **kwargs: recorded.append(kwargs))
+
+    def panel_read_fails_for_the_target(label, role_id, *, timeout):
+        controller._identity_wait_calls.append((label, role_id, timeout))
+        return (tmp_path / "source_profile.png") if role_id == "role-a" else None
+
+    monkeypatch.setattr(controller, "_capture_until_identity", panel_read_fails_for_the_target)
+
+    result = controller.switch_to(
+        source_role_id="role-a", target_role_id="role-b", reason="ROLE_B has runnable work",
+    )
+
+    assert result.ok is True, result.reason
+    assert result.role_id == "role-b"
+    assert result.reason == "ROLE_SWITCH_AVATAR_TEMPLATE_VERIFIED"
+    assert not result.reason.startswith("ROLE_SWITCH_EXCEPTION")
+    assert "identity_via=ROLE_AVATAR_TEMPLATE target=role-b" in result.evidence
+    assert recorded == [], "a panel read that never happened must not be persisted as one"
+    state = store.load()
+    assert state.active_role_id == "role-b"
+    assert state.role_switch_success_count == 1
