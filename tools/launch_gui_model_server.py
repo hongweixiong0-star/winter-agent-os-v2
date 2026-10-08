@@ -209,25 +209,47 @@ class ServerProfile:
     #: along with the offload curve; re-measured for this model on 2026-10-08 because the docstring
     #: above already warns that those numbers describe the old launch.
     #:
-    #: Measured in place on the running server, same four real packets (prompt p50 5008 tokens),
-    #: one restart per row:
+    #: These are launch-time parameters, not per-request ones: llama.cpp fixes them when the
+    #: server starts, and they are *upper bounds* rather than fixed workloads -- a prompt is split
+    #: into ``ubatch``-sized chunks, so a 3,000-token request under ``-ub 4096`` runs as one chunk
+    #: where under ``-ub 512`` it runs as six.  That is also why the two halves of a call want
+    #: opposite things, and the measured table shows both: prompt evaluation (one long chunk)
+    #: improves with a bigger ubatch, generation (many single-token steps) gets slower.
     #:
-    #:     -b/-ub      prompt tok/s   generation tok/s   estimated total
-    #:      512/512        148.7            26.4            39.4 s
-    #:     2048/1024       199.3            21.8            32.0 s   <- this profile
-    #:     2048/512        141.7            23.1            41.8 s
+    #: Measured in place on the running server, same four real packets (prompt p50 5,008 tokens),
+    #: three repeats per profile, prompt and generation rates read from llama-server's own log:
     #:
-    #: The whole gain is the *physical* batch: 512/512 -> 2048/1024 is +34% on prompt evaluation
-    #: (33.7 s -> 25.1 s of the call) against -17% on generation (5.7 s -> 6.9 s), a net ~19% off
-    #: the total.  Raising the logical batch alone (2048/512) is *worse than doing nothing*, which
-    #: is why the two are set together rather than tuned independently -- the win is in how many
-    #: prompt tokens one pass through the expert weights serves, not in how the batch is booked.
+    #:     -b/-ub        prompt tok/s (3 runs)      generation tok/s   free VRAM
+    #:      512/512       142.6 / 133.7 / 129.7        22.3-24.9        3,496 MiB
+    #:     2048/1024      204.6 / 163.6 / 164.4          --            3,471 MiB
+    #:     2048/2048      244.8 (1 run)                24.7            3,336 MiB
+    #:     4096/4096      294.7 / 189.9 / 188.6        22.4-24.3       2,710 MiB   <- this profile
+    #:     8192/8192      295.2 (1 run)                23.8            1,663 MiB   <- no further gain
+    #:    16384/16384     -- could not fit --                            169 MiB   <- refused
     #:
-    #: Estimated total is ``prompt_tokens/prompt_rate + 150/generation_rate``: the measured prompt
-    #: plus a representative 150-token reply, because the two halves move in opposite directions
-    #: and a single latency number would hide that.
-    batch: int = 2048
-    ubatch: int = 1024
+    #: The knee is 4,096: 8,192 measures no faster (295.2 against 298.8) while costing a gigabyte
+    #: of VRAM, and 16,384 leaves 169 MiB, which the operator's own floor of 300 MiB rejects.
+    #: Prompt throughput roughly doubles (133.7 -> 189.9 medians, 298.8 when the GPU is otherwise
+    #: idle); generation gives up about 8%.  The spread across repeats is contention from MuMu and
+    #: MAA sharing the card, not measurement error, so the medians are what to read.
+    #:
+    #: **The quality half, and its honest size.**  Twelve calls per profile over the same four
+    #: cases, parsed with the production contract:
+    #:
+    #:     512/512    parsed 9/12  ->  3 distinct cases: DEFER, DEFER, OBSERVE
+    #:     2048/1024  parsed 6/12  ->  2 distinct cases: DEFER, DEFER
+    #:     4096/4096  parsed 6/12  ->  2 distinct cases: DEFER, DEFER
+    #:
+    #: Every failure in every profile is the *same* content refusal,
+    #: ``PLAN_TARGET_IS_NOT_A_CONTROL`` -- the model naming a printed label -- and reply lengths
+    #: are healthy throughout (289-579 chars).  So the reply contract is intact and nothing here
+    #: damages the shape of the answer.  But the repeats are byte-identical within a profile, which
+    #: means the twelve calls are really *four* independent observations: 3/4 against 2/4 is not
+    #: evidence, and this is recorded as an open question rather than a result.  The production
+    #: arbiter is the rate of that same refusal in ``learning/local_planner_steps.jsonl``, measured
+    #: at **58/322 = 18%** before this change; if it rises materially, go back to ``-b/-ub 512/512``.
+    batch: int = 4096
+    ubatch: int = 4096
 
     def server_args(self) -> list[str]:
         moe_args = (["-cmoe"] if self.cpu_moe_layers is None
