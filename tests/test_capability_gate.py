@@ -991,5 +991,119 @@ class EpisodeMeasurementTests(unittest.TestCase):
         self.assertIs(row["goal_progress"], True)
 
 
+class TheStaminaSinkExemptionIsNotAGoalLevelExcuseTests(unittest.TestCase):
+    """A sink test must not lift a fact that is sink-independent.
+
+    ``_selectable`` lifts a deferral on ``AVOID_STAMINA_WASTE`` when the capability is
+    ``SPEND_STAMINA_ON_BEAST`` and the chosen sink is INTEL or GIANT_BEAST -- the reason being
+    that a failed *solo-beast path* must not veto another stamina sink.  But the two kinds of
+    deferral carry the capability field differently: a capability deferral gets it from the
+    escalation queue naming the capability that failed, while a no-progress deferral gets it
+    from ``_route_capability``, which names the goal's declared first-reached alternative --
+    a route label, not the path that stalled.
+
+    Measured live 2026-10-08 13:32:54Z, both halves of the pair at once:
+
+        Deferral(goal_id='AVOID_STAMINA_WASTE', source='NO_GOAL_PROGRESS',
+                 capability='SPEND_STAMINA_ON_BEAST', streak=29, last_skill='OPEN_INTEL',
+                 reason='29 consecutive production episodes passed their verifier and
+                         advanced no part of this goal')
+
+    -- the stall was on ``OPEN_INTEL``, none of the 29 counted runs contained a beast-path
+    skill, and the exemption lifted it anyway because the sink was INTEL.  AUTO went back to
+    ``OPEN_MAP -> OPEN_INTEL -> BACK -> OPEN_INTEL -> BACK`` with ``goal_progress=False`` on
+    every step; over the window that goal recorded 1,027 steps that moved nothing against 153
+    that did.
+    """
+
+    #: A world whose stamina route really does choose INTEL.  The intel reading has to say
+    #: AVAILABLE with untried pins, because that is the input ``choose_stamina_goal`` reads.
+    INTEL_IS_THE_SINK = {
+        "intel": {"status": "AVAILABLE", "pins": 3, "untried_pins": 3},
+        "training": {"status": "IN_PROGRESS", "queue_available": False},
+        "research": {"status": "IN_PROGRESS", "queue_available": False},
+        "daily": {"status": "AVAILABLE", "claimable_count": 0},
+        "exploration": {"status": "NOT_AVAILABLE"},
+    }
+
+    def _gate(self, **kwargs):
+        base = {
+            "compositions": {"AVOID_STAMINA_WASTE": GoalComposition(
+                "AVOID_STAMINA_WASTE", "ANY_OF", ("SPEND_STAMINA_ON_BEAST",))},
+            # No capability blocker at all: the only deferral in play is the goal's own
+            # record, which is the whole point of the pair.
+            "capabilities": {},
+            "streaks": {"AVOID_STAMINA_WASTE": (
+                29, datetime.now(timezone.utc) - timedelta(minutes=1), "OPEN_INTEL")},
+            "attempted": {"AVOID_STAMINA_WASTE": frozenset({"OPEN_INTEL", "BACK"})},
+            "reached": {"AVOID_STAMINA_WASTE": frozenset({"SPEND_STAMINA_ON_BEAST"})},
+        }
+        base.update(kwargs)
+        return CapabilityGate(**base)
+
+    def _run(self, states, gate, *, max_actions=1, observations=None):
+        device = FakeDevice()
+        with TemporaryDirectory() as temp:
+            path = Path(temp) / "episodes.jsonl"
+            with offline_runtime_state(Path(temp), observations):
+                run = LiveRuntime(
+                    device=device,
+                    vision=StickyVision(states),
+                    semantic_vision=FakeSemantic(),
+                    capture_dir=Path(temp) / "captures",
+                    sleeper=lambda _seconds: None,
+                    episode_store=EpisodeStore(path),
+                    capability_gate=gate,
+                ).run(max_actions=max_actions, allowed_skills=GATHER_ROUTE)
+        return device, run
+
+    def _map_frames(self):
+        # ``idle_marches`` is a property derived from ``march_used``/``march_max``, so two
+        # free slots come from the pair rather than from a keyword of their own.
+        return [
+            WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=3,
+                       confidence=0.99),
+            WorldState(page=Page.HOME, confidence=0.99),
+            WorldState(page=Page.HOME, confidence=0.99),
+        ]
+
+    def test_the_sink_really_is_intel_in_this_fixture(self):
+        """Without this the pair below would pass for the wrong reason."""
+        runtime = object.__new__(LiveRuntime)
+        runtime.registry = v2_registry()
+        goal = GoalState(
+            "AVOID_STAMINA_WASTE", GoalStatus.READY,
+            evidence={"current": 457, "intel_state": self.INTEL_IS_THE_SINK["intel"],
+                      "idle_marches": 2, "own_rally": {}},
+        )
+        runtime._stamina_route(goal, self._gate())
+        self.assertEqual(goal.evidence.get("stamina_sink"), "INTEL")
+
+    def test_a_goal_level_stall_is_not_lifted_by_the_sink(self):
+        device, run = self._run(self._map_frames(), self._gate(),
+                                observations=self.INTEL_IS_THE_SINK)
+        reported = [row for row in run.deferrals if row["goal_id"] == "AVOID_STAMINA_WASTE"]
+        self.assertEqual(
+            len(reported), 1,
+            "the goal's own 29-run stall must stand even though the sink is INTEL",
+        )
+        self.assertEqual(reported[0]["source"], SOURCE_NO_PROGRESS)
+
+    def test_a_beast_capability_blocker_is_still_lifted_for_another_sink(self):
+        """The intent the exemption exists for, kept intact.
+
+        A capability deferral's ``SPEND_STAMINA_ON_BEAST`` really does name the beast path, so
+        a sink of INTEL must still be allowed to route around it.
+        """
+        gate = self._gate(capabilities={
+            "SPEND_STAMINA_ON_BEAST": (BLOCKED, "repair budget exhausted", None),
+        })
+        device, run = self._run(self._map_frames(), gate, observations=self.INTEL_IS_THE_SINK)
+        self.assertEqual(
+            [row for row in run.deferrals if row["goal_id"] == "AVOID_STAMINA_WASTE"], [],
+            "a blocked beast capability must not veto the intel sink",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

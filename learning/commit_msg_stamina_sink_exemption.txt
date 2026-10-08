@@ -1,0 +1,61 @@
+fix(runtime): a stamina-sink test must not excuse a goal-level stall
+
+`_selectable` lifts a deferral on `AVOID_STAMINA_WASTE` when the capability is
+`SPEND_STAMINA_ON_BEAST` and the chosen sink is INTEL or GIANT_BEAST.  The reason is sound and
+narrow: a failed *solo-beast path* must not veto another stamina sink.  But the two kinds of
+deferral carry the capability field differently, and one of them was being read as the other.
+
+A capability deferral gets the field from the escalation queue naming the capability that
+failed, so `SPEND_STAMINA_ON_BEAST` really does mean the beast path and the sink test is the
+right test.  A no-progress deferral gets it from `_route_capability`, which names the goal's
+declared first-reached alternative -- a **route label**, not the path that stalled.
+
+**Measured live 2026-10-08 13:32:54Z**, both halves of the contradiction in one object:
+
+    Deferral(goal_id='AVOID_STAMINA_WASTE', source='NO_GOAL_PROGRESS',
+             capability='SPEND_STAMINA_ON_BEAST', streak=29, last_skill='OPEN_INTEL',
+             reason='29 consecutive production episodes passed their verifier and
+                     advanced no part of this goal')
+
+The stall was on `OPEN_INTEL`.  Of the 29 counted runs, **0** contained any beast-path skill.
+The exemption lifted it anyway -- because the sink was INTEL, the one sink it was never about --
+and AUTO went straight back to `OPEN_MAP -> OPEN_INTEL -> BACK -> OPEN_INTEL -> BACK` with
+`goal_progress=False` on every step.  Over the window that goal recorded **1,027 steps that
+moved nothing against 153 that did**.
+
+This is why the stall survived every guard the project already had.  `no_progress_streak` and
+`goal_utility` demote it in the ordering, the scheduler's own `loop_detected` counter reached 20
+with `loop_patterns={"ABAB": 20}`, and the deferral was computed and published every cycle --
+and then handed back at the last step before selection.  A fact that is sink-independent cannot
+be lifted by a sink test, so the exemption is scoped to the deferrals whose capability field is
+a capability.
+
+`bootstrap_observation_only` above is deliberately left alone: that one is about what a bounded
+projection may do, which is a property of the goal, not of the evidence behind the deferral.
+
+**Tests.**  `TheStaminaSinkExemptionIsNotAGoalLevelExcuseTests` in `tests/test_capability_gate.py`,
+three cases, and the bite is shown rather than claimed: removing the one guard line turns
+`test_a_goal_level_stall_is_not_lifted_by_the_sink` red, and the captured output of that run is
+the live symptom verbatim -- `[utility] chose AVOID_STAMINA_WASTE (2320; resource +40.0,
+page-residency +40.0 (already standing on its page))`.  The pair is a pair on purpose:
+`test_a_beast_capability_blocker_is_still_lifted_for_another_sink` passes in **both** directions,
+so the intent the exemption exists for is pinned rather than assumed, and a fixture-sanity test
+asserts the sink really is INTEL so the other two cannot pass for the wrong reason.
+
+A/B on the touched suites: the same 17 pre-existing failures with this change and without it,
+byte-identical sets (`test_capability_gate.py`, `test_queue_pump.py`,
+`test_runtime_bootstrap_integration.py`); the twelve-file set that touches the gate is 17 failed
+/ 181 passed, the same 17.
+
+**Not live-verified as an outcome.**  The change is pinned, and a worker started on it at
+13:31:31Z, but no round has yet been observed *not* re-entering the alternation.  What is
+verified live is the premise: the gate computed the deferral above, from the production ledger,
+while the running scheduler was re-selecting the goal.
+
+**Found on the way, and it is not this commit's:** the `WORKER_RESULT_MISSING: exit=3` at
+13:24:49Z is not a crash.  `run_live.py` returns 3 from the startup version fence when the code
+tree moves between process start and the post-import re-check -- which is exactly what a repin
+does to a running panel -- so the cycle correctly refuses to touch the device and produces
+nothing.  The panel's `worker_result_failure` classifies every `WORKER_RESULT_MISSING` as
+`WORKER_CRASH`, so a designed refusal is filed in the crash ledger as a crash; that
+misreporting is left alone here rather than fixed in the same commit as a scheduling change.

@@ -90,7 +90,7 @@ from .loop_watch import (
 )
 from .global_scheduler_state import GlobalSchedulerStateStore
 from .task_completion import TaskCompletionStore
-from .capability_gate import DEFERRED, CapabilityGate, Deferral
+from .capability_gate import DEFERRED, SOURCE_NO_PROGRESS, CapabilityGate, Deferral
 from .device_lease import OWNER_DEVELOPMENT_VALIDATION, OWNER_GAMEPLAY, DeviceLease
 from .mode_state import (
     DEFAULT_PATH as MODE_STATE_PATH,
@@ -1220,8 +1220,41 @@ class LiveRuntime:
                 # A capability gap still blocks ordinary execution, while this
                 # bounded projection can only observe or open a safe entry.
                 blocked = None
-            if blocked is not None and goal.goal_id == 'AVOID_STAMINA_WASTE' and blocked.capability == 'SPEND_STAMINA_ON_BEAST' and (goal.evidence or {}).get('stamina_sink') in {'INTEL','GIANT_BEAST'}:
-                blocked = None  # a failed solo-beast path cannot veto another stamina sink
+            if (blocked is not None and goal.goal_id == 'AVOID_STAMINA_WASTE'
+                    and blocked.source != SOURCE_NO_PROGRESS
+                    and blocked.capability == 'SPEND_STAMINA_ON_BEAST'
+                    and (goal.evidence or {}).get('stamina_sink') in {'INTEL','GIANT_BEAST'}):
+                # A failed solo-beast path cannot veto another stamina sink -- but a
+                # *goal-level* no-progress fact is not a beast-path statement, and this
+                # exemption used to lift it as if it were.
+                #
+                # The two deferrals answer different questions and carry the capability
+                # field differently.  A capability deferral is produced by the escalation
+                # queue naming the capability that failed, so ``SPEND_STAMINA_ON_BEAST``
+                # really does mean the beast path and the sink test is the right test.  A
+                # no-progress deferral is produced by ``_route_capability``, which names
+                # the goal's declared first-reached alternative -- a **route label**, not
+                # the path that stalled.  Measured live 2026-10-08 13:32:54Z:
+                #
+                #     Deferral(goal_id='AVOID_STAMINA_WASTE', source='NO_GOAL_PROGRESS',
+                #              capability='SPEND_STAMINA_ON_BEAST', streak=29,
+                #              last_skill='OPEN_INTEL',
+                #              reason='29 consecutive production episodes passed their
+                #                      verifier and advanced no part of this goal')
+                #
+                # -- the stall was on ``OPEN_INTEL``, and of the 29 counted runs **0**
+                # contained any beast-path skill.  The exemption lifted it because the sink
+                # was INTEL, which is the one sink it was never about, and AUTO went
+                # straight back to ``OPEN_MAP -> OPEN_INTEL -> BACK -> OPEN_INTEL -> BACK``
+                # with ``goal_progress=False`` on every step.  Over the window that goal
+                # recorded 1,027 steps that moved nothing against 153 that did.
+                #
+                # A sink test cannot be allowed to lift a fact that is sink-independent, so
+                # the exemption is scoped to the deferrals whose capability field is a
+                # capability.  ``bootstrap_observation_only`` above is deliberately left
+                # alone: that one is about what a bounded projection may do, which is a
+                # property of the goal and not of the evidence behind the deferral.
+                blocked = None
             if blocked is not None:
                 if all(item.goal_id != blocked.goal_id for item in deferrals):
                     deferrals.append(blocked)
