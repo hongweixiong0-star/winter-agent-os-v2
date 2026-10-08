@@ -1,0 +1,42 @@
+fix(runtime): the remembered meter must keep its scale, or progress is decided across two of them
+
+``progress_moved`` compares the after-frame's reading with the last one this run read, and the module
+already states the rule: "the writer records the scale alongside the number.  A remembered value with
+no matching kind was written by the other meter and the honest answer is ``None``."
+
+The writer recorded the value and the kind **separately, on whatever tick happened to run**: the value
+is only overwritten when a meter exists, the kind whenever one does.  So the two can come from
+different frames, and the guard in ``progress_moved`` only ever tests the *current* kind -- never the
+remembered value's.
+
+Reproduced in six lines against the real functions::
+
+    remembered value: -8.0   remembered kind: distance   <- value and kind from different ticks
+    progress_moved(after = a frame with no count) -> False   "the action landed, the goal did not move"
+    the same frame, kind kept as 'observation'    -> None    the honest verdict
+    a board frame with one pin fewer               -> True
+
+**Measured live, on the running client, 2026-10-09**: ``CLEAR_INTEL`` took 17 steps in one run --
+``OPEN_INTEL`` -> ``SELECT_INTEL_PIN`` -> ``OPEN_INTEL_BEAST_TARGET`` -> ``INTEL_BEAST_START_MARCH``
+-> ``DISPATCH_INTEL_BEAST``, then the hero variant -- every one ``SUCCESS``, and recorded
+``goal_progress`` **False 9 / None 8 / True 0**.  ``1.0 < -8.0`` is False.  That run's goal then
+carried a ``NO_GOAL_PROGRESS`` deferral with streak 4: demoted for work it could not report, which is
+the failure ``_observation_meter``'s own note says it exists to remove ("It also carries a constant
+``distance`` (1.0) whenever the board still has intel, so ``1.0 < 1.0`` is False on every step, and
+False also increments ``no_progress_streak``").
+
+So: the evidence scale now wins for the rest of the run once it has been seen, and a change of scale
+**drops** the remembered number, because the first reading on a new scale is a first reading -- which
+``progress_moved`` already answers with ``None``.  A goal with no observation meter keeps the distance
+fallback exactly as it was; nothing is taken away where the distance comparison already meant
+something.
+
+**Tests.**  ``tests/test_the_meter_never_crosses_scales.py``, four cases, driving the real
+``LiveRuntime._remember_goal_meters`` and the real ``progress_moved``.  The bite is shown rather than
+claimed: restoring the old writer turns the two cross-scale cases red and leaves the other two green
+-- one of which is a property the old code happened to satisfy in that direction, stated here rather
+than implied.  A/B over the six suites that touch the meter: **11 failed / 93 passed before, 9 failed
+/ 95 passed after**, and the nine that remain are byte-identical in both arms.
+
+**Not verified live yet.**  AUTO is running on this pin, so the next ``CLEAR_INTEL`` run is the
+observation that matters -- whether it records progress (or ``None``) instead of a no-progress streak.

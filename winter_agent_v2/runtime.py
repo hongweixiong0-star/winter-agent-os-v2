@@ -1578,9 +1578,33 @@ class LiveRuntime:
 
         for goal in goals or ():
             meter = _meter_for(goal)
-            if meter is not None:
-                self._goal_meters[goal.goal_id] = meter
-                _METER_KINDS[goal.goal_id] = meter_kind(goal)
+            if meter is None:
+                continue
+            kind = meter_kind(goal)
+            previous = _METER_KINDS.get(goal.goal_id)
+            if previous == "observation" and kind != "observation":
+                # This run has already measured the goal on its own evidence scale, and the
+                # weaker ``distance`` fallback must not replace it.  ``_meter_for`` returns
+                # ``goal.distance`` when the evidence-derived reading is absent, and for the
+                # goals that have one that distance is a **constant** -- so recording it would
+                # both lose the measurement and hand ``progress_moved`` a number on the other
+                # scale to compare against a remembered one on this scale.
+                #
+                # Measured live 2026-10-08/09: ``CLEAR_INTEL`` dispatched a beast march and then
+                # a hero march -- 17 verified steps, every one SUCCESS -- and recorded
+                # ``goal_progress`` False 9 / None 8 / **True 0**, because the remembered value
+                # ``-8.0`` (from a frame that read the intel board) was compared with ``1.0``
+                # (from a frame that did not) as ``1.0 < -8.0``.  The goal was then deferred for
+                # a no-progress streak of 4, which is "demoted for work it could not report" --
+                # the exact failure ``_observation_meter`` says it exists to remove.
+                continue
+            if previous is not None and previous != kind:
+                # A scale change makes the remembered number incomparable rather than wrong:
+                # the first reading on the new scale is a *first* reading, which
+                # ``progress_moved`` already answers with ``None``.
+                self._goal_meters.pop(goal.goal_id, None)
+            self._goal_meters[goal.goal_id] = meter
+            _METER_KINDS[goal.goal_id] = kind
 
     def _event_readiness_for_goals(self, goals, *, now=None) -> dict[str, float]:
         """Apply live countdown priority only to this runtime's observed role.
