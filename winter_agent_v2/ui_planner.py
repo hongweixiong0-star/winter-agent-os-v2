@@ -68,6 +68,7 @@ from . import ui_venus_online
 from . import unknown_advisor
 from . import venus_screen_budget
 from .context_budget import HISTORY_TARGET
+from .ui_collection import EXECUTABLE_ELEMENT_KINDS
 
 #: How many steps the advisor remembers.  Twice the packet's target, so the budget ladder has a
 #: real surplus to trim rather than a list that was cut before anyone measured it -- and so a
@@ -468,7 +469,37 @@ def elements_from_request(request: Any) -> list[dict[str, Any]]:
         if kind:
             entry["kind"] = kind
             entry["semantic"] = str(box.get("element_semantic") or "")
-            entry["executable"] = bool(box.get("element_executable"))
+            recorded = box.get("element_executable") if isinstance(box, Mapping) else None
+            if recorded is None:
+                # The two fields are one identity, and a writer that recorded the kind but not the
+                # flag used to get the *opposite* default for each: an absent ``kind`` leaves the
+                # element untyped and therefore permitted, while an absent flag was read as "not a
+                # control" and refused everything.
+                #
+                # Measured 2026-10-08 over ``learning/unknown_requests/sweepcase_*.json``: all six
+                # records carry ``element_kind`` on every box and ``element_executable`` on **none**
+                # (0 of 5/5/5/7/40/32), so ``bool(None)`` offered every element of every one of them
+                # as not-a-control and refused every proposal -- including the two screens that do
+                # hold a registered composite control::
+                #
+                #     case 5  E1  is COMPOSITE_CONTROL   (登录好礼, semantic CONTROL[登录好礼])
+                #     case 6  E14 is TEXT_LABEL
+                #
+                # Case 5 is the one that shows it: the model named the login-gift control, the
+                # record says it is a ``COMPOSITE_CONTROL``, and the refusal quoted that kind back
+                # while refusing it.  Two of the three missing-flag cases are therefore unwinnable
+                # by construction, which is the permanent UNKNOWN blackhole the guard's own note
+                # says must not exist.
+                #
+                # Deriving it from the kind is not a guess: ``EXECUTABLE_ELEMENT_KINDS`` is this
+                # project's own declaration of which kinds may be a ``CLICK_ELEMENT`` target, and
+                # §2 states it in prose ("Only the former may be clicked").  A box that carries no
+                # kind at all is still left untyped rather than defaulted, and an explicit flag is
+                # still honoured whatever it says, so nothing of §2's guard is relaxed -- the
+                # refusal keeps its teeth where a screen really did offer a control.
+                entry["executable"] = kind.strip().upper() in EXECUTABLE_ELEMENT_KINDS
+            else:
+                entry["executable"] = bool(recorded)
         elements.append(entry)
     return elements
 
