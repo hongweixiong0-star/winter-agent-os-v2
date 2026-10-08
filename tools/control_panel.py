@@ -235,6 +235,19 @@ def runtime_env_blocker() -> str | None:
     report = runtime_interpreter_report()
     return None if report.ok else report.reason
 CAPTURE_ROOT = ROOT / "dataset/raw/control_panel"
+
+#: How many screenshots this process may delete inside one turn, across every retention pass in it.
+#:
+#: ``retention.MAX_DELETIONS_PER_PASS`` bounds one *call* and its own note says why 30 is the
+#: number: the host aborts a process that deletes 50 files inside one turn.  But ``_enforce_retention``
+#: has two callers in the same turn -- start-up and the round boundary -- so 30 + 30 reached 60 and
+#: the abort took the worker with it.  Measured 2026-10-08: four ``WORKER_RESULT_MISSING: exit=1``
+#: crashes inside 100 seconds, the watchdog's recovery budget spent, AUTO paused, and the worker's
+#: last log line the guard's own
+#: ``[safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED] {"count":50,"threshold":50,"scope":"turn"}``.
+#: A budget per *turn* is what the guard actually counts, so this is the same number spent on the
+#: same scope rather than a new limit.
+RETENTION_DELETIONS_PER_TURN = 30
 LOG_ROOT = ROOT / "learning/control_panel"
 CRASH_ROOT = LOG_ROOT / "crashes"
 # The window's own narration, on disk.  It carries the startup preflight verdict,
@@ -5113,6 +5126,14 @@ class ControlPanel:
         self._build()
         self._save_policy_state()
         self._save_panel_state()
+        # The host's bulk-delete guard counts deletions per *turn*; the retention pass counts
+        # per *call*.  Start-up and the first round boundary are the same turn, so two 30-file
+        # passes reached 60 and the guard aborted the process tree -- measured 2026-10-08:
+        # four WORKER_CRASH exits in 100 seconds, the recovery budget spent, AUTO paused, with
+        # ``[safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED] {"count":50,"threshold":50,
+        # "scope":"turn"}`` in latest.log as the worker's last line.  One process therefore
+        # spends one budget across every pass it makes in a turn.
+        self._retention_removed_this_turn = 0
         self._enforce_retention()
         root.after(100, self._drain_events)
         root.after(250, self._tick)
@@ -9034,6 +9055,9 @@ class ControlPanel:
         # Full structured output belongs only in latest.log. Rendering large
         # JSON blobs in Tk made the UI appear flooded and could stall it.
         self._idle_buttons(); self._enforce_retention(); self.refresh()
+        # The turn is over: next round gets its own budget.  Reset *after* the call, so this round's
+        # drain and the start-up drain share one turn exactly as the guard counts them.
+        self._retention_removed_this_turn = 0
         # After the refresh, not before: the two console lines above read the file this writes, so
         # the round that just ended is the first one whose numbers are folded in, and the operator
         # sees them one round later rather than never (which is what happened while nothing wrote
@@ -9161,6 +9185,14 @@ class ControlPanel:
         policy = self.config.get("retention", {})
         if not policy.get("auto_prune", False):
             return
+        # One budget per turn, spent across every pass this process makes in it.  ``limit`` alone
+        # was not enough: ``prune_runtime_screenshots`` bounds a *call*, and this method has two
+        # callers in the same turn -- start-up below and the round boundary.  30 + 30 crossed the
+        # host's 50, which killed the worker rather than trimming it (2026-10-08).  Keeping the
+        # second pass at zero costs one round's worth of drain and cannot take AUTO down.
+        budget = RETENTION_DELETIONS_PER_TURN - getattr(self, "_retention_removed_this_turn", 0)
+        if budget <= 0:
+            return
         removed = prune_runtime_screenshots(
             CAPTURE_ROOT,
             max_count=int(policy.get("max_screenshots", 500)),
@@ -9174,6 +9206,10 @@ class ControlPanel:
                 int(policy["referenced_ttl_days"])
                 if "referenced_ttl_days" in policy else None
             ),
+            limit=budget,
+        )
+        self._retention_removed_this_turn = (
+            getattr(self, "_retention_removed_this_turn", 0) + len(removed)
         )
         if removed:
             self._append(f"磁盘保护：已清理 {len(removed)} 张过期或超额运行截图。")
