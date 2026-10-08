@@ -243,6 +243,42 @@ def select_prunable_screenshots(
 #: bounds one burst rather than the whole sweep.
 MAX_DELETIONS_PER_PASS = 30
 
+#: The sandbox variable that says its bulk-delete gate is armed.  Deliberately the same name
+#: the suite's ``_past_the_hosts_delete_gate`` reads: one vocabulary, one meaning.
+HOST_BULK_DELETE_GATE = "CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR"
+
+
+def _past_the_hosts_delete_gate(call, path: Path) -> bool:
+    """Run ``call()``, treating a *sandbox* refusal as "this pass is over".
+
+    ``True`` when the path is gone, ``False`` when the host's gate refused to remove it.
+
+    This is the production half of a rule the test suite learned first and the worker never
+    did.  A sandbox around this machine intercepts the delete and, once one turn has removed
+    more than 50 files, raises ``SystemExit(1)`` **instead of** deleting.  An uncaught
+    ``SystemExit`` prints no traceback and exits 1 -- which is exactly the shape of the crash
+    record: ``WORKER_RESULT_MISSING: exit=1``, an empty ``child_traceback``, and the guard's
+    own line as the worker's last log entry.  Measured 2026-10-08: four such crashes in 100
+    seconds, the watchdog's recovery budget spent, AUTO paused.
+
+    The gate's decision is honoured rather than overridden: the file stays, this pass stops,
+    and the next cycle picks the backlog up -- ``prune_runtime_screenshots`` already runs once
+    per cycle, so a bounded pass drains any backlog within a few minutes.  What changes is only
+    that a *refused prune* stops being a *fatal error*; there is nothing in trimming old
+    screenshots worth killing a production run over.
+
+    Tolerated only when both halves of the evidence agree: the gate says it is armed, **and**
+    the path is still on disk because the removal did not happen.  So a ``SystemExit`` raised by
+    this code, or a removal that silently did nothing while the gate is unarmed, still raises.
+    """
+    try:
+        call()
+    except SystemExit:
+        if os.environ.get(HOST_BULK_DELETE_GATE) and path.exists():
+            return False
+        raise
+    return True
+
 
 def find_repo_root(start: Path) -> Path:
     """Walk up from a capture root until the repository root is found.
@@ -307,7 +343,13 @@ def prune_runtime_screenshots(
         resolved = path.resolve()
         if not resolved.is_relative_to(resolved_root):
             continue
-        resolved.unlink(missing_ok=True)
+        if not _past_the_hosts_delete_gate(
+            lambda target=resolved: target.unlink(missing_ok=True), resolved,
+        ):
+            # The sandbox refused. Every later removal in this turn would be refused too, so
+            # stop instead of spending the pass on raises, and let the next cycle drain the
+            # rest. The files are still there; nothing was lost.
+            break
         removed.append(resolved)
     return removed
 
@@ -336,7 +378,11 @@ def remove_empty_run_dirs(root: Path) -> list[Path]:
         if dirnames or filenames:
             continue
         try:
-            path.rmdir()
+            if not _past_the_hosts_delete_gate(path.rmdir, path):
+                # Same refusal as in the screenshot pass, and the same answer: an empty
+                # folder is not worth taking the run down for.  ``except OSError`` alone
+                # cannot see this one, because the gate raises SystemExit.
+                break
         except OSError:
             continue
         removed.append(path)

@@ -13,10 +13,14 @@ and AUTO paused, with the guard's own line as the worker's last log entry:
 """
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -83,6 +87,116 @@ class RetentionTurnBudgetTest(unittest.TestCase):
             panel._enforce_retention()
         self.assertLessEqual(sum(int(limit or 0) for limit in calls), 50)
         self.assertLessEqual(self.panel_module.RETENTION_DELETIONS_PER_TURN, 50)
+
+
+class DeleteGateToleranceTest(unittest.TestCase):
+    """A refused prune must end the *pass*, not the production run.
+
+    Measured 2026-10-08, after the per-turn budget above was already in place: the guard fired
+    again on a single file (``{"count":50,"threshold":50,"scope":"turn","targetCount":1}``), the
+    ``SystemExit`` killed the worker (``WORKER_RESULT_MISSING: exit=1``, empty
+    ``child_traceback``, the guard's own line as the worker's last log entry), the watchdog's
+    recovery budget was spent, and AUTO paused while the client sat idle.
+
+    The gate's decision is kept -- the files stay where they are -- so these tests assert two
+    things at once: that a refusal is survivable, and that it is *only* the gate's refusal that
+    is survivable.
+    """
+
+    def setUp(self):
+        from winter_agent_v2 import retention
+
+        self.retention = retention
+
+    def _runtime_root(self, count: int = 5):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name) / "runtime_auto"
+        root.mkdir()
+        files = []
+        for index in range(count):
+            path = root / f"frame_{index}.png"
+            path.write_bytes(b"only the path matters here")
+            files.append(path)
+        return root, files
+
+    def _patch_selection(self, files):
+        """Make exactly ``files`` the prunable candidates, with no evidence stream consulted."""
+        stack = contextlib.ExitStack()
+        self.addCleanup(stack.close)
+        for name in ("referenced_evidence", "corpus_evidence", "unknown_request_evidence"):
+            stack.enter_context(mock.patch.object(self.retention, name, lambda *a, **k: set()))
+        stack.enter_context(mock.patch.object(
+            self.retention, "select_prunable_screenshots", lambda *a, **k: list(files),
+        ))
+        return stack
+
+    def test_a_refusal_ends_the_pass_instead_of_killing_the_worker(self):
+        root, files = self._runtime_root()
+        self._patch_selection(files)
+        attempts: list[Path] = []
+
+        def refusing_unlink(target, *args, **kwargs):
+            attempts.append(Path(target))
+            # What the gate does: print its own line, then raise instead of deleting.
+            raise SystemExit(1)
+
+        with mock.patch.dict(os.environ, {self.retention.HOST_BULK_DELETE_GATE: "armed"}):
+            with mock.patch.object(Path, "unlink", refusing_unlink):
+                removed = self.retention.prune_runtime_screenshots(
+                    root, max_count=0, ttl_days=0,
+                )
+
+        self.assertEqual(removed, [], "a refused pass removes nothing")
+        self.assertEqual(len(attempts), 1,
+                         "the pass must stop at the first refusal, not spend itself on raises")
+        self.assertTrue(all(path.exists() for path in files),
+                        "the gate's decision is kept: the files stay")
+
+    def test_a_refusal_is_not_tolerated_when_the_delete_really_happened(self):
+        """The other half of the evidence. A delete that *did* happen is not the gate's doing."""
+        root, files = self._runtime_root()
+        self._patch_selection(files)
+
+        def deleting_unlink(target, *args, **kwargs):
+            os.remove(target)          # the delete really happened ...
+            raise SystemExit(1)        # ... so this SystemExit is not the gate's refusal
+
+        with mock.patch.dict(os.environ, {self.retention.HOST_BULK_DELETE_GATE: "armed"}):
+            with mock.patch.object(Path, "unlink", deleting_unlink):
+                with self.assertRaises(SystemExit):
+                    self.retention.prune_runtime_screenshots(root, max_count=0, ttl_days=0)
+
+    def test_our_own_system_exit_still_fails_when_the_gate_is_not_armed(self):
+        root, files = self._runtime_root()
+        self._patch_selection(files)
+
+        def refusing_unlink(target, *args, **kwargs):
+            raise SystemExit(1)
+
+        with mock.patch.dict(os.environ, {}, clear=True):
+            with mock.patch.object(Path, "unlink", refusing_unlink):
+                with self.assertRaises(SystemExit):
+                    self.retention.prune_runtime_screenshots(root, max_count=0, ttl_days=0)
+
+    def test_the_empty_directory_pass_is_tolerant_too(self):
+        """``rmdir`` reaches the same gate, and ``except OSError`` cannot see a SystemExit."""
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name) / "runtime_auto"
+        empty = root / "20261008_160303_701925"
+        empty.mkdir(parents=True)
+
+        def refusing_rmdir(self_, *args, **kwargs):
+            raise SystemExit(1)
+
+        with mock.patch.dict(os.environ, {self.retention.HOST_BULK_DELETE_GATE: "armed"}):
+            with mock.patch.object(Path, "rmdir", refusing_rmdir):
+                removed = self.retention.remove_empty_run_dirs(root)
+
+        self.assertEqual(removed, [])
+        self.assertTrue(empty.is_dir(), "the folder the gate refused is still there")
+
 
 
 if __name__ == "__main__":
