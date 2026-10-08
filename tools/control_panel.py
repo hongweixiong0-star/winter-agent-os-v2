@@ -1495,6 +1495,17 @@ def load_operator_intent(path: Path) -> str:
     return value if value in OPERATOR_INTENTS else "RUNNING"
 
 
+def load_operator_intent_reason(path: Path) -> str:
+    """The sentence stored beside the intent, which is what says *who* asked for it.
+
+    ``operator_intent`` has two writers: the operator's own buttons, and -- since the watchdog
+    gained a recovery budget -- the watchdog itself when consecutive worker crashes exhaust it.
+    The durable record is one field with one vocabulary, so the reason is the only
+    discriminator, and it was already being written; nothing read it back.
+    """
+    return str(read_panel_state(path).get("operator_intent_reason") or "")
+
+
 def save_operator_intent(path: Path, intent: str, reason: str = "") -> str:
     wanted = str(intent).upper()
     if wanted not in OPERATOR_INTENTS:
@@ -7938,8 +7949,20 @@ class ControlPanel:
             return
         if self.operator_intent != "RUNNING":
             stopped = self.operator_intent == "STOPPED"
-            self._append(f"不自动启动：上次由用户{'停止' if stopped else '暂停'}"
-                         "，只有点击“开始自动运行”才会恢复。")
+            # Who asked matters.  ``operator_intent`` is written by the operator's own buttons
+            # (reason ``user pressed ...``) *and* by the watchdog when the worker-crash recovery
+            # budget runs out.  Reading only the intent made this window tell the operator
+            # "上次由用户暂停" for a pause the watchdog had taken -- measured 2026-10-08 at
+            # 16:27:37, right after four worker crashes whose cause is fixed in 83259c6c.  The
+            # stored reason distinguishes them and was already on disk; it just had no reader.
+            stored_reason = load_operator_intent_reason(PANEL_STATE_PATH)
+            asked_by_operator = stored_reason.startswith("user pressed")
+            if asked_by_operator:
+                self._append(f"不自动启动：上次由用户{'停止' if stopped else '暂停'}"
+                             "，只有点击“开始自动运行”才会恢复。")
+            else:
+                self._append(f"不自动启动：上次的暂停不是操作者按的"
+                             f"（{stored_reason or '原因未记录'}）；点击“开始自动运行”可恢复。")
             self._idle_buttons()
             self.runtime_store.update(agent_state=AgentState.IDLE.value, runtime_thread_alive=False,
                                       scheduler_loop_alive=False,

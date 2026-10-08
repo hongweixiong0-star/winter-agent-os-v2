@@ -421,6 +421,42 @@ class AutostartGateTest(unittest.TestCase):
         self.panel_obj._maybe_autostart()
         self.assertEqual(self.started, [])
 
+    def test_an_automatic_pause_is_not_reported_as_the_operators_own(self):
+        """The watchdog writes ``operator_intent`` too. The window must not blame the operator.
+
+        Measured 2026-10-08 16:27:37: after four worker crashes the watchdog paused AUTO with
+        the reason ``worker crash restart budget exhausted``, and the next window told the
+        operator "上次由用户暂停" -- a decision they never made, about a cause that had just
+        been fixed. Both writers persist the same field, so the stored reason is the only
+        discriminator, and it had no reader until now.
+        """
+        from tools import control_panel as module
+
+        module.save_operator_intent(
+            module.PANEL_STATE_PATH, "PAUSED", "worker crash restart budget exhausted")
+        self.panel_obj.operator_intent = "PAUSED"
+        module.PANEL_LOG_PATH.write_text("", encoding="utf-8")
+        self._preflight(fake_sections())
+        self.panel_obj._maybe_autostart()
+
+        log = module.PANEL_LOG_PATH.read_text(encoding="utf-8")
+        self.assertIn("不是操作者按的", log)
+        self.assertIn("worker crash restart budget exhausted", log)
+        self.assertNotIn("由用户暂停", log)
+
+    def test_a_real_operator_pause_is_still_reported_as_theirs(self):
+        from tools import control_panel as module
+
+        module.save_operator_intent(module.PANEL_STATE_PATH, "PAUSED", "user pressed pause")
+        self.panel_obj.operator_intent = "PAUSED"
+        module.PANEL_LOG_PATH.write_text("", encoding="utf-8")
+        self._preflight(fake_sections())
+        self.panel_obj._maybe_autostart()
+
+        log = module.PANEL_LOG_PATH.read_text(encoding="utf-8")
+        self.assertIn("上次由用户暂停", log)
+        self.assertNotIn("不是操作者按的", log)
+
     def test_a_running_intent_with_a_gateway_outage_still_starts_auto(self):
         # Requirement 3, at the window layer: the gateway is down, core is fine,
         # AUTO starts anyway.
