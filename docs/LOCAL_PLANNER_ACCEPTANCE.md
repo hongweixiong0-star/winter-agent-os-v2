@@ -551,3 +551,82 @@ A/B：A 臂 **2 failed / 5 passed**，B 臂 **2 failed / 13 passed** —— 同�
 测试改指向副本 —— 不能拿别的帧顶替，因为它们承载的是特定画面的断言。
 「复制到受保护目录」这句话对**还活着**的引用成立（如
 `20260925_003829_467215`，它现在被第二条守卫按路径正确点名）；对这 6 条不成立。
+
+## 10. 验收链的真实漏斗：四级状态没变，但**断点位置**换了（2026-10-09 实测）
+
+§1–§4 的四级状态（`STRUCTURED_OUTPUT_PASS` / `MAA_EXECUTION_PASS` / `GOAL_VERIFIED` / `SKILL_REUSABLE`）
+**一个字都没改**。变的是"下一个该修的东西"——这一节把链上每一跳的数出来，以免下一个人继续修已经不是瓶颈的地方。
+
+### 10.1 项目自己的报表怎么说（`learning/learning_funnel.json`，window_days=1，生成于 2026-10-08T14:07:27Z）
+
+```
+GAME_TASK_COMPLETION_RATE       0.9726   (n=2880)   ← 游戏任务本身在完成
+UNKNOWN_RESOLUTION_RATE         0.0                 ← 未知屏解决率：零
+UNKNOWN_VERIFIED_STEPS_CREATED  0
+CANDIDATE_SKILLS_CREATED        0
+MODEL_CALLS_PER_HOUR            0.333               ← 每 3 小时才问模型一次
+UNKNOWN_REPEAT_MODEL_CALL_RATE  0.375（历史 0.5031） ← 同一个未知屏被反复问
+
+joined_funnel:  unknown_observed 6 → venus_called 6 → venus_proposed 5
+                → grounding_valid 0 · risk_gate_allowed 0 · maa_executed 0
+                · verifier_success 0 · candidate_step_created 0
+```
+
+**`grounding_valid` 与 `grounding_rejected` 同时为 0** ⇒ 那 5 份提案**根本没有进入 grounding 阶段**，
+因为它们没有一个是"要点击"的决定。天花板上方那一跳之前就已经断了。
+
+### 10.2 全台账的手工点数（三段独立证据，彼此对得上）
+
+```
+unknown_observed 239  →  venus_called 239  →  venus_proposed 113
+planner 拒绝 59（几何：城墙 50 + 使用 1 + QUICK_PANEL 4 + 别处 4）
+→ 113 份提案的 decision 分布：REPLAN 92 · DEFER 15 · OBSERVE 5 · EXECUTE **1**
+```
+
+那一份 `EXECUTE`（2026-10-08T13:51:35Z，page HOME，`target=E6`，`executable_count=12/33`）
+**被契约拒了**，代码是 `PLAN_REASON_TOO_LONG @ SCHEMA`——它的 `reason` 有 143 字。
+
+契约自己的判定行（`ui_venus_online.jsonl` 里带 `verdict` 字段的那两行，全历史只有两行）：
+
+```
+2026-10-08T13:51:35  admitted=False  code=PLAN_REASON_TOO_LONG  stage=SCHEMA  page=HOME   ×2
+CONTRACT_ALLOWED 行数：0（全 `learning/*.jsonl`）
+```
+
+### 10.3 那条拒绝对不对？——**对，而且是量过的设计**
+
+`ui_venus_contract.reason_violation` 的 docstring：超长**拒绝而不是截断**，因为
+"截断的解释仍然花了生成它的 token，只有拒绝才能把成本去掉"。
+`ui_planner` 顶部对同一件事有更早的实测记录：**"asking for a short reason does not work"**
+——把要求从 ≤120 收紧到 ≤20 字，p50 只从 11.5 s 变成 12.4 s（噪声内）；
+模型每份计划稳定输出 112–160 token，**prompt 不可控**；真正管住它的是 schema 的 `maxLength`
+（实测 `maxLength: 30` 让同一次调用从 147 token 变成 23）。
+`SYSTEM_PROMPT` 里第 9 条也确实写了"一句话、<=120 字"。
+
+**所以这一跳不是缺陷，是已知取舍生效的那一次。** 记下来，不要"顺手放宽契约"。
+
+### 10.4 结论：闸门已经不是瓶颈，**输入量与模型的意愿**是
+
+上面两个修复（`b946523` 登记 `一键使用`/`使用`；`864ea4b6` 缺 flag 时由 kind 派生可执行性）
+针对的是 2026-10-08 那天 58 次 `PLAN_TARGET_IS_NOT_A_CONTROL` —— **它们是那天最大的一族拒绝，确实该修**。
+但它们**不可能移动这个漏斗**，因为漏斗的墙在更上游：
+
+1. **问得太少**：`MODEL_CALLS_PER_HOUR = 0.333`；239 次观测摊在约 4 天里 ≈ **每 2–4 小时才遇到一个未知屏**。
+   而 `GAME_TASK_COMPLETION_RATE = 0.9726` ⇒ **未知屏稀有正是 AUTO 自己覆盖率高的结果**。
+2. **问到了也不动**：113 份提案里 **REPLAN 92（81%）**，只有 1 份 `EXECUTE`。
+   其中 105 份发生在没有记录 `element_mix` 的旧行上；能读到 mix 的那几份是 `exec=0/N`
+   ——屏幕没给可点的东西时，模型答 REPLAN 是**诚实**的，不是它在偷懒。
+3. **唯一一次它决定动手**，被一条刻意设计的 schema 约束按住了（§10.3）。
+
+**因此下一个真正的选择不是"再修哪个守卫"，而是两者之一**（都需要操作者/设计决定，不宜顺手改）：
+- 让 AUTO **主动走到已知覆盖面之外**（探索策略），把"未知屏的出现率"抬起来；或
+- 接受"覆盖率已 97%，所以学习份额天然低"，把 `TARGET_LEARNING_SHARE` 的口径按覆盖率解释。
+
+### 10.5 本轮**没有**验证的（不猜）
+
+- AUTO 自 2026-10-08T22:07:13+08:00 起被**操作者自己暂停**（`operator_intent=PAUSED`,
+  `reason="user pressed pause"`），此后没有真机轮次 ⇒ 上面所有数字都是**暂停前**的。
+- 本地模型服务已退出：16:59Z 时 18080 无监听、无 `llama-server` 进程，
+  而 `gui_model_service.json`（checked_at 15:01Z）仍写 `state: HEALTHY`。
+  历史 `VENUS_CALL_FAILED` 66 条里 **63 条**就是"服务不可达"。
+  **`ensure()` 在恢复时能否自愈，未验证**；也没为跑基准去起这个 5.4 GB 常驻服务。
