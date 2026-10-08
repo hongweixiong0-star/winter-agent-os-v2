@@ -89,7 +89,21 @@
     "what_the_crop_is": "the client's own 天数 tab caption with the edge of its pill, so the words pin the match to the pill they are drawn on",
     "registered_at": "2026-09-24"
    }
+  },
+  "升级": {
+   "label": "升级",
+   "semantic": "BTN_BUILD_UPGRADE",
+   "relation": "label_is_the_control",
+   "source": "MEASURED_REFUSALS_2026-10-08",
+   "evidence": {
+    "verified_by": "50 of the 58 PLAN_TARGET_IS_NOT_A_CONTROL refusals in learning/local_planner_steps.jsonl name this control, on page_key UNKNOWN::城墙; the model reply itself reads \"目标为继续建设生产力，当前城墙升级条件已满足，点击升级按钮即可推进。\"",
+    "why_registered": "The element table typed a printed button as TEXT_LABEL, so the model named it correctly and was refused. 50 of 58 refusals are this word.",
+    "why_no_template": "The manifest holds a verified crop (BTN_BUILD_UPGRADE, 升级/UPGRADE) but it contains the button countdown, which this project disqualifies, and it measures at most 0.2864 over 75 real frames against a 0.7 threshold -- it matches nothing, not even the button.  With label_is_the_control the control region is the box this frame OCRs for the word, which is measured, not stored.",
+    "measured_specificity": "the same crop over 75 real frames: max 0.2864, 0 of 75 over threshold; that crop is NOT used, only recorded here",
+    "recall": "UNMEASURED -- no current frame draws the wall panel, so no positive exists yet",
+    "registered_at": "2026-10-08"
+   }
   }
  },
- "updated_at": "2026-09-24T05:57:55.736591+00:00"
+ "updated_at": "2026-10-08T11:26:42.461675+00:00"
 }

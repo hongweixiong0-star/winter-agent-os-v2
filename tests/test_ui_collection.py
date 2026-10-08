@@ -459,6 +459,60 @@ class UnnamedPageTemplateSourcesTests(unittest.TestCase):
             [])
 
 
+class RegisteredTextButtonTests(unittest.TestCase):
+    """A registered ``label_is_the_control`` word is a control with no crop at all.
+
+    The measured need, from learning/local_planner_steps.jsonl: on page ``UNKNOWN::城墙`` the
+    local model answered ``{"decision":"EXECUTE","action":{"type":"CLICK_ELEMENT",
+    "target_element_id":"E16"},"reason":"…点击升级按钮即可推进。"}`` -- correct -- and was refused
+    with ``PLAN_TARGET_IS_NOT_A_CONTROL: E16 is TEXT_LABEL``.  That refusal accounts for 50 of the
+    58 in the ledger: the table could not type a printed button as a control.
+
+    The crop route was measured and rejected before this: the manifest's verified
+    ``BTN_BUILD_UPGRADE`` crop contains the button's own countdown (which this project disqualifies
+    a template for) and scores at most 0.2864 over 75 real frames against a 0.7 threshold -- it
+    matches nothing, not even the button.  ``label_is_the_control`` needs no crop: the region is
+    the box this frame's OCR measured for the word, so nothing stored is a coordinate.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.frame = Path(self.tmp.name) / "frame.png"
+        Image.new("RGB", (720, 1280), (20, 30, 40)).save(self.frame)
+        self.label_box = {"x_norm": 0.42, "y_norm": 0.68, "w_norm": 0.10, "h_norm": 0.03}
+
+    def _region(self, text: str) -> dict:
+        return {"text": text, "box_norm": dict(self.label_box),
+                "basis": "OCR_BOX", "score": 0.99, "detail": {}}
+
+    def _controls(self, record: dict, text: str):
+        with mock.patch.object(ui_collection, "grounding_regions",
+                               lambda *_a, **_k: [self._region(text)]):
+            return ui_collection.composite_controls(
+                self.frame, ocr=None, page="UNKNOWN", registry={text: record})
+
+    def test_a_self_relation_needs_no_crop(self):
+        found = self._controls({
+            "label": "升级", "semantic": "BTN_BUILD_UPGRADE",
+            "relation": ui_collection.RELATION_SELF, "source": "TEST",
+        }, "升级")
+        self.assertEqual([c["text"] for c in found], ["升级"])
+        self.assertEqual(found[0]["box_norm"], self.label_box,
+                         "the control region must be this frame's own label box")
+        self.assertEqual(found[0]["kind"], ui_collection.ELEMENT_INTERACTIVE_CONTROL)
+        self.assertEqual(found[0]["detail"]["source"], "LABEL_BOX_IS_THE_CONTROL")
+
+    def test_an_above_relation_still_needs_its_crop(self):
+        """The relaxation is scoped to the relation that claims it, and to nothing else."""
+        found = self._controls({
+            "label": "登录好礼", "semantic": "CONTROL[登录好礼]",
+            "relation": ui_collection.RELATION_ABOVE, "source": "TEST",
+        }, "登录好礼")
+        self.assertEqual(found, [],
+                         "a control_directly_above_label record with no crop must stay unlocated")
+
+
 class RetentionTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

@@ -2197,6 +2197,35 @@ def composite_controls(
                 measured = control_block_above_label(
                     frame_path, label_box, label=text, frame=size, image=image, text_boxes=others
                 )
+            if measured is None and relation == RELATION_SELF:
+                # ``label_is_the_control`` says the control *is* the printed word's own pill, so the
+                # box this frame's OCR already measured for that word is the control region.  No crop
+                # is required for that claim, and none is stored.
+                #
+                # This is what makes a curated text-button registry usable, and it exists because of
+                # a measured failure: on ``UNKNOWN::城墙`` the local model replied
+                # ``{"decision":"EXECUTE","action":{"type":"CLICK_ELEMENT","target_element_id":"E16"},
+                # "reason":"…点击升级按钮即可推进"}`` -- correct in every respect -- and was refused
+                # with ``PLAN_TARGET_IS_NOT_A_CONTROL: E16 is TEXT_LABEL``, 50 of the 58 such
+                # refusals in the ledger, because the table could not type a printed button as a
+                # control.  The manifest does hold a verified crop for it
+                # (``BTN_BUILD_UPGRADE``, aliases 升级/UPGRADE) but that crop contains the button's
+                # own countdown, which this project's own rule disqualifies -- and it measures 0.2864
+                # at best over 75 real frames, i.e. it matches nothing, including the button.
+                #
+                # Nothing stored is a coordinate (A §24.2/§24.4): ``label_box`` comes from this
+                # frame's OCR, and a word that is not printed here produces no region and no tap.
+                # The safety gate is the registry entry itself -- a person asserts which words name
+                # controls -- which is the same gate the cropped records already rely on.
+                measured = {
+                    "box_norm": dict(label_box),
+                    "icon_box_norm": None,
+                    "label_box_norm": dict(label_box),
+                    "basis": BASIS_LABEL_ON_CONTROL,
+                    "confidence": float(region.get("score") or 0.0),
+                    "detail": {"relation": RELATION_SELF, "template": "",
+                               "source": "LABEL_BOX_IS_THE_CONTROL"},
+                }
             if measured is None:
                 continue
             out.append({
