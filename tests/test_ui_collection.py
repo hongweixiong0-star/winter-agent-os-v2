@@ -513,6 +513,97 @@ class RegisteredTextButtonTests(unittest.TestCase):
                          "a control_directly_above_label record with no crop must stay unlocated")
 
 
+class TheSpeedupPanelTests(unittest.TestCase):
+    """The model was right about the screen, and the record was missing.
+
+    Measured from ``learning/local_planner_steps.jsonl`` (2026-10-08T03:31:49Z), the live reply on
+    the 士兵训练加速 panel was::
+
+        {"decision": "EXECUTE", "action": {"type": "CLICK_ELEMENT", "target_element_id": "E16"},
+         "expected": {"result": "training_completed"},
+         "reason": "Goal is to keep building productive; '一键使用' (Use All) is the only executable
+                    control to apply boosts and finish training"}
+
+    -- it named the control in English *and* Chinese -- and the contract answered
+    ``PLAN_TARGET_IS_NOT_A_CONTROL: E16 is TEXT_LABEL``.  Rebuilding the table on that exact frame
+    (located by image digest) with the registry as it then stood reproduces the ledger's own
+    ``element_count 16 / executable_count 0``, and E16 on it really is ``一键使用``.
+
+    So ``一键使用`` and ``使用`` are registered as ``label_is_the_control``.  ``立即完成`` is on the
+    same panel and is **refused on purpose**: it prints a gem cost (8,292 there, 15,699 on 城墙) and
+    ``OPERATIONAL.md`` puts 大额宝石 in the Strict tier.  Both halves are asserted here, because a
+    test that only pins the additions would let the next pass add the gem button as a "sibling".
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.frame = Path(self.tmp.name) / "frame.png"
+        Image.new("RGB", (720, 1280), (20, 30, 40)).save(self.frame)
+        self.label_box = {"x_norm": 0.42, "y_norm": 0.68, "w_norm": 0.10, "h_norm": 0.03}
+
+    def _table(self, text: str) -> list[dict]:
+        """The production table for a frame whose only printed word is ``text``."""
+        region = {"text": text, "box_norm": dict(self.label_box),
+                  "basis": "OCR_BOX", "score": 0.99, "detail": {}}
+        with mock.patch.object(ui_collection, "grounding_regions", lambda *_a, **_k: [region]):
+            return ui_collection.build_element_table(
+                self.frame, ocr=None, page="UNKNOWN::使用")
+
+    def test_the_word_the_refusal_named_is_now_a_control(self):
+        row = next(r for r in self._table("一键使用") if r["text"] == "一键使用")
+        self.assertEqual(row["kind"], ui_collection.ELEMENT_INTERACTIVE_CONTROL)
+        self.assertTrue(row["executable"])
+        self.assertEqual(row["semantic"], "BTN_USE_ALL_ITEMS")
+        self.assertEqual(row["box_norm"], self.label_box,
+                         "the region must be this frame's own label box, never a stored position")
+
+    def test_its_sibling_on_the_same_panel_is_a_control_too(self):
+        row = next(r for r in self._table("使用") if r["text"] == "使用")
+        self.assertEqual(row["kind"], ui_collection.ELEMENT_INTERACTIVE_CONTROL)
+        self.assertTrue(row["executable"])
+
+    def test_the_two_are_separate_keys_so_neither_stands_in_for_the_other(self):
+        """The match is an equality on the printed word, so ``使用`` must not match ``一键使用``."""
+        payload = json.loads(
+            (ui_collection.PROJECT_ROOT / ui_collection.ICON_CONTROL_REGISTRY).read_text(
+                encoding="utf-8"))
+        controls = payload["controls"]
+        self.assertIn("使用", controls)
+        self.assertIn("一键使用", controls)
+        self.assertNotEqual(controls["使用"]["semantic"], controls["一键使用"]["semantic"])
+
+        rows = self._table("一键使用")
+        offered = [r["text"] for r in rows
+                   if r["kind"] == ui_collection.ELEMENT_INTERACTIVE_CONTROL]
+        self.assertEqual(offered, ["一键使用"],
+                         "a frame printing only 一键使用 must offer exactly that one control")
+
+        # Two rows for the one word, and that is the table's design rather than a duplicate: the
+        # resolved control comes first so a label-grounded answer lands on the control's region, and
+        # the raw text row stays behind it, marked executable *because* this frame measured a control
+        # for it (``build_element_table``'s own ``control_labels``). Asserted so the shape is not
+        # mistaken for a bug by the next reader -- and so it cannot silently become three rows.
+        same_word = [r for r in rows if r["text"] == "一键使用"]
+        self.assertEqual([r["kind"] for r in same_word],
+                         [ui_collection.ELEMENT_INTERACTIVE_CONTROL, ui_collection.ELEMENT_TEXT_LABEL])
+        self.assertTrue(all(r["executable"] for r in same_word))
+
+    def test_the_gem_button_is_not_registered_and_the_reason_is_on_file(self):
+        row = next(r for r in self._table("立即完成") if r["text"] == "立即完成")
+        self.assertEqual(row["kind"], ui_collection.ELEMENT_TEXT_LABEL)
+        self.assertFalse(row["executable"], "a large gem spend must stay unpressable")
+
+        payload = json.loads(
+            (ui_collection.PROJECT_ROOT / ui_collection.ICON_CONTROL_REGISTRY).read_text(
+                encoding="utf-8"))
+        self.assertNotIn("立即完成", payload["controls"])
+        refused = {item["label"]: item for item in payload.get("refused_on_purpose") or []}
+        self.assertIn("立即完成", refused,
+                      "an absent record must say why it is absent, or the next pass re-adds it")
+        self.assertIn("宝石", refused["立即完成"]["reason"])
+
+
 class RetentionTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

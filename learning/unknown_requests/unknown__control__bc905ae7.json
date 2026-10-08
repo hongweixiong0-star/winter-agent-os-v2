@@ -1,0 +1,172 @@
+{
+ "request_id": "unknown__control__bc905ae7",
+ "unknown_type": "CONTROL",
+ "page_label": "使用",
+ "page_key": "UNKNOWN::使用",
+ "goal": "KEEP_BUILDING_PRODUCTIVE",
+ "frame_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261008_112917_779019\\20261008_112917_779019_step_007_before_20261008T033042567078.png",
+ "page_confidence": 0.0,
+ "ocr_texts": [
+  "士兵训练加速",
+  "10:21:52",
+  "选择加速道具进行加速",
+  "5分钟",
+  "1小时",
+  "1分钟",
+  "1.2万",
+  "236",
+  "2,177",
+  "10",
+  "总加速时间：",
+  "10:00:00",
+  "立即完成",
+  "使用",
+  "8,292",
+  "一键使用"
+ ],
+ "ocr_boxes": [
+  {
+   "text": "士兵训练加速",
+   "confidence": 0.9762,
+   "x_norm": 0.0556,
+   "y_norm": 0.1562,
+   "w_norm": 0.2681,
+   "h_norm": 0.0297
+  },
+  {
+   "text": "10:21:52",
+   "confidence": 0.9647,
+   "x_norm": 0.425,
+   "y_norm": 0.2234,
+   "w_norm": 0.1514,
+   "h_norm": 0.0234
+  },
+  {
+   "text": "选择加速道具进行加速",
+   "confidence": 0.9944,
+   "x_norm": 0.3139,
+   "y_norm": 0.2727,
+   "w_norm": 0.3708,
+   "h_norm": 0.0211
+  },
+  {
+   "text": "5分钟",
+   "confidence": 0.9987,
+   "x_norm": 0.1903,
+   "y_norm": 0.3328,
+   "w_norm": 0.1097,
+   "h_norm": 0.0297
+  },
+  {
+   "text": "1小时",
+   "confidence": 0.8726,
+   "x_norm": 0.4097,
+   "y_norm": 0.3344,
+   "w_norm": 0.1042,
+   "h_norm": 0.0273
+  },
+  {
+   "text": "1分钟",
+   "confidence": 0.9842,
+   "x_norm": 0.6278,
+   "y_norm": 0.3336,
+   "w_norm": 0.1,
+   "h_norm": 0.0281
+  },
+  {
+   "text": "1.2万",
+   "confidence": 0.9921,
+   "x_norm": 0.2292,
+   "y_norm": 0.4008,
+   "w_norm": 0.0972,
+   "h_norm": 0.0297
+  },
+  {
+   "text": "236",
+   "confidence": 0.9987,
+   "x_norm": 0.4694,
+   "y_norm": 0.4055,
+   "w_norm": 0.075,
+   "h_norm": 0.0219
+  },
+  {
+   "text": "2,177",
+   "confidence": 0.8916,
+   "x_norm": 0.6694,
+   "y_norm": 0.4055,
+   "w_norm": 0.0944,
+   "h_norm": 0.0242
+  },
+  {
+   "text": "10",
+   "confidence": 0.9989,
+   "x_norm": 0.7833,
+   "y_norm": 0.4914,
+   "w_norm": 0.0472,
+   "h_norm": 0.0219
+  },
+  {
+   "text": "总加速时间：",
+   "confidence": 0.9989,
+   "x_norm": 0.3028,
+   "y_norm": 0.5453,
+   "w_norm": 0.1847,
+   "h_norm": 0.0227
+  },
+  {
+   "text": "10:00:00",
+   "confidence": 0.9764,
+   "x_norm": 0.5569,
+   "y_norm": 0.5461,
+   "w_norm": 0.1431,
+   "h_norm": 0.0203
+  },
+  {
+   "text": "立即完成",
+   "confidence": 0.9973,
+   "x_norm": 0.2194,
+   "y_norm": 0.593,
+   "w_norm": 0.1569,
+   "h_norm": 0.0258
+  },
+  {
+   "text": "使用",
+   "confidence": 0.9998,
+   "x_norm": 0.6472,
+   "y_norm": 0.5992,
+   "w_norm": 0.1083,
+   "h_norm": 0.0398
+  },
+  {
+   "text": "8,292",
+   "confidence": 0.9475,
+   "x_norm": 0.2153,
+   "y_norm": 0.6203,
+   "w_norm": 0.1667,
+   "h_norm": 0.0258
+  },
+  {
+   "text": "一键使用",
+   "confidence": 0.9994,
+   "x_norm": 0.4056,
+   "y_norm": 0.6867,
+   "w_norm": 0.1889,
+   "h_norm": 0.032
+  }
+ ],
+ "filed_because": "the live model proposed a control on this screen and the contract refused it (PLAN_TARGET_IS_NOT_A_CONTROL: E16 is TEXT_LABEL, 2026-10-08T03:31:49Z). Filed so the frame is protected by the UNKNOWN evidence stream -- measured 2026-10-08, that stream held only the 15 manual sweepcases and nothing from the live calls, which is why a live refusal can become unreviewable once its episode rotates out of the 10,000-row ledger",
+ "refusal": {
+  "at": "2026-10-08T03:31:49.287424+00:00",
+  "error": "PLAN_TARGET_IS_NOT_A_CONTROL: E16 is TEXT_LABEL",
+  "element_count": 16,
+  "executable_count": 0,
+  "text_label_count": 16,
+  "model_reply": "{\"decision\": \"EXECUTE\", \"action\": {\"type\": \"CLICK_ELEMENT\", \"target_element_id\": \"E16\"}, \"expected\": {\"result\": \"training_completed\"}, \"reason\": \"Goal is to keep building productive; '一键使用' (Use All) is the only executable control to apply boosts and finish training\"}"
+ },
+ "resolution": {
+  "at": "2026-10-08",
+  "what": "registered 一键使用 and 使用 in knowledge/ui/icon_label_controls.json as label_is_the_control; 立即完成 on the same panel is refused on purpose (大额宝石)",
+  "verified_by": "rebuilding the element table on this exact frame: 18 elements, 一键使用 is INTERACTIVE_CONTROL/executable, 立即完成 stays TEXT_LABEL/not executable"
+ },
+ "ocr_source": "re-read with the project's own OCR service on this exact frame, 16 regions, matching the live refusal's own element_count 16. Filed the first time without it, and the benchmark then showed the model a screen with 0 elements -- the record must carry the reading the call was made from, or the case is not the case"
+}

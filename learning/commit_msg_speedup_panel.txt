@@ -1,0 +1,88 @@
+knowledge(ui): the model was right about the speedup panel, and the record was missing
+
+_The refusal said the answer was wrong. It was not: it said the answer was not on record._
+
+The live reply, `learning/local_planner_steps.jsonl`, 2026-10-08T03:31:49Z, on the 士兵训练加速 panel:
+
+    {"decision": "EXECUTE", "action": {"type": "CLICK_ELEMENT", "target_element_id": "E16"},
+     "expected": {"result": "training_completed"},
+     "reason": "Goal is to keep building productive; '一键使用' (Use All) is the only executable
+                control to apply boosts and finish training"}
+
+-- and the contract answered `PLAN_TARGET_IS_NOT_A_CONTROL: E16 is TEXT_LABEL`.  The model named the
+control in English *and* Chinese and was refused for not having a word for it.
+
+**Getting back to the frame.**  `ui_venus_online` / `local_planner_steps` record
+`frame_id = frame_<sha256[:16]>` of the image bytes and no path, so the picture behind a call could
+only be found by hashing candidates in the episode's own directory.  Getting to the right directory
+was half the work: the frames live under `dataset/raw/control_panel/runtime_auto/<episode_id>/`, and
+a first look under `dataset/raw/live_runtime/` returned nothing, which is how a wrong "the frame was
+pruned" conclusion gets made.  Measured afterwards: of 20,177 distinct frames the episode ledger
+cites, **20,177 are on disk**.  The frame is
+`.../20261008_112917_779019_step_007_before_20261008T033042567078.png`, 287,850 bytes, matching the
+call's own recorded `image_bytes` exactly.
+
+**The reproduction, on that frame, with the registry as it then stood:** 16 elements, every one a
+`TEXT_LABEL`, `executable_count 0` -- the ledger's own `element_count 16 / executable_count 0` -- and
+E16 really is `一键使用`.  So the typing failure is reproduced from the registry rather than argued
+from it, and the word the model wanted is named.
+
+**What is registered:** `一键使用` and its sibling `使用`, both `label_is_the_control`, so nothing
+stored is a coordinate -- the region is the box this frame's OCR measured for the word.  The sample
+is one frame each and the entries say so (`occurrences_reviewed`), because the honesty of "is it ever
+plain text elsewhere" rests on one observation here, not on a corpus sweep.
+
+**What is refused on purpose:** `立即完成`, on the same panel.  It prints a gem cost -- 8,292 there,
+15,699 on 城墙 -- and it is the orange gem-cost pill in both.  `OPERATIONAL.md` puts 大额宝石 in the
+Strict tier (门禁不放宽, §8) and `PRINCIPLES.md` requires 钻石 to pass the Risk Gate when
+unauthorised, so registering it would be a gate removal by registry entry.  The refusal is written
+*into the file* (`refused_on_purpose`) and asserted by a test, so the next pass cannot re-add it as a
+"sibling of the two that were just added".
+
+**The end-to-end measurement, with the project's own instrument**
+(`tools/benchmark_gui_unknown.py`, seven cases):
+
+    before  INVALID_ACTION_RATE 0.5714   ELEMENT_ID_VALIDITY null   element_plans 0
+    after   INVALID_ACTION_RATE 0.4286   ELEMENT_ID_VALIDITY 1.0    element_plans 1
+
+and the case itself, same words in the same model's reason:
+
+    [7/7] UNKNOWN::使用  elements=16  decision=EXECUTE  basis=FRAME_ELEMENT  target=E16  parse_error=""
+
+`ELEMENT_ID_VALIDITY 1.0` is the element path's whole guarantee and it was `null` before because no
+element-naming plan had ever survived.  `SAFE_DEFER_RATE` moves 1.0 -> 0.75, which is the intended
+direction and is only correct because this screen genuinely has an actionable control that the run's
+own goal wants.
+
+**One thing the acceptance does not say, stated rather than left to be discovered.**  Ids are
+positional (`E1..En` in emission order, composites first), so adding two controls renumbered this
+frame's table: the accepted plan's `target_element_id` is E16, which in the *new* table is the label
+copy of `使用`, while the model's reason still names `一键使用`.  Both are real buttons on the panel
+and both are now typed as controls, so the tap lands on the screen the model meant; the exact word is
+not the one its reason says.  The reuse path is unaffected because it is anchored on text, not on an
+id -- measured in its own payload: `grounding_basis: CURRENT_FRAME_OCR`, `ocr_anchor: word`.
+
+**The record that made the case reviewable.**  `learning/unknown_requests/unknown__control__bc905ae7.json`
+is filed for this screen, which also puts its frame under the UNKNOWN evidence stream's protection.
+Filed first *without* `ocr_texts`/`ocr_boxes`, and the benchmark then showed the model a screen with
+**0 elements** -- the case was not the case, and it made the first run's aggregate look worse than the
+code is.  Re-read with the project's own OCR service: 16 regions, matching the live refusal's own
+`element_count 16`.  That mistake is in the commit rather than silently corrected, because "the
+record must carry the reading the call was made from" is the kind of thing this project keeps
+re-learning.
+
+**Evidence-integrity found on the way, and left alone:**
+* the UNKNOWN protection stream held only the 15 manual sweepcases and **nothing filed by the live
+  calls**, so a live refusal whose episode rotates out of the 10,000-row ledger becomes unreviewable
+  -- measured: 5,447 of 6,615 episode directories are now empty, and 8 of the 15 sweepcase records no
+  longer have their frame;
+* the four remaining refusals on the `QUICK_PANEL_ROW_BUILDING` screen (2026-10-01/02) are already in
+  that state, so they are **recorded as unreviewable rather than guessed at**.
+
+**Proof.**  `tests/test_ui_collection.py::TheSpeedupPanelTests`, four cases, and the bite is shown
+rather than claimed: removing the two registry entries fails three of the four and leaves the gem
+refusal green in **both** directions -- the negative control does not depend on the additions.  A/B
+over the eight suites that read this registry: **23 failed with the entries, 27 without**, and the
+four that differ are exactly these tests; the other 23 are byte-identical in both states.  The file's
+own formatting was preserved (indent=1), so the diff is 51 lines rather than a 887-line reflow of a
+file nobody could then review.

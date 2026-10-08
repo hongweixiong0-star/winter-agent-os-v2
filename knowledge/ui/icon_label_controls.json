@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "note": "Printed words that name a control drawn directly above them, and how to locate that control on the current frame. This file holds IDENTITY and a RELATION, never a click position: 'template_path' is a picture of the control, matched on the frame in front of the run, and the tap target is wherever the match IS. Constitution A §24.2 forbids a stored coordinate as a tap target and §24.4 forbids reading a historical position to click; §24.3 explicitly allows a bounded search region, which is what 'search' records. A record may also carry 'allow_measured_block': true, which lets the measured-block gate run when no crop exists yet -- it is off by default because that gate failed its own calibration (see docs/LOCAL_PLANNER_ACCEPTANCE.md §7).",
  "controls": {
   "登录好礼": {
@@ -417,7 +417,56 @@
     "why_no_template": "label_is_the_control needs no crop: the control region is the box this frame OCRs for the word, so nothing stored is a coordinate",
     "registered_at": "2026-10-08"
    }
+  },
+  "使用": {
+   "label": "使用",
+   "semantic": "BTN_USE_ITEM",
+   "relation": "label_is_the_control",
+   "source": "MEASURED_REFUSALS_2026-10-08",
+   "evidence": {
+    "verified_by": "human review of the frame the refusal was made on, located by image digest",
+    "why_registered": "the sibling of the word that was refused, on the same panel and from the same frame: 使用 is the blue pill that applies the speedup item the run has selected, drawn beside 一键使用 and 立即完成. Registered in the same pass because the panel is now a screen the run can act on, and leaving the primary button uncatalogued would send the next round straight back into the same refusal with a different element id",
+    "not_the_refused_word": "stated rather than left to inference: the refusal named E16, and E16 was 一键使用, not 使用",
+    "occurrences_reviewed": "1/1 occurrence in the current ledgers. THIN ON PURPOSE AND RECORDED: one frame, so 'is it ever plain text elsewhere' is answered by one observation, not by a corpus sweep",
+    "frame": "dataset/raw/control_panel/runtime_auto/20261008_112917_779019/20261008_112917_779019_step_007_before_20261008T033042567078.png",
+    "frame_hash": "sha256:7cedf27b1b963e7156bbc6420b2c3375cdaa185d91308f143c4d11a7a44c08dc",
+    "refused_at": "2026-10-08T03:31:49Z",
+    "page_key_at_refusal": "UNKNOWN::使用",
+    "spends_no_gem": "the button carries no gem price; it applies units the account already owns. Contrast 立即完成 on the same panel, which prints a gem cost and is deliberately NOT registered",
+    "registered_at": "2026-10-08"
+   }
+  },
+  "一键使用": {
+   "label": "一键使用",
+   "semantic": "BTN_USE_ALL_ITEMS",
+   "relation": "label_is_the_control",
+   "source": "MEASURED_REFUSALS_2026-10-08",
+   "evidence": {
+    "verified_by": "human review of the frame the refusal was made on, located by image digest",
+    "why_registered": "THIS is the word the refusal was about. The model's own reply was {\"decision\":\"EXECUTE\",\"action\":{\"type\":\"CLICK_ELEMENT\",\"target_element_id\":\"E16\"},\"expected\":{\"result\":\"training_completed\"},\"reason\":\"... '一键使用' (Use All) is the only executable control to apply boosts and finish training\"} -- it named the word in English and in Chinese, and the contract answered PLAN_TARGET_IS_NOT_A_CONTROL: E16 is TEXT_LABEL. Rebuilding the table on that same frame with the registry as it then stood reproduces the ledger's own element_count 16 / executable_count 0, and E16 on it really is 一键使用. The answer was right; the record was missing",
+    "occurrences_reviewed": "1/1 occurrence of the printed word in the current ledgers. THIN, AND RECORDED AS SUCH: one frame, so 'is it ever plain text elsewhere' rests on one observation rather than a corpus sweep. What makes it usable is the relation: the control IS the printed word's own pill, so nothing is stored but the claim that this word names a button",
+    "frame": "dataset/raw/control_panel/runtime_auto/20261008_112917_779019/20261008_112917_779019_step_007_before_20261008T033042567078.png",
+    "frame_hash": "sha256:7cedf27b1b963e7156bbc6420b2c3375cdaa185d91308f143c4d11a7a44c08dc",
+    "refused_at": "2026-10-08T03:31:49Z",
+    "page_key_at_refusal": "UNKNOWN::使用",
+    "spends_no_gem": "applies owned items; no price is printed on it",
+    "registered_at": "2026-10-08"
+   }
   }
  },
- "updated_at": "2026-10-08T12:38:20.661391+00:00"
+ "updated_at": "2026-10-08T13:56:40.282132+00:00",
+ "refused_on_purpose": [
+  {
+   "label": "立即完成",
+   "decision": "NOT_REGISTERED",
+   "reason": "it is a 大额宝石 purchase. On 城墙 it prints 15,699 and on 士兵训练加速 8,292, and it is the orange gem-cost pill in both. OPERATIONAL.md puts 大额宝石 in the Strict tier (门禁不放宽, §8) and PRINCIPLES.md requires 钻石 to pass the Risk Gate when unauthorised. Registering it with label_is_the_control would make it freely tappable by any planner reply that names it, which is a gate removal this project does not do by registry entry",
+   "reviewed_frames": [
+    "dataset/raw/control_panel/runtime_auto/20261005_130426_511718/20261005_130426_511718_step_003_after_refresh_2_20261005T050504658438.png",
+    "dataset/raw/control_panel/runtime_auto/20261008_112917_779019/20261008_112917_779019_step_007_before_20261008T033042567078.png"
+   ],
+   "occurrences_reviewed": "2 occurrences in the ledgers, both the same orange gem-cost button: 城墙 (15,699) and 士兵训练加速 (8,292)",
+   "consequence": "a model proposal to tap it still comes back PLAN_TARGET_IS_NOT_A_CONTROL and is refused, which is the safe direction: refusing twice costs a turn, spending gems cannot be undone",
+   "decided_at": "2026-10-08"
+  }
+ ]
 }
