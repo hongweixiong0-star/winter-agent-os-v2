@@ -5126,15 +5126,17 @@ class ControlPanel:
         self._build()
         self._save_policy_state()
         self._save_panel_state()
-        # The host's bulk-delete guard counts deletions per *turn*; the retention pass counts
-        # per *call*.  Start-up and the first round boundary are the same turn, so two 30-file
-        # passes reached 60 and the guard aborted the process tree -- measured 2026-10-08:
-        # four WORKER_CRASH exits in 100 seconds, the recovery budget spent, AUTO paused, with
+        # **No retention pass at start-up**, deliberately.  The round boundary runs one, so a
+        # start-up pass drains nothing the next round would not, and what it costs is the whole
+        # risk: the host's bulk-delete guard counts deletions per *agent turn* across every
+        # process, while a budget can only be spent per *panel process*.  Measured 2026-10-08: a
+        # panel started three times inside one agent turn spent 30 each time, the guard fired at
+        # 50, and the worker died with
         # ``[safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED] {"count":50,"threshold":50,
-        # "scope":"turn"}`` in latest.log as the worker's last line.  One process therefore
-        # spends one budget across every pass it makes in a turn.
+        # "scope":"turn"}`` as its last log line -- twice in one afternoon.  A pass that spends
+        # zero on start-up cannot contribute to that sum at all.  The counter is still initialised
+        # here because the round boundary reads it before it writes it.
         self._retention_removed_this_turn = 0
-        self._enforce_retention()
         root.after(100, self._drain_events)
         root.after(250, self._tick)
         root.after(1000, self._refresh_runtime_snapshot)
