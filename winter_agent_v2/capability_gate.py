@@ -83,9 +83,42 @@ NO_PROGRESS_PROBE_MINUTES = 30
 # ordinary single failure is still AUTO's own business to retry.
 NO_PROGRESS_STREAK = 3
 
-# Episodes read back when a run asks the gate.  Only the tail matters: every rule is
-# "the most recent attempts of this goal".
-EPISODE_TAIL = 400
+# How far back the deferral projection reads, in hours.
+#
+# The gate reads episodes, not a queue, so the window is the whole of its memory: a goal
+# whose attempts all sit outside it is not "not stalled", it is **invisible**, and no rule
+# here can say anything about it.  Measured 2026-10-08 on the live ledger: the old
+# 400-row read returned 138 rows spanning **1 h 50 m of a single goal**
+# (``AVOID_STAMINA_WASTE``), so ``attempted`` held exactly one goal out of the 24 that had
+# really run, ``streaks`` held one entry, and the no-progress rule could only ever fire
+# for whichever goal happened to dominate the tail.  The 34-alternation
+# ``SUBMIT_RESOURCE_SEARCH`` <-> ``BACK`` loop that burned 6.5 minutes under
+# ``KEEP_MARCHES_PRODUCTIVE`` on 2026-10-08 00:42 could not be deferred, because
+# ``KEEP_MARCHES_PRODUCTIVE`` was not in the window at all.
+#
+# 24 h is not a round number, it is where the answer stops changing.  Replayed over the
+# same ledger (``E:/experiments/gate_window_replay.py``): 6 h reaches 15 goals and defers
+# 5; 24 h reaches 24 goals and defers 9; 72 h reaches the same 24 and defers the same 9.
+# So past a day the projection is already saturated, and a longer window buys nothing but
+# parse time.  Cost at 24 h: 2,586 rows and 0.56-0.72 s for the read, once per run.
+EPISODE_WINDOW_HOURS = 24
+
+# The most episode rows one read keeps.
+#
+# This is the **cost cap, not the definition** of the window.  Measured, 24 h of this
+# ledger is ~2,600 rows and bursts reach ~4,200 rows/day, so 4,000 covers a day on the
+# history this was measured against.
+EPISODE_TAIL = 4000
+
+# The most bytes one read touches, so a ledger of unusually fat rows cannot make the gate
+# slow.  When this binds it returns *fewer* rows, which can only make the window smaller
+# and therefore quieter -- a cap can never invent a deferral.  Measured mean row: 13,508 B
+# (2026-10-08), i.e. 4,000 rows ~= 54 MB.
+EPISODE_TAIL_BYTES = 64 * 1024 * 1024
+
+# The size of one backwards step while looking for the tail.
+EPISODE_TAIL_CHUNK = 1 << 20
+
 _EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 # Skill -> capability memo, so a per-step deferral check does not re-read the table.
@@ -150,20 +183,132 @@ def _moment(value: Any) -> datetime | None:
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
-def _episode_tail(path: Path, limit: int = EPISODE_TAIL) -> list[dict[str, Any]]:
-    """The last ``limit`` well-formed episode rows.  Unreadable file -> empty."""
+def _first_line_stamp(blob: bytes, offset: int) -> datetime | None:
+    """``recorded_at`` of the oldest complete line in ``blob``, or ``None``.
+
+    ``blob`` was read backwards, so its first line is the tail of a record that starts
+    before the read whenever ``offset > 0``; that partial line is skipped rather than
+    parsed.  ``None`` means "could not read this one", and every caller treats it as
+    "keep going" rather than as a boundary: one unreadable line must not be able to cut
+    the window short.
+    """
+    parts = blob.split(b"\n", 2)
+    index = 1 if offset else 0
+    if len(parts) <= index:
+        return None
     try:
-        with path.open("rb") as handle:
-            handle.seek(0, 2)
-            size = handle.tell()
-            # 4 KiB per row is a generous upper bound for an episode, so this reads
-            # about the right amount without parsing all 1,855 rows on every run.
-            handle.seek(max(0, size - limit * 4096))
-            chunk = handle.read().decode("utf-8", errors="replace")
+        payload = json.loads(parts[index].decode("utf-8", errors="replace"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    return _moment(payload.get("recorded_at"))
+
+
+def _episode_tail(
+    path: Path,
+    limit: int = EPISODE_TAIL,
+    *,
+    hours: float | None = EPISODE_WINDOW_HOURS,
+    now: datetime | None = None,
+) -> list[dict[str, Any]]:
+    """The newest episode rows within ``hours``, at most ``limit`` of them.
+
+    **The old reader did not return what it said it did, and the gap was the whole
+    window.**  It seeked back ``limit * 4096`` bytes and its own comment called 4 KiB "a
+    generous upper bound" for an episode.  Measured 2026-10-08: the live ledger's mean row
+    is **13,508 B** -- 3.3x the claimed bound -- so ``limit=400`` returned **138 rows**,
+    1 h 50 m of one goal.  Nothing downstream could tell: ``CapabilityGate.load`` asked for
+    400 rows, got 138, and every rule that says "this goal is not advancing" silently
+    became a rule about ``AVOID_STAMINA_WASTE`` alone.
+
+    So the read grows backwards in chunks until it really has ``limit`` rows, reaches the
+    start of the file, or is older than the window.  Growing rather than guessing is the
+    standard shape for this problem (there is no stdlib helper for it), and it is the only
+    shape that holds for any row length, including rows this project has never written.
+    The chunks are joined once at the end: prepending each 1 MiB chunk onto the buffer
+    copies the whole buffer every step, which measured 1.7 s for a 54 MB read against
+    0.27 s spent parsing it -- most of the cost of the read was the read.
+
+    Three bounds keep it finite, and none can over-report:
+
+    * ``hours`` -- the window itself.  It is checked as the read grows, so the read stops
+      at the window instead of at a row count that only approximates it;
+    * ``limit`` rows -- a hard count, the backstop for a burst of very short rows;
+    * ``EPISODE_TAIL_BYTES`` -- a hard byte budget.  When this one binds, the read returns
+      *fewer* rows than asked for, which shrinks the window and can only make the gate
+      quieter.  A cap must never be able to invent a deferral, and this one cannot.
+
+    A row with no readable timestamp is kept rather than dropped: this function cannot place
+    it in time, and silently discarding evidence it cannot read is how the count would drift
+    away from the ledger without anyone noticing.  Live episodes always carry
+    ``recorded_at``, so this is a guard, not a case.
+
+    **One assumption, named once.**  Reading from the end and stopping when a bound is
+    reached returns "the newest rows in *file* order".  That is the same set as "the newest
+    rows in time" only while ``recorded_at`` is non-decreasing in file order -- an
+    append-only ledger written by one loop.  Measured over the whole live ledger
+    (2026-10-08): **0 inversions in 10,179 stamped rows**.  It is not an extra assumption
+    this read introduces; the row cap and the byte cap already rest on it, because both also
+    drop rows from the old end.  Where it can bite matters, though -- a dropped row that
+    showed *progress* would hold a streak open -- so the equivalence is pinned by a test that
+    reads the same fixture with the early stop and with it disabled, and compares.
+
+    Unreadable file -> empty, unchanged: a gate that cannot read its evidence defers
+    nothing, which is yesterday's behaviour and never a refusal to play.
+    """
+    try:
+        size = path.stat().st_size
     except OSError:
         return []
+    if size <= 0:
+        return []
+
+    clock = now or datetime.now(timezone.utc)
+    cutoff = (
+        clock - timedelta(hours=float(hours)) if hours and hours > 0 else None
+    )
+    budget = min(size, EPISODE_TAIL_BYTES)
+    chunks: list[bytes] = []
+    newlines = 0
+    read = 0
+    offset = size
+    try:
+        with path.open("rb") as handle:
+            while offset > 0:
+                step = min(EPISODE_TAIL_CHUNK, offset, budget - read)
+                if step <= 0:
+                    break
+                offset -= step
+                handle.seek(offset)
+                chunk = handle.read(step)
+                chunks.append(chunk)
+                read += step
+                newlines += chunk.count(b"\n")
+                if newlines > limit:
+                    break
+                if cutoff is not None:
+                    # The chunks were read newest-first, so the oldest bytes read are in
+                    # the *last* chunk.  Checking that one chunk rather than the joined
+                    # buffer keeps this check O(1) per step instead of O(read so far).
+                    # Stopping here is exact only while ``recorded_at`` rises with file
+                    # order -- the same assumption the caps below rest on; the docstring
+                    # carries the measurement and the test that pins it.
+                    oldest = _first_line_stamp(chunks[-1], offset)
+                    if oldest is not None and oldest < cutoff:
+                        break
+    except OSError:
+        return []
+
+    blob = b"".join(reversed(chunks))
+    lines = blob.decode("utf-8", errors="replace").splitlines()
+    if offset and lines:
+        # The first line is the tail of a record that starts before the read, so it is
+        # not a JSON object and parsing it would fail rather than mislead -- drop it
+        # explicitly so the count below is rows really read.
+        lines = lines[1:]
     rows: list[dict[str, Any]] = []
-    for line in chunk.splitlines():
+    for line in lines:
         line = line.strip()
         if not line.startswith("{"):
             continue
@@ -173,7 +318,13 @@ def _episode_tail(path: Path, limit: int = EPISODE_TAIL) -> list[dict[str, Any]]
             continue
         if isinstance(payload, dict):
             rows.append(payload)
-    return rows[-limit:]
+    rows = rows[-limit:]
+    if cutoff is None:
+        return rows
+    return [
+        row for row in rows
+        if (stamp := _moment(row.get("recorded_at"))) is None or stamp >= cutoff
+    ]
 
 
 def capability_states(
@@ -467,7 +618,11 @@ class CapabilityGate:
         states = capability_states(snapshot, now=moment, policy=policy) if snapshot else {}
         compositions = goal_compositions(base)
         rows: Sequence[Mapping[str, Any]] = (
-            list(episodes) if episodes is not None else _episode_tail(base / "learning/episodes.jsonl")
+            list(episodes) if episodes is not None
+            # The window's clock is the gate's own ``moment``, not a second reading of the
+            # wall clock taken a few lines later.  Two clocks in one projection is how a
+            # boundary and the rows it bounds disagree about which side of it they are on.
+            else _episode_tail(base / "learning/episodes.jsonl", now=moment)
         )
 
         # A no-progress cooldown describes one version of the code. If the live
