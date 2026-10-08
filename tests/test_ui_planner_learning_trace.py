@@ -121,3 +121,26 @@ def test_stale_frame_rejection_stays_on_the_same_trace(tmp_path):
     assert refused[0]["trace_id"] == "unknown_parent"
     assert refused[0]["verdict"]["code"] == "CONTEXT_FRAME_MISMATCH"
     assert not any(row.get("stage") == "VERIFIER_SUCCESS" for row in rows(tmp_path))
+
+
+def test_the_planner_ledger_says_whether_this_frame_offered_a_control(tmp_path):
+    """Every planner-ledger row carries the element mix, not just the element count.
+
+    Measured 2026-10-08: ``executable_count`` was in **0 of 321** production rows, so the only way
+    to tell "this frame offered nothing tappable" apart from "the model named a printed label
+    anyway" was to recover the frame by its ``frame_hash`` -- and those frames had been pruned, so
+    the 50 ``E16 is TEXT_LABEL`` rows could not be classified at all.  Every row is built as
+    ``{**trace, ...}``, so this pins that the mix rides along on the ledger, not only on the trace.
+    """
+    advisor, client, request = setup(tmp_path)
+    assert advisor.take_request(request) is not None
+    plan_rows = [json.loads(line) for line in
+                 (tmp_path / "plans.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert plan_rows, "the planner ledger must carry a row for this call"
+    row = plan_rows[-1]
+    assert row["element_count"] == 1
+    # The request's own OCR box carries no ``element_kind``, so this element is neither a measured
+    # control nor a typed label -- it is unjudged, and saying so is the whole point of the count.
+    assert row["unjudged_count"] == 1
+    assert row["executable_count"] == 0
+    assert row["text_label_count"] == 0

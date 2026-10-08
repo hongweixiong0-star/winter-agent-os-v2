@@ -1004,6 +1004,17 @@ class ManagedAdvisor:
         # never reach the model, and those must not spend the budget.
         venus_screen_budget.record(trace.get("request_id") or request_id,
                                    path=self._screen_budget_path())
+        # The mix goes into ``trace`` itself, not only into this one trace stage.  Every ledger row
+        # below is built as ``{**trace, ...}`` -- the model-error row, the parse-refusal row, the
+        # success row, the COMPLETE row and the contract-gate row alike -- so this single
+        # assignment is what makes ``executable_count`` answerable from the ledger alone.
+        #
+        # Measured 2026-10-08: without it, `executable_count` was in **0 of 321** ledger rows, and
+        # the only way to tell "this frame offered nothing tappable" apart from "the model named a
+        # printed label anyway" was to recover the frame by its ``frame_hash`` -- and those frames
+        # had already been pruned, so the 50 ``E16 is TEXT_LABEL`` rows could not be classified
+        # from the record at all.  Three integers per row buy that answer permanently.
+        trace.update(_element_mix(elements))
         self._trace_stage("VENUS_CALLED", trace, **_element_mix(elements))
         call = self.client.ask_json(
             system=SYSTEM_PROMPT, user=render_packet(packet), purpose="ui_plan",
