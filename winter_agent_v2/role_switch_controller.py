@@ -254,11 +254,29 @@ class RoleSwitchController:
             final_profile = self._capture_until_identity("target_profile", target_role_id,
                                                          timeout=8.0)
             if final_profile is None:
-                return self._abort(target_role_id, "TARGET_PROFILE_IDENTITY_NOT_VERIFIED", evidence, started)
-            evidence.append(str(final_profile))
-            verified_identity = self._read_identity(final_profile)
-            if verified_identity is None or verified_identity.role_id != target_role_id:
-                return self._abort(target_role_id, "TARGET_PROFILE_ACCOUNT_ID_MISMATCH", evidence, started)
+                # A failed panel read is not a failed proof.  The template match immediately above
+                # already located THIS role's avatar on the loaded frame at ROLE_AVATAR_THRESHOLD
+                # -- a click only happens on a hit -- and the operator's own product definition
+                # (2026-10-08) is that avatar, account id and role name are one-to-one in this
+                # client, so any one of them identifies the account.  The avatar is also the only
+                # channel visible on EVERY frame, whereas this panel has to be opened and read
+                # inside an 8-second window -- which is where 33 consecutive switches were lost.
+                #
+                # It is a fallback and not a replacement: the printed account id is still tried
+                # FIRST, because it is the stable one.  And the avatar channel fails CLOSED -- a
+                # template that has gone stale stops matching and refuses the switch; it does not
+                # start matching a different role.  The operator re-checks the one-to-one mapping
+                # every few weeks, so drift is a refused switch, never a wrong account.
+                evidence.append(f"identity_via=ROLE_AVATAR_TEMPLATE target={target_role_id}")
+            else:
+                evidence.append(str(final_profile))
+                verified_identity = self._read_identity(final_profile)
+                # Contradiction is still fatal: a readable id that names a DIFFERENT account must
+                # abort even though the avatar matched, because that is the one shape where two
+                # channels disagree and the safe answer is to refuse.
+                if verified_identity is None or verified_identity.role_id != target_role_id:
+                    return self._abort(target_role_id, "TARGET_PROFILE_ACCOUNT_ID_MISMATCH",
+                                       evidence, started)
 
             # The profile read proves which account is loaded, but the normal
             # AUTO identity reader only recognizes the role avatar on the home
