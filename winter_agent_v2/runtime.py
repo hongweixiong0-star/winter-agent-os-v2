@@ -13,6 +13,7 @@ from typing import Any, Callable, Iterable, Mapping
 from .brain import RuleBrain
 from . import action_latency
 from .settle_policy import FrameChangeProbe, choose as choose_settle_policy
+from .retention import delete_past_the_hosts_gate
 from .rally import RallyTarget, live_rally_join_point, rally_target_for_goal
 from .verifier import verify_bear_rally_list_open
 from . import control_experience
@@ -4985,14 +4986,24 @@ class LiveRuntime:
 
         Never deletes the frame the step will record, and never deletes ``before_path``: the
         caller passes only what it is about to stop using.
+
+        ``except OSError`` alone was not enough, and this is the site where it showed: measured
+        2026-10-08 at 08:36:46, 08:37:06 and 08:37:40, three ``WORKER_RESULT_MISSING: exit=1``
+        crashes inside a minute, each one with the host's own line as the worker's last log
+        entry -- ``[safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED] {"count":50,"threshold":50,
+        "scope":"turn"}`` naming a single ``runtime_auto`` step frame.  The gate reports a
+        refusal as ``SystemExit``, which ``OSError`` cannot see, so it escaped and took the
+        worker with it; the panel spent its recovery budget and paused AUTO.  Losing a discard
+        never ends a step, so a *refused* discard must not end the run either.
         """
         candidate = getattr(path, "name", None)
         if not candidate or not str(superseded_by):
             return
+        target = Path(path)
+        if not (target.name and target.is_file()):
+            return
         try:
-            target = Path(path)
-            if target.name and target.is_file():
-                target.unlink(missing_ok=True)
+            delete_past_the_hosts_gate(lambda: target.unlink(missing_ok=True), target)
         except OSError:
             # Losing a discard never ends a step; the frame simply lives until retention
             # reaches it, which is the state this method exists to shorten, not to require.

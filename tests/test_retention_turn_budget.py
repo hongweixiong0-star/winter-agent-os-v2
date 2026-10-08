@@ -199,5 +199,49 @@ class DeleteGateToleranceTest(unittest.TestCase):
 
 
 
+    def test_the_runtime_discard_is_tolerant_too(self):
+        """The site where it actually showed: ``LiveRuntime._retire_superseded``.
+
+        Three crashes inside a minute on 2026-10-08 (08:36:46, 08:37:06, 08:37:40), each with
+        the host's own line as the worker's last log entry, all naming a single ``runtime_auto``
+        step frame. ``except OSError`` cannot see a ``SystemExit``, so the refusal escaped and
+        took the worker, the recovery budget and AUTO with it.
+        """
+        from winter_agent_v2.runtime import LiveRuntime
+
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        frame = Path(directory.name) / "20261008_163716_498476_step_002_after.png"
+        frame.write_bytes(b"a capture a newer one has replaced")
+        runtime = object.__new__(LiveRuntime)
+
+        def refusing_unlink(target, *args, **kwargs):
+            raise SystemExit(1)
+
+        with mock.patch.dict(os.environ, {self.retention.HOST_BULK_DELETE_GATE: "armed"}):
+            with mock.patch.object(Path, "unlink", refusing_unlink):
+                runtime._retire_superseded(frame, superseded_by="refresh_1")
+
+        self.assertTrue(frame.exists(), "the gate's decision is kept: the frame stays")
+
+    def test_the_runtime_discard_still_fails_when_the_gate_is_not_armed(self):
+        from winter_agent_v2.runtime import LiveRuntime
+
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        frame = Path(directory.name) / "frame.png"
+        frame.write_bytes(b"x")
+        runtime = object.__new__(LiveRuntime)
+
+        def refusing_unlink(target, *args, **kwargs):
+            raise SystemExit(1)
+
+        with mock.patch.dict(os.environ, {self.retention.HOST_BULK_DELETE_GATE: "armed"}):
+            with mock.patch.object(Path, "unlink", lambda target, *a, **k: os.remove(target)):
+                runtime._retire_superseded(frame, superseded_by="refresh_1")
+
+        self.assertFalse(frame.exists(), "an unarmed gate never blocks a real discard")
+
+
 if __name__ == "__main__":
     unittest.main()

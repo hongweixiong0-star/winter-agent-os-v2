@@ -244,11 +244,13 @@ def select_prunable_screenshots(
 MAX_DELETIONS_PER_PASS = 30
 
 #: The sandbox variable that says its bulk-delete gate is armed.  Deliberately the same name
-#: the suite's ``_past_the_hosts_delete_gate`` reads: one vocabulary, one meaning.
+#: the suite's own tolerance helper reads
+#: (``tests/test_control_plane_reload.py::_past_the_hosts_delete_gate``): one vocabulary, one
+#: meaning, so the two halves cannot drift apart.
 HOST_BULK_DELETE_GATE = "CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR"
 
 
-def _past_the_hosts_delete_gate(call, path: Path) -> bool:
+def delete_past_the_hosts_gate(call, path: Path) -> bool:
     """Run ``call()``, treating a *sandbox* refusal as "this pass is over".
 
     ``True`` when the path is gone, ``False`` when the host's gate refused to remove it.
@@ -343,7 +345,7 @@ def prune_runtime_screenshots(
         resolved = path.resolve()
         if not resolved.is_relative_to(resolved_root):
             continue
-        if not _past_the_hosts_delete_gate(
+        if not delete_past_the_hosts_gate(
             lambda target=resolved: target.unlink(missing_ok=True), resolved,
         ):
             # The sandbox refused. Every later removal in this turn would be refused too, so
@@ -378,7 +380,7 @@ def remove_empty_run_dirs(root: Path) -> list[Path]:
         if dirnames or filenames:
             continue
         try:
-            if not _past_the_hosts_delete_gate(path.rmdir, path):
+            if not delete_past_the_hosts_gate(path.rmdir, path):
                 # Same refusal as in the screenshot pass, and the same answer: an empty
                 # folder is not worth taking the run down for.  ``except OSError`` alone
                 # cannot see this one, because the gate raises SystemExit.
