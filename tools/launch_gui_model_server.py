@@ -184,16 +184,62 @@ class ServerProfile:
     context: int = CONTEXT
     kv_type: str = KV_TYPE
     port: int = PORT
+    #: How many layers' MoE expert tensors stay in CPU RAM.  ``None`` means "all of them", which
+    #: is ``-cmoe`` and is what production runs.
+    #:
+    #: **The obvious hypothesis was tested and refuted.**  Prompt evaluation is the cost here --
+    #: the server's own timings put 5,500-7,800-token prompts at 89-162 tok/s (28-74 s of a 32-80 s
+    #: call) against 17-25 tok/s for generation (4.4-6.8 s) -- and with every expert in RAM, each
+    #: micro-batch runs its expert FFN on the 8-core CPU.  Moving expert layers to the GPU looked
+    #: like the one lever that attacks that directly, and it would spend exactly the resource that
+    #: is spare (3,253 MiB of 8,188 MiB free with the model resident and the game running).  It
+    #: does not work: same four packets, one restart per row, ``-b/-ub 2048/1024``:
+    #:
+    #:     cpu_moe_layers   prompt tok/s   generation tok/s   VRAM free at peak
+    #:     None (all CPU)      176.6            26.1             3,433 MiB
+    #:     28 (5 on GPU)       177.7            21.6             3,415 MiB
+    #:
+    #: No gain on the half it was aimed at, a loss on the other half, and it buys no VRAM back
+    #: either.  So the wall is not the CPU's expert arithmetic, and the spare VRAM is not the
+    #: constraint it looked like.  Kept as a knob because a future model may behave differently,
+    #: and kept documented because "use the headroom" is a hypothesis that has now been measured
+    #: once -- the next account should not re-run it by intuition.
+    cpu_moe_layers: int | None = None
+    #: Logical and physical batch sizes.  Production ran 512/512, inherited from the UI-Venus era
+    #: along with the offload curve; re-measured for this model on 2026-10-08 because the docstring
+    #: above already warns that those numbers describe the old launch.
+    #:
+    #: Measured in place on the running server, same four real packets (prompt p50 5008 tokens),
+    #: one restart per row:
+    #:
+    #:     -b/-ub      prompt tok/s   generation tok/s   estimated total
+    #:      512/512        148.7            26.4            39.4 s
+    #:     2048/1024       199.3            21.8            32.0 s   <- this profile
+    #:     2048/512        141.7            23.1            41.8 s
+    #:
+    #: The whole gain is the *physical* batch: 512/512 -> 2048/1024 is +34% on prompt evaluation
+    #: (33.7 s -> 25.1 s of the call) against -17% on generation (5.7 s -> 6.9 s), a net ~19% off
+    #: the total.  Raising the logical batch alone (2048/512) is *worse than doing nothing*, which
+    #: is why the two are set together rather than tuned independently -- the win is in how many
+    #: prompt tokens one pass through the expert weights serves, not in how the batch is booked.
+    #:
+    #: Estimated total is ``prompt_tokens/prompt_rate + 150/generation_rate``: the measured prompt
+    #: plus a representative 150-token reply, because the two halves move in opposite directions
+    #: and a single latency number would hide that.
+    batch: int = 2048
+    ubatch: int = 1024
 
     def server_args(self) -> list[str]:
+        moe_args = (["-cmoe"] if self.cpu_moe_layers is None
+                    else ["--n-cpu-moe", str(int(self.cpu_moe_layers))])
         return [
             "-m", str(WEIGHTS),
             "--mmproj", str(MMPROJ),
             "-ngl", str(self.gpu_layers),
-            "-cmoe",
+            *moe_args,
             "-c", str(self.context),
             "-np", "1",
-            "-b", "512", "-ub", "512",
+            "-b", str(self.batch), "-ub", str(self.ubatch),
             "-ctk", self.kv_type, "-ctv", self.kv_type,
             "-fa", "on",
             "--image-min-tokens", "1024",
@@ -210,6 +256,9 @@ class ServerProfile:
             "context": self.context,
             "kv_type": self.kv_type,
             "port": self.port,
+            "cpu_moe_layers": self.cpu_moe_layers,
+            "batch": self.batch,
+            "ubatch": self.ubatch,
         }
 
 

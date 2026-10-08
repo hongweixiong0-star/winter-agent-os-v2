@@ -40,6 +40,7 @@ from __future__ import annotations
 import argparse
 import importlib
 import json
+import re
 import sys
 import time
 from datetime import datetime, timezone
@@ -248,6 +249,11 @@ def sweep(config: dict, profiles: list[launcher.ServerProfile], calls: int,
             peak_ram = max(peak_ram, _ram()["used_mib"])
         row["latency_ms"] = _stats(latencies)
         row["actual_prompt_tokens"] = _stats(prompt_tokens)
+        # The server's own split, because total latency conflates two different costs.  Measured
+        # 2026-10-08 on the production profile: 5,500-7,800-token prompts evaluate at 89-162 tok/s
+        # (28-74 s) while generation runs at 17-25 tok/s (4.4-6.8 s), so a change that helps one
+        # half and hurts the other is invisible in the total and obvious here.
+        row["server_timings"] = _server_timings()
         row["vram_peak"] = {"used_mib": peak_vram, "free_mib": _vram()["free_mib"]}
         row["ram_peak"] = {"used_mib": peak_ram, "free_mib": _ram()["free_mib"]}
         row["server_rss_peak_mib"] = _server_rss_mib()
@@ -341,6 +347,46 @@ def ladder(config: dict, manager: context_budget.ContextBudgetManager, targets: 
     return {"mode": "ladder", "rows": rows}
 
 
+def _server_timings(limit: int = 40) -> dict:
+    """The server's own prompt/generation split for this cell, from its log.
+
+    ``llama-server`` prints, per completed request::
+
+        prompt eval time =   37557.20 ms /  6009 tokens ( 6.25 ms per token, 160.00 tokens/s)
+               eval time =    6695.75 ms /   168 tokens (40.09 ms per token,  24.94 tokens/s)
+
+    Read from the log rather than inferred from the client's total, because the two halves move
+    independently and a profile that speeds one up while slowing the other is the case this
+    sweep exists to catch.  The log is opened with ``"w"`` at each launch, so this is always the
+    cell that is running.
+    """
+    prompt_rates: list[float] = []
+    eval_rates: list[float] = []
+    try:
+        text = launcher.LOG_PATH.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {"n_prompt": 0, "n_eval": 0}
+    for line in text.splitlines()[-limit * 4:]:
+        if "prompt eval time" in line:
+            match = re.search(r"([0-9.]+) tokens per second", line)
+            if match:
+                prompt_rates.append(float(match.group(1)))
+        elif "eval time" in line:
+            match = re.search(r"([0-9.]+) tokens per second", line)
+            if match:
+                eval_rates.append(float(match.group(1)))
+
+    def summarise(values: list[float]) -> dict:
+        if not values:
+            return {"n": 0, "p50": 0.0, "min": 0.0, "max": 0.0}
+        ordered = sorted(values)
+        return {"n": len(ordered), "p50": round(ordered[len(ordered) // 2], 1),
+                "min": round(ordered[0], 1), "max": round(ordered[-1], 1)}
+
+    return {"prompt_tokens_per_s": summarise(prompt_rates),
+            "generation_tokens_per_s": summarise(eval_rates)}
+
+
 def _stats(values: list[float]) -> dict:
     if not values:
         return {"n": 0, "p50": 0, "p95": 0, "max": 0, "min": 0, "mean": 0}
@@ -363,6 +409,13 @@ def main() -> int:
     parser.add_argument("--gpu-layers", default="",
                         help="comma list for --sweep, or one value for the report header")
     parser.add_argument("--kv", default="q8_0,f16", help="comma list of KV cache types")
+    parser.add_argument("--cpu-moe", default="",
+                        help="comma list of --n-cpu-moe values for --sweep. 'all' keeps every "
+                             "expert layer in RAM (-cmoe, the production default); a number N "
+                             "keeps the first N layers' experts in RAM and puts the rest on the "
+                             "GPU, which is the lever for prompt-processing speed")
+    parser.add_argument("--ubatch", default="",
+                        help="comma list of physical batch sizes for --sweep (default 512)")
     parser.add_argument("--context", type=int, default=context_budget.MAX_MODEL_CONTEXT)
     parser.add_argument("--targets", default=",".join(str(t) for t in DEFAULT_TARGETS))
     parser.add_argument("--calls", type=int, default=6)
@@ -394,8 +447,21 @@ def main() -> int:
     if args.sweep:
         layers = [int(v) for v in str(args.gpu_layers or launcher.GPU_LAYERS).split(",") if v.strip()]
         kvs = [v.strip() for v in args.kv.split(",") if v.strip()]
-        profiles = [launcher.ServerProfile(gpu_layers=n, context=args.context, kv_type=kv)
-                    for n in layers for kv in kvs]
+        # ``all`` is the production default (``-cmoe``); a number becomes ``--n-cpu-moe N``.
+        cpu_moe: list[int | None] = []
+        for raw in (str(args.cpu_moe).split(",") if str(args.cpu_moe).strip() else ["all"]):
+            value = raw.strip().lower()
+            if not value:
+                continue
+            cpu_moe.append(None if value == "all" else int(value))
+        ubatches = ([int(v) for v in str(args.ubatch).split(",") if v.strip()]
+                    if str(args.ubatch).strip() else [512])
+        profiles = [
+            launcher.ServerProfile(gpu_layers=n, context=args.context, kv_type=kv,
+                                   cpu_moe_layers=moe,
+                                   batch=max(512, ub), ubatch=ub)
+            for n in layers for kv in kvs for moe in cpu_moe for ub in ubatches
+        ]
         report["sweep"] = sweep(config, profiles, args.calls, args.timeout,
                                 keep_last=args.keep)
     if args.ladder:
