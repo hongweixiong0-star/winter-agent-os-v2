@@ -362,10 +362,25 @@ class ServerProfile:
     #: actually is.  Recorded so the next account does not re-run it.
     spec_type: str = ""
 
+    #: CPU threads for decode and for batch/prompt processing.  ``None`` leaves llama.cpp's own
+    #: default (``-1``, which resolved to 8 here -- the physical cores of the Ryzen 7 7840H).
+    #:
+    #: This is the last untested lever on the half that holds 80% of a call.  The batch profile
+    #: took prefill from 133.7 to 189.9 tok/s and the size is at its knee (8,192 measures no faster
+    #: than 4,096), so what is left is how many cores do the expert work: the expert tensors are in
+    #: RAM (``-cmoe``) and their FFN runs on the CPU, while MAA, MuMu and the game want cores too.
+    threads: int | None = None
+    threads_batch: int | None = None
+
     def server_args(self) -> list[str]:
         moe_args = (["-cmoe"] if self.cpu_moe_layers is None
                     else ["--n-cpu-moe", str(int(self.cpu_moe_layers))])
         spec_args = ["--spec-type", self.spec_type] if self.spec_type else []
+        thread_args: list[str] = []
+        if self.threads is not None:
+            thread_args += ["-t", str(int(self.threads))]
+        if self.threads_batch is not None:
+            thread_args += ["-tb", str(int(self.threads_batch))]
         return [
             "-m", str(WEIGHTS),
             "--mmproj", str(MMPROJ),
@@ -377,6 +392,7 @@ class ServerProfile:
             "-ctk", self.kv_type, "-ctv", self.kv_type,
             "-fa", "on",
             *spec_args,
+            *thread_args,
             "--image-min-tokens", "1024",
             "--image-max-tokens", "1024",
             "--host", HOST,
@@ -395,6 +411,8 @@ class ServerProfile:
             "batch": self.batch,
             "ubatch": self.ubatch,
             "spec_type": self.spec_type,
+            "threads": self.threads,
+            "threads_batch": self.threads_batch,
         }
 
 
