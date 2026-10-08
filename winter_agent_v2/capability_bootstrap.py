@@ -832,11 +832,35 @@ def acceptance_seed_allowed(root: Path | str | None = None) -> tuple[bool, str]:
             f"{open_seeds[0].state}）：同时只允许一个"
         )
 
+    # "Open" is not the same as "in flight", and the difference is the entire cold start.
+    #
+    # Measured 2026-10-08: the ledger held 14 records in state ``NEW``, **every one of them** with
+    # ``attempts == 0`` and ``job_id == ''`` -- never dispatched -- and their mere existence is
+    # what refused the seed ("已有未完成 trace（NAVIGATE_TO_MAP|NO_GOAL_PROGRESS|START_GATHER）").
+    # They could not be dispatched because the mechanism was unarmed; the mechanism could not be
+    # armed because they existed.  A closed circle, holding 199 capability records and a queue of
+    # 199 with no exit -- the permanent state §三·八 第九条 forbids and §三·六 第八条 names as the
+    # break to fix.  The ladder route could not break it either: its artifact is dated 2026-09-18
+    # and its first rung measures ``gap -> escalation -> submit -> real job id -> WORKING``, the
+    # WorkBuddy job channel the operator has since retired, so that rung can never read PASS again.
+    #
+    # What this restores is the rule this very block already states: what must not be running is a
+    # *seed* (checked just above, unchanged), and what must not be pending is *work in flight*.
+    # A record nobody has ever picked up is neither.  It is the evidence OF the cold start -- which
+    # is what the seed exists to break, per this function's own docstring.
+    #
+    # The predicate reads two facts the ledger already carries rather than a new flag: a record is
+    # in flight once something has claimed it (``job_id``) or attempted it (``attempts``).  Every
+    # record that was genuinely in flight before still refuses the seed.
+    def _in_flight(record: Any) -> bool:
+        return bool(getattr(record, "job_id", "")) or int(getattr(record, "attempts", 0) or 0) > 0
+
     current = current_development_trace(snapshot)
-    if current is not None:
+    if current is not None and _in_flight(current):
         return False, f"已有未完成 trace（{current.key}），不需要种子"
     for state_name in SEED_OPEN_STATES:
-        holders = [r for r in snapshot.records.values() if r.state == state_name]
+        holders = [r for r in snapshot.records.values()
+                   if r.state == state_name and _in_flight(r)]
         if holders:
             return False, f"台账里已有 {state_name} 记录（{holders[0].key}），不需要种子"
 

@@ -72,12 +72,43 @@ def test_each_condition_blocks_on_its_own(tmp_path: Path, missing: str, expect: 
     assert expect in why, why
 
 
-def test_an_open_trace_means_no_seed_is_needed(tmp_path: Path):
+def test_a_record_nobody_ever_picked_up_does_not_refuse_the_seed(tmp_path: Path):
+    """A record in ``NEW`` with ``attempts == 0`` and no ``job_id`` is not work in flight.
+
+    This test used to assert the opposite, and the assertion was wrong in production.  Measured
+    2026-10-08: the live ledger held 14 such records -- **every one** never dispatched -- and their
+    mere existence refused the seed ("已有未完成 trace（NAVIGATE_TO_MAP|NO_GOAL_PROGRESS|START_GATHER）").
+    They could not be dispatched because the mechanism was unarmed; the mechanism could not be armed
+    because they existed.  The circle held 199 capability records with no exit, which is the
+    permanent state §三·八 第九条 forbids.
+
+    Production evidence outranks a test, so the rule is now the one this block's own comment always
+    stated: a *seed* must not already be running (unchanged, checked above), and *work in flight*
+    must not be pending.  A record nobody has claimed is neither -- it is the evidence OF the cold
+    start the seed exists to break.
+    """
     root = _seedable(tmp_path)
     (root / "learning/workbuddy_escalations.jsonl").write_text(json.dumps({
         "event": "escalation_created", "key": "A|F|S", "capability": "A", "state": "NEW",
         "recorded_at": "2026-09-19T00:00:00+00:00",
     }) + "\n", encoding="utf-8")
+    ok, why = acceptance_seed_allowed(root)
+    assert ok is True, why
+
+
+def test_a_record_that_was_actually_dispatched_still_refuses_the_seed(tmp_path: Path):
+    """The safety this predicate protects is kept: claimed work still blocks the seed.
+
+    ``job_id`` and ``attempts`` are the two facts the ledger already carries that say "something
+    picked this up", so the refusal is read from the record rather than from a new flag.
+    """
+    root = _seedable(tmp_path)
+    (root / "learning/workbuddy_escalations.jsonl").write_text("\n".join([
+        json.dumps({"event": "escalation_created", "key": "A|F|S", "capability": "A",
+                    "state": "NEW", "recorded_at": "2026-09-19T00:00:00+00:00"}),
+        json.dumps({"event": "submitted", "key": "A|F|S", "job_id": "abc123",
+                    "capability": "A", "recorded_at": "2026-09-19T00:01:00+00:00"}),
+    ]) + "\n", encoding="utf-8")
     ok, why = acceptance_seed_allowed(root)
     assert ok is False
     assert "不需要种子" in why, why
