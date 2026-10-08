@@ -1019,7 +1019,19 @@ class ManagedAdvisor:
         call = self.client.ask_json(
             system=SYSTEM_PROMPT, user=render_packet(packet), purpose="ui_plan",
             element_count=len(elements), image_path=frame_path or None,
-            response_schema=response_schema(needs_box=not elements),
+            # ``needs_box`` follows "this frame offered nothing reliable to name", not "the table is
+            # empty".  Those differ on exactly the screen that matters: measured 2026-10-08, the
+            # MAIL page's table held 30 elements and **every one** was a TEXT_LABEL, so the old
+            # ``not elements`` asked for no region, ``parse_plan`` got ``box is None``, and its
+            # fall-through to the proposal channel -- the one that exists precisely for this case,
+            # see its own 2026-10-06 note -- was unreachable.  The screen stayed a blackhole one
+            # call site further up than the fix that was written for it.
+            #
+            # Strictly no behaviour change elsewhere: a table with a usable control still gets
+            # ``False`` (so the label-naming guard keeps its teeth), an empty table still gets
+            # ``True``, and an untyped table still gets ``False`` because an element with no
+            # measured ``kind`` is nameable.
+            response_schema=response_schema(needs_box=not _offered_a_usable_control(elements)),
         )
         self.steps += 1
         self._per_screen[page_key] = self._per_screen.get(page_key, 0) + 1

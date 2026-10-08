@@ -144,3 +144,50 @@ def test_the_planner_ledger_says_whether_this_frame_offered_a_control(tmp_path):
     assert row["unjudged_count"] == 1
     assert row["executable_count"] == 0
     assert row["text_label_count"] == 0
+
+
+def test_an_all_label_screen_makes_the_schema_ask_for_a_region(tmp_path):
+    """``needs_box`` must follow "nothing reliable was offered", not "the table is empty".
+
+    Measured 2026-10-08: the MAIL page's element table held 30 entries and every one was a
+    TEXT_LABEL, so ``not elements`` was False, no region was requested, ``parse_plan`` saw
+    ``box is None`` and refused -- which made its own fall-through to the proposal channel
+    unreachable.  That fall-through exists for exactly this screen, so the blackhole the
+    2026-10-06 fix was written to close was still open one call site further up.
+    """
+    seen: dict = {}
+
+    class SchemaClient:
+        def ask_json(self, **kwargs):
+            seen.update(kwargs)
+            # Names the printed label and carries no region: the honest reply of a model that was
+            # never asked for one, and the one the guard must still refuse.
+            return SimpleNamespace(
+                ok=True, error="", latency_ms=12.0, prompt_tokens=100,
+                text=json.dumps({
+                    "decision": "EXECUTE",
+                    "action": {"type": "CLICK_ELEMENT", "target_element_id": "E1"},
+                    "expected": {"result": "opened"}, "reason": "the only thing on this screen"}))
+
+    frame = tmp_path / "current.png"
+    frame.write_bytes(b"fresh captured frame")
+    request = unknown_advisor.build_request(
+        unknown_type=unknown_advisor.UNKNOWN_CONTROL,
+        page_label="UNKNOWN", page_key="UNKNOWN", frame_path=frame,
+        goal="MAIL_ROUTINE", character="ROLE_A",
+        ocr_texts=("邮件", "联盟"),
+        ocr_boxes=({"text": "邮件", "element_kind": "TEXT_LABEL"},
+                   {"text": "联盟", "element_kind": "TEXT_LABEL"}))
+    request.trace_id = "unknown_parent"
+    request.parent_trace_id = "session_parent"
+    request.semantic_target = ""
+    request.relevant_state_signature = "UNKNOWN"
+    advisor = ui_planner.ManagedAdvisor(
+        client=SchemaClient(), ledger=ui_planner.PlannerLedger(tmp_path / "plans.jsonl"),
+        root=tmp_path, max_steps_per_screen=2)
+
+    # An unboxed label-naming reply is still refused: §2 is untouched.
+    assert advisor.take_request(request) is None
+    schema = seen["response_schema"]
+    assert "semantic_target" in schema["required"]
+    assert ui_planner.VISION_BOX_KEY in schema["required"]
