@@ -661,3 +661,56 @@ day           OBSERVED  CALLED  PROPOSED  FAILED  REJECTED
   而 `gui_model_service.json`（checked_at 15:01Z）仍写 `state: HEALTHY`。
   历史 `VENUS_CALL_FAILED` 66 条里 **63 条**就是"服务不可达"。
   **`ensure()` 在恢复时能否自愈，未验证**；也没为跑基准去起这个 5.4 GB 常驻服务。
+
+### 10.6 那份唯一的 EXECUTE：把 reason 换短，它**通过全部契约门**（2026-10-09 实测）
+
+§10.3 判定"超长 reason 的拒绝是对的、是量过的设计"。这一节把它的**代价**量出来，
+因为代价决定"下一个该投哪一边"。
+
+回放方法：按摘要找回那一帧（`20261008_215017_046367_step_003_before_...png`，939,687 B），
+用当前登记表重建元素表与 packet，把台账里记下的那份 action 原样送进
+`ui_venus_online.validate_action`，**只改 `reason`**：
+
+```
+as recorded (long, 155 chars)  ->  refused PLAN_REASON_TOO_LONG @ SCHEMA
+with a short reason  (66 chars) ->  ALLOWED
+contract.reason_violation(long)  = 'PLAN_REASON_TOO_LONG'    （复现）
+contract.reason_violation(short) = ''
+```
+
+**⇒ 在这块屏上，一份形状相同的计划只差一个短 reason 就能成为本项目第一条 `CONTRACT_ALLOWED`。**
+（`CONTRACT_ALLOWED` 至今全库 0 行，见 §10.2。）
+
+**这条结论的边界，必须写清楚**：
+- 重建出来的表是 **45 元素 / 24 可执行**，而台账当时记的是 **33 / 12** ——
+  10-08 那次登记表修改之后，同一帧的元素编号变了，所以重建里的 `E6`（= `升级`）
+  **不是**模型当时点的那个 `E6`。因此这证明的是"**同形状**的计划能过"，
+  不是"那一份计划能过"。
+- 那一份**精确**的表**已经不存在**：`home__control__36e65c39` 在
+  `local_planner_steps.jsonl` 有 85 行、`ui_venus_online.jsonl` 有 255 行，
+  但 `learning/unknown_requests/` 里**没有它的记录**，所以它的 `ocr_boxes` 没被留存。
+
+### 10.6.1 顺手否掉一个提案：不要把元素表整张写进台账（量过再否）
+
+按"记录必须带上那次调用所依据的读数"的原则，自然会想到**把元素表存进 planner 台账**，
+这样每一次拒绝都能事后精确归因。**量了成本，否决**：
+
+```
+local_planner_steps.jsonl: 324 行, 均值 1218 B, 中位数 1488 B, 最大 1701 B, 共 0.41 MB
+一张 45 元素的紧凑身份表（id|text|kind|executable）≈ 2.1 KB/行
+⇒ 行宽约翻倍，整本台账约 0.41 MB -> 1.06 MB（2.6x）
+```
+
+而它能买到的信息**大部分已经从 `raw` 里可读**：模型自己会在 reason 里点名元素，
+本节三个案例全都有——`'一键使用' (Use All)…`、`The '前往查看' button…`、
+`the Wall at level 8 with an 'Upgrade' button (E6)`。
+⇒ 前一轮把 `element_count / executable_count / text_label_count / unjudged_count`
+四个整数写进每一行，是**比整张表更划算**的选择；**不要推翻它**。
+
+### 10.6.2 一个被否掉的假说（记下来免得下一个人再查一遍）
+
+曾怀疑 `chat_template_kwargs` 与 `_post` 的恢复逻辑不符（注释声称会重试，代码只认
+`response_format` 与 `temperature`）。**读原文后否掉**：那句"retries once without it"
+挂在 `response_format` 上，是真的；`chat_template_kwargs` 上方的注释说的是
+"**reply reader below still accepts either field** if a template ignores the flag"，
+即只在读回复那一侧容忍，**没有**承诺重试。**注释与代码一致。**
