@@ -130,6 +130,17 @@ BASIS_VISION_PROPOSAL = "UNTRUSTED_CURRENT_FRAME_PROPOSAL"
 #: The reason every refusal is filed under when the model is simply not there.
 PLANNER_UNAVAILABLE = "LOCAL_PLANNER_UNAVAILABLE"
 
+#: How many consecutive measured no-progress steps end an unknown screen's turn.
+#:
+#: Operator directive 2026-10-08 §二.四 gives exactly four stop conditions -- "Qwen says done",
+#: "Qwen says abort", "ten consecutive steps with no progress", "the operator interrupts" -- and
+#: §二.六 forbids a step cap.  So the bound is the directive's own number, counted the way it says
+#: to count it: ``no_progress_count``, consecutive steps whose measured ``goal_progress`` was
+#: False.  It is not a step budget -- a screen that keeps advancing is never cut off by it -- and
+#: it is what keeps "no step cap" from meaning "ask the same screen for ever", which the project
+#: has measured once already (84 calls on one screen, 0 resolutions).
+NO_PROGRESS_STOP = 10
+
 # ---------------------------------------------------------------------------- output contract
 #
 # Why the reply is constrained by a schema and not by a sentence in the prompt
@@ -328,6 +339,13 @@ Hard rules:
 10. You are not a chat model and this is not a conversation. The window is large (32768) so that
    a deep session fits, not so that you can think at length: answer with the decision above and
    nothing else. Do not write a plan, a rationale paragraph or a list of alternatives.
+11. You have plenty of time.  Take it.  (Operator directive 2026-10-08 §二.4: "你有充足的时间。
+   不确定就 OBSERVE，不着急。失败了可以重试。任务做不完没关系，重要的是看清楚每一步。")
+   There is no per-step time limit and no step budget: OBSERVE as many times in a row as you need,
+   retry a control that did nothing, and change your mind with REPLAN rather than persisting down
+   a direction you no longer believe in.  The only conditions that end the task are: you say the
+   goal is done, you say it cannot be done, ten consecutive steps changed nothing, or the
+   operator stops it.  Finishing is not the measure -- understanding each step is.
 """
 
 
@@ -958,7 +976,9 @@ class ManagedAdvisor:
             recent_steps=self.recent_steps[-HISTORY_TARGET:],
             session=self.session_context(page_key),
             last_failure=self._last_failure(),
-            remaining_steps=max(0, self.max_steps_per_screen - self._per_screen.get(page_key, 0)),
+            # Measured in *progress*, not in steps: the directive's stop condition is ten
+            # consecutive no-progress steps, so that is what "how much is left" means here.
+            remaining_steps=max(0, NO_PROGRESS_STOP - self.no_progress_count()),
             step_index=self.steps,
             # The caller wrote this question for the model -- it names the control that could
             # not be located and says to advance only that one.  Handing it over is the whole
@@ -1161,28 +1181,30 @@ class ManagedAdvisor:
         return Path(self.root) / venus_screen_budget.STORE_PATH
 
     def take_guard(self, page_key: str, request_id: str = "") -> bool:
-        """Whether this step is out of budget.  Bounded on purpose (section 3, path D).
+        """Whether this step is out of budget.
 
-        Three bounds now.  The first two were already here and they work within a run; the third is
-        the half that used to reset every cycle, because ``runtime.py`` builds this advisor fresh
-        per run ("a factory (called for a fresh advisor with fresh per-run budgets)") and
-        ``_per_screen`` is an in-memory dict.
+        The per-screen and per-run STEP caps are gone (operator directive 2026-10-08 §二.四: the
+        stop conditions are "Qwen says done / Qwen says abort / ten consecutive steps with no
+        progress / the operator interrupts" -- a step count is not one of them).  What replaces
+        them is the directive's own third condition, ``no_progress_count``, which counts
+        consecutive measured no-progress steps rather than calls.
 
-        Measured 2026-10-06 in ``learning/ui_venus_online.jsonl``: 228 ``VENUS_CALLED`` rows across
-        13 ``request_id``s, one screen asked **84** times -- about 42 runs at two per run -- with
-        ``UNKNOWN_RESOLUTION_RATE`` 0.0.  §48 says a screen gets about two attempts and *then*
-        Recovery → Cooldown → Next Goal; only the "two attempts" half existed.
+        Why a bound survives at all, in the project's own numbers rather than in principle: these
+        caps were added against a measurement -- 228 ``VENUS_CALLED`` rows across 13 ``request_id``s
+        with **one screen asked 84 times** and ``UNKNOWN_RESOLUTION_RATE`` 0.0.  "No step cap" read
+        literally re-opens exactly that.  Ten consecutive no-progress steps is the directive's own
+        number for closing it, and it bounds the same failure by progress instead of by count --
+        which is also what stops the anti-repetition rule from being able to freeze a screen: the
+        counter moves the moment a step does advance something.
 
-        Keyed on ``request_id`` rather than ``page_key``, matching the identity
-        ``unknown_advisor.ask`` suppresses on and finer than a page, so a page carrying several
-        distinct unknowns is not over-suppressed.  An empty id answers "not my business" rather
-        than refusing, so an id-less caller behaves exactly as before.
+        The cross-run cooldown stays.  It is neither a step cap nor a risk rule: it is the recovery
+        half §48 names (attempts -> Recovery -> Cooldown -> Next Goal), and without it a screen the
+        model keeps failing is re-asked on every run for ever, which is the permanent state
+        §三·八 第九条 forbids.
         """
-        if self.steps >= self.max_steps_per_run:
-            self.last_outcome = {"decision": "", "error": "PLANNER_RUN_BUDGET_SPENT"}
-            return True
-        if self._per_screen.get(page_key, 0) >= self.max_steps_per_screen:
-            self.last_outcome = {"decision": "", "error": "PLANNER_SCREEN_BUDGET_SPENT"}
+        if self.no_progress_count() >= NO_PROGRESS_STOP:
+            self.last_outcome = {"decision": "", "error": "PLANNER_NO_PROGRESS_STOP",
+                                 "no_progress_count": self.no_progress_count()}
             return True
         may_ask, why = venus_screen_budget.allow(request_id, path=self._screen_budget_path())
         if not may_ask:
@@ -1304,8 +1326,12 @@ class ManagedAdvisor:
         """
         return {
             "step_index": int(self.steps),
-            "remaining_steps": max(0, self.max_steps_per_screen - self._per_screen.get(page_key, 0)),
-            "remaining_run_steps": max(0, self.max_steps_per_run - self.steps),
+            # The remaining budget is measured in *progress*, not in steps: the directive's stop
+            # condition is ten consecutive no-progress steps, so that is what "how much is left"
+            # means to the model now.  Reporting a step cap here would tell it to hurry, which is
+            # the opposite of what §二.四 asks the prompt to say.
+            "remaining_steps": max(0, NO_PROGRESS_STOP - self.no_progress_count()),
+            "remaining_run_steps": None,
             "no_progress_count": self.no_progress_count(),
             "steps_on_this_screen": int(self._per_screen.get(page_key, 0)),
             "steps_in_session": len(self.recent_steps),

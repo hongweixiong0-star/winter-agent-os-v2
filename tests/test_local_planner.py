@@ -217,7 +217,16 @@ class PlanBecomesTheExistingAdviceTest(unittest.TestCase):
 
 
 class BudgetsAreBoundedTest(unittest.TestCase):
-    def test_a_screen_cannot_consume_the_whole_run(self):
+    def test_a_screen_is_stopped_by_no_progress_not_by_a_step_count(self):
+        """Operator directive 2026-10-08 §二.四: the stop conditions are done / abort / ten
+        consecutive no-progress steps / the operator interrupts -- a step count is not one of them.
+
+        These two tests used to pin ``max_steps_per_screen`` and ``max_steps_per_run``.  Both caps
+        are gone from ``take_guard``; what bounds a screen now is the directive's own third
+        condition, counted from measured progress rather than from calls.  The reason the bound
+        survives at all is the measurement the caps were added for: 228 ``VENUS_CALLED`` rows with
+        ONE SCREEN ASKED 84 TIMES and ``UNKNOWN_RESOLUTION_RATE`` 0.0.
+        """
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -225,28 +234,28 @@ class BudgetsAreBoundedTest(unittest.TestCase):
             advisor = ui_planner.ManagedAdvisor(
                 client=client,
                 ledger=ui_planner.PlannerLedger(Path(tmp) / "steps.jsonl"),
-                root=Path(tmp), max_steps_per_screen=1, max_steps_per_run=5,
+                root=Path(tmp), max_steps_per_screen=1, max_steps_per_run=1,
             )
+            # The per-call caps no longer bite: a second call on the same screen is allowed.
             self.assertIsNotNone(advisor.take_request(_request()))
             before = client.calls
-            advisor.take_request(_request())
-            self.assertEqual(client.calls, before, "the screen budget must stop the second call")
-
-    def test_the_run_budget_stops_the_calls(self):
-        import tempfile
-
-        with tempfile.TemporaryDirectory() as tmp:
-            client = _StubClient(execute())
-            advisor = ui_planner.ManagedAdvisor(
-                client=client,
-                ledger=ui_planner.PlannerLedger(Path(tmp) / "steps.jsonl"),
-                root=Path(tmp), max_steps_per_screen=9, max_steps_per_run=1,
-            )
-            advisor.take_request(_request())
-            before = client.calls
             advisor._requests.clear()
-            advisor.take_request(_request(page_key="OTHER::屏幕"))
+            advisor.take_request(_request())
+            self.assertGreater(client.calls, before,
+                               "a step count must no longer stop the second call")
+
+            # What does bite is ten consecutive no-progress steps.  ``observed`` must be one of the
+            # frame-difference words ``no_progress_count`` counts ("NONE"/"UNKNOWN"/"") -- a
+            # verdict of FAIL is not enough on its own, which is the distinction that keeps "the
+            # verifier failed" apart from "the screen did not change".
+            advisor.recent_steps[:] = [
+                {"skill": "OPENER", "control": "X", "observed": "NONE", "verifier": "FAIL"}
+                for _ in range(ui_planner.NO_PROGRESS_STOP)
+            ]
+            before = client.calls
+            self.assertIsNone(advisor.take_request(_request(page_key="OTHER::屏幕")))
             self.assertEqual(client.calls, before)
+            self.assertEqual(advisor.last_outcome["error"], "PLANNER_NO_PROGRESS_STOP")
 
 
 class ElementsComeFromTheQuestionItselfTest(unittest.TestCase):
@@ -683,12 +692,16 @@ class TheSessionIsRememberedTest(unittest.TestCase):
             advisor = _advisor_with(Path(tmp), execute())
             self.assertEqual(advisor._last_failure(), "")
 
-    def test_the_session_block_reports_both_budgets(self):
+    def test_the_session_block_reports_the_progress_budget(self):
         with tempfile.TemporaryDirectory() as tmp:
             advisor = _advisor_with(Path(tmp), execute())
             block = advisor.session_context("UNKNOWN::挂机收益")
             self.assertEqual(block["step_index"], 0)
-            self.assertEqual(block["remaining_run_steps"], advisor.max_steps_per_run)
+            # The remaining budget is in *progress* now, not in steps: the directive's stop
+            # condition is ten consecutive no-progress steps, and reporting a step cap here would
+            # tell the model to hurry, which is the opposite of what §二.4 asks the prompt to say.
+            self.assertEqual(block["remaining_steps"], ui_planner.NO_PROGRESS_STOP)
+            self.assertIsNone(block["remaining_run_steps"])
             self.assertEqual(block["steps_on_this_screen"], 0)
             self.assertIn("no_progress_count", block)
 

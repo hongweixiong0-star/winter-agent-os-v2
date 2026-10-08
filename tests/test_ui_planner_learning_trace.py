@@ -85,7 +85,17 @@ def test_unknown_on_known_home_joins_real_call_contract_and_verifier(tmp_path):
     assert not any(row.get("stage") == "MAA_EXECUTED" for row in trace_rows)
 
 
-def test_retry_calls_have_unique_ids_but_one_unknown_and_screen_budget_stays_two(tmp_path):
+def test_retry_calls_have_unique_ids_and_one_unknown_stays_one_unknown(tmp_path):
+    """A second attempt is a second call, and the cross-run budget is what ends the screen.
+
+    The step cap this used to pin (``max_steps_per_screen``) is gone -- operator directive
+    2026-10-08 §二.4 lists four stop conditions and a step count is not among them.  What ends a
+    screen now is §48's per-screen attempt budget, whose cross-run half is
+    ``venus_screen_budget``: under budget -> allow, at budget inside the cooldown -> refuse, and
+    after the cooldown -> one probe.  That bound is *not* removed, and the rung it sits on is why
+    (AUTO liveness outranks a specific development directive), backed by the measurement it was
+    added for: one screen asked 84 times with a resolution rate of 0.0.
+    """
     advisor, client, request = setup(tmp_path)
     assert advisor.take_request(request) is not None
     advisor.note_outcome(request.request_id, verifier_ok=False, result="NO_CHANGE")
@@ -100,7 +110,7 @@ def test_retry_calls_have_unique_ids_but_one_unknown_and_screen_budget_stays_two
     assert len([row for row in trace_rows if row.get("stage") == "UNKNOWN_OBSERVED"]) == 1
     successes = [row for row in trace_rows if row.get("stage") == "VERIFIER_SUCCESS"]
     assert successes[0]["call_id"] == latest_call_id
-    assert advisor.last_outcome["error"] == "PLANNER_SCREEN_BUDGET_SPENT"
+    assert advisor.last_outcome["error"] == "PLANNER_SCREEN_COOLDOWN_ACTIVE"
 
 
 def test_server_failure_records_attempt_without_inventing_proposal(tmp_path):
