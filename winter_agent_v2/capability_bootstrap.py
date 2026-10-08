@@ -612,23 +612,84 @@ REALTIME_GOALS = frozenset({
 REALTIME_SKILLS = frozenset({"JOIN_RALLY", "START_RALLY", "SCAN_MAP_FOR_BEAST"})
 
 DEFAULT_ARM_PATH = "config/bootstrap_arm.json"
+#: The artifact the ladder used to be read from.  Kept named so a reader can find the history, but
+#: **no longer read**: see ``main_loop_status`` for why.
 DEFAULT_P0_PATH = "dataset/truth_audit/p0_loop_20260918/P0_LOOP_STATUS.json"
+
+#: The live channel's own ledgers, and the rung each of its stages answers.
+#:
+#: This ladder replaces one that measured ``gap -> escalation -> submit -> real job id ->
+#: WORKING`` -- the WorkBuddy background-job channel.  The operator retired that channel, so its
+#: first rung could never read PASS again, and it was being read from an artifact whose
+#: ``generated_at`` was 2026-09-18: a permanent veto produced by a measurement of a subsystem that
+#: no longer exists.  §三·八 第二条 calls a permanently-excluded closure an architecture error and
+#: 第九条 forbids a state with no exit; §三·八 第十五条 says fix the wiring and the truth drift
+#: rather than add a framework, so this measures the channel that is actually running instead.
+#:
+#: The *standard* is unchanged -- "has the closure been demonstrated end to end at least once" --
+#: and so is the verdict rule: every rung must have fired at least once.  What changes is that the
+#: rungs are now read from the ledgers the loop writes on every step, recomputed on every call, so
+#: the gate opens **by itself** the first time a proposal becomes a verified execution.  It is no
+#: longer a file somebody has to remember to regenerate.
+LIVE_LADDER: tuple[tuple[str, str, str, str], ...] = (
+    ("P0-A", "learning/workbuddy_escalations.jsonl", "event", "escalation_created"),
+    ("P0-B", "learning/ui_venus_online.jsonl", "stage", "UNKNOWN_OBSERVED"),
+    ("P0-C", "learning/ui_venus_online.jsonl", "stage", "VENUS_CALLED"),
+    ("P0-D", "learning/ui_venus_online.jsonl", "stage", "VENUS_PROPOSED"),
+    ("P0-E", "learning/ui_venus_online.jsonl", "stage", "MAA_EXECUTED"),
+    ("P0-F", "learning/ui_venus_online.jsonl", "stage", "VERIFIER_SUCCESS"),
+)
+
+#: What each rung means, in the order a closure travels them.  Recorded beside the counts so a
+#: reader of the refusal can see which link is missing rather than only that something is.
+LADDER_MEANING = {
+    "P0-A": "a capability gap became a recorded escalation",
+    "P0-B": "an escalation became a screen-level UNKNOWN on the live client",
+    "P0-C": "that UNKNOWN reached the local model",
+    "P0-D": "the model returned a proposal the contract accepted",
+    "P0-E": "the runtime executed that proposal on the device",
+    "P0-F": "the verifier confirmed the result",
+}
+
+
+def _stage_count(path: Path, needle: str) -> int | None:
+    """How many rows carry ``needle``, or ``None`` when the ledger cannot be read.
+
+    ``None`` and ``0`` are kept apart on purpose: an unreadable ledger is *not measured*, which is
+    not the same statement as *measured zero*, and this project's rule is that a missing reading
+    must never be printed as a value.
+    """
+    try:
+        with path.open("r", encoding="utf-8", errors="replace") as handle:
+            return sum(1 for line in handle if needle in line)
+    except OSError:
+        return None
 
 
 def main_loop_status(root: Path | str | None) -> dict[str, Any]:
-    """Read the main autonomous-development loop's own ladder, if it exists.
+    """The main loop's P0 ladder, measured **now** from the ledgers the loop itself writes.
 
-    The operator's rule is "完成自主开发主闭环 P0 后自动启用该 Bootstrap 机制", so
-    this reads the loop's status artifact rather than a flag somebody has to
-    remember to flip.  A missing artifact is honestly *not* complete.
+    The operator's rule is "完成自主开发主闭环 P0 后自动启用该 Bootstrap 机制", so this reads the
+    loop's own evidence rather than a flag somebody has to remember to flip.  What it deliberately
+    no longer does is read a *dated file*: the previous implementation read one artifact whose
+    ``generated_at`` was 2026-09-18, so twenty days of real work could not change the answer.
+
+    A rung is ``PASS`` once it has fired at least once, which is the same standard the retired
+    ladder used ("demonstrated end to end at least once").  A rung whose ledger is unreadable is
+    ``UNMEASURED``, never ``PASS`` -- not knowing is not evidence.
     """
     base = Path(root) if root else Path(__file__).resolve().parents[1]
-    path = base / DEFAULT_P0_PATH
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {}
-    return payload if isinstance(payload, dict) else {}
+    stages: dict[str, Any] = {}
+    for tag, relative, key, value in LIVE_LADDER:
+        count = _stage_count(base / relative, f'"{key}": "{value}"')
+        verdict = "UNMEASURED" if count is None else ("PASS" if count >= 1 else "NOT_PROVEN")
+        stages[f"{tag} {LADDER_MEANING[tag]}"] = {
+            "verdict": verdict,
+            "recorded_in": relative,
+            "stage": value,
+            "count": count,
+        }
+    return {"stages": stages, "measured_from": "live ledgers", "path_read": None}
 
 
 def arm_state(

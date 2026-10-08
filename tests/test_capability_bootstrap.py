@@ -414,39 +414,68 @@ class TheGate(unittest.TestCase):
 
 
 class Arming(unittest.TestCase):
-    def _root(self, payload=None, override=None):
+    def _root(self, *, fired=(), override=None):
+        """A root whose ledgers carry exactly the rungs named in ``fired``.
+
+        The ladder used to be read from a file somebody had to regenerate, and its tests wrote
+        that file.  It is now measured from the ledgers the loop writes on every step, so a test
+        states which rungs have fired and this writes the rows that mean it -- which is also what
+        makes the gate re-measurable rather than a verdict frozen on the day it was written.
+        """
         tmp = Path(tempfile.mkdtemp())
         (tmp / "config").mkdir()
-        (tmp / "dataset/truth_audit/p0_loop_20260918").mkdir(parents=True)
-        if payload is not None:
-            (tmp / cb.DEFAULT_P0_PATH).write_text(json.dumps(payload), encoding="utf-8")
+        (tmp / "learning").mkdir()
+        lines: dict[str, list[str]] = {}
+        for tag, relative, key, value in cb.LIVE_LADDER:
+            if tag in fired:
+                lines.setdefault(relative, []).append(f'{{"{key}": "{value}"}}')
+        for relative, rows in lines.items():
+            (tmp / relative).write_text("\n".join(rows) + "\n", encoding="utf-8")
         if override is not None:
             (tmp / cb.DEFAULT_ARM_PATH).write_text(json.dumps(override), encoding="utf-8")
         return tmp
 
-    def test_a_missing_artifact_is_honestly_not_complete(self):
+    def test_ledgers_that_were_never_read_are_unmeasured_not_complete(self):
+        """Not knowing is not evidence.  A missing ledger is UNMEASURED, never PASS."""
         armed, reason, detail = cb.arm_state(self._root())
         self.assertFalse(armed)
         self.assertEqual(reason, cb.GATE_NOT_ARMED)
-        self.assertIn("no main-loop status artifact", detail)
+        self.assertIn("UNMEASURED", detail)
 
     def test_a_partial_ladder_does_not_arm_it(self):
-        payload = {"stages": {"P0-A gate -> job": {"verdict": "PARTIAL"},
-                              "P0-D live": {"verdict": "NOT PROVEN"}}}
-        armed, reason, detail = cb.arm_state(self._root(payload))
+        armed, reason, detail = cb.arm_state(self._root(fired=("P0-A",)))
         self.assertFalse(armed)
-        self.assertIn("P0-A=PARTIAL", detail)
-        self.assertIn("P0-D=NOT PROVEN", detail)
+        self.assertNotIn("P0-A", detail, "P0-A fired, so it is not one of the outstanding rungs")
+        self.assertIn("P0-B=UNMEASURED", detail)
+        self.assertIn("P0-F=UNMEASURED", detail)
 
     def test_every_stage_at_pass_arms_it_automatically(self):
-        payload = {"stages": {"P0-A": {"verdict": "PASS"}, "P0-F": {"verdict": "PASS"}}}
-        armed, reason, _ = cb.arm_state(self._root(payload))
+        every = tuple(tag for tag, _relative, _key, _value in cb.LIVE_LADDER)
+        armed, reason, _ = cb.arm_state(self._root(fired=every))
         self.assertTrue(armed)
         self.assertEqual(reason, "MAIN_LOOP_P0_PASS")
 
+    def test_the_ladder_is_re_measured_rather_than_frozen_on_a_file(self):
+        """The defect this replaced: a dated artifact kept a gate shut for twenty days.
+
+        Measured 2026-10-08: ``main_loop_status`` read a file whose ``generated_at`` was
+        2026-09-18 and whose first rung measured the retired WorkBuddy job channel, so no amount
+        of real work could change the answer -- a permanent veto from a subsystem that no longer
+        exists.  Here the same root arms the moment the last rung fires, with nothing regenerated
+        and nobody remembering anything.
+        """
+        tmp = self._root(fired=("P0-A", "P0-B", "P0-C", "P0-D", "P0-E"))
+        self.assertFalse(cb.arm_state(tmp)[0], "P0-F has not fired yet")
+        trace = tmp / "learning/ui_venus_online.jsonl"
+        with trace.open("a", encoding="utf-8") as handle:
+            handle.write('{"stage": "VERIFIER_SUCCESS"}\n')
+        armed, reason, _ = cb.arm_state(tmp)
+        self.assertTrue(armed, "the last rung firing must arm it with no other action")
+        self.assertEqual(reason, "MAIN_LOOP_P0_PASS")
+
     def test_an_operator_override_is_explicit_and_never_silent(self):
-        root = self._root({"stages": {"P0-A": {"verdict": "PARTIAL"}}},
-                          {"armed": True, "armed_by": "operator", "reason": "watch it once"})
+        root = self._root(fired=(),
+                          override={"armed": True, "armed_by": "operator", "reason": "watch it once"})
         armed, reason, detail = cb.arm_state(root)
         self.assertTrue(armed)
         self.assertEqual(reason, "OPERATOR_OVERRIDE")
