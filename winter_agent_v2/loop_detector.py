@@ -100,6 +100,11 @@ RUNG_WIDEN_OBSERVE = "widen_observe"
 RUNG_FEATURE_REOPEN = "feature_reopen"
 #: Go HOME and re-approach from a known page.  The runtime's existing OPEN_HOME skill.
 RUNG_HOME_RECOVERY = "home_recovery"
+#: Return to the last state in which this Goal actually moved.  The one rung of LongHorizonUI's
+#: CAE that V2 lacked: ``semantic_retry`` re-issues what just FAILED, this re-issues what last
+#: WORKED, which is a different question and the one a long-horizon flow needs.  It sits last
+#: because it is the most disruptive remedy short of handing the Goal back.
+RUNG_CHECKPOINT_ROLLBACK = "checkpoint_rollback"
 #: Hand the Goal back to the Scheduler.  The session ends; AUTO continues elsewhere.
 RUNG_DEFER_GOAL = "defer_goal"
 
@@ -109,6 +114,7 @@ RECOVERY_LADDER: tuple[str, ...] = (
     RUNG_WIDEN_OBSERVE,
     RUNG_FEATURE_REOPEN,
     RUNG_HOME_RECOVERY,
+    RUNG_CHECKPOINT_ROLLBACK,
     RUNG_DEFER_GOAL,
 )
 
@@ -642,7 +648,8 @@ __all__ = [
     "AUTO_CONTINUED", "DEVICE_RUNGS", "LOOP_DEFERRED", "LOOP_DETECTED",
     "LOOP_DETECTED_NET", "LOOP_FALSE_POSITIVE", "LOOP_RECOVERED", "LoopDetector",
     "LoopPattern", "LoopSignature", "LoopVerdict", "RECOVERY_LADDER",
-    "RELEVANT_STATE_FIELDS", "RUNG_DEFER_GOAL", "RUNG_FEATURE_REOPEN",
+    "RELEVANT_STATE_FIELDS", "RUNG_CHECKPOINT_ROLLBACK", "RUNG_DEFER_GOAL",
+    "RUNG_FEATURE_REOPEN",
     "RUNG_HOME_RECOVERY", "RUNG_LOCAL_REOBSERVE", "RUNG_SEMANTIC_RETRY",
     "RUNG_WIDEN_OBSERVE", "no_progress_block", "progress_from_outcome", "relevant_state_hash",
     "signature_rows",

@@ -81,6 +81,7 @@ from typing import Any
 
 from winter_agent_v2.loop_detector import (
     RECOVERY_LADDER,
+    RUNG_CHECKPOINT_ROLLBACK,
     RUNG_DEFER_GOAL,
     RUNG_FEATURE_REOPEN,
     RUNG_HOME_RECOVERY,
@@ -123,6 +124,10 @@ INTENT_GO_HOME = "go_home"
 #: ``_yield_to_next_goal``.  This is the ladder's last rung and the strongest ending available
 #: here -- it ends one Goal's turn, never the run.
 INTENT_YIELD_GOAL = "yield_goal"
+#: Go back to the last state in which this Goal actually moved.  The run re-issues the skill that
+#: last succeeded for it -- not the step that just failed, which is ``INTENT_SAME_STEP``.  The two
+#: read alike in a trace and mean opposite things, which is why they are separate names.
+INTENT_RESTORE_CHECKPOINT = "restore_checkpoint"
 
 #: The ladder, projected onto what the main path can carry out.  A tuple rather than a dict
 #: because this file keeps nothing mutable at module level, which is ``loop_detector``'s own
@@ -137,6 +142,7 @@ RUNG_INTENTS: tuple[tuple[str, str], ...] = (
     (RUNG_LOCAL_REOBSERVE, INTENT_SAME_STEP),
     (RUNG_WIDEN_OBSERVE, INTENT_WIDEN),
     (RUNG_HOME_RECOVERY, INTENT_GO_HOME),
+    (RUNG_CHECKPOINT_ROLLBACK, INTENT_RESTORE_CHECKPOINT),
     (RUNG_DEFER_GOAL, INTENT_YIELD_GOAL),
 )
 
@@ -253,6 +259,10 @@ class LoopWatch:
         self.skipped: list[str] = []
         #: Detections this run acted on, by intent.  Run-level telemetry, not truth.
         self.acted: dict[str, int] = {}
+        #: The last state in which each Goal actually moved: (skill, semantic target, page).
+        #: In memory on purpose -- writing it down would be a second source of truth about where a
+        #: Goal was, which §三·八 第十四条 forbids, and a stale one after any role switch.
+        self._checkpoints: dict[str, tuple[str, str, str]] = {}
 
     # ---------------------------------------------------------------- observation
 
@@ -291,14 +301,34 @@ class LoopWatch:
                       flush=True)
             return None
 
+        # A step that moved the Goal IS the checkpoint: "the last thing that worked" is what CAE
+        # rolls back to.  Recorded in this seam because it already carries the goal, the skill and
+        # the frame -- so the checkpoint costs no runtime change and cannot drift from the detector.
+        if progress is True and goal_id:
+            self._checkpoints[str(goal_id)] = (
+                str(skill_id or ""), str(semantic_target or ""), _page_of(after))
+
         if verdict.detected:
             intent, skipped = resolve(verdict.rung)
+            if intent == INTENT_RESTORE_CHECKPOINT and str(goal_id or "") not in self._checkpoints:
+                # Nothing to roll back TO for this Goal.  The rung cannot be carried out here, so
+                # walk on from the next one and record the skip: the trace then says the ladder had
+                # one fewer step, instead of the run quietly retrying nothing.
+                intent, more = resolve(RUNG_DEFER_GOAL)
+                skipped = tuple(skipped) + (RUNG_CHECKPOINT_ROLLBACK,) + tuple(more)
             for name in skipped:
                 if name not in self.skipped:
                     self.skipped.append(name)
+            # On a rollback the action to re-issue is the checkpoint's, not the looping step's: a
+            # Watch carrying the failed step's skill would be `semantic_retry` wearing the
+            # rollback's name -- the mislabelling this rung exists to make impossible.
+            roll = self._checkpoints.get(str(goal_id or ""), ("", "", ""))
+            restoring = intent == INTENT_RESTORE_CHECKPOINT
             self._pending = Watch(
-                goal_id=str(goal_id or ""), skill_id=str(skill_id or ""),
-                semantic_target=str(semantic_target or ""), intent=intent, rung=verdict.rung,
+                goal_id=str(goal_id or ""),
+                skill_id=roll[0] if restoring else str(skill_id or ""),
+                semantic_target=roll[1] if restoring else str(semantic_target or ""),
+                intent=intent, rung=verdict.rung,
                 pattern=verdict.pattern, reason=verdict.reason, repeats=verdict.repeats,
                 skipped=skipped,
             )
@@ -364,7 +394,8 @@ class LoopWatch:
 
 
 __all__ = [
-    "EMPTY_WATCH", "INTENT_GO_HOME", "INTENT_SAME_STEP", "INTENT_WIDEN",
+    "EMPTY_WATCH", "INTENT_GO_HOME", "INTENT_RESTORE_CHECKPOINT", "INTENT_SAME_STEP",
+    "INTENT_WIDEN",
     "INTENT_YIELD_GOAL", "LoopWatch", "RUNG_INTENTS", "UNAVAILABLE_ON_MAIN_PATH", "Watch",
     "resolve", "unmapped_rungs",
 ]

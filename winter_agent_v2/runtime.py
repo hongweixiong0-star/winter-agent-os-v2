@@ -84,7 +84,8 @@ from .goal_library import (
     newly_completed_goal_ids, progress_moved, route_for,
 )
 from .loop_watch import (
-    INTENT_GO_HOME, INTENT_WIDEN, INTENT_YIELD_GOAL, LoopWatch,
+    INTENT_GO_HOME, INTENT_RESTORE_CHECKPOINT, INTENT_WIDEN, INTENT_YIELD_GOAL,
+    LoopWatch,
 )
 from .global_scheduler_state import GlobalSchedulerStateStore
 from .task_completion import TaskCompletionStore
@@ -9340,6 +9341,24 @@ class LiveRuntime:
                             decision = Decision(
                                 "OPEN_HOME", f"loop_recovery_{watch.rung}",
                                 before.confidence, "home_opened",
+                            )
+                elif watch.intent == INTENT_RESTORE_CHECKPOINT:
+                    # Back to the last state that moved this Goal.  The remedy is an existing
+                    # skill dispatched as an ordinary decision -- the same surface INTENT_GO_HOME
+                    # uses, and the same verifier proves it.  No new executor, no new scheduler,
+                    # and no coordinate: the skill re-enters the page it re-entered the last time
+                    # it worked, which is why this needs no exception to the coordinate rule.
+                    restore = self.registry.get(watch.skill_id) if watch.skill_id else None
+                    if restore is not None and restore.ready(before):
+                        self._loop_watch.note_acted(watch.intent)
+                        self._narrate_once(
+                            f"loop {watch.rung} on {best_goal.goal_id}: back to the last "
+                            f"state that moved it ({watch.skill_id})"
+                        )
+                        if decision.skill != watch.skill_id:
+                            decision = Decision(
+                                watch.skill_id, f"loop_recovery_{watch.rung}",
+                                before.confidence, "checkpoint_restored",
                             )
                 elif watch.intent == INTENT_YIELD_GOAL:
                     self._loop_watch.note_acted(watch.intent)

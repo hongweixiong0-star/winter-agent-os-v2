@@ -30,6 +30,7 @@ from winter_agent_v2.loop_detector import (  # noqa: E402
     LOOP_RECOVERED,
     RECOVERY_LADDER,
     RELEVANT_STATE_FIELDS,
+    RUNG_CHECKPOINT_ROLLBACK,
     RUNG_DEFER_GOAL,
     RUNG_FEATURE_REOPEN,
     RUNG_HOME_RECOVERY,
@@ -279,7 +280,8 @@ class TheRecoveryLadderIsTheOneTheDirectiveSpecifiesTests(unittest.TestCase):
     def test_the_ladder_is_exactly_the_declared_order(self):
         self.assertEqual(RECOVERY_LADDER, (
             RUNG_SEMANTIC_RETRY, RUNG_LOCAL_REOBSERVE, RUNG_WIDEN_OBSERVE,
-            RUNG_FEATURE_REOPEN, RUNG_HOME_RECOVERY, RUNG_DEFER_GOAL,
+            RUNG_FEATURE_REOPEN, RUNG_HOME_RECOVERY, RUNG_CHECKPOINT_ROLLBACK,
+            RUNG_DEFER_GOAL,
         ))
 
     def test_repeats_escalate_monotonically_and_stop_at_defer(self):
@@ -333,7 +335,9 @@ class TheRecoveryLadderIsTheOneTheDirectiveSpecifiesTests(unittest.TestCase):
 
     def test_deferring_is_counted_separately(self):
         d = LoopDetector()
-        for _ in range(8):
+        # Two warm-up observations, then one rung per observation -- measured, so the count that
+        # reaches ``defer_goal`` moves with the ladder instead of being a literal to re-guess.
+        for _ in range(2 + len(RECOVERY_LADDER)):
             d.observe(sig())
         self.assertEqual(d.summary()[LOOP_DEFERRED], 1)
         self.assertTrue(d.observe(sig()).wants_defer,

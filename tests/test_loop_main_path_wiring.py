@@ -45,6 +45,7 @@ from winter_agent_v2.loop_detector import (  # noqa: E402
 )
 from winter_agent_v2.loop_watch import (  # noqa: E402
     INTENT_GO_HOME,
+    INTENT_RESTORE_CHECKPOINT,
     INTENT_SAME_STEP,
     INTENT_WIDEN,
     INTENT_YIELD_GOAL,
@@ -56,7 +57,8 @@ from winter_agent_v2.loop_watch import (  # noqa: E402
 MODULE = "loop_watch"
 #: Every remedy the projection may name.  A closed set on purpose: an ending added to it would
 #: have to be added here too, where the ``cannot end a run`` test would then see it.
-ALLOWED_INTENTS = (INTENT_SAME_STEP, INTENT_WIDEN, INTENT_GO_HOME, INTENT_YIELD_GOAL)
+ALLOWED_INTENTS = (INTENT_SAME_STEP, INTENT_WIDEN, INTENT_GO_HOME, INTENT_RESTORE_CHECKPOINT,
+                   INTENT_YIELD_GOAL)
 BANNED_IMPORTS = ("subprocess", "socket", "http", "urllib", "requests", "ctypes",
                   "torch", "numpy", "cv2", "onnxruntime", "openai", "adb")
 
@@ -390,7 +392,7 @@ class TheSeamFiresOnTheGoalFactAndNotOnTheOutcomeTests(unittest.TestCase):
         """Bounded by design: 3 identical answers, then one rung per repeat, then the ending."""
         watch = LoopWatch()
         rungs = []
-        for _ in range(8):
+        for _ in range(9):
             verdict = watch.observe_step(
                 role_id="A", goal_id="HERO_RECRUIT_ADVANCED", skill_id="S",
                 semantic_target="T", after={"page": "HOME"}, outcome="SUCCESS", progress=False)
