@@ -247,17 +247,29 @@ def test_target_avatar_does_not_make_popup_frame_ready_for_profile_click(tmp_pat
     assert observed == [popup, home]
 
 
+def _paid_offer_close_band_origin(size=(720, 1280)):
+    """The frame-relative origin of the band the close control is sought in."""
+    from winter_agent_v2.role_switch_controller import PAID_OFFER_CLOSE_ROI
+
+    width, height = size
+    return (max(0, round(PAID_OFFER_CLOSE_ROI["x_norm"] * width)),
+            max(0, round(PAID_OFFER_CLOSE_ROI["y_norm"] * height)))
+
+
 def test_paid_offer_close_uses_live_purchase_popup_close_candidate(tmp_path, monkeypatch):
     _store, controller = _role_switch_fixture(tmp_path)
     candidate = tmp_path / "dataset/candidate/templates/btn_close__step_001_before__0.png"
     candidate.parent.mkdir(parents=True)
     Image.new("RGB", (8, 8), "white").save(candidate)
     frame = tmp_path / "recharge-offer.png"
-    Image.new("RGB", (32, 32), "blue").save(frame)
+    Image.new("RGB", (720, 1280), "blue").save(frame)
+    left, top = _paid_offer_close_band_origin()
     calls = []
     monkeypatch.setattr(controller, "_match_image", lambda _image, semantic, template, **_kwargs: (
         calls.append((semantic, Path(template))) or
-        ({"hit": True, "center": (676, 45)} if Path(template) == candidate else None)
+        # A match centre is band-relative; this one is the close control itself
+        # on a 720x1280 frame, i.e. (609, 176) in frame coordinates.
+        ({"hit": True, "center": (163, 125)} if Path(template) == candidate else None)
     ))
     monkeypatch.setattr(controller, "_click", lambda x, y: calls.append((x, y)) or True)
     monkeypatch.setattr(controller, "_capture", lambda _label: tmp_path / "closed.png")
@@ -265,7 +277,61 @@ def test_paid_offer_close_uses_live_purchase_popup_close_candidate(tmp_path, mon
 
     assert controller._close_paid_offer(frame) is True
     assert calls[0][1] == candidate
-    assert calls[-1] == (676, 45)
+    assert calls[-1] == (left + 163, top + 125)
+
+
+def test_the_paid_offer_close_is_never_sought_outside_the_panel_header(tmp_path, monkeypatch):
+    """The measured failure mode: a stale crop matched the bottom navigation row.
+
+    On the live frame of 2026-10-08 the stored crop's best full-frame hit was at
+    y_norm 0.95, on the navigation bar, 1000 px below the control it was supposed
+    to be. Had that score crossed the threshold the controller would have tapped
+    the navigation row while claiming to dismiss a money offer. Bounding the
+    lookup has to make that case produce *no tap at all*.
+    """
+    _store, controller = _role_switch_fixture(tmp_path)
+    candidate = tmp_path / "dataset/candidate/templates/btn_close__step_001_before__0.png"
+    candidate.parent.mkdir(parents=True)
+    # A distinctive, matchable control image ...
+    control = Image.new("RGB", (16, 16), "white")
+    for x in range(16):
+        control.putpixel((x, x), (255, 0, 0))
+        control.putpixel((15 - x, x), (0, 255, 0))
+    control.save(candidate)
+    # ... pasted ONLY on the bottom navigation row, far below the offer panel.
+    frame = Image.new("RGB", (720, 1280), "blue")
+    frame.paste(control, (600, 1210))
+    frame_path = tmp_path / "post-login.png"
+    frame.save(frame_path)
+    clicks = []
+    monkeypatch.setattr(controller, "_click", lambda x, y: clicks.append((x, y)) or True)
+    monkeypatch.setattr(controller, "_capture", lambda _label: tmp_path / "after.png")
+    monkeypatch.setattr(controller, "_text", lambda _path: "主城 统帅")
+
+    assert controller._close_paid_offer(frame_path) is False
+    assert clicks == []
+
+
+def test_the_paid_offer_close_reports_its_match_in_frame_coordinates(tmp_path, monkeypatch):
+    _store, controller = _role_switch_fixture(tmp_path)
+    candidate = tmp_path / "dataset/candidate/templates/btn_close__step_001_before__0.png"
+    candidate.parent.mkdir(parents=True)
+    control = Image.new("RGB", (16, 16), "white")
+    for x in range(16):
+        control.putpixel((x, x), (255, 0, 0))
+        control.putpixel((15 - x, x), (0, 255, 0))
+    control.save(candidate)
+    frame = Image.new("RGB", (720, 1280), "blue")
+    frame.paste(control, (601, 168))  # centre (609, 176), inside the header band
+    frame_path = tmp_path / "post-login.png"
+    frame.save(frame_path)
+    clicks = []
+    monkeypatch.setattr(controller, "_click", lambda x, y: clicks.append((x, y)) or True)
+    monkeypatch.setattr(controller, "_capture", lambda _label: tmp_path / "after.png")
+    monkeypatch.setattr(controller, "_text", lambda _path: "主城 统帅")  # offer is gone
+
+    assert controller._close_paid_offer(frame_path) is True
+    assert clicks == [(609, 176)]
 
 
 def test_paid_offer_close_waits_for_animation_and_does_not_repeat_the_click(tmp_path, monkeypatch):
@@ -274,13 +340,13 @@ def test_paid_offer_close_waits_for_animation_and_does_not_repeat_the_click(tmp_
     candidate.parent.mkdir(parents=True)
     Image.new("RGB", (8, 8), "white").save(candidate)
     frame = tmp_path / "recharge-offer.png"
-    Image.new("RGB", (32, 32), "blue").save(frame)
+    Image.new("RGB", (720, 1280), "blue").save(frame)
     after_frames = iter((tmp_path / "still-visible.png", tmp_path / "closed.png"))
     Image.new("RGB", (32, 32), "red").save(tmp_path / "still-visible.png")
     Image.new("RGB", (32, 32), "green").save(tmp_path / "closed.png")
     clicks = []
     monkeypatch.setattr(controller, "_match_image", lambda *_args, **_kwargs:
-                        {"hit": True, "center": (676, 45)})
+                        {"hit": True, "center": (163, 125)})
     monkeypatch.setattr(controller, "_click", lambda x, y: clicks.append((x, y)) or True)
     monkeypatch.setattr(controller, "_capture", lambda _label: next(after_frames))
     monkeypatch.setattr(controller, "_text", lambda path: (
@@ -290,9 +356,10 @@ def test_paid_offer_close_waits_for_animation_and_does_not_repeat_the_click(tmp_
     controller.monotonic = lambda: now[0]
     controller.sleeper = lambda seconds: now.__setitem__(0, now[0] + seconds)
     controller.poll_seconds = 0.25
+    left, top = _paid_offer_close_band_origin()
 
     assert controller._close_paid_offer(frame) is True
-    assert clicks == [(676, 45)]
+    assert clicks == [(left + 163, top + 125)]
     assert now[0] == 0.25
 
 

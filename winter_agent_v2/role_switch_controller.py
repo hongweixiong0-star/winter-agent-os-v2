@@ -31,6 +31,24 @@ ROLE_AVATAR_THRESHOLD = 0.94
 PAID_OFFER_CLOSE_THRESHOLD = 0.88
 PAID_OFFER_CLOSE_VERIFY_TIMEOUT = 8.0
 
+#: Confine the close-control lookup to the offer panel's header.
+#
+# Two independent measurements (2026-10-08) say a whole-frame search is both
+# inaccurate and unsafe here. First, the template is a crop of a control that
+# moves: when the panel's header grew taller the stored crop stopped overlapping
+# the control, and the matcher's best full-frame hit migrated to the *bottom*
+# navigation row (y_norm 0.95) -- so a stale crop that happened to clear the
+# threshold would have spent the tap on the navigation bar rather than on the
+# popup. Second, the purchase button sits at y_norm 0.78, far below this band,
+# so no in-band match can ever reach the money surface.
+#
+# The band is deliberately wider than the control (274x333 px of a 720x1280
+# frame against a 40x40 glyph) so that ordinary panel resizing does not put the
+# control outside it; and a crop that no longer fits fails closed -- no match,
+# no tap, the role switch aborts exactly as it does today -- instead of tapping
+# somewhere unintended.
+PAID_OFFER_CLOSE_ROI = {"x_norm": 0.62, "y_norm": 0.04, "w_norm": 0.38, "h_norm": 0.26}
+
 
 @dataclass(frozen=True)
 class RoleSwitchResult:
@@ -722,18 +740,31 @@ class RoleSwitchController:
             image = np.asarray(Image.open(frame_path).convert("RGB"))
         except (OSError, ValueError):
             return False
+        height, width = image.shape[:2]
+        left = max(0, round(PAID_OFFER_CLOSE_ROI["x_norm"] * width))
+        top = max(0, round(PAID_OFFER_CLOSE_ROI["y_norm"] * height))
+        right = min(width, round((PAID_OFFER_CLOSE_ROI["x_norm"]
+                                 + PAID_OFFER_CLOSE_ROI["w_norm"]) * width))
+        bottom = min(height, round((PAID_OFFER_CLOSE_ROI["y_norm"]
+                                   + PAID_OFFER_CLOSE_ROI["h_norm"]) * height))
+        window = image[top:bottom, left:right]
+        if window.size == 0:
+            return False
         templates = (*PAID_OFFER_CLOSE_FALLBACKS, PAID_OFFER_CLOSE_TEMPLATE)
         for index, candidate in enumerate(templates):
             template = candidate if candidate.is_absolute() else self.root / candidate
             if not template.is_file():
                 continue
             result = self._match_image(
-                image, f"ROLE_SWITCH_PAID_OFFER_CLOSE_{index}", template,
+                window, f"ROLE_SWITCH_PAID_OFFER_CLOSE_{index}", template,
                 threshold=PAID_OFFER_CLOSE_THRESHOLD,
             )
             if not result or not result.get("hit") or not result.get("center"):
                 continue
-            if not self._click(*result["center"]):
+            # The match centre is relative to the band; the click is in frame
+            # coordinates, so the band origin has to go back on.
+            center_x, center_y = result["center"][0], result["center"][1]
+            if not self._click(int(center_x) + left, int(center_y) + top):
                 return False
             # Login offers animate out asynchronously. A frame captured in the
             # first few hundred milliseconds can still show the old overlay even
