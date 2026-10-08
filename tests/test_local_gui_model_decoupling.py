@@ -24,6 +24,7 @@ Each assertion below still fails if the property it names stops holding:
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 import sys
@@ -68,13 +69,64 @@ DECISION_LOOP = ("brain.py", "scheduler.py", "skills.py", "verifier.py", "goal_l
                  "executor.py", "executor_router.py", "maa_executor.py")
 
 
+def _code_without_docstrings(path: Path) -> str:
+    """This module's source with every docstring blanked out, comments left alone.
+
+    The distinction that matters for the endpoint scan is **prose versus code**, and this file
+    already had to make it once: ``test_only_the_planner_reads_the_client`` was a substring search
+    until ``unknown_advisor.py``'s docstring naming the module produced a false positive, and the
+    fix was to require an ``import`` statement -- the only way a module can actually reach code.
+
+    The same distinction, by line range rather than by keyword: a docstring is documentation, and
+    this project deliberately quotes measured log lines in its documentation.  A module that only
+    *mentions* an endpoint in prose does not spell it in code, and only the second is the thing
+    the single-client rule is about.
+    """
+    text = path.read_text(encoding="utf-8")
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return text
+    ranges: list[tuple[int, int]] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        body = getattr(node, "body", None) or []
+        if not body:
+            continue
+        first = body[0]
+        if (isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant)
+                and isinstance(first.value.value, str)):
+            ranges.append((first.lineno, getattr(first, "end_lineno", first.lineno)))
+    if not ranges:
+        return text
+    kept = [
+        line for number, line in enumerate(text.splitlines(), start=1)
+        if not any(start <= number <= end for start, end in ranges)
+    ]
+    return "\n".join(kept)
+
+
 class OneClientAndNoSecondTest(unittest.TestCase):
     def test_the_model_endpoint_is_reachable_from_exactly_one_module(self):
+        """Only code counts, and that is the lesson this file already learned once.
+
+        The scan used to run over the raw text, and it has been red ever since
+        ``gui_model_service.py`` documented the incident that produced it -- its docstring quotes
+        the real log line, ``LOCAL_GUI_MODEL_UNAVAILABLE 127.0.0.1:18080``.  That module does not
+        spell the endpoint at all in code: it reads it from ``config/v2.json``
+        (``section.get("endpoint")``).  So the finding was a false positive of the same kind
+        ``test_only_the_planner_reads_the_client`` was already fixed for -- "a scanner that cannot
+        tell an import from a sentence punishes documentation, which is exactly backwards" --
+        applied to the other token list.
+
+        Teeth kept, and asserted below: a literal in *code* is still an offence.
+        """
         offenders: list[str] = []
         for source in sorted((ROOT / "winter_agent_v2").glob("*.py")):
             if source.name == MODEL_CLIENT:
                 continue
-            text = source.read_text(encoding="utf-8")
+            text = _code_without_docstrings(source)
             for token in ENDPOINT_TOKENS:
                 if token in text:
                     offenders.append(f"{source.name}: {token}")
@@ -83,6 +135,18 @@ class OneClientAndNoSecondTest(unittest.TestCase):
             "the local model endpoint must stay in winter_agent_v2/local_gui_model.py so the "
             "client can be replaced without touching V2: " + ", ".join(offenders),
         )
+
+    def test_the_stripper_keeps_a_literal_that_is_really_in_the_code(self):
+        """The counter-case: prose is dropped, code is not."""
+        client = ROOT / "winter_agent_v2" / MODEL_CLIENT
+        stripped = _code_without_docstrings(client)
+        self.assertIn("http://127.0.0.1:18080", stripped,
+                      "the client's own endpoint literal must survive the strip")
+        service = ROOT / "winter_agent_v2" / "gui_model_service.py"
+        self.assertNotIn("18080", _code_without_docstrings(service),
+                         "...and the lifecycle module's *prose* must not be reported as code")
+        self.assertIn("18080", service.read_text(encoding="utf-8"),
+                      "the prose is still there -- it is documentation, not a violation")
 
     def test_only_the_planner_reads_the_client(self):
         """The invariant is "who can *reach* it", so only import statements count.
