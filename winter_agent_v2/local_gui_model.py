@@ -328,13 +328,32 @@ class LocalGUIModel:
             # first, then the loose ``json_object``, and only then nothing.  Dropping straight
             # to "any text at all" would trade a fast correct answer for an unconstrained one,
             # which is the failure this module already paid to remove.
-            if payload.get("response_format", {}).get("type") == "json_schema":
-                payload["response_format"] = {"type": "json_object"}
-                constraint = "json_object"
-            else:
-                payload.pop("response_format", None)
-                constraint = "none"
-            if exc.key == "temperature":
+            #
+            # **Each recovery is scoped to the key the server actually named.**  It was not, and
+            # that is a measured defect rather than a tidy-up: ``_post`` raises
+            # ``_RejectedKey`` for exactly two keys, ``response_format`` and ``temperature``, and
+            # the schema downgrade used to run on *either* one.  So a build that rejected
+            # ``temperature`` cost us the grammar as well -- silently, since the request was
+            # still well-formed and still answered.
+            #
+            # What that costs is not abstract.  The whole anti-prose design rests on the schema:
+            # ``ui_planner`` caps ``reason`` at ``maxLength: 120`` in the grammar and
+            # ``ui_venus_contract.reason_violation`` then *refuses* a longer one rather than
+            # truncating it.  Measured 2026-10-08T13:51:35Z: the only ``EXECUTE`` in this
+            # project's history -- page HOME, ``E6``, on the screen that had been asked 84 times
+            # across a week -- carried a three-sentence reason and was refused with
+            # ``PLAN_REASON_TOO_LONG``.  A reason that long cannot be generated under a grammar
+            # that bounds it (llama.cpp's own ``grammars/README.md`` turns ``maxLength: 100``
+            # into ``char{1,100}``), so that call was unconstrained, and this branch is the one
+            # that can do that without a word.
+            if exc.key == "response_format":
+                if payload.get("response_format", {}).get("type") == "json_schema":
+                    payload["response_format"] = {"type": "json_object"}
+                    constraint = "json_object"
+                else:
+                    payload.pop("response_format", None)
+                    constraint = "none"
+            elif exc.key == "temperature":
                 payload.pop("temperature", None)
             try:
                 body = self._post(payload, timeout_s=timeout_s)

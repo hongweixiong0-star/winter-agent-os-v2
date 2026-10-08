@@ -112,6 +112,49 @@ class TheReplyConstraintIsRecordedTests(unittest.TestCase):
         row = json.loads(self.ledger.read_text(encoding="utf-8").strip())
         self.assertEqual(row["reply_constraint"], "json_object")
 
+    def test_a_rejected_temperature_does_not_cost_the_schema(self):
+        """The recovery is per key, and this is the case that was wrong.
+
+        ``_post`` names exactly two keys it can be rejected for.  The recovery used to loosen the
+        reply constraint for *either* of them, so a build that complained about ``temperature``
+        silently took the grammar with it -- and with the grammar gone, ``reason`` grows past
+        ``maxLength`` and a correct plan is refused with ``PLAN_REASON_TOO_LONG``.
+        """
+        seen: list[dict] = []
+
+        def post(self, payload, timeout_s=None):
+            seen.append({
+                "format": (payload.get("response_format") or {}).get("type"),
+                "temperature": "temperature" in payload,
+            })
+            if len(seen) == 1:
+                raise _RejectedKey("temperature")
+            return _body()
+
+        self._ask(post)
+        self.assertEqual(seen[0], {"format": "json_schema", "temperature": True})
+        self.assertEqual(seen[1], {"format": "json_schema", "temperature": False},
+                         "removing temperature must not touch the reply constraint")
+        row = json.loads(self.ledger.read_text(encoding="utf-8").strip())
+        self.assertEqual(row["reply_constraint"], "schema")
+
+    def test_a_rejected_schema_does_not_cost_the_sampler(self):
+        """The mirror, so the scoping cannot be over-applied in the other direction."""
+        seen: list[dict] = []
+
+        def post(self, payload, timeout_s=None):
+            seen.append({
+                "format": (payload.get("response_format") or {}).get("type"),
+                "temperature": "temperature" in payload,
+            })
+            if len(seen) == 1:
+                raise _RejectedKey("response_format")
+            return _body()
+
+        self._ask(post)
+        self.assertEqual(seen[1], {"format": "json_object", "temperature": True},
+                         "the greedy sampler is not what the server complained about")
+
     def test_a_failed_call_still_says_what_it_was_asking_for(self):
         """A transport failure is not a reason to forget which constraint was attempted."""
         with mock.patch.object(LocalGUIModel, "_post",
