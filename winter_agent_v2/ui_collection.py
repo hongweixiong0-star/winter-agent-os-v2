@@ -700,6 +700,13 @@ def template_entries_from_candidates(
 
     The page filter is the directive's own (§四/§九 elsewhere): the same-looking icon on two pages
     is two different controls, so a template collected on MAP is not evidence about EVENT.
+
+    That argument is about two pages this project can *name*.  Against an unnamed page the name
+    carries no information about which control a crop is, and testing it there excluded every
+    candidate from every source -- so on a screen the reader could not name there were no
+    template regions at all, and nothing a textless control could be grounded against.  See
+    ``page_is_unnamed``; the match on the current frame is still the evidence, so a crop that is
+    not drawn produces no region and no tap.
     """
     wanted = str(page or "").strip()
     out: list[dict[str, Any]] = []
@@ -707,7 +714,8 @@ def template_entries_from_candidates(
         if len(out) >= limit:
             break
         record_page = str(getattr(record, "page", "") or "")
-        if wanted and record_page and record_page != wanted:
+        if (wanted and record_page and record_page != wanted
+                and not page_is_unnamed(wanted)):
             continue
         image_path = Path(str(getattr(record, "image_path", "") or ""))
         bbox = getattr(record, "bbox", None)
@@ -745,6 +753,10 @@ def template_entries_from_experience(
     which would have searched for a whole 720x1280 screenshot inside a 40 px window of another one.
     Nothing could ever have matched, so the source was quietly useless -- found by running it, not
     by reading it.
+
+    Same unnamed-page rule as ``template_entries_from_candidates``, and for the same reason: an
+    L1 registration measured on HOME is real evidence about a screen the reader has no name for,
+    because the crop still has to be found on the frame in front of the run.
     """
     wanted = str(page or "").strip()
     directory = Path(cache_dir) if cache_dir else TEMPLATE_DIR / "experience_crops"
@@ -753,7 +765,8 @@ def template_entries_from_experience(
         if len(out) >= limit:
             break
         record_page = str(getattr(record, "page", "") or "")
-        if wanted and record_page and record_page != wanted:
+        if (wanted and record_page and record_page != wanted
+                and not page_is_unnamed(wanted)):
             continue
         features = getattr(record, "visual_features", None)
         if not isinstance(features, Mapping):

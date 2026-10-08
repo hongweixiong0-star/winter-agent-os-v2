@@ -382,6 +382,62 @@ class UnnamedPageOfferTests(unittest.TestCase):
             self.assertFalse(ui_collection.page_is_unnamed(page))
 
 
+class UnnamedPageTemplateSourcesTests(unittest.TestCase):
+    """The same rule at the two places that decide which *templates* are searched.
+
+    ``composite_controls`` was one member of a family.  These two gate the evidence the grounding
+    pool is built from -- collected candidate crops and L1 experience crops -- and they used the
+    identical test: ``record_page != wanted``.  On a screen named UNKNOWN that excluded every
+    record, so the pool had no template regions at all and a textless control could never be
+    grounded, however well the model named it.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        base = Path(self.tmp.name)
+        self.frame = base / "source_frame.png"
+        Image.new("RGB", (720, 1280), (40, 50, 60)).save(self.frame)
+        self.box = {"x_norm": 0.10, "y_norm": 0.20, "w_norm": 0.08, "h_norm": 0.05}
+
+    def _candidate(self, page: str):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(page=page, image_path=self.frame, bbox=dict(self.box),
+                               semantic_id="BTN_TEST")
+
+    def _experience(self, page: str):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(
+            page=page, control="BTN_TEST",
+            visual_features={"box_norm": dict(self.box), "read_from_frame": str(self.frame)},
+        )
+
+    def test_an_unnamed_page_still_offers_collected_and_measured_templates(self):
+        candidates = ui_collection.template_entries_from_candidates(
+            [self._candidate("HOME")], page="UNKNOWN")
+        self.assertEqual(len(candidates), 1,
+                         "a crop collected on HOME was excluded by a page name that is not a page")
+        experiences = ui_collection.template_entries_from_experience(
+            [self._experience("HOME")], page="UNKNOWN",
+            cache_dir=Path(self.tmp.name) / "crops",
+        )
+        self.assertEqual(len(experiences), 1,
+                         "an L1 crop measured on HOME was excluded by an unnamed page")
+
+    def test_a_named_page_still_excludes_another_named_page(self):
+        self.assertEqual(
+            ui_collection.template_entries_from_candidates(
+                [self._candidate("HOME")], page="EVENT"),
+            [], "a crop collected on HOME must still not be evidence about EVENT")
+        self.assertEqual(
+            ui_collection.template_entries_from_experience(
+                [self._experience("HOME")], page="EVENT",
+                cache_dir=Path(self.tmp.name) / "crops2"),
+            [])
+
+
 class RetentionTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
