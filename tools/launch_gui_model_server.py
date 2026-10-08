@@ -84,6 +84,34 @@ Removing a 9B model from VRAM per round
 Nothing here reloads the model.  ``--stop`` is for a deliberate restart (a repin, a config
 change); the normal state is that this process is already up when the runtime asks.
 
+Which silicon is actually working (measured 2026-10-08)
+-------------------------------------------------------
+Sampled every 0.5 s during one real planner call (5,047-token prompt, 37 s), because "are we
+using the CPU, the discrete GPU and the integrated GPU" is a question about a measurement:
+
+    discrete GPU (RTX 4060)   util 11% / 56% / 99%   (min / median / max), VRAM 5,276-5,398 of 8,188
+    CPU (Ryzen 7 7840H)       35% median, 87% peak, of 16 logical cores; llama.cpp init n_threads = 8
+    integrated GPU (Radeon 780M)   **not used, and not usable by either component**
+
+The iGPU is not idle-by-neglect, and there are two independent reasons it cannot help:
+
+* this build is CUDA-only -- ``llama-server.exe --list-devices`` prints exactly one line,
+  ``CUDA0: NVIDIA GeForce RTX 4060 Laptop GPU``, so the model never sees the 780M; and
+* MuMu does not see it either: its own instance log records
+  ``"Adapters":["NVIDIA GeForce RTX 4060 Laptop GPU"]`` and
+  ``"Renderer":"MuMu GL (NVIDIA GeForce RTX 4060 Laptop GPU Direct3D11 vs_5_0 ps_5_0")``, i.e. the
+  emulator enumerates one adapter and renders on it.  Windows' per-app GPU preference is *already*
+  set to power-saving (``GpuPreference=1`` on every MuMu executable) and the emulator renders on
+  the discrete card anyway -- so that knob is spent, not available.
+
+**And the more useful reading of the same numbers: neither the GPU nor the CPU is saturated.**
+Median GPU 56% means the card was executing kernels barely over half the time; median CPU 35%
+means most cores were free.  The cost is therefore in the *handoff* between the CPU-resident
+expert stage and the GPU stages, not in capacity on either side -- which is consistent with two
+other measurements: moving expert layers to the GPU bought nothing (see ``cpu_moe_layers``), and
+the batch-size win above is a handoff win (a bigger ubatch means fewer chunks, so fewer
+CPU<->GPU round trips).  It is also why spending the spare VRAM is not the lever it looks like.
+
 The VRAM ledger, and why 32K did *not* force a smaller ``-ngl``
 ---------------------------------------------------------------
 Measured on 2026-09-30.  The per-process number is not available on Windows (WDDM), so every
