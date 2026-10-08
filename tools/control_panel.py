@@ -1261,6 +1261,35 @@ def should_foreground_emulator(
     return bool(want_package) and foreground_package != want_package
 
 
+def should_restart_the_emulator(
+    *, launch_already_requested: bool, restart_already_requested: bool,
+    failed_attempts: int, threshold: int = 3,
+) -> bool:
+    """May this call restart the emulator, having already tried launching it?
+
+    **A launch cannot rebind a dead ADB bridge, and this machine produces that state.**  Measured
+    2026-10-09, twice in one evening: ``mumu-cli info`` reported ``is_android_started: true`` and
+    ``player_state: start_finished`` while every serial in ``adb devices`` read ``offline`` and
+    ``netstat`` showed nothing listening on 16384/5555/7555 -- the instance was healthy and its ADB
+    bridge was not there.  ``adb kill-server``/``start-server``, ``adb disconnect`` + ``connect``
+    and the panel's own ``adb connect`` all failed, because a client cannot dial a port that is not
+    open; ``mumu-cli control -v 0 restart`` restored it both times, and the reconnect then succeeded
+    immediately.
+
+    What the panel did instead was launch once -- a no-op on an instance that is already running --
+    and then spend its whole 120-second budget retrying ``adb connect`` against a bridge that was
+    never going to appear.  The run then ended as ``error: device offline``, which the runtime
+    classifies as a ``SYSTEM_FAILURE``, so AUTO stopped by design.
+
+    The escalation is deliberately narrow: a launch must have been requested already, a restart must
+    not have been, and the reconnect must have failed ``threshold`` times first.  One extra attempt
+    per process, on the one verb this machine was measured to need.
+    """
+    if launch_already_requested is False or restart_already_requested:
+        return False
+    return int(failed_attempts) >= int(threshold)
+
+
 ROLE_SWITCH_RETRY_DELAY_MS = 15_000
 
 # The runtime re-observes the same role inside its own run when the Scheduler finds no
@@ -5025,6 +5054,8 @@ class ControlPanel:
         self._last_preview_render_at = 0.0
         self.stop_requested = self.paused = False
         self._device_launch_requested = False
+        #: The escalation above the launch, once per start: see ``should_restart_the_emulator``.
+        self._device_restart_requested = False
         #: § 闪屏: whether this round has already raised the emulator window.  ``_ensure_device``
         #: is called from 13+ sites -- once per phase of every round -- and each one used to
         #: foreground unconditionally, so a game that merely sat behind another window got yanked
@@ -8044,7 +8075,7 @@ class ControlPanel:
         self.starting = True
         self._append(f"运行环境预检通过：{runtime_python_path()}")
         if self.repeat_after_id: self.root.after_cancel(self.repeat_after_id); self.repeat_after_id = None
-        self.stop_requested = self.paused = False; self._device_launch_requested = False; self._running_buttons()
+        self.stop_requested = self.paused = False; self._device_launch_requested = False; self._device_restart_requested = False; self._running_buttons()
         # An explicit 开始 (or an allowed auto-start) is the operator saying
         # "run": that is what clears a remembered stop.
         self.operator_intent = save_operator_intent(PANEL_STATE_PATH, "RUNNING", "started")
@@ -8611,6 +8642,34 @@ class ControlPanel:
                 except RuntimeError as retry_error:
                     if str(retry_error) not in retryable:
                         raise
+                    if should_restart_the_emulator(
+                        launch_already_requested=self._device_launch_requested,
+                        restart_already_requested=self._device_restart_requested,
+                        failed_attempts=attempt,
+                    ):
+                        # The launch did not bring the bridge back, and on this machine that is a
+                        # state it cannot fix: the instance was already running and its ADB port was
+                        # not open.  One restart, then the loop above keeps retrying the reconnect
+                        # inside the same 120-second budget.  See ``should_restart_the_emulator``.
+                        self._device_restart_requested = True
+                        self._append("MuMu/ADB 连续重连失败；重启模拟器实例以重建 ADB 桥（一次）。")
+                        restart_timeout = remaining(60.0)
+                        if restart_timeout > 0:
+                            try:
+                                restarted = _background_run(
+                                    [str(MUMU_MANAGER_PATH), "control", "-v", MUMU_VM_INDEX, "restart"],
+                                    capture_output=True, text=True, timeout=restart_timeout,
+                                    check=False,
+                                )
+                                if restarted.returncode != 0:
+                                    self._append(
+                                        "模拟器重启命令返回非零："
+                                        f"{restarted.stderr.strip() or restarted.stdout.strip()}"
+                                    )
+                            except subprocess.TimeoutExpired:
+                                self._append("模拟器重启命令超时；继续按原退避重连。")
+                            except OSError as restart_error:
+                                self._append(f"模拟器重启命令无法执行：{restart_error}")
                     delay = min(float(2 ** min(attempt, 4)), 15.0, remaining(15.0))
                     if delay <= 0 or self._wait_for_worker_retry(delay):
                         raise RuntimeError("用户已停止") from retry_error

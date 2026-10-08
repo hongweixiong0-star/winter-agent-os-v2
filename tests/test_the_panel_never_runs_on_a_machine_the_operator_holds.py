@@ -129,3 +129,43 @@ def test_the_operator_can_still_ask_for_it():
     assert panel.foreground_emulator_enabled({"WINTER_FOREGROUND_EMULATOR": "1"}) is True
     assert _may(enabled=True, machine_is_ours=True,
                 foreground_package="com.android.launcher") is True
+
+
+# -- the emulator repair: a launch cannot rebind a dead ADB bridge --------------------------
+
+def _restart(**overrides):
+    kwargs = dict(launch_already_requested=True, restart_already_requested=False, failed_attempts=3)
+    kwargs.update(overrides)
+    return panel.should_restart_the_emulator(**kwargs)
+
+
+def test_a_dead_bridge_escalates_to_a_restart():
+    """Measured 2026-10-09, twice in one evening, on the production pin.
+
+    ``mumu-cli info`` said ``start_finished`` while every serial in ``adb devices`` read ``offline``
+    and ``netstat`` showed nothing listening on the ADB ports -- the instance was healthy, its bridge
+    was gone.  The panel launched (a no-op on a running instance) and then spent its whole 120-second
+    budget retrying ``adb connect`` at a port that was not open, so the run ended as
+    ``error: device offline`` and AUTO stopped by design.  ``mumu-cli control -v 0 restart`` restored
+    it both times.
+    """
+    assert _restart() is True
+
+
+def test_the_restart_waits_for_the_launch_to_have_failed_first():
+    """The launch is still the cheaper repair, and it is tried first."""
+    assert _restart(launch_already_requested=False) is False
+    assert _restart(launch_already_requested=False, failed_attempts=99) is False
+
+
+def test_the_reconnect_must_have_failed_repeatedly_before_restarting():
+    """One refused connect is not evidence that the bridge is gone for good."""
+    assert _restart(failed_attempts=0) is False
+    assert _restart(failed_attempts=2) is False
+    assert _restart(failed_attempts=3) is True
+
+
+def test_the_restart_happens_at_most_once_per_start():
+    """A machine that will not come back must not be restarted in a loop."""
+    assert _restart(restart_already_requested=True) is False
+    assert _restart(restart_already_requested=True, failed_attempts=99) is False
