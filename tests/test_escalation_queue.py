@@ -546,6 +546,44 @@ class NoGoalProgressDeferralTest(unittest.TestCase):
         candidates = self._candidates(self._deferral("|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST"))
         self.assertEqual(candidates, ())
 
+    def test_the_cause_is_the_deferrals_own_measured_sentence(self):
+        """One fact, one spelling: the gate measured it, so the queue must not restate it.
+
+        ``_no_progress_reason`` reads the episode counts and says which of three things actually
+        happened -- every episode passed its verifier, or every one issued no action, or every one
+        was rejected.  This writer used to assert the first of those unconditionally, in its own
+        words, which is the claim that fix exists to remove.
+
+        Measured 2026-10-09 over ``learning/workbuddy_escalations.jsonl``: 6,516 records carry the
+        unmeasured sentence across 14 goals, and 343 of them name a goal with **no episode at all**
+        in the retained stream -- ``USE_FREE_ARENA_ATTEMPTS`` (11) and ``LABYRINTH_DAILY`` (4) among
+        them, which this project deliberately emits as ``prepared_only`` with no skills so the
+        scheduler will not walk them by guesswork.
+        """
+        measured = ("3 consecutive production episodes issued no action at all -- the tap target "
+                    "never resolved, so no verifier judged them -- and advanced no part of this goal")
+        candidates = self._candidates(
+            self._deferral("SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
+                           reason=measured)
+        )
+        self.assertEqual(len(candidates), 1)
+        reason = candidates[0].reason
+        self.assertIn(measured, reason, "the measured cause must travel into the escalation")
+        self.assertNotIn("every step passed its own verifier", reason)
+        # the escalation's own policy sentence is this function's to make, and stays
+        self.assertIn("cannot reach the goal", reason)
+
+    def test_a_deferral_with_no_reason_claims_nothing_about_verifiers(self):
+        """Older rows carry no measured sentence, and then the honest answer says less."""
+        candidates = self._candidates(
+            self._deferral("SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST")
+        )
+        self.assertEqual(len(candidates), 1)
+        reason = candidates[0].reason
+        self.assertNotIn("passed its own verifier", reason)
+        self.assertIn("refused by the scheduler", reason)
+        self.assertIn("cannot reach the goal", reason)
+
 
 # ------------------------------------------------------- classification
 

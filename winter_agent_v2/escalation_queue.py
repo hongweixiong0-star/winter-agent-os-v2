@@ -1386,16 +1386,45 @@ def candidates_from_run(
         seen.add(signature.key)
         goal = str(deferral.get("goal_id") or "")
         streak = deferral.get("streak") or 0
+        # **The cause comes from the deferral, which measured it -- not from a sentence written
+        # here.**  This block used to assert unconditionally that "every step passed its own
+        # verifier", and that is the exact claim ``_no_progress_reason`` was fixed for on
+        # 2026-09-20: a goal also fails to advance when the executor never issued an action, and
+        # then no verifier judged anything, so the assertion was false in the ledger.  The fix
+        # landed in the gate and left this copy behind, which is why the same fact now has two
+        # spellings: the deferral carries the measured one ("N consecutive production episodes
+        # issued no action at all ...", "N ... issued an action that its verifier rejected ...")
+        # and this function invented its own.
+        #
+        # Measured 2026-10-09 over ``learning/workbuddy_escalations.jsonl``: 6,516 records carry
+        # the unmeasured sentence, across 14 goals, and **343 of them name a goal with no episode
+        # at all in the retained stream** (``ALLIANCE_ROUTINE`` 327, ``USE_FREE_ARENA_ATTEMPTS``
+        # 11, ``LABYRINTH_DAILY`` 4, ``EVENT_MINIMUM_GUARANTEE`` 1) -- so for those, whether any
+        # step passed a verifier could not be read back even in principle.  The last two are the
+        # goals this project deliberately emits as ``prepared_only`` with no skills, precisely so
+        # the scheduler will not navigate them by guesswork; a development agent was nonetheless
+        # told they had been "attempted N times in a row".
+        #
+        # The escalation's own closing sentence stays: that part is a policy statement about what
+        # a repeated wall means, not a measurement, so it is this function's to make.
+        measured = str(deferral.get("reason") or "").strip()
+        if measured:
+            cause = measured
+        else:
+            # An older row that carries no reason.  Say what is known -- the scheduler refused
+            # this path -- and claim nothing about verifiers.
+            cause = (
+                f"{goal or capability} was refused by the scheduler for {streak} consecutive "
+                f"attempt(s) and no part of it advanced"
+            )
         out.append(
             EscalationCandidate(
                 signature=signature,
                 condition=REPEATED_LIVE_FAILURE,
                 reason=(
-                    f"{goal or capability} was attempted {streak} time(s) in a row and no part "
-                    f"of it advanced, while every step passed its own verifier: the route is "
-                    f"running but it cannot reach the goal.  This is not a retry that will "
-                    f"succeed on the next cycle, and it is not the same failure shape the "
-                    f"capability was previously escalated for"
+                    f"{cause}: the route is running but it cannot reach the goal.  This is not a "
+                    f"retry that will succeed on the next cycle, and it is not the same failure "
+                    f"shape the capability was previously escalated for"
                 ),
                 goal=goal,
                 evidence=(f"deferral:{goal}:{streak}",),
