@@ -9347,6 +9347,26 @@ class ControlPanel:
         else: self.values["result"].set("暂无可打开的截图")
 
     def close(self) -> None:
+        # Say who closed the window, and from where.
+        #
+        # Measured 2026-10-08, five times in one afternoon: the panel process disappears 20-40 s
+        # after a round whose end does not schedule another one (``ROLE_SWITCH_FAILED``,
+        # ``MAX_ACTIONS_REACHED``, ``device_leased_for_development``), while a round that DOES
+        # continue leaves it alive.  Both exits this class owns were read and neither can do it --
+        # ``root.destroy()`` is only here, and the halt branch below only logs -- so the killer is
+        # outside the halt path, and guessing which one would be worse than measuring.
+        #
+        # One line with the three frames that called this turns that into a measurement: a death
+        # with NO such line means the process was killed (nothing ran), and a death WITH one names
+        # the caller.  The line before it is kept, because a shutdown that cannot write is the one
+        # case where the absence of evidence is a reading too.
+        try:
+            import traceback
+
+            frames = [f"{Path(f.filename).name}:{f.lineno}" for f in traceback.extract_stack()[-4:-1]]
+            self._append("面板关闭：由 " + " <- ".join(reversed(frames)) + " 发起")
+        except Exception:  # noqa: BLE001 - a diagnostic must never stop the shutdown
+            pass
         # No orphan AUTO worker: the whole tree goes down, not just the venv stub
         # the panel holds (see ``_kill_worker_tree``).
         self.stop_requested = True
