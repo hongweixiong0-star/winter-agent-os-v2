@@ -103,7 +103,157 @@
     "recall": "UNMEASURED -- no current frame draws the wall panel, so no positive exists yet",
     "registered_at": "2026-10-08"
    }
+  },
+  "探险": {
+   "label": "探险",
+   "semantic": "NAV[探险]",
+   "relation": "control_directly_above_label",
+   "template_path": "knowledge/ui/icon_templates/探险.png",
+   "source": "CALIBRATED_CROP_2026-10-08",
+   "evidence": {
+    "verified_by": "human review of the extracted crop (the nav item is the icon drawn above the caption) plus the three checks below",
+    "why_registered": "74% of 92 recent frames offered the planner ZERO executable elements; the navigation bar is drawn on all of them and these six words are its buttons",
+    "recall": "29/29 = 100.0%",
+    "score": "min 1.0 median 1.0 (threshold 0.7)",
+    "specificity": "whole-frame best match landed on the icon itself on 10/10 frames over threshold",
+    "no_crop_rotation": "the nav icon is static: no countdown, no animation",
+    "out_of_nav_safety": "measured with the production call on every frame where this word appears outside the nav band: regions returned 0 times, so the word as plain text produces no control",
+    "contrast": 65.3,
+    "source_frame": "20261008_193147_319242_step_001_after_20261008T113228913888.png",
+    "crop_box_px": [
+     52,
+     1196,
+     94,
+     1238
+    ],
+    "registered_at": "2026-10-08"
+   }
+  },
+  "英雄": {
+   "label": "英雄",
+   "semantic": "NAV[英雄]",
+   "relation": "control_directly_above_label",
+   "template_path": "knowledge/ui/icon_templates/英雄.png",
+   "source": "CALIBRATED_CROP_2026-10-08",
+   "evidence": {
+    "verified_by": "human review of the extracted crop (the nav item is the icon drawn above the caption) plus the three checks below",
+    "why_registered": "74% of 92 recent frames offered the planner ZERO executable elements; the navigation bar is drawn on all of them and these six words are its buttons",
+    "recall": "29/29 = 100.0%",
+    "score": "min 1.0 median 1.0 (threshold 0.7)",
+    "specificity": "whole-frame best match landed on the icon itself on 10/10 frames over threshold",
+    "no_crop_rotation": "the nav icon is static: no countdown, no animation",
+    "out_of_nav_safety": "measured with the production call on every frame where this word appears outside the nav band: regions returned 0 times, so the word as plain text produces no control",
+    "contrast": 60.9,
+    "source_frame": "20261008_193147_319242_step_001_after_20261008T113228913888.png",
+    "crop_box_px": [
+     167,
+     1189,
+     214,
+     1224
+    ],
+    "registered_at": "2026-10-08"
+   }
+  },
+  "背包": {
+   "label": "背包",
+   "semantic": "NAV[背包]",
+   "relation": "control_directly_above_label",
+   "template_path": "knowledge/ui/icon_templates/背包.png",
+   "source": "CALIBRATED_CROP_2026-10-08",
+   "evidence": {
+    "verified_by": "human review of the extracted crop (the nav item is the icon drawn above the caption) plus the three checks below",
+    "why_registered": "74% of 92 recent frames offered the planner ZERO executable elements; the navigation bar is drawn on all of them and these six words are its buttons",
+    "recall": "29/29 = 100.0%",
+    "score": "min 1.0 median 1.0 (threshold 0.7)",
+    "specificity": "whole-frame best match landed on the icon itself on 10/10 frames over threshold",
+    "no_crop_rotation": "the nav icon is static: no countdown, no animation",
+    "out_of_nav_safety": "measured with the production call on every frame where this word appears outside the nav band: regions returned 0 times, so the word as plain text produces no control",
+    "contrast": 66.1,
+    "source_frame": "20261008_193147_319242_step_001_after_20261008T113228913888.png",
+    "crop_box_px": [
+     287,
+     1208,
+     325,
+     1238
+    ],
+    "registered_at": "2026-10-08"
+   }
+  },
+  "商店": {
+   "label": "商店",
+   "semantic": "NAV[商店]",
+   "relation": "control_directly_above_label",
+   "template_path": "knowledge/ui/icon_templates/商店.png",
+   "source": "CALIBRATED_CROP_2026-10-08",
+   "evidence": {
+    "verified_by": "human review of the extracted crop (the nav item is the icon drawn above the caption) plus the three checks below",
+    "why_registered": "74% of 92 recent frames offered the planner ZERO executable elements; the navigation bar is drawn on all of them and these six words are its buttons",
+    "recall": "29/29 = 100.0%",
+    "score": "min 1.0 median 1.0 (threshold 0.7)",
+    "specificity": "whole-frame best match landed on the icon itself on 10/10 frames over threshold",
+    "no_crop_rotation": "the nav icon is static: no countdown, no animation",
+    "out_of_nav_safety": "measured with the production call on every frame where this word appears outside the nav band: regions returned 0 times, so the word as plain text produces no control",
+    "contrast": 59.6,
+    "source_frame": "20261008_193147_319242_step_001_after_20261008T113228913888.png",
+    "crop_box_px": [
+     403,
+     1217,
+     439,
+     1237
+    ],
+    "registered_at": "2026-10-08"
+   }
+  },
+  "联盟": {
+   "label": "联盟",
+   "semantic": "NAV[联盟]",
+   "relation": "control_directly_above_label",
+   "template_path": "knowledge/ui/icon_templates/联盟.png",
+   "source": "CALIBRATED_CROP_2026-10-08",
+   "evidence": {
+    "verified_by": "human review of the extracted crop (the nav item is the icon drawn above the caption) plus the three checks below",
+    "why_registered": "74% of 92 recent frames offered the planner ZERO executable elements; the navigation bar is drawn on all of them and these six words are its buttons",
+    "recall": "29/29 = 100.0%",
+    "score": "min 0.9997 median 1.0 (threshold 0.7)",
+    "specificity": "whole-frame best match landed on the icon itself on 10/10 frames over threshold",
+    "no_crop_rotation": "the nav icon is static: no countdown, no animation",
+    "out_of_nav_safety": "measured with the production call on every frame where this word appears outside the nav band: regions returned 0 times, so the word as plain text produces no control",
+    "contrast": 61.1,
+    "source_frame": "20261008_193147_319242_step_001_after_20261008T113228913888.png",
+    "crop_box_px": [
+     521,
+     1200,
+     550,
+     1240
+    ],
+    "registered_at": "2026-10-08"
+   }
+  },
+  "野外": {
+   "label": "野外",
+   "semantic": "NAV[野外]",
+   "relation": "control_directly_above_label",
+   "template_path": "knowledge/ui/icon_templates/野外.png",
+   "source": "CALIBRATED_CROP_2026-10-08",
+   "evidence": {
+    "verified_by": "human review of the extracted crop (the nav item is the icon drawn above the caption) plus the three checks below",
+    "why_registered": "74% of 92 recent frames offered the planner ZERO executable elements; the navigation bar is drawn on all of them and these six words are its buttons",
+    "recall": "29/29 = 100.0%",
+    "score": "min 0.9959 median 0.9985 (threshold 0.7)",
+    "specificity": "whole-frame best match landed on the icon itself on 10/10 frames over threshold",
+    "no_crop_rotation": "the nav icon is static: no countdown, no animation",
+    "out_of_nav_safety": "measured with the production call on every frame where this word appears outside the nav band: regions returned 0 times, so the word as plain text produces no control",
+    "contrast": 46.3,
+    "source_frame": "20261008_193147_319242_step_001_after_20261008T113228913888.png",
+    "crop_box_px": [
+     609,
+     1165,
+     690,
+     1238
+    ],
+    "registered_at": "2026-10-08"
+   }
   }
  },
- "updated_at": "2026-10-08T11:26:42.461675+00:00"
+ "updated_at": "2026-10-08T11:42:00.341642+00:00"
 }
