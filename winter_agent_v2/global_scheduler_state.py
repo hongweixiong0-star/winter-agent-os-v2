@@ -15,6 +15,7 @@ from pathlib import Path
 import tempfile
 from typing import Any, Mapping
 
+from .retention import delete_past_the_hosts_gate
 from .role_session import (
     RoleSessionState,
     classify_switch_reason,
@@ -286,8 +287,15 @@ class GlobalSchedulerStateStore:
                 os.fsync(stream.fileno())
             os.replace(temp_name, self.path)
         finally:
+            # The host's bulk-delete gate raises SystemExit *instead of* deleting, and an
+            # uncaught one takes the whole worker with it -- measured 2026-10-08 at 17:04:55,
+            # goal GLOBAL_SCHEDULER, with this exact temporary file named in the gate's own
+            # line.  This deletion is already best-effort: its own branch above says a missing
+            # file is not an error, so a refused one is not an error either.
             try:
-                os.unlink(temp_name)
+                delete_past_the_hosts_gate(
+                    lambda: os.unlink(temp_name), Path(temp_name), missing_is_fine=True,
+                )
             except FileNotFoundError:
                 pass
 

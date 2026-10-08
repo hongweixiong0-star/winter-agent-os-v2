@@ -33,6 +33,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from .retention import delete_past_the_hosts_gate
+
 # The name is the operator's, and it is written into the marker so a human
 # reading the file knows what it means without opening this module.
 REQUEST_KIND = "RUNTIME_RELOAD_REQUIRED"
@@ -192,12 +194,14 @@ class ReloadSignal:
         """Remove the marker.  ``True`` when there was one to remove."""
         if self.pending() is None:
             try:
-                self.path.unlink(missing_ok=True)
+                delete_past_the_hosts_gate(
+                    lambda: self.path.unlink(missing_ok=True), self.path, missing_is_fine=True)
             except OSError:
                 pass
             return False
         try:
-            self.path.unlink(missing_ok=True)
+            delete_past_the_hosts_gate(
+                lambda: self.path.unlink(missing_ok=True), self.path, missing_is_fine=True)
             self.last_clearance_reason = reason
             return True
         except OSError:

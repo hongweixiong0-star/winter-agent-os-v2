@@ -1416,11 +1416,13 @@ class UiCandidateStore:
             directory = self.root / record.candidate_id
             for name in ("element.png", "context.png", "metadata.yaml"):
                 try:
-                    (directory / name).unlink()
+                    delete_past_the_hosts_gate(
+                        (directory / name).unlink, directory / name, missing_is_fine=True)
                 except OSError:
                     pass
             try:
-                directory.rmdir()
+                delete_past_the_hosts_gate(
+                    directory.rmdir, directory, missing_is_fine=True)
             except OSError:
                 pass
         for key in dropped:

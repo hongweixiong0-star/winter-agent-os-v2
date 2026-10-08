@@ -250,8 +250,8 @@ MAX_DELETIONS_PER_PASS = 30
 HOST_BULK_DELETE_GATE = "CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR"
 
 
-def delete_past_the_hosts_gate(call, path: Path) -> bool:
-    """Run ``call()``, treating a *sandbox* refusal as "this pass is over".
+def delete_past_the_hosts_gate(call, path: Path, *, missing_is_fine: bool = False) -> bool:
+    """Run ``call()``, treating a *sandbox* refusal as "not removed" rather than as death.
 
     ``True`` when the path is gone, ``False`` when the host's gate refused to remove it.
 
@@ -261,22 +261,30 @@ def delete_past_the_hosts_gate(call, path: Path) -> bool:
     ``SystemExit`` prints no traceback and exits 1 -- which is exactly the shape of the crash
     record: ``WORKER_RESULT_MISSING: exit=1``, an empty ``child_traceback``, and the guard's
     own line as the worker's last log entry.  Measured 2026-10-08: four such crashes in 100
-    seconds, the watchdog's recovery budget spent, AUTO paused.
+    seconds, the watchdog's recovery budget spent, AUTO paused -- and then a fifth at 17:04:55
+    on a temporary file, from a call site that was not in the first two fixes.
 
-    The gate's decision is honoured rather than overridden: the file stays, this pass stops,
-    and the next cycle picks the backlog up -- ``prune_runtime_screenshots`` already runs once
-    per cycle, so a bounded pass drains any backlog within a few minutes.  What changes is only
-    that a *refused prune* stops being a *fatal error*; there is nothing in trimming old
-    screenshots worth killing a production run over.
+    ``call`` must be the removal itself and nothing else -- a bare ``unlink``/``rmdir`` -- so
+    that a ``SystemExit`` reaching here can only have come from the gate.
 
-    Tolerated only when both halves of the evidence agree: the gate says it is armed, **and**
-    the path is still on disk because the removal did not happen.  So a ``SystemExit`` raised by
-    this code, or a removal that silently did nothing while the gate is unarmed, still raises.
+    Normally tolerated only when both halves of the evidence agree: the gate says it is armed,
+    **and** the path is still on disk because the removal did not happen.  So a ``SystemExit``
+    raised by this code, or a removal that silently did nothing while the gate is unarmed, still
+    raises.
+
+    ``missing_is_fine`` is for the call sites that are already best-effort cleanups -- a
+    temporary file being removed after a rename, a lock file, a pruned crop -- where the code
+    around them *already* treats "it was not there" as success (that is what their
+    ``except OSError``/``FileNotFoundError`` branch means).  There the filesystem cannot supply
+    the second half of the evidence, because the file is expected to be gone; and since the call
+    is a bare removal, there is no failure for the waiver to hide.  A refused cleanup leaves one
+    temporary file behind, which the next write replaces.
     """
     try:
         call()
     except SystemExit:
-        if os.environ.get(HOST_BULK_DELETE_GATE) and path.exists():
+        armed = bool(os.environ.get(HOST_BULK_DELETE_GATE))
+        if armed and (missing_is_fine or path.exists()):
             return False
         raise
     return True

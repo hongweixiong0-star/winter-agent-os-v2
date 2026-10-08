@@ -243,5 +243,56 @@ class DeleteGateToleranceTest(unittest.TestCase):
         self.assertFalse(frame.exists(), "an unarmed gate never blocks a real discard")
 
 
+    def test_a_refused_cleanup_of_a_file_that_is_already_gone_is_tolerated(self):
+        """``missing_is_fine``: a temporary file's cleanup cannot supply the second half.
+
+        The call sites that need it are already best-effort -- their own ``except OSError`` /
+        ``except FileNotFoundError`` says a missing file is not an error -- so a refused one is
+        not an error either. The call is a bare ``unlink``, so nothing else can raise SystemExit
+        through here.
+        """
+        gone = Path(tempfile.gettempdir()) / "definitely-not-here-9a43c890.tmp"
+
+        def refusing_call():
+            # what the gate does: raise instead of deleting.  Modelled explicitly, because
+            # ``unlink(missing_ok=True)`` on a name that is not there simply returns -- a test
+            # that passed that in would have been asserting nothing at all.
+            raise SystemExit(1)
+
+        with mock.patch.dict(os.environ, {self.retention.HOST_BULK_DELETE_GATE: "armed"}):
+            # a missing path with the waiver must not raise ...
+            self.assertFalse(self.retention.delete_past_the_hosts_gate(
+                refusing_call, gone, missing_is_fine=True))
+            # ... and without the waiver the two-half rule still applies
+            with self.assertRaises(SystemExit):
+                self.retention.delete_past_the_hosts_gate(refusing_call, gone)
+
+    def test_the_scheduler_state_writer_survives_a_refused_temp_cleanup(self):
+        """The crash this waiver was written for: 2026-10-08 17:04:55, goal GLOBAL_SCHEDULER.
+
+        The gate's own line named ``learning/.global_scheduler_state.json.<rand>.tmp``, the
+        temporary file this writer removes after its rename. ``except FileNotFoundError`` could
+        not see a ``SystemExit``, so the refusal took the worker, the recovery budget and AUTO.
+        """
+        from winter_agent_v2 import global_scheduler_state as gss
+        from winter_agent_v2.global_scheduler_state import GlobalSchedulerStateStore
+
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        store = GlobalSchedulerStateStore(Path(directory.name) / "global-state.json")
+        real_unlink = os.unlink
+
+        def refusing_unlink(target, *args, **kwargs):
+            if str(target).endswith(".tmp"):
+                raise SystemExit(1)      # what the gate does, for exactly this file
+            return real_unlink(target, *args, **kwargs)
+
+        with mock.patch.dict(os.environ, {self.retention.HOST_BULK_DELETE_GATE: "armed"}):
+            with mock.patch.object(gss.os, "unlink", refusing_unlink):
+                store.save(store.load())   # must not raise: this is the crash, reproduced
+
+        self.assertTrue((Path(directory.name) / "global-state.json").is_file())
+
+
 if __name__ == "__main__":
     unittest.main()

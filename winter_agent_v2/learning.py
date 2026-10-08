@@ -7,6 +7,8 @@ from pathlib import Path
 import tempfile
 from typing import Any
 
+from .retention import delete_past_the_hosts_gate
+
 
 @dataclass(frozen=True)
 class Episode:
@@ -280,13 +282,19 @@ class EpisodeStore:
                 target.flush()
         except Exception:
             if temporary_path is not None:
-                temporary_path.unlink(missing_ok=True)
+                delete_past_the_hosts_gate(
+                    lambda: temporary_path.unlink(missing_ok=True), temporary_path,
+                    missing_is_fine=True,
+                )
             raise
         assert temporary_path is not None
         try:
             temporary_path.replace(self.path)
         except Exception:
-            temporary_path.unlink(missing_ok=True)
+            delete_past_the_hosts_gate(
+                lambda: temporary_path.unlink(missing_ok=True), temporary_path,
+                missing_is_fine=True,
+            )
             raise
         self._line_count = self.limit
         self._ends_with_newline = True
@@ -314,7 +322,10 @@ class EpisodeStore:
             temporary_path.replace(self._index_path)
         except OSError:
             if temporary_path is not None:
-                temporary_path.unlink(missing_ok=True)
+                delete_past_the_hosts_gate(
+                    lambda: temporary_path.unlink(missing_ok=True), temporary_path,
+                    missing_is_fine=True,
+                )
 
 
 @dataclass(frozen=True)

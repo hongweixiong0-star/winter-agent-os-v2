@@ -15,6 +15,8 @@ from pathlib import Path
 import tempfile
 from typing import Any, Iterable, Mapping
 
+from .retention import delete_past_the_hosts_gate
+
 
 GAME_TIMEZONE = "Asia/Shanghai"
 _GAME_TZ = timezone(timedelta(hours=8), name=GAME_TIMEZONE)
@@ -383,8 +385,13 @@ class TaskCompletionStore:
                 os.fsync(stream.fileno())
             os.replace(temp_name, self.path)
         finally:
+            # Best-effort cleanup, same rule as global_scheduler_state's writer: the host's
+            # bulk-delete gate raises SystemExit instead of deleting, and a refused cleanup
+            # must leave one temporary file behind rather than take the worker down.
             try:
-                os.unlink(temp_name)
+                delete_past_the_hosts_gate(
+                    lambda: os.unlink(temp_name), Path(temp_name), missing_is_fine=True,
+                )
             except FileNotFoundError:
                 pass
 

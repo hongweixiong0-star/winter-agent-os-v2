@@ -50,6 +50,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from . import unknown_advisor
+from .retention import delete_past_the_hosts_gate
 from .workbuddy_bridge import (
     GatewayUnavailable,
     JobLost,
@@ -926,7 +927,7 @@ class UnknownDispatcher:
                 acquired = True
             if not acquired and _holder_is_gone():
                 try:
-                    path.unlink()
+                    delete_past_the_hosts_gate(path.unlink, path, missing_is_fine=True)
                 except OSError:
                     pass
                 acquired = _take()
@@ -939,7 +940,7 @@ class UnknownDispatcher:
                     pass
             if acquired:
                 try:
-                    path.unlink()
+                    delete_past_the_hosts_gate(path.unlink, path, missing_is_fine=True)
                 except OSError:
                     pass
 
