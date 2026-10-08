@@ -426,6 +426,27 @@ class UnnamedPageTemplateSourcesTests(unittest.TestCase):
         self.assertEqual(len(experiences), 1,
                          "an L1 crop measured on HOME was excluded by an unnamed page")
 
+    def test_the_whole_library_is_offered_not_its_first_four(self):
+        """The cap used to be 4, which is a fixed prefix of a library that now holds 199 records.
+
+        Measured 2026-10-08 on one real frame: the first four eligible records were one ALLIANCE
+        crop, then two with no image at all, then one HOME crop -- so the pool was built from two
+        crops belonging to other screens, and ``template_regions`` measured **0** regions on that
+        frame. Lifting the cap measured 6 regions, at 439 ms against a model call of 44-69 s.
+
+        The bound belongs to ``template_regions`` (which stops at 6 and breaks out), not to a
+        fixed prefix here, which is why the default is now "every eligible record" and the
+        parameter survives only for a caller that deliberately wants a cap.
+        """
+        records = [self._candidate("HOME") for _ in range(9)]
+        self.assertEqual(
+            len(ui_collection.template_entries_from_candidates(records, page="UNKNOWN")), 9,
+            "every eligible record must be offered; a fixed prefix silently ignores the library")
+        self.assertEqual(
+            len(ui_collection.template_entries_from_candidates(
+                records, page="UNKNOWN", limit=4)), 4,
+            "an explicit cap must still be honoured")
+
     def test_a_named_page_still_excludes_another_named_page(self):
         self.assertEqual(
             ui_collection.template_entries_from_candidates(

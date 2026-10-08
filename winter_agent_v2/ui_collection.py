@@ -694,9 +694,24 @@ def template_entries_from_candidates(
     candidates: Iterable[Any],
     *,
     page: str = "",
-    limit: int = 4,
+    limit: int | None = None,
 ) -> list[dict[str, Any]]:
     """Candidate records that can act as a template *on this page*: a crop, and where it was seen.
+
+    ``limit`` is ``None`` by default, i.e. every eligible record, and that default is the fix
+    for a measured defect rather than a preference.  It used to be 4, and 4 is a *fixed prefix*
+    of a library that now holds 199 records: measured 2026-10-08 on one real frame, the first
+    four were one ALLIANCE crop, then two records with no image at all, then one HOME crop --
+    so the pool was built from two usable crops belonging to other screens.
+
+        entries   4 -> 0 regions measured on the frame     168 ms
+        entries  40 -> 6 regions                           446 ms
+        entries 153 -> 6 regions                           601 ms
+
+    The cap was never the safety it looked like, because ``template_regions`` is already the
+    bound: it stops at its own ``limit`` of 6 and breaks out of the loop once it has them.  What
+    the entry cap actually did was keep a 199-record library from ever being read.  Half a second
+    against a model call that measures 44-69 s is not a cost worth an unused library.
 
     The page filter is the directive's own (§四/§九 elsewhere): the same-looking icon on two pages
     is two different controls, so a template collected on MAP is not evidence about EVENT.
@@ -711,7 +726,7 @@ def template_entries_from_candidates(
     wanted = str(page or "").strip()
     out: list[dict[str, Any]] = []
     for record in candidates:
-        if len(out) >= limit:
+        if limit is not None and len(out) >= limit:
             break
         record_page = str(getattr(record, "page", "") or "")
         if (wanted and record_page and record_page != wanted
@@ -739,7 +754,7 @@ def template_entries_from_experience(
     experiences: Iterable[Any],
     *,
     page: str = "",
-    limit: int = 4,
+    limit: int | None = None,
     cache_dir: Path | str | None = None,
 ) -> list[dict[str, Any]]:
     """Ledger records whose own measured crop can be found on this frame (§三's fourth source).
@@ -756,13 +771,14 @@ def template_entries_from_experience(
 
     Same unnamed-page rule as ``template_entries_from_candidates``, and for the same reason: an
     L1 registration measured on HOME is real evidence about a screen the reader has no name for,
-    because the crop still has to be found on the frame in front of the run.
+    because the crop still has to be found on the frame in front of the run.  ``limit`` is
+    ``None`` here too, for the reason measured there.
     """
     wanted = str(page or "").strip()
     directory = Path(cache_dir) if cache_dir else TEMPLATE_DIR / "experience_crops"
     out: list[dict[str, Any]] = []
     for record in experiences:
-        if len(out) >= limit:
+        if limit is not None and len(out) >= limit:
             break
         record_page = str(getattr(record, "page", "") or "")
         if (wanted and record_page and record_page != wanted
