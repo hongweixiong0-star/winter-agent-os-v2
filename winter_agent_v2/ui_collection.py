@@ -2041,6 +2041,35 @@ def registered_icon_region(
     }
 
 
+#: The prefix the page reader uses when it could not name the screen.  Production passes
+#: ``world.page.value``, so an unnamed screen arrives here as ``UNKNOWN`` (and the planner's
+#: page key as ``UNKNOWN::<read text>``).
+UNNAMED_PAGE_PREFIX = "UNKNOWN"
+
+
+def page_is_unnamed(page: str) -> bool:
+    """``True`` when the page name is the reader admitting it does not know this screen.
+
+    A record's ``pages`` list says where its control is *normally* drawn.  It can only
+    discriminate between pages this project can name; against an unnamed page it carries no
+    information, and using it to exclude turned "we have no name for this screen" into
+    "nothing on this screen can be pressed".  Measured 2026-10-08 on one real frame, changing
+    nothing but this one argument to ``build_element_table``:
+
+        page='UNKNOWN' -> executable_count 0
+        page=''        -> executable_count 2
+        page='HOME'    -> executable_count 2
+
+    That is the whole distance between a planner whose legal answer set is empty -- the state
+    every unknown screen was in, which is why ``EXECUTE`` had not been produced since
+    2026-09-30 -- and one that can name a control.  Nothing is loosened about *pressing*: the
+    registered crop still has to match **this frame**, so a control that is not drawn produces
+    no element and nothing is tapped.  A *named* page keeps the filter exactly as it was, so a
+    record that belongs to EVENT is still not offered on HOME.
+    """
+    return str(page or "").strip().upper().startswith(UNNAMED_PAGE_PREFIX)
+
+
 def load_control_registry(root: Path | str | None = None) -> dict[str, dict[str, Any]]:
     """The labels known to name a control that sits directly above them, by printed word.
 
@@ -2111,7 +2140,12 @@ def composite_controls(
             if record is None:
                 continue
             pages = record.get("pages")
-            if isinstance(pages, (list, tuple)) and pages and page and page not in pages:
+            # Excluded on a page the record does not list -- but only when the page has a name
+            # to test.  Against an unnamed page the list discriminates nothing, and letting it
+            # exclude made every unknown screen offer zero pressable elements; see
+            # ``page_is_unnamed`` for the measurement and for what still keeps this safe.
+            if (isinstance(pages, (list, tuple)) and pages and page
+                    and not page_is_unnamed(page) and page not in pages):
                 continue
             label_box = dict(region.get("box_norm") or {})
             others = [box for box in text_boxes if box.get("text") != text]

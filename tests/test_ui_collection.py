@@ -24,6 +24,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from PIL import Image  # noqa: E402
 
@@ -307,6 +308,78 @@ class IngestionTests(unittest.TestCase):
             self.assertTrue(ok, reason)
             row = json.loads(manifest.read_text(encoding="utf-8"))["records"][0]
             self.assertEqual(row.get("ocr_text"), "常规活动")
+
+
+class UnnamedPageOfferTests(unittest.TestCase):
+    """An unnamed page must not be used to exclude every registered control.
+
+    Measured 2026-10-08 on one real frame (720x1280), changing nothing but the ``page`` argument
+    to ``build_element_table``:
+
+        page='UNKNOWN' -> executable_count 0
+        page=''        -> executable_count 2
+        page='HOME'    -> executable_count 2
+
+    Every record in ``icon_label_controls.json`` carries a ``pages`` list, so on a screen the
+    reader could not name, the list excluded all of them and the element table offered the
+    planner no pressable element at all -- which is why ``EXECUTE`` had not been produced since
+    2026-09-30, and why no unknown screen could ever be advanced.  The same frame with the
+    filter relaxed produced ``EXECUTE`` + ``CLICK_ELEMENT`` from the local model on the first
+    call.
+
+    What must NOT change: a page with a name keeps the filter exactly as it was.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.frame = Path(self.tmp.name) / "frame.png"
+        Image.new("RGB", (720, 1280), (20, 30, 40)).save(self.frame)
+        self.label_box = {"x_norm": 0.05, "y_norm": 0.96, "w_norm": 0.07, "h_norm": 0.03}
+        self.measured = {
+            "box_norm": dict(self.label_box),
+            "icon_box_norm": None,
+            "label_box_norm": dict(self.label_box),
+            "basis": "TEMPLATE_LABEL_ON_CONTROL",
+            "confidence": 0.99,
+            "detail": {},
+        }
+        self.registry = {
+            "探险": {
+                "label": "探险", "semantic": "NAV[探险]", "pages": ["MAP"],
+                "relation": "label_is_the_control",
+                "template_path": "knowledge/ui/icon_templates/登录好礼.png",
+                "source": "TEST",
+            },
+        }
+
+    def _controls(self, page: str):
+        region = {"text": "探险", "box_norm": dict(self.label_box),
+                  "basis": "OCR_BOX", "score": 0.99, "detail": {}}
+        with mock.patch.object(ui_collection, "grounding_regions", lambda *_a, **_k: [region]), \
+             mock.patch.object(ui_collection, "registered_control_region",
+                               lambda *_a, **_k: dict(self.measured)):
+            return ui_collection.composite_controls(
+                self.frame, ocr=None, page=page, registry=self.registry,
+            )
+
+    def test_an_unnamed_page_still_offers_the_registered_control(self):
+        for page in ("UNKNOWN", "UNKNOWN::使用", "UNKNOWN::对战"):
+            found = self._controls(page)
+            self.assertEqual([c["text"] for c in found], ["探险"],
+                             f"{page!r} offered no control; this is the unknown-screen blackhole")
+            self.assertEqual(found[0]["kind"], ui_collection.ELEMENT_INTERACTIVE_CONTROL)
+
+    def test_a_named_page_keeps_the_filter_it_had(self):
+        self.assertEqual(self._controls("EVENT"), [],
+                         "a record that belongs to MAP must still be excluded on EVENT")
+        self.assertEqual([c["text"] for c in self._controls("MAP")], ["探险"])
+
+    def test_page_is_unnamed_reads_the_reader_admitting_it(self):
+        for page in ("UNKNOWN", "unknown", " UNKNOWN::使用 "):
+            self.assertTrue(ui_collection.page_is_unnamed(page))
+        for page in ("HOME", "MAP", "EVENT", ""):
+            self.assertFalse(ui_collection.page_is_unnamed(page))
 
 
 class RetentionTests(unittest.TestCase):
