@@ -138,6 +138,20 @@ class GUIModelCall:
     #: The window the server was started with, echoed on every row so a ledger read months
     #: later cannot be mistaken for one produced under a different ``-c``.
     context_limit: int = 0
+    #: Which reply constraint was **actually in force** for this call: ``schema`` /
+    #: ``json_object`` / ``none``.  Recorded because the request can degrade silently.
+    #:
+    #: The whole anti-prose design rests on the schema holding: ``ui_planner`` caps ``reason``
+    #: at ``maxLength: 120`` in the grammar, and ``ui_venus_contract.reason_violation`` then
+    #: *refuses* rather than truncates, on the stated grounds that "a truncated rationale still
+    #: cost the tokens it was written in -- only a refusal removes it".  That argument is only
+    #: true while generation is bounded.  Measured 2026-10-08T13:51:35Z: a reply whose reason is
+    #: three sentences and well past 120 characters reached the validator and was refused, and
+    #: llama.cpp's own grammar conversion does enforce ``maxLength`` (its README's worked example
+    #: turns ``maxLength: 100`` into ``char{1,100}``) -- so on that call the exact schema was
+    #: **not** in force.  ``_post``'s ``_RejectedKey`` recovery is what can silently swap it for
+    #: ``json_object``, and until this field existed nothing in the ledger said that it had.
+    reply_constraint: str = ""
 
     def to_row(self, *, purpose: str = "", element_count: int = 0) -> dict[str, Any]:
         return {
@@ -148,6 +162,7 @@ class GUIModelCall:
             "quantization": self.quantization,
             "ok": self.ok,
             "error": self.error,
+            "reply_constraint": self.reply_constraint,
             "latency_ms": self.latency_ms,
             "prompt_chars": self.prompt_chars,
             "prompt_tokens": self.prompt_tokens,
@@ -302,6 +317,9 @@ class LocalGUIModel:
             "temperature": 0.0,
             "max_tokens": self.max_tokens,
         }
+        # What this call is asking for, kept beside the payload so the downgrade below cannot
+        # leave the record saying "schema" about a request that ended up unconstrained.
+        constraint = "schema" if response_schema else "json_object"
         started = time.perf_counter()
         try:
             body = self._post(payload, timeout_s=timeout_s)
@@ -312,18 +330,20 @@ class LocalGUIModel:
             # which is the failure this module already paid to remove.
             if payload.get("response_format", {}).get("type") == "json_schema":
                 payload["response_format"] = {"type": "json_object"}
+                constraint = "json_object"
             else:
                 payload.pop("response_format", None)
+                constraint = "none"
             if exc.key == "temperature":
                 payload.pop("temperature", None)
             try:
                 body = self._post(payload, timeout_s=timeout_s)
             except Exception as exc2:  # noqa: BLE001 - every failure is data, none is fatal
                 return self._failed(exc2, prompt_chars, purpose, element_count,
-                                    image_bytes, image_digest)
+                                    image_bytes, image_digest, constraint)
         except Exception as exc:  # noqa: BLE001
             return self._failed(exc, prompt_chars, purpose, element_count,
-                                image_bytes, image_digest)
+                                image_bytes, image_digest, constraint)
         latency_ms = round((time.perf_counter() - started) * 1000.0, 2)
         text = self._reply_text(body)
         call = GUIModelCall(
@@ -340,6 +360,7 @@ class LocalGUIModel:
             image_digest=image_digest,
             prompt_tokens=self._usage_tokens(body),
             context_limit=self.context,
+            reply_constraint=constraint,
         )
         self.record(call, purpose=purpose, element_count=element_count)
         return call
@@ -481,7 +502,8 @@ class LocalGUIModel:
         return str(body.get("response") or "")
 
     def _failed(self, exc: BaseException, prompt_chars: int, purpose: str,
-                element_count: int, image_bytes: bytes = b"", image_digest: str = "") -> GUIModelCall:
+                element_count: int, image_bytes: bytes = b"", image_digest: str = "",
+                reply_constraint: str = "") -> GUIModelCall:
         name = type(exc).__name__
         if isinstance(exc, (TimeoutError, socket.timeout)):
             error = f"LOCAL_GUI_MODEL_TIMEOUT: {str(exc)[:160]}"
@@ -497,6 +519,7 @@ class LocalGUIModel:
             image_sent=bool(image_bytes),
             image_bytes=len(image_bytes),
             image_digest=image_digest,
+            reply_constraint=reply_constraint,
         )
         self.record(call, purpose=purpose, element_count=element_count)
         return call
