@@ -253,7 +253,111 @@
     ],
     "registered_at": "2026-10-08"
    }
+  },
+  "超值活动": {
+   "label": "超值活动",
+   "semantic": "ACTIVITY[超值活动]",
+   "relation": "control_directly_above_label",
+   "template_path": "knowledge/ui/icon_templates/超值活动.png",
+   "source": "CALIBRATED_CROP_2026-10-08",
+   "evidence": {
+    "verified_by": "human review of the extracted crop plus the three checks below",
+    "why_registered": "activity-entry captions are among the most frequent un-typed printed words (超值活动 79, 常规活动 78, 宝石大师礼包 75, 冰封的宝藏 41 frames in a 94-frame sample) and each is drawn under its own tile",
+    "recall": "29/29 = 100.0%",
+    "score": "min 0.9245 median 0.9917 (threshold 0.7)",
+    "specificity": "whole-frame best match landed on the tile itself on 10/10 frames over threshold",
+    "every_occurrence_checked": "54/54 centred, 0 off -- the production call was run on every occurrence of the word in 60 runs and every region it returned was centred on that word",
+    "margin_note": "",
+    "money_surface": "",
+    "contrast": 47.4,
+    "source_frame": "20261008_195114_393758_step_001_after_20261008T115144362731.png",
+    "crop_box_px": [
+     627,
+     215,
+     685,
+     274
+    ],
+    "registered_at": "2026-10-08"
+   }
+  },
+  "常规活动": {
+   "label": "常规活动",
+   "semantic": "ACTIVITY[常规活动]",
+   "relation": "control_directly_above_label",
+   "template_path": "knowledge/ui/icon_templates/常规活动.png",
+   "source": "CALIBRATED_CROP_2026-10-08",
+   "evidence": {
+    "verified_by": "human review of the extracted crop plus the three checks below",
+    "why_registered": "activity-entry captions are among the most frequent un-typed printed words (超值活动 79, 常规活动 78, 宝石大师礼包 75, 冰封的宝藏 41 frames in a 94-frame sample) and each is drawn under its own tile",
+    "recall": "29/29 = 100.0%",
+    "score": "min 0.8369 median 0.9941 (threshold 0.7)",
+    "specificity": "whole-frame best match landed on the tile itself on 10/10 frames over threshold",
+    "every_occurrence_checked": "53/53 centred, 0 off -- the production call was run on every occurrence of the word in 60 runs and every region it returned was centred on that word",
+    "margin_note": "",
+    "money_surface": "",
+    "contrast": 55.5,
+    "source_frame": "20261008_195114_393758_step_001_after_20261008T115144362731.png",
+    "crop_box_px": [
+     636,
+     117,
+     687,
+     177
+    ],
+    "registered_at": "2026-10-08"
+   }
+  },
+  "宝石大师礼包": {
+   "label": "宝石大师礼包",
+   "semantic": "ACTIVITY[宝石大师礼包]",
+   "relation": "control_directly_above_label",
+   "template_path": "knowledge/ui/icon_templates/宝石大师礼包.png",
+   "source": "CALIBRATED_CROP_2026-10-08",
+   "evidence": {
+    "verified_by": "human review of the extracted crop plus the three checks below",
+    "why_registered": "activity-entry captions are among the most frequent un-typed printed words (超值活动 79, 常规活动 78, 宝石大师礼包 75, 冰封的宝藏 41 frames in a 94-frame sample) and each is drawn under its own tile",
+    "recall": "29/29 = 100.0%",
+    "score": "min 0.8532 median 0.9909 (threshold 0.7)",
+    "specificity": "whole-frame best match landed on the tile itself on 10/10 frames over threshold",
+    "every_occurrence_checked": "50/50 centred, 0 off -- the production call was run on every occurrence of the word in 60 runs and every region it returned was centred on that word",
+    "margin_note": "",
+    "money_surface": "This entry opens the paid-offer surface, as the 商店 navigation button opens the shop; opening it is not a purchase, the prompt forbids proposing spend actions, and the runtime screens the response against the money list before any tap.",
+    "contrast": 39.9,
+    "source_frame": "20261008_195114_393758_step_001_after_20261008T115144362731.png",
+    "crop_box_px": [
+     526,
+     215,
+     585,
+     273
+    ],
+    "registered_at": "2026-10-08"
+   }
+  },
+  "冰封的宝藏": {
+   "label": "冰封的宝藏",
+   "semantic": "ACTIVITY[冰封的宝藏]",
+   "relation": "control_directly_above_label",
+   "template_path": "knowledge/ui/icon_templates/冰封的宝藏.png",
+   "source": "CALIBRATED_CROP_2026-10-08",
+   "evidence": {
+    "verified_by": "human review of the extracted crop plus the three checks below",
+    "why_registered": "activity-entry captions are among the most frequent un-typed printed words (超值活动 79, 常规活动 78, 宝石大师礼包 75, 冰封的宝藏 41 frames in a 94-frame sample) and each is drawn under its own tile",
+    "recall": "29/29 = 100.0%",
+    "score": "min 0.7559 median 0.9924 (threshold 0.7)",
+    "specificity": "whole-frame best match landed on the tile itself on 10/10 frames over threshold",
+    "every_occurrence_checked": "42/42 centred, 0 off -- the production call was run on every occurrence of the word in 60 runs and every region it returned was centred on that word",
+    "margin_note": "冰封的宝藏 min score 0.756 is the thinnest margin against 0.7; a score that falls below it produces no element, which fails closed",
+    "money_surface": "",
+    "contrast": 66.6,
+    "source_frame": "20261008_195114_393758_step_001_after_20261008T115144362731.png",
+    "crop_box_px": [
+     518,
+     123,
+     597,
+     178
+    ],
+    "registered_at": "2026-10-08"
+   }
   }
  },
- "updated_at": "2026-10-08T11:42:00.341642+00:00"
+ "updated_at": "2026-10-08T12:19:15.138419+00:00"
 }
