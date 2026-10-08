@@ -84,6 +84,54 @@ Removing a 9B model from VRAM per round
 Nothing here reloads the model.  ``--stop`` is for a deliberate restart (a repin, a config
 change); the normal state is that this process is already up when the runtime asks.
 
+Why there is no expert cache here (assessed 2026-10-08, on request)
+-------------------------------------------------------------------
+The MoE expert-cache idea is real and is aimed at exactly this shape of deployment -- expert
+weights that do not fit in VRAM, with spare VRAM turned into a live cache of the experts in use.
+Three findings, in order of how much they change the answer:
+
+1. **``--moe-expert-cache-mib`` is not upstream llama.cpp.**  It belongs to a fork
+   (``GenerelSchwerz/llama.cpp``, the ``moe-cache`` branch, CUDA-only; its neighbours are
+   ``--moe-expert-cache-size`` and ``--moe-expert-cache-layers``), and the upstream route is the
+   in-progress PR #26563 (``-ehs N``, an "expert hot store", CUDA-only, off by default).  This
+   build -- 0.5.0-dev, build 11284 -- has neither: its only MoE controls are the *static*
+   placements ``-cmoe`` / ``--n-cpu-moe`` / ``--n-cpu-ffn``.  So enabling it is a **build
+   change**, not a flag.
+
+2. **The gain has to be scaled by two things this project measures.**  Caching accelerates
+   *decode*, and decode is 20% of a planner call (26.4 s of prefill against 6.7 s of decode at the
+   medians for ``-b/-ub 4096/4096``, 5,008-token prompt, 150-token reply).  So:
+
+       PR #26563's own figure for Qwen3.6-35B-A3B (+16% decode)   ->   -2.8% on the call
+       the 4060-laptop fork report (2.0x decode, Q2_0)            ->  -10.1% on the call
+       decode infinitely fast (impossible)                        ->  -20.3% ceiling
+       for comparison: the batch profile above already banked     ->    -22%
+
+   And the same 4060-laptop report shows **prefill at 0.4x** -- 2.5x *slower* prompt processing --
+   on another model on that machine, which is the half that holds 80% of our time.  Prefill is
+   where the risk is, and it is the half no cache claims to help.
+
+3. **A measured null result of our own points the other way.**
+   ``--n-cpu-moe 28`` (5 of 33 layers' experts resident in VRAM) gave 176.6 -> 177.7 tok/s on
+   prefill and 26.1 -> 21.6 on generation: nothing gained, one half lost.  An independent sweep
+   agrees and gives the reason: on a 4070 12 GB with Qwen3.5-35B-A3B, driving ``-ncmoe`` from 48
+   down to 24 fell monotonically from **34.60 to 11.71 tok/s** -- the more experts on the GPU, the
+   slower -- because VRAM bandwidth belongs to attention and the KV cache, not to sparse experts.
+   Our own resource sampling says the same thing from the other side: during a call the GPU ran
+   kernels only ~56% of the time and the CPU was ~35% busy, so neither side is saturated and the
+   cost is in the CPU<->GPU handoff, which a cache does not shorten.
+
+Also considered and not applicable: the Ollama staged-MoE variables (``OLLAMA_MOE_GPU_LAYERS`` and
+friends) are the same idea under a different name on a runtime this project does not use, and
+their cited "prefill 2072 ms -> 1230 ms" is a different order of magnitude from our 26 s; a
+domain-predicting transparency proxy addresses *loading* experts, and ours are already 13.8 GB
+resident, with the added cost of a new layer between the client and the server; ReMoE needs the
+router fine-tuned, which changes model behaviour and is not a launch parameter.
+
+Recorded so the next account does not re-derive it: **the ceiling is ~10% here, the fix is a
+different build, and the two open levers -- the other 80% of the call, and the 18% of replies the
+contract refuses -- are larger.**
+
 Which silicon is actually working (measured 2026-10-08)
 -------------------------------------------------------
 Sampled every 0.5 s during one real planner call (5,047-token prompt, 37 s), because "are we
