@@ -250,10 +250,46 @@ class ServerProfile:
     #: at **58/322 = 18%** before this change; if it rises materially, go back to ``-b/-ub 512/512``.
     batch: int = 4096
     ubatch: int = 4096
+    #: Speculative decoding type, forwarded as ``--spec-type``.  Empty means the server's own
+    #: default (``none``).
+    #:
+    #: **The ceiling here is measured, and it is low.**  Speculative decoding accelerates
+    #: *decoding*, and decoding is the smaller half of this workload by a wide margin: a 5,008-token
+    #: prompt with a ~150-token reply costs 26.4 s of prompt evaluation against 6.7 s of generation
+    #: at the medians for 4096/4096, so generation is 20% of the call.  A perfect draft therefore
+    #: cannot save more than that, and a realistic 2x on decoding saves ~10% -- against the 2.2x
+    #: that the batch profile above already took out of the dominant half.
+    #:
+    #: Which types are even available, measured 2026-10-08 rather than assumed:
+    #: - ``draft-simple`` / ``draft-eagle3`` / ``draft-dflash`` / ``draft-dspark`` need a draft
+    #:   model (``--spec-draft-model``).  None is installed; ``E:/winter_models`` holds only the
+    #:   35B weights and the mmproj.  One would have to be downloaded, and it would compete for the
+    #:   VRAM the batch profile is using and for the CPU cores the expert tensors are using.
+    #: - ``draft-mtp`` would be the natural fit -- the model *ships* multi-token-prediction heads
+    #:   (``blk.40.nextn.eh_proj / enorm / hnorm / shared_head_norm``) -- but this build loads them
+    #:   as unused: the log prints four "model has unused tensor blk.40.nextn.* -- ignoring" lines.
+    #:   So the capability is in the weights and not in the loader.
+    #: - the ``ngram-*`` family needs no draft model at all: it drafts from the context it has
+    #:   already seen.  That is the only variant worth measuring here, and it costs no VRAM.
+    #:
+    #: **Measured 2026-10-08, and the answer is no.**  ``--spec-type ngram-simple`` on the
+    #: production profile: generation 22.9 tok/s against the baseline's 22.4-24.3 -- no gain -- and
+    #: the four replies came back **byte-identical** to the profile without it.  The server log
+    #: contains no draft/accept line at all, so the drafter proposed nothing: it needs a 12-token
+    #: n-gram match to draft from, and a 130-200-token free-form Chinese reply offers none.
+    #: ``--spec-type ngram-cache`` did not even fit: it left **196 MiB** of VRAM free, under the
+    #: 300 MiB floor the operator set, and was stopped before it could be measured.
+    #:
+    #: The structural reason it cannot matter here, and the reason to leave this empty: speculative
+    #: decoding only accelerates decoding, decoding is 20% of this call, and the 2.2x that the
+    #: batch profile already took out of the other 80% is the same win obtained where the time
+    #: actually is.  Recorded so the next account does not re-run it.
+    spec_type: str = ""
 
     def server_args(self) -> list[str]:
         moe_args = (["-cmoe"] if self.cpu_moe_layers is None
                     else ["--n-cpu-moe", str(int(self.cpu_moe_layers))])
+        spec_args = ["--spec-type", self.spec_type] if self.spec_type else []
         return [
             "-m", str(WEIGHTS),
             "--mmproj", str(MMPROJ),
@@ -264,6 +300,7 @@ class ServerProfile:
             "-b", str(self.batch), "-ub", str(self.ubatch),
             "-ctk", self.kv_type, "-ctv", self.kv_type,
             "-fa", "on",
+            *spec_args,
             "--image-min-tokens", "1024",
             "--image-max-tokens", "1024",
             "--host", HOST,
@@ -281,6 +318,7 @@ class ServerProfile:
             "cpu_moe_layers": self.cpu_moe_layers,
             "batch": self.batch,
             "ubatch": self.ubatch,
+            "spec_type": self.spec_type,
         }
 
 
