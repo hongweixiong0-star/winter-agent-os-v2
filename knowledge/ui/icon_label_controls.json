@@ -357,7 +357,67 @@
     ],
     "registered_at": "2026-10-08"
    }
+  },
+  "确定": {
+   "label": "确定",
+   "semantic": "BTN[确定]",
+   "relation": "label_is_the_control",
+   "source": "REVIEWED_OCCURRENCES_2026-10-08",
+   "evidence": {
+    "verified_by": "human review of every occurrence found in the current corpus, as a montage of the word in its own surroundings",
+    "why_registered": "the confirm control of this client's dialogs (role-login confirmation, purchase confirmation, popups); without it the model cannot close a dialog it must close",
+    "occurrences_reviewed": "7/7 occurrences are the same blue dialog button with white text, reviewed as a montage.",
+    "sample": "searched 191 frames taken one and two per run across 110 recent runs",
+    "unverified": "",
+    "why_no_template": "label_is_the_control needs no crop: the control region is the box this frame OCRs for the word, so nothing stored is a coordinate",
+    "registered_at": "2026-10-08"
+   }
+  },
+  "取消": {
+   "label": "取消",
+   "semantic": "BTN[取消]",
+   "relation": "label_is_the_control",
+   "source": "REVIEWED_OCCURRENCES_2026-10-08",
+   "evidence": {
+    "verified_by": "human review of every occurrence found in the current corpus, as a montage of the word in its own surroundings",
+    "why_registered": "the cancel half of the same dialogs, and the safe half: it is the control that declines",
+    "occurrences_reviewed": "7/7 occurrences are the same orange dialog button with white text, reviewed as a montage.",
+    "sample": "searched 191 frames taken one and two per run across 110 recent runs",
+    "unverified": "",
+    "why_no_template": "label_is_the_control needs no crop: the control region is the box this frame OCRs for the word, so nothing stored is a coordinate",
+    "registered_at": "2026-10-08"
+   }
+  },
+  "领取": {
+   "label": "领取",
+   "semantic": "BTN[领取]",
+   "relation": "label_is_the_control",
+   "source": "REVIEWED_OCCURRENCES_2026-10-08",
+   "evidence": {
+    "verified_by": "human review of every occurrence found in the current corpus, as a montage of the word in its own surroundings",
+    "why_registered": "the claim control on reward panels; several goals exist only to reach a 领取",
+    "occurrences_reviewed": "7/7 occurrences are button-shaped; two colour skins were seen, green 4 / grey 3.",
+    "sample": "searched 191 frames taken one and two per run across 110 recent runs",
+    "unverified": "Whether the grey skin is a disabled state is UNVERIFIED.  A disabled button still produces a tap that cannot succeed, which the verifier catches and rule 8 of the prompt tells the model not to repeat; it is recorded here rather than assumed.",
+    "why_no_template": "label_is_the_control needs no crop: the control region is the box this frame OCRs for the word, so nothing stored is a coordinate",
+    "registered_at": "2026-10-08"
+   }
+  },
+  "前往": {
+   "label": "前往",
+   "semantic": "BTN[前往]",
+   "relation": "label_is_the_control",
+   "source": "REVIEWED_OCCURRENCES_2026-10-08",
+   "evidence": {
+    "verified_by": "human review of every occurrence found in the current corpus, as a montage of the word in its own surroundings",
+    "why_registered": "the \"go there\" control that turns a notice into navigation",
+    "occurrences_reviewed": "3/3 occurrences are the same wide blue button, reviewed as a montage.",
+    "sample": "searched 191 frames taken one and two per run across 110 recent runs",
+    "unverified": "Thin sample: 3 occurrences.  Consistent in all three, and recorded as thin.",
+    "why_no_template": "label_is_the_control needs no crop: the control region is the box this frame OCRs for the word, so nothing stored is a coordinate",
+    "registered_at": "2026-10-08"
+   }
   }
  },
- "updated_at": "2026-10-08T12:19:15.138419+00:00"
+ "updated_at": "2026-10-08T12:38:20.661391+00:00"
 }
