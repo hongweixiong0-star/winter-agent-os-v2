@@ -195,6 +195,14 @@
   "the_wake_half_exists_and_has_no_feeder_20261010": {
     "one_line": "『何时行动』那一半不是缺的 —— 它存在、已接线、也被消费。缺的是【巨熊印刷排期的那句话】没有一个生产读者，喂给它的是一条与巨熊无关的字段。",
     "corrects": "external_capability_map.json 的 BEAR_TRAP_PARTICIPATION.current_gap 写『V2 has no time-window concept and no preemption』。本次代码级复核后，前半句不成立：时间窗概念存在。",
+    "correction_20261010b_the_reservation_is_only_a_priority": {
+      "what_i_got_imprecise": "本节标题写『the wake half exists and is consumed』。『被消费』成立，但消费它的方式不叫唤醒。",
+      "measured": "reserved_start 唯一的消费者是 runtime.py:1698 —— schedule.phase_at(moment) → event_schedule.PHASE_PRIORITY[phase] → 一个【优先级加成】。在 runtime.py 里对 reservation / reserved 做 wait / next_action / sleep / until 的搜索，命中 0 处。",
+      "what_the_design_intends": "ReadinessPhase 本身就是那条阶梯：IDLE < T30 < T15 < T5 < T1 < OPEN（event_schedule.py:55-63），与 bear_hunt_time_20260927_newaccount.json 的 wake_ladder 同构；event_schedule.py:116 的注释自称 reserved_start『is the only field that can produce a wake』。所以意图齐备，缺的是把 phase 变成一次真正的 wait/next_action_at。",
+      "why_this_decides_the_timezone_question": "为一个只会影响【已经醒着时的排序】的字段去声明客户端时区，不会让 agent【准时到场】。所以顺序必须是：① 先让 reserved_start 产生真正的 wait（§三·七 第十二条『定时用 next_action_at』）；② 再声明时区让它有值可填。反过来做只是把一个未完成的机制提前接上电。",
+      "note": "route_for('PARTICIPATE_BEAR') = 'ALLIANCE'（实测），所以 runtime.py:1676-1681 那段『BEAR_HUNT has no route』的注释是过时的 —— 它说的是 event_id，而该处检查的是 goal_id；readiness 加成对 PARTICIPATE_BEAR 不会被 route 挡住。",
+      "and_the_popup_route_does_not_need_any_of_this": "a70dc18f 读的是【正在看着的窗口】的剩余时长，直接给 bear_phase 一个 ACTIVE，因此产生的是【动作】而不是【唤醒】。巨熊链路现在有一条不依赖唤醒机制的动作路径。"
+    },
     "what_exists": {
       "the_reservation_field": "winter_agent_v2/event_schedule.py:123 RoleSchedule.reserved_start —— 注释自称『the only field that can produce a wake』（event_schedule.py:116）",
       "the_writer_api": "event_schedule.py:858 record_reservation() 与 :893 record_live_countdown()；清空是一等操作（客户端倒计时消失就写 None，不留过期分钟）",
