@@ -192,6 +192,37 @@
     "why_not_fixed": "改的是 2026-10-01 操作者指令 §二十四 定下的预算，属设计决定；且 V2 当前未运行，改动无法实机验证。按 §三·八 第十九/二十条，先报冲突与替代方案，不擅自实现。"
   },
 
+  "the_wake_half_exists_and_has_no_feeder_20261010": {
+    "one_line": "『何时行动』那一半不是缺的 —— 它存在、已接线、也被消费。缺的是【巨熊印刷排期的那句话】没有一个生产读者，喂给它的是一条与巨熊无关的字段。",
+    "corrects": "external_capability_map.json 的 BEAR_TRAP_PARTICIPATION.current_gap 写『V2 has no time-window concept and no preemption』。本次代码级复核后，前半句不成立：时间窗概念存在。",
+    "what_exists": {
+      "the_reservation_field": "winter_agent_v2/event_schedule.py:123 RoleSchedule.reserved_start —— 注释自称『the only field that can produce a wake』（event_schedule.py:116）",
+      "the_writer_api": "event_schedule.py:858 record_reservation() 与 :893 record_live_countdown()；清空是一等操作（客户端倒计时消失就写 None，不留过期分钟）",
+      "the_consumer": "runtime.py:1677 起 event_schedule.load() → 算 ReadinessPhase → event_schedule.PHASE_PRIORITY[phase] 作为优先级加成（runtime.py:1704-1715）。所以预约确实会变成决策权重。",
+      "so_it_is_wired": true
+    },
+    "what_is_missing": {
+      "the_only_feeder": "record_live_countdown 全仓库只有一个调用点：runtime.py:5022。它的输入是 minimum —— 即 world.events[<event_id>][\"minimum_guarantee\"].seconds_to_start，source 写死为 LIVE_CLIENT_EXPLICIT_START_COUNTDOWN。也就是说：只有『当前活动面板』打印的倒计时能产生预约。",
+      "the_bear_s_own_sentence_has_no_reader": "巨熊的排期印成【预约自动开启：yyyy-MM-dd HH:mm】（CONFIRMED，见 bear_hunt_time_20260927_newaccount.json）。字符串『预约自动开启』在 winter_agent_v2/ 里出现 0 次；它只出现在四个一次性探针里：tools/bear_new_account_baseline.py:43、tools/bear_new_account_baseline_pass11.py:29/167/171、tools/bear_baseline_roleB.py:32、tools/bear_roleB_complete.py:37（均已带可用正则）。",
+      "consequence": "即使页签条现在走得通了（cbcb6d2e），生产里也没有人读它揭示出来的那一行。READ 与 USE 之间少的是【把探针里的那个读者抬成生产能力，并接到 record_reservation】。",
+      "note_on_evidences_page": "runtime.py:5022 那一处的 activity 来自 minimum，而 minimum 是当前活动面板；巨熊行动走的是常规活动的 tab body，不是 minimum_guarantee。两条数据源不是同一个。"
+    },
+    "correction_to_the_earlier_note_in_this_file": "本文件 proposed_minimal_fix 把下一步写成『让窗口读数跨帧』。按本节，跨帧那一步只解决 PARTICIPATE_BEAR 的生成；排期那一半要的是【一个生产读者 + 接到 record_reservation】。两件事都要做，但它们是不同的两处。",
+    "next_work_item": {
+      "shape": "把『预约自动开启』从 tools/ 探针抬成生产能力：在常规活动详情帧上解析该行 → 以 event_id=BEAR_HUNT、role_id 为键调用 event_schedule.record_reservation(source 标明来源)。不新增第二套时间真值，沿用 RoleSchedule.reserved_start。",
+      "reuse_available": "四个探针里的正则可直接作为先验（同游戏同分辨率 720×1280）；但探针用固定像素框取页签，正则本身不依赖坐标，可安全复用。",
+      "preconditions": [
+        "设备归属：本轮实测 AUTO 未运行（episodes.jsonl 末条 2026-10-08T23:19:53Z），但屏幕上出现了【铸匠的珍藏】付费弹窗（¥30.00 按钮），且 operator 的 com.xm.wujindongri 仍有 5 个进程 —— 动真机取帧前必须先清，付费按钮上误触的代价是真实货币",
+        "确认 event_schedule 的 RoleSchedule 是否已有 BEAR_HUNT 的行（避免与 minimum 那条互相覆盖）",
+        "走 winter-capability-intake-ladder 五步"
+      ],
+      "acceptance_criteria": {
+        "offline": "以 p11_bear_page.png 为输入，解析器必须给出 2026-09-27T20:30+08:00 这一绝对时刻；以一张没有该行的帧为输入必须返回 None 而不是编造。",
+        "live": "episode 流出现以 预约自动开启 为来源的预约写入，且 runtime.py:1677 起算出的 phase 因此改变；随后在窗口内出现真实 JOIN。"
+      }
+    }
+  },
+
   "role_status_20261005": {
     "1063040265": {
       "verdict": "READY",
