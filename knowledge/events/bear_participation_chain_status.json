@@ -223,6 +223,61 @@
     }
   },
 
+  "the_gate_is_built_for_the_wrong_state_20261010": {
+    "one_line": "到达巨熊的那条路，上游帧在项目自己的磁盘上就是全的（30+ 帧）；挡住的不是导航，是 ocr.py 那个门：它是为『还没开窗』设计的，窗口一开它反而认不出。",
+    "coverage_snapshot_20261010": {
+      "generator": "tools/build_capability_coverage.py（必须先跑再引用）",
+      "result": "total=20 fully_live_verified=2 partial=9 never_tried=4 blocked=4 degraded=1 missing=0",
+      "fully_live_verified_percent": 10.0,
+      "live_coverage_mean": 0.4012,
+      "highest_leverage_top3": [
+        "CHECK_ALLIANCE_EVENT —— blocks 2 goals: ALLIANCE_TIMED_EVENTS, PARTICIPATE_BEAR",
+        "CLAIM_EVENT_TIER —— blocks 2 goals: EVENT_MINIMUM_GUARANTEE, ALLIANCE_TIMED_EVENTS",
+        "READ_BEAR_TIMER —— blocks 2 goals: ALLIANCE_TIMED_EVENTS, PARTICIPATE_BEAR"
+      ],
+      "reading": "项目自己的杠杆排序前三全部落在巨熊/联盟活动这条链上，与本次审计独立一致。"
+    },
+    "the_route_frames_already_exist": {
+      "root": "dataset/raw/bear_live_20260909/ —— 2026-09-09 真机会话的完整证据根，30+ 帧 + _grid/",
+      "route_in_frames": [
+        "alliance_main_now.png（联盟主页）",
+        "alliance_territory.png / territory_actual.png（联盟领地）",
+        "special_buildings.png（特殊建筑：同时含『狩猎陷阱』与『前往』）",
+        "bear_trap_detail.png / bear_trap_loaded.png（窗口开着时的巨熊弹窗）"
+      ],
+      "also_present": "join_list_now.png, joined_bear_1/2/3.png, bear_rally_panel.png, join_green_search.png 等整条加入链",
+      "grid_overlays": "_grid/grid_bear_trap_detail.png, grid_bear_trap_detail_buttons.png（已做好的网格叠加）"
+    },
+    "what_bear_trap_detail_png_actually_is": {
+      "not_a_building_page": "它不是狩猎陷阱建筑页，而是【地图上的「等级1变异巨熊」弹窗】：熊的立绘 + 倒计时 00:13:54 + 两个按钮『伤害排行』『集结』；地图上另有『集结时间 00:13:15』与独立计时 00:00:14 / 00:00:02。",
+      "why_it_matters": "窗口开着时，页面给的是【到结束还有多久】（remaining_seconds）和一个『集结』按钮，不是『距开始』（seconds_to_start）。"
+    },
+    "the_garble": {
+      "measured": "对这四帧跑项目自己的 reader（executor_router._rapid_ocr_results）：bear_trap_detail.png 读出 'o将猎陷阱'，bear_trap_loaded.png 读出 'io将猎陷阱'，special_buildings.png 读出正确的 '狩猎陷阱'；bear_trap_entered.png 是 0 token 的过渡帧。",
+      "consequence": "ocr.py:1176 的 `\"狩猎陷阱\" in exact_texts` 是精确匹配，遇到 'o将猎陷阱' 直接不成立。"
+    },
+    "the_real_shape_of_the_gate_problem": {
+      "code": "ocr.py:1176-1182 —— bear_trap_detail = (\"狩猎陷阱\" in exact_texts) and any(marker in text for text in exact_texts for marker in (\"前往\",\"距开始\",\"距离开始\",\"狩猎陷阱详情\"))",
+      "measured_truth": [
+        "special_buildings.png 两个条件都满足（有『狩猎陷阱』也有『前往』）⇒ 门能过",
+        "bear_trap_detail.png / bear_trap_loaded.png：标签被读坏（o将猎陷阱 / io将猎陷阱），且【一个 marker 都没有】—— 因为窗口开着，页面给的是『集结』而不是『前往』⇒ 门必不过"
+      ],
+      "conclusion": "这个合取门是为『还没开窗』设计的（前往 / 距开始）。窗口一开，它两个条件同时失效。所以即使页签条、导航都通了，也读不到窗口内那一次。",
+      "second_order": "_explicit_start_seconds（ocr.py:820）只认『距开始/距离开始』两种标签，且注释明确说阶段计时是 deadline 不是 start time —— 所以它也不会从『00:13:54』这个到结束的倒计时产生 seconds_to_start。要做窗口内那次，必须读成 remaining_seconds。"
+    },
+    "why_i_did_not_patch_it": {
+      "reason": "把标签匹配改成宽容（例如按三字核心『猎陷阱』匹配）是我能写的最小改动，但【手上没有任何一帧能证明补了它就会生效】：那两帧的 marker 子句本来就不过。在没有可证明的样本上改识别，正是本会话三次更正（cc97315b → 782823b4 → 更正到第一版诊断）都源于的同一个错误。",
+      "what_would_make_it_patchable": "一次真机取帧，覆盖狩猎陷阱页的【两个状态】：开窗前（应出现『前往』/『距开始』）与窗口内（出现『集结』与到结束的倒计时）。有了这两帧，宽容匹配与 remaining_seconds 读法都能被证明或证伪。"
+    },
+    "next_capability": {
+      "name": "READ_BEAR_TIMER（项目自己 highest_leverage 的第 3 项，卡住 ALLIANCE_TIMED_EVENTS 与 PARTICIPATE_BEAR 两个目标）",
+      "shape": "识别巨熊弹窗（『等级N变异巨熊』+ 到结束的倒计时 + 『集结』按钮），把倒计时读成 events['bear'].remaining_seconds，使 rally.bear_phase 得到 ACTIVE，从而 PARTICIPATE_BEAR 以 READY 出现并带上 JOIN_RALLY。",
+      "why_this_is_cheaper_than_the_常规活动 route": "它走 remaining_seconds 即【相对量】，不需要【为客户端声明时区】那一步；那条路仍然卡在时区决定上。",
+      "reuse_available": "识别素材与整条加入链的帧都在 dataset/raw/bear_live_20260909/；加入机制 2026-09-27 已 LIVE_VERIFIED（knowledge/rally/rally_engine_rules.json#city_rally_badge）。",
+      "blocked_on": "设备。屏幕上有付费弹窗，且 operator 的 com.xm.wujindongri 仍在跑（5 个进程，7 小时未变）。"
+    }
+  },
+
   "role_status_20261005": {
     "1063040265": {
       "verdict": "READY",
