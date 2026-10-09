@@ -333,6 +333,55 @@
     "device_note": "本次是操作者明确授权后进行的（『弹窗你自己点掉』）。清弹窗只用 KEYCODE_BACK，全程没有一次点击落在付费按钮上。operator 的 com.xm.wujindongri 仍有 5 个进程在跑 —— 每次读数都受此影响，本目录的帧是唯一可用的当前客户端证据。"
   },
 
+  "live_verification_20261010T0750_the_chain_ran_on_the_client": {
+    "one_line": "把三条提交拿到真机上串起来跑：生产入口、裁剪补齐、向前滑动、日历读者 —— 全部在当前客户端上通过；并且发现【巨熊行动的页签此刻就在条上】。",
+    "evidence_root": "dataset/evidence/live_regular_activity_20261010T0745/",
+    "how": "用真实 OCR 服务走生产入口：OCRService(RapidOCRBackend()) 塞进 rt.vision.ocr，再调 rt._regular_event_hub_on_frame(帧)。不是模拟，是生产那个函数。",
+    "1_生产入口在常规活动页上通过": {
+      "frame": "regular_activity_production_run.png",
+      "reading": {"recognized": true, "display_name": "最强王国", "event_id": "STATE_VS_STATE",
+                  "tabs": ["日历", "变革的乐章"], "calendar_tab_visible": true,
+                  "tab_positions_norm": {"日历": [0.19028, 0.13359], "变革的乐章": [0.74236, 0.13359]},
+                  "scroll_to_start_norm": null, "scroll_to_end_norm": null},
+      "proof_the_crop_pass_ran": "OCRService.timing_calls = 2（整帧 1 次 + ROI 裁剪 1 次）",
+      "why_it_matters": "这同时坐实了 01dbdc28 的更正：整帧读不到 日历，裁剪补齐把它拿回来了；而『不给滑动』是正确答案，因为 日历 就在屏上。"
+    },
+    "2_向前滑动的生产几何在真机上执行成功_cbcb6d2e": {
+      "steps": [
+        "向前滑到 日历 离开视野 → 生产读者给出 tabs=['决战王城','堡垒争夺','社区']、calendar_tab_visible=false、两个方向都有点",
+        "用【读者自己推导出的】朝起点点 (195,170)→(551,170) 执行一次",
+        "重新读那一帧 → tabs=['巨熊行动','决战王城']，条确实移动了"
+      ],
+      "frame": "regular_activity_after_production_derived_swipe.png",
+      "why_it_matters": "cbcb6d2e 的手势在此之前只有人工大滑动作为证据；这是第一次【由生产几何推导出的点】在真机上推动了条。"
+    },
+    "3_巨熊行动的页签此刻就在条上": {
+      "frame": "bear_tab_visible_on_strip.png",
+      "reading": "tabs=['巨熊行动','决战王城']，tab_positions_norm={'巨熊行动': [0.25556, 0.13359], '决战王城': [0.53194, 0.13281]}",
+      "corrects": "本节早前写『今天条上没有巨熊』。那是错的 —— 条的页签集合不是一条可以用滑动枚举完的固定线性表，我按『滑到底』枚举得出的全集是不完整的。",
+      "visual": "条上是 (!) | [熊头图标+巨熊行动] | [皇冠+决战王城] | [堡垒+堡垒争夺] | …",
+      "not_completed": "没能点进这个页签。推导出 (184,171) 之后点击，页面切到了【日历】视图而不是巨熊行动 —— 说明抓帧与点击之间条的位置变了。随后连点两次都停在日历视图。这一步留给下一次（或者由运行时自己走，它有当帧读数）。"
+    },
+    "4_日历读者在当前客户端上完全正常": {
+      "frame": "probe_frame.png（= 日历视图）",
+      "reading": {"recognized": true,
+                  "visible_dates_raw": ["10/08","10/09","10/10","10/11","10/12","10/13","10/14"],
+                  "entries": ["DISCOVERED_EVENT_DC53E03FB8","DISCOVERED_EVENT_A33B0DC6E9","EXCLUSIVE_GEAR_FORGE","DISCOVERED_EVENT_6F33C054CA","DISCOVERED_EVENT_2CED2A762E","DISCOVERED_EVENT_6F33C054CA"]},
+      "verify_conditions": "dates>=2 ✓ entries>=1 ✓ ⇒ 只差上层把这一帧判成 Page.EVENT",
+      "why_it_matters": "这正是生产里 14/14 全失败的那个读者（EVENT_CALENDAR_READ_NOT_PROVEN / calendar_recognized=false）。它没有坏 —— 那 14 次站在【HUB 帧】上，而站在【日历帧】上它读得完全正确。所以问题一直是【把读取票发到了哪一帧】，不是读者。"
+    },
+    "5_日历上今天的活动清单里没有巨熊": {
+      "listed_for_1010": ["除雪小分队", "神秘藏宝室", "专属装备铸炼", "英雄集结", "旅途的收获", "英雄集结"],
+      "client_clock_on_that_frame": "2026-10-10 07:52:18，且 星期六 10/10 为选中列",
+      "client_s_own_disclaimer": "页脚印着『所有活动的最终开放情况以游戏内为准』 —— 客户端自己声明日历不是权威。",
+      "reading": "今天排期里没有巨熊，但条的页签里【有】巨熊行动 —— 两者不矛盾（页签可以是因为冷却/可开启状态而在，而日历只列当天已排的活动）。这与外部证据一致：由 R4/R5 手动开启，不是日历排期。"
+    },
+    "6_日历的条目大多没被解析成已知活动": {
+      "observed": "6 条里 5 条是 DISCOVERED_EVENT_<hash>，只有 EXCLUSIVE_GEAR_FORGE 解析到了已知 id",
+      "note": "这是活动身份映射的覆盖缺口，不是读者缺陷；记下来因为 `advertised_but_unread_activities` 那类判断依赖它。"
+    }
+  },
+
   "role_status_20261005": {
     "1063040265": {
       "verdict": "READY",
