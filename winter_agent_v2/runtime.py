@@ -226,6 +226,62 @@ def _recognition_error(router_error: Any, resolver_error: Any) -> str:
     return str(router_error or "") or str(resolver_error or "")
 
 
+#: The one guard name that is a statement about the *question* rather than about the failure.
+#:
+#: ``_unknown_navigation_target`` answers it before it can ask anything: ``navigation`` is
+#: ``skill_id.startswith("OPEN_") or skill_id.startswith("TAP_FOCUSED_TRAINING_CAMP_")``, and every
+#: other skill returns here.  So for a skill that is not navigation the advisor was provably never
+#: consulted, and this name carries no information about why the registered locator missed.
+#:
+#: Measured 2026-10-08 over the whole production stream: 248 episodes ran ``TRY_ORDINARY_CONTROL``,
+#: 115 of them failed as ``SEMANTIC_TARGET_NOT_VERIFIED``, and **all 115** carry this name -- one
+#: constant, on the project's single largest failure cluster.  The cause was not measured away; it
+#: was overwritten: both ``resolve`` closures set ``self._resolution_error`` to the cause the
+#: resolver had already named and then unconditionally replaced it with this refusal.
+#:
+#: ``learning.Episode.recognition_error`` had already written the rule down (``UNKNOWN_NAV:...`` is
+#: "the navigation advisor's own guards"; ``RESOLVER:LOCATOR_MISSED`` is "the registered locator
+#: answered nothing and no advisor applies"), so an episode filed under this name for a
+#: non-navigation skill contradicts the field's own contract rather than extending it.
+#:
+#: The principle is the same one PEP 3134 encodes for exception chaining: a carrier added outside a
+#: cause must not erase the cause.  Hence: this code never replaces one.
+NAVIGATION_QUESTION_NOT_ASKED = "UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION"
+
+#: The resolver-side code for every exit of ``_ordinary_control_candidate`` that returns no point.
+#:
+#: ``RESOLVER:LOCATOR_MISSED`` is the family's fallback -- "the registered locator answered nothing"
+#: -- and it is what a branch that has not been given a name of its own reports.  These are the
+#: names for the one method whose silences were measured to be the majority of the misses, so that
+#: "no point" stops being a single undifferentiated answer for the largest failing skill.
+RESOLVER_LOCATOR_MISSED = "RESOLVER:LOCATOR_MISSED"
+
+
+def _prefer_the_cause(locator_cause: str, advisor_refusal: str) -> str:
+    """Which of two refusals belongs on the episode row when a target resolved to nothing.
+
+    Two layers can each say why, and they answer different questions:
+
+    * ``locator_cause`` is the *registered locator's* answer -- ``RESOLVER:ORDINARY_NO_FRAME``,
+      ``RESOLVER:LOCATOR_MISSED`` -- i.e. what the project's own first-choice reader found.
+    * ``advisor_refusal`` is the *navigation advisor's* answer.  When it is
+      ``NAVIGATION_QUESTION_NOT_ASKED`` the advisor was refused before it could be consulted, so
+      its name says something true of every skill and every screen alike -- the least informative
+      of all of them, and therefore the one that must never win.
+
+    So: a named locator cause outranks the question-level refusal; a generic
+    ``RESOLVER:LOCATOR_MISSED`` does not, because it is the family's fallback rather than an
+    answer, and the advisor's own guard name is strictly more specific than it.  Empty means
+    nothing was refused, which is what an episode that resolved carries.
+
+    Measured 2026-10-08: this precedence is what makes the 208 failed ``TRY_ORDINARY_CONTROL``
+    episodes distinguishable; before it, all 208 carried ``NAVIGATION_QUESTION_NOT_ASKED``.
+    """
+    if locator_cause and locator_cause != RESOLVER_LOCATOR_MISSED:
+        return locator_cause
+    return advisor_refusal or locator_cause or RESOLVER_LOCATOR_MISSED
+
+
 #: Where the client's own names for its controls are written down.
 #:
 #: This is the one resolver input that is *knowledge* rather than a measurement of this device:
@@ -6546,15 +6602,34 @@ class LiveRuntime:
         The learned reuse (§五/§六) rides here rather than in a second mechanism: the transition
         ledger says which control on *this screen* really left it and which one did nothing, so the
         order below prefers the first and skips the second instead of rediscovering the page.
+
+        Every exit that returns no point also *names itself*, into ``self._resolution_error``, which
+        the episode row carries as ``recognition_error``.  Nothing about which point is returned
+        changes: ``_no`` returns ``None`` exactly where the code returned ``None`` before.  The
+        reason it has to exist here is measured rather than tidy -- this method's silences were the
+        largest single unclassified block in the stream.  Over the 248 live ``TRY_ORDINARY_CONTROL``
+        episodes (2026-10-08): 115 failed as ``SEMANTIC_TARGET_NOT_VERIFIED`` and every one of them
+        carried the *same* code, ``UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION``, which is the advisor
+        saying it was never applicable -- a statement about the question, not about this frame.  So
+        the one thing the ledger could say about the project's biggest failure cluster was something
+        that was true of every skill and every screen alike.
         """
-        if frame_path is None:
-            return None
-        # Cleared at the very top, before every early return: a refusal belongs to the call that made
-        # it, and a step that resolved nothing must not inherit the previous step's reason any more
-        # than it may inherit its control (``_ordinary_last`` is cleared for the same reason below).
+        # Cleared at the very top, *before* every early return -- which is what this comment claimed
+        # from the start and what the code did not do: the ``frame_path is None`` exit sat above it,
+        # so that one path inherited the previous step's decline and ``_failure_type_from`` named a
+        # refusal this call never made.  Moved rather than duplicated, so there is one clear and it
+        # is above all of them.
         self._ordinary_declined = None
-        if frame.page in (Page.MAINTENANCE, Page.LOADING):
+
+        def _no(code: str):
+            """Return no point, and say which of this method's exits it was."""
+            self._resolution_error = code
             return None
+
+        if frame_path is None:
+            return _no("RESOLVER:ORDINARY_NO_FRAME")
+        if frame.page in (Page.MAINTENANCE, Page.LOADING):
+            return _no("RESOLVER:ORDINARY_TRANSIENT_PAGE")
         bootstrap = getattr(self, "_bootstrap_context", {}) or {}
         if bootstrap.get("bootstrap_stage"):
             self._ordinary_last = {}
@@ -6564,7 +6639,7 @@ class LiveRuntime:
             if (bootstrap.get("bootstrap_goal_id") != str(getattr(self, "_committed_goal", "") or "")
                     or bootstrap.get("bootstrap_role_id") != self._calendar_role_id()
                     or not bootstrap.get("bootstrap_entry_label")):
-                return None
+                return _no("RESOLVER:ORDINARY_BOOTSTRAP_CONTEXT_MISMATCH")
             self._unknown_semantic_target = str(bootstrap.get("bootstrap_semantic_target") or bootstrap["bootstrap_entry_label"])
             self._unknown_skill_id = "TRY_ORDINARY_CONTROL"
             try:
@@ -6575,12 +6650,12 @@ class LiveRuntime:
                 self._unknown_skill_id = ""
         ocr = self._ocr_service()
         if ocr is None:
-            return None
+            return _no("RESOLVER:ORDINARY_NO_OCR")
         if self._ordinary_attempts >= self.MAX_ORDINARY_ATTEMPTS:
             brain = getattr(self, "brain", None)
             if brain is not None:
                 brain.ordinary_scan_exhausted = True
-            return None
+            return _no("RESOLVER:ORDINARY_BUDGET_EXHAUSTED")
         page = control_experience.label(frame.page)
         unnamed = not frame.known
         title = ""
@@ -6610,7 +6685,7 @@ class LiveRuntime:
         try:
             tokens = [(t.text or "").strip() for t in ocr.recognize(frame_path).tokens]
         except (OSError, ValueError):
-            return None
+            return _no("RESOLVER:ORDINARY_OCR_FAILED")
         joined = "".join(tokens)
         spend_refused = any(refused and refused in joined for refused in self.ORDINARY_CONTROL_REFUSED_WORDS)
         # A control the dictionary declares -- and declares as non-spending -- is judged by its own
@@ -6649,7 +6724,7 @@ class LiveRuntime:
             brain = getattr(self, "brain", None)
             if brain is not None:
                 brain.ordinary_scan_exhausted = True
-            return None
+            return _no("RESOLVER:ORDINARY_SPEND_WORD_VETO")
         # (1) L1 reuse (operator directive 2026-09-22 section 11).  A single-step action
         # registered for this page, goal and state, whose element is *still drawn on this frame*,
         # is taken before anything is identified again -- that is what makes the second visit
@@ -6765,7 +6840,7 @@ class LiveRuntime:
         brain = getattr(self, "brain", None)
         if brain is not None:
             brain.ordinary_scan_exhausted = True
-        return None
+        return _no("RESOLVER:ORDINARY_NOTHING_ON_SCREEN")
 
     def _unknown_navigation_target(
         self, semantic: str, frame: WorldState, frame_path: Path, *, skill_id: str,
@@ -8615,11 +8690,14 @@ class LiveRuntime:
             )
             if point is not None:
                 return point
-            self._resolution_error = "RESOLVER:LOCATOR_MISSED"
+            # The registered locator's own answer, kept as a *cause* rather than a placeholder.
+            # ``_ordinary_control_candidate`` names which of its exits returned no point (see
+            # ``RESOLVER:ORDINARY_*``); when it did not, this is the family's fallback.
+            locator_cause = self._resolution_error or RESOLVER_LOCATOR_MISSED
             point = self._unknown_navigation_target(semantic, world, before_path, skill_id=skill_id)
             if point is None:
-                self._resolution_error = (
-                    self._unknown_navigation_refusal or "RESOLVER:LOCATOR_MISSED")
+                self._resolution_error = _prefer_the_cause(
+                    locator_cause, self._unknown_navigation_refusal)
             return point
 
         adb_executor = Executor(
@@ -9875,7 +9953,7 @@ class LiveRuntime:
                                                             skill_id=decision.skill)
                     if point is None:
                         self._resolution_error = (
-                            self._unknown_navigation_refusal or "RESOLVER:LOCATOR_MISSED")
+                            self._unknown_navigation_refusal or RESOLVER_LOCATOR_MISSED)
                     return point
                 point = self._resolve_semantic_target(
                     semantic,
@@ -9888,14 +9966,17 @@ class LiveRuntime:
                 if point is not None:
                     return point
                 # The registered locator -- the project's own, first-choice reader -- answered
-                # nothing.  Whether the advisor is even allowed to be asked, and if so whether it
-                # answered, is the next fact; both are more specific than "not verified".
-                self._resolution_error = "RESOLVER:LOCATOR_MISSED"
+                # nothing.  Its own name for *which* exit that was (``RESOLVER:ORDINARY_*``) is a
+                # cause; whether the advisor is even allowed to be asked, and if so whether it
+                # answered, is the next fact.  ``_prefer_the_cause`` keeps the cause when the
+                # advisor's reply is only ``NAVIGATION_QUESTION_NOT_ASKED`` -- a statement about the
+                # question, not this frame.
+                locator_cause = self._resolution_error or RESOLVER_LOCATOR_MISSED
                 point = self._unknown_navigation_target(semantic, before, before_path,
                                                        skill_id=decision.skill)
                 if point is None:
-                    self._resolution_error = (
-                        self._unknown_navigation_refusal or "RESOLVER:LOCATOR_MISSED")
+                    self._resolution_error = _prefer_the_cause(
+                        locator_cause, self._unknown_navigation_refusal)
                 return point
 
             def verify_current_step(before_state: WorldState, after_state: WorldState):

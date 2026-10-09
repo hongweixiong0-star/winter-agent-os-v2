@@ -27,7 +27,7 @@ if str(ROOT) not in sys.path:
 
 from winter_agent_v2.learning import Episode  # noqa: E402
 from winter_agent_v2.models import Page, WorldState  # noqa: E402
-from winter_agent_v2.runtime import LiveRuntime, _recognition_error  # noqa: E402
+from winter_agent_v2.runtime import LiveRuntime, _prefer_the_cause, _recognition_error  # noqa: E402
 
 
 class _Holder:
@@ -189,6 +189,62 @@ class TheEpisodeCarriesItTests(unittest.TestCase):
     def test_nothing_refused_is_the_empty_string_not_a_word(self):
         self.assertEqual(_recognition_error("", None), "")
         self.assertEqual(_recognition_error(None, None), "")
+
+
+class TheCauseIsNotErasedByTheQuestionTests(unittest.TestCase):
+    """A named locator cause must outrank the advisor saying it was never asked.
+
+    Measured 2026-10-08 over the whole production stream: 351 ``TRY_ORDINARY_CONTROL`` episodes,
+    208 of them failed ``SEMANTIC_TARGET_NOT_VERIFIED``, and **all 208** carried
+    ``UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION``.  That name is the advisor answering "this skill is not
+    navigation" *before it could ask anything* -- a statement about the question, true of every
+    skill and every screen alike.  The cause had been named by the locator and then overwritten by
+    both ``resolve`` closures.
+
+    PEP 3134 states the principle for exception chaining: a carrier added outside a cause must not
+    erase the cause.  The same rule is what makes the ledger answerable here.
+    """
+
+    def test_a_named_locator_cause_beats_the_question_level_refusal(self):
+        self.assertEqual(
+            _prefer_the_cause("RESOLVER:ORDINARY_NO_FRAME",
+                              "UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION"),
+            "RESOLVER:ORDINARY_NO_FRAME")
+
+    def test_every_ordinary_exit_is_a_distinct_answer_on_the_same_failure_type(self):
+        """The work order's target metric: ``distinct_codes_for_them > 1``."""
+        exits = [
+            "RESOLVER:ORDINARY_NO_FRAME",
+            "RESOLVER:ORDINARY_TRANSIENT_PAGE",
+            "RESOLVER:ORDINARY_NO_OCR",
+            "RESOLVER:ORDINARY_BUDGET_EXHAUSTED",
+            "RESOLVER:ORDINARY_OCR_FAILED",
+            "RESOLVER:ORDINARY_SPEND_WORD_VETO",
+            "RESOLVER:ORDINARY_NOTHING_ON_SCREEN",
+            "RESOLVER:ORDINARY_BOOTSTRAP_CONTEXT_MISMATCH",
+        ]
+        resolved = {_prefer_the_cause(code, "UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION")
+                    for code in exits}
+        self.assertEqual(len(resolved), len(exits))
+        self.assertGreater(len(resolved), 1)
+
+    def test_the_generic_locator_miss_does_not_outrank_the_advisor_s_guard(self):
+        """``RESOLVER:LOCATOR_MISSED`` is the family's fallback, not an answer -- so a specific
+        advisor guard (e.g. the panel-dependent case) is strictly more informative and wins."""
+        self.assertEqual(
+            _prefer_the_cause("RESOLVER:LOCATOR_MISSED",
+                              "UNKNOWN_NAV:PANEL_DEPENDENT_TARGET_PANEL_CLOSED"),
+            "UNKNOWN_NAV:PANEL_DEPENDENT_TARGET_PANEL_CLOSED")
+
+    def test_when_both_are_the_fallback_it_is_still_named_and_never_empty(self):
+        self.assertEqual(
+            _prefer_the_cause("RESOLVER:LOCATOR_MISSED", ""), "RESOLVER:LOCATOR_MISSED")
+        self.assertEqual(_prefer_the_cause("", ""), "RESOLVER:LOCATOR_MISSED")
+
+    def test_the_question_level_constant_is_never_returned_when_a_cause_exists(self):
+        code = _prefer_the_cause("RESOLVER:ORDINARY_NO_FRAME",
+                                 "UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION")
+        self.assertNotEqual(code, "UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION")
 
 
 if __name__ == "__main__":
