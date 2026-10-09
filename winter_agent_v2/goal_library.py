@@ -6,7 +6,7 @@ from typing import Any, Iterable, Mapping
 import json
 import re
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from .camp_training import CAMP_LABELS, CAMP_ORDER, TROOP_TO_CAMP
@@ -1210,6 +1210,49 @@ def _frame_shows_calendar_grid(world: "WorldState | None") -> bool:
     return isinstance(calendar, Mapping) and calendar.get("recognized") is True
 
 
+#: How long before a Bear window opens the runtime should be woken for it.  This is the T-30
+#: rung of the ladder the operator's own record carries
+#: (``knowledge/events/bear_hunt_time_20260927_newaccount.json`` -> wake_ladder
+#: T-30 / T-15 / T-5 / T-1 / OPEN): early enough to clear marches and read the page afresh,
+#: late enough that nothing read at T-30 has gone stale by the time it opens.
+BEAR_WAKE_LEAD_SECONDS = 30 * 60
+
+
+def _bear_wake_at(bear: Mapping[str, Any], world: WorldState, phase: BearPhase) -> str | None:
+    """When to wake for a Bear window that has not opened yet -- from a DURATION, not a clock.
+
+    Built from ``seconds_to_start`` and deliberately **not** from ``reserved_start_time``.  The
+    client prints 预约自动开启 as a naive local time, the project's time rule forbids inferring
+    the game's timezone from this machine's (``timed_event_readiness.json`` -> ``time_rule``),
+    and ``event_goal.Activity.window`` refuses a timestamp without an offset for exactly this
+    reason -- so an absolute stamp from that line could not be turned into a wake at all.  A
+    duration can, and needs no timezone to do it.
+
+    Why the wake has to be said here rather than left to the reservation: a reservation's phase
+    only reorders work that is ALREADY awake (``runtime`` applies it as a priority bonus), so a
+    goal that must be *visited* at a time has to put that time where the runtime aggregates wait
+    times.  ``runtime`` already reads ``next_action_at`` out of goal evidence for exactly this.
+
+    ``None`` for a window that is open or finished, for a phase that carries no duration, and
+    for a non-positive one -- "nothing says when" is not "now", and waking immediately for an
+    unknown would spend the device to learn nothing.
+    """
+    if phase not in {BearPhase.SCHEDULED, BearPhase.PREPARING}:
+        return None
+    seconds = _optional_int(bear.get("seconds_to_start"))
+    if seconds is None or seconds <= 0:
+        return None
+    reference = getattr(world, "timestamp", None)
+    if not isinstance(reference, datetime):
+        try:
+            reference = datetime.fromisoformat(str(reference))
+        except (TypeError, ValueError):
+            reference = datetime.now(timezone.utc)
+    if reference.tzinfo is None:
+        reference = reference.replace(tzinfo=timezone.utc)
+    return (reference + timedelta(seconds=max(0, seconds - BEAR_WAKE_LEAD_SECONDS))).isoformat()
+
+
 class GoalLibrary:
     """Turns observed state into goals. It is knowledge, not another scheduler."""
 
@@ -1599,6 +1642,7 @@ class GoalLibrary:
                 skills = ("CHECK_MARCH", "SELECT_TROOP_PRESET")
             else:
                 skills = ("CHECK_ALLIANCE_EVENT", "READ_BEAR_TIMER")
+            wake_at = _bear_wake_at(bear, world, phase)
             goals.append(GoalState(
                 "PARTICIPATE_BEAR", status,
                 completion=1.0 if status is GoalStatus.EXPIRED else 0.0,
@@ -1606,6 +1650,13 @@ class GoalLibrary:
                 reward_value=1000, daily_loss=5000 if phase in {BearPhase.READY, BearPhase.ACTIVE} else 0,
                 available_skills=skills,
                 evidence={"phase":phase.value, "reserved_start_time":bear.get("reserved_start_time"),
+                          # The wake.  A reservation's phase only reorders work that is already
+                          # awake, so a window that has not opened yet also has to name the time
+                          # to come back -- beside the goal, through the key ``runtime`` already
+                          # reads into the role's ``next_action_at`` (runtime.py:2067).  ABSENT
+                          # rather than null when there is nothing to say: "no duration on file"
+                          # must not read as "come back at an unset time".
+                          **({"next_action_at": wake_at} if wake_at is not None else {}),
                           "normal_idle_slots":world.idle_marches,
                           "bear_rally_special_available":world.bear_rally_special_available,
                           # Named, so the plan below is not duplicated for an event already on the
