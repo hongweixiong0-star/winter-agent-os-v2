@@ -1,26 +1,38 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "topic": "BEAR_PARTICIPATION_CHAIN_STATUS",
   "written_at": "2026-10-05T21:25:00+08:00",
-  "written_by": "session 2026-10-05 (bear work)",
+  "updated_at": "2026-10-09T23:45:00+08:00",
+  "updated_by": "session 2026-10-09 (bear chain re-measurement)",
   "question": "两个角色打巨熊，到底缺什么？",
-  "one_line": "链路本身是通的；缺的是「在窗口那一分钟里，agent 恰好站在联盟战争集结页」。这不是引擎缺陷，是一段还没有被真机覆盖的时序。",
+  "one_line": "链路通的；缺的不是时序运气 —— 巨熊窗口在生产里被真机读到过 4 次，4 次都没有进入决策帧，所以 PARTICIPATE_BEAR 一次都没被生成。这是读数传递缺陷，不是运气。",
+
+  "correction_20261009": {
+    "what_was_wrong": "本文件 2026-10-05 的 the_gap.consequence 写的是『The agent participates only if it happens to be on the alliance war / rally list page during the window. It has never been.』—— 后半句是错的。",
+    "what_the_frames_say": "agent 在窗口内确实到过集结页，而且窗口是活的：生产 episode 流里 state_after.events.bear 非空的记录共 4 条（67s / 73s / 165s / 13s），全部来自 LIVE_CLIENT_RALLY_ROW。",
+    "the_real_defect": "同一份 episode 流里 state_before.events.bear 非空的记录是 0 条。goal_library 生成 PARTICIPATE_BEAR 时读的是决策帧的 world.events（goal_library.py:1567，原注释写 1531，行号已漂移），而决策帧的 events 里从来没有 bear。所以『窗口被读到』与『窗口进入决策』之间断了，4/4 都没接上。",
+    "why_it_looked_like_timing": "4 条读数都挂在非巨熊目标上（SCHEDULED_OFFICER_PROJECT / SCHEDULED_BROTHERS_IN_ARMS / OBSERVE_FISHING_STATE x2），skill 全是 BACK，观察到的变化是 PAGE_CHANGED —— 看起来像『随机路过』。但它们不是重试帧也不是陈旧帧，after_screenshot 是该步自己的 after，所以是真实到达，只是到达之后下一帧的 before 里 bear 已经没了。",
+    "correction_of_the_correction": "本文件 2026-10-05 同时写着『the reader 不是原因』—— 这条仍然成立，本条更正不推翻它。reader 是对的：目标词表 RALLY_TARGET_WORDS[BEAR]=('变异巨熊','巨熊') 在 rally.py:193，2026-09-27 真机读到过『等级1变异巨熊』-> target_type=BEAR。"
+  },
 
   "verified_working_20261005": {
     "reach_the_page": {
       "goal": "DISCOVER_BEAR_RALLY_LIST",
       "skill": "OPEN_BEAR_RALLY_LIST",
-      "episodes": 4,
+      "episodes_on_20261005": 4,
+      "episodes_all_time_20261009": 28,
       "result": "ALL SUCCESS",
-      "context": "ALLIANCE/HOME, bear_entry_visible=True, decision_reason=current_alliance_war_entry_allows_live_rally_list_discovery_only",
-      "entry_badge": "ABSENT from red_dots on all four -- the badge was not what admitted it",
+      "context": "ALLIANCE/HOME, bear_entry_visible=True",
+      "entry_gate": "DISCOVER_BEAR_RALLY_LIST 在 entry_badges.ENTRY_GATED_GOALS 里绑定 BTN_ALLIANCE_WAR（entry_badges.py:278），gate 要求 PRESENT；goal_library.py:1626 的发射条件要求它的判定 == PRESENT",
+      "measured_20261009": "28 次全部 SUCCESS，28 次的 state_after.events 全是 {} —— 一次都没写到 events['bear']",
       "source": "learning/episodes.jsonl"
     },
     "read_the_rows": {
-      "observed": "target_text='等级1变异巨熊' target_type=BEAR state=JOINABLE joinable=True capacity=12/15 join_norm=[0.8889,0.302]",
+      "observed_bear": "target_text='等级1变异巨熊' target_type=BEAR state=JOINABLE joinable=True capacity=12/15 join_norm=[0.8889,0.302]",
       "role": "1063040265",
       "at": "2026-10-05T12:39:34Z",
-      "source": "learning/episodes.jsonl"
+      "observed_non_bear_20261009": "2026-10-08T13:53:10Z frame step_018_after：列表只有野兽 —— 等级1失控的雪怪（52公里）、等级7霜鳞避役（23公里），没有巨熊。reader 把它们读成 target_text='' / target_type=UNKNOWN 是正确行为，不是漏读：词表里没有雪怪/避役。",
+      "source": "learning/episodes.jsonl; dataset/raw/control_panel/runtime_auto/20261008_215017_046367/20261008_215017_046367_step_018_after_20261008T135310350119.png"
     },
     "join_mechanism": {
       "status": "LIVE_VERIFIED 2026-09-27T23:41",
@@ -29,24 +41,155 @@
       "source": "knowledge/rally/rally_engine_rules.json#city_rally_badge"
     },
     "bear_status_is_read_from_a_rally_row": {
-      "writer": "winter_agent_v2/ocr.py:4855 -- events['bear'] set only when a rally row has target_type=BEAR and remaining_seconds>0",
+      "writer": "winter_agent_v2/ocr.py:4897（原注 4855）-- _read_rally_list_state 里 events['bear'] 仅在 rally row 有 target_type=BEAR 且 remaining_seconds>0 时写入",
       "proof": "2026-10-05T12:39:52Z events.bear = {status: ACTIVE, remaining_seconds: 73, source: LIVE_CLIENT_RALLY_ROW}"
     }
   },
 
   "the_gap": {
-    "statement": "PARTICIPATE_BEAR is generated only when world.events['bear'] already exists (goal_library.py:1531), and that field is only written while the agent is standing on a page that prints the bear. So the goal that would drive participation cannot be created by the page visit that would reveal the window.",
-    "consequence": "The agent participates only if it happens to be on the alliance war / rally list page during the window. It has never been.",
+    "statement": "PARTICIPATE_BEAR 只在 world.events['bear'] 已存在时才生成（goal_library.py:1567），而该字段只在 agent 站在会打印巨熊的页面上时才写入。所以驱动参战的那个目标，无法由揭示窗口的那次页面访问创建出来。",
+    "consequence_corrected": "agent 确实到过那个页面（4 次，窗口都是活的），但读数没有进入下一帧的决策状态，所以目标从未生成、动作从未发出。",
+    "consequence_as_written_20261005_SUPERSEDED": "The agent participates only if it happens to be on the alliance war / rally list page during the window. It has never been. —— 见 correction_20261009。",
     "evidence": {
-      "board_20261005T1302Z": "SCHEDULED_BEAR_HUNT present (EXPIRED); PARTICIPATE_BEAR absent from the board",
-      "episodes": "zero episodes carry goal_id=PARTICIPATE_BEAR",
-      "window": "one window observed all day (12:39Z, 67-73s remaining)"
+      "state_after_has_bear": 4,
+      "state_before_has_bear": 0,
+      "episodes_with_goal_PARTICIPATE_BEAR": 0,
+      "episodes_with_skill_START_RALLY": 0,
+      "episodes_with_skill_JOIN_RALLY": 0,
+      "episodes_total": 10371,
+      "readings": [
+        "4937 2026-10-05T12:39:34.895620+00:00 BACK goal=SCHEDULED_OFFICER_PROJECT role=1063040265 remaining_seconds=67",
+        "4939 2026-10-05T12:39:52.282715+00:00 BACK goal=SCHEDULED_BROTHERS_IN_ARMS role=1063040265 remaining_seconds=73",
+        "5053 2026-10-05T13:26:23.451428+00:00 BACK goal=OBSERVE_FISHING_STATE role=1061663148 remaining_seconds=165",
+        "5054 2026-10-05T13:26:29.076581+00:00 BACK goal=OBSERVE_FISHING_STATE role=1061663148 remaining_seconds=13"
+      ]
     },
     "not_the_cause": [
-      "the reader (rows parse correctly when a bear is printed)",
-      "the join mechanism (live-verified 2026-09-27)",
-      "role 1061663148's ability (it has never been on that page while a bear was present -- three frames verified by OCR contained no bear at all; its only beast label was 等级7霜鳞避役)"
+      "the reader（词表命中正确；读到野兽就是野兽，读到巨熊就是巨熊）",
+      "the join mechanism（2026-09-27 真机已验证）",
+      "role 1061663148's ability（它 13:26Z 那两帧就是带着活窗口的，能力未测得，不是缺失）"
     ]
+  },
+
+  "the_second_path_and_why_it_cannot_work": {
+    "goal": "SCHEDULED_BEAR_HUNT",
+    "episodes": 47,
+    "result_split": "31 SUCCESS（全是 OPEN_HOME / BACK 的路由跳），16 FAILURE",
+    "failure_breakdown": "14 x READ_EVENT_CALENDAR，failure_type=EVENT_CALENDAR_READ_NOT_PROVEN，verifier_evidence={'calendar_recognized': false, 'visible_dates': [], 'entry_count': 0}；1 x SAFE_STOP；1 x OPEN_HOME",
+    "why_it_cannot_work": "READ_EVENT_CALENDAR 是全局活动日历的读者，而巨熊不是日历排期活动。外部一手确认：巨熊由联盟 R4/R5 手动开启狩猎陷阱，联盟冷却 47.5 小时（约每 2 天一次），开放窗口 30 分钟；官方指南明说『查看游戏内活动计时器和报名窗口』『设个提醒别错过开始』『官员公告时间』。所以窗口时间不在全局日历上，这条路读不到是结构性的。",
+
+    "root_cause_wiring_20261010": {
+      "verdict": "机制全都有，缺的是接线 —— 而且不是一处，是两处（§三·八 第十五条 的『字段没人消费』+『route 缺映射』）。",
+      "already_correct_in_the_repo": {
+        "registry_entry": "knowledge/events/event_registry.json 里 BEAR_HUNT 的 gate=REVIEWED，而 _PLANNABLE_GATES={REVIEWED,VERIFIED}，所以它本来就有资格拿到计划",
+        "the_declared_source": "同一条目的 next_open_condition 写明：field=world.events.bear.seconds_to_start；how_to_read_it=『the client prints the remaining cooldown on the 狩猎陷阱 page, and prints 距开始 there for an upcoming hunt』（观测于 2026-09-09）",
+        "the_declared_route": "同一条目的 verified_path.entry = [联盟, 联盟领地, 特殊建筑, 狩猎陷阱, 前往]",
+        "the_reader_exists": "winter_agent_v2/ocr.py:1176-1180 已经在识别『狩猎陷阱』并读取 markers ('前往','距开始','距离开始','狩猎陷阱详情')；ocr.py:1350 据此写 events['bear']={status:SCHEDULED, seconds_to_start:N, source:LIVE_CLIENT_OCR_EXPLICIT_START_LABEL}",
+        "the_mapper_exists": "goal_library.py:291 的 _WINDOW_STATUS 已把 event_goal.WindowState 映射成 GoalStatus"
+      },
+      "what_is_missing": {
+        "1_field_never_consumed": "next_open_condition 全仓库只有四处出现：event_goal.py 的 dataclass 字段(242)、同一文件的文档(257)、plan() 里打包(335)、从注册表读入(395)。运行时与目标层从不读它的 field / how_to_read_it。字段被写出来、被塞进 plan、然后没有人消费。",
+        "2_observation_skill_is_one_size_fits_all": "goal_library.py:322 的 _ACTIVITY_OBSERVATION_SKILLS=('READ_EVENT_CALENDAR',) 对所有 SCHEDULED_* 活动统一使用（使用点 2320、2374）。它对日历排期活动是对的，对 BEAR_HUNT 是错的。",
+        "3_no_route_to_the_page_that_has_it": "没有任何技能走 verified_path.entry 那条路（全仓库没有 HUNTING_TRAP / BEAR_TRAP 类技能，只有 OPEN_BEAR_RALLY_LIST）。所以 ocr.py:1176 那个读者永远不会被走到。",
+        "4_ready_is_only_a_page_check": "skills.py:91 Skill.ready() 只判 world.known 与 world.page is required_page。READ_EVENT_CALENDAR 的 required_page=Page.EVENT，所以在任何 EVENT 帧上都『就绪』——包括当时 EVENT 页显示的是 SUPER_ACTIVITY 面板（episode 里 events={'hub':'SUPER_ACTIVITY','panel':'SUPER_ACTIVITY'} 的那些帧）。技能自己的前置条件成立，而它的 verifier（要求 calendar recognized + ≥2 dates + ≥1 entry）没有任何东西在尝试之前检查。这就是 14 次 calendar_recognized=false 的来历。"
+      },
+      "why_you_cannot_fix_it_by_editing_the_skill_list": {
+        "conclusion": "把 _ACTIVITY_OBSERVATION_SKILLS 改成按活动取，会让 SCHEDULED_BEAR_HUNT 拿不到任何观察技能 —— 而那正是 2026-10-03 实测后修掉的回归。",
+        "evidence": "goal_library.py:311-322 的注释记录了那次测量：24 小时内 20 个 SCHEDULED_* 票据被选中 121 次、284 个决策点名它们，实际跑的却是 OPEN_MAP 38 / INTEL_HERO_DISPATCH 26 / START_GATHER 15 / SUBMIT_RESOURCE_SEARCH 14 —— 没有一个和活动有关。根因是 available_skills=() 让 brain 无从下手，通用兜底就跑了页面当时给的东西。原文：『A ticket that names what it needs to read and carries no way to read it is how a scheduled observation becomes an unrelated action.』",
+        "therefore": "正确的顺序是先有到达狩猎陷阱页的能力（route/skill），再让观察技能按 next_open_condition 取。反过来做是制造已知回归。"
+      },
+      "next_work_item_SUPERSEDED_20261010": {
+        "superseded_by": "correction_20261010_not_the_trap_page",
+        "why": "本条把下一步定成『补一条到达狩猎陷阱页的 route』。补做阶梯第 2 步（读 knowledge/external/external_capability_map.json 的 BEAR_TRAP_PARTICIPATION 卡片）后证明这是错的目标。",
+        "kept_for": "留证：这说明跳过 reused_check / external prior 两步会导出看似合理但方向错误的结论。"
+      },
+
+      "correction_20261010_not_the_trap_page": {
+        "what_was_wrong": "下一步不是『补一条到狩猎陷阱页的 route』。",
+        "why": "阶梯第 2 步一打开 external_capability_map.json 就有答案：BEAR_TRAP_PARTICIPATION 卡片的 reuse_note（2026-10-05 按 reuse_check 裁决写回）已经写明『WHERE THE TIME IS ACTUALLY PUBLISHED』，并给出已 CONFIRMED 的读数。本次补做后确认：狩猎陷阱页读的是 cooldown / 距开始（registry next_open_condition 的读法），而【预约自动开启 <datetime>】这个排期公布在【常规活动】页的任务条里 —— 两者是不同的读数，排期以常规活动页为准。",
+        "the_confirmed_source": {
+          "page": "常规活动 → 巨熊行动（tab strip 横向滑动第 2 屏）",
+          "field": "预约自动开启：<yyyy-MM-dd HH:mm>",
+          "confidence": "CONFIRMED",
+          "observed_by": "V2_AUTO_SESSION tools/bear_new_account_baseline_pass11.py（模板匹配 0.9991）",
+          "record": "knowledge/events/bear_hunt_time_20260927_newaccount.json",
+          "frame_on_disk": "dataset/evidence/bear_baseline_newaccount_20260927T100038Z/p11_bear_page.png",
+          "second_record": "knowledge/events/bear_hunt_time_20260928.json —— 旧账号 1171757165，由 OPERATOR_ON_LIVE_CLIENT 读得，且 independent_live_verification_pending=true（那份还需要 agent 自己抓一张帧）",
+          "invalidated_do_not_use": "knowledge/events/bear_hunt_time_20260926.json 是 COOLDOWN_END_DERIVED，已 do_not_use"
+        },
+        "the_real_blocker_measured": {
+          "verdict_after_reading_the_frames": "阻塞就是【缺少向前（朝末端）的滑动】—— 本条的第一版诊断是对的。中间一度改成『页签文字不可读、必须用模板』，那一步说得太满，已被本节的 OCR 实测推翻。",
+          "ocr_measurement_20261010": {
+            "how": "用项目自己的 reader（winter_agent_v2.executor_router._rapid_ocr_results）读四帧的条带（y+h 在 80..218）",
+            "p11_step_0": "联盟争霸赛 x=476 score=0.994",
+            "p11_step_1": "联盟争霸赛 x=201 0.994；小游戏 x=425 0.999；熊行动 x=636 w=50 score=0.818 ← 被帧右缘切掉，只读到后半",
+            "p11_step_2": "小游戏 x=146 0.999；决战王城 x=532 0.996",
+            "p11_bear_page": "小游戏 x=147 0.999；决战王城 x=532 0.996 —— 选中态那个抬起的白页签上没有标签，所以巨熊行动在此帧完全读不到",
+            "conclusion": "条带标签是【能读】的（未选中态 ≥0.99）。巨熊行动的标签读不全，不是 OCR 不行，是它停在帧右缘被切掉；要读全必须让条向前滚，把它整段带进画面。",
+            "correction_to_the_probe_docstring": "tools/bear_new_account_baseline_pass11.py 写『OCR cannot read the tab labels reliably (icon-overlapped text)』——对『选中态那个抬起页签』成立（它确实没有标签），对整条不成立。这句话被引用时被外推过头了。"
+          },
+          "why_the_strip_is_scrollable_forward_proven": {
+            "evidence": "p11_step_0 的条是 [日历][奖杯,选中][联盟争霸赛]，body=冻土之王；p11_step_1 是 [奖杯][联盟争霸赛][小游戏][巨熊行动,右缘]；p11_bear_page 是 [切边][小游戏][巨熊行动,选中][决战王城][切边]。三帧的页签集合不同 ⇒ 条确实被向前滚过。",
+            "how_the_probe_did_it": "docstring：『Walk the strip in 60 px nudges, match the template inside the strip band each step, tap the tab when the match is strong.』即 60px 小步向前 + 每步匹配 + 命中即点。",
+            "what_production_does_instead": "只有一次由 OCR 页签框推导的大滑动，且方向朝条起点（event_calendar.py:651-658，x 递增）。",
+            "measured_failure": "0.332 宽的滑动只推动 0.001（阈值 0.03），124/349 次 REGULAR_EVENT_TABS_SCROLL_NOT_PROVEN；且 calendar_tab_visible 在 40 次 READ_EVENT_CALENDAR 上全为 false。"
+          },
+          "so_the_shape_of_the_fix": {
+            "recognition": "不需要模板：在条带 band 内按标签匹配『巨熊行动』即可（同 band 内 小游戏/决战王城/联盟争霸赛 都稳定读到）。要求是标签【完整落在帧内】——被切边时只能读到『熊行动』。",
+            "motion": "补一个朝末端的、增量的条带滑动。方向与步长都应来自当前帧的页签几何；若几何不可信，则用当前帧已知标签的位置关系推导，不得回退到固定像素。",
+            "verification": "沿用既有 verify_regular_event_tabs_scrolled（页签位移 ≥0.03 或 calendar_tab_visible 由假转真）；巨熊页进入则用 body 文本（陷阱可持续30分钟 / 联盟开启陷阱捕获【变异巨熊】）与 预约自动开启 作为到达证据。"
+          },
+          "code_sites": [
+            "event_calendar.py:651-658 —— 唯一手势 scroll_to_start_norm，[left+margin, y, right-margin, y]，x 递增（朝起点）",
+            "brain.py:701 与 717 —— 只在 scroll_to_start_norm 为真时给 SCROLL_REGULAR_EVENT_TABS",
+            "goal_library.py:2129 —— 同上，给 DISCOVER_EVENT_CALENDAR 的技能",
+            "runtime.py:5370-5385 —— semantic REGULAR_EVENT_TABS_SCROLL_CURRENT 解析到 scroll_to_start_norm",
+            "verifier.py:1921-1937 —— 阈值 0.03（tab 位移）或 calendar_tab_visible 由假转真"
+          ]
+        },
+        "the_reuse_that_already_works_but_is_not_production_legal": {
+          "probe": "tools/bear_new_account_baseline_pass11.py —— 模板匹配 + 60px 步进 + 条带内匹配 + 命中即点；它真的到过那一页并读到排期",
+          "template_crop": "dataset/evidence/bear_baseline_newaccount_20260927T095435Z/p8b_nudge_0.png，TEMPLATE_BOX=(210,88,350,168)",
+          "why_it_cannot_be_lifted_as_is": "TEMPLATE_BOX 是固定像素框。生产宪法第二/三条禁止坐标硬编码（含把固定坐标藏在配置里），test_coordinate_hardcoding_admission.py 会拦。",
+          "production_legal_shape": "把该页签登记成【模板 UI 元素】（走 ui-asset-pipeline：下载/裁剪 → 语义身份 → 去重 → 转换 → 注册 → 真机识别测试），再在条带 ROI 内用 MAA TemplateMatch 识别并点击。模板是『被识别出的 UI 元素』，不是坐标。"
+        },
+        "next_work_item": {
+          "shape": "给【常规活动】的页签条补一个【朝末端（向前）的、增量的】滑动，让停在帧右缘的页签（例如巨熊行动）能被整段带进画面；识别沿用条带内标签匹配，不引入模板。落地前不得回退到固定像素：方向与步长必须由当前帧的页签几何或已知标签位置推导。",
+          "removed_from_the_earlier_version": "上一版把下一步写成『先给巨熊行动页签建立模板识别（ui-asset-pipeline）』——那建立在『OCR 读不出标签』这个被推翻的前提上。按错误前提抠出的模板裁剪已从 dataset/candidate/templates/ 删除（库内计数回到 284），不留未登记的散件。",
+          "preconditions_before_coding": [
+            "设备归属：已确认 AUTO 已停（episodes.jsonl 末条 2026-10-08T23:19:53Z，mtime 2026-10-09 07:19:53，距今约 17h；8080/18080 无监听），设备可用",
+            "但 operator 的另一个自动化 com.xm.wujindongri 仍有 5 个进程在跑 —— 动真机前应先清掉，否则读数会被污染",
+            "已有帧可先做离线推理：dataset/evidence/bear_baseline_newaccount_20260927T100038Z/p11_bear_page.png 与 095435Z/p8b_nudge_0.png",
+            "按 §三·八 第十四条：不得新建第二套模板库；走既有 dataset/candidate/templates 与 registry"
+          ],
+          "acceptance_criteria": {
+            "offline": "以 p11_step_0/1/2 与 p11_bear_page 四帧为输入：现有读者在这四帧上读到的条带标签即本节的 ocr_measurement_20261010。新增的向前滑动必须能由 p11_step_0 或 p11_bear_page 的帧几何推导出方向与步长，且不写入任何固定像素；并能在 p11_step_1 上复现『熊行动』被右缘切掉这一状态。",
+            "live": "episode 流首次出现向前滚动条带的技能且成功；随后条带内出现完整『巨熊行动』标签并进入该页（body 出现 陷阱可持续30分钟 / 预约自动开启）；再往后出现 goal_id=PARTICIPATE_BEAR。"
+          },
+          "remaining_design_question": "即使读到了排期，『何时用它』仍是另一件事：external 卡片 current_gap 写明 V2 没有 time-window 与 preemption（『Bear needs at 19:00 join the rally, even if gathering. This is a design question for the V2 scheduler, not a new scheduler.』）。所以本轮只解锁 READ 的一半。"
+        }
+      }
+    },
+    "external_sources": [
+      "https://www.whiteoutsurvival.wiki/events/bear-hunt/",
+      "https://wiki.wosforge.org/wiki/Bear_Trap",
+      "https://www.whiteoutsurvival-community.com/tools/wiki/events/bear-hunt-wsco.html",
+      "https://wjdrgl.centurygames.cn/?p=6841（官方百科：冷却 47h，陷阱可持续 30 分钟，集结不消耗体力）"
+    ],
+    "also_measured": "该目标 2026-10-05T12:21Z 之后再无 episode（10-06/10-07/10-08 各 0 条），而同一时期 agent 在跑。"
+  },
+
+  "the_budget_that_has_no_run_boundary": {
+    "observation": "capability_bootstrap.DEFAULT_BUDGET 声明 max_bootstrap_visits_per_run=1、max_bootstrap_attempts=1，但两个计数器都没有可用的运行边界。",
+    "evidence": [
+      "runtime.py:2357 写入 state['__run__']['visits_this_run']=1；全仓库没有第二处写入，也没有任何复位点",
+      "runtime.py:2192-2197 的 _bootstrap_state() 载入时只保留带 cooldown_until 的 key，因此 __run__ 与所有 attempts_this_run / navigation_steps / model_calls_this_screen 在每次载入时被静默丢弃",
+      "因此 _learning_window_open() 的第二项 visits < max_bootstrap_visits_per_run 恒为 0 < 1，是死代码；真正生效的只有每进程一次的 self._learning_window_used",
+      "learning/capability_bootstrap/runtime_discovery.json mtime = 2026-10-04 23:29（本地），内容仍是 10-04 的两条记录"
+    ],
+    "why_it_matters": "对一个长期无人值守、按天计运行的进程，『每进程一次』等于整个学习计划的上限是一次观察。这是 CAPABILITY_EXPANSION 阶段（TARGET_LEARNING_SHARE>=0.50）真实的天花板。",
+    "status": "NOT_FIXED_NEEDS_OPERATOR_DECISION",
+    "why_not_fixed": "改的是 2026-10-01 操作者指令 §二十四 定下的预算，属设计决定；且 V2 当前未运行，改动无法实机验证。按 §三·八 第十九/二十条，先报冲突与替代方案，不擅自实现。"
   },
 
   "role_status_20261005": {
@@ -55,8 +198,8 @@
       "detail": "4 bear rows read, all joinable; OCR ground truth: client printed a bear in 2 of 3 verified frames"
     },
     "1061663148": {
-      "verdict": "NO_BEAR_ON_THOSE_FRAMES",
-      "detail": "13 rally rows, none naming a bear; OCR ground truth: client printed a bear in 0 of 3 verified frames. Never on the page with a bear present, so its ability is unmeasured rather than absent."
+      "verdict": "READY_BUT_UNACTED",
+      "detail": "2026-10-05T13:26:23Z 与 13:26:29Z 两帧，它就在集结页上，events.bear=ACTIVE(165s, 13s)，来源 LIVE_CLIENT_RALLY_ROW。所以『never on the page with a bear present』不再成立；它现在是『到过页面、窗口活着、没有动作』。"
     },
     "1171757165": {
       "verdict": "NOT_IN_SCOPE",
@@ -71,22 +214,52 @@
     "source": "knowledge/events/bear_rally_rules.json"
   },
 
+  "proposed_minimal_fix": {
+    "status": "PROPOSED_NOT_IMPLEMENTED",
+    "shape": "让『窗口是活的』这个读数能跨过一帧。当某帧的观察结果给出 events['bear'] 且 status=ACTIVE / remaining_seconds>0 时，把该事实带进下一步的决策状态（以 remaining_seconds 为有效上限，过期即失效），使 goal_library.py:1567 在紧随其后的一帧上能生成 PARTICIPATE_BEAR。",
+    "constraints_it_must_not_break": [
+      "不得变成历史坐标复用：带过去的只有『窗口开着、还剩多少秒』这个事实，点击位置仍必须由当帧 UI 元素重新产生（生产宪法第二/三条）",
+      "不得成为永久状态：必须随 remaining_seconds 过期或随一次失败而清除（§三·八 第九条 可达性）",
+      "不得让 PARTICIPATE_BEAR 在没有窗口时生成（否则会制造无效点击）"
+    ],
+    "acceptance_criteria": {
+      "offline": "新增单测：给定一帧 after 含 bear=ACTIVE(remaining>0)，下一帧的决策状态含 bear，且 goal 层产出 PARTICIPATE_BEAR；给定 remaining 已过期，则不产出。",
+      "live": "下一个真实窗口里，episode 流出现 state_before.events.bear 非空 >=1 条，且出现 goal_id=PARTICIPATE_BEAR 的 episode；再加入一次真实 JOIN 与 JOINED_STATE 证据。"
+    },
+    "open_design_questions": [
+      "把读数挂在 world.events 上跨帧携带，还是在 runtime 里单独保存一个窗口事实 —— 按 §三·八 第十四条必须先查是否已有单一真值，避免第二套状态",
+      "窗口开着但当前不在集结页时，应该由谁导航过去（现有 DISCOVER 入口受 BTN_ALLIANCE_WAR 红点门限制，§七.1 又不许反复找还没出现的入口）"
+    ]
+  },
+
   "next_step": {
     "order": [
-      "1. decide how the agent may periodically read the rally list during a plausible window without violating the red-dot entry gate or §七.1's 不要反复寻找尚未出现的入口",
-      "2. when a window is open, run: tools/bear_two_role_readiness.py --verify-frames 3 (WINDOW OPEN NOW + bear_rows_marked_joinable)",
-      "3. confirm one real JOIN per role via JOINED_STATE (role name visible in the rally member list)"
+      "1. 先就 proposed_minimal_fix 的 open_design_questions 做设计决定（挂在哪、谁导航），再动代码",
+      "2. 实现后用离线单测钉住『读数跨帧』与『过期即失效』两侧",
+      "3. 下一个真实窗口里跑 tools/bear_two_role_readiness.py --verify-frames 3，确认 WINDOW OPEN NOW + bear_rows_marked_joinable",
+      "4. 确认每个角色一次真实 JOIN，以 JOINED_STATE（集结成员列表里出现角色名）为准"
     ],
     "command": "E:\\无尽冬日智能体\\.venv\\Scripts\\python.exe tools\\bear_two_role_readiness.py --verify-frames 3"
   },
 
   "sources": [
-    "learning/episodes.jsonl",
+    "learning/episodes.jsonl（10371 条，本次全部重放）",
     "learning/goal_state.json",
+    "learning/capability_bootstrap/runtime_discovery.json",
+    "learning/knowledge_bootstrap/STATE.json",
     "knowledge/game/bear.json",
     "knowledge/events/bear_rally_rules.json",
     "knowledge/rally/rally_engine_rules.json",
     "knowledge/ui/entry_badges.json",
+    "dataset/raw/control_panel/runtime_auto/20261008_215017_046367/",
+    "winter_agent_v2/goal_library.py",
+    "winter_agent_v2/ocr.py",
+    "winter_agent_v2/rally.py",
+    "winter_agent_v2/entry_badges.py",
+    "winter_agent_v2/capability_bootstrap.py",
+    "winter_agent_v2/runtime.py",
+    "winter_agent_v2/brain.py",
+    "winter_agent_v2/verifier.py",
     ".workbuddy-ai/handoff/ACTIVITY_TICKET_ASKS_THE_WRONG_PAGE_20261005.md"
   ]
 }
