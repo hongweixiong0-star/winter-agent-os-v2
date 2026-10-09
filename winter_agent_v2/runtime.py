@@ -5173,6 +5173,56 @@ class LiveRuntime:
             return None
         return (x_norm, y_norm)
 
+    def _regular_event_strip_swipe_key(self) -> str:
+        """Which of the strip's two directions this attempt should use.
+
+        The regular-event strip is a horizontal scroller.  Until 2026-10-10 only the
+        towards-start direction existed, so a tab parked past the visible window could
+        never be brought in.  Measured on
+        ``dataset/evidence/bear_baseline_newaccount_20260927T100038Z/p11_step_1.png``: the
+        production reader returns 巨熊行动 as ``熊行动`` with a 50px box against 69-117px
+        for its neighbours -- clipped by the right edge -- and the one probe that did reach
+        that page (``tools/bear_new_account_baseline_pass11.py``) had to walk the strip in
+        60px nudges to do it.
+
+        Both points come from the same measured tab boxes in ``event_calendar``, so this
+        picks a direction for an existing gesture rather than inventing a new control.  The
+        caller is the existing ``SCROLL_REGULAR_EVENT_TABS`` skill and therefore keeps
+        owning the device lease, the recovery and the verifier; only the pair of points the
+        swipe is drawn between changes.
+        """
+        if getattr(self, "_calendar_tab_swipe_towards_end", False):
+            return "scroll_to_end_norm"
+        return "scroll_to_start_norm"
+
+    def _note_regular_event_strip_swipe(self, before) -> None:
+        """Decide the direction of the *next* strip swipe from what the last one did.
+
+        ``tab_signature`` is the strip's own drawn identity -- each label with its box -- so
+        a change in it is the strip having scrolled.  That is the entire feedback signal: no
+        timer, no second piece of state, and progress is what clears the flag.
+
+        Read this before the tick that will resolve the next swipe: ``_calendar_tab_resolved_swipe``
+        is written by the resolver, so at this point it still holds the direction the last
+        attempt actually used, and ``before`` is the frame that attempt produced.
+
+        If the strip moved, the direction that just ran is the useful one and is kept.
+        If it did not move, the flag flips, so the next attempt tries the other side.  Every
+        non-moving attempt therefore flips and no direction can be latched into: the worst
+        case is one wasted swipe per two, and it is bounded by the step budget rather than
+        by a wall.
+        """
+        self._calendar_tab_swipe_count = int(getattr(self, "_calendar_tab_swipe_count", 0) or 0) + 1
+        events = getattr(before, "events", None)
+        hub = events.get("regular_events_hub") if isinstance(events, Mapping) else None
+        signature = str((hub or {}).get("tab_signature") or "") if isinstance(hub, Mapping) else ""
+        previous = getattr(self, "_calendar_tab_signature_at_last_swipe", None)
+        looked_towards_end = str(getattr(self, "_calendar_tab_resolved_swipe", "") or "") == "scroll_to_end_norm"
+        if previous is not None and signature:
+            self._calendar_tab_swipe_towards_end = (
+                looked_towards_end if signature != previous else not looked_towards_end)
+        self._calendar_tab_signature_at_last_swipe = signature
+
     def _resolve_semantic_target(
         self,
         semantic: str,
@@ -5375,12 +5425,20 @@ class LiveRuntime:
                 return None
             fresh_hub = self._regular_event_hub_on_frame(Path(frame_path))
             if fresh_hub.get("recognized") is True:
-                key = "calendar_tab_tap_norm" if semantic == "EVENT_CALENDAR_TAB" else "scroll_to_start_norm"
+                key = ("calendar_tab_tap_norm" if semantic == "EVENT_CALENDAR_TAB"
+                       else self._regular_event_strip_swipe_key())
                 point = fresh_hub.get(key)
                 expected_len = 2 if semantic == "EVENT_CALENDAR_TAB" else 4
                 if isinstance(point, (tuple, list)) and len(point) == expected_len:
                     target = tuple(float(value) for value in point)
-                    return target if all(0.0 <= value <= 1.0 for value in target) else None
+                    if not all(0.0 <= value <= 1.0 for value in target):
+                        return None
+                    if semantic != "EVENT_CALENDAR_TAB":
+                        # Read back by _note_regular_event_strip_swipe, which needs to know
+                        # which direction the last attempt actually used before it can say
+                        # whether that attempt moved the strip.
+                        self._calendar_tab_resolved_swipe = key
+                    return target
                 if semantic == "REGULAR_EVENT_TABS_SCROLL_CURRENT":
                     return None
             if semantic == "REGULAR_EVENT_TABS_SCROLL_CURRENT":
@@ -10264,7 +10322,7 @@ class LiveRuntime:
                 self._scheduler.executor = executor
             self._mark_bootstrap_attempt(best_goal)
             if decision.skill == "SCROLL_REGULAR_EVENT_TABS":
-                self._calendar_tab_swipe_count = getattr(self, "_calendar_tab_swipe_count", 0) + 1
+                self._note_regular_event_strip_swipe(before)
             tick = self._scheduler.tick(before, decision)
             # The executor router computes a rich reason for every recognition it refused
             # (``MAA_OCR:NO_TEXT`` / ``STRUCTURE:NO_ANCHOR`` / ``LIST_DYNAMIC:NO_ROWS`` ...) and until

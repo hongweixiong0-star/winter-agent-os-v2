@@ -557,7 +557,7 @@ def read_regular_event_hub(
     result: dict[str, Any] = {
         "kind": "REGULAR_EVENT_HUB", "recognized": False,
         "calendar_tab_visible": False, "calendar_tab_tap_norm": None,
-        "scroll_to_start_norm": None, "tab_signature": "",
+        "scroll_to_start_norm": None, "scroll_to_end_norm": None, "tab_signature": "",
         "tab_positions_norm": {},
         "tabstrip_roi_norm": None, "source": "CURRENT_FRAME_OCR",
     }
@@ -657,6 +657,20 @@ def read_regular_event_hub(
             if end - start >= tab_height * 2 and roi_top < y < roi_bottom:
                 result["scroll_to_start_norm"] = [round(start / width, 5), round(y / height, 5),
                                                   round(end / width, 5), round(y / height, 5)]
+                # The same two points, reversed.  A horizontal strip carries its content the
+                # way the finger moves, so a swipe drawn left-to-right walks it back towards
+                # its first tab and one drawn right-to-left walks it on towards its last.
+                # Only the towards-start direction existed, which made every tab parked past
+                # the visible window unreachable.  Measured 2026-10-10 on
+                # dataset/evidence/bear_baseline_newaccount_20260927T100038Z/p11_step_1.png:
+                # 巨熊行动 sits at x=636 of 720 and the production reader returns it as
+                # "熊行动" with a 50px box against 69-117px for its neighbours -- the label is
+                # clipped by the right edge.  The probe that did reach that page
+                # (tools/bear_new_account_baseline_pass11.py) walked the strip in 60px nudges
+                # to do it.  Both points are computed from the same measured tab boxes, so
+                # this is a second direction for an existing gesture and not a new coordinate.
+                result["scroll_to_end_norm"] = [round(end / width, 5), round(y / height, 5),
+                                                round(start / width, 5), round(y / height, 5)]
         return result
     return {**result, "reason": "EVENT_BODY_OR_TAB_STRUCTURE_MISSING"}
 
