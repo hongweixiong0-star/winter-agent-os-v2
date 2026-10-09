@@ -385,6 +385,24 @@
       "not_completed": "没有拿到【点进巨熊页并读到 预约自动开启】的真机证据。624de00f 的读者目前只有离线帧证据（2026-09-27 那张 p11_bear_page.png）。"
     },
 
+    "3c_有界探针_同帧读点": {
+      "tool": "tools/probe_tap_a_regular_event_tab.py",
+      "shape": "取设备租约 → 循环（抓帧 → 用生产入口 _regular_event_hub_on_frame 读 → 若目标页签在 tab_positions_norm 里就【立刻】点 → 否则滑一格再看），最多 6 次；目标不在读数里就绝不点。",
+      "refusals_built_in": [
+        "目标不在当帧读数里 → 不点（『不在屏上』不是一个位置）",
+        "算出的点在读数报告的条带 band 之外 → 不点",
+        "滑动次数上限 6"
+      ],
+      "direction_rule": "与运行时一致：条动了就保持方向，条没动就翻向。写死一个方向会走离另一侧的目标 —— 实测 巨熊行动 在 决战王城 左边，固定朝末端滑 6 次都没看见它。",
+      "result_20261010T0755": "6 次尝试、两个方向，巨熊行动 都不在可见页签中 ⇒ 探针按设计【没有点】。今天这条条上拿不到它。",
+      "side_finding_stale_serial": {
+        "what": "config/v2.json 的 device.serial 仍是 127.0.0.1:7555，而这台机器上的设备是 emulator-5554。",
+        "observed": "探针第一次跑直接产出空截图，然后在很远的地方抛 PIL.UnidentifiedImageError —— 报错点离原因很远。",
+        "fix_in_the_probe": "加 resolve_serial()：配置里的串号若在连就用它，否则用唯一在连的设备，并把替换写进台账（serial / serial_substituted_for_config / configured_serial）。",
+        "not_fixed_in_config": "没有改 config/v2.json —— 那是生产配置，改它属于另一件事（而且运行时的取帧路径可能另有解析）。**记下来：它现在是过期的。**"
+      }
+    },
+
     "4_日历读者在当前客户端上完全正常": {
       "frame": "probe_frame.png（= 日历视图）",
       "reading": {"recognized": true,
