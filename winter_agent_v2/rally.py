@@ -748,6 +748,56 @@ class BearGoalState:
     special_start_available: bool | None = None
 
 
+#: The label the client puts in front of a running window's clock.  It is what makes the
+#: reading unambiguous: the same screen draws several bare timers (measured 2026-10-10 on
+#: ``dataset/raw/bear_live_20260909/bear_trap_detail.png``: 00:00:02, 00:00:07, 06:04:48 and
+#: the popup's own 00:13:54), so an unlabelled clock is not evidence of anything.
+REMAINING_LABEL = "剩余时间"
+
+
+def read_bear_popup_countdown(tokens: Iterable[Any]) -> dict[str, Any] | None:
+    """The open Bear window as the map's 巨熊 popup prints it: identity plus time left.
+
+    Measured 2026-10-10 on ``dataset/raw/bear_live_20260909/bear_trap_detail.png``: the popup
+    draws ``等级1变异巨熊`` at 0.999 and ``剩余时间：00:13:54`` at 0.930, over a map that also
+    draws 00:00:02, 00:00:07 and 06:04:48.  ``bear_trap_loaded.png`` is the same popup one
+    second earlier with the clock misread as ``剩余时间：00：142``.
+
+    The reading is a DURATION, never an instant, and that is the whole point: a duration needs
+    no timezone, and ``knowledge/events/timed_event_readiness.json``'s time_rule forbids
+    inferring the game's from this machine's.  ``bear_phase(None, None, N)`` answers ACTIVE for
+    any ``N > 0``, and ``goal_library`` already reads ``world.events.bear.remaining_seconds`` --
+    so this one number is what turns a window the agent is looking at into a PARTICIPATE_BEAR
+    that is READY with JOIN_RALLY.
+
+    Both halves are required and both are refused rather than guessed:
+
+    * identity -- a token naming 变异巨熊/巨熊, through the same vocabulary the rally rows use;
+    * clock -- a token carrying ``剩余时间`` AND a complete HH:MM:SS.  A frame whose clock is
+      misread (``00：142``) answers ``None``.  Recovering "14:2" from that would be inventing a
+      number, which is worse than not answering: the window would be acted on at a wrong time.
+    """
+    labelled = None
+    named = False
+    for token in tokens:
+        text = str(getattr(token, "text", "") or "")
+        match = _rally_target_in(text)
+        if match is not None and match[0] is RallyTarget.BEAR:
+            named = True
+        if REMAINING_LABEL in text:
+            seconds = _clock_seconds(text)
+            if seconds is not None:
+                labelled = seconds
+    if not named or labelled is None:
+        return None
+    return {
+        "event_id": "BEAR_HUNT",
+        "name": "巨熊行动",
+        "remaining_seconds": labelled,
+        "source": "LIVE_CLIENT_BEAR_POPUP_COUNTDOWN",
+    }
+
+
 def bear_phase(event_status: str | None, seconds_to_start: int | None, seconds_remaining: int | None) -> BearPhase:
     if event_status == "ACTIVE" or (seconds_remaining is not None and seconds_remaining > 0):
         return BearPhase.ACTIVE

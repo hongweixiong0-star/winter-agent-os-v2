@@ -1355,6 +1355,19 @@ class OCRPageClassifier:
                 events["bear"] = {**events["bear"], **printed}
         if activity_strip.get("recognized") is True:
             events["activity_strip"] = activity_strip
+        # The map's 巨熊 popup is the OPEN window: it draws 等级N变异巨熊 and 剩余时间：HH:MM:SS.
+        # 剩余时间 is a duration, so this reading needs no timezone, and ``rally.bear_phase``
+        # answers ACTIVE for any positive remainder -- which is what puts PARTICIPATE_BEAR on the
+        # board READY with JOIN_RALLY instead of leaving the window unread.  Merged and never
+        # replaced: the alliance branch below writes the SCHEDULED phase (seconds_to_start) and
+        # this writes the RUNNING one, and a frame that shows one must not delete the other.
+        # Page-independent on purpose -- the popup is drawn over the map, not on the alliance
+        # page, and the reader refuses unless both the identity and a labelled clock are present.
+        from .rally import read_bear_popup_countdown
+        popup = read_bear_popup_countdown(eligible)
+        if popup is not None:
+            events["bear"] = {
+                **(events["bear"] if isinstance(events.get("bear"), dict) else {}), **popup}
         if page is Page.ALLIANCE:
             texts = [token.text for token in eligible]
             if bear_trap_detail:
