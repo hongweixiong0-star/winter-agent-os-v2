@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import math
 import re
+from datetime import datetime
 from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Iterable
@@ -541,6 +542,58 @@ def _strip_entries_from_rows(
     return {
         **result, "recognized": True, "reason": "LABELLED_ACTIVITY_ABOVE_CALENDAR_GRID",
         "entries": entries,
+    }
+
+
+#: The client's own reservation line: 「预约自动开启：」 then the local time it will open.
+#:
+#: Measured 2026-10-10 on
+#: ``dataset/evidence/bear_baseline_newaccount_20260927T100038Z/p11_bear_page.png``: OCR
+#: returns the two lines as TWO tokens (y=1083 and y=1113) and glues the clock to the date
+#: with no space -- ``2026-09-2720:30`` -- so this is applied to the frame's text joined in
+#: the reader's own order, not to a single token.  Joined that way it reproduces exactly the
+#: ``client_raw`` the CONFIRMED record holds
+#: (``knowledge/events/bear_hunt_time_20260927_newaccount.json``:
+#: ``预约自动开启： 2026-09-2720:30`` -> ``2026-09-27T20:30:00+08:00``).  The same pattern is
+#: carried by four one-off probes under ``tools/``; this is that reading, in the package.
+PRINTED_RESERVATION_RE = re.compile(
+    r"预约自动开启[：:]?\s*(\d{4})[-/年.](\d{1,2})[-/月.](\d{1,2})\s*(\d{1,2})[：:.](\d{2})")
+
+
+def read_printed_reservation(tokens: Iterable[Any]) -> dict[str, Any] | None:
+    """The time the client says it will open an activity, exactly as the client printed it.
+
+    The answer is deliberately **naive** and carries no UTC offset: the client prints none,
+    and ``knowledge/events/timed_event_readiness.json``'s ``time_rule`` forbids inferring the
+    game's timezone from this machine's -- "只有来源明确给出 IANA 时区时才记录命名时区，不从
+    电脑时区推断游戏时区".  So this answers "what did the client say", not "when is that".
+
+    That distinction is load-bearing: ``event_goal.Activity.window`` refuses a timestamp
+    without an offset, and it is right to -- a local stamp cannot safely drive an unattended
+    wake.  A caller that needs an instant must supply a declared timezone; until one is
+    declared for this client, the honest use of this reading is to record it as what the
+    client printed.
+
+    A ``ValueError`` from the clock is a misread (``2026-13-45``), not a reservation, and
+    answers ``None``.
+    """
+    joined = " ".join(str(getattr(t, "text", "") or "") for t in tokens)
+    match = PRINTED_RESERVATION_RE.search(joined)
+    if match is None:
+        return None
+    year, month, day, hour, minute = (int(part) for part in match.groups())
+    try:
+        stamp = datetime(year, month, day, hour, minute)
+    except ValueError:
+        return None
+    return {
+        # Named for the field the goal layer already reads (``goal_library`` passes
+        # ``bear.get("reserved_start_time")`` into PARTICIPATE_BEAR's evidence and nothing was
+        # ever writing it), so this needs no second vocabulary.
+        "reserved_start_time": stamp.isoformat(),
+        "reserved_start_raw": match.group(0),
+        "reserved_start_source": "LIVE_CLIENT_PRINTED_RESERVATION",
+        "reserved_start_offset": None,
     }
 
 

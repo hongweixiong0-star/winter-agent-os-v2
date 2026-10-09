@@ -1340,7 +1340,19 @@ class OCRPageClassifier:
             # preview title from creating an actionable minimum-guarantee goal.
             events["calendar"] = calendar_reading
         if regular_event_hub.get("recognized") is True:
+            printed = event_calendar.read_printed_reservation(eligible)
+            if printed is not None:
+                regular_event_hub = {**regular_event_hub, "printed_reservation": printed}
             events["regular_events_hub"] = regular_event_hub
+            # The client's own 预约自动开启 line, put on the event record it belongs to.  It is
+            # MERGED IN and never creates that record: a bear record carrying a schedule but no
+            # window state would let ``rally.bear_phase`` answer DISCOVERED from a clock rather
+            # than from what the client drew, and inventing a phase is what §二 forbids.  When
+            # the record does exist, this fills the field ``goal_library`` already reads
+            # (``bear.get("reserved_start_time")`` into PARTICIPATE_BEAR's evidence) and which
+            # nothing in the package was writing -- the four ``tools/`` probes were.
+            if printed is not None and isinstance(events.get("bear"), dict):
+                events["bear"] = {**events["bear"], **printed}
         if activity_strip.get("recognized") is True:
             events["activity_strip"] = activity_strip
         if page is Page.ALLIANCE:
