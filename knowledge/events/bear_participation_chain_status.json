@@ -286,6 +286,49 @@
     }
   },
 
+  "live_session_20261010T0745_what_the_client_actually_shows": {
+    "one_line": "第一次在当前客户端上做真机读数（此前三个提交都没有实机验证）。四条实测：向前滑动确实有效；今天条上没有巨熊；生产读者在这条上只读到 1 个页签并声称日历不可见；客户端自己印『北京时间』。",
+    "evidence_root": "dataset/evidence/live_regular_activity_20261010T0745/",
+    "frames": [
+      "city_after_clearing_the_purchase_popup.png —— 用 KEYCODE_BACK 清掉『铸匠的珍藏』付费弹窗后的城市视图（未用任何点击，因此不可能落到 ¥30.00 上）",
+      "regular_activity_before_swipe.png —— 常规活动页初始态",
+      "regular_activity_after_forward_swipe.png —— 向前滑一次后",
+      "regular_activity_forward_2.png / _forward_3.png —— 再滑两次（第 2、3 次后条不再变化 ⇒ 已到末端）"
+    ],
+    "1_向前滑动真的有效": {
+      "how": "adb input swipe 620 138 → 110 138，400ms（点的来源是识别出的 tabstrip_roi_norm 中线，不是固定像素）",
+      "result": "条从「日历 / [最强王国,选中] / 变革的乐章」整段滚到「决战王城 / 堡垒争夺 / 社区」",
+      "meaning": "cbcb6d2e 补的那个朝末端手势在真机上确实推动条 —— 这是它第一次得到实机证据（此前 124/349 次 NOT_PROVEN 全是朝起点方向）。"
+    },
+    "2_今天条上没有巨熊": {
+      "the_whole_strip_today": ["日历", "最强王国", "变革的乐章", "决战王城", "堡垒争夺", "社区"],
+      "巨熊行动": "不在条上（三次向前滑到底仍未见）",
+      "reading": "当前客户端没有挂着巨熊窗口。与外部证据一致：由 R4/R5 手动开启、联盟冷却约 47.5 小时，不是每天固定时刻。"
+    },
+    "3_生产读者在这条上读不出这条": {
+      "what_the_page_shows": "条上肉眼可见 日历 / [皇冠,选中] / 变革的乐章 / 红感叹号 —— 4 个以上的元素",
+      "what_read_regular_event_hub_returns": {
+        "recognized": true,
+        "display_name": "最强王国",
+        "event_id": "STATE_VS_STATE",
+        "tabs": [{"label": "变革的乐章"}],
+        "calendar_tab_visible": false,
+        "scroll_to_start_norm": null,
+        "scroll_to_end_norm": null,
+        "tabstrip_roi_norm": {"x_norm": 0.0, "y_norm": 0.05133, "w_norm": 1.0, "h_norm": 0.11359}
+      },
+      "why_this_matters": "① 日历 明明在屏上，却报 calendar_tab_visible=False；② 因为只读到 1 个标签，`len({labels}) >= 2` 不成立，于是【两个方向的滑动都不给出】—— 包括 cbcb6d2e 新增的那个。也就是说：在这一帧上，agent 无法移动这条条，尽管页面让它动。",
+      "cause_measured": "OCR 没有读到『日历』这个标签（该帧条带内只读到『变革的乐章』一个）。且两张帧对比显示页签标签不在同一高度：变革的乐章在 y=158，滑后的 决战王城/社区 在 y≈110-140 —— 所以固定的 band 会漏。",
+      "not_fixed_here": "改它要动 tab 检测与 band 的取法，而『按 ROI 的固定百分比取滑动端点』本身是宪法第二条禁止的（固定百分比）。正确做法仍待设计：端点必须来自识别到的元素。有帧可依（本目录），不需要设备也能继续。"
+    },
+    "4_客户端自己印出时区": {
+      "observed": "城市视图顶部通知条：『新增待办：据点争夺-3级科技工程站，将于北京时间2026-10-11 07:11:00 开启』（OCR 分两行读出，两行都含『北京时间』）",
+      "why_it_matters": "这是【客户端自己】给出的时区字样，比『此前所有探针都记 +08:00』强得多。timed_event_readiness 的 time_rule 禁止从本机时区推断游戏时区 —— 而『北京时间』不是推断，是客户端说的。",
+      "still_a_decision": "但本轮没有据此声明时区。理由见 cb6083ae：reserved_start 目前只产生优先级加成、不产生唤醒，而唤醒现在已由 b4704288 用【时长】给出，不需要时区。所以时区仍是可选项，不是阻塞项。"
+    },
+    "device_note": "本次是操作者明确授权后进行的（『弹窗你自己点掉』）。清弹窗只用 KEYCODE_BACK，全程没有一次点击落在付费按钮上。operator 的 com.xm.wujindongri 仍有 5 个进程在跑 —— 每次读数都受此影响，本目录的帧是唯一可用的当前客户端证据。"
+  },
+
   "role_status_20261005": {
     "1063040265": {
       "verdict": "READY",
