@@ -319,7 +319,14 @@
       },
       "why_this_matters": "① 日历 明明在屏上，却报 calendar_tab_visible=False；② 因为只读到 1 个标签，`len({labels}) >= 2` 不成立，于是【两个方向的滑动都不给出】—— 包括 cbcb6d2e 新增的那个。也就是说：在这一帧上，agent 无法移动这条条，尽管页面让它动。",
       "cause_measured": "OCR 没有读到『日历』这个标签（该帧条带内只读到『变革的乐章』一个）。且两张帧对比显示页签标签不在同一高度：变革的乐章在 y=158，滑后的 决战王城/社区 在 y≈110-140 —— 所以固定的 band 会漏。",
-      "not_fixed_here": "改它要动 tab 检测与 band 的取法，而『按 ROI 的固定百分比取滑动端点』本身是宪法第二条禁止的（固定百分比）。正确做法仍待设计：端点必须来自识别到的元素。有帧可依（本目录），不需要设备也能继续。"
+      "not_fixed_here": "改它要动 tab 检测与 band 的取法，而『按 ROI 的固定百分比取滑动端点』本身是宪法第二条禁止的（固定百分比）。正确做法仍待设计：端点必须来自识别到的元素。有帧可依（本目录），不需要设备也能继续。",
+      "i_tried_relaxing_the_gate_and_reverted": {
+        "what_i_tried": "把几何块的 `len({labels}) >= 2` 放宽成 `tabs` 非空（即 1 个标签也给出双向滑动）。在 before_swipe 那一帧上它确实从『两个手势都不给』变成给出双向，长度约 75px（0.105×720）；我甚至用这个推导出来的点真机滑了一次，条确实动了。",
+        "why_i_reverted": "4 条既有测试当场变红，而且它们正是钉在这个闸门上的：test_single_ocr_tab_recognizes_hub_but_does_not_authorize_scroll、test_duplicate_tab_ocr_does_not_authorize_a_scroll、test_no_frame_geometry_or_outside_frame_tokens_are_not_actionable、test_partial_tab_ocr_is_lifted_from_crop_to_same_frame。读过之后规则是有道理的 —— 尤其 duplicate 那条：两个 token 但同一个标签仍然不给，说明规则要的是【两个不同的标签】。",
+        "the_rule_s_real_content": "两个『不同』标签才是『这条条确实不止一个页签、因而是可滚的』的证据。一个标签什么都不能证明：你不知道有没有东西可滚、也不知道在左边还是右边。这也解释了为什么它不是一个整数可以被随手放松的地方。",
+        "so_the_aligned_fix_is_elsewhere": "正确的修法在【识别】：让读者把页面上本来就读得到的标签读出来（现场那条帧肉眼有 5+ 个带标签的页签，读者只读到 1 个），于是自然满足 >= 2，闸门不必动。今天那张帧的 OCR 漏读了『日历』，而且标签不在同一高度（变革的乐章 y=158，滑后的 决战王城/社区 y≈110-140）—— 这是一个 band/检测问题，不是闸门问题。",
+        "kept_as_a_lesson": "我的 75px 实测滑动『成功了』，但那是【一帧】、而且方向是我替它选的。一帧成功不足以推翻一条被测试钉住、且理由成立的守卫。"
+      }
     },
     "4_客户端自己印出时区": {
       "observed": "城市视图顶部通知条：『新增待办：据点争夺-3级科技工程站，将于北京时间2026-10-11 07:11:00 开启』（OCR 分两行读出，两行都含『北京时间』）",
