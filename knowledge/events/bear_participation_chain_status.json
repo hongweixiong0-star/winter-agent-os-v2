@@ -2,7 +2,7 @@
   "schema_version": "1.1",
   "topic": "BEAR_PARTICIPATION_CHAIN_STATUS",
   "written_at": "2026-10-05T21:25:00+08:00",
-  "updated_at": "2026-10-10T09:05:00+08:00",
+  "updated_at": "2026-10-10T09:15:00+08:00",
   "updated_by": "session 2026-10-10 (the strip debt measured; the missing piece is one action, not a goal)",
   "question": "两个角色打巨熊，到底缺什么？",
   "one_line": "链路通的；缺的不是时序运气 —— 巨熊窗口在生产里被真机读到过 4 次，4 次都没有进入决策帧，所以 PARTICIPATE_BEAR 一次都没被生成。这是读数传递缺陷，不是运气。",
@@ -792,6 +792,60 @@
       "second_hazard": "页签格子被裁一半时 OCR 框中心可能落在邻居上（runtime.py:5858-5869 记过：点 野兽 的可见窄条，选中的是 冰原巨兽）。所以点必须来自本帧且落在 tabstrip_roi_norm 带内。"
     },
     "where_the_design_is_written": ".workbuddy-ai/handoff/THE_STRIP_DEBT_HAS_NO_TAB_TAP_20261010.md（含五处最小改动、离线验收判据、设备门、以及明确不做的事）",
-    "status": "设计已定，**未实现**。第 4 步（实现）尚未开始；明晚窗口不依赖它（预约已在册）。"
+    "status": "设计已定，**未实现**。第 4 步（实现）尚未开始；明晚窗口不依赖它（预约已在册）。",
+    "correction_20261010T0915_the_live_debt_is_the_grid_not_the_strip": {
+      "what_i_got_wrong": "本节上文写『条带债务让 calendar_scan_due 一直为真』。前半段（debt 覆盖条带）在代码上成立，但**把当前 scan_due=True 的成因记到了条带上**是错的。量了真实债务才知道成因是网格行。",
+      "the_measurement": {
+        "role_1063040265": {
+          "calendar_scan_due": true,
+          "grid_rows": 6,
+          "grid_rows_with_details_observed_true": 1,
+          "strip_entries_advertised": [
+            "STATE_VS_STATE"
+          ],
+          "strip_read_entries_credited": [
+            "STATE_VS_STATE",
+            "CANYON_CLASH"
+          ],
+          "debt": [
+            "DISCOVERED_EVENT_2CED2A762E",
+            "DISCOVERED_EVENT_A33B0DC6E9",
+            "DISCOVERED_EVENT_DC53E03FB8",
+            "EXCLUSIVE_GEAR_FORGE"
+          ]
+        },
+        "role_1061663148": {
+          "calendar_scan_due": true,
+          "grid_rows": 6,
+          "grid_rows_with_details_observed_true": 1,
+          "strip_entries_advertised": [
+            "STATE_VS_STATE"
+          ],
+          "strip_read_entries_credited": [
+            "CANYON_CLASH",
+            "ALLIANCE_MOBILIZATION",
+            "STATE_VS_STATE"
+          ],
+          "debt": [
+            "DISCOVERED_EVENT_2CED2A762E",
+            "DISCOVERED_EVENT_A33B0DC6E9",
+            "DISCOVERED_EVENT_DC53E03FB8",
+            "EXCLUSIVE_GEAR_FORGE"
+          ]
+        }
+      },
+      "three_consequences": [
+        "**条带今天一笔都不欠** —— STATE_VS_STATE 已在 read_entries 里。所以 event_schedule.py:463 的 docstring 那句『条带是唯一还欠着的一笔』**已经过时**（它描述的是写作当时的状态）。",
+        "让 calendar_scan_due 一直为真的是**网格行**：6 行都有 tap_norm，只有 1 行 details_observed=True，其余 4 个 id 从未被打开。",
+        "所以『加一个点条带页签的动作』**不会**清掉当前这笔债，也不会让扫描收敛。它解决的是另一半（让 AUTO 读到巨熊排期），但当前 scan_due 的成因不是它。"
+      ],
+      "the_general_rule": "债务是【按 event_id 去重】的：网格第 3 行与第 5 行同 id（DISCOVERED_EVENT_6F33C054CA，但 occurrence_key 不同：|10/08|10/11 与 |10/12|10/14），第 3 行 details_observed=True 就把两行一起算作已读。所以【行数】不等于【债务条目数】，诊断时不要按行数读。",
+      "two_entries_measured_for_the_next_step": {
+        "calendar_next_entry_always_takes_the_first": "event_schedule.py calendar_next_entry 的取法是 next(row for row in entries if details_observed is not True and tap_norm and event_id) —— **永远第一行**。当前两个角色都取 DISCOVERED_EVENT_DC53E03FB8（tap_norm=[0.87431, 0.38047]）。",
+        "how_often_it_has_been_tried": "全流 10004 条 episode 中，提到 OPEN_EVENT_CALENDAR_DETAIL 或 EVENT_CALENDAR_DETAIL_OPEN 的只有 49 条；其中 7 条带 UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING（最近一条 2026-10-10T00:38:10Z）。注意：PROVIDER_ANSWERED_NOTHING 的『整簇被一个常量覆盖』那个缺陷已由 4c62e600 修过（针对 TRY_ORDINARY_CONTROL/SEMANTIC_TARGET_NOT_VERIFIED），这里出现的是**另一条路径**，尚未归因。",
+        "the_grid_keeps_no_title": "每个网格行的 title_raw 都是 None —— 网格读出了 event_id 与 occurrence_key，却没留下被画出来的那个标题。诊断时看不到『这一行是什么活动』。"
+      },
+      "status_after_correction": "两件事要分开做：① 条带 → 让 AUTO 读到巨熊排期（本节的五处改动，见 handoff 文档）；② 网格 → 当前 scan_due 的真实成因，需先归因（A/B）再动。**不要因为设计文档里写着『条带』就把网格的账记到条带上。**"
+    }
   }
 }
