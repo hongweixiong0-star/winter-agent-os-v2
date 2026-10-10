@@ -473,6 +473,54 @@
     "not_measured": "没有跑起来验证。这是读代码 + 算术得到的结论；真实的一次 GLOBAL_WAIT 下的等待时长仍未实机观测。"
   },
 
+  "system_was_down_32h_and_is_up_again_20261010T0813": {
+    "one_line": "V2 从 2026-10-09 07:21 起停了 32 小时；根因是那次启动走的是第三条路径（绕过 pin 校验、且活不过调用轮）。已用计划任务正确拉起，跑的是 3580bf27。",
+    "evidence_it_was_down": {
+      "episodes_last": "2026-10-08T23:19:53Z（= +08:00 的 10-09 07:19:53）",
+      "panel_log_last_lines": "2026-10-09 07:21:53 『运行环境预检通过』+『自动运行已启动』，此后一字不写",
+      "pump_json_mtime": "2026-10-09 07:21:55",
+      "panel_pid": "17248，alive=False",
+      "crashes": "目录为空 —— 没有崩溃报告"
+    },
+    "the_root_cause_reading": {
+      "signature": "启动入口技能第 8 步的三条判据同时成立：panel.log 最后一行是【正常循环行】而不是 traceback；crashes/ 没有该时间点的新文件；desktop_startup.log 里【没有】该次启动的 CODE_COMMIT 行（它只有计划任务那条路才写）。",
+      "conclusion": "那次启动是第三条路径 tools/panel_restart.py --start —— 它直接跑 control_panel.py，绕过 verify_pin，所以加载版本不可归因；而它【活不过发起它的那一轮】：宿主会回收整棵分离子进程树。",
+      "honesty": "这是从三条判据推断出来的，不是直接观测到的调用栈。但它解释了全部四个读数。"
+    },
+    "the_correct_start_and_its_readings": {
+      "command": "经计划任务启动（该入口由宿主提供的独立执行通道发出，不经过本会话的进程树）",
+      "desktop_startup_log_new_line": "[2026-10-10T08:13:04] CODE_COMMIT=3580bf27c61ef5d80d308f1663e4cf91fc912a06 WORKTREE_CLEAN=true DATA_ROOT=E:/无尽冬日智能体",
+      "launcher": "…/winter-prod-pinned/…/tools/launch_pinned_production.py —— 指向 pin 树",
+      "panel_pid": "27308，alive=True",
+      "pump_json_mtime": "2026-10-10 08:13:12（新鲜）",
+      "task_last_result": "267009 (0x41301) = 当前正在运行",
+      "preflight_line": "预检·核心：Runtime OK · MuMu OK (127.0.0.1:7555 [720,1280] 前台 com.gof.china)"
+    },
+    "live_behaviour_in_the_first_three_minutes": {
+      "episodes": "10371 -> 10380（+9）",
+      "sequence": [
+        "OPEN_EVENT_CALENDAR_FROM_HOME SUCCESS",
+        "OPEN_EVENT_CALENDAR_TAB SUCCESS",
+        "OPEN_EVENT_CALENDAR_DETAIL FAILURE x2",
+        "BACK FAILURE, BACK SUCCESS",
+        "OPEN_QUICK_PANEL SUCCESS, OPEN_TASK_FROM_QUICK_PANEL_BUILDING SUCCESS, OPEN_BUILDING_UPGRADE SUCCESS"
+      ],
+      "result_mix": "6 SUCCESS / 3 FAILURE",
+      "what_matters": "两次失败【没有挡住任何东西】—— 它退出来、换了目标、成功。这是本文件反复引用的那条不变量（一个任务失败不得挡住其他任务）第一次在实机上看得到。",
+      "the_two_failures_left_open": {
+        "skill": "OPEN_EVENT_CALENDAR_DETAIL",
+        "history": "全流 37 条，35 SUCCESS；仅有的 2 条 FAILURE 就是这两条",
+        "reasons": ["open_next_uninspected_visible_calendar_entry", "ONLINE_UNKNOWN_NAVIGATION:EVENT_CALENDAR_DETAIL_NOT_PROVEN"],
+        "not_attributed": "没有归因。两个候选：① 它就在我手动导航留下的【日历视图】上接着干活，而日历的 6 条 entry 里 5 条是 DISCOVERED_EVENT_<hash>（身份未解析），详情很可能没有可点的定位；② 我的改动弄坏了它。样本只有 2 条，不足以区分 —— 记下来，让它继续跑再看。"
+      }
+    },
+    "correction_the_serial_is_not_stale": {
+      "what_i_said_before": "本节早前（44a8e916）写『config/v2.json 的 device.serial 仍是 127.0.0.1:7555，而这台机器上的设备是 emulator-5554 ⇒ 它现在是过期的』。",
+      "what_is_true": "面板自己会 connect 那个串号。它起来之后 adb devices 同时列出 127.0.0.1:7555 和 emulator-5554，而且面板预检报 MuMu OK (127.0.0.1:7555)。",
+      "why_i_got_it_wrong": "我的探针用裸 adb devices 判断『在连的设备』，而没有人替它 connect 过 —— 那是【我的探针的视角】，不是配置的错。resolve_serial 的回退仍然有用（探针在面板没跑时确实需要它），但把它说成 config 过期是错的。"
+    }
+  },
+
   "role_status_20261005": {
     "1063040265": {
       "verdict": "READY",
