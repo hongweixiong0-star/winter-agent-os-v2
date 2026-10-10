@@ -2,8 +2,8 @@
   "schema_version": "1.1",
   "topic": "BEAR_PARTICIPATION_CHAIN_STATUS",
   "written_at": "2026-10-05T21:25:00+08:00",
-  "updated_at": "2026-10-10T10:25:00+08:00",
-  "updated_by": "session 2026-10-10 (three blockers measured; identity is a hash of OCR text, so the debt cannot clear)",
+  "updated_at": "2026-10-10T10:50:00+08:00",
+  "updated_by": "session 2026-10-10 (identity must change: measured twice; the daily carve-out is a mask)",
   "question": "两个角色打巨熊，到底缺什么？",
   "one_line": "链路通的；缺的不是时序运气 —— 巨熊窗口在生产里被真机读到过 4 次，4 次都没有进入决策帧，所以 PARTICIPATE_BEAR 一次都没被生成。这是读数传递缺陷，不是运气。",
   "correction_20261009": {
@@ -975,5 +975,88 @@
     "the_candidate_for_a_stable_identity": "日期窗口 + 行槽位。理由：calendar_dates_raw 在两帧上是稳定的（除雪 10/13-10/14 两帧一致），而 display_name 不是（除雪 / 除雪小分队、神秘藏宝室 / 神秘藏）。代价：会改写已存 id 的含义，可能孤立历史记录 ⇒ **必须单独设计、单独验收**。",
     "the_instrument": "tools/probe_whether_a_card_identity_matches_the_row.py（真帧、离线、给出三个阻塞点与两帧 id 存活率）",
     "status": "归因完成；**ocr.py / event_calendar.py / runtime.py / brain.py 均未改动**。修法需要设计，不在窗口期顺手做。"
+  },
+  "impact_ranking_20261010T1035_the_calendar_loop_is_47_percent_of_failures": {
+    "one_line": "按 OPERATIONAL §20（失败优先开发，按影响排序）实测了整流：近 2 小时 281 步 / 55 失败（80.4% 成功），其中**一个循环独占 26 条（47%）**—— 而且它是**一个**成因，不是几个。**这条线程的优先级由测量确认了。**",
+    "the_window_measured": {
+      "episodes": 281,
+      "success": 226,
+      "failure": 55,
+      "success_rate": "80.4%",
+      "note": "台账第一条 2026-10-04，但近 12h 与近 2h 都是 281 条 —— 当前这次运行约从 2 小时前开始。"
+    },
+    "the_clusters": {
+      "1_calendar_loop": {
+        "failures": 26,
+        "share": "47%",
+        "skills": {
+          "OPEN_EVENT_CALENDAR_DETAIL / SEMANTIC_TARGET_NOT_VERIFIED / PROVIDER_ANSWERED_NOTHING": 13,
+          "OPEN_EVENT_CALENDAR_DETAIL / EVENT_CALENDAR_DETAIL_NOT_PROVEN": 8,
+          "OPEN_EVENT_CALENDAR_DETAIL / EVENT_CALENDAR_DETAIL_NOT_PROVEN / RESOLVER:CALENDAR_DETAIL_PANEL_ALREADY_VISIBLE": 5
+        },
+        "plus_the_downstream": "BACK / SAFE_BACK_NOT_PROVEN 13 条 —— 与日历失败**逐轮重叠 13/13**，即每轮第 5 步（第一次 BACK 的 verifier 没通过，第 6 步第二次 BACK 才成功）。所以它不是第二个问题，而是同一个循环的尾巴。",
+        "the_fixed_signature": [
+          "step 1 OPEN_EVENT_CALENDAR_FROM_HOME  SUCCESS",
+          "step 2 OPEN_EVENT_CALENDAR_TAB        SUCCESS",
+          "step 3 OPEN_EVENT_CALENDAR_DETAIL     FAILURE EVENT_CALENDAR_DETAIL_NOT_PROVEN",
+          "step 4 OPEN_EVENT_CALENDAR_DETAIL     FAILURE SEMANTIC_TARGET_NOT_VERIFIED",
+          "step 5 BACK                          FAILURE SAFE_BACK_NOT_PROVEN",
+          "step 6 BACK                          SUCCESS"
+        ],
+        "cadence": "约每 5 分钟一轮（00:14 / 00:19 / 00:22 / 00:27 / 00:30 / 00:34 / 00:38 / 00:42 / 00:46 / 00:50 / 00:55 / 01:01 / 01:06）",
+        "goal_attribution": "DISCOVER_EVENT_CALENDAR 26 条；其中 BACK 那一步按 best_goal 记到 AVOID_STAMINA_WASTE 10 条 / CLEAR_INTEL 3 条。"
+      },
+      "2_beast_search": {
+        "failures": 8,
+        "detail": "SUBMIT_GIANT_BEAST_SEARCH 5 + SELECT_BEAST_TARGET_MAMMOTH 3"
+      },
+      "3_the_rest": {
+        "failures": "各 1 条，共 9 条",
+        "examples": "DISMISS_DAILY_GENERIC_REWARD / EXPLORATION_IDLE_CLAIM / TRY_ORDINARY_CONTROL / OPEN_BEAST_SEARCH_TAB / OPEN_HOME 等"
+      }
+    },
+    "the_ranking_verdict": "日历循环是**第一优先**，且不是靠印象 —— 47% 的失败来自它，形状固定、逐轮复现、每 5 分钟一次。次优先是野兽搜索（8 条）。其余是长尾。",
+    "the_decision_this_opens": {
+      "a_the_root": "修身份（阻塞点 3）：让发现式活动的身份来自跨帧稳定的东西（候选：日期窗口 + 行槽位）。代价：改写已存 id 的含义，可能孤立历史记录 ⇒ 需要单独设计与验收。",
+      "b_the_existing_shape": "本文件与 event_schedule.py:417-433 已有**同型机制的现成先例**：`_unreachable_today()`。它存在的理由就是『一个真实游戏状态让债务无法清偿』（2026-10-03 STATE_VS_STATE 满员、看得见进不去）。今天这一批的形状是『卡能打开但身份读不出来 ⇒ 记账永远匹配不上』。用同一机制把它们按**当日**划出债务，`calendar_scan_due` 就能落回 false，循环立即停。",
+      "the_tension": "选 b 会让账本安静，而本项目刚立过『不要用更安静代替更好』的判据。但 b 不是隐藏：它是**声明**『今天这类活动本运行无法完成』，且 _unreachable_today 已经为此而存在。差别在于：(a) 修根、慢、有风险；(b) 立即止血、把根留成显式未结项。",
+      "what_decides_it": "**先量一件事：这些活动明天（换一天）是否会重新变成可清偿的。** 若会 ⇒ b 是安全的止血；若不会（身份漂移是常态）⇒ b 会每天重新划一次，那说明 (a) 才是必须做的，b 只是拖延。",
+      "status": "**未决定、未实现**。生产代码一行未改。"
+    }
+  },
+  "the_identity_must_change_and_option_b_is_ruled_out_20261010T1050": {
+    "one_line": "两个测量把下一步定死了：①**身份不改，循环不可能结束** —— 只把 detail 的 id 换成一个不同的哈希（其余字段全是真机读出来的原样），债务就不下降；②**『按当日划出债务』这个省事办法不成立** —— 这些 id 跨天存续（A33B0DC6E9 见于 10-07 与 10-10，EXCLUSIVE_GEAR_FORGE 见于 10-04/05/07/10），每天都会重新划一次，那是遮罩不是修复。",
+    "measurement_1_the_id_mismatch_blocks_the_credit": {
+      "tool": "tools/probe_whether_a_card_detail_credits_the_row.py",
+      "how_it_avoids_a_guessed_fixture": "第一版我从**猜的字段名**（activity_open_start_raw）造 fixture，rebinding 没触发 —— 那什么都证明不了，因为 rebinding 读的可能是别的字段（真机观测用的是 preview_start_raw / preview_end_raw）。第二版改成：从**活库**里取一条真实的 detail_observation，只把 event_id 换掉，其余字段一字不动，并把窗口对到目标行的日期上。",
+      "result": {
+        "real_detail": "event_id=DISCOVERED_EVENT_6F33C054CA, display_name=英雄集结, preview=2026-09-2800:00..2026-10-1124:00",
+        "target_row": "display_name=除雪, event_id=DISCOVERED_EVENT_DC53E03FB8, dates=[10/13,10/14]",
+        "debt_before": "('DISCOVERED_EVENT_DC53E03FB8',)",
+        "perturbed_id": "DISCOVERED_EVENT_1C9F9BD8F5（= sha1('除雪小分队')）",
+        "debt_after": "('DISCOVERED_EVENT_DC53E03FB8',)  ← 没降",
+        "matched_occurrence_key": null,
+        "strip_activity_credited": null
+      },
+      "conclusion": "记账**不是**足够按日期驱动的：id 不匹配就记不上。而在册债务按**网格帧**的 id 记 ⇒ 在任何『把标签读短』的帧上取得的读数记不上任何东西。"
+    },
+    "measurement_2_option_b_is_a_daily_mask": {
+      "the_option": "用**现成**的 _unreachable_today() 机制（event_schedule.py:417-433）把这类活动按**当日**划出债务 —— 它存在的理由就是『一个真实游戏状态让债务无法清偿』（2026-10-03 STATE_VS_STATE 满员：看得见、进不去）。循环会立即停。",
+      "why_it_fails_as_a_fix": {
+        "evidence": "按日统计这些 id 在台账里出现的日子",
+        "DISCOVERED_EVENT_A33B0DC6E9": "2026-10-07 与 2026-10-10（跨天存续）",
+        "EXCLUSIVE_GEAR_FORGE": "2026-10-04 / 10-05 / 10-07 / 10-10（跨 6 天）",
+        "DISCOVERED_EVENT_2CED2A762E / DC53E03FB8": "仅 2026-10-10（它们绑的是当期日期窗口，属正常换期）",
+        "conclusion": "既然 id 跨天存续，按日划出就会**每天重新划一次** ⇒ 循环每天照旧 ⇒ 那是遮罩，不是修复。"
+      },
+      "note_this_does_not_contradict_the_earlier_rejection": "之前拒绝的是『给模型兜底重试加字典门』（那会让失败数变少但循环仍在）。这里拒绝的是『按日划出债务』（每天重划）。两者是同一个判据的不同实例。"
+    },
+    "the_direction_that_remains": {
+      "must": "让**发现式活动的身份跨帧稳定**",
+      "candidate": "日期窗口 + 行槽位。calendar_dates_raw 在两帧上是稳定的（除雪 10/13-10/14 两帧一致），display_name 不是（除雪 / 除雪小分队）。",
+      "less_invasive_alternative_worth_considering": "不动 id 方案，改**读者**：当某行的标签被截断时，若它的日期窗口与一条已知行的窗口相同，就复用那条已知行的 id。这样读数会与库里的债务一致，而 id 方案不变。",
+      "the_risk_that_forces_a_migration_step": "**改 id 方案会在迁移期让情况更糟**：库里现存的债务 id 是按旧方案算的，新的读数会铸出新的 id ⇒ 保证不匹配。所以任何身份改动都必须**同时**给出旧 id 的别名/迁移，而不能只换算法。",
+      "status": "**方向已定（必须改身份），实现与迁移方案未设计**。生产代码一行未改。"
+    }
   }
 }
