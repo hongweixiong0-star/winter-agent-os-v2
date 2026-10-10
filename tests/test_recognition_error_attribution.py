@@ -20,11 +20,15 @@ import sys
 import unittest
 from dataclasses import asdict
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from winter_agent_v2 import event_calendar as event_calendar_module  # noqa: E402
+from winter_agent_v2 import runtime as runtime_module  # noqa: E402
 from winter_agent_v2.learning import Episode  # noqa: E402
 from winter_agent_v2.models import Page, WorldState  # noqa: E402
 from winter_agent_v2.runtime import LiveRuntime, _prefer_the_cause, _recognition_error  # noqa: E402
@@ -245,6 +249,114 @@ class TheCauseIsNotErasedByTheQuestionTests(unittest.TestCase):
         code = _prefer_the_cause("RESOLVER:ORDINARY_NO_FRAME",
                                  "UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION")
         self.assertNotEqual(code, "UNKNOWN_NAV:NOT_A_NAVIGATION_ACTION")
+
+
+class TheCalendarDetailExitsAreNamedTests(unittest.TestCase):
+    """The ``EVENT_CALENDAR_NEXT_DETAIL`` branch names its own six exits.
+
+    Measured 2026-10-10: 7 live episodes carried ``UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING``
+    for this semantic, and the ledger could say nothing better, because the branch returned
+    bare ``None`` from every exit -- so ``resolve`` read the family fallback
+    ``RESOLVER:LOCATOR_MISSED`` and ``_prefer_the_cause`` let the advisor's generic reply
+    replace it.  Replaying those episodes' own before-frames
+    (``tools/ab_which_calendar_detail_guard_refuses.py``) showed the real cause: the calendar
+    reader reported ``details_visible`` while ``calendar_detail`` was never read at all -- the
+    tap had landed on the activity's own page, so a panel covered the rows this resolver was
+    being asked to tap.  The refusal was right; only its name was missing.
+    """
+
+    def _exit(self, *, page=Page.EVENT, events=None, frame_path=Path("frame.png"),
+              calendar=None, next_entry=None) -> LiveRuntime:
+        """Drive one exit of the branch and hand back the runtime that recorded it.
+
+        Two different readings decide this hop and both are inputs here:
+
+        * ``events["calendar"]`` is the FRAME's own reading, which the first guards test --
+          the branch reads it off ``frame.events``;
+        * ``calendar`` is what the second, current-frame ``read_event_calendar`` call answers,
+          which the later guards test.
+
+        Conflating them is what made an earlier draft of this helper pass ``events={}`` and
+        trip ``GRID_NOT_READ`` on every case.
+        """
+        if events is None:
+            events = {"calendar": {"recognized": True}}
+        if calendar is None:
+            calendar = {"recognized": True, "details_visible": False}
+        rt = object.__new__(LiveRuntime)
+        rt.role_id = "1061663148"
+        rt.role_scope = "FRESH_RUNTIME"
+        rt._resolution_error = ""
+        rt.vision = SimpleNamespace(ocr=SimpleNamespace(
+            recognize=lambda path, **_: SimpleNamespace(tokens=[])))
+        frame = WorldState(page=page, events=events)
+        with patch.object(runtime_module, "read_frame_size", lambda path: (720, 1280)), \
+                patch.object(event_calendar_module, "read_event_calendar",
+                             lambda *a, **k: calendar), \
+                patch.object(runtime_module.event_schedule, "calendar_next_entry",
+                             lambda *a, **k: next_entry):
+            rt.calendar_detail_point = rt._resolve_semantic_target(
+                "EVENT_CALENDAR_NEXT_DETAIL", frame, frame_path=frame_path)
+        return rt
+
+    def test_the_measured_live_case_names_the_panel_already_visible(self):
+        rt = self._exit(calendar={"recognized": True, "details_visible": True})
+        self.assertIsNone(rt.calendar_detail_point)
+        self.assertEqual(rt._resolution_error,
+                         "RESOLVER:CALENDAR_DETAIL_PANEL_ALREADY_VISIBLE")
+
+    def test_the_exits_are_distinguishable(self):
+        """The work order's target metric, one branch down: ``distinct_codes > 1``."""
+        cases = {
+            "no frame": dict(frame_path=None),
+            "wrong page": dict(page=Page.HOME),
+            "frame grid not read": dict(events={"calendar": {"recognized": False}}),
+            "detail already read": dict(
+                events={"calendar": {"recognized": True},
+                        "calendar_detail": {"recognized": True}}),
+            "no role or ocr": dict(_drop_ocr=True),
+            "grid unreadable": dict(calendar={"recognized": False}),
+            "panel already visible": dict(
+                calendar={"recognized": True, "details_visible": True}),
+            "no uninspected row": dict(next_entry=None),
+            "row without a tap": dict(next_entry={"occurrence_key": "k", "event_id": "E",
+                                                 "title_box": [(0, 0)], "tap_norm": None}),
+            "point outside frame": dict(next_entry={"occurrence_key": "k", "event_id": "E",
+                                                    "title_box": [(0, 0)],
+                                                    "tap_norm": [5.0, 0.5]}),
+        }
+        codes = {}
+        for label, kwargs in cases.items():
+            drop_ocr = kwargs.pop("_drop_ocr", False)
+            rt = self._exit(**kwargs)
+            if drop_ocr:
+                rt = object.__new__(LiveRuntime)
+                rt.role_id = "1061663148"
+                rt.role_scope = "FRESH_RUNTIME"
+                rt._resolution_error = ""
+                rt.vision = SimpleNamespace()  # no OCR at all
+                rt.calendar_detail_point = rt._resolve_semantic_target(
+                    "EVENT_CALENDAR_NEXT_DETAIL",
+                    WorldState(page=Page.EVENT, events={"calendar": {"recognized": True}}),
+                    frame_path=Path("frame.png"))
+            codes[label] = rt._resolution_error
+        self.assertEqual(len(set(codes.values())), len(cases), codes)
+        for label, code in codes.items():
+            self.assertTrue(code.startswith("RESOLVER:CALENDAR_DETAIL_"), (label, code))
+
+    def test_a_named_calendar_detail_cause_beats_the_advisor_s_generic_reply(self):
+        """This is the whole point: the live row carries the advisor's name today, and a named
+        locator cause outranks it -- ``_prefer_the_cause``'s own documented rule."""
+        self.assertEqual(
+            _prefer_the_cause("RESOLVER:CALENDAR_DETAIL_PANEL_ALREADY_VISIBLE",
+                              "UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING"),
+            "RESOLVER:CALENDAR_DETAIL_PANEL_ALREADY_VISIBLE")
+
+    def test_naming_the_exits_changed_no_return(self):
+        """A recorder must not become a decision: the resolved case still returns its point."""
+        rt = self._exit(next_entry={"occurrence_key": "k", "event_id": "E",
+                                    "title_box": [(0, 0)], "tap_norm": [0.5, 0.25]})
+        self.assertEqual(rt.calendar_detail_point, (0.5, 0.25))
 
 
 if __name__ == "__main__":

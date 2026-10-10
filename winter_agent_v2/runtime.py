@@ -5420,36 +5420,67 @@ class LiveRuntime:
             # The store supplies only inspected-state attribution. Positions and
             # occurrence identity are reread from the current visible calendar;
             # stale taps from a prior scan never enter this resolver.
+            #
+            # Every exit names itself, for the reason ``_ordinary_control_target`` documents at
+            # length: a bare ``None`` leaves ``_resolution_error`` empty, ``resolve`` then reads
+            # ``RESOLVER:LOCATOR_MISSED`` -- the family's fallback rather than an answer -- and
+            # ``_prefer_the_cause`` lets the advisor's generic reply replace it.  Measured
+            # 2026-10-10: 7 live episodes carried ``UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING`` for
+            # this semantic.  Replaying their own before-frames offline
+            # (``tools/ab_which_calendar_detail_guard_refuses.py``) showed the real cause was
+            # ``details_visible`` being True while ``calendar_detail`` was never read at all:
+            # the tap had landed on the activity's own page, so the calendar reader still saw
+            # rows but the detail reader saw no panel.  The refusal was correct; only its name
+            # was lost.  ``_prefer_the_cause`` gives a named locator cause precedence over the
+            # question-level refusal, so naming these is what makes the next one answerable.
+            def _no(code: str):
+                """Return no point, and say which of this branch's exits it was."""
+                self._resolution_error = code
+                return None
+
             events = frame.events or {}
             calendar = events.get("calendar") or {}
             detail = events.get("calendar_detail") or {}
-            if (frame.page is not Page.EVENT or frame_path is None
-                    or not isinstance(calendar, Mapping) or calendar.get("recognized") is not True
-                    or (isinstance(detail, Mapping) and detail.get("recognized") is True)):
-                return None
+            if frame_path is None:
+                return _no("RESOLVER:CALENDAR_DETAIL_NO_FRAME")
+            if frame.page is not Page.EVENT:
+                return _no("RESOLVER:CALENDAR_DETAIL_WRONG_PAGE")
+            if not isinstance(calendar, Mapping) or calendar.get("recognized") is not True:
+                return _no("RESOLVER:CALENDAR_DETAIL_GRID_NOT_READ")
+            if isinstance(detail, Mapping) and detail.get("recognized") is True:
+                return _no("RESOLVER:CALENDAR_DETAIL_ALREADY_OPEN")
             role_id = self._calendar_role_id()
             ocr = self._ocr_service()
             if not role_id or ocr is None:
-                return None
+                return _no("RESOLVER:CALENDAR_DETAIL_NO_ROLE_OR_OCR")
             from .event_calendar import read_event_calendar
             try:
                 current = read_event_calendar(
                     ocr.recognize(Path(frame_path)).tokens,
                     frame_size=read_frame_size(Path(frame_path)), frame_path=Path(frame_path),
                 )
-                if current.get("recognized") is not True or current.get("details_visible") is True:
-                    return None
+                if current.get("recognized") is not True:
+                    return _no("RESOLVER:CALENDAR_DETAIL_GRID_UNREADABLE")
+                if current.get("details_visible") is True:
+                    # The grid's own reader reports a detail/overlay region while no
+                    # ``calendar_detail`` was read, so a panel is already covering the rows this
+                    # resolver is being asked to tap.  Tapping now would land on the panel, not
+                    # on a row.  Kept as a refusal for that reason, and named so the ledger can
+                    # tell it apart from "the reader found nothing".
+                    return _no("RESOLVER:CALENDAR_DETAIL_PANEL_ALREADY_VISIBLE")
                 row = event_schedule.calendar_next_entry(role_id, current.get("entries") or ())
                 if (not isinstance(row, Mapping) or not row.get("occurrence_key")
                         or not row.get("event_id") or not row.get("title_box")):
-                    return None
+                    return _no("RESOLVER:CALENDAR_DETAIL_NO_UNINSPECTED_ROW")
                 point = row.get("tap_norm")
                 if not isinstance(point, (tuple, list)) or len(point) != 2:
-                    return None
+                    return _no("RESOLVER:CALENDAR_DETAIL_ROW_WITHOUT_TAP")
                 target = tuple(float(value) for value in point)
             except (OSError, TypeError, ValueError):
-                return None
-            return target if all(0.0 <= value <= 1.0 for value in target) else None
+                return _no("RESOLVER:CALENDAR_DETAIL_READER_RAISED")
+            if not all(0.0 <= value <= 1.0 for value in target):
+                return _no("RESOLVER:CALENDAR_DETAIL_POINT_OUTSIDE_FRAME")
+            return target
         if semantic in {"EVENT_CALENDAR_TAB", "REGULAR_EVENT_TABS_SCROLL_CURRENT"}:
             # Its template art also appears on HOME. The tab exists only inside
             # the recognized regular-event detail or calendar page.

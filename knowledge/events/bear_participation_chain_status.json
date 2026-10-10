@@ -2,8 +2,8 @@
   "schema_version": "1.1",
   "topic": "BEAR_PARTICIPATION_CHAIN_STATUS",
   "written_at": "2026-10-05T21:25:00+08:00",
-  "updated_at": "2026-10-10T09:15:00+08:00",
-  "updated_by": "session 2026-10-10 (the strip debt measured; the missing piece is one action, not a goal)",
+  "updated_at": "2026-10-10T09:45:00+08:00",
+  "updated_by": "session 2026-10-10 (the calendar-detail refusal attributed by A/B; its exits now name themselves)",
   "question": "两个角色打巨熊，到底缺什么？",
   "one_line": "链路通的；缺的不是时序运气 —— 巨熊窗口在生产里被真机读到过 4 次，4 次都没有进入决策帧，所以 PARTICIPATE_BEAR 一次都没被生成。这是读数传递缺陷，不是运气。",
   "correction_20261009": {
@@ -847,5 +847,59 @@
       },
       "status_after_correction": "两件事要分开做：① 条带 → 让 AUTO 读到巨熊排期（本节的五处改动，见 handoff 文档）；② 网格 → 当前 scan_due 的真实成因，需先归因（A/B）再动。**不要因为设计文档里写着『条带』就把网格的账记到条带上。**"
     }
+  },
+  "the_calendar_detail_refusal_was_unnamed_20261010T0945": {
+    "one_line": "把上一节量到的『4 个网格 id 从未被打开、scan_due 永远为真』做了 A/B 归因：拒绝本身是**对的**（那一帧上真有一个面板盖住了网格行），错的是**它没有名字** —— EVENT_CALENDAR_NEXT_DETAIL 的六个出口全是裸 return None，于是 ledger 只记下顾问那句通用的 PROVIDER_ANSWERED_NOTHING。已让六个出口各自报名。",
+    "the_symptom": {
+      "episodes": "全流 10004 条里，skill=OPEN_EVENT_CALENDAR_DETAIL 的只有 49 条：35 SUCCESS / 14 FAILURE",
+      "the_7": "其中 7 条带 UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING，decision_reason=ONLINE_UNKNOWN_NAVIGATION:EVENT_CALENDAR_DETAIL_NOT_PROVEN",
+      "the_recorded_shape": "result=FAILURE, failure_type=SEMANTIC_TARGET_NOT_VERIFIED, expected_result=registered_navigation_verifier",
+      "why_it_is_navigation_at_all": "skill_id 以 OPEN_ 开头 ⇒ _unknown_navigation_target 认为它是 navigation ⇒ 顾问**确实被问过**。所以这里不是 4c62e600 修过的『顾问从未被咨询却被记成它的答复』那个缺陷，而是同一家族的另一半：**解析器自己命名了原因，但那个名字没被留下**。"
+    },
+    "the_attribution_how": {
+      "tool": "tools/ab_which_calendar_detail_guard_refuses.py（本提交新增）",
+      "method": "把失败回合**自己的 before_screenshot** 喂进解析器用的同一个读者，然后逐条打印六个守卫的判定；并与同技能的 SUCCESS 帧并排跑（『它拒绝』只有在『这一帧它不拒绝』旁边才有意义）。全程离线读 PNG，不碰设备。",
+      "result_summary": "2 条 PROVIDER_ANSWERED_NOTHING 的帧 → 都是 GUARD_detail_overlay_open；4 条 SUCCESS 帧 → 都是 PASS"
+    },
+    "the_measured_cause": {
+      "the_frame": "那一帧 page=EVENT、calendar.recognized=True 且 **calendar.details_visible=True**，但 events 里**根本没有 calendar_detail 这个键**（存在的键是 activity_strip / calendar / regular_events_hub）。",
+      "what_it_means": "点日历网格的一行之后，落点是**该活动自己的页面**（所以 hub 读者认得它），而事件详情读者认不出那个面板。日历读者仍然看得到行，并且报 details_visible=True。⇒ 解析器拒绝去点是对的：有一个面板正盖在它被要求点的那些行上。",
+      "the_two_readers_disagree": "brain.decide 只有 detail.recognized 为真才会走 RETURN_EVENT_CALENDAR（brain.py:670），而解析器是拿 calendar 读数的 details_visible 拒绝的（runtime.py:5428 一带）。两个不同的读者、两个不同的字段；不一致时运行时被要求去开一个它正站着的详情。",
+      "a_hypothesis_i_killed": "我先怀疑是 ocr.py:1333 那个 `elif` 被上一支（active_event/minimum_guarantee）抑制了。实测 active_event=None 且 minimum_guarantee 不存在 ⇒ **这个假设是错的**，calendar_detail 缺席的原因就是详情读者没认出那个面板。"
+    },
+    "the_fix": {
+      "what_changed": "runtime.py 的 EVENT_CALENDAR_NEXT_DETAIL 分支：六个裸 return None 改成各自命名，并在复合守卫处拆成独立判断（**判定结果完全不变**，只有记录的名字变了）。",
+      "the_names": [
+        "RESOLVER:CALENDAR_DETAIL_NO_FRAME",
+        "RESOLVER:CALENDAR_DETAIL_WRONG_PAGE",
+        "RESOLVER:CALENDAR_DETAIL_GRID_NOT_READ",
+        "RESOLVER:CALENDAR_DETAIL_ALREADY_OPEN",
+        "RESOLVER:CALENDAR_DETAIL_NO_ROLE_OR_OCR",
+        "RESOLVER:CALENDAR_DETAIL_GRID_UNREADABLE",
+        "RESOLVER:CALENDAR_DETAIL_PANEL_ALREADY_VISIBLE",
+        "RESOLVER:CALENDAR_DETAIL_NO_UNINSPECTED_ROW",
+        "RESOLVER:CALENDAR_DETAIL_ROW_WITHOUT_TAP",
+        "RESOLVER:CALENDAR_DETAIL_POINT_OUTSIDE_FRAME",
+        "RESOLVER:CALENDAR_DETAIL_READER_RAISED"
+      ],
+      "why_naming_actually_surfaces": "resolve() 在调顾问**之前**读 locator_cause = self._resolution_error or RESOLVER:LOCATOR_MISSED，然后 _prefer_the_cause(locator_cause, 顾问答复)。该函数有明文规则：『a named locator cause outranks the question-level refusal; a generic RESOLVER:LOCATOR_MISSED does not』。所以命名之后 PROVIDER_ANSWERED_NOTHING 会被顶掉 —— 这不是装饰性改动。",
+      "what_it_does_not_do": "它**不**修那个循环。它让下一次出现时**可归因**：ledger 会直接说出是哪一支出卖了这个步骤。真正的修法（面板已可见时该做什么：退回、还是把那次观察记账）仍需另行设计，而那一步不能在窗口期盲改。"
+    },
+    "the_verification": {
+      "new_tests": "tests/test_recognition_error_attribution.py 新增 TheCalendarDetailExitsAreNamedTests（该文件已经拥有 RESOLVER:ORDINARY_* 家族，所以归在那里）",
+      "the_distinctness_test": "十个出口必须给出十个不同的码，且都以 RESOLVER:CALENDAR_DETAIL_ 开头",
+      "the_recorder_is_not_a_decision_test": "解析成功时仍返回同一个点（记录不得变成决策）",
+      "the_ab": {
+        "how": "回退 runtime.py 到 HEAD、重跑同一批、再恢复，并核 md5",
+        "selection": "-k 'calendar or resolve or semantic or nav or recognition or ordinary_control'",
+        "after_my_change": "15 failed, 580 passed",
+        "before_my_change": "17 failed, 578 passed",
+        "regressions": "FAILED-only-after 集合为**空**",
+        "the_two_differences": "恰好是我新加的两条测试在 HEAD 上失败（一个 10 个码必须互不相同、一个直接断言那一条实测码）。它们**应该**在改动前失败 —— 这正是它们不是空测试的证据。",
+        "pre_existing_red": "其余 15 条红在改动前后**完全一致**，与本改动无关；ERROR 集合也一致。",
+        "restore_verified": "runtime.py md5 3b33cbb5140b990cf6dc6f198b37e706，A/B 前后相同"
+      }
+    },
+    "the_next_step_this_opens": "现在『面板已经盖住网格』这件事有名有姓了。下一步是决定**该做什么**：当 calendar.details_visible=True 且 calendar_detail 缺席时，合理动作是退回日历（RETURN_EVENT_CALENDAR）还是把这次观察当作一次已读记账。这需要设计，不应在窗口期盲改。"
   }
 }
