@@ -30,7 +30,9 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 from winter_agent_v2 import event_schedule as es  # noqa: E402
 from winter_agent_v2.ocr import OCRService, OCRPageClassifier, RapidOCRBackend  # noqa: E402
-from winter_agent_v2.runtime import read_frame_size  # noqa: E402
+from winter_agent_v2.runtime import (  # noqa: E402
+    RESOLVER_LOCATOR_MISSED, LiveRuntime, _prefer_the_cause, read_frame_size,
+)
 from winter_agent_v2.event_calendar import read_event_calendar  # noqa: E402
 
 EPISODES = ROOT / "learning" / "episodes.jsonl"
@@ -150,6 +152,31 @@ def classifier_view(frame: Path, ocr: OCRService, classifier: OCRPageClassifier)
     }
 
 
+def ledger_code(frame: Path, role_id: str, classifier: OCRPageClassifier,
+                ocr: OCRService) -> tuple[str, str]:
+    """What the episode row actually carries, before and after the naming change.
+
+    ``resolve`` reads ``locator_cause = self._resolution_error or RESOLVER_LOCATOR_MISSED``
+    after the resolver declines, then lets ``_prefer_the_cause`` choose between that and the
+    advisor's reply.  This runs that composition for real on a real frame, so the claim
+    "the row will now carry the true cause" is measured rather than read off a docstring.
+    """
+    world = classifier.classify(ocr.recognize(frame), frame_size=read_frame_size(frame))
+    rt = object.__new__(LiveRuntime)
+    rt.role_id = role_id
+    rt.role_scope = "FRESH_RUNTIME"
+    rt.vision = SimpleNamespace(ocr=ocr)
+    rt._resolution_error = ""
+    point = rt._resolve_semantic_target("EVENT_CALENDAR_NEXT_DETAIL", world,
+                                        frame_path=Path(frame))
+    # Before the change this branch named nothing, so the resolver read the family fallback.
+    before = _prefer_the_cause(RESOLVER_LOCATOR_MISSED, "UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING")
+    after = _prefer_the_cause(rt._resolution_error or RESOLVER_LOCATOR_MISSED,
+                              "UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING")
+    assert point is None, "this frame was expected to be refused"
+    return before, after
+
+
 def main() -> int:
     rows = load_episodes()
     print(f"{SKILL}: {len(rows)} episodes, "
@@ -186,6 +213,11 @@ def main() -> int:
             if got.get("detail"):
                 print(f"    detail  : {got['detail']}")
             print(f"    GUARD   : {got['guard']}")
+            if got["guard"] != "PASS" and frame.is_file():
+                before, after = ledger_code(frame, str(row.get("role_id") or ""),
+                                            classifier, ocr)
+                print(f"    LEDGER  : recorded before = {before}")
+                print(f"              recorded now    = {after}")
             view = classifier_view(frame, ocr, classifier)
             print(f"    RUNTIME : {view}")
             if (view.get("calendar_details_visible") is True
