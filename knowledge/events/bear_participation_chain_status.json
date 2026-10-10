@@ -2,8 +2,8 @@
   "schema_version": "1.1",
   "topic": "BEAR_PARTICIPATION_CHAIN_STATUS",
   "written_at": "2026-10-05T21:25:00+08:00",
-  "updated_at": "2026-10-10T11:28:00+08:00",
-  "updated_by": "session 2026-10-10 (credit path fixed and A/B-verified; loop unchanged because no detail reading is produced)",
+  "updated_at": "2026-10-10T12:00:00+08:00",
+  "updated_by": "session 2026-10-10 (all three blockers landed; the calendar loop closed for the role that has run)",
   "question": "两个角色打巨熊，到底缺什么？",
   "one_line": "链路通的；缺的不是时序运气 —— 巨熊窗口在生产里被真机读到过 4 次，4 次都没有进入决策帧，所以 PARTICIPATE_BEAR 一次都没被生成。这是读数传递缺陷，不是运气。",
   "correction_20261009": {
@@ -1097,5 +1097,37 @@
       "the_caution": "read_event_detail 的 docstring 警告过：能返回五个答案的规则不能用来**取名**。本子句只用于**识别**（是不是一张带排期的卡），取名仍走几何 ⇒ 不违反该警告。"
     },
     "the_honest_status": "阻塞点 1+2 决定『卡上的排期会不会被读出来』，阻塞点 3 决定『这一行会不会被记账』。本轮修了 3 的记账路径（必要且已验证），但循环要停，必须先让卡被读成一次 detail 观测。**生产代码已改的这一处，本身没有让循环变好，也没有让它变坏。**"
+  },
+  "the_calendar_loop_is_closed_20261010T1200": {
+    "one_line": "**循环关掉了。** 三个阻塞点全部落地后，角色 1061663148 在 01:51–01:52 走完一次**健康的 12 步扫描**（5 次『打开详情→退回』全部 SUCCESS），**六行全部记账**，`calendar_scan_due=False`、**债务 `()`** —— 这是第一次观测到它为空。修复落地后（01:51Z 起）**日历循环失败为 0**。",
+    "the_three_blockers_and_their_commits": {
+      "blocker_3_the_credit_path": "f9b6ee60 —— `event_schedule.row_covering_the_details_window` 等：用详情自印日期跨过 id 漂移（`_prior_calendar_row` 的原话：『Date evidence is required when OCR changes an identifier.』）。",
+      "blocker_2_the_card_was_not_read_as_a_detail": "8eb16ff7 —— `read_event_detail` 加『日期区间 + 距开始/倒计时 + 有候选标题』子句。同五张帧的读者 A/B：只改变卡帧一张，其余四张逐字不变。",
+      "blocker_1b_the_attribution_granularity": "af4c1186 —— 解析器把『它瞄准的那一行』记下来，归属优先用它（卡自印窗口须与该行相交）。卡的窗口粒度是『活动期』，不足以区分『哪一行』。"
+    },
+    "the_measured_outcome": {
+      "role_1061663148": {
+        "the_healthy_sweep": "01:51:55 OPEN_EVENT_CALENDAR_DETAIL SUCCESS（expected=DC53E03FB8 attributed=DC53E03FB8）→ 01:52:00 RETURN_EVENT_CALENDAR → 01:52:05 → 01:52:10 → 01:52:14 → 01:52:19 → 01:52:25 → 01:52:29 → 01:52:36 → 01:52:42，共 5 对，全部 SUCCESS。",
+        "grid": "六行全部 details_observed=True",
+        "debt": "()",
+        "calendar_scan_due": false
+      },
+      "role_1063040265": {
+        "state": "债务仍是那 4 个 id，scan_due 仍为 True",
+        "why_not_a_failure": "它自修复落地后**还没轮到日历轮次**（最后一次日历轮是 01:35，早于修复）。按同样路径它应当在下一次轮到时间样收敛 —— **这一点尚未观测到，不许当成已完成**。"
+      },
+      "the_loop_failures": {
+        "before": "每约 5 分钟一轮、每轮 2 条失败（step 3 EVENT_CALENDAR_DETAIL_NOT_PROVEN + step 4 SEMANTIC_TARGET_NOT_VERIFIED）；近 2 小时 281 步 / 55 失败（19.6%），其中日历 26 条（47%）",
+        "after": "**修复落地（01:51Z）之后日历循环失败 0 条**；最后一次日历失败在 01:48（修复前）",
+        "the_run_s_failure_rate": "近 10 分钟 55 步 / 5 失败（**9.1%**）；近 20 分钟 105 步 / 16 失败（15.2%）"
+      },
+      "why_the_remaining_rate_is_not_zero": "剩下的失败已经不是循环：近 10 分钟是 5 条各一次的杂项（CALENDAR 1 + BACK 1 + SELECT_INTEL_BEAST_MISSION 1 + START_RALLY 1 …），不是同一步骤每 5 分钟重演。"
+    },
+    "the_verification_that_this_is_the_real_path": {
+      "verifier_evidence": "每一步都能看到 `expected_event_id` 与 `attributed_event_id` **相等**（DC53E03FB8 / A33B0DC6E9 / EXCLUSIVE_GEAR_FORGE / 2CED2A762E / 6F33C054CA），而修复前 `attributed_event_id` 是空串。",
+      "the_A_B_for_each_step": "三次改动各做了独立 A/B（三文件回退到 HEAD、重跑同一批）：f9b6ee60 零回归；8eb16ff7 零回归；af4c1186 after 24 failed/775 passed vs before 25 failed/774 passed，FAILED-only-after = {}。",
+      "the_method_lesson": "**两次 A/B 曾无效**：pytest 跑到 100% 但 teardown 批量删 temp 被沙箱拦下 ⇒ 汇总行缺失、FAILED 列表截断 ⇒ `comm` 拿 30 条比 0 条，报出 29 条幻影回归。现在每侧都必须有汇总行且失败数 == FAILED 行数，并用 `--basetemp` 独立目录。"
+    },
+    "honest_status": "① 循环对已轮到的角色确实关掉了，且是**在账本里可验证的**（债务为空、expected==attributed、连续 SUCCESS）；② 另一个角色尚未轮到，**未观测到**它的收敛；③ 剩余失败率不再由循环主导。"
   }
 }
