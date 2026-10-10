@@ -997,6 +997,38 @@ def read_event_detail(
             date_range is not None and "前往" in all_text
             and any(_candidate_title(text) for _, text in rows)
         )
+        or (
+            # A preview card opened from the grid, which prints its own window and the countdown
+            # to the start but carries no 活动时间 label and no registered name.
+            #
+            # Measured 2026-10-10 on the live client: tapping the 除雪 row opens a card headed
+            # 除雪小分队 reading ``2026-10-13 00:00 -2026-10-15 24:00`` and
+            # ``距离开始：2天15:09:21``.  All three predicates above answered False -- there is
+            # no 活动详情, none of the six time labels, no 前往, and ``_heading_scale_activity``
+            # needs a REGISTERED name, which 除雪小分队 is not -- so no ``calendar_detail`` was
+            # ever produced for the frame the tap had just opened.  Without one,
+            # ``verify_event_calendar_detail_open`` can never pass, the row is never credited,
+            # ``calendar_scan_due`` stays true, and DISCOVER_EVENT_CALENDAR is re-selected every
+            # few minutes (26 of the last 55 failures).
+            #
+            # Both halves are required, and neither is incidental:
+            #
+            #   * a date range -- a plain grid frame carries none.  That is exactly why
+            #     ``details_visible`` reads False on the grid and True on the card, so this
+            #     clause cannot fire while the grid is unobstructed;
+            #   * a start countdown -- the window alone is a preview, and this module has always
+            #     refused to promote a bare date range to a clock.  ``_COUNTDOWN_RE`` already
+            #     matches the card's ``距离开始`` and is the same pattern that sets
+            #     ``details_visible``.
+            #
+            # The candidate-title half keeps a stray range and countdown from promoting a frame
+            # that names no activity at all.  It is a **recognition** test only: which activity
+            # this is remains the geometric question answered further down, because a rule that
+            # can return several names must not be used for naming.
+            date_range is not None
+            and _COUNTDOWN_RE.search(all_text) is not None
+            and any(_candidate_title(text) for _, text in rows)
+        )
     )
     # Page identity: a registered alias at heading scale. Same rule, same reason, and the
     # same 0.03 threshold ``ocr.py`` uses for ``Page.EVENT`` -- one criterion, not two.
