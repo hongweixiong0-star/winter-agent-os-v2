@@ -2,11 +2,10 @@
   "schema_version": "1.1",
   "topic": "BEAR_PARTICIPATION_CHAIN_STATUS",
   "written_at": "2026-10-05T21:25:00+08:00",
-  "updated_at": "2026-10-09T23:45:00+08:00",
-  "updated_by": "session 2026-10-09 (bear chain re-measurement)",
+  "updated_at": "2026-10-10T08:52:00+08:00",
+  "updated_by": "session 2026-10-10 (wake consumer located in the panel, ladder measured on the real state file)",
   "question": "两个角色打巨熊，到底缺什么？",
   "one_line": "链路通的；缺的不是时序运气 —— 巨熊窗口在生产里被真机读到过 4 次，4 次都没有进入决策帧，所以 PARTICIPATE_BEAR 一次都没被生成。这是读数传递缺陷，不是运气。",
-
   "correction_20261009": {
     "what_was_wrong": "本文件 2026-10-05 的 the_gap.consequence 写的是『The agent participates only if it happens to be on the alliance war / rally list page during the window. It has never been.』—— 后半句是错的。",
     "what_the_frames_say": "agent 在窗口内确实到过集结页，而且窗口是活的：生产 episode 流里 state_after.events.bear 非空的记录共 4 条（67s / 73s / 165s / 13s），全部来自 LIVE_CLIENT_RALLY_ROW。",
@@ -14,7 +13,6 @@
     "why_it_looked_like_timing": "4 条读数都挂在非巨熊目标上（SCHEDULED_OFFICER_PROJECT / SCHEDULED_BROTHERS_IN_ARMS / OBSERVE_FISHING_STATE x2），skill 全是 BACK，观察到的变化是 PAGE_CHANGED —— 看起来像『随机路过』。但它们不是重试帧也不是陈旧帧，after_screenshot 是该步自己的 after，所以是真实到达，只是到达之后下一帧的 before 里 bear 已经没了。",
     "correction_of_the_correction": "本文件 2026-10-05 同时写着『the reader 不是原因』—— 这条仍然成立，本条更正不推翻它。reader 是对的：目标词表 RALLY_TARGET_WORDS[BEAR]=('变异巨熊','巨熊') 在 rally.py:193，2026-09-27 真机读到过『等级1变异巨熊』-> target_type=BEAR。"
   },
-
   "verified_working_20261005": {
     "reach_the_page": {
       "goal": "DISCOVER_BEAR_RALLY_LIST",
@@ -45,7 +43,6 @@
       "proof": "2026-10-05T12:39:52Z events.bear = {status: ACTIVE, remaining_seconds: 73, source: LIVE_CLIENT_RALLY_ROW}"
     }
   },
-
   "the_gap": {
     "statement": "PARTICIPATE_BEAR 只在 world.events['bear'] 已存在时才生成（goal_library.py:1567），而该字段只在 agent 站在会打印巨熊的页面上时才写入。所以驱动参战的那个目标，无法由揭示窗口的那次页面访问创建出来。",
     "consequence_corrected": "agent 确实到过那个页面（4 次，窗口都是活的），但读数没有进入下一帧的决策状态，所以目标从未生成、动作从未发出。",
@@ -70,14 +67,12 @@
       "role 1061663148's ability（它 13:26Z 那两帧就是带着活窗口的，能力未测得，不是缺失）"
     ]
   },
-
   "the_second_path_and_why_it_cannot_work": {
     "goal": "SCHEDULED_BEAR_HUNT",
     "episodes": 47,
     "result_split": "31 SUCCESS（全是 OPEN_HOME / BACK 的路由跳），16 FAILURE",
     "failure_breakdown": "14 x READ_EVENT_CALENDAR，failure_type=EVENT_CALENDAR_READ_NOT_PROVEN，verifier_evidence={'calendar_recognized': false, 'visible_dates': [], 'entry_count': 0}；1 x SAFE_STOP；1 x OPEN_HOME",
     "why_it_cannot_work": "READ_EVENT_CALENDAR 是全局活动日历的读者，而巨熊不是日历排期活动。外部一手确认：巨熊由联盟 R4/R5 手动开启狩猎陷阱，联盟冷却 47.5 小时（约每 2 天一次），开放窗口 30 分钟；官方指南明说『查看游戏内活动计时器和报名窗口』『设个提醒别错过开始』『官员公告时间』。所以窗口时间不在全局日历上，这条路读不到是结构性的。",
-
     "root_cause_wiring_20261010": {
       "verdict": "机制全都有，缺的是接线 —— 而且不是一处，是两处（§三·八 第十五条 的『字段没人消费』+『route 缺映射』）。",
       "already_correct_in_the_repo": {
@@ -103,7 +98,6 @@
         "why": "本条把下一步定成『补一条到达狩猎陷阱页的 route』。补做阶梯第 2 步（读 knowledge/external/external_capability_map.json 的 BEAR_TRAP_PARTICIPATION 卡片）后证明这是错的目标。",
         "kept_for": "留证：这说明跳过 reused_check / external prior 两步会导出看似合理但方向错误的结论。"
       },
-
       "correction_20261010_not_the_trap_page": {
         "what_was_wrong": "下一步不是『补一条到狩猎陷阱页的 route』。",
         "why": "阶梯第 2 步一打开 external_capability_map.json 就有答案：BEAR_TRAP_PARTICIPATION 卡片的 reuse_note（2026-10-05 按 reuse_check 裁决写回）已经写明『WHERE THE TIME IS ACTUALLY PUBLISHED』，并给出已 CONFIRMED 的读数。本次补做后确认：狩猎陷阱页读的是 cooldown / 距开始（registry next_open_condition 的读法），而【预约自动开启 <datetime>】这个排期公布在【常规活动】页的任务条里 —— 两者是不同的读数，排期以常规活动页为准。",
@@ -178,7 +172,6 @@
     ],
     "also_measured": "该目标 2026-10-05T12:21Z 之后再无 episode（10-06/10-07/10-08 各 0 条），而同一时期 agent 在跑。"
   },
-
   "the_budget_that_has_no_run_boundary": {
     "observation": "capability_bootstrap.DEFAULT_BUDGET 声明 max_bootstrap_visits_per_run=1、max_bootstrap_attempts=1，但两个计数器都没有可用的运行边界。",
     "evidence": [
@@ -191,7 +184,6 @@
     "status": "NOT_FIXED_NEEDS_OPERATOR_DECISION",
     "why_not_fixed": "改的是 2026-10-01 操作者指令 §二十四 定下的预算，属设计决定；且 V2 当前未运行，改动无法实机验证。按 §三·八 第十九/二十条，先报冲突与替代方案，不擅自实现。"
   },
-
   "the_wake_half_exists_and_has_no_feeder_20261010": {
     "one_line": "『何时行动』那一半不是缺的 —— 它存在、已接线、也被消费。缺的是【巨熊印刷排期的那句话】没有一个生产读者，喂给它的是一条与巨熊无关的字段。",
     "corrects": "external_capability_map.json 的 BEAR_TRAP_PARTICIPATION.current_gap 写『V2 has no time-window concept and no preemption』。本次代码级复核后，前半句不成立：时间窗概念存在。",
@@ -230,7 +222,6 @@
       }
     }
   },
-
   "the_gate_is_built_for_the_wrong_state_20261010": {
     "one_line": "到达巨熊的那条路，上游帧在项目自己的磁盘上就是全的（30+ 帧）；挡住的不是导航，是 ocr.py 那个门：它是为『还没开窗』设计的，窗口一开它反而认不出。",
     "coverage_snapshot_20261010": {
@@ -285,7 +276,6 @@
       "blocked_on": "设备。屏幕上有付费弹窗，且 operator 的 com.xm.wujindongri 仍在跑（5 个进程，7 小时未变）。"
     }
   },
-
   "live_session_20261010T0745_what_the_client_actually_shows": {
     "one_line": "第一次在当前客户端上做真机读数（此前三个提交都没有实机验证）。四条实测：向前滑动确实有效；今天条上没有巨熊；生产读者在这条上只读到 1 个页签并声称日历不可见；客户端自己印『北京时间』。",
     "evidence_root": "dataset/evidence/live_regular_activity_20261010T0745/",
@@ -301,7 +291,14 @@
       "meaning": "cbcb6d2e 补的那个朝末端手势在真机上确实推动条 —— 这是它第一次得到实机证据（此前 124/349 次 NOT_PROVEN 全是朝起点方向）。"
     },
     "2_今天条上没有巨熊": {
-      "the_whole_strip_today": ["日历", "最强王国", "变革的乐章", "决战王城", "堡垒争夺", "社区"],
+      "the_whole_strip_today": [
+        "日历",
+        "最强王国",
+        "变革的乐章",
+        "决战王城",
+        "堡垒争夺",
+        "社区"
+      ],
       "巨熊行动": "不在条上（三次向前滑到底仍未见）",
       "reading": "当前客户端没有挂着巨熊窗口。与外部证据一致：由 R4/R5 手动开启、联盟冷却约 47.5 小时，不是每天固定时刻。"
     },
@@ -313,7 +310,10 @@
         "how": "用真实方法 rt._regular_event_hub_on_frame(那一帧)，配一个把 recognize(frame, roi=...) 实现为『按 ROI 裁剪后再跑生产 OCR』的假服务",
         "result": {
           "display_name": "最强王国",
-          "tabs": ["日历", "变革的乐章"],
+          "tabs": [
+            "日历",
+            "变革的乐章"
+          ],
           "calendar_tab_visible": true,
           "scroll_to_start_norm": null,
           "scroll_to_end_norm": null
@@ -324,7 +324,6 @@
       "why_the_pinned_gate_is_right": "既然裁剪补齐存在，内层 read_regular_event_hub 的 >= 2 就是【保守的内层判断】而不是缺陷 —— 它只负责整帧那一遍，补齐由外层负责。71056664 的撤回因此是对的（虽然当时给的理由是错的）。",
       "the_real_lesson": "宣布一个读者坏了之前，必须调【生产入口】，不是内层 helper。本条与 cc97315b / 782823b4 一起构成本会话的四次更正：三次在部分证据上，这一次是【量错了函数】。"
     },
-
     "4_客户端自己印出时区": {
       "observed": "城市视图顶部通知条：『新增待办：据点争夺-3级科技工程站，将于北京时间2026-10-11 07:11:00 开启』（OCR 分两行读出，两行都含『北京时间』）",
       "why_it_matters": "这是【客户端自己】给出的时区字样，比『此前所有探针都记 +08:00』强得多。timed_event_readiness 的 time_rule 禁止从本机时区推断游戏时区 —— 而『北京时间』不是推断，是客户端说的。",
@@ -332,17 +331,34 @@
     },
     "device_note": "本次是操作者明确授权后进行的（『弹窗你自己点掉』）。清弹窗只用 KEYCODE_BACK，全程没有一次点击落在付费按钮上。operator 的 com.xm.wujindongri 仍有 5 个进程在跑 —— 每次读数都受此影响，本目录的帧是唯一可用的当前客户端证据。"
   },
-
   "live_verification_20261010T0750_the_chain_ran_on_the_client": {
     "one_line": "把三条提交拿到真机上串起来跑：生产入口、裁剪补齐、向前滑动、日历读者 —— 全部在当前客户端上通过；并且发现【巨熊行动的页签此刻就在条上】。",
     "evidence_root": "dataset/evidence/live_regular_activity_20261010T0745/",
     "how": "用真实 OCR 服务走生产入口：OCRService(RapidOCRBackend()) 塞进 rt.vision.ocr，再调 rt._regular_event_hub_on_frame(帧)。不是模拟，是生产那个函数。",
     "1_生产入口在常规活动页上通过": {
       "frame": "regular_activity_production_run.png",
-      "reading": {"recognized": true, "display_name": "最强王国", "event_id": "STATE_VS_STATE",
-                  "tabs": ["日历", "变革的乐章"], "calendar_tab_visible": true,
-                  "tab_positions_norm": {"日历": [0.19028, 0.13359], "变革的乐章": [0.74236, 0.13359]},
-                  "scroll_to_start_norm": null, "scroll_to_end_norm": null},
+      "reading": {
+        "recognized": true,
+        "display_name": "最强王国",
+        "event_id": "STATE_VS_STATE",
+        "tabs": [
+          "日历",
+          "变革的乐章"
+        ],
+        "calendar_tab_visible": true,
+        "tab_positions_norm": {
+          "日历": [
+            0.19028,
+            0.13359
+          ],
+          "变革的乐章": [
+            0.74236,
+            0.13359
+          ]
+        },
+        "scroll_to_start_norm": null,
+        "scroll_to_end_norm": null
+      },
       "proof_the_crop_pass_ran": "OCRService.timing_calls = 2（整帧 1 次 + ROI 裁剪 1 次）",
       "why_it_matters": "这同时坐实了 01dbdc28 的更正：整帧读不到 日历，裁剪补齐把它拿回来了；而『不给滑动』是正确答案，因为 日历 就在屏上。"
     },
@@ -384,7 +400,6 @@
       ],
       "not_completed": "没有拿到【点进巨熊页并读到 预约自动开启】的真机证据。624de00f 的读者目前只有离线帧证据（2026-09-27 那张 p11_bear_page.png）。"
     },
-
     "3c_有界探针_同帧读点": {
       "tool": "tools/probe_tap_a_regular_event_tab.py",
       "shape": "取设备租约 → 循环（抓帧 → 用生产入口 _regular_event_hub_on_frame 读 → 若目标页签在 tab_positions_norm 里就【立刻】点 → 否则滑一格再看），最多 6 次；目标不在读数里就绝不点。",
@@ -402,12 +417,19 @@
         "not_fixed_in_config": "没有改 config/v2.json —— 那是生产配置，改它属于另一件事（而且运行时的取帧路径可能另有解析）。**记下来：它现在是过期的。**"
       }
     },
-
     "3d_点进巨熊页并读到排期_624de00f 的真机端到端": {
       "outcome": "成功。工具在同帧读到并点中了巨熊页签，随后 read_printed_reservation 从【当前客户端】读出排期。",
       "the_frame_that_landed": {
-        "tabs": ["决战王城", "堡垒争夺", "存戏", "巨熊行动"],
-        "tapped": [232, 171],
+        "tabs": [
+          "决战王城",
+          "堡垒争夺",
+          "存戏",
+          "巨熊行动"
+        ],
+        "tapped": [
+          232,
+          171
+        ],
         "inside_band": true,
         "attempt": 14,
         "step_px": 60
@@ -421,7 +443,11 @@
         "title": "巨熊行动",
         "body": "【变异巨熊】，可获得大量装备 / 联盟开启陷阱捕获 / 材料与奖励。/ 陷阱可持续30分钟，盟友协力造成的总伤害越高，奖励越多。",
         "reservation_line": "预约自动开启： 2026-10-1120:30",
-        "buttons": ["开启", "伤害奖励", "陷阱强化"],
+        "buttons": [
+          "开启",
+          "伤害奖励",
+          "陷阱强化"
+        ],
         "等级5": true
       },
       "the_reader_s_output": {
@@ -438,17 +464,40 @@
       "motion_blur": "滚动中的页签标签 OCR 很抖（同一轮里读到 存戏/订动/决战王/争霸赛/盟争霸赛）。探针只在目标标签【出现】时点，并把当时的 tabs 全量写进台账，不做模糊匹配。",
       "what_this_closes": "624de00f 在此之前只有 2026-09-27 那张离线帧作为证据；现在它有了当前客户端的真机证据，而且读出的 client_raw 与那次 CONFIRMED 记录同型（『预约自动开启： yyyy-MM-ddHH:mm』）。"
     },
-
     "4_日历读者在当前客户端上完全正常": {
       "frame": "probe_frame.png（= 日历视图）",
-      "reading": {"recognized": true,
-                  "visible_dates_raw": ["10/08","10/09","10/10","10/11","10/12","10/13","10/14"],
-                  "entries": ["DISCOVERED_EVENT_DC53E03FB8","DISCOVERED_EVENT_A33B0DC6E9","EXCLUSIVE_GEAR_FORGE","DISCOVERED_EVENT_6F33C054CA","DISCOVERED_EVENT_2CED2A762E","DISCOVERED_EVENT_6F33C054CA"]},
+      "reading": {
+        "recognized": true,
+        "visible_dates_raw": [
+          "10/08",
+          "10/09",
+          "10/10",
+          "10/11",
+          "10/12",
+          "10/13",
+          "10/14"
+        ],
+        "entries": [
+          "DISCOVERED_EVENT_DC53E03FB8",
+          "DISCOVERED_EVENT_A33B0DC6E9",
+          "EXCLUSIVE_GEAR_FORGE",
+          "DISCOVERED_EVENT_6F33C054CA",
+          "DISCOVERED_EVENT_2CED2A762E",
+          "DISCOVERED_EVENT_6F33C054CA"
+        ]
+      },
       "verify_conditions": "dates>=2 ✓ entries>=1 ✓ ⇒ 只差上层把这一帧判成 Page.EVENT",
       "why_it_matters": "这正是生产里 14/14 全失败的那个读者（EVENT_CALENDAR_READ_NOT_PROVEN / calendar_recognized=false）。它没有坏 —— 那 14 次站在【HUB 帧】上，而站在【日历帧】上它读得完全正确。所以问题一直是【把读取票发到了哪一帧】，不是读者。"
     },
     "5_日历上今天的活动清单里没有巨熊": {
-      "listed_for_1010": ["除雪小分队", "神秘藏宝室", "专属装备铸炼", "英雄集结", "旅途的收获", "英雄集结"],
+      "listed_for_1010": [
+        "除雪小分队",
+        "神秘藏宝室",
+        "专属装备铸炼",
+        "英雄集结",
+        "旅途的收获",
+        "英雄集结"
+      ],
       "client_clock_on_that_frame": "2026-10-10 07:52:18，且 星期六 10/10 为选中列",
       "client_s_own_disclaimer": "页脚印着『所有活动的最终开放情况以游戏内为准』 —— 客户端自己声明日历不是权威。",
       "reading": "今天排期里没有巨熊，但条的页签里【有】巨熊行动 —— 两者不矛盾（页签可以是因为冷却/可开启状态而在，而日历只列当天已排的活动）。这与外部证据一致：由 R4/R5 手动开启，不是日历排期。"
@@ -458,7 +507,6 @@
       "note": "这是活动身份映射的覆盖缺口，不是读者缺陷；记下来因为 `advertised_but_unread_activities` 那类判断依赖它。"
     }
   },
-
   "self_review_20261010T0809_the_new_wake_s_blast_radius": {
     "why": "1a17741a 让排期第一次有可能写出一个【36 小时后】的唤醒。写完之后我先查它会不会把系统按到那时候 —— 这是实现后的复核，只不过复核的是调度面。",
     "what_it_touches": [
@@ -472,7 +520,6 @@
     "verdict": "SAFE，且判据是两个具体事实（24 小时上限、只在 GLOBAL_WAIT 生效），不是一个印象。",
     "not_measured": "没有跑起来验证。这是读代码 + 算术得到的结论；真实的一次 GLOBAL_WAIT 下的等待时长仍未实机观测。"
   },
-
   "system_was_down_32h_and_is_up_again_20261010T0813": {
     "one_line": "V2 从 2026-10-09 07:21 起停了 32 小时；根因是那次启动走的是第三条路径（绕过 pin 校验、且活不过调用轮）。已用计划任务正确拉起，跑的是 3580bf27。",
     "evidence_it_was_down": {
@@ -510,7 +557,10 @@
       "the_two_failures_left_open": {
         "skill": "OPEN_EVENT_CALENDAR_DETAIL",
         "history": "全流 37 条，35 SUCCESS；仅有的 2 条 FAILURE 就是这两条",
-        "reasons": ["open_next_uninspected_visible_calendar_entry", "ONLINE_UNKNOWN_NAVIGATION:EVENT_CALENDAR_DETAIL_NOT_PROVEN"],
+        "reasons": [
+          "open_next_uninspected_visible_calendar_entry",
+          "ONLINE_UNKNOWN_NAVIGATION:EVENT_CALENDAR_DETAIL_NOT_PROVEN"
+        ],
         "not_attributed": "没有归因。两个候选：① 它就在我手动导航留下的【日历视图】上接着干活，而日历的 6 条 entry 里 5 条是 DISCOVERED_EVENT_<hash>（身份未解析），详情很可能没有可点的定位；② 我的改动弄坏了它。样本只有 2 条，不足以区分 —— 记下来，让它继续跑再看。"
       }
     },
@@ -543,7 +593,6 @@
       "why_i_got_it_wrong": "我的探针用裸 adb devices 判断『在连的设备』，而没有人替它 connect 过 —— 那是【我的探针的视角】，不是配置的错。resolve_serial 的回退仍然有用（探针在面板没跑时确实需要它），但把它说成 config 过期是错的。"
     }
   },
-
   "tomorrow_s_wake_has_no_reservation_20261010T0824": {
     "one_line": "查持久化预约：两个【活跃角色】的 BEAR_HUNT reserved_start 都是 None。⇒ 明晚 20:00 不会有唤醒。原因是链条上游缺一环：没有任何东西会去读巨熊页。",
     "the_state_measured": {
@@ -602,7 +651,6 @@
     },
     "the_honest_statement_about_tomorrow": "按当前代码与状态，明晚 20:00 不会有唤醒把运行时叫起来，因为没有任何预约。先前那句『让它自己走完』的前提【不成立】—— 我查了状态才发现。"
   },
-
   "role_status_20261005": {
     "1063040265": {
       "verdict": "READY",
@@ -617,14 +665,12 @@
       "detail": "recorded as BEAR_HUNT's measured role in knowledge/events/bear_hunt_time_20260928.json; the operator named two roles, so it is not reported by tools/bear_two_role_readiness.py"
     }
   },
-
   "user_policy_that_does_not_change": {
     "manual_join_required": true,
     "auto_join_supported_for_bear": false,
     "note": "BEAR_AUTO_JOIN's wording 『开启后自动加入冰原巨兽集结』 belongs to ICEFIELD_BEAST, not 巨熊行动",
     "source": "knowledge/events/bear_rally_rules.json"
   },
-
   "proposed_minimal_fix": {
     "status": "PROPOSED_NOT_IMPLEMENTED",
     "shape": "让『窗口是活的』这个读数能跨过一帧。当某帧的观察结果给出 events['bear'] 且 status=ACTIVE / remaining_seconds>0 时，把该事实带进下一步的决策状态（以 remaining_seconds 为有效上限，过期即失效），使 goal_library.py:1567 在紧随其后的一帧上能生成 PARTICIPATE_BEAR。",
@@ -642,7 +688,6 @@
       "窗口开着但当前不在集结页时，应该由谁导航过去（现有 DISCOVER 入口受 BTN_ALLIANCE_WAR 红点门限制，§七.1 又不许反复找还没出现的入口）"
     ]
   },
-
   "next_step": {
     "order": [
       "1. 先就 proposed_minimal_fix 的 open_design_questions 做设计决定（挂在哪、谁导航），再动代码",
@@ -652,7 +697,6 @@
     ],
     "command": "E:\\无尽冬日智能体\\.venv\\Scripts\\python.exe tools\\bear_two_role_readiness.py --verify-frames 3"
   },
-
   "sources": [
     "learning/episodes.jsonl（10371 条，本次全部重放）",
     "learning/goal_state.json",
@@ -672,5 +716,42 @@
     "winter_agent_v2/brain.py",
     "winter_agent_v2/verifier.py",
     ".workbuddy-ai/handoff/ACTIVITY_TICKET_ASKS_THE_WRONG_PAGE_20261005.md"
-  ]
+  ],
+  "the_wake_is_wired_at_the_panel_not_in_the_runtime_20261010T0852": {
+    "one_line": "我先前写的『reserved_start 唯一的消费者是优先级加成，wait/next_action 命中 0 处』是【搜索范围错误】。那次搜索只覆盖了 winter_agent_v2/，而消费它的那一半在 tools/control_panel.py —— AUTO 轮次之间的等待会被压到下一个阶梯边界。已用真状态文件在真实时刻上实测。",
+    "corrects": "本文件的 correction_20261010b_the_reservation_is_only_a_priority。那一条的『唯一的消费者是优先级加成』在当时是对的（加成确实只在 runtime.py:1715 被算），但它把结论扩大成了『没有真正的 wait』——这一步是错的。",
+    "why_my_search_missed_it": "我搜的是 `runtime.py` 这个文件里有没有 wait/sleep/next_action 消费 reserved。而唤醒的消费者根本不从 runtime.py 读盘：control_panel.py 自己在规划下一轮之前重新 `event_schedule.load()` 一次。按文件搜索回答的是『这个文件里有没有』，而我把它当成了『这个系统里有没有』。",
+    "the_chain_measured": {
+      "step_1": "tools/control_panel.py:9196 把 `bound_ms=activity_bounded_wait_ms` 传进 next_cycle_delay",
+      "step_2": "next_cycle_delay 在 control_panel.py:1363-1364 用 bound_ms 收紧 delay_ms（`delay_ms = int(bound_ms(delay_ms))`）",
+      "step_3": "activity_bounded_wait_ms 在 control_panel.py:1309-1318 调 event_schedule.bounded_poll_delay_seconds(ms/1000, event_schedule.load())",
+      "step_4": "bounded_poll_delay_seconds (event_schedule.py:266) = min(普通轮询间隔, seconds_until_next_transition)，后者取 min over roles 的『距下一个 T30/T15/T5/T1/OPEN 边界』",
+      "step_5": "所以预约确实会让面板【提前醒来】停在边界上，而不是等满普通间隔"
+    },
+    "the_second_half_that_makes_this_safe": "GLOBAL_WAIT 被登记在 runtime_snapshot.py:165 EXPECTED_NO_ACTION_STOPS 里（注释写明『the panel already plans a scheduled wakeup for it』）。它一度没被登记，于是 classify_stop_reason 落到 SYSTEM_FAILURE，面板 healthy=false，AUTO 被停 —— 而一旦被停，那个 scheduled wakeup 就永远跑不到。所以『会唤醒』与『醒了不被判成故障』是两件必须同时成立的事，第二件曾单独坏过。",
+    "the_measurement": {
+      "tool": "tools/probe_the_armed_reservation_reaches_the_ladder.py（本提交新增）",
+      "input": "真实状态文件 learning/timed_event_schedule.json，不是 fixture",
+      "route_check": "route_for('PARTICIPATE_BEAR') = 'ALLIANCE'（不为 None）⇒ runtime.py:1687 的 route 门不会挡住巨熊的加成",
+      "ladder_on_the_armed_reservation": {
+        "北京 2026-10-11 19:59:26 (T-31)": "IDLE bonus 0.0，wake 60s（正好落在 T-30）",
+        "北京 2026-10-11 20:00:26 (T-30)": "T30 bonus 40.0，wake 900s（落在 T-15）",
+        "北京 2026-10-11 20:15:26 (T-15)": "T15 bonus 200.0，wake 600s（落在 T-5）",
+        "北京 2026-10-11 20:25:26 (T-5)": "T5 bonus 2000.0，wake 240s（落在 T-1）",
+        "北京 2026-10-11 20:29:26 (T-1)": "T1 bonus 2000.0，wake 60s（落在 OPEN）",
+        "北京 2026-10-11 20:30:26 (OPEN)": "OPEN bonus 4000.0，wake none（窗口内交给普通轮询节奏）"
+      },
+      "the_capped_wait_table": {
+        "T-35 请求 600s": "→ 300s",
+        "T-17 请求 600s": "→ 120s",
+        "T-3 请求 600s": "→ 120s",
+        "T-0.5 请求 600s": "→ 30s",
+        "T+1 请求 600s": "→ 600s（前方无边界，保持普通轮询）"
+      },
+      "both_active_roles": "1063040265 与 1061663148 的 BEAR_HUNT 行都读到同一预约，阶梯一致；learning/roles/ 下正好是这两个 id，与键 `{role_id}|{event_id}` 的一半相吻合。"
+    },
+    "what_the_probe_also_settled_the_open_rung": "阶梯在 T-0 处返回 OPEN/4000，但 runtime.py:1704-1714 只有在【同一角色】也在 15 分钟内真机读到 live_window_state=OPEN 时才付这 4000。当前两个活跃角色的 live_window_state 都是 SCHEDULED_NOT_OPEN ⇒ OPEN 加成是 WITHHELD，这是【正确的】状态，不是缺陷：时钟可以把运行时叫醒，但它不能证明活动已经开。T30/T15/T5/T1 的 40/200/2000/2000 会照常发放；4000 需要现场证据。",
+    "what_this_still_does_not_fix": "喂给预约的那一环仍然只能靠人手（tools/record_a_printed_reservation_from_a_frame.py），因为【没有任何目标会去常规活动页签条上选中巨熊页签】—— 见本文件 tomorrow_s_wake_has_no_reservation_20261010T0824。本次证明的是【一旦预约在册，唤醒与加成两者都会发生】，不是【预约能自己产生】。",
+    "how_to_re_check": "python tools/probe_the_armed_reservation_reaches_the_ladder.py —— 退出码 0 表示在册预约仍能逐级登梯并收紧 AUTO 等待。"
+  }
 }
