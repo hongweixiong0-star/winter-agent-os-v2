@@ -514,6 +514,21 @@
         "not_attributed": "没有归因。两个候选：① 它就在我手动导航留下的【日历视图】上接着干活，而日历的 6 条 entry 里 5 条是 DISCOVERED_EVENT_<hash>（身份未解析），详情很可能没有可点的定位；② 我的改动弄坏了它。样本只有 2 条，不足以区分 —— 记下来，让它继续跑再看。"
       }
     },
+    "the_repeating_calendar_detail_failure_20261010T0820": {
+      "state": "启动后 21 条：14 SUCCESS / 7 FAILURE。失败有界 —— 撞一次、BACK 退出、换目标成功（最近 8 条是邮件链 MailClaim 连续成功）。没有卡死在同页。",
+      "two_failure_shapes": [
+        "SEMANTIC_TARGET_NOT_VERIFIED / UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING，且 after_screenshot 为空 ⇒ 连详情控件在哪都没解析出来，根本没点。",
+        "EVENT_CALENDAR_DETAIL_NOT_PROVEN，verifier 期望 expected_event_id=DISCOVERED_EVENT_DC53E03FB8 而 actual 为空 ⇒ 点了，详情没开。"
+      ],
+      "my_first_hypothesis_and_its_refutation_by_evidence": {
+        "hypothesis": "今天日历的 6 条 entry 里 5 条是 DISCOVERED_EVENT_<hash>（身份未解析），所以详情打不开 —— 是内容问题，不是我改的。",
+        "refuted": "查全流 OPEN_EVENT_CALENDAR_DETAIL 的 39 条：历史上的 DISCOVERED_EVENT_<hash> 详情【多次成功打开】—— BB2077C97D x3、E1FB4AC23A x3、4178AC2F00 x2、A33B0DC6E9 x2、6F33C054CA x2，全部 SUCCESS。所以『entry 是 DISCOVERED』不是失败原因。",
+        "kinds": "期望 id 类型分布：KNOWN 21 / DISCOVERED 16 / NONE 2；35 条 SUCCESS 里既有 KNOWN 也有 DISCOVERED。"
+      },
+      "what_the_evidence_actually_says": "失败的期望 id 是 DISCOVERED_EVENT_DC53E03FB8 —— 一个【历史集合里没有的新 hash】。而它被反复重试、从不前进到那些历史上能开的 entry。所以形状更像【卡在一个打不开的 entry 上反复试】，而不是内容或缺能力。",
+      "not_attributed": "仍未归因。我的改动没有碰 calendar_next_entry 的取序，也没有碰日历详情的语义解析路径；但『没碰』不是证据。要分清需要一次 A/B：在同一台机器上以改动前的提交跑一轮日历链。此刻不打断正在跑的轮次。",
+      "top_thing_to_watch": "它是当前唯一重复的失败形状；明天的窗口更重要，所以先让它跑，但这条要盯着。"
+    },
     "correction_the_serial_is_not_stale": {
       "what_i_said_before": "本节早前（44a8e916）写『config/v2.json 的 device.serial 仍是 127.0.0.1:7555，而这台机器上的设备是 emulator-5554 ⇒ 它现在是过期的』。",
       "what_is_true": "面板自己会 connect 那个串号。它起来之后 adb devices 同时列出 127.0.0.1:7555 和 emulator-5554，而且面板预检报 MuMu OK (127.0.0.1:7555)。",
