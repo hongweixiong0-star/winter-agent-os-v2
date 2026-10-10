@@ -2,8 +2,8 @@
   "schema_version": "1.1",
   "topic": "BEAR_PARTICIPATION_CHAIN_STATUS",
   "written_at": "2026-10-05T21:25:00+08:00",
-  "updated_at": "2026-10-10T10:50:00+08:00",
-  "updated_by": "session 2026-10-10 (identity must change: measured twice; the daily carve-out is a mask)",
+  "updated_at": "2026-10-10T11:28:00+08:00",
+  "updated_by": "session 2026-10-10 (credit path fixed and A/B-verified; loop unchanged because no detail reading is produced)",
   "question": "两个角色打巨熊，到底缺什么？",
   "one_line": "链路通的；缺的不是时序运气 —— 巨熊窗口在生产里被真机读到过 4 次，4 次都没有进入决策帧，所以 PARTICIPATE_BEAR 一次都没被生成。这是读数传递缺陷，不是运气。",
   "correction_20261009": {
@@ -1058,5 +1058,44 @@
       "the_risk_that_forces_a_migration_step": "**改 id 方案会在迁移期让情况更糟**：库里现存的债务 id 是按旧方案算的，新的读数会铸出新的 id ⇒ 保证不匹配。所以任何身份改动都必须**同时**给出旧 id 的别名/迁移，而不能只换算法。",
       "status": "**方向已定（必须改身份），实现与迁移方案未设计**。生产代码一行未改。"
     }
+  },
+  "the_credit_is_fixed_but_the_loop_continues_20261010T1128": {
+    "one_line": "记账那一环已修并离线验收通过（`f9b6ee60`），但**生产里循环照旧** —— 因为卡帧上**根本不会产生 detail 读数**，新回退没有东西可记。阻塞点 2 已精确诊断到三个判据全 False。诚实结论：这一步是**必要但不充分**。",
+    "what_was_fixed_and_verified": {
+      "commit": "f9b6ee60 fix(events): credit a detail by its own dates when OCR changed the identifier",
+      "located_at": "runtime.py:2424 与 event_schedule 的 EVENT_DETAIL 分支，两处都按 detail 自己的 event_id 过滤行",
+      "the_rule_applied": "_prior_calendar_row 的原话：『Date evidence is required when OCR changes an identifier.』",
+      "new_function": "event_schedule.row_covering_the_details_window(reading, rows) —— 用详情自印日期与未查看且有 tap_norm 的行相交，恰好一行才认",
+      "offline_acceptance": {
+        "tests": "tests/test_calendar_detail_attribution.py 12 passed（新增 7 条）",
+        "probe_before": "debt (X,) -> (X,)  matched_occurrence_key=None  exit 1",
+        "probe_after": "debt (X,) -> ()    matched_occurrence_key=X|10/13|10/14  exit 0",
+        "ab": "after 24 failed/769 passed vs before 29 failed/764 passed；FAILED-only-after = {} 零回归"
+      },
+      "guard_the_ab_forced": "第一版回退过宽，打破了 test_a_credit_is_refused_when_two_occurrences_of_one_event_are_uninspected：详情印的是整段档期，会与同一活动的另一次相撞。补上守卫 —— **只有当详情的 id 在行里一个都匹配不上时**回退才允许运行（即『标识符被改了』这一情形）。"
+    },
+    "but_production_shows_no_change": {
+      "measured_at": "2026-10-10T01:22Z（修好并 repin 之后）",
+      "episodes": [
+        "01:22:12 step 3 FAILURE EVENT_CALENDAR_DETAIL_NOT_PROVEN RESOLVER:CALENDAR_DETAIL_PANEL_ALREADY_VISIBLE",
+        "01:22:25 step 4 FAILURE SEMANTIC_TARGET_NOT_VERIFIED UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING"
+      ],
+      "debt_both_roles": "仍是那 4 个 id，逐字未变；calendar_scan_due 仍为 True",
+      "why": "卡帧上 read_event_detail 返回 recognized=False ⇒ events 里没有 calendar_detail ⇒ 没有任何 EVENT_DETAIL 观测到达存储层 ⇒ 新回退无从生效。**记账的路修好了，但走那条路的人还没出生。**"
+    },
+    "blocker_2_now_precisely_diagnosed": {
+      "frame": "20261010_084940_792088_step_004_before_20261010T005039829501.png",
+      "ocr_full_text_has": "常规活动 / 除雪小分队 / 除雪 / 神秘藏 / 2026-10-13 00:00 -2026-10-15 24:00 / 距离开始：2天15:09:21 / 奖励 / 英雄集结 …",
+      "the_three_predicates": {
+        "calendar_score_panel": "False —— 没有 我的积分/目标积分/本期英雄/阶段",
+        "explicit_calendar_detail": "False —— 没有 活动详情，没有 活动时间/开始时间/…，也没有 前往",
+        "identified_activity": "空 —— `_heading_scale_activity` 要求**已注册**的活动名，而 除雪小分队 未注册"
+      },
+      "so_the_card_is_unrecognisable_by_design": "详情读者要求『已注册的活动名』或『显式的详情/时间标签』；这张卡有**日期区间 + 距离开始**，却没有 活动时间 标签，标题也未注册。",
+      "the_clause_that_would_cover_it": "`date_range is not None and _COUNTDOWN_RE matches` —— 卡上印着 2026-10-13 00:00 -2026-10-15 24:00 与 距离开始：2天15:09:21，两条都在。**而且它不会在纯网格帧上误触发**：网格帧没有 date_range（这正是 details_visible=False 的原因）。",
+      "naming_is_already_handled": "标签选择那段（event_calendar.py:1012-1052）本来就处理『紧贴在日期区间上方的标题』，而 除雪小分队 正好就在区间上方 ⇒ **只缺识别判据，不缺取名逻辑**。",
+      "the_caution": "read_event_detail 的 docstring 警告过：能返回五个答案的规则不能用来**取名**。本子句只用于**识别**（是不是一张带排期的卡），取名仍走几何 ⇒ 不违反该警告。"
+    },
+    "the_honest_status": "阻塞点 1+2 决定『卡上的排期会不会被读出来』，阻塞点 3 决定『这一行会不会被记账』。本轮修了 3 的记账路径（必要且已验证），但循环要停，必须先让卡被读成一次 detail 观测。**生产代码已改的这一处，本身没有让循环变好，也没有让它变坏。**"
   }
 }
