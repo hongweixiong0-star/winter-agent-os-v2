@@ -527,6 +527,14 @@
       },
       "what_the_evidence_actually_says": "失败的期望 id 是 DISCOVERED_EVENT_DC53E03FB8 —— 一个【历史集合里没有的新 hash】。而它被反复重试、从不前进到那些历史上能开的 entry。所以形状更像【卡在一个打不开的 entry 上反复试】，而不是内容或缺能力。",
       "not_attributed": "仍未归因。我的改动没有碰 calendar_next_entry 的取序，也没有碰日历详情的语义解析路径；但『没碰』不是证据。要分清需要一次 A/B：在同一台机器上以改动前的提交跑一轮日历链。此刻不打断正在跑的轮次。",
+      "the_mechanism_found_20261010T0825": {
+        "the_tap_points_are_all_correct": "把失败那一帧上 6 条 entry 的 tap_norm 全画出来并目视核对：除雪 / 神秘藏宝室 / 专属装备铸炼 / 英雄集结 / 旅途的收获 / 英雄集结 六个红圈【全部落在对应条目上】。所以条目框的推导没有问题，不是『框错了所以点不到』。证据帧 dataset/evidence/live_bear_page_20261010T0800/calendar_tap_points_verified.png",
+        "what_the_frame_shows": "日历是 7 个日期列（10/08..10/14）。【除雪小分队】与【超值活动】是横贯整行的分区标题条；除雪是一条【窄条，画在最右的 10/14 列】，形状与其它条目不同。6 条 entry 的 details_observed 全部是 None。",
+        "the_actual_mechanism": "calendar_next_entry 只在 details_observed is not True 的条目里挑，所以它【每一次都挑第一条未检查的】—— 也就是除雪。除雪的详情开不出来（两次形状：一次是连控件都没定位到、无 after 帧；一次是点了但 verifier 找不到详情），于是下一次又是它。⇒ 这是一条【取序 + 无跳过】的链：一个打不开的条目会让后面五条永远轮不到。",
+        "why_it_is_not_my_change": "① 六个可点点经目视全部正确 ⇒ 几何/框的推导没坏，而我改的是【另一个读者】(read_regular_event_hub) 的几何守卫；② read_event_calendar 的条目提取我一行没动；③ 两次失败的形状（provider 定位不到控件 / verifier 找不到详情）都不经过我改的任何路径。",
+        "the_real_defect_and_its_bound": "真缺陷是【日历链没有『试过失败就跳过』】：一个坏的条目前置会挡住其余。但它【有界】—— 运行时撞两次就 BACK 退出、换别的目标成功（邮件链连续 8 条 SUCCESS），所以它拖慢而不是卡死整机。",
+        "proposed_fix_not_implemented": "方向：给 calendar_next_entry 一个【有界的跳过】—— 某条 entry 连续 N 次打不开就不再选它（N 小、且要对每条 entry 分别记，不能全局）。没做，因为①它要新状态，而 §三·八 第十四条要求先查有没有既有单一真值（details_observed 是最接近的，但它表示『看过』而不是『打不开』）；②明晚 20:30 的窗口比日历详情重要；③本会话已经证明在证据边界上赶工是错的。"
+      },
       "top_thing_to_watch": "它是当前唯一重复的失败形状；明天的窗口更重要，所以先让它跑，但这条要盯着。"
     },
     "correction_the_serial_is_not_stale": {
