@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "entity_class": "TIMED_EVENT_SCHEDULE",
+  "event_id": "BEAR_HUNT",
+  "activity_name": "巨熊行动",
+  "page": "常规活动 → 巨熊行动",
+  "scheduled_start_local": "2026-10-11T20:30:00",
+  "client_raw": "预约自动开启： 2026-10-1120:30",
+  "source_type": "CLIENT_DIRECT_SCHEDULE",
+  "confidence": "CONFIRMED",
+  "read_by": "tools/probe_tap_a_regular_event_tab.py（同帧读点）+ winter_agent_v2/event_calendar.read_printed_reservation",
+  "observed_at": "2026-10-10T00:02:00+00:00",
+  "observed_by": "V2 tooling on the live client (not a hand-typed read)",
+  "time_zone": null,
+  "why_the_stamp_is_naive": "客户端印的 预约自动开启 没有 offset，而 knowledge/events/timed_event_readiness.json 的 time_rule 禁止从本机时区推断游戏时区，所以 read_printed_reservation 返回朴素时间戳、并把 reserved_start_offset 置为 null。这一条【不是】读不到时区，是【不替客户端假设时区】。",
+
+  "client_timezone_statement": {
+    "text": "新增待办：据点争夺-3级科技工程站，将于北京时间2026-10-11 07:11:00 开启",
+    "where": "城市视图顶部通知条，两行 OCR 都含『北京时间』",
+    "observed_at": "2026-10-10T07:45:00+08:00",
+    "evidence_frame": "dataset/evidence/live_regular_activity_20261010T0745/city_after_clearing_the_purchase_popup.png",
+    "what_it_supports": "客户端【自己】把它的时间标注为『北京时间』。这比『此前所有探针都记 +08:00』强，因为那不是从本机时区推断出来的。",
+    "why_it_is_not_fused_into_scheduled_start_here": "它是在另一个活动（据点争夺）的通知上出现的。把它当成『所有客户端时间都是 +08:00』的证明属于外推；本轮只把它作为【来源】记下，不替客户端把 offset 填进上面那个字段。要让排期产生唤醒，需要一个被声明的 offset —— 而唤醒现在已由 b4704288 用【时长】给出，所以这一条不阻塞。"
+  },
+
+  "how_it_was_read": {
+    "why_a_probe_and_not_hand_typed_adb": "常规活动的页签条会回到选中页签，且 巨熊行动 只在某些滚动位置可见。抓帧与点击之间隔一次 OCR（约 1.5s）加上条自身的回位，位置就已经变了 —— 人工多步点错过一次，落在了 日历 上。",
+    "the_probe": "tools/probe_tap_a_regular_event_tab.py：取设备租约 → 循环（抓帧 → 生产入口 _regular_event_hub_on_frame 读 → 目标页签在 tab_positions_norm 里就立刻点 → 否则滑一格再看）。读到才点，读不到不点。",
+    "the_step_that_mattered": "步长 60px。用半屏滑动时条只在两个位置之间来回（变革的乐章/日历 与 决战王城/堡垒争夺/社区，24 次尝试 12:12 交替），而 巨熊行动 正好在两者之间，被每一步跨过去。改成 60px 小步后第 14 次就落在 tabs=['决战王城','堡垒争夺','存戏','巨熊行动'] 上并点中。这与项目那个唯一到过该页的探针自己的说法一致：『walk the strip in 60 px nudges』。",
+    "motion_blur_note": "滚动中的页签标签 OCR 很抖（同一轮里读到 存戏 / 订动 / 决战王 / 争霸赛 / 盟争霸赛）。所以匹配目标标签时不能要求高置信度；但也不能因此接受模糊匹配 —— 探针只在目标标签【出现】时点，并把当时的 tabs 全量记进台账。"
+  },
+
+  "evidence_frames": [
+    "dataset/evidence/live_bear_page_20261010T0800/strip_before_tap_showing_bear_tab.png —— 点击前那一帧（条上含 巨熊行动）",
+    "dataset/evidence/live_bear_page_20261010T0800/bear_page_live_20261010.png —— 点开后的巨熊行动页，含 预约自动开启： 2026-10-1120:30"
+  ],
+
+  "operational_consequence": "巨熊行动的窗口在北京时间 2026-10-11 20:30 开。这是本会话第一次从【当前客户端】读到它的排期（此前唯一一条 CONFIRMED 是 2026-09-27 那次）。",
+
+  "recorded_at": "2026-10-10T00:02:00+00:00"
+}

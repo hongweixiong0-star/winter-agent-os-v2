@@ -43,12 +43,6 @@ if str(ROOT) not in sys.path:
 #: Enough to walk a strip that holds six tabs, and few enough that a strip which never shows the
 #: target gives up instead of grinding.
 MAX_ATTEMPTS = 6
-#: The point the swipe is drawn between, in the strip's own band.  Only the BAND is reused from
-#: the reading; the length is the frame's, not a constant, because a strip that has stopped
-#: moving does not care how far the gesture was.
-SWIPE_FRACTION = 0.72
-
-
 def attached_serials(adb: str) -> list[str]:
     """Which devices adb currently sees as usable."""
     done = subprocess.run([adb, "devices"], capture_output=True, text=True, check=False)
@@ -75,6 +69,13 @@ def resolve_serial(adb: str, preferred: str) -> tuple[str, bool]:
 def main(argv: list[str]) -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     target = argv[1] if len(argv) > 1 else "巨熊行动"
+    # Patience is a parameter, not a rewrite: the strip only shows some tabs at some scroll
+    # positions, so a run that stops at six can honestly report "not there" while a longer run
+    # is still the same probe.
+    attempts_arg = int(argv[2]) if len(argv) > 2 else MAX_ATTEMPTS
+    # Gesture LENGTH is a parameter of the walk; the gesture's POSITION still comes from the
+    # band this frame reported.  A half-screen step stepped over a whole tab position.
+    step_px = int(argv[3]) if len(argv) > 3 else 60
 
     cfg = json.loads((ROOT / "config" / "v2.json").read_text(encoding="utf-8"))
     adb = cfg["device"]["adb_path"]
@@ -96,7 +97,7 @@ def main(argv: list[str]) -> int:
         print(json.dumps({"refused": why}, ensure_ascii=False))
         return 2
 
-    out: dict = {"target": target, "attempts": [], "serial": serial,
+    out: dict = {"target": target, "attempts": [], "step_px": step_px, "serial": serial,
                  "serial_substituted_for_config": substituted,
                  "configured_serial": cfg["device"]["serial"],
                  "evidence": str(evidence.relative_to(ROOT))}
@@ -124,7 +125,7 @@ def main(argv: list[str]) -> int:
 
         towards_end = True
         previous_tabs: list[str] = []
-        for attempt in range(1, MAX_ATTEMPTS + 1):
+        for attempt in range(1, attempts_arg + 1):
             frame = capture(f"attempt{attempt}_frame")
             hub = runtime._regular_event_hub_on_frame(frame)
             positions = hub.get("tab_positions_norm") or {}
@@ -158,8 +159,16 @@ def main(argv: list[str]) -> int:
             height = band.get("h_norm")
             if isinstance(top, (int, float)) and isinstance(height, (int, float)) and height > 0:
                 y_mid = round((top + height / 2) * 1280)
-                span = round(SWIPE_FRACTION * 720 / 2)
-                left, right = round(360 - span), round(360 + span)
+                # ONE TAB, NOT ONE SCREEN.  Measured 2026-10-10: with a half-screen swipe the
+                # strip only ever showed two positions, 变革的乐章/日历 and
+                # 决战王城/堡垒争夺/社区, alternating 12 and 12 over 24 attempts -- and 巨熊行动
+                # sits BETWEEN them, so it was stepped over every time.  The one probe that ever
+                # reached that tab describes its own method as "walk the strip in 60 px nudges".
+                # The step is a PARAMETER (default 60 px, the figure that probe used); where to
+                # draw it comes from the band this frame reported.  A diagnostic gesture length
+                # is not an operation position, and the position is still the frame's.
+                span = max(20, min(300, step_px))
+                left, right = round(360 - span / 2), round(360 + span / 2)
                 # Try BOTH directions, and let the strip decide -- the same rule the runtime
                 # uses (``_regular_event_hub_on_frame``'s caller alternates on whether
                 # ``tab_signature`` moved).  A fixed direction walks away from a target on the

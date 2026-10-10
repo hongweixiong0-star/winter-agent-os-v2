@@ -403,6 +403,42 @@
       }
     },
 
+    "3d_点进巨熊页并读到排期_624de00f 的真机端到端": {
+      "outcome": "成功。工具在同帧读到并点中了巨熊页签，随后 read_printed_reservation 从【当前客户端】读出排期。",
+      "the_frame_that_landed": {
+        "tabs": ["决战王城", "堡垒争夺", "存戏", "巨熊行动"],
+        "tapped": [232, 171],
+        "inside_band": true,
+        "attempt": 14,
+        "step_px": 60
+      },
+      "and_the_step_size_was_the_whole_difference": {
+        "with_a_half_screen_step": "24 次尝试只在两个位置之间来回：变革的乐章/日历 与 决战王城/堡垒争夺/社区，12:12。巨熊行动 正好在两者之间，每一步都跨过去。",
+        "with_a_60px_step": "第 14 次就落在含 巨熊行动 的滚动位置上。",
+        "corroboration": "项目那个唯一到过该页的探针，自己的注释就是『walk the strip in 60 px nudges』。"
+      },
+      "the_page_after_the_tap": {
+        "title": "巨熊行动",
+        "body": "【变异巨熊】，可获得大量装备 / 联盟开启陷阱捕获 / 材料与奖励。/ 陷阱可持续30分钟，盟友协力造成的总伤害越高，奖励越多。",
+        "reservation_line": "预约自动开启： 2026-10-1120:30",
+        "buttons": ["开启", "伤害奖励", "陷阱强化"],
+        "等级5": true
+      },
+      "the_reader_s_output": {
+        "reserved_start_time": "2026-10-11T20:30:00",
+        "reserved_start_raw": "预约自动开启： 2026-10-1120:30",
+        "reserved_start_source": "LIVE_CLIENT_PRINTED_RESERVATION",
+        "reserved_start_offset": null
+      },
+      "schedule_record": "knowledge/events/bear_hunt_time_20261010.json —— 巨熊行动 的窗口在北京时间 2026-10-11 20:30 开",
+      "evidence": [
+        "dataset/evidence/live_bear_page_20261010T0800/strip_before_tap_showing_bear_tab.png",
+        "dataset/evidence/live_bear_page_20261010T0800/bear_page_live_20261010.png"
+      ],
+      "motion_blur": "滚动中的页签标签 OCR 很抖（同一轮里读到 存戏/订动/决战王/争霸赛/盟争霸赛）。探针只在目标标签【出现】时点，并把当时的 tabs 全量写进台账，不做模糊匹配。",
+      "what_this_closes": "624de00f 在此之前只有 2026-09-27 那张离线帧作为证据；现在它有了当前客户端的真机证据，而且读出的 client_raw 与那次 CONFIRMED 记录同型（『预约自动开启： yyyy-MM-ddHH:mm』）。"
+    },
+
     "4_日历读者在当前客户端上完全正常": {
       "frame": "probe_frame.png（= 日历视图）",
       "reading": {"recognized": true,
