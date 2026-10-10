@@ -1247,6 +1247,319 @@ def _contained(
 # ------------------------------------------------------------------- the scan
 
 
+# --------------------------------------------------------------------- static drift
+#
+# A capability SPEC (``knowledge/skills/*.json``) may declare a page or a vision element that no
+# authoritative store contains.  Such a spec is not a registered skill, so it is never scheduled,
+# never attempted and never fails -- which means the ordinary failure-driven improvement loop can
+# never see it.  Measured 2026-10-10: three specs declare pages outside ``knowledge/ui/pages.json``
+# and a number of element ids resolve to nothing, while ``CAP-J02 READ_INTEL_LIST`` is meanwhile
+# marked ``implementation_status: EXISTING``.
+#
+# This is the ONE implementation of that check.  ``tests/test_declared_pages_and_elements_are_registered.py``
+# imports it rather than repeating it, so a runtime scan and a test can never disagree about what
+# counts as drift.
+
+#: An element reference is a known family prefix, or SCREAMING_SNAKE with a separator. CJK is
+#: allowed because the client prints Chinese and specs name elements after what is drawn.
+ELEMENT_PREFIXES = (
+    "PAGE_", "BTN_", "TAB_", "POPUP_", "DIALOG_", "STATUS_", "CARD_", "NAV_", "WALLET_", "TILE_",
+    "SHOP_", "TOP_BAR_", "OVERLAY_", "LIST_", "ICON_", "TEXT_", "TIMER_", "COUNTER_",
+)
+
+_STATIC_UI_FILES = (
+    "pages.json", "semantic_dictionary.json", "icon_label_controls.json", "entry_badges.json",
+    "element_types.json", "generic_semantics.json", "en_zh_semantic_map.json",
+    "navigation_matrix.json", "page_transitions.json", "semantic_evidence.json",
+    "operator_ui_requests.json", "icons/manifest.json",
+)
+
+
+@dataclass(frozen=True)
+class StaticKnowledgeDrift:
+    """One declared reference that no authoritative store contains."""
+
+    spec_file: str
+    field: str
+    missing: str
+    kind: str            # "page" | "element" | "registry"
+    skill_id: str = ""
+    detail: str = ""
+
+    def as_row(self) -> dict[str, Any]:
+        return {"spec_file": self.spec_file, "field": self.field, "missing": self.missing,
+                "kind": self.kind, "skill_id": self.skill_id, "detail": self.detail}
+
+
+def _leading_token(entry: Any) -> str:
+    """The element name an entry starts with, before any space, parenthesis or annotation."""
+    text = str(entry).strip()
+    for cut in (" ", "(", "（"):
+        text = text.split(cut)[0]
+    return text.strip()
+
+
+def _is_element_reference(token: str) -> bool:
+    if "*" in token:
+        return False          # a wildcard declaration is not resolvable statically
+    if token.startswith(ELEMENT_PREFIXES):
+        return True
+    return bool(re.fullmatch(r"[A-Z0-9_]+", token) and "_" in token)
+
+
+def _authoritative_element_corpus(root: Path) -> str:
+    """Only authoritative stores. Both of these would make the check blind and are excluded:
+    ``knowledge/skills/**`` is the DECLARING side, and ``knowledge/ui/screenshot_audit/**`` is a
+    report ABOUT the missing names."""
+    parts: list[str] = []
+    for path in sorted((root / "winter_agent_v2").glob("*.py")):
+        parts.append(path.read_text(encoding="utf-8", errors="replace"))
+    for rel in _STATIC_UI_FILES:
+        path = root / "knowledge" / "ui" / rel
+        if path.is_file():
+            parts.append(path.read_text(encoding="utf-8", errors="replace"))
+    for pattern in ("knowledge/ui/icon_templates/*", "knowledge/perception/**/*.json",
+                    "knowledge/vision/**/*.json"):
+        for path in sorted(root.glob(pattern)):
+            if path.is_file():
+                parts.append(path.name if "icon_templates" in pattern
+                             else path.read_text(encoding="utf-8", errors="replace"))
+    return "\n".join(parts)
+
+
+def _registry_view(root: Path) -> tuple[set[str], dict[str, str], set[str]]:
+    """``(skill ids, id -> state, dispatchable ids)`` from the authoritative sources.
+
+    Three authoritative sources are compared here, and they are the ones the runtime itself uses:
+    ``v2_registry()`` for the skill list and its state, and ``LiveRuntime.VERIFIED_ATOMIC`` for the
+    skills the live loop can actually dispatch (a dict whose values are the bound verifier callables).
+    Nothing is inferred from `Skill.verifier`, which is empty for 46 of the 47 VERIFIED skills because
+    the binding lives in VERIFIED_ATOMIC instead - flagging those would have been a mass false
+    positive, which is why this reads the real binding.
+    """
+    import sys as _sys
+
+    if str(root) not in _sys.path:
+        _sys.path.insert(0, str(root))
+    ids: set[str] = set()
+    states: dict[str, str] = {}
+    dispatchable: set[str] = set()
+    try:
+        from .skills import v2_registry
+
+        for skill in v2_registry().all():
+            sid = str(skill.id)
+            ids.add(sid)
+            states[sid] = str(getattr(skill.state, "value", skill.state))
+    except Exception:  # noqa: BLE001 - a scan must not need an importable registry
+        pass
+    try:
+        from .runtime import LiveRuntime
+
+        dispatchable = {str(k) for k in (getattr(LiveRuntime, "VERIFIED_ATOMIC", {}) or {})}
+    except Exception:  # noqa: BLE001
+        pass
+    return ids, states, dispatchable
+
+
+def _executable_states() -> frozenset[str] | None:
+    """The states the project itself treats as executable, or None when it cannot be read.
+
+    ``capability_coverage.EXECUTABLE_STATES`` is the authority, and it contains ``CANDIDATE`` -
+    which is the whole reason the first version of the promotion check was wrong. That version
+    compared `VERIFIED_ATOMIC` membership against `state in (VERIFIED, STABLE)` and reported 95
+    "candidate being treated as production capability" findings; in this project a CANDIDATE skill
+    is *meant* to be dispatchable, and `runtime.py` gates on `VERIFIED_ATOMIC` membership without
+    consulting `state` at all. Reading the project's own list instead of inventing one reduced that
+    to the genuinely contradictory cases.
+
+    Returns None rather than guessing when the constant cannot be imported: an unmeasured check must
+    report nothing, not everything.
+    """
+    try:
+        from .capability_coverage import EXECUTABLE_STATES
+
+        return frozenset(str(s) for s in EXECUTABLE_STATES)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _cross_registry_drift(base: Path) -> list[StaticKnowledgeDrift]:
+    """Drift between the Goal Library, the skill registry and the production dispatch table.
+
+    Three independent checks, each between two authoritative files rather than against a guess:
+
+    * a Goal Library entry naming a skill that is not registered - the goal then has no execution
+      path, and because it is never dispatched it never fails either;
+    * a skill the live loop can dispatch whose registry state still says CANDIDATE or BLOCKED, i.e.
+      a candidate being treated as production capability;
+    * a skill claiming VERIFIED that the dispatch table does not carry.
+    """
+    out: list[StaticKnowledgeDrift] = []
+    registry_ids, states, dispatchable = _registry_view(base)
+    if not registry_ids or not dispatchable:
+        return out
+
+    map_path = base / "knowledge/goals/capability_skill_map.json"
+    try:
+        goal_map = json.loads(map_path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        goal_map = {}
+    seen: set[tuple[str, str]] = set()
+    for goal in goal_map.get("goals") or []:
+        if not isinstance(goal, dict):
+            continue
+        goal_name = str(goal.get("goal") or "")
+        for capability in goal.get("capabilities") or []:
+            if not isinstance(capability, dict):
+                continue
+            names = list(capability.get("alternatives") or [])
+            names += [capability.get("implemented_by"), capability.get("live_verified_by")]
+            for name in names:
+                name = str(name or "")
+                if not name or name in registry_ids or (goal_name, name) in seen:
+                    continue
+                seen.add((goal_name, name))
+                out.append(StaticKnowledgeDrift(
+                    spec_file=map_path.name, field="implemented_by/alternatives",
+                    missing=name, kind="goal", skill_id=name,
+                    detail=f"goal {goal_name} names it but it is not in the skill registry, so the "
+                           "goal has no execution path and can never produce a failure either",
+                ))
+
+    for skill_id, state in sorted(states.items()):
+        if state == "BLOCKED" and skill_id in dispatchable:
+            # A state the project does not treat as executable, reached through the dispatch table.
+            #
+            # Classified 2026-10-10 as LOW SEVERITY, and the message says so, because a bare
+            # "contradiction" here reads as a defect and is not one: the retirement is already
+            # enforced on the decision path (a passing test asserts `decision.skill !=` a BLOCKED id),
+            # so a surviving verifier binding is dead weight. Kept reported so it can be tidied, not
+            # chased to zero - the round's own rule.
+            out.append(StaticKnowledgeDrift(
+                spec_file="winter_agent_v2/runtime.py", field="LiveRuntime.VERIFIED_ATOMIC",
+                missing=skill_id, kind="promotion", skill_id=skill_id,
+                detail=f"LOW SEVERITY / bookkeeping: BLOCKED is not in "
+                       "capability_coverage.EXECUTABLE_STATES, yet a verifier binding remains in the "
+                       "dispatch table. The retirement is still enforced on the decision path, so "
+                       "this is dead weight rather than a reachable contradiction. Tidy the binding, "
+                       "do not treat it as a live defect.",
+            ))
+        elif state in ("VERIFIED", "STABLE") and skill_id not in dispatchable:
+            out.append(StaticKnowledgeDrift(
+                spec_file="winter_agent_v2/runtime.py", field="LiveRuntime.VERIFIED_ATOMIC",
+                missing=skill_id, kind="promotion", skill_id=skill_id,
+                detail=f"LOW SEVERITY / bookkeeping: the registry says {state}, an executable state, "
+                       "but the entry is not in the dispatch table. Checked for GATHER_RESOURCE: it "
+                       "is a goal-level construct the decision layer reads via "
+                       "`brain.current_goal`, and the real verifier is bound under a different id "
+                       "(VERIFY_GATHERING), so being non-atomic is by design here. Reported for "
+                       "tidiness only.",
+            ))
+        # Deliberately NOT flagged: CANDIDATE without a dispatch entry. If the executable-state set
+        # could not be read the whole check is skipped instead of guessed.
+    if _executable_states() is None:
+        # The rule cannot be applied without knowing which states are executable, so the promotion
+        # section reports nothing rather than reporting everything.
+        out = [f for f in out if f.kind != "promotion"]
+
+    # A printed label the project's own registry places on more than one page: the same word on two
+    # pages is not page identity, and a consumer must not treat it as such.
+    labels_path = base / "knowledge/ui/icon_label_controls.json"
+    try:
+        labels = json.loads(labels_path.read_text(encoding="utf-8")).get("controls") or {}
+    except Exception:  # noqa: BLE001
+        labels = {}
+    for label, entry in sorted(labels.items()):
+        pages = (entry or {}).get("pages") or []
+        if len(pages) > 1:
+            out.append(StaticKnowledgeDrift(
+                spec_file=labels_path.name, field="controls[].pages", missing=str(label),
+                kind="ambiguity", skill_id="",
+                detail=f"registered on {' and '.join(str(p) for p in pages)}, so the printed word "
+                       "alone cannot identify the page",
+            ))
+    return out
+
+
+def static_knowledge_drift(root: Path | str) -> tuple[StaticKnowledgeDrift, ...]:
+    """Every declaration in a capability spec that resolves to nothing. Never raises.
+
+    Prose entries and wildcard patterns are NOT reported as missing - they cannot be resolved
+    statically, so reporting them would be a false positive. Only concrete references count.
+    """
+    base = Path(root)
+    try:
+        corpus = _authoritative_element_corpus(base)
+        vocabulary = set(
+            json.loads((base / "knowledge/ui/pages.json").read_text(encoding="utf-8"))["pages"])
+    except Exception:  # noqa: BLE001 - a scan must not die on an unreadable knowledge tree
+        return ()
+
+    registry_source = ""
+    skills_py = base / "winter_agent_v2/skills.py"
+    if skills_py.is_file():
+        registry_source = skills_py.read_text(encoding="utf-8", errors="replace")
+    registered = set(re.findall(r'Skill\(\s*"([A-Z0-9_]+)"', registry_source))
+
+    out: list[StaticKnowledgeDrift] = []
+    # RECURSIVE on purpose. The first version globbed `*.json` at the top level only, which missed
+    # `knowledge/skills/candidate/` entirely - 33 specs whose declarations were never checked - and
+    # could not see that the same skill_id can appear in both places with different lifecycles.
+    seen_ids: dict[str, list[str]] = {}
+    for path in sorted((base / "knowledge/skills").rglob("*.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            continue
+        if not isinstance(data, dict):
+            continue
+        skill_id = str(data.get("skill_id") or "")
+        if skill_id:
+            seen_ids.setdefault(skill_id, []).append(
+                str(path.relative_to(base / "knowledge/skills")))
+        declared_page = data.get("required_page")
+        if declared_page and str(declared_page) not in vocabulary:
+            out.append(StaticKnowledgeDrift(
+                spec_file=str(path.relative_to(base / "knowledge/skills")),
+                field="required_page", missing=str(declared_page),
+                kind="page", skill_id=skill_id,
+                detail="not in knowledge/ui/pages.json, so no page reader can emit it",
+            ))
+        for entry in data.get("required_vision") or []:
+            token = _leading_token(entry)
+            if not token or not _is_element_reference(token) or token in corpus:
+                continue
+            out.append(StaticKnowledgeDrift(
+                spec_file=str(path.relative_to(base / "knowledge/skills")),
+                field="required_vision", missing=token,
+                kind="element", skill_id=skill_id,
+                detail="not in any authoritative vision store",
+            ))
+        if skill_id and declared_page and skill_id not in registered:
+            out.append(StaticKnowledgeDrift(
+                spec_file=str(path.relative_to(base / "knowledge/skills")),
+                field="skill_id", missing=skill_id,
+                kind="registry", skill_id=skill_id,
+                detail="a specification, not a registered skill: never scheduled, so it can never "
+                       "produce a failure episode and the failure-driven loop cannot see it",
+            ))
+    for skill_id, files in sorted(seen_ids.items()):
+        if len(files) > 1:
+            # Measured 2026-10-10: READ_DAILY_PROGRESS and READ_INTEL_LIST each exist twice, and the
+            # copies disagree - the top-level one carries lifecycle LIVE_TRIED with a live frame and
+            # live_successes=1, the candidate one says CANDIDATE with live_evidence=[]. A reader
+            # asking "what is this skill's state" gets two answers, so one of them is stale.
+            out.append(StaticKnowledgeDrift(
+                spec_file=", ".join(files), field="skill_id", missing=skill_id,
+                kind="duplicate", skill_id=skill_id,
+                detail=f"{len(files)} spec files declare this skill_id ({', '.join(files)}); a "
+                       "reader cannot tell which state is current",
+            ))
+    out.extend(_cross_registry_drift(base))
+    return tuple(out)
+
+
 class BootstrapScanner:
     """Reads what the project already knows, and says what could be preloaded.
 
@@ -1272,6 +1585,7 @@ class BootstrapScanner:
         ledger_index: Mapping[str, tuple[str, str]] | None = None,
         episodes_attempts: Mapping[str, int] | None = None,
         tools: Mapping[str, Any] | None = None,
+        static_drift: Sequence[StaticKnowledgeDrift] = (),
         now: datetime | None = None,
     ) -> None:
         self.root = Path(root)
@@ -1289,6 +1603,14 @@ class BootstrapScanner:
         self.ledger_index = dict(ledger_index or {})
         self.episodes_attempts = dict(episodes_attempts or {})
         self.tools = dict(tools or {})
+        self.static_drift = tuple(static_drift)
+        #: Drift indexed by the skill id a spec declares, so a plan can be told what it is missing
+        #: without re-reading the knowledge tree.
+        self._drift_by_skill: dict[str, tuple[StaticKnowledgeDrift, ...]] = {}
+        for finding in self.static_drift:
+            if finding.skill_id:
+                self._drift_by_skill[finding.skill_id] = (
+                    *self._drift_by_skill.get(finding.skill_id, ()), finding)
         self.now = now or datetime.now(timezone.utc)
         self._asset_stems = frozenset(_token_key(name) for name in self.asset_names)
         self._asset_index = _index_by_token(self.asset_names)
@@ -1429,6 +1751,7 @@ class BootstrapScanner:
             ledger_index=ledger_index,
             episodes_attempts=attempts,
             tools=tools,
+            static_drift=static_knowledge_drift(base),
             now=now,
         )
 
@@ -1956,6 +2279,22 @@ class BootstrapScanner:
         if card and str(card.get("reuse_level")) in ("LICENSE_BLOCKED", "NOT_USEFUL"):
             notes.append(f"外部沿用等级 {card.get('reuse_level')}：只作玩法/UI 先验，不复制任何代码")
 
+        # A spec that this row points at via `existing_skill` may declare a page or an element that
+        # no authoritative store contains. That capability is then unimplementable however complete
+        # the rest of its knowledge looks, and the ordinary failure-driven loop cannot see it because
+        # a spec that is never scheduled never fails. Attaching it here is what carries the finding
+        # into the existing chain: plan -> candidates() -> adapter.preload() -> ledger.
+        drift = self._drift_by_skill.get(skill, ())
+        if drift:
+            declared = [f for f in drift if f.kind == "element"]
+            if declared:
+                missing = set(missing) | {f.missing for f in declared}
+            for finding in drift:
+                notes.append(
+                    f"静态规范漂移（{finding.kind}）：{finding.spec_file} 的 {finding.field} 声明了 "
+                    f"{finding.missing!r}，但权威注册表里没有它 —— {finding.detail}"
+                )
+
         return BootstrapPlan(
             capability_id=str(row.get("capability_id") or ""),
             code=str(row.get("code") or ""),
@@ -1998,6 +2337,16 @@ class BootstrapScanner:
         )
 
     # -- public ------------------------------------------------------------
+
+    def _drift_kind_counts(self) -> dict[str, int]:
+        counts: dict[str, int] = {}
+        for finding in self.static_drift:
+            counts[finding.kind] = counts.get(finding.kind, 0) + 1
+        return counts
+
+    def static_drift_for(self, skill: str) -> tuple[StaticKnowledgeDrift, ...]:
+        """The drift attached to one skill id, as ``_plan`` sees it."""
+        return self._drift_by_skill.get(str(skill), ())
 
     def plans(self) -> tuple[BootstrapPlan, ...]:
         return tuple(self._plan(row) for row in self.catalog)
@@ -2044,6 +2393,14 @@ class BootstrapScanner:
                 "by_knowledge_source": by_source,
             },
             "candidates": [p.as_row() for p in ranked[:limit]],
+            # Static spec drift is a consistency fact, not a game fact: it exists whether or not any
+            # run has ever touched the capability. Reported here so the ordinary scan output carries
+            # it, and attached to the affected plans so it can reach the preload/ledger chain.
+            "static_drift": {
+                "total": len(self.static_drift),
+                "by_kind": self._drift_kind_counts(),
+                "findings": [f.as_row() for f in self.static_drift],
+            },
         }
 
     def markdown(self, *, limit: int = 12) -> str:

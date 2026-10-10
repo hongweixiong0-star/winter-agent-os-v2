@@ -434,6 +434,41 @@ def runs(episodes: Sequence[Mapping[str, Any]]) -> list[list[Mapping[str, Any]]]
     return out
 
 
+def attempted_skills(rows: Iterable[Mapping[str, Any]]) -> dict[str, set[str]]:
+    """Goal -> the **skills** production used for it, with the ledger's non-skill values removed.
+
+    The ledger's ``skill`` field carries three vocabularies (see ``skills.NON_SKILL_LEDGER_VALUES``),
+    and this function used to collect all of them:
+
+        attempted.setdefault(goal_id, set()).add(skill)          # no filter
+
+    That set feeds ``reached``, then ``touched``, and then this comparison, which moves a Goal's
+    restart boundary -- i.e. **resets its no-progress streak** and hands it a fresh repair budget:
+
+        if record.capability in touched or record.skill in touched:
+            boundaries[goal_id] = max(boundaries.get(goal_id, _EPOCH), record.settled_at)
+
+    ``capability_for_skill`` returns an unknown name unchanged, so a non-skill became a *capability
+    name*, and the escalation ledger really does carry such records: measured 2026-10-10 over 17,413
+    rows, ``skill`` holds ``SAFE_STOP`` 90 times, ``capability`` holds it 11 times.  A decision to
+    stop was therefore able to reset a failure streak.
+
+    The filter is by declaration, not by inference: the four values are the ones named in
+    ``skills.NON_SKILL_LEDGER_VALUES``, each with what it really is.  A value that is neither
+    registered nor declared is still collected -- dropping unknown names silently would hide the next
+    vocabulary rather than expose it, and the vocabulary guard is what reports those.
+    """
+    from .skills import NON_SKILL_LEDGER_VALUES
+
+    out: dict[str, set[str]] = {}
+    for row in rows:
+        goal_id = str(row.get("goal_id") or "")
+        skill = str(row.get("skill") or "")
+        if goal_id and skill and skill not in NON_SKILL_LEDGER_VALUES:
+            out.setdefault(goal_id, set()).add(skill)
+    return out
+
+
 def _streak_and_last(
     grouped: Sequence[Sequence[Mapping[str, Any]]],
     goal_id: str,
@@ -653,12 +688,7 @@ class CapabilityGate:
         # Goal -> the skills production really used for it.  This is what makes
         # "the same failing path" measurable instead of assumed.
         grouped = runs(rows)
-        attempted: dict[str, set[str]] = {}
-        for row in rows:
-            goal_id = str(row.get("goal_id") or "")
-            skill = str(row.get("skill") or "")
-            if goal_id and skill:
-                attempted.setdefault(goal_id, set()).add(skill)
+        attempted = attempted_skills(rows)
 
         cache: dict[str, str] = {}
 

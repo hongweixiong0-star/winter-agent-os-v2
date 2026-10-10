@@ -1182,6 +1182,30 @@ class OCRPageClassifier:
         )
         if bear_trap_detail:
             found.append(Page.ALLIANCE)
+        # The task board is the one page whose two identities are both drawn at once: its own
+        # centred heading, and the *other* tab along the bottom edge, which is always visible. The
+        # precise rule above already answered "which tab is selected" from the top band, so the
+        # generic keyword table must not let the bottom tab vote as well -- `RULES` maps `每日任务`
+        # to `Page.DAILY`, and on the 成长任务 board that string is on screen as the inactive tab.
+        #
+        # Measured 2026-10-10 on dataset/evidence/daily_panel_observe_20261006T105705/
+        # p1_after_entry_tap.png, whose own production_reading.json recorded page=UNKNOWN,
+        # confidence=0.0: both candidates reached `len(set(found)) != 1` and the frame was left
+        # unnamed even though it prints 成长任务 as its heading. Removing just the bottom-band
+        # `每日任务` token makes the same frame resolve to Page.GROWTH_TASKS, which is what this
+        # keeps. Only the task-board pair is affected, and only when the precise rule fired.
+        if task_page is not None:
+            found = [candidate for candidate in found
+                     if candidate is not Page.DAILY and candidate is not Page.GROWTH_TASKS]
+            found.append(task_page)
+        elif task_heading_tokens:
+            # A task-board label IS on screen, but the top band decided nothing - so every task
+            # label present is an inactive tab. That is exactly the "incomplete or conflicting
+            # evidence" case: a tab that is always drawn cannot say which page this is, and the
+            # honest answer is UNKNOWN rather than whichever tab happened to be read. Without this
+            # the generic table below would still name Page.DAILY from that tab alone.
+            found = [candidate for candidate in found
+                     if candidate is not Page.DAILY and candidate is not Page.GROWTH_TASKS]
         calendar_entry = event_calendar.read_calendar_entry(eligible, frame_size=frame_size)
         if len(set(found)) != 1:
             # Hybrid vision may already have a reliable Home/Map page template even when this

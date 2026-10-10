@@ -2377,9 +2377,21 @@ class GoalLibrary:
         # New localized names discovered in a calendar remain visible as role-scoped candidates.
         # They carry no guessed mechanics, timing or executable action until a live page supplies
         # those facts; exact IDs are deduplicated with any live event goal already on the board.
+        #
+        # The dedup below reads ``static_ids`` and ``reported``, and neither can see **this loop's own
+        # earlier appends** -- so one ``event_id`` offered twice by the snapshot became two GoalStates.
+        # The snapshot really does offer it twice: measured 2026-10-10, ``CALENDAR_GRID`` in
+        # ``learning/event_schedule_state.json`` held 6 entries of which **2** were
+        # ``DISCOVERED_EVENT_6F33C054CA`` (in both role scopes), and the board showed 英雄集结 as two
+        # identical rows.  The upstream duplicate row is left where it is -- two grid rows really did
+        # carry that id, and that is evidence about the scanner, not something to erase here.  What a
+        # board may not do is list one event twice, so the live Goal list is consulted as it stands.
+        on_board = {str(getattr(goal, "goal_id", "")) for goal in goals}
         for row in calendar_rows:
             event_id = str(row.get("event_id") or "")
             if not event_id or event_id in static_ids or event_id in reported:
+                continue
+            if f"SCHEDULED_{event_id}" in on_board:
                 continue
             row_detail_observed = row.get("details_observed") is True
             row_evidence = {
@@ -2427,6 +2439,9 @@ class GoalLibrary:
                 evidence=row_evidence,
                 distance=1.0,
             ))
+            # Registered as it is appended, not merely read before the loop: a snapshot offering the
+            # id three times would otherwise slip past a set that was never updated.
+            on_board.add(f"SCHEDULED_{event_id}")
 
     @staticmethod
     def _append_queue_goal(goals: list[GoalState], goal_id: str, state: dict[str, Any], skills: tuple[str, ...], value: float) -> None:
