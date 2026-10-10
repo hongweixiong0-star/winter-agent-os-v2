@@ -883,6 +883,60 @@ def record_reservation(
     return schedule
 
 
+def seconds_until_a_printed_reservation(
+    reserved_local: str | None,
+    client_now_local: str | None,
+    *,
+    client_now_age_seconds: float = 0.0,
+) -> int | None:
+    """How long until a reservation the CLIENT printed, using only what the client printed.
+
+    Both stamps come off the client and carry no offset, so their difference is a duration and
+    needs no timezone.  That matters here for a specific reason: the client prints 预约自动开启 as
+    a naive local time, the project's time rule forbids inferring the game's zone from this
+    machine's, and ``event_goal.Activity.window`` refuses a stamp without an offset -- so a naive
+    reservation cannot become a wake on its own.  Its difference from the client's own clock can.
+
+    ``client_now_age_seconds`` is how long ago the clock was read.  The clock and the reservation
+    are printed on different pages (measured 2026-10-10: the calendar view prints
+    ``2026-10-10 07:52:18`` while the 巨熊行动 page prints only ``预约自动开启：``), so the two
+    readings are seconds to minutes apart and the elapse has to come off the difference.  A few
+    minutes of error against a lead measured in hours is the trade that keeps the timezone out of
+    it.
+
+    ``None`` when either stamp is missing or unparseable, or when the reservation is not in the
+    future.  A negative answer is "this already happened", which is not a countdown.
+    """
+    if not reserved_local or not client_now_local:
+        return None
+    try:
+        reserved = datetime.fromisoformat(str(reserved_local).replace("/", "-"))
+    except (TypeError, ValueError):
+        return None
+    parsed_now = _parse_client_clock(client_now_local)
+    if parsed_now is None:
+        return None
+    remaining = (reserved - parsed_now).total_seconds() - max(0.0, float(client_now_age_seconds))
+    if remaining <= 0:
+        return None
+    return int(round(remaining))
+
+
+def _parse_client_clock(value: str | None) -> datetime | None:
+    """The client's clock, naive, from either shape it is drawn in.
+
+    ``2026-10-10 07:52:18`` on the calendar view; ``09-09 21:16:07`` on the map popup, where the
+    year is absent and must not be invented -- that shape answers ``None`` rather than guessing.
+    """
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text.replace("/", "-"))
+    except ValueError:
+        return None
+
+
 def record_live_countdown(
     schedules: dict[str, RoleSchedule],
     *,
