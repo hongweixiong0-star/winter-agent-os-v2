@@ -613,6 +613,21 @@ def _row_carrying_the_details_dates(
     return candidates[0] if len(candidates) == 1 else None
 
 
+def detail_window_touches(reading: Mapping[str, Any], row: Mapping[str, Any]) -> bool:
+    """Whether the detail's OWN printed window names a day this row also carries.
+
+    One definition of "touches", shared by the unique-match fallback below and by the runtime's
+    attribution of a card to the row it aimed at.  Two copies of this test would drift, and the
+    whole point of it is that it is the same evidence in both places.
+    """
+    wanted = _detail_window_days(reading)
+    if not wanted:
+        return False
+    row_days = {key for key in (_calendar_day_key(day) for day in _calendar_row_days(row))
+                if key is not None}
+    return bool(row_days & wanted)
+
+
 def row_covering_the_details_window(
     reading: Mapping[str, Any], old_rows: list[dict],
 ) -> dict | None:
@@ -649,9 +664,7 @@ def row_covering_the_details_window(
     for row in old_rows:
         if row.get("details_observed") is True or not row.get("tap_norm"):
             continue
-        row_days = {key for key in (_calendar_day_key(day) for day in _calendar_row_days(row))
-                    if key is not None}
-        if row_days & wanted:
+        if detail_window_touches(reading, row):
             candidates.append(row)
     return candidates[0] if len(candidates) == 1 else None
 

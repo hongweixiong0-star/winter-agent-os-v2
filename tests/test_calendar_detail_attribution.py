@@ -257,3 +257,99 @@ def test_the_window_fallback_never_runs_when_the_id_already_matches_a_row(
     observed = [row.get("details_observed") for row in
                 (event_schedule.latest_calendar_snapshot(ROLE) or {}).get("entries") or ()]
     assert observed == [None, None], "an ambiguous frame must still credit nothing"
+
+
+# ---------------------------------------------------------------------------------------------
+# Attribution when the card's own window cannot discriminate.
+#
+# Measured 2026-10-10 in production: the 除雪 card prints 2026-10-13 00:00 - 2026-10-15 24:00,
+# which overlaps THREE uninspected rows (除雪 10/13-14, 专属装备铸炼 10/08-14, the second
+# 英雄集结 10/12-14), so a window-only rule correctly refuses and credits nothing.  The
+# discriminator is the row the run actually aimed at -- already on hand in the resolver, and the
+# same row ``verify_event_calendar_detail_open`` treats as ``expected_event_id``.
+# ---------------------------------------------------------------------------------------------
+
+FORGE_ID = "DISCOVERED_EVENT_FORGE"
+HERO_ID = "DISCOVERED_EVENT_HERO"
+
+
+def _overlapping_rows():
+    """Three uninspected rows the card's window touches, so no window rule can pick one.
+
+    The card's own raws are ``2026-10-13`` and ``2026-10-15``, so the day set it yields is
+    ``{(10, 13), (10, 15)}`` -- not the whole run.  The rows below are chosen to overlap BOTH of
+    those days across three rows, which is what makes the window rule refuse.  An earlier draft
+    of this fixture gave the other rows 10/14, which the window does not contain, so only one
+    row matched and the window fallback credited it -- the test passed without ever reaching the
+    aimed-row path it was written for.
+    """
+    return [
+        {**_target_row(), "event_id": ROW_ID, "occurrence_key": f"{ROW_ID}|10/13|10/14",
+         "calendar_dates_raw": ["10/13", "10/14"]},
+        {"event_id": FORGE_ID, "display_name": "专属装备铸炼",
+         "occurrence_key": f"{FORGE_ID}|10/08|10/13",
+         "calendar_dates_raw": ["10/08", "10/13"], "tap_norm": [0.55, 0.59]},
+        {"event_id": HERO_ID, "display_name": "英雄集结",
+         "occurrence_key": f"{HERO_ID}|10/14|10/15",
+         "calendar_dates_raw": ["10/14", "10/15"], "tap_norm": [0.34, 0.86]},
+    ]
+
+
+def _observed_detail(tmp_path, monkeypatch, *, tap_row, detail):
+    """Run the real ``_read_due_calendar_entry`` over a fixture with only the readers patched."""
+    monkeypatch.setattr(event_calendar, "read_event_calendar", lambda *a, **k: {
+        "recognized": True, "details_visible": True, "entries": [],
+    })
+    monkeypatch.setattr(event_calendar, "read_event_detail", lambda *a, **k: dict(detail))
+    frame = tmp_path / "card.png"
+    Image.new("RGB", (720, 1280), "white").save(frame)
+    runtime = LiveRuntime.__new__(LiveRuntime)
+    runtime.role_id = ROLE
+    runtime.role_scope = "LIVE_OBSERVED"
+    runtime.vision = SimpleNamespace(ocr=SimpleNamespace(
+        recognize=lambda _frame: OCRResult((), "fixture")))
+    runtime._regular_event_hub_on_frame = lambda *a, **k: {}
+    runtime._calendar_detail_tap_row = tap_row
+    return runtime._read_due_calendar_entry(WorldState(page=Page.EVENT), frame).events["calendar_detail"]
+
+
+def test_the_card_is_attributed_to_the_row_the_run_aimed_at(tmp_path, monkeypatch):
+    monkeypatch.setattr(event_schedule, "STATE_PATH", tmp_path / "schedule.json")
+    rows = _overlapping_rows()
+    event_schedule.record_calendar_snapshot(
+        role_id=ROLE, observation={"recognized": True, "entries": rows},
+        observed_at=datetime.now(timezone.utc))
+
+    # Guard against a test that passes for the wrong reason: the window rule ALONE must refuse
+    # here, so anything that credits a row did it from the aimed row.
+    assert event_schedule.row_covering_the_details_window(_card(), rows) is None
+
+    observed = _observed_detail(
+        tmp_path, monkeypatch,
+        tap_row={"occurrence_key": f"{ROW_ID}|10/13|10/14", "event_id": ROW_ID},
+        detail=_card())
+
+    assert observed["matched_occurrence_key"] == f"{ROW_ID}|10/13|10/14"
+    assert observed["matched_event_id"] == ROW_ID
+
+
+def test_a_card_that_does_not_touch_the_row_it_aimed_at_is_not_attributed(tmp_path, monkeypatch):
+    """A tap that landed on something else must not be credited to what it aimed at."""
+    monkeypatch.setattr(event_schedule, "STATE_PATH", tmp_path / "schedule.json")
+    rows = _overlapping_rows()
+    # Aim at a row whose dates the card's window (10/13-10/15) does not touch.
+    rows.append({"event_id": "DISCOVERED_EVENT_EARLY", "display_name": "早期活动",
+                 "occurrence_key": "DISCOVERED_EVENT_EARLY|10/01|10/02",
+                 "calendar_dates_raw": ["10/01", "10/02"], "tap_norm": [0.9, 0.2]})
+    event_schedule.record_calendar_snapshot(
+        role_id=ROLE, observation={"recognized": True, "entries": rows},
+        observed_at=datetime.now(timezone.utc))
+
+    observed = _observed_detail(
+        tmp_path, monkeypatch,
+        tap_row={"occurrence_key": "DISCOVERED_EVENT_EARLY|10/01|10/02",
+                 "event_id": "DISCOVERED_EVENT_EARLY"},
+        detail=_card())
+
+    assert not observed.get("matched_occurrence_key")
+    assert not observed.get("matched_event_id")

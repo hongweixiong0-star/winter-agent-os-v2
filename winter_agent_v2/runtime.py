@@ -2431,14 +2431,39 @@ class LiveRuntime:
                         # (`_event_id` hashes the OCR label, and the card says 除雪小分队 where
                         # the grid said 除雪), so the id test above can never find the row that
                         # was tapped -- and the verifier reads THIS key, so leaving it empty
-                        # fails the step however well the store credits it.  The detail's own
-                        # printed dates are the evidence that survives the truncation.
+                        # fails the step however well the store credits it.
                         #
+                        # The row the run actually aimed at is the strongest evidence available
+                        # and it is already on hand: the resolver recorded it when it computed
+                        # the tap point, and ``verify_event_calendar_detail_open`` treats the
+                        # same row as ``expected_event_id``.  It is preferred over the window
+                        # fallback because the card's printed window is coarse -- measured
+                        # 2026-10-10, the 除雪 card's 10/13-10/15 overlaps THREE uninspected
+                        # rows (除雪 10/13-14, 专属装备铸炼 10/08-14, the second 英雄集结
+                        # 10/12-14), so a window-only rule correctly refuses and credits nothing.
+                        #
+                        # The row must still be uninspected, and the card's own printed window
+                        # must touch its dates: a tap that landed on something else must not be
+                        # credited to what it aimed at.
+                        aimed = getattr(self, "_calendar_detail_tap_row", None) or {}
+                        aimed_key = str(aimed.get("occurrence_key") or "")
+                        aimed_row = next(
+                            (row for row in rows
+                             if isinstance(row, Mapping)
+                             and aimed_key
+                             and str(row.get("occurrence_key") or "") == aimed_key
+                             and row.get("details_observed") is not True),
+                            None,
+                        )
+                        if (aimed_row is not None
+                                and event_schedule.detail_window_touches(detail, aimed_row)):
+                            detail.update(matched_event_id=aimed_row.get("event_id"),
+                                          matched_occurrence_key=aimed_key)
                         # Gated on the id matching nothing at all: when it does match a row,
                         # the identifier was not changed and the ambiguous case must stay
                         # ambiguous (see the same guard in ``event_schedule``).
-                        if not any(str(row.get("event_id") or "") == str(detail.get("event_id") or "")
-                                   for row in rows):
+                        elif not any(str(row.get("event_id") or "") == str(detail.get("event_id") or "")
+                                     for row in rows):
                             covering = event_schedule.row_covering_the_details_window(detail, rows)
                             if covering is not None:
                                 detail.update(matched_event_id=covering.get("event_id"),
@@ -5497,6 +5522,19 @@ class LiveRuntime:
                 return _no("RESOLVER:CALENDAR_DETAIL_READER_RAISED")
             if not all(0.0 <= value <= 1.0 for value in target):
                 return _no("RESOLVER:CALENDAR_DETAIL_POINT_OUTSIDE_FRAME")
+            # Record the row this tap is aimed at.  Attribution cannot re-derive which row a
+            # card belongs to from the card's own heading -- the heading mints a different id
+            # for the same activity -- and the card's printed window is coarse enough to
+            # overlap several rows, so the run keeps what it aimed at and
+            # ``_read_due_calendar_entry`` checks the card against it.  This is the same row
+            # ``verify_event_calendar_detail_open`` already treats as ``expected_event_id``.
+            #
+            # Set only on the way out with a real point, so a refused resolution cannot leave a
+            # row recorded that was never tapped.
+            self._calendar_detail_tap_row = {
+                "occurrence_key": str(row.get("occurrence_key") or ""),
+                "event_id": str(row.get("event_id") or ""),
+            }
             return target
         if semantic in {"EVENT_CALENDAR_TAB", "REGULAR_EVENT_TABS_SCROLL_CURRENT"}:
             # Its template art also appears on HOME. The tab exists only inside
