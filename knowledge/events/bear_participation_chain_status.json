@@ -459,6 +459,20 @@
     }
   },
 
+  "self_review_20261010T0809_the_new_wake_s_blast_radius": {
+    "why": "1a17741a 让排期第一次有可能写出一个【36 小时后】的唤醒。写完之后我先查它会不会把系统按到那时候 —— 这是实现后的复核，只不过复核的是调度面。",
+    "what_it_touches": [
+      "runtime.py:2086 —— 角色的 next_action_at = 该角色所有目标等待里最早的那个；我的排期进了这个集合",
+      "scheduler.py:690-697 —— waits = [role.next_action_at, 各目标 retry_after]，但它【只用来报告】 role_statuses 里的 wait_until，是遥测，不是过滤器 ⇒ 不会把角色按死",
+      "scheduler.py:743-755 —— wakeups 收集 role.next_action_at 与目标 retry_after，next_wakeup = min(wakeups)，并持久化进全局决策",
+      "tools/control_panel.py:718-735 —— 面板按 global_next_wakeup_at 等，但【只在 reason == GLOBAL_WAIT 时】；否则 30000ms"
+    ],
+    "the_guard_that_makes_it_safe": "control_panel.py 的最后一行是 return int(min(seconds, 24 * 60 * 60) * 1000) —— 上限 24 小时，注释写明『保留每天一次健康刷新，以防来源时间意外地远』。所以 36 小时会被砍到 24 小时：今天 08:09 等下去，明天约 08:09 必醒一次，而窗口在明天 20:30 ⇒ 仍在窗口之前。",
+    "the_other_half": "min(wakeups) 取【最早】的。只要该角色还有任何更近的等待（队列、计时器、退避），我的 36 小时就不参与决定；只有当巨熊确实是最近的那件事时它才决定 —— 而那正是唤醒要表达的意思。",
+    "verdict": "SAFE，且判据是两个具体事实（24 小时上限、只在 GLOBAL_WAIT 生效），不是一个印象。",
+    "not_measured": "没有跑起来验证。这是读代码 + 算术得到的结论；真实的一次 GLOBAL_WAIT 下的等待时长仍未实机观测。"
+  },
+
   "role_status_20261005": {
     "1063040265": {
       "verdict": "READY",
