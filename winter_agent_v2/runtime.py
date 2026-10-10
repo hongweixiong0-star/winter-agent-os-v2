@@ -5034,6 +5034,39 @@ class LiveRuntime:
                     state=window_state, source="LIVE_CLIENT_EVENT_WINDOW_OBSERVATION",
                     role=role, alliance=alliance, now=observed,
                 )
+            # A reservation the client PRINTED carries no offset, so on its own it cannot drive
+            # a wake: event_goal.Activity.window refuses a stamp without one, and the project's
+            # time rule forbids inferring the game's zone from this machine's.  Its difference
+            # from the client's OWN clock can, and both are already on file -- the calendar
+            # reading carries current_game_datetime_raw, and its observed_at says how old that
+            # clock is.  Nothing here assumes a timezone; the two stamps are subtracted.
+            printed = events.get("bear")
+            reserved = (printed.get("reserved_start_time")
+                        if isinstance(printed, Mapping) else None)
+            if reserved:
+                grid = event_schedule.latest_calendar_snapshot(role_id) or {}
+                clock = grid.get("current_game_datetime_raw")
+                try:
+                    read_at = datetime.fromisoformat(str(grid.get("observed_at") or ""))
+                except (TypeError, ValueError):
+                    read_at = None
+                # No readable age means no answer, deliberately.  A clock from an hour ago
+                # treated as "now" would overstate the lead by that hour, and acting an hour
+                # early is worse than not acting: the window would be read as still ahead.
+                if read_at is not None:
+                    if read_at.tzinfo is None:
+                        read_at = read_at.replace(tzinfo=timezone.utc)
+                    lead = event_schedule.seconds_until_a_printed_reservation(
+                        str(reserved), str(clock) if clock else None,
+                        client_now_age_seconds=max(0.0, (observed - read_at).total_seconds()),
+                    )
+                    if lead is not None:
+                        event_schedule.record_live_countdown(
+                            schedules, role_id=role_id, event_id="BEAR_HUNT",
+                            seconds_to_start=lead,
+                            source="LIVE_CLIENT_PRINTED_RESERVATION_MINUS_CLIENT_CLOCK",
+                            role="AUTO", alliance=None, now=observed,
+                        )
             event_schedule.save(schedules)
         except Exception:  # noqa: BLE001 -- event-clock persistence must never block AUTO
             return
