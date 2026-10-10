@@ -2,8 +2,8 @@
   "schema_version": "1.1",
   "topic": "BEAR_PARTICIPATION_CHAIN_STATUS",
   "written_at": "2026-10-05T21:25:00+08:00",
-  "updated_at": "2026-10-10T09:45:00+08:00",
-  "updated_by": "session 2026-10-10 (the calendar-detail refusal attributed by A/B; its exits now name themselves)",
+  "updated_at": "2026-10-10T10:05:00+08:00",
+  "updated_by": "session 2026-10-10 (the calendar preview card is an overlay; the reader that would read it is gated out)",
   "question": "两个角色打巨熊，到底缺什么？",
   "one_line": "链路通的；缺的不是时序运气 —— 巨熊窗口在生产里被真机读到过 4 次，4 次都没有进入决策帧，所以 PARTICIPATE_BEAR 一次都没被生成。这是读数传递缺陷，不是运气。",
   "correction_20261009": {
@@ -901,5 +901,45 @@
       }
     },
     "the_next_step_this_opens": "现在『面板已经盖住网格』这件事有名有姓了。下一步是决定**该做什么**：当 calendar.details_visible=True 且 calendar_detail 缺席时，合理动作是退回日历（RETURN_EVENT_CALENDAR）还是把这次观察当作一次已读记账。这需要设计，不应在窗口期盲改。"
+  },
+  "the_calendar_preview_card_is_never_read_20261010T1005": {
+    "one_line": "把『网格里 4 个 id 从未被打开』查到根了：**点是对的**，浮起来的就是目标活动；但卡是一张 **overlay**，而读它的那一支以『网格没被识别』为前提 —— overlay 不会让背后的网格变得不可识别，所以那一支永远不执行，卡上印的『距离开始』永远读不到，那一行永远拿不到记账。**是一行条件写反了。**",
+    "how_it_was_settled": {
+      "what_i_did": "不再推理，直接看那张帧（多模态读图）。",
+      "frame": "dataset/raw/control_panel/runtime_auto/20261010_084940_792088/20261010_084940_792088_step_004_before_20261010T005039829501.png",
+      "what_the_frame_shows": [
+        "页头 常规活动；页签条 最强王国 | 变革的乐章；客户端时钟 2026-10-10 08:50:39",
+        "背后网格仍在画：10/08 … 10/14，星期六 10/10 选中",
+        "网格上浮着一张卡：『除雪小分队』/ 2026-10-13 00:00 - 2026-10-15 24:00 / 带上除雪器…… / 奖励 / 【距离开始：2 天 15:09:21】"
+      ],
+      "conclusion_1_pointing_was_correct": "目标是 DISCOVERED_EVENT_DC53E03FB8（display_name=除雪），浮起来的是『除雪小分队』—— 同一个活动。所以点没错。",
+      "conclusion_2_it_is_an_overlay_not_a_detail_page": "网格背后的行仍被读出（5 行而不是 6 行），calendar_detail 因此缺席。⇒ 任何『面板在就退回』式的修法都会把一张**刚刚正确打开**的卡退掉。",
+      "conclusion_3_the_card_prints_both_stamps_consistently": "08:50:39 + 2天15:09:21 = 2026-10-13 00:00:00，与卡上印的 2026-10-13 00:00 一致 —— 再一次支持『两个时间戳相减』的方法。"
+    },
+    "the_defect_one_guard_condition": {
+      "where": "winter_agent_v2/ocr.py:1282-1295",
+      "code": "if (page is Page.EVENT\n        and calendar_reading.get(\"recognized\") is not True      # ← 要求网格【没被识别】\n        and calendar_detail_reading.get(\"recognized\") is not True):\n    ...\n    seconds_to_start = self._explicit_start_seconds(eligible)   # :1295",
+      "why_it_never_runs_on_the_card": "卡帧上 calendar_reading.recognized **是 True**（背后 5 行仍被读出），所以这一支被整支跳过 ⇒ 卡的『距离开始』永远不会被读 ⇒ seconds_to_start 不算 ⇒ 没有记录产生 ⇒ 那一行不被记账 ⇒ 债务不降 ⇒ calendar_scan_due 仍为真 ⇒ 下一轮重来。",
+      "the_reader_already_exists": "ocr.py:820 `_explicit_start_seconds` 的注释就写着 『Read only a timer explicitly labeled 距开始/距离开始』，它也在 :1295 被调用 —— **只是被这一支的门挡住了**。所以缺的不是读者，是门。",
+      "the_general_rule": "预览卡是 overlay，**不会**让背后的网格变成不可识别。因此任何以『网格没被识别』为前提的分支，都不可能在卡出现时执行 —— 而卡出现恰恰就是『点对了一行』之后的状态。",
+      "what_the_gate_should_accept": "『有东西盖着网格』这个本帧可读的事实：calendar_reading.details_visible is True 且 entries 从 6 掉到 5。"
+    },
+    "the_loop_is_reproducible_every_round": {
+      "evidence": "tools/probe_whether_the_detail_flag_fires_on_a_plain_grid.py",
+      "shape": "连续 5 轮（00:46 / 00:49:40 / 00:50 / 00:54:20 / 00:54:50 各一轮）逐字重复：step_003 帧 = 网格 6 行 details_visible=False；step_004 帧 = 5 行 details_visible=True、无 calendar_detail。",
+      "why_that_matters": "每轮两步、同样失败 ⇒ 修好之后的效果可以直接用『轮数』量。",
+      "false_positive_check": "10 张识别帧中，details_visible=True 只出现在 5 张 step_004（点击之后）帧上，5 张网格帧全是 False —— **没有观察到假阳性**。样本仍然小（10 张），不得把『没见过』当成『不存在』。"
+    },
+    "the_retry_gate_i_decided_not_to_add": {
+      "the_tempting_change": "在 runtime.py:10954 的排队条件里加『语义必须在语义字典里』，让那 32 步不再发生。",
+      "why_not": [
+        "它让账本变安静，而不是让系统变好：循环本身没被修，scan_due 仍为真。",
+        "真正的问题是『这一步该做什么』（读卡 / 记一笔），不是『该不该重试』。",
+        "它是对决策链的改动，而明晚有一个已武装的窗口。"
+      ],
+      "the_measurement_that_supports_it_anyway": "tools/probe_the_model_only_navigation_retry.py：48 条走模型兜底的 episode 里，**字典里没有**的语义 32 条顾问作答 0 次；**字典里有**的语义 8 条作答 4 次。机制清楚：顾问产点的唯一来源是一次 _advised_control 调用，而这类控件靠测量几何定位，模型无从知道。数据留档，供以后决定。"
+    },
+    "status": "归因完成，**未改行为**。ocr.py / runtime.py / brain.py 均未改动。",
+    "where_the_design_is_written": ".workbuddy-ai/handoff/THE_CALENDAR_DETAIL_LOOP_ASKS_A_QUESTION_ALREADY_ANSWERED_20261010.md（含候选 A/B/C 的取舍、C 的验收判据、以及离线素材清单）"
   }
 }
