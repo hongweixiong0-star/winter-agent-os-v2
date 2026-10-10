@@ -544,6 +544,65 @@
     }
   },
 
+  "tomorrow_s_wake_has_no_reservation_20261010T0824": {
+    "one_line": "查持久化预约：两个【活跃角色】的 BEAR_HUNT reserved_start 都是 None。⇒ 明晚 20:00 不会有唤醒。原因是链条上游缺一环：没有任何东西会去读巨熊页。",
+    "the_state_measured": {
+      "file": "learning/timed_event_schedule.json（mtime 08:22:48，updated_at 2026-10-10T00:22:47Z）",
+      "active_roles": {
+        "1063040265": "BEAR_HUNT reserved_start=None, source=UNKNOWN",
+        "1061663148": "BEAR_HUNT reserved_start=None, source=UNKNOWN"
+      },
+      "stale_rows_still_present": [
+        "1171757165 BEAR_HUNT reserved=2026-09-28T20:00:00+08:00 source=CLIENT_DIRECT_SCHEDULE",
+        "ACCT1063040265-ROLEA BEAR_HUNT reserved=2026-09-27T20:30:00+08:00",
+        "ACCT1061663148-ROLEB BEAR_HUNT reserved=2026-09-27T21:00:00+08:00"
+      ],
+      "note_on_the_stale_rows": "它们在【旧的角色键】下（ACCT…-ROLEA/ROLEB、1171757165），运行时按 `{role_id}|{event_id}` 找，所以对活跃角色是惰性的；不是风险，但是需要清理的历史。活跃角色自己的行是 None（正确：还没读到窗口）。"
+    },
+    "why_it_is_none_and_that_is_a_chain_gap_not_a_bug": {
+      "the_wiring_needs_：": "1a17741a 只在【某一帧的 events['bear'] 带 reserved_start_time】时写预约。",
+      "reserved_start_time_is_written_by": "ocr.py 里常规活动的 hub 分支（624de00f）—— 它要求那一帧【就是巨熊行动页】，因为 预约自动开启 印在页体上。",
+      "so_the_chain_is": "要写出预约 ⇒ 必须先站在巨熊页上 ⇒ 而到达巨熊页要么靠 DISCOVER_BEAR_RALLY_LIST（红点门，且它开的是【集结列表】不是活动页，只能从 bear row 读出 ACTIVE），要么靠【在常规活动的页签条上选中巨熊页签】。",
+      "the_gap": "【没有任何目标会去『在常规活动页签条上找巨熊页签并选中它』】。运行时会到那条条上（DISCOVER_EVENT_CALENDAR 的 OPEN_EVENT_CALENDAR_FROM_HOME → OPEN_EVENT_CALENDAR_TAB，08:13 就走过），但它选的是【日历】页签，不是巨熊页签。所以读者写好了、接线写好了，却没有任何东西去喂它。",
+      "the_irony": "这正是本文件开头记录的同一个模式，第四次出现：【读者存在、接线存在、没人去喂】。区别是这次缺的不是读者也不是接线，而是【一个会去那一页的目标】。"
+    },
+    "what_it_would_take": {
+      "shape": "一个目标：在常规活动页签条上，若某个页签的标签对应【需要排期的活动】，选中它并读它的详情（于是 reserved_start_time 被写、预约被建、唤醒被设）。",
+      "which_ladder": "这是【目标侧】的接入，走 winter-goal-intake-ladder，不是能力侧 —— 因为技能（OPEN_* 页签、read_printed_reservation）和接线都已存在。",
+      "why_i_did_not_implement_it_now": [
+        "它要新目标 + 新路由判定，属于需要设计审查的改动（§三·八），而不是一个可以在 12 小时内盲改的东西。",
+        "系统【正在跑】，而且我刚刚改过调度面；再加一处并 repin 会在窗口前引入未验证的行为。",
+        "本会话已经三次证明在证据边界上赶工会付出代价 —— 而这一次的代价可能是明晚的窗口。"
+      ],
+      "what_can_still_be_done_without_new_code": "让运行时自己撞上：如果巨熊页签【恰好】在它经过条条时可见，而它不是只选日历页签…… 这不可控，所以不当作方案，只当作观察。"
+    },
+    "armed_at_0830_what_i_did_about_it": {
+      "what_i_did": "写了一个显式工具 tools/record_a_printed_reservation_from_a_frame.py，用它把【今天两张真机帧的读数】记成预约：reservation 帧 = 巨熊页（read_printed_reservation 读出 2026-10-11T20:30:00），clock 帧 = 日历页（read_event_calendar 读出 2026-10-10 07:52:18）。差值走【已测过的】seconds_until_a_printed_reservation，落库走【既有的】event_schedule.record_live_countdown。",
+      "why_this_is_not_a_shortcut": "项目一直是这么记真机读数的 —— bear_hunt_time_20260927_newaccount.json 由 V2 会话写、bear_hunt_time_20260928.json 由操作者写。这里只是把同一件事做成可复现的工具，并且 source 明写 RECORDED_FROM_CAPTURED_LIVE_FRAMES_BY_TOOL，好让以后的读者能分辨它不是 AUTO 循环的观察。",
+      "the_numbers": {
+        "reserved_local_from_the_client": "2026-10-11T20:30:00",
+        "client_clock_from_the_client": "2026-10-10 07:52:18",
+        "lead_seconds": 129870,
+        "written_reserved_start": "2026-10-11T12:30:26.415951+00:00",
+        "as_beijing": "2026-10-11 20:30:26",
+        "error_against_the_printed_minute": "约 26 秒 —— 来自时钟帧的年龄估计，对 T-30 的提前量无所谓"
+      },
+      "verified_after_writing": {
+        "persisted": "两个活跃角色（1063040265 / 1061663148）的 BEAR_HUNT 行都有 reserved_start，source=RECORDED_FROM_CAPTURED_LIVE_FRAMES_BY_TOOL，live_window_state=SCHEDULED_NOT_OPEN",
+        "the_ladder_climbs_on_schedule": {
+          "北京 20:00:26": "T30 (bonus 40)",
+          "北京 20:15:26": "T15 (bonus 200)",
+          "北京 20:25:26": "T5 (bonus 2000)",
+          "北京 20:29:26": "T1 (bonus 2000)"
+        },
+        "ladder_thresholds_checked": "_PHASE_LADDER = ((1,T1),(5,T5),(15,T15),(30,T30))，readiness_phase 按序取第一个 minutes_to_start <= threshold。用精确时刻复核过，阶梯没有偏移。",
+        "my_first_reading_of_the_ladder_was_wrong": "我第一次拿【整点分】去对比一个 20:30:26 的预约，得出『阶梯偏了 15 分钟』。是我用错了时间，不是阶梯的问题 —— 记在这里因为它和今天其它几次是同一类错误。"
+      },
+      "what_this_does_not_fix": "它没有补上那个缺失的目标。明天之后，如果那个目标还不存在，预约仍然只能靠人手记。工具的 docstring 里写清了这一点。"
+    },
+    "the_honest_statement_about_tomorrow": "按当前代码与状态，明晚 20:00 不会有唤醒把运行时叫起来，因为没有任何预约。先前那句『让它自己走完』的前提【不成立】—— 我查了状态才发现。"
+  },
+
   "role_status_20261005": {
     "1063040265": {
       "verdict": "READY",
