@@ -2,8 +2,8 @@
   "schema_version": "1.1",
   "topic": "BEAR_PARTICIPATION_CHAIN_STATUS",
   "written_at": "2026-10-05T21:25:00+08:00",
-  "updated_at": "2026-10-10T08:52:00+08:00",
-  "updated_by": "session 2026-10-10 (wake consumer located in the panel, ladder measured on the real state file)",
+  "updated_at": "2026-10-10T09:05:00+08:00",
+  "updated_by": "session 2026-10-10 (the strip debt measured; the missing piece is one action, not a goal)",
   "question": "两个角色打巨熊，到底缺什么？",
   "one_line": "链路通的；缺的不是时序运气 —— 巨熊窗口在生产里被真机读到过 4 次，4 次都没有进入决策帧，所以 PARTICIPATE_BEAR 一次都没被生成。这是读数传递缺陷，不是运气。",
   "correction_20261009": {
@@ -753,5 +753,45 @@
     "what_the_probe_also_settled_the_open_rung": "阶梯在 T-0 处返回 OPEN/4000，但 runtime.py:1704-1714 只有在【同一角色】也在 15 分钟内真机读到 live_window_state=OPEN 时才付这 4000。当前两个活跃角色的 live_window_state 都是 SCHEDULED_NOT_OPEN ⇒ OPEN 加成是 WITHHELD，这是【正确的】状态，不是缺陷：时钟可以把运行时叫醒，但它不能证明活动已经开。T30/T15/T5/T1 的 40/200/2000/2000 会照常发放；4000 需要现场证据。",
     "what_this_still_does_not_fix": "喂给预约的那一环仍然只能靠人手（tools/record_a_printed_reservation_from_a_frame.py），因为【没有任何目标会去常规活动页签条上选中巨熊页签】—— 见本文件 tomorrow_s_wake_has_no_reservation_20261010T0824。本次证明的是【一旦预约在册，唤醒与加成两者都会发生】，不是【预约能自己产生】。",
     "how_to_re_check": "python tools/probe_the_armed_reservation_reaches_the_ladder.py —— 退出码 0 表示在册预约仍能逐级登梯并收紧 AUTO 等待。"
+  },
+  "the_strip_debt_is_measured_and_the_fix_is_one_action_20261010T0905": {
+    "one_line": "把『缺一个会去巨熊页的目标』查到底了：**不是缺目标**。DISCOVER_EVENT_CALENDAR 已经会被产出（条带债务让 calendar_scan_due 一直为真），缺的是它手上没有【点某个具名页签】这个动作。而点下去需要的一切——逐页签坐标、滑出屏幕外的页签、点中后的读者与写预约的接线——今天都在。",
+    "how_it_was_measured": {
+      "tool": "tools/probe_what_the_event_strip_exposes.py（本提交新增，离线读今天的真机帧，不碰设备）",
+      "reader": "生产入口 runtime._regular_event_hub_on_frame（runtime.py:2504，含 ROI 裁图补读），不是内层 read_regular_event_hub",
+      "result": "9 帧中 8 帧被识别为常规活动 hub，8 帧都带逐页签坐标；巨熊行动 出现在 3 帧里",
+      "tap_points": {
+        "bear_tab_visible_on_strip.png": "巨熊行动 -> [0.25556, 0.13359]（同行 决战王城）",
+        "regular_activity_after_production_derived_swipe.png": "巨熊行动 -> [0.25556, 0.13359]",
+        "strip_before_tap_showing_bear_tab.png": "巨熊行动 -> [0.32153, 0.13398]（四页签帧：存戏/巨熊行动/决战王城/堡垒争夺）"
+      },
+      "the_strip_is_a_real_scroller": "同一屏在不同滚动位置给出三套页签：左端 [变革的乐章,日历]、一步之后 [决战王城,巨熊行动]、再往后 [决战王城,堡垒争夺,社区]。巨熊行动 与 决战王城 并排，不在最左 ⇒ 想点它必须先把它滑出来。",
+      "the_hub_identity_is_the_selected_event": "所有 hub 帧的 display_name/event_id 都是【当前选中】的活动（最强王国 / STATE_VS_STATE），不是条带内容。所以『读到一条条带读数』不等于『读到巨熊』。"
+    },
+    "the_chain_map": {
+      "geometry_for_a_named_tab": "event_calendar.py:694-697 已经产出 tab_positions_norm = {label: [x_norm, y_norm]}",
+      "production_entry": "runtime.py:2504 _regular_event_hub_on_frame",
+      "scroll_to_reveal": "skills.py:287 SCROLL_REGULAR_EVENT_TABS（已存在）",
+      "strip_band_guard": "event_calendar.py:698 tabstrip_roi_norm（点必须落在带内）",
+      "the_debt": "event_schedule.py:463-519 advertised_but_unread_activities —— **已经覆盖条带**（ACTIVITY_STRIP 的 entries 算展示、read_entries 算已读）",
+      "debt_keeps_the_scan_due": "event_schedule.py:545-551 calendar_scan_due 里有 advertised_but_unread_activities 这一项",
+      "credit_entry_for_a_strip_row": "event_schedule.py:767-808 —— 条带行唯一的记账入口是【该活动的 EVENT_DETAIL 读数且 calendar_origin != GRID_ENTRY】",
+      "what_only_exists_for_the_calendar_tab": "runtime.py:5453-5474 EVENT_CALENDAR_TAB 的目标写死读 calendar_tab_tap_norm；全仓库没有 TAB_BY_LABEL/SELECT_TAB 之类的通用动作",
+      "closest_sibling_prior": "runtime.py:5837-5881 BEAST_SEARCH_TAB —— 按本帧 OCR 读到的标签点页签；格子被裁时返回 None 让调用方去滑，而不是给一个裁一半的点"
+    },
+    "the_gap_in_one_sentence": "运行时会走到那条条上、会读它、会滑它，但**永远只选『日历』那一个页签**，所以条带上其它活动永远是『已展示、未读』，这笔债永远还不上。而 event_schedule.py:463 的 docstring 自己就写着『条带是唯一还欠着的一笔』。",
+    "the_ladder_verdict_not_a_new_goal": {
+      "分流判据": "『discover() 会不会产出这条 goal』——会。DISCOVER_EVENT_CALENDAR 在 calendar_scan_due 为真时就会被产出，而条带债务让它**已经**为真。",
+      "结论": "既有目标缺能力，走 winter-capability-intake-ladder；**不要加第二个目标**。",
+      "外部先验的支持": "knowledge/events/timed_event_readiness.json 把这件事建模成【排期 + 触发】（reservation_scope: PER_ROLE、next_open_condition），不是 goal。与本项目既有判断一致。"
+    },
+    "the_hazard_that_must_be_solved_in_the_same_change": {
+      "what": "条带行要被记账，需要一条 calendar_origin != GRID_ENTRY 的 EVENT_DETAIL 读数（event_schedule.py:767）。点中页签产生的是『hub 且选中该活动』，未必是 detail 读数。",
+      "consequence_if_ignored": "债务不清 ⇒ calendar_scan_due 永远为真 ⇒ DISCOVER_EVENT_CALENDAR 每 ~24 秒被重选。这正是 event_schedule.py:417-433 与 tools/strip_credit_convergence_check.py 记录过的循环。",
+      "acceptance_rule": "验收必须包含【债务下降且不再回升】，不能只验收『点到了那个页签』。现成检查器：tools/strip_credit_convergence_check.py。",
+      "second_hazard": "页签格子被裁一半时 OCR 框中心可能落在邻居上（runtime.py:5858-5869 记过：点 野兽 的可见窄条，选中的是 冰原巨兽）。所以点必须来自本帧且落在 tabstrip_roi_norm 带内。"
+    },
+    "where_the_design_is_written": ".workbuddy-ai/handoff/THE_STRIP_DEBT_HAS_NO_TAB_TAP_20261010.md（含五处最小改动、离线验收判据、设备门、以及明确不做的事）",
+    "status": "设计已定，**未实现**。第 4 步（实现）尚未开始；明晚窗口不依赖它（预约已在册）。"
   }
 }
