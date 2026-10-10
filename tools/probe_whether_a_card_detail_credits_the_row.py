@@ -110,12 +110,14 @@ def main() -> int:
     fell = len(after) < len(before)
     print("=" * 88)
     if fell:
-        print("ANSWER: the credit is date-driven -- the id mismatch does NOT block it, so")
-        print("blocker 3 is already handled at the credit step and the repair is smaller.")
+        print("ANSWER: the debt fell -- a card whose id is a different hash still credits the")
+        print("row it belongs to, on the date evidence alone.  Before the date-window fallback")
+        print("was added this printed (1 -> 1) with matched_occurrence_key=None, which is what")
+        print("kept the calendar goal re-selected every few minutes.")
         return 0
-    print("ANSWER: a differently-hashed id defeats the credit.  The debt on file is keyed on")
-    print("the grid frame's ids, so a reading taken on a frame that read the label differently")
-    print("credits nothing -- which is why the loop cannot end by relaxing a guard.")
+    print("ANSWER: the debt did NOT fall.  The credit refused a differently-hashed id, so a")
+    print("reading taken on a frame that read the label differently credits nothing -- the")
+    print("state this probe was written to catch.")
     return 1
 
 

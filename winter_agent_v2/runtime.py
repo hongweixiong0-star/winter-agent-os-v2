@@ -2426,6 +2426,23 @@ class LiveRuntime:
                     if len(candidates) == 1:
                         detail.update(matched_event_id=candidates[0].get("event_id"),
                                       matched_occurrence_key=candidates[0].get("occurrence_key"))
+                    else:
+                        # The card's own heading minted a different id for the same activity
+                        # (`_event_id` hashes the OCR label, and the card says 除雪小分队 where
+                        # the grid said 除雪), so the id test above can never find the row that
+                        # was tapped -- and the verifier reads THIS key, so leaving it empty
+                        # fails the step however well the store credits it.  The detail's own
+                        # printed dates are the evidence that survives the truncation.
+                        #
+                        # Gated on the id matching nothing at all: when it does match a row,
+                        # the identifier was not changed and the ambiguous case must stay
+                        # ambiguous (see the same guard in ``event_schedule``).
+                        if not any(str(row.get("event_id") or "") == str(detail.get("event_id") or "")
+                                   for row in rows):
+                            covering = event_schedule.row_covering_the_details_window(detail, rows)
+                            if covering is not None:
+                                detail.update(matched_event_id=covering.get("event_id"),
+                                              matched_occurrence_key=covering.get("occurrence_key"))
                 detail["calendar_origin"] = "GRID_ENTRY"
             events["calendar_detail"] = detail
         elif calendar.get("recognized") is True:
