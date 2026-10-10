@@ -2,8 +2,8 @@
   "schema_version": "1.1",
   "topic": "BEAR_PARTICIPATION_CHAIN_STATUS",
   "written_at": "2026-10-05T21:25:00+08:00",
-  "updated_at": "2026-10-10T10:05:00+08:00",
-  "updated_by": "session 2026-10-10 (the calendar preview card is an overlay; the reader that would read it is gated out)",
+  "updated_at": "2026-10-10T10:25:00+08:00",
+  "updated_by": "session 2026-10-10 (three blockers measured; identity is a hash of OCR text, so the debt cannot clear)",
   "question": "两个角色打巨熊，到底缺什么？",
   "one_line": "链路通的；缺的不是时序运气 —— 巨熊窗口在生产里被真机读到过 4 次，4 次都没有进入决策帧，所以 PARTICIPATE_BEAR 一次都没被生成。这是读数传递缺陷，不是运气。",
   "correction_20261009": {
@@ -941,5 +941,39 @@
     },
     "status": "归因完成，**未改行为**。ocr.py / runtime.py / brain.py 均未改动。",
     "where_the_design_is_written": ".workbuddy-ai/handoff/THE_CALENDAR_DETAIL_LOOP_ASKS_A_QUESTION_ALREADY_ANSWERED_20261010.md（含候选 A/B/C 的取舍、C 的验收判据、以及离线素材清单）"
+  },
+  "three_blockers_not_one_guard_and_the_third_is_identity_20261010T1025": {
+    "one_line": "我上一节写下『根因是一行条件写反了』—— **那句是残缺的**。量完之后是**三个**阻塞点叠在一起，而第三个（身份不稳定）才是债务永远清不掉的原因，**而且它不是放宽一个守卫能修的**。",
+    "corrects": "本节上一条 the_calendar_preview_card_is_never_read_20261010T1005 里 the_defect_one_guard_condition 的说法。门确实写反了，但那只是第一层。",
+    "the_three_blockers": {
+      "blocker_1_the_gate": {
+        "where": "ocr.py:1282-1286",
+        "measured": "卡帧 calendar.recognized=True ⇒ 那一支整支不执行 ⇒ 卡上的『距离开始』读不到",
+        "repairable": "yes —— 改门，让它接受『有东西盖着网格』"
+      },
+      "blocker_2_the_detail_reader": {
+        "where": "event_calendar.read_event_detail",
+        "measured": "在真卡帧上返回 **recognized=False**（网格帧同样是 False）",
+        "why_it_matters": "verify_event_calendar_detail_open 要求 after 帧的 calendar_detail.recognized 为真 ⇒ 这一步永远无法 verify ⇒ 那一行永远不被记账",
+        "repairable": "yes —— 教它认这种预览卡（它已经有处理『detail card 后面网格仍可见』的几何代码，见 event_calendar.py:1012-1016）"
+      },
+      "blocker_3_the_identity_is_not_stable": {
+        "where": "event_calendar.py:74 _event_id",
+        "the_code": "digest = hashlib.sha1(label.encode('utf-8')).hexdigest()[:10].upper(); return f'DISCOVERED_EVENT_{digest}'",
+        "measured": {
+          "grid 神秘藏宝室": "DISCOVERED_EVENT_A33B0DC6E9",
+          "card 神秘藏": "DISCOVERED_EVENT_2AE3F69AE7（DIFFERENT）",
+          "grid 旅途的收获": "DISCOVERED_EVENT_2CED2A762E",
+          "card 旅途的": "DISCOVERED_EVENT_80FDBE61F5（DIFFERENT）",
+          "survival_between_the_two_frames": "5 个 id 里只有 2 个存活（除雪、英雄集结）"
+        },
+        "why_it_explains_the_un_clearable_debt": "在册债务正好是按**网格帧**的 id 记的（2CED2A762E / A33B0DC6E9 / DC53E03FB8）。在任何把标签读短的帧上取得的读数，记的是债务从未听说过的 id ⇒ advertised_but_unread_activities 不可能下降 ⇒ calendar_scan_due 永久为真 ⇒ DISCOVER_EVENT_CALENDAR 反复被选中。",
+        "repairable": "**no** —— 需要改『发现式活动的身份如何得出』，不是改一个条件"
+      }
+    },
+    "the_general_rule": "只要身份是【OCR 文本的哈希】，它就随读取条件漂移 —— 而『读取条件』包括【有没有东西盖住它】。于是『点开一个覆盖物』这个动作**系统性地制造不匹配**。",
+    "the_candidate_for_a_stable_identity": "日期窗口 + 行槽位。理由：calendar_dates_raw 在两帧上是稳定的（除雪 10/13-10/14 两帧一致），而 display_name 不是（除雪 / 除雪小分队、神秘藏宝室 / 神秘藏）。代价：会改写已存 id 的含义，可能孤立历史记录 ⇒ **必须单独设计、单独验收**。",
+    "the_instrument": "tools/probe_whether_a_card_identity_matches_the_row.py（真帧、离线、给出三个阻塞点与两帧 id 存活率）",
+    "status": "归因完成；**ocr.py / event_calendar.py / runtime.py / brain.py 均未改动**。修法需要设计，不在窗口期顺手做。"
   }
 }
