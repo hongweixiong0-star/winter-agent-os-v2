@@ -9117,19 +9117,52 @@ class ControlPanel:
         if self.repeat_after_id: self.root.after_cancel(self.repeat_after_id); self.repeat_after_id = None
 
     def _drain_events(self) -> None:
+        """Drain one batch of worker events -- and never let one bad event end the drain.
+
+        Measured 2026-10-11 08:00, unattended: the panel sat ten minutes with ``workers: 0``,
+        ``panel.log`` frozen at the last 「自动运行已启动」, and three ledgers stopped in adjacent
+        minutes (``goal_state`` 07:53:54 / ``episodes`` 07:53:38 / ``snapshot`` 07:54:51) while the
+        process stayed ``alive=True`` the whole time.  The round had started; the next thing it
+        should have written was 「本轮结束」, and it never came.
+
+        The shape of the hole: this loop drained inside one ``try`` whose only handler was
+        ``queue.Empty``, and the re-arm (``root.after(100, ...)``) sat *after* it.  So an exception
+        raised while handling **any** single event -- ``_apply_complete`` alone touches a dozen
+        fields, a funnel refresh and a file write -- propagated out, the re-arm never ran, and the
+        drain was over.  Stderr goes nowhere because the panel runs under ``pythonw``, so the round
+        ended in silence.  The panel's own rule is 「a halt must never be silent」 (it is written at
+        the ``⏹ 未进入下一轮`` line); this was the one exit that rule did not cover.
+
+        Two changes, both about the loop rather than about any event's meaning:
+        * each event is handled inside its own ``try``, so a bad one is named and the batch
+          continues -- one malformed payload must not cost the operator every later event;
+        * the re-arm is in a ``finally``, so the drain continues even if the handler itself fails.
+
+        The exception is *reported through the panel's own log* rather than swallowed: a refusal to
+        die quietly is the whole point.
+        """
         try:
             while True:
                 kind, data = self.events.get_nowait()
-                if kind == "refresh": self._apply_world(*data)
-                elif kind == "complete": self._apply_complete(*data)
-                elif kind == "note":
-                    self._append(str(data))
-                elif kind == "worker_failure":
-                    self._handle_worker_failure(data)
-                else:
-                    self._handle_runtime_error(str(data))
-        except queue.Empty: pass
-        self.root.after(100, self._drain_events)
+                try:
+                    if kind == "refresh": self._apply_world(*data)
+                    elif kind == "complete": self._apply_complete(*data)
+                    elif kind == "note":
+                        self._append(str(data))
+                    elif kind == "worker_failure":
+                        self._handle_worker_failure(data)
+                    else:
+                        self._handle_runtime_error(str(data))
+                except Exception as exc:  # noqa: BLE001 - one bad event must not end the drain
+                    self._append(
+                        f"⚠ 处理 {kind} 事件时出错（{type(exc).__name__}: {str(exc)[:160]}）；"
+                        "drain 继续。这一行是它唯一的记录 —— 在此修复前，这种异常会让 drain 停住、"
+                        "连续循环不再排下一轮，而面板看起来仍在运行。"
+                    )
+        except queue.Empty:
+            pass
+        finally:
+            self.root.after(100, self._drain_events)
 
     def _handle_worker_failure(self, data: dict) -> None:
         """Route a worker death by classification instead of one blunt counter.
