@@ -73,35 +73,35 @@ job 锁被拒 → `POST /api/v1/jobs` HTTP 500。修复：`service_environment()
 <!-- /HANDWRITTEN:2026-09-24 -->
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-10-02T12:45:01+00:00
+HANDOFF TIME: 2026-10-13T16:40:13+00:00
 LAST GOOD COMMIT: e4fd245
-WORKING TREE: 1515 dirty file(s)
-  ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', 'MM .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md', 'MM .workbuddy-ai/commander/WORK_QUEUE.json', 'D  .workbuddy-ai/commander/results/WB-1002-22-BUILDING-UPGRADE-ROUTE.json', 'MM .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', 'MM .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', 'MM .workbuddy-ai/handoff/03_NEXT_ACTION.md', 'MM .workbuddy-ai/handoff/04_OPEN_ISSUES.md']
+WORKING TREE: 1389 dirty file(s)
+  ['M .gitignore', ' M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M .workbuddy-ai/handoff/08_LIVE_METRICS.json']
 
-WHAT FINISHED (machine-visible): 10 skills live verified, 58 stable, 891 commit(s) in history
+WHAT FINISHED (machine-visible): 8 skills live verified, 58 stable, 1249 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
-WHAT NOT VERIFIED: 71 skills never executed, 5 never succeeded
+WHAT NOT VERIFIED: 67 skills never executed, 7 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
-STOPPED AT: agent_state=GOAL_RUNNING stop_reason=None
-LAST PRODUCTION EPISODE: {"skill": "DISMISS_DAILY_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-10-02T12:44:56.542993+00:00", "episode_id": "20261002_204428_500709", "before_screenshot": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_204428_500709\\20261002_204428_500709_step_003_before_20261002T124453073135.png", "after_screenshot": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_204428_500709\\20261002_204428_500709_step_003_after_settle_retry_20261002T124454825074.png"}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 332, "recent": 255, "last_seen": "2026-10-02T12:20:03.392522+00:00", "dates": {"2026-09-28": 3, "2026-09-29": 2, "2026-09-30": 155, "2026-10-01": 67, "2026-10-02": 105}, "undated": 0, "top_skills": [["TRY_ORDINARY_CONTROL", 98], ["SELECT_RESOURCE", 86], ["SELECT_BEAST_TARGET_MAMMOTH", 34]]}
+STOPPED AT: agent_state=IDLE stop_reason=manually_owned_by_workbuddy
+LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-10-11T09:29:00.345277+00:00", "episode_id": "20261011_172738_866458", "before_screenshot": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_172738_866458\\20261011_172738_866458_step_004_before_20261011T092853016380.png", "after_screenshot": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_172738_866458\\20261011_172738_866458_step_004_after_20261011T092854351456.png"}
+TOP FAILURE: {"failure_type": "GIANT_BEAST_SEARCH_NOT_PROVEN", "count": 164, "recent": 150, "last_seen": "2026-10-11T09:24:02.519152+00:00", "dates": {"2026-10-05": 4, "2026-10-06": 2, "2026-10-07": 2, "2026-10-08": 6, "2026-10-10": 99, "2026-10-11": 51}, "undated": 0, "top_skills": [["SUBMIT_GIANT_BEAST_SEARCH", 164]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 1515
+DIRTY FILES: 1389
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
-LIVE STATUS: PASS (unexpected_worker_exits=18)
+LIVE STATUS: PASS (unexpected_worker_exits=59)
 
 GIT SYNC (is the public mirror current?):
-SYNC STATE at 2026-10-02T12:45:01+00:00
+SYNC STATE at 2026-10-13T16:40:13+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : 164de5e5c2e01492342450cc5731cb242a373d62
-remote_head       : 164de5e5c2e01492342450cc5731cb242a373d62   (local remote-tracking ref; run tools/git_sync.py status to refresh)
-unpushed_commits  : 0   (behind: 0)
-git_dirty         : True (1515 path(s))
-last_push_at      : 2026-10-02T06:58:22.838057+00:00
+local_head        : d54d9e9f3721431ecc442e86ef5e9852287f214e
+remote_head       : 297af0d1c1d4ebfac2635f279c5f4cc0233ed936   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+unpushed_commits  : 138   (behind: 0)
+git_dirty         : True (1389 path(s))
+last_push_at      : 2026-10-05T13:19:05.233600+00:00
 last_push_status  : PUSHED
-verdict           : GitHub mirrors the local tree
+verdict           : LOCAL IS AHEAD by 138 commit(s) -- run `python tools/git_sync.py push`
 
 KNOWN RISKS:
 - Live Verified depends on screenshots that are NOT in git (see .gitignore); they are machine-local.
@@ -117,6 +117,152 @@ DO NOT REPEAT:
 ---
 
 ## 手写：人类补充（生成器读不出来的部分）
+
+### ⏱ 2026-10-11 00:58 交接 —— 7 个源码改动曾躺在生产树里未提交（**07:28 已提交，见下节 ✅**）
+
+**pin 状态**：工作树 `E:\无尽冬日智能体_worktrees\winter-prod-pinned\无尽冬日智能体`，
+分支 `codex/production-pin-recovery`，HEAD **`abe67449`**；`tools/check_mainline.py` → **`MAINLINE_OK`**。
+
+⚠ **本文件机器块里的 `commit=25810c7f` 是数据根（main 镜像）的 HEAD，不是生产 pin 的。**
+两个数字都对，说的是两棵树 —— 接手时不要把 `25810c7f` 当成生产 commit。
+
+⚠ **另一个同名不同粒度的数字**：机器块报 `live_verified=9`，而
+`learning/knowledge_bootstrap/STATE.json` 报 `live_verified: 36`。**两者都不是错的**：
+
+| 数字 | 出处 | 数的是什么 |
+|---|---|---|
+| **9** | `tools/update_workbuddy_handoff.py:292-324` | **skill** 级 —— 遍历 skill，数"在生产里有成功证据"的那些 |
+| **36** | `winter_agent_v2/capability_bootstrap.py:3142` | **capability** 级 —— `coverage.unlocked.live_verified`，定义就写在同文件 `definitions` 里：`"live_verified_percent": "lifecycle=LIVE_VERIFIED / 分母"`，分母 194 |
+
+⇒ **同一个词指两个粒度**（skill / capability）。引用时必须带出处，否则看起来像矛盾。
+
+#### ✅ 头号事项已解决（2026-10-11 07:28–07:32）
+
+`PinError` 窗口**已解除**，三步链路已执行完：
+
+| 步骤 | 结果 |
+|---|---|
+| commit | **HEAD `abe67449` → `6dfa1da5`**（22 files, 2980 insertions, 14 deletions） |
+| repin | **`RESULT: CLEAN_OUTSIDE_DATA`**，manifest `expected_commit` 已更新为 `6dfa1da5` |
+| `--check-only` | **`CODE_COMMIT=6dfa1da5 WORKTREE_CLEAN=true`** |
+| `check_mainline.py` | **`MAINLINE_OK`**（三条全过） |
+| 面板重启 | `panel_restart.py --restart --force` → 新 pid **9988**；`CONTROL_PLANE_RELOAD_REQUIRED.json` **已被机制自己 retire** |
+| 复查 | `device: CONNECTED`（`taskkill /T` 未打断 ADB 桥）；`last_fatal_error: None`；两计数未变 |
+
+**回退凭据**：备份在 `E:/tmp/wb_backup_20261011_0727/`（`working_tree.patch` 36962 行 + 15 个新文件 + 原 HEAD）；
+`git revert 6dfa1da5` 可整体回退。**未 push**。
+
+**面板加载了新代码（已确证，两把尺子）**：`pump.json` 的
+`runtime_loaded_revision = 6dfa1da5…`（＝新提交，且 `runtime_loaded_at` 正是本次重启时刻），
+`control_plane_loaded_sha256 = e73fe81a…`（与提交前工作区该文件的 sha256 **逐位相同**）。
+
+**⚠ 本文档前一版写的"仍未验证：面板那四格没被亲眼看到"是我的误判，已澄清**：
+`· 今日 Goal 摘要` 在**总览页**、内容是 6 个任务行，它的 **L2 折叠是有意设计**（`INERT_FOLDS`）；
+**我改的那块板在「运行·目标」tab**（`control_panel.py:6148`）。截图停在"总览"⇒ 看不见它是**必然**，
+**不是修复未生效**。**未取的只是第三把尺子**（切 tab 后的截图），因为切 tab 需要 UI 交互、风险高于收益。
+
+**新观察**：面板自己报了 `STATE_CONFLICT`（`runtime_snapshot.json` 的 `page=MAP` vs 最近 episode 的 `state_after=INTEL`），
+两条记录更新时间不同，**未查是时序还是真冲突**。
+
+#### 脏文件逐个说明（22 条；**07:28 已全部提交为 `6dfa1da5`**）
+
+| 文件 | 是什么 | 生产状态 |
+|---|---|---|
+| `winter_agent_v2/goal_library.py` (+15) | 一个日历事件只占一行（`on_board` 去重） | **已生效** |
+| `winter_agent_v2/ocr.py` (+24) | 任务板的两个身份：底栏 tab 不参与页面身份 | **已生效** |
+| `winter_agent_v2/capability_bootstrap.py` (+357) | 静态漂移检测（spec 声明的页/元素未注册） | **已生效** |
+| `winter_agent_v2/capability_gate.py` (+36/−6) | `attempted_skills()` 过滤账本里的非技能值 | **已生效** |
+| `winter_agent_v2/skills.py` (+24) | `NON_SKILL_LEDGER_VALUES` 声明那 4 个非技能值 | **已生效** |
+| `winter_agent_v2/device_lease.py` (+16) | `acquire` 写后**读回**，读不回就返回 `LOCK_NOT_WRITTEN` | **已生效** |
+| `tools/control_panel.py` (+156/−8) | 今日目标板：8 个状态的译名 + 四格（优先级/进度/阻塞原因） | **未生效（面板未重启）** |
+| `tools/screenshot_incremental.py` (??) | 增量截图处理工具（配 `tests/test_screenshot_incremental.py`） | 新文件 |
+| `tests/test_*.py` ×14 (??) | 116 个用例全过 | 新文件 |
+
+**"已生效"的判据是产物，不是 HEAD**：6 个 `winter_agent_v2/*` 的 mtime 全部早于本轮 worker 启动
+（00:21:10），worker 每轮重新 import。`goal_state.json` 里 `len(goals)=20`、**`goal_id` 无重复**、
+**`SCHEDULED_*` 9 个事件 9 行** —— 正是 `goal_library` 修复的产物。
+
+#### 收尾顺序（不要颠倒）
+
+```bash
+git add <上面 22 条显式路径>    # 绝不用 git add -A：会连 648 条数据脏一起暂存
+git commit -m "..."
+python tools/repin_production.py --to $(git rev-parse HEAD)      # 期望 RESULT: CLEAN_OUTSIDE_DATA
+python tools/launch_pinned_production.py --check-only            # 期望 CODE_COMMIT=<pin HEAD> WORKTREE_CLEAN=true
+# 然后一次人工重启面板（tools/control_panel.py 属控制面，必须重启才生效）
+```
+
+**`repin_production.py` 的 `checkout` 会抹掉 pin 树里未提交的代码改动** ⇒ 永远是**先提交、后 repin**。
+
+`CONTROL_PLANE_RELOAD_REQUIRED.json` 是**真信号**（用 `winter_agent_v2.control_plane_reload.touched_control_plane`
+判定 → `('tools/control_panel.py', 'winter_agent_v2/device_lease.py')`），且正在被持续刷新 —— **不要清它**。
+
+#### WHAT LIVE VERIFIED（有真机帧为证）
+
+**只有一项**：2026-10-11 00:09 的活帧校准（`dataset/evidence/live_probe_20261011/`）——
+`page=MAP conf 0.99`、`stamina 147` 与画面 HUD 一致、读 158 → 147 跟随真实消耗、`marches 2/6`。
+**AUTO 主链本身没有在本轮被真机验证过。**
+
+#### WHAT NOT VERIFIED（别当成已完成）
+
+- 面板那一格的修复**还没被任何人看到**（面板未重启）。A/B 量化：它会改动 20 行里的 13 个 status 格、17 个 blocked 格。
+- `PinError` 之后生产能否启动 —— 未验证，因为**没有提交**。
+- 全量测试 `233 failed / 5402 passed / 28 errors`（26 分 09 秒）。**本轮 14 个新测试与 5 个被直接测试的模块全绿**；
+  其余失败**未逐个归因**。
+
+#### NEXT EXACT STEP
+
+等操作者授权提交 → 按上面四条命令收尾 → 重启面板一次 → 用产物（`goal_state.json` 的 blockers、面板截图）确认生效。
+
+#### 本轮的完整证据在哪（不要把这一节当成全部）
+
+`knowledge/ui/screenshot_audit/V2_FINAL_ACCEPTANCE_REPORT.md`（**2256 行**，§18.1–18.11 + §19.1–19.6）
+—— 本轮所有判断的原始证据、A/B 数字、被推翻的假设和撤回的说法都在那里。几个入口：
+
+| 想看什么 | 看哪一节 |
+|---|---|
+| 真实运行状态怎么测的（两棵树/一个 AUTO/租约） | §18.2 |
+| 7 个改动哪些已生效、哪些没有，凭什么判 | §18.3 |
+| **A/B：为什么可以断言"没引入新失败"** | §18.10、§18.11 |
+| 那次真机会话（活帧校准） | §16 |
+| 设备上有第二个自动化 | §17 |
+| 今日目标板修复的价值（20 行里改 13/17 格） | §18.6 |
+| **能力成长通道一天 0 产出、根因与出处** | §19.1–19.6 |
+
+配套证据脚本在 `knowledge/ui/screenshot_audit/_scripts/`（含 `_ab_screen_key_plugin.py`，
+它带本轮补上的 `AB_ATTEMPTED_SKILLS=off` 开关）。
+
+#### DO NOT REPEAT（本会话踩过的）
+
+- **别把 `handoff/THE_LEARNING_FUNNEL_PRODUCES_NOTHING_20261006.md` 的结论当新发现** —— 漏斗不产出
+  **10-06 就诊断过**。（但更要紧的是下一条。）
+- **⚠ 一份写着"本轮没做"的 handoff，说的是「它那一轮」，不是「至今」。**
+  我据此写成"修法写了 4 天还没落地"，**是错的**：那份 handoff 写于 10-06 **01:37**，而 **01:46**
+  commit **`f5f81f81`**（`fix(learning): make §48's per-screen Venus budget outlive the run that
+  spent it`，带 188 行测试）就把它做了。**且它在运行** —— 账本 `learning/venus_screen_attempts.json`
+  里 `home__control__36e65c39`（正是那份 handoff 说"曾被问 **84** 次"的屏）现在是
+  `attempts=2 / budget=2`。
+  **查证只需一条命令**：`git log --diff-filter=A -- <修法本该所在的文件>`。
+  另：`remaining_model_steps` 确实仍是孤儿，但**它所属的 section 29 步数预算已被操作者 10-08 指令废除**
+  （`ui_planner.take_guard()` docstring 原话："a step count is not one of them"）；替代它的是
+  `NO_PROGRESS_STOP = 10`（连续十步无进展），**已实现且已接线**（`take_guard` 的唯一调用者在 `:976`）。
+- **别把 `*_REFUSED` / `*_SKIPPED` 读成故障**：`GATE_REFUSED`（让路）、`runtime.py:1322` 的 unrouted 跳过，
+  都是**具名设计**，注解就在三行之外。
+- **别用"两个 run_live 进程"推断双执行者** —— 那是 launcher → runner 的 re-exec 父子链。
+- **路径是 `lrwork`（小写 L）**，不是 `irwork`。
+- **`C:\...\.codex\worktrees\...` 与 `E:\..._worktrees\...` 是同一个文件**（`st_ino`/`realpath` 相等；
+  **不要**用 `st_reparse_tag` 反推）。
+- **别用"重复的 skill 序列"推断 livelock** —— 要看 `goal_progress` 的分布才算数。
+- **A/B 回退源码但不回退测试**：同一次提交里新增的测试文件在两侧都失败 ⇒ 会被算成"既存"。
+- **⚠ 机器块 KNOWN RISKS 里那条 `unexpected_worker_exits` 的注解，事实前提已经过时**（2026-10-11 实测）：
+  注解说 "No crash reports exist and latest.log is 0 bytes"，而实际上
+  `learning/control_panel/crashes/` **有一个** crash 报告
+  （`20260921_071708_578653_unified_worker.json`，3798 B，`classification: ENVIRONMENT`，
+  `RuntimeError: DEVICE_AMBIGUOUS`），`learning/control_panel/latest.log` 是 **63545 B** 且仍在写。
+  **结构问题（两个写入者）仍然成立，所以这个计数仍不可读作"worker 崩溃"；但"读不了"的理由没了 ——
+  现在可以从 `crashes/` 与 `latest.log` 查真实原因了。** 该注解的其余部分（不得清零）不变。
+- **该注解只出现在 `10_LAST_HANDOFF.md`，不在 `01_CURRENT_TRUTH.md`**，而后者才是接手者先读的那份、
+  且它照样报了 `unexpected_worker_exits: 57`。⇒ **同一个字段的数值与读法分处两地**，读第一份文件的人会漏掉读法。
 
 ### ⭐ 能力扩展主路线已变更 + 常驻知识预载已上线（2026-09-18 11:24，`a641b6d` / `6b31d45`）— 先读这一节
 

@@ -1,0 +1,69 @@
+{
+  "recorded_at": "2026-10-02T04:19:57.742791+00:00",
+  "authorization": "Latest human request: see what you can do now, then do it. Nonconflicting existing-service recovery and isolated patch; not a release-owner takeover.",
+  "service_recovery": {
+    "started_at": "2026-10-02T12:04:39.884322+08:00",
+    "pid": 18012,
+    "endpoint": "http://127.0.0.1:18080",
+    "health": {
+      "status": "ok"
+    },
+    "context": 32768,
+    "vision_loaded": true,
+    "gpu_layers": 30,
+    "kv_type": "f16",
+    "new_model_installed": false,
+    "service_count": 1,
+    "launcher": "tools/launch_gui_model_server.py",
+    "backup": "C:\\Users\\xhw\\.codex\\backups\\venus-service-recovery-20261002T120438",
+    "old_exit_root_cause": "UNPROVEN: original log empty, no exit code or attributable Windows crash; post-reboot successful calls exclude reboot as established current cause",
+    "resource_sample": {
+      "gpu_total_used_mib": 7811,
+      "model_dedicated_bytes": 7351541760,
+      "model_shared_bytes": 146800640,
+      "system_free_kib": 11564468,
+      "system_total_kib": 32729300,
+      "measurement": "single samples, not peaks"
+    },
+    "post_restore_auto_evidence": {
+      "run_ids": [
+        "20261002_120614_753046",
+        "20261002_120834_587792",
+        "20261002_121119_112086",
+        "20261002_121611_362773"
+      ],
+      "sampled_steps": 49,
+      "verifier_pass_steps": 43,
+      "unexpected_worker_exits": 18,
+      "watchdog_restart_count": 24,
+      "last_fatal_error": null
+    },
+    "new_online_unknown_model_proof": false,
+    "FIRST_SECOND_LOOP_COMPLETED": false
+  },
+  "calendar_patch": {
+    "commit": "aab14bb5f240815ab5a86a41d85ead3a60ab99ce",
+    "branch": "codex/calendar-detail-liveness",
+    "worktree": "C:\\Users\\xhw\\.codex\\worktrees\\calendar-detail-liveness\\无尽冬日智能体",
+    "base_commit": "77d5b4b09bbe21193cfe467d6363dc66726b3ce6",
+    "scope": [
+      "winter_agent_v2/runtime.py",
+      "tests/test_event_calendar.py",
+      "tests/test_calendar_detail_attribution.py"
+    ],
+    "root_cause": "Same event name inherited an old calendar occurrence key; current grid rejected it and remained pending. Reuse only an unreturned detail with a key still present for the same event/role in the current grid; otherwise attribute the currently pending row. Preserve strict store rejection and role isolation.",
+    "tests": "36 passed: attribution plus existing calendar/reader regressions; five new cases",
+    "maturity": [
+      "CODE_EXISTS",
+      "TEST_PASS",
+      "INDEPENDENT_READ_REVIEW"
+    ],
+    "production_loaded": false,
+    "main_merged": false,
+    "remote_pushed": false,
+    "release_owner": "Existing WorkBuddy exclusive claim remains",
+    "integration_action": "Owner may inspect/cherry-pick this local commit, then targeted checks and safe owner repin/reload. Real calendar completion remains to verify.",
+    "separate_next_root_cause": "Navigation distance changes still count as calendar progress; address separately, not mixed into this commit."
+  },
+  "scope_limits": "No MuMu input, AUTO stop, main merge/push, production repin/reload, ownership transfer or execution-result edits."
+}

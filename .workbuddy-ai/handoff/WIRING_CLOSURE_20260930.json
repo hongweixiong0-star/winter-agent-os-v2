@@ -1,0 +1,2586 @@
+{
+  "recorded_at": "2026-09-30T14:30:51.055470+00:00",
+  "main_commit": "1f7c9c5787be2d0571973693858a9a480e955609",
+  "production_loaded_revision": "b13c3244cf5f1c36fc03aaab0ed3fa2b549e969f+1988ab4fcd0252f4",
+  "runtime_snapshot": {
+    "agent_state": "PAUSED",
+    "runtime_thread_alive": false,
+    "scheduler_loop_alive": false,
+    "last_tick_time": "2026-09-30T14:27:12.004357+00:00",
+    "last_action_time": "2026-09-30T14:25:41.052376+00:00",
+    "last_success_time": "2026-09-30T14:25:47.419325+00:00",
+    "last_fatal_error": null,
+    "watchdog_restart_count": 23,
+    "unexpected_worker_exits": 17,
+    "page": "MAP",
+    "role_id": "1063040265",
+    "current_goal": null,
+    "current_skill": null,
+    "reason": "DEVELOPMENT_VALIDATION owns the device for STAMINA_POLAR_RALLY",
+    "preconditions": [],
+    "verifier": null,
+    "next_action": "yielded at a safe point; resumes when the lease is released",
+    "risk": "UNKNOWN",
+    "confidence": 0.99,
+    "device": "UNKNOWN",
+    "game": "UNKNOWN",
+    "mode": "AUTO",
+    "qwen": "ON_DEMAND",
+    "vision": "READY",
+    "screenshot_path": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260930_222421_237307\\20260930_222421_237307_step_009_before_20260930T142706055351.png",
+    "march_used": 1,
+    "march_max": 6,
+    "queues": {
+      "building": {},
+      "research": {},
+      "training": {},
+      "intel": {},
+      "alliance": {},
+      "events": {}
+    },
+    "stop_reason": "device_leased_for_development",
+    "stop_category": null,
+    "deferred_goals": [
+      {
+        "goal_id": "KEEP_TRAINING_PRODUCTIVE",
+        "capability": "",
+        "state": "DEFERRED",
+        "reason": "3 consecutive production episodes advanced no part of this goal (2 passed their verifier, 0 were rejected by it, 1 issued no action)",
+        "source": "NO_GOAL_PROGRESS",
+        "failure_signature": "|NO_GOAL_PROGRESS|OPEN_QUICK_PANEL",
+        "streak": 3,
+        "until": "",
+        "last_skill": "OPEN_QUICK_PANEL"
+      },
+      {
+        "goal_id": "MAIL_ROUTINE",
+        "capability": "READ_MAIL_TABS",
+        "state": "BLOCKED",
+        "reason": "repair budget exhausted (2/2) after CODE_CHANGED",
+        "source": "ESCALATION_QUEUE",
+        "failure_signature": "",
+        "streak": 0,
+        "until": "2026-09-28T14:20:26.922513+00:00",
+        "last_skill": ""
+      },
+      {
+        "goal_id": "DAILY_ACTIVITY_TARGET",
+        "capability": "READ_DAILY_PROGRESS",
+        "state": "BLOCKED",
+        "reason": "repair budget exhausted (2/2) after CODE_CHANGED",
+        "source": "ESCALATION_QUEUE",
+        "failure_signature": "",
+        "streak": 0,
+        "until": "2026-09-23T14:42:13.806048+00:00",
+        "last_skill": ""
+      }
+    ],
+    "updated_at": "2026-09-30T14:29:27.000368+00:00"
+  },
+  "role_boards": {
+    "ROLE_A": {
+      "game_date": "2026-09-30",
+      "timezone": "Asia/Shanghai",
+      "generated_at": "2026-09-30T14:01:54.113354+00:00",
+      "last_observed_at": "2026-09-30T14:01:54.113354+00:00",
+      "tasks": {
+        "DAILY": {
+          "task_type": "DAILY",
+          "status": "READY",
+          "goal_ids": [
+            "DAILY_ACTIVITY_TARGET"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "DAILY_ACTIVITY_TARGET",
+              "status": "READY",
+              "source_status": "DISCOVERED",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": null,
+              "available_skills": [
+                "OPEN_DAILY"
+              ],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 3,
+          "last_goal_completion": {
+            "at": "2026-09-30T12:35:28.744876+00:00",
+            "episode_id": "20260930_203500_647591",
+            "source": "completed_goal_ids"
+          }
+        },
+        "INTEL": {
+          "task_type": "INTEL",
+          "status": "READY",
+          "goal_ids": [
+            "CLEAR_INTEL"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "CLEAR_INTEL",
+              "status": "READY",
+              "source_status": "DISCOVERED",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": null,
+              "available_skills": [
+                "OPEN_INTEL"
+              ],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 0
+        },
+        "MAIL": {
+          "task_type": "MAIL",
+          "status": "COMPLETE",
+          "goal_ids": [
+            "MAIL_ROUTINE"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "MAIL_ROUTINE",
+              "status": "COMPLETE",
+              "source_status": "COMPLETE",
+              "completion": 1.0,
+              "distance": 0.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": null,
+              "available_skills": [
+                "MAIL_CLAIM_REWARDS",
+                "SELECT_MAIL_ALLIANCE_TAB",
+                "SELECT_MAIL_SYSTEM_TAB",
+                "SELECT_MAIL_REPORT_TAB"
+              ],
+              "updated_at": "2026-09-30T14:01:42.773484+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:42.773484+00:00",
+          "completion_events_today": 2,
+          "last_goal_completion": {
+            "at": "2026-09-30T14:01:23.879520+00:00",
+            "episode_id": "20260930_220035_371371",
+            "source": "completed_goal_ids"
+          }
+        },
+        "REWARD": {
+          "task_type": "REWARD",
+          "status": "COMPLETE",
+          "goal_ids": [
+            "CLAIM_EXPLORATION_IDLE"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "CLAIM_EXPLORATION_IDLE",
+              "status": "COMPLETE",
+              "source_status": "COMPLETE",
+              "completion": 1.0,
+              "distance": 0.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": null,
+              "available_skills": [
+                "EXPLORATION_IDLE_CLAIM"
+              ],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 6,
+          "last_goal_completion": {
+            "at": "2026-09-30T13:39:50.286529+00:00",
+            "episode_id": "20260930_213840_030390",
+            "source": "completed_goal_ids"
+          }
+        },
+        "ALLIANCE": {
+          "task_type": "ALLIANCE",
+          "status": "BLOCKED",
+          "goal_ids": [
+            "ALLIANCE_TIMED_EVENTS"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "ALLIANCE_TIMED_EVENTS",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            }
+          ],
+          "reason_code": "ENVIRONMENT_BLOCKED",
+          "current_blocker": "current availability has not been observed",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 0
+        },
+        "ALLIANCE_DONATION": {
+          "task_type": "ALLIANCE_DONATION",
+          "status": "NOT_DISCOVERED",
+          "goal_ids": [],
+          "goal_states": [],
+          "reason_code": "NOT_DISCOVERED",
+          "current_blocker": "no matching role-scoped Goal in the latest discovery snapshot",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 0
+        },
+        "TRAINING": {
+          "task_type": "TRAINING",
+          "status": "READY",
+          "goal_ids": [
+            "KEEP_TRAINING_PRODUCTIVE"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "KEEP_TRAINING_PRODUCTIVE",
+              "status": "READY",
+              "source_status": "READY",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": null,
+              "available_skills": [
+                "TRAIN_TROOPS"
+              ],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 0,
+          "PRODUCTIVE_CYCLE_VERIFIED": true,
+          "productive_cycle_evidence": {
+            "at": "2026-09-30T13:47:53.666451+00:00",
+            "episode_id": "20260930_214611_602738",
+            "skill": "TRAIN_TROOPS",
+            "scope": "STEP_VERIFIED"
+          }
+        },
+        "RESEARCH": {
+          "task_type": "RESEARCH",
+          "status": "COMPLETE",
+          "goal_ids": [
+            "KEEP_RESEARCH_PRODUCTIVE"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+              "status": "COMPLETE",
+              "source_status": "COMPLETE",
+              "completion": 1.0,
+              "distance": 0.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": "09:35:33",
+              "available_skills": [
+                "RESEARCH"
+              ],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 0
+        },
+        "BUILDING": {
+          "task_type": "BUILDING",
+          "status": "COMPLETE",
+          "goal_ids": [
+            "KEEP_BUILDING_PRODUCTIVE"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "KEEP_BUILDING_PRODUCTIVE",
+              "status": "COMPLETE",
+              "source_status": "COMPLETE",
+              "completion": 1.0,
+              "distance": 0.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": "1天21:08:21",
+              "available_skills": [
+                "OPEN_BUILDING_UPGRADE",
+                "BUILDING_UPGRADE",
+                "TRY_ORDINARY_CONTROL"
+              ],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 0
+        },
+        "GATHER": {
+          "task_type": "GATHER",
+          "status": "NOT_DISCOVERED",
+          "goal_ids": [],
+          "goal_states": [],
+          "reason_code": "NOT_DISCOVERED",
+          "current_blocker": "no matching role-scoped Goal in the latest discovery snapshot",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 0
+        },
+        "STAMINA": {
+          "task_type": "STAMINA",
+          "status": "READY",
+          "goal_ids": [
+            "AVOID_STAMINA_WASTE"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "AVOID_STAMINA_WASTE",
+              "status": "READY",
+              "source_status": "READY",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": null,
+              "available_skills": [
+                "BACK",
+                "OPEN_MAP"
+              ],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 1,
+          "last_goal_completion": {
+            "at": "2026-09-30T02:18:39.068498+00:00",
+            "episode_id": "20260930_101813_365265",
+            "source": "completed_goal_ids"
+          }
+        },
+        "BEAST": {
+          "task_type": "BEAST",
+          "status": "NOT_DISCOVERED",
+          "goal_ids": [],
+          "goal_states": [],
+          "reason_code": "NOT_DISCOVERED",
+          "current_blocker": "no matching role-scoped Goal in the latest discovery snapshot",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 0
+        },
+        "ICEFIELD_BEAST": {
+          "task_type": "ICEFIELD_BEAST",
+          "status": "NOT_DISCOVERED",
+          "goal_ids": [],
+          "goal_states": [],
+          "reason_code": "NOT_DISCOVERED",
+          "current_blocker": "no matching role-scoped Goal in the latest discovery snapshot",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 0
+        },
+        "ARENA": {
+          "task_type": "ARENA",
+          "status": "BLOCKED",
+          "goal_ids": [
+            "USE_FREE_ARENA_ATTEMPTS"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "USE_FREE_ARENA_ATTEMPTS",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "CAPABILITY_GAP",
+              "current_blocker": "missing production observation: world.attempts",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            }
+          ],
+          "reason_code": "CAPABILITY_GAP",
+          "current_blocker": "missing production observation: world.attempts",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 0
+        },
+        "ACTIVITY_CLAIM": {
+          "task_type": "ACTIVITY_CLAIM",
+          "status": "BLOCKED",
+          "goal_ids": [
+            "SCHEDULED_BEAR_HUNT",
+            "SCHEDULED_STATE_VS_STATE",
+            "SCHEDULED_ARMAMENT_COMPETITION",
+            "SCHEDULED_ALLIANCE_MOBILIZATION",
+            "SCHEDULED_OFFICER_PROJECT",
+            "SCHEDULED_DEFEAT_NEARBY_BEASTS",
+            "SCHEDULED_BROTHERS_IN_ARMS",
+            "SCHEDULED_CANYON_CLASH",
+            "SCHEDULED_FORTRESS_CONTEST",
+            "SCHEDULED_ARMAMENT_FACTORY_EVENT",
+            "SCHEDULED_UNDERGROUND_EXPLORATION",
+            "SCHEDULED_ICEBOUND_TREASURE",
+            "SCHEDULED_MOONLIGHT_FESTIVAL_SHOP",
+            "SCHEDULED_EXCLUSIVE_GEAR_FORGE",
+            "SCHEDULED_ICEBOUND_TREASURE_TRAINING",
+            "SCHEDULED_ICEBOUND_TREASURE_MYSTERY_SHOP",
+            "ALLIANCE_TIMED_EVENTS"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "SCHEDULED_BEAR_HUNT",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_STATE_VS_STATE",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ARMAMENT_COMPETITION",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ALLIANCE_MOBILIZATION",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_OFFICER_PROJECT",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_DEFEAT_NEARBY_BEASTS",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_BROTHERS_IN_ARMS",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_CANYON_CLASH",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_FORTRESS_CONTEST",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ARMAMENT_FACTORY_EVENT",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_UNDERGROUND_EXPLORATION",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ICEBOUND_TREASURE",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_MOONLIGHT_FESTIVAL_SHOP",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_EXCLUSIVE_GEAR_FORGE",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ICEBOUND_TREASURE_TRAINING",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ICEBOUND_TREASURE_MYSTERY_SHOP",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "ALLIANCE_TIMED_EVENTS",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            }
+          ],
+          "reason_code": "ENVIRONMENT_BLOCKED",
+          "current_blocker": "current availability has not been observed",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 0
+        },
+        "FREE_REWARD": {
+          "task_type": "FREE_REWARD",
+          "status": "COMPLETE",
+          "goal_ids": [
+            "CLAIM_EXPLORATION_IDLE"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "CLAIM_EXPLORATION_IDLE",
+              "status": "COMPLETE",
+              "source_status": "COMPLETE",
+              "completion": 1.0,
+              "distance": 0.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": null,
+              "available_skills": [
+                "EXPLORATION_IDLE_CLAIM"
+              ],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 6,
+          "last_goal_completion": {
+            "at": "2026-09-30T13:39:50.286529+00:00",
+            "episode_id": "20260930_213840_030390",
+            "source": "completed_goal_ids"
+          }
+        },
+        "ALLIANCE_MOBILIZATION": {
+          "task_type": "ALLIANCE_MOBILIZATION",
+          "status": "BLOCKED",
+          "goal_ids": [
+            "SCHEDULED_ALLIANCE_MOBILIZATION"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "SCHEDULED_ALLIANCE_MOBILIZATION",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            }
+          ],
+          "reason_code": "ENVIRONMENT_BLOCKED",
+          "current_blocker": "current availability has not been observed",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 0
+        },
+        "BEAR": {
+          "task_type": "BEAR",
+          "status": "BLOCKED",
+          "goal_ids": [
+            "SCHEDULED_BEAR_HUNT"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "SCHEDULED_BEAR_HUNT",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            }
+          ],
+          "reason_code": "ENVIRONMENT_BLOCKED",
+          "current_blocker": "current availability has not been observed",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 0
+        },
+        "FISHING": {
+          "task_type": "FISHING",
+          "status": "READY",
+          "goal_ids": [
+            "SCHEDULED_FISHING_TOURNAMENT",
+            "OBSERVE_FISHING_STATE"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "SCHEDULED_FISHING_TOURNAMENT",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "OBSERVE_FISHING_STATE",
+              "status": "READY",
+              "source_status": "READY",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": null,
+              "available_skills": [
+                "READ_FISHING_STATE"
+              ],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 0
+        },
+        "OTHER_CURRENT_EVENTS": {
+          "task_type": "OTHER_CURRENT_EVENTS",
+          "status": "BLOCKED",
+          "goal_ids": [
+            "SCHEDULED_BEAR_HUNT",
+            "SCHEDULED_STATE_VS_STATE",
+            "SCHEDULED_ARMAMENT_COMPETITION",
+            "SCHEDULED_ALLIANCE_MOBILIZATION",
+            "SCHEDULED_OFFICER_PROJECT",
+            "SCHEDULED_DEFEAT_NEARBY_BEASTS",
+            "SCHEDULED_BROTHERS_IN_ARMS",
+            "SCHEDULED_CANYON_CLASH",
+            "SCHEDULED_FORTRESS_CONTEST",
+            "SCHEDULED_ARMAMENT_FACTORY_EVENT",
+            "SCHEDULED_UNDERGROUND_EXPLORATION",
+            "SCHEDULED_ICEBOUND_TREASURE",
+            "SCHEDULED_MOONLIGHT_FESTIVAL_SHOP",
+            "SCHEDULED_EXCLUSIVE_GEAR_FORGE",
+            "SCHEDULED_ICEBOUND_TREASURE_TRAINING",
+            "SCHEDULED_ICEBOUND_TREASURE_MYSTERY_SHOP"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "SCHEDULED_BEAR_HUNT",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_STATE_VS_STATE",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ARMAMENT_COMPETITION",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ALLIANCE_MOBILIZATION",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_OFFICER_PROJECT",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_DEFEAT_NEARBY_BEASTS",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_BROTHERS_IN_ARMS",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_CANYON_CLASH",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_FORTRESS_CONTEST",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ARMAMENT_FACTORY_EVENT",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_UNDERGROUND_EXPLORATION",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ICEBOUND_TREASURE",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_MOONLIGHT_FESTIVAL_SHOP",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_EXCLUSIVE_GEAR_FORGE",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ICEBOUND_TREASURE_TRAINING",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ICEBOUND_TREASURE_MYSTERY_SHOP",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:01:54.113354+00:00"
+            }
+          ],
+          "reason_code": "ENVIRONMENT_BLOCKED",
+          "current_blocker": "current availability has not been observed",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:01:54.113354+00:00",
+          "completion_events_today": 0
+        }
+      },
+      "completion_events_today": {
+        "REWARD": [
+          "20260930_004204_284184:6",
+          "20260930_022823_870743:4",
+          "20260930_170702_692798:4",
+          "20260930_192817_142926:5",
+          "20260930_203500_647591:9",
+          "20260930_213840_030390:7"
+        ],
+        "FREE_REWARD": [
+          "20260930_004204_284184:6",
+          "20260930_022823_870743:4",
+          "20260930_170702_692798:4",
+          "20260930_192817_142926:5",
+          "20260930_203500_647591:9",
+          "20260930_213840_030390:7"
+        ],
+        "DAILY": [
+          "20260930_032831_029636:8",
+          "20260930_143030_419729:6",
+          "20260930_203500_647591:2"
+        ],
+        "MAIL": [
+          "20260930_034822_085912:3",
+          "20260930_220035_371371:5"
+        ],
+        "STAMINA": [
+          "20260930_101813_365265:1"
+        ]
+      },
+      "summary": {
+        "completed": 5,
+        "observed": 16,
+        "pending": 15,
+        "not_discovered": 4,
+        "expired": 0,
+        "observed_completion_rate": 0.3125
+      },
+      "refresh_required": false
+    },
+    "ROLE_B": {
+      "game_date": "2026-09-30",
+      "timezone": "Asia/Shanghai",
+      "generated_at": "2026-09-30T14:27:10.065058+00:00",
+      "last_observed_at": "2026-09-30T14:27:10.065058+00:00",
+      "tasks": {
+        "DAILY": {
+          "task_type": "DAILY",
+          "status": "READY",
+          "goal_ids": [
+            "DAILY_ACTIVITY_TARGET"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "DAILY_ACTIVITY_TARGET",
+              "status": "READY",
+              "source_status": "DISCOVERED",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": null,
+              "available_skills": [
+                "OPEN_DAILY"
+              ],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0
+        },
+        "INTEL": {
+          "task_type": "INTEL",
+          "status": "READY",
+          "goal_ids": [
+            "CLEAR_INTEL"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "CLEAR_INTEL",
+              "status": "READY",
+              "source_status": "READY",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": null,
+              "available_skills": [
+                "INTEL_CLAIM_REWARDS",
+                "SELECT_INTEL_BEAST_MISSION"
+              ],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0
+        },
+        "MAIL": {
+          "task_type": "MAIL",
+          "status": "NOT_DISCOVERED",
+          "goal_ids": [],
+          "goal_states": [],
+          "reason_code": "NOT_DISCOVERED",
+          "current_blocker": "no matching role-scoped Goal in the latest discovery snapshot",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 4,
+          "last_goal_completion": {
+            "at": "2026-09-30T09:27:14.929627+00:00",
+            "episode_id": "20260930_172642_547485",
+            "source": "completed_goal_ids"
+          }
+        },
+        "REWARD": {
+          "task_type": "REWARD",
+          "status": "READY",
+          "goal_ids": [
+            "CLAIM_EXPLORATION_IDLE"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "CLAIM_EXPLORATION_IDLE",
+              "status": "READY",
+              "source_status": "DISCOVERED",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": null,
+              "available_skills": [
+                "OPEN_EXPLORATION"
+              ],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 9,
+          "last_goal_completion": {
+            "at": "2026-09-30T13:03:51.234836+00:00",
+            "episode_id": "20260930_210217_959531",
+            "source": "completed_goal_ids"
+          }
+        },
+        "ALLIANCE": {
+          "task_type": "ALLIANCE",
+          "status": "BLOCKED",
+          "goal_ids": [
+            "ALLIANCE_TIMED_EVENTS"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "ALLIANCE_TIMED_EVENTS",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            }
+          ],
+          "reason_code": "ENVIRONMENT_BLOCKED",
+          "current_blocker": "current availability has not been observed",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0
+        },
+        "ALLIANCE_DONATION": {
+          "task_type": "ALLIANCE_DONATION",
+          "status": "NOT_DISCOVERED",
+          "goal_ids": [],
+          "goal_states": [],
+          "reason_code": "NOT_DISCOVERED",
+          "current_blocker": "no matching role-scoped Goal in the latest discovery snapshot",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0
+        },
+        "TRAINING": {
+          "task_type": "TRAINING",
+          "status": "READY",
+          "goal_ids": [
+            "KEEP_TRAINING_PRODUCTIVE"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "KEEP_TRAINING_PRODUCTIVE",
+              "status": "READY",
+              "source_status": "DISCOVERED",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": null,
+              "available_skills": [
+                "TRY_ORDINARY_CONTROL"
+              ],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0,
+          "PRODUCTIVE_CYCLE_VERIFIED": true,
+          "productive_cycle_evidence": {
+            "at": "2026-09-30T13:54:32.490347+00:00",
+            "episode_id": "20260930_215159_771246",
+            "skill": "TRAIN_TROOPS",
+            "scope": "STEP_VERIFIED"
+          }
+        },
+        "RESEARCH": {
+          "task_type": "RESEARCH",
+          "status": "COMPLETE",
+          "goal_ids": [
+            "KEEP_RESEARCH_PRODUCTIVE"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+              "status": "COMPLETE",
+              "source_status": "COMPLETE",
+              "completion": 1.0,
+              "distance": 0.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": "42天22:37:01",
+              "available_skills": [
+                "RESEARCH"
+              ],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0
+        },
+        "BUILDING": {
+          "task_type": "BUILDING",
+          "status": "COMPLETE",
+          "goal_ids": [
+            "KEEP_BUILDING_PRODUCTIVE"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "KEEP_BUILDING_PRODUCTIVE",
+              "status": "COMPLETE",
+              "source_status": "COMPLETE",
+              "completion": 1.0,
+              "distance": 0.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": "14:12:46",
+              "available_skills": [
+                "OPEN_BUILDING_UPGRADE",
+                "BUILDING_UPGRADE",
+                "TRY_ORDINARY_CONTROL"
+              ],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0
+        },
+        "GATHER": {
+          "task_type": "GATHER",
+          "status": "READY",
+          "goal_ids": [
+            "KEEP_MARCHES_PRODUCTIVE"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "KEEP_MARCHES_PRODUCTIVE",
+              "status": "READY",
+              "source_status": "READY",
+              "completion": 0.0,
+              "distance": 5.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": null,
+              "available_skills": [
+                "DISPATCH_MARCH",
+                "SEARCH_RESOURCE"
+              ],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0
+        },
+        "STAMINA": {
+          "task_type": "STAMINA",
+          "status": "READY",
+          "goal_ids": [
+            "AVOID_STAMINA_WASTE"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "AVOID_STAMINA_WASTE",
+              "status": "READY",
+              "source_status": "READY",
+              "completion": 0.0,
+              "distance": 1805.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": null,
+              "available_skills": [
+                "INTEL_CLAIM_REWARDS",
+                "BEAST_HUNT",
+                "SEARCH_RESOURCE",
+                "OPEN_BEAST_SEARCH_TAB",
+                "SUBMIT_BEAST_SEARCH",
+                "SELECT_GIANT_BEAST_TAB",
+                "SUBMIT_GIANT_BEAST_SEARCH",
+                "START_RALLY"
+              ],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0
+        },
+        "BEAST": {
+          "task_type": "BEAST",
+          "status": "NOT_DISCOVERED",
+          "goal_ids": [],
+          "goal_states": [],
+          "reason_code": "NOT_DISCOVERED",
+          "current_blocker": "no matching role-scoped Goal in the latest discovery snapshot",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0
+        },
+        "ICEFIELD_BEAST": {
+          "task_type": "ICEFIELD_BEAST",
+          "status": "NOT_DISCOVERED",
+          "goal_ids": [],
+          "goal_states": [],
+          "reason_code": "NOT_DISCOVERED",
+          "current_blocker": "no matching role-scoped Goal in the latest discovery snapshot",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0
+        },
+        "ARENA": {
+          "task_type": "ARENA",
+          "status": "BLOCKED",
+          "goal_ids": [
+            "USE_FREE_ARENA_ATTEMPTS"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "USE_FREE_ARENA_ATTEMPTS",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "CAPABILITY_GAP",
+              "current_blocker": "missing production observation: world.attempts",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            }
+          ],
+          "reason_code": "CAPABILITY_GAP",
+          "current_blocker": "missing production observation: world.attempts",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0
+        },
+        "ACTIVITY_CLAIM": {
+          "task_type": "ACTIVITY_CLAIM",
+          "status": "BLOCKED",
+          "goal_ids": [
+            "SCHEDULED_BEAR_HUNT",
+            "SCHEDULED_STATE_VS_STATE",
+            "SCHEDULED_ARMAMENT_COMPETITION",
+            "SCHEDULED_ALLIANCE_MOBILIZATION",
+            "SCHEDULED_OFFICER_PROJECT",
+            "SCHEDULED_DEFEAT_NEARBY_BEASTS",
+            "SCHEDULED_BROTHERS_IN_ARMS",
+            "SCHEDULED_CANYON_CLASH",
+            "SCHEDULED_FORTRESS_CONTEST",
+            "SCHEDULED_ARMAMENT_FACTORY_EVENT",
+            "SCHEDULED_UNDERGROUND_EXPLORATION",
+            "SCHEDULED_ICEBOUND_TREASURE",
+            "SCHEDULED_MOONLIGHT_FESTIVAL_SHOP",
+            "SCHEDULED_EXCLUSIVE_GEAR_FORGE",
+            "SCHEDULED_ICEBOUND_TREASURE_TRAINING",
+            "SCHEDULED_ICEBOUND_TREASURE_MYSTERY_SHOP",
+            "ALLIANCE_TIMED_EVENTS"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "SCHEDULED_BEAR_HUNT",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_STATE_VS_STATE",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ARMAMENT_COMPETITION",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ALLIANCE_MOBILIZATION",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_OFFICER_PROJECT",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_DEFEAT_NEARBY_BEASTS",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_BROTHERS_IN_ARMS",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_CANYON_CLASH",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_FORTRESS_CONTEST",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ARMAMENT_FACTORY_EVENT",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_UNDERGROUND_EXPLORATION",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ICEBOUND_TREASURE",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_MOONLIGHT_FESTIVAL_SHOP",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_EXCLUSIVE_GEAR_FORGE",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ICEBOUND_TREASURE_TRAINING",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ICEBOUND_TREASURE_MYSTERY_SHOP",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "ALLIANCE_TIMED_EVENTS",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            }
+          ],
+          "reason_code": "ENVIRONMENT_BLOCKED",
+          "current_blocker": "current availability has not been observed",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0
+        },
+        "FREE_REWARD": {
+          "task_type": "FREE_REWARD",
+          "status": "READY",
+          "goal_ids": [
+            "CLAIM_EXPLORATION_IDLE"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "CLAIM_EXPLORATION_IDLE",
+              "status": "READY",
+              "source_status": "DISCOVERED",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": null,
+              "available_skills": [
+                "OPEN_EXPLORATION"
+              ],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 9,
+          "last_goal_completion": {
+            "at": "2026-09-30T13:03:51.234836+00:00",
+            "episode_id": "20260930_210217_959531",
+            "source": "completed_goal_ids"
+          }
+        },
+        "ALLIANCE_MOBILIZATION": {
+          "task_type": "ALLIANCE_MOBILIZATION",
+          "status": "BLOCKED",
+          "goal_ids": [
+            "SCHEDULED_ALLIANCE_MOBILIZATION"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "SCHEDULED_ALLIANCE_MOBILIZATION",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            }
+          ],
+          "reason_code": "ENVIRONMENT_BLOCKED",
+          "current_blocker": "current availability has not been observed",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0
+        },
+        "BEAR": {
+          "task_type": "BEAR",
+          "status": "BLOCKED",
+          "goal_ids": [
+            "SCHEDULED_BEAR_HUNT"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "SCHEDULED_BEAR_HUNT",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            }
+          ],
+          "reason_code": "ENVIRONMENT_BLOCKED",
+          "current_blocker": "current availability has not been observed",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0
+        },
+        "FISHING": {
+          "task_type": "FISHING",
+          "status": "READY",
+          "goal_ids": [
+            "SCHEDULED_FISHING_TOURNAMENT",
+            "OBSERVE_FISHING_STATE"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "SCHEDULED_FISHING_TOURNAMENT",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "OBSERVE_FISHING_STATE",
+              "status": "READY",
+              "source_status": "READY",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": null,
+              "current_blocker": null,
+              "next_action_at": null,
+              "available_skills": [
+                "READ_FISHING_STATE"
+              ],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            }
+          ],
+          "reason_code": null,
+          "current_blocker": null,
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0
+        },
+        "OTHER_CURRENT_EVENTS": {
+          "task_type": "OTHER_CURRENT_EVENTS",
+          "status": "BLOCKED",
+          "goal_ids": [
+            "SCHEDULED_BEAR_HUNT",
+            "SCHEDULED_STATE_VS_STATE",
+            "SCHEDULED_ARMAMENT_COMPETITION",
+            "SCHEDULED_ALLIANCE_MOBILIZATION",
+            "SCHEDULED_OFFICER_PROJECT",
+            "SCHEDULED_DEFEAT_NEARBY_BEASTS",
+            "SCHEDULED_BROTHERS_IN_ARMS",
+            "SCHEDULED_CANYON_CLASH",
+            "SCHEDULED_FORTRESS_CONTEST",
+            "SCHEDULED_ARMAMENT_FACTORY_EVENT",
+            "SCHEDULED_UNDERGROUND_EXPLORATION",
+            "SCHEDULED_ICEBOUND_TREASURE",
+            "SCHEDULED_MOONLIGHT_FESTIVAL_SHOP",
+            "SCHEDULED_EXCLUSIVE_GEAR_FORGE",
+            "SCHEDULED_ICEBOUND_TREASURE_TRAINING",
+            "SCHEDULED_ICEBOUND_TREASURE_MYSTERY_SHOP"
+          ],
+          "goal_states": [
+            {
+              "goal_id": "SCHEDULED_BEAR_HUNT",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_STATE_VS_STATE",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ARMAMENT_COMPETITION",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ALLIANCE_MOBILIZATION",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_OFFICER_PROJECT",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_DEFEAT_NEARBY_BEASTS",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_BROTHERS_IN_ARMS",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_CANYON_CLASH",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_FORTRESS_CONTEST",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ARMAMENT_FACTORY_EVENT",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_UNDERGROUND_EXPLORATION",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ICEBOUND_TREASURE",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_MOONLIGHT_FESTIVAL_SHOP",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_EXCLUSIVE_GEAR_FORGE",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ICEBOUND_TREASURE_TRAINING",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            },
+            {
+              "goal_id": "SCHEDULED_ICEBOUND_TREASURE_MYSTERY_SHOP",
+              "status": "BLOCKED",
+              "source_status": "UNKNOWN",
+              "completion": 0.0,
+              "distance": 1.0,
+              "reason_code": "ENVIRONMENT_BLOCKED",
+              "current_blocker": "current availability has not been observed",
+              "next_action_at": null,
+              "available_skills": [],
+              "updated_at": "2026-09-30T14:27:10.065058+00:00"
+            }
+          ],
+          "reason_code": "ENVIRONMENT_BLOCKED",
+          "current_blocker": "current availability has not been observed",
+          "next_action_at": null,
+          "updated_at": "2026-09-30T14:27:10.065058+00:00",
+          "completion_events_today": 0
+        }
+      },
+      "completion_events_today": {
+        "REWARD": [
+          "20260930_005942_933638:1",
+          "20260930_023206_092539:4",
+          "20260930_101533_440516:5",
+          "20260930_122156_699748:5",
+          "20260930_132704_832967:4",
+          "20260930_145539_373509:4",
+          "20260930_173255_898952:13",
+          "20260930_190216_742397:5",
+          "20260930_210217_959531:11"
+        ],
+        "FREE_REWARD": [
+          "20260930_005942_933638:1",
+          "20260930_023206_092539:4",
+          "20260930_101533_440516:5",
+          "20260930_122156_699748:5",
+          "20260930_132704_832967:4",
+          "20260930_145539_373509:4",
+          "20260930_173255_898952:13",
+          "20260930_190216_742397:5",
+          "20260930_210217_959531:11"
+        ],
+        "MAIL": [
+          "20260930_142734_405677:3",
+          "20260930_151443_699050:5",
+          "20260930_164840_327547:5",
+          "20260930_172642_547485:2"
+        ]
+      },
+      "summary": {
+        "completed": 2,
+        "observed": 16,
+        "pending": 18,
+        "not_discovered": 4,
+        "expired": 0,
+        "observed_completion_rate": 0.125
+      },
+      "refresh_required": false
+    }
+  },
+  "scheduler_decision": {
+    "decision": "ROLE_REFRESH_REQUIRED",
+    "current_role_id": "1061663148",
+    "selected_role_id": "1063040265",
+    "selected_goal_id": "KEEP_TRAINING_PRODUCTIVE",
+    "selected_skill_id": "TRAIN_TROOPS",
+    "requires_role_refresh": true,
+    "reason": "SWITCH 1061663148→1063040265: ROLE_SESSION_END(NO_WORK_STREAK); current role has no fresh runnable Goal",
+    "score": 1146.438000000082,
+    "role_switch_cost": 53.561999999918044,
+    "next_wakeup": "2026-09-30T23:37:27.113354+00:00",
+    "role_statuses": [
+      {
+        "role_id": "1063040265",
+        "top_goal": "KEEP_TRAINING_PRODUCTIVE",
+        "runnable_count": 6,
+        "blocked_count": 20,
+        "ready_goal_count": 6,
+        "runnable_goal_count": 6,
+        "waiting_goal_count": 0,
+        "capability_gap_count": 0,
+        "board_goal_ids": [
+          "AVOID_STAMINA_WASTE",
+          "KEEP_TRAINING_PRODUCTIVE",
+          "CLEAR_INTEL",
+          "KEEP_RESEARCH_PRODUCTIVE",
+          "KEEP_BUILDING_PRODUCTIVE",
+          "DAILY_ACTIVITY_TARGET",
+          "CLAIM_EXPLORATION_IDLE",
+          "DISCOVER_QUICK_PANEL_TASKS",
+          "SCHEDULED_BEAR_HUNT",
+          "SCHEDULED_STATE_VS_STATE",
+          "SCHEDULED_ARMAMENT_COMPETITION",
+          "SCHEDULED_ALLIANCE_MOBILIZATION",
+          "SCHEDULED_OFFICER_PROJECT",
+          "SCHEDULED_DEFEAT_NEARBY_BEASTS",
+          "SCHEDULED_BROTHERS_IN_ARMS",
+          "SCHEDULED_CANYON_CLASH",
+          "SCHEDULED_FORTRESS_CONTEST",
+          "SCHEDULED_ARMAMENT_FACTORY_EVENT",
+          "SCHEDULED_UNDERGROUND_EXPLORATION",
+          "SCHEDULED_FISHING_TOURNAMENT",
+          "SCHEDULED_ICEBOUND_TREASURE",
+          "SCHEDULED_MOONLIGHT_FESTIVAL_SHOP",
+          "SCHEDULED_EXCLUSIVE_GEAR_FORGE",
+          "SCHEDULED_ICEBOUND_TREASURE_TRAINING",
+          "SCHEDULED_ICEBOUND_TREASURE_MYSTERY_SHOP",
+          "OBSERVE_FISHING_STATE",
+          "ALLIANCE_TIMED_EVENTS",
+          "USE_FREE_ARENA_ATTEMPTS",
+          "LABYRINTH_DAILY"
+        ],
+        "board_settled_goal_ids": [
+          "KEEP_RESEARCH_PRODUCTIVE",
+          "KEEP_BUILDING_PRODUCTIVE",
+          "CLAIM_EXPLORATION_IDLE"
+        ],
+        "board_runnable_goal_ids": [
+          "AVOID_STAMINA_WASTE",
+          "KEEP_TRAINING_PRODUCTIVE",
+          "CLEAR_INTEL",
+          "DAILY_ACTIVITY_TARGET",
+          "DISCOVER_QUICK_PANEL_TASKS",
+          "OBSERVE_FISHING_STATE"
+        ],
+        "wait_until": "2026-09-30T23:37:27.113354+00:00",
+        "next_deadline_seconds": null,
+        "state_fresh": false,
+        "state_reason": "role_has_no_live_world_state",
+        "switch_cooldown_until": null,
+        "switch_failure_streak": 0,
+        "switch_cooldown_active": false,
+        "logical_snapshot_usable": true
+      },
+      {
+        "role_id": "1061663148",
+        "top_goal": "AVOID_STAMINA_WASTE",
+        "runnable_count": 7,
+        "blocked_count": 20,
+        "ready_goal_count": 7,
+        "runnable_goal_count": 7,
+        "waiting_goal_count": 0,
+        "capability_gap_count": 0,
+        "board_goal_ids": [
+          "AVOID_STAMINA_WASTE",
+          "KEEP_TRAINING_PRODUCTIVE",
+          "CLEAR_INTEL",
+          "KEEP_RESEARCH_PRODUCTIVE",
+          "KEEP_BUILDING_PRODUCTIVE",
+          "DAILY_ACTIVITY_TARGET",
+          "CLAIM_EXPLORATION_IDLE",
+          "KEEP_MARCHES_PRODUCTIVE",
+          "SCHEDULED_BEAR_HUNT",
+          "SCHEDULED_STATE_VS_STATE",
+          "SCHEDULED_ARMAMENT_COMPETITION",
+          "SCHEDULED_ALLIANCE_MOBILIZATION",
+          "SCHEDULED_OFFICER_PROJECT",
+          "SCHEDULED_DEFEAT_NEARBY_BEASTS",
+          "SCHEDULED_BROTHERS_IN_ARMS",
+          "SCHEDULED_CANYON_CLASH",
+          "SCHEDULED_FORTRESS_CONTEST",
+          "SCHEDULED_ARMAMENT_FACTORY_EVENT",
+          "SCHEDULED_UNDERGROUND_EXPLORATION",
+          "SCHEDULED_FISHING_TOURNAMENT",
+          "SCHEDULED_ICEBOUND_TREASURE",
+          "SCHEDULED_MOONLIGHT_FESTIVAL_SHOP",
+          "SCHEDULED_EXCLUSIVE_GEAR_FORGE",
+          "SCHEDULED_ICEBOUND_TREASURE_TRAINING",
+          "SCHEDULED_ICEBOUND_TREASURE_MYSTERY_SHOP",
+          "OBSERVE_FISHING_STATE",
+          "ALLIANCE_TIMED_EVENTS",
+          "USE_FREE_ARENA_ATTEMPTS",
+          "LABYRINTH_DAILY"
+        ],
+        "board_settled_goal_ids": [
+          "KEEP_RESEARCH_PRODUCTIVE",
+          "KEEP_BUILDING_PRODUCTIVE"
+        ],
+        "board_runnable_goal_ids": [
+          "AVOID_STAMINA_WASTE",
+          "KEEP_TRAINING_PRODUCTIVE",
+          "CLEAR_INTEL",
+          "DAILY_ACTIVITY_TARGET",
+          "CLAIM_EXPLORATION_IDLE",
+          "KEEP_MARCHES_PRODUCTIVE",
+          "OBSERVE_FISHING_STATE"
+        ],
+        "wait_until": "2026-10-01T04:39:58.110539+00:00",
+        "next_deadline_seconds": null,
+        "state_fresh": true,
+        "state_reason": "fresh_role_observation",
+        "switch_cooldown_until": null,
+        "switch_failure_streak": 0,
+        "switch_cooldown_active": false,
+        "logical_snapshot_usable": false,
+        "started_at": "2026-09-30T14:02:25.771380+00:00",
+        "goals_completed": 0,
+        "actions_verified": 61,
+        "ready_at_start": 0,
+        "ready_now": 7,
+        "runnable_now": 7,
+        "waiting_now": 0,
+        "blocked_now": 20,
+        "capability_gap_now": 0,
+        "completion_ratio": 0.0571,
+        "no_work_streak": 2,
+        "switch_allowed": true,
+        "switch_reason": "NO_WORK_STREAK",
+        "session_goal_count": 35,
+        "session_done_goal_count": 2,
+        "session_started_goal_count": 3,
+        "elapsed_seconds": 1486.354601,
+        "session_gate_detail": "NO_WORK_STREAK",
+        "session_gate_reason_class": "NO_RUNNABLE_WORK",
+        "session_active": true,
+        "switch_reason_description": "2 consecutive schedulings found no runnable work",
+        "dwell_seconds": 300.0
+      }
+    ],
+    "candidates": [
+      {
+        "role_id": "1063040265",
+        "goal_id": "AVOID_STAMINA_WASTE",
+        "skill_id": "BACK",
+        "source": "CACHED_GOAL_REFRESH",
+        "ready_now": false,
+        "score": 46.438000000081956,
+        "role_switch_cost": 53.561999999918044,
+        "hard_event": false,
+        "deadline_seconds": null,
+        "event_starts_in_seconds": null,
+        "event_phase": "IDLE",
+        "selected": false,
+        "selected_reason": "",
+        "rejected_reason": "lower_score_or_role_hysteresis",
+        "attached_goal_ids": [
+          "AVOID_STAMINA_WASTE"
+        ]
+      },
+      {
+        "role_id": "1063040265",
+        "goal_id": "AVOID_STAMINA_WASTE",
+        "skill_id": "OPEN_MAP",
+        "source": "CACHED_GOAL_REFRESH",
+        "ready_now": false,
+        "score": 46.438000000081956,
+        "role_switch_cost": 53.561999999918044,
+        "hard_event": false,
+        "deadline_seconds": null,
+        "event_starts_in_seconds": null,
+        "event_phase": "IDLE",
+        "selected": false,
+        "selected_reason": "",
+        "rejected_reason": "lower_score_or_role_hysteresis",
+        "attached_goal_ids": [
+          "AVOID_STAMINA_WASTE"
+        ]
+      },
+      {
+        "role_id": "1063040265",
+        "goal_id": "KEEP_TRAINING_PRODUCTIVE",
+        "skill_id": "TRAIN_TROOPS",
+        "source": "CACHED_GOAL_REFRESH",
+        "ready_now": false,
+        "score": 1146.438000000082,
+        "role_switch_cost": 53.561999999918044,
+        "hard_event": false,
+        "deadline_seconds": null,
+        "event_starts_in_seconds": null,
+        "event_phase": "IDLE",
+        "selected": true,
+        "selected_reason": "SWITCH 1061663148→1063040265: ROLE_SESSION_END(NO_WORK_STREAK); current role has no fresh runnable Goal",
+        "rejected_reason": "selected_candidate_won_global_arbitration",
+        "attached_goal_ids": [
+          "KEEP_TRAINING_PRODUCTIVE"
+        ]
+      },
+      {
+        "role_id": "1063040265",
+        "goal_id": "CLEAR_INTEL",
+        "skill_id": "OPEN_INTEL",
+        "source": "CACHED_GOAL_REFRESH",
+        "ready_now": false,
+        "score": 106.38184275980919,
+        "role_switch_cost": 53.561999999918044,
+        "hard_event": false,
+        "deadline_seconds": null,
+        "event_starts_in_seconds": null,
+        "event_phase": "IDLE",
+        "selected": false,
+        "selected_reason": "",
+        "rejected_reason": "lower_score_or_role_hysteresis",
+        "attached_goal_ids": [
+          "CLEAR_INTEL"
+        ]
+      },
+      {
+        "role_id": "1063040265",
+        "goal_id": "DAILY_ACTIVITY_TARGET",
+        "skill_id": "OPEN_DAILY",
+        "source": "CACHED_GOAL_REFRESH",
+        "ready_now": false,
+        "score": 100.66480412379332,
+        "role_switch_cost": 53.561999999918044,
+        "hard_event": false,
+        "deadline_seconds": null,
+        "event_starts_in_seconds": null,
+        "event_phase": "IDLE",
+        "selected": false,
+        "selected_reason": "",
+        "rejected_reason": "lower_score_or_role_hysteresis",
+        "attached_goal_ids": [
+          "DAILY_ACTIVITY_TARGET"
+        ]
+      },
+      {
+        "role_id": "1063040265",
+        "goal_id": "DISCOVER_QUICK_PANEL_TASKS",
+        "skill_id": "OPEN_QUICK_PANEL",
+        "source": "CACHED_GOAL_REFRESH",
+        "ready_now": false,
+        "score": 206.43800000008196,
+        "role_switch_cost": 53.561999999918044,
+        "hard_event": false,
+        "deadline_seconds": null,
+        "event_starts_in_seconds": null,
+        "event_phase": "IDLE",
+        "selected": false,
+        "selected_reason": "",
+        "rejected_reason": "lower_score_or_role_hysteresis",
+        "attached_goal_ids": [
+          "DISCOVER_QUICK_PANEL_TASKS"
+        ]
+      },
+      {
+        "role_id": "1063040265",
+        "goal_id": "OBSERVE_FISHING_STATE",
+        "skill_id": "READ_FISHING_STATE",
+        "source": "CACHED_GOAL_REFRESH",
+        "ready_now": false,
+        "score": -53.561999999918044,
+        "role_switch_cost": 53.561999999918044,
+        "hard_event": false,
+        "deadline_seconds": null,
+        "event_starts_in_seconds": null,
+        "event_phase": "IDLE",
+        "selected": false,
+        "selected_reason": "",
+        "rejected_reason": "lower_score_or_role_hysteresis",
+        "attached_goal_ids": [
+          "OBSERVE_FISHING_STATE"
+        ]
+      }
+    ],
+    "session_gate": {
+      "allowed": true,
+      "reason_class": "NO_RUNNABLE_WORK",
+      "detail": "NO_WORK_STREAK",
+      "description": "2 consecutive schedulings found no runnable work",
+      "runnable_now": 7,
+      "ready_now": 7,
+      "waiting_now": 0,
+      "blocked_now": 20,
+      "capability_gap_now": 0,
+      "completion_ratio": 0.0571,
+      "goals_discovered": 35,
+      "goals_consumed": 2,
+      "no_work_streak": 2,
+      "min_role_dwell_seconds": 300.0,
+      "switch_margin": 30.0,
+      "session_started_at": "2026-09-30T14:02:25.771380+00:00",
+      "session_elapsed_seconds": 1486.354601,
+      "session_role_id": "1061663148"
+    },
+    "switch_reason_class": "NO_RUNNABLE_WORK",
+    "hard_event_roles": [],
+    "at": "2026-09-30T14:27:12.135171+00:00"
+  },
+  "tests": {
+    "passed": 235,
+    "subtests_passed": 83,
+    "baseline_capability_gate_failures": 9,
+    "baseline_failure_reason": "Older assertions still expect solo beast/no stamina rally route; no full suite claim"
+  },
+  "fishing_validation": {
+    "state": "LIVE_STATE_READ",
+    "selected_correctly": true,
+    "unrelated_daily_selected": false,
+    "normal_bait_spent": 0,
+    "evidence": "dataset/raw/wiring_fishing_validation/run_20260930T212840/session_timeline.jsonl",
+    "goal": "OBSERVE_FISHING_STATE",
+    "reason": "FISHING_STATE_READ",
+    "note": "Probe exit=2 after subsequent NO_RUNNABLE_VALIDATION_GOAL; actual session was COMPLETE"
+  },
+  "giant_rally": {
+    "state": "PRODUCTION_SESSION_VERIFIED",
+    "timeline": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260930_214611_602738\\session_timeline.jsonl",
+    "session": {
+      "timestamp": "2026-09-30T13:49:54.970308+00:00",
+      "event": "SESSION_ENDED",
+      "role_id": "1063040265",
+      "repo_revision": "e9ead532e400d7096d7611d44cdd16f90321e65c+38e86a202adf7377",
+      "session_id": "SD703A33277",
+      "goal_id": "AVOID_STAMINA_WASTE",
+      "reason": "GIANT_BEAST_RALLY_STARTED",
+      "metrics": {
+        "SESSION_STEPS": 6,
+        "SESSION_VERIFIED_STEPS": 6,
+        "SESSION_SEMANTIC_RETRIES": 0,
+        "SESSION_AMBIGUOUS_RETRIES": 0,
+        "SESSION_RECOVERIES": 0,
+        "SESSION_OBSERVES": 7,
+        "SESSION_WAITS": 0,
+        "SESSION_STILL_PENDING": 0,
+        "SESSION_DURATION_MS": 68328.0,
+        "SESSION_STEP_BUDGET": 14,
+        "SESSION_TIME_BUDGET_S": 120.0,
+        "SESSION_GOAL_DEADLINE_S": null,
+        "SESSION_MEAN_STEP_INTERVAL_MS": 10181.2,
+        "SESSION_MAX_STEP_INTERVAL_MS": 13984.0,
+        "SESSION_LIFECYCLE": "COMPLETE",
+        "SESSION_FAILURE": null,
+        "SESSION_YIELD_REASON": null,
+        "SESSION_YIELD_CLASS": null,
+        "SESSION_TRANSITIONS": [
+          "CREATED->PREPARING",
+          "PREPARING->RUNNING",
+          "RUNNING->VERIFYING",
+          "VERIFYING->RUNNING",
+          "RUNNING->VERIFYING",
+          "VERIFYING->RUNNING",
+          "RUNNING->VERIFYING",
+          "VERIFYING->RUNNING",
+          "RUNNING->VERIFYING",
+          "VERIFYING->RUNNING",
+          "RUNNING->VERIFYING",
+          "VERIFYING->RUNNING",
+          "RUNNING->VERIFYING",
+          "VERIFYING->RUNNING",
+          "RUNNING->COMPLETE"
+        ],
+        "LOOP_DETECTED": 0,
+        "LOOP_FALSE_POSITIVE": 0,
+        "LOOP_RECOVERED": 0,
+        "LOOP_DEFERRED": 0,
+        "LOOP_DETECTED_NET": 0,
+        "LOOP_PATTERNS": {},
+        "LOOP_LADDER_TOP": "",
+        "LOOP_TIMELINE": [
+          {
+            "kind": "ok",
+            "digest": "2ca5d716c1",
+            "role_id": "1063040265",
+            "goal_id": "AVOID_STAMINA_WASTE",
+            "skill_id": "SEARCH_RESOURCE",
+            "semantic_target": "",
+            "relevant_state_hash": "c1a4cb577ec2",
+            "page": "MAP",
+            "outcome": "SUCCESS",
+            "progress": true
+          },
+          {
+            "kind": "ok",
+            "digest": "1f1f02cb23",
+            "role_id": "1063040265",
+            "goal_id": "AVOID_STAMINA_WASTE",
+            "skill_id": "SELECT_GIANT_BEAST_TAB",
+            "semantic_target": "",
+            "relevant_state_hash": "c1a4cb577ec2",
+            "page": "MAP",
+            "outcome": "SUCCESS",
+            "progress": true
+          },
+          {
+            "kind": "ok",
+            "digest": "561d278e46",
+            "role_id": "1063040265",
+            "goal_id": "AVOID_STAMINA_WASTE",
+            "skill_id": "SUBMIT_GIANT_BEAST_SEARCH",
+            "semantic_target": "",
+            "relevant_state_hash": "52e7d9fb913b",
+            "page": "BEAST",
+            "outcome": "SUCCESS",
+            "progress": true
+          },
+          {
+            "kind": "ok",
+            "digest": "0105f1dc19",
+            "role_id": "1063040265",
+            "goal_id": "AVOID_STAMINA_WASTE",
+            "skill_id": "",
+            "semantic_target": "集结",
+            "relevant_state_hash": "4161de517a2e",
+            "page": "",
+            "outcome": "SUCCESS",
+            "progress": true
+          },
+          {
+            "kind": "ok",
+            "digest": "7851337af0",
+            "role_id": "1063040265",
+            "goal_id": "AVOID_STAMINA_WASTE",
+            "skill_id": "",
+            "semantic_target": "发起集结",
+            "relevant_state_hash": "4161de517a2e",
+            "page": "",
+            "outcome": "SUCCESS",
+            "progress": true
+          },
+          {
+            "kind": "ok",
+            "digest": "066c5378b3",
+            "role_id": "1063040265",
+            "goal_id": "AVOID_STAMINA_WASTE",
+            "skill_id": "",
+            "semantic_target": "出征",
+            "relevant_state_hash": "4161de517a2e",
+            "page": "",
+            "outcome": "SUCCESS",
+            "progress": true
+          }
+        ],
+        "SESSION_LOOP_RECOVERIES": 0
+      }
+    },
+    "verified_episode_count": 9,
+    "dispatch_before_stamina": {
+      "cost_affordable": true,
+      "cost_verdict_source": "DISPATCH_COST_COLOUR"
+    },
+    "dispatch_after_stamina": {
+      "current": 210,
+      "source": "MAP_HUD",
+      "roi": {
+        "x_norm": 0.04,
+        "y_norm": 0.0755,
+        "w_norm": 0.075,
+        "h_norm": 0.019
+      },
+      "gauge_pixels": 555
+    },
+    "dispatch_verifier_evidence": {
+      "word": "出征",
+      "frame": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260930_214611_602738\\20260930_214611_602738_step_021_session_printed_20260930T134943356512.png",
+      "center_norm": [
+        0.7645833333333333,
+        0.934375
+      ],
+      "game_response_verified": true
+    },
+    "note": "One START session is productive goal progress, not stamina Goal COMPLETE"
+  },
+  "measured_tasks_per_hour": 2,
+  "tasks_per_hour_definition": "Distinct (role, episode, completed_goal_id), last 60 minutes; no click/step count substitution",
+  "current_revision_run_ids": [],
+  "production_giant_verified_roles": [
+    "1061663148",
+    "1063040265"
+  ],
+  "production_fishing_read_roles": [
+    "1063040265"
+  ],
+  "loop_last_hour": {
+    "LOOP_DETECTED": 0,
+    "LOOP_RECOVERED": 0,
+    "LOOP_FALSE_POSITIVE": 0
+  },
+  "current_revision_production_evidence": [],
+  "goal_capability_drift": {
+    "confirmed_and_fixed_groups": [
+      "stamina START alternative",
+      "bear START/JOIN variant",
+      "fishing read/play map",
+      "retired coverage requirements",
+      "retired building entry",
+      "mobilization target and route"
+    ],
+    "not_a_claim_all_missing_activity_or_arena_capabilities_are_implemented": true
+  },
+  "open_blockers": [
+    {
+      "id": "TRAINING_LIVE_CLOSURE",
+      "status": "AWAITING_LIVE",
+      "condition": "Three camps claim and queue-start verifier results still required; focus-only adapter bypassed"
+    },
+    {
+      "id": "ARENA_LIVE_ATTEMPTS",
+      "status": "NEEDS_EVIDENCE",
+      "condition": "Missing role-scoped live attempts / Arena page and opponent observation"
+    },
+    {
+      "id": "BEAR_LIVE_WINDOW",
+      "status": "AWAITING_LIVE",
+      "condition": "Current Bear event/role/list/capacity observation and actual START/JOIN verification"
+    },
+    {
+      "id": "GATHER_LOW_STAMINA_LIVE",
+      "status": "AWAITING_LIVE",
+      "condition": "Regression proves stamina zero does not complete Gather; ordinary production gather dispatch still needed"
+    },
+    {
+      "id": "REMAINING_ACTIVITY_CAPABILITIES",
+      "status": "NEEDS_EVIDENCE",
+      "condition": "Other map entries still cite unregistered operations; inspect live UI before replacing them"
+    }
+  ],
+  "scope": "Partial production closure; original full engineering task remains active"
+}

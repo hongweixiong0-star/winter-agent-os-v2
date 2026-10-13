@@ -1,0 +1,114 @@
+{
+  "recorded_at": "2026-10-02T12:31:43.590247+08:00",
+  "source_attachment": "C:\\Users\\xhw\\.codex\\attachments\\48de560a-31d3-4d3e-8c1d-0821464201c2\\已粘贴的文本.txt",
+  "source_sha256": "FB1AF8B85F43A9C26FABB801CC4334618B42371B28FA2614AD5BA8807B7958D7",
+  "identical_to_active_final": true,
+  "action": "Reconfirmed active FINAL; refreshed developer handoff evidence without reinstalling or changing release ownership",
+  "authority": {
+    "release_owner": "Existing WorkBuddy exclusive claim",
+    "codex_source_or_release_permission_changed": false,
+    "workbuddy_current_task": null,
+    "fresh_workbuddy_task02_or_later_execution_proven": false,
+    "claim_preserved": true
+  },
+  "version": {
+    "HEAD": "77d5b4b09bbe21193cfe467d6363dc66726b3ce6",
+    "origin_main": "77d5b4b09bbe21193cfe467d6363dc66726b3ce6",
+    "PROD_PIN": "951abbdd039c4955f2cd99fd442ae2aea56ffae3",
+    "control_plane_loaded_revision": "951abbdd039c4955f2cd99fd442ae2aea56ffae3+4bbe4ebe437d0758",
+    "latest_episode_revision": "951abbdd039c4955f2cd99fd442ae2aea56ffae3+5033068c778a4099",
+    "calendar_patch": "aab14bb5f240815ab5a86a41d85ead3a60ab99ce",
+    "calendar_patch_production_loaded": false,
+    "PROD_CLEAN": "Not inferred from shared mutable-data fingerprint"
+  },
+  "runtime": {
+    "updated_at": "2026-10-02T04:31:42.681195+00:00",
+    "agent_state": "GOAL_RUNNING",
+    "runtime_thread_alive": true,
+    "scheduler_loop_alive": true,
+    "role_id": "1063040265",
+    "current_goal": "AVOID_STAMINA_WASTE",
+    "current_skill": "OPEN_MAP",
+    "last_fatal_error": null,
+    "unexpected_worker_exits": 18,
+    "watchdog_restart_count": 24
+  },
+  "processes_observed": [
+    {
+      "ProcessId": 21136,
+      "ParentProcessId": 2464,
+      "Name": "pythonw.exe"
+    },
+    {
+      "ProcessId": 11356,
+      "ParentProcessId": 21136,
+      "Name": "pythonw.exe"
+    },
+    {
+      "ProcessId": 18012,
+      "ParentProcessId": 24692,
+      "Name": "llama-server.exe"
+    },
+    {
+      "ProcessId": 460,
+      "ParentProcessId": 11356,
+      "Name": "python.exe"
+    },
+    {
+      "ProcessId": 26468,
+      "ParentProcessId": 460,
+      "Name": "python.exe"
+    }
+  ],
+  "model": {
+    "health": {
+      "status": "ok"
+    },
+    "context": 32768,
+    "vision": true,
+    "restored_at": "2026-10-02T12:04:39.884322+08:00",
+    "restoration_record": ".workbuddy-ai/handoff/CODEX_ASSISTANCE_20261002_1204.json",
+    "post_restore_online_ledger_rows": 0,
+    "FIRST_SECOND_ACCEPTANCE_PROVEN": false
+  },
+  "post_restore_production_window": {
+    "from": "2026-10-02T04:04:39.884322+00:00",
+    "to": "2026-10-02T12:31:43.590247+08:00",
+    "first_available_tail_record_at": "2026-10-02T01:04:53.014988+00:00",
+    "steps": 93,
+    "verifier_pass_steps": 85,
+    "run_ids": [
+      "20261002_120614_753046",
+      "20261002_120834_587792",
+      "20261002_121119_112086",
+      "20261002_121611_362773",
+      "20261002_122046_107857",
+      "20261002_122514_611728",
+      "20261002_122900_441646"
+    ],
+    "latest_episode_at": "2026-10-02T04:29:48.524119+00:00",
+    "step_pass_is_not_goal_complete": true
+  },
+  "next_calendar_root_cause": {
+    "status": "CODE_PATH_CONFIRMED_READ_ONLY_NOT_FIXED",
+    "problem": "Navigation distance changes are counted as calendar goal progress, resetting no-progress counters even when no current calendar detail is completed",
+    "code_refs": [
+      "winter_agent_v2/goal_library.py:_append_event_calendar_goal (1766, 1802, 1854, 1869, 1902, 1916, 1939)",
+      "winter_agent_v2/goal_library.py:progress_moved (2406)",
+      "winter_agent_v2/runtime.py:9333-9343",
+      "winter_agent_v2/capability_gate.py:323-325"
+    ],
+    "minimum_owner_change": "In the existing calendar provider, use role-scoped count of clickable unseen current rows for navigation, all detail branches, return, and hub; fresh full grid uses current pending count. No stored grid uses baseline 1; stored empty entries is known 0. Keep final RETURN runnable until fresh full grid confirms COMPLETE.",
+    "targeted_regressions": [
+      "Same saved grid has unchanged distance on HOME/MAP/hub/default detail/GRID_ENTRY detail/UNKNOWN return",
+      "Confirmed detail reduces pending once; return and reread do not",
+      "Final detail retains RETURN then full-grid COMPLETE once",
+      "Navigation-only episodes accumulate no-progress across run boundaries; real detail progress resets it"
+    ],
+    "dependency": "Independent follow-up to prepared aab14bb occurrence attribution patch; integrate each cause separately and verify real current-grid completion before claiming production fix",
+    "read_only_review": true
+  },
+  "highest_value_next_action": "Claimed WorkBuddy owner fresh-checks current blocker, reviews local aab14bb and calendar progress cause, applies targeted fixes, then alone loads safely and verifies live; service availability is already restored and must not be restarted just to complete task09",
+  "scope": "Governance evidence only. No source modification, device input, task-result edits, AUTO stop, main commit/push, repin, reload, or ownership transfer.",
+  "backup": "C:\\Users\\xhw\\.codex\\backups\\workbuddy-directive-reconfirm-20261002T123143"
+}

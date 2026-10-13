@@ -6,43 +6,63 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
-- `164de5e 2026-10-02T20:34:15+08:00 fix(schedule): 20 activity rows were unroutable, and 3 ticketed goals were unroutable too`
-- `5bfe164 2026-10-02T19:30:06+08:00 docs(commander): WB-1002-23 -- the duplicate commits are explained; the reverts are not`
-- `00c139d 2026-10-02T19:30:04+08:00 docs(commander): WB-1002-23 -- the duplicate commits are explained; the reverts are not`
-- `9b76e15 2026-10-02T19:27:44+08:00 docs(memory): WB-1002-22 -- a green test on a route production never takes`
-- `756631c 2026-10-02T19:27:42+08:00 docs(memory): WB-1002-22 -- a green test on a route production never takes`
-- `3a6ea9f 2026-10-02T19:25:58+08:00 docs(commander): WB-1002-22 closed -- the fix was already green and the router never called it`
-- `081d48b 2026-10-02T19:25:56+08:00 docs(commander): WB-1002-22 closed -- the fix was already green and the router never called it`
-- `5a04821 2026-10-02T19:12:16+08:00 fix(routing): the node that answered 0 times in 10 is not the router's first choice`
-- `0434e07 2026-10-02T18:45:51+08:00 docs(memory): WB-1002-20 -- a value that was read and then thrown away`
-- `f1614f7 2026-10-02T18:44:17+08:00 docs(commander): WB-1002-20 closed -- the tap point was read off the frame and thrown away`
-- `130d8bb 2026-10-02T18:38:35+08:00 fix(select): the material tabs' tap point was read off the frame and thrown away`
-- `9766283 2026-10-02T18:24:21+08:00 docs(memory): WB-1002-16 -- read a failure's own two frames before trusting the guard's verdict`
+- `d54d9e9f 2026-10-14T00:37:37+08:00 docs(memory): the machine is parked in MANUAL, and only the operator can release it`
+- `08b74eb6 2026-10-14T00:34:09+08:00 docs(memory): wiring closes at 3, and all three are attributed`
+- `44a60663 2026-10-14T00:33:25+08:00 fix(wiring): the swept-in tab probe must hide its adb console, like every other call site`
+- `0993ac1d 2026-10-14T00:29:42+08:00 docs(memory): wiring is down to 5, and the merge itself armed the preload mechanism`
+- `4523c192 2026-10-14T00:26:42+08:00 chore(wiring): regenerate the navigation matrix and bind SimpleNamespace in the A/B tool`
+- `20514489 2026-10-14T00:23:37+08:00 docs(memory): the prune delete-gate fix, with its A/B and regression numbers`
+- `3b196b6c 2026-10-14T00:23:19+08:00 fix(retention): prune() must import the host's delete gate, not call a name it never bound`
+- `27b7fde7 2026-10-14T00:12:36+08:00 docs(memory): the production pin is merged into main, and a latent NameError sits on the retention path`
+- `821472c5 2026-10-13T23:57:54+08:00 merge: bring the production pin (codex/production-pin-recovery) back into main`
+- `e9b7e984 2026-10-13T23:49:49+08:00 correction(events): that root cause was already known and already fixed on the pin branch`
+- `51d536c9 2026-10-13T23:17:34+08:00 diag(events): the calendar detail chain is sound; identity-by-partial-OCR is what breaks it`
+- `cb825d74 2026-10-13T22:37:38+08:00 chore(events): the T-30 bear re-read was attempted and could not read the tab, so it stays owed`
 
-Uncommitted changes: 1515
-- `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
-- `MM .workbuddy-ai/commander/EXECUTION_STATE.json`
+Uncommitted changes: 1389
+- `M .gitignore`
+- ` M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
-- `MM .workbuddy-ai/commander/WORK_QUEUE.json`
-- `D  .workbuddy-ai/commander/results/WB-1002-22-BUILDING-UPGRADE-ROUTE.json`
-- `MM .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-- `MM .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-- `MM .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- `MM .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- `MM .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- `MM .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-- `MM .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-- `MM .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M .workbuddy-ai/memory/2026-09-30.md`
-- `MM .workbuddy-ai/memory/2026-10-02.md`
-- `MM .workbuddy-ai/memory/MEMORY.md`
-- `MM .workbuddy/memory/2026-10-02.md`
-- `MM .workbuddy/memory/MEMORY.md`
+- ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
+- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
+- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
+- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+- ` M .workbuddy-ai/memory/2026-10-03.md`
+- ` M .workbuddy-ai/memory/2026-10-05.md`
+- ` M .workbuddy-ai/memory/MEMORY.md`
+- ` M .workbuddy/memory/2026-10-03.md`
+- ` M .workbuddy/memory/2026-10-05.md`
 - ` M START_HERE.md`
+- ` M _capture_panel_window.py`
+- ` D backups/dataset_cleanup_20261006/template_manifest.json.bak`
 <!-- /AUTO:recent_commits -->
 
 ---
+
+## 手写：2026-10-11 —— 回归归因 + 报告自洽 + 交接（**07:28 已提交并落地**）
+
+**一句话**：本轮没有加功能。做的是把"已写好但没进生产"的东西盘清、验证、并证明它们安全。
+
+**改了什么（7 个源码 + 15 个新文件；07:28 已提交为 `6dfa1da5`，repin 完成，面板已重启）**：
+- `goal_library.py` 一个日历事件一行；`ocr.py` 任务板两个身份；`capability_bootstrap.py` 静态漂移检测；
+  `capability_gate.py` 过滤账本非技能值（配 `skills.py` 的 `NON_SKILL_LEDGER_VALUES`）；
+  `device_lease.py` 取得租约后**读回**；`tools/control_panel.py` 今日目标板四格。
+  **只有 `control_panel.py` 需要重启面板**；其余 6 个属运行时侧，worker 每轮重导入即生效。
+- 14 个新测试文件 + `tools/screenshot_incremental.py`。
+
+**为什么可信**：三次独立 A/B（用项目自带的 `_ab_screen_key_plugin.py` 在**内存里**回退，绝不回退工作树）
+的 `only AFTER` 全为 **0**；HEAD 等价基线 `18 failed` → 现在 `9 failed`；全量回归里**本轮 14 个新测试与被改的
+5 个模块 0 失败**。剩下 9 个红是既存的（10-08 的 commit message 已记为"两侧 byte-identical"）。
+
+**"没做什么"（本节写于 00:58，那段话在当时属实，07:28 起已改变）**：未提交、未 repin、未重启任何服务、
+未前向导航、未改任何生产参数。
+**⇒ 07:28 起已做**：提交 `6dfa1da5` → repin `CLEAN_OUTSIDE_DATA` → `--check-only` `WORKTREE_CLEAN=true`
+→ 面板重启（pid **9988**）。**仍未做**：前向导航、改生产参数、`push`。
 
 ## 手写：2026-09-15 第十七轮 — 解开 pHash「0 / 26」之谜（`0ax`）+ 拆掉无人值守的静默死结（`0az`）
 

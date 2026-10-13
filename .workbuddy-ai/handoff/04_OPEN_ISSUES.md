@@ -6,23 +6,73 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x332 all-time; recent=255 (last 2d), last seen 2026-10-02T12:20:03.392522+00:00 — TRY_ORDINARY_CONTROL(98), SELECT_RESOURCE(86), SELECT_BEAST_TARGET_MAMMOTH(34)
-- **GIANT_BEAST_SEARCH_NOT_PROVEN** x66 all-time; recent=61 (last 2d), last seen 2026-10-02T12:19:45.411572+00:00 — SUBMIT_GIANT_BEAST_SEARCH(66)
-- **NO_EXECUTION** x126 all-time; recent=45 (last 2d), last seen 2026-10-02T12:27:00.511127+00:00 — OBSERVE_ONLY(65), PRINTED_TAP(39), TAP_FOCUSED_TRAINING_CAMP_SHIELD(6)
-- **BEAST_SEARCH_TAB_NOT_PROVEN** x54 all-time; recent=28 (last 2d), last seen 2026-10-02T06:48:32.057019+00:00 — OPEN_BEAST_SEARCH_TAB(54)
-- **PANEL_BUILDING_QUEUE_NOT_PROVEN** x26 all-time; recent=26 (last 2d), last seen 2026-10-02T11:29:52.082851+00:00 — OPEN_TASK_FROM_QUICK_PANEL_BUILDING(26)
-- **FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN** x28 all-time; recent=22 (last 2d), last seen 2026-10-02T04:13:21.744721+00:00 — TAP_FOCUSED_TRAINING_CAMP_LANCER(10), TAP_FOCUSED_TRAINING_CAMP_SHIELD(9), TAP_FOCUSED_TRAINING_CAMP_MARKSMAN(9)
-- `OPEN_BUILDING_UPGRADE` never succeeded (attempts=13, failure=13)
-- `READ_FISHING_STATE` never succeeded (attempts=2, failure=2)
-- `REALTIME` never succeeded (attempts=27, failure=8)
-- `SELECT_BEAST_TARGET_LABELLED` never succeeded (attempts=4, failure=4)
-- `SELECT_BEAST_TARGET_MAMMOTH` never succeeded (attempts=34, failure=34)
-- 1515 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', 'MM .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md', 'MM .workbuddy-ai/commander/WORK_QUEUE.json']
+- **GIANT_BEAST_SEARCH_NOT_PROVEN** x164 all-time; recent=150 (last 2d), last seen 2026-10-11T09:24:02.519152+00:00 — SUBMIT_GIANT_BEAST_SEARCH(164)
+- **BEAST_TARGET_SELECTION_NOT_PROVEN** x146 all-time; recent=135 (last 2d), last seen 2026-10-11T09:24:46.029368+00:00 — SELECT_BEAST_TARGET_MAMMOTH(143), SELECT_BEAST_TARGET_LABELLED(3)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x292 all-time; recent=77 (last 2d), last seen 2026-10-11T08:53:23.678490+00:00 — TRY_ORDINARY_CONTROL(159), OPEN_HOME(36), OPEN_EVENT_CALENDAR_DETAIL(23)
+- **SAFE_BACK_NOT_PROVEN** x37 all-time; recent=30 (last 2d), last seen 2026-10-11T00:58:55.631257+00:00 — BACK(37)
+- **EVENT_CALENDAR_DETAIL_NOT_PROVEN** x23 all-time; recent=23 (last 2d), last seen 2026-10-10T01:48:15.333284+00:00 — OPEN_EVENT_CALENDAR_DETAIL(23)
+- **INTEL_BEAST_TARGET_NOT_PROVEN** x20 all-time; recent=19 (last 2d), last seen 2026-10-11T05:10:58.444256+00:00 — OPEN_INTEL_BEAST_TARGET(20)
+- `ALLIANCE_ALLY_GIFT_CLAIM` never succeeded (attempts=1, failure=1)
+- `OBSERVE_ONLY` never succeeded (attempts=4, failure=0)
+- `OPEN_ALLIANCE_RECOMMENDED_TECH_NODE` never succeeded (attempts=1, failure=1)
+- `OPEN_BEAST_SEARCH_TAB` never succeeded (attempts=30, failure=30)
+- `READ_FISHING_STATE` never succeeded (attempts=1, failure=1)
+- `SAFE_STOP` never succeeded (attempts=6, failure=6)
+- `START_RALLY` never succeeded (attempts=1, failure=1)
+- 1389 uncommitted file(s): ['M .gitignore', ' M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md']
 <!-- /AUTO:open_issues -->
 
 ---
 
 ## 手写：未决问题
+
+### 2026-10-11 · P0（新增）—— 生产树脏 ⇒ `PinError` 窗口
+
+| # | 问题 | 状态 | 备注 |
+|---|---|---|---|
+| ~~P0-1 生产树脏 ⇒ `PinError`~~ | **✅ 已解决 2026-10-11 07:28** | `commit 6dfa1da5` → repin **`CLEAN_OUTSIDE_DATA`** → `--check-only` **`WORKTREE_CLEAN=true`**；launcher 不再"一重启就起不来" |
+| ~~P0-2 面板修复未生效~~ | **✅ 已解决 07:30** | 面板已重启（新 pid **9988**），`CONTROL_PLANE_RELOAD_REQUIRED.json` 被机制自行 retire；加载版本见 `pump.json` 的 `runtime_loaded_revision = 6dfa1da5…` |
+
+### 2026-10-11 · P1（新增）—— 学习漏斗的闸门至今不存在
+
+| # | 问题 | 状态 | 备注 |
+|---|---|---|---|
+| P1-1 | ~~§48 每屏预算"只写在提示词里、运行时无闸门"~~ **← 本条是我的误判，已更正** | **闸门存在且在运行**（`f5f81f81`, 10-06 01:46） | `ui_planner.take_guard()`(`:1214`) 唯一调用者 `:976`，在模型被问之前；`NO_PROGRESS_STOP = 10`(`:143`) 是操作者 10-08 指令对旧步数上限的替代；账本 `learning/venus_screen_attempts.json` **在写**（`home__control__36e65c39` attempts=2/budget=2 —— 正是那条"曾被问 84 次"的屏）。`remaining_model_steps` 仍是孤儿，但其所属 section 29 预算**已被 10-08 指令废除**，与"没人实现"无关 |
+| P1-2 | 模型调用超时余量：`DEFAULT_TIMEOUT_S=60` 而实测耗时 30–37 s，`LOCAL_GUI_MODEL_UNAVAILABLE` 63 次/日 | **待裁决** | 属操作者写进 `config/v2.json` 的 `local_planner` 段，本轮未改 |
+
+### 2026-10-11 · 已定性、**不需要修** —— 面板的 `STATE_CONFLICT`
+
+面板会报 `current_page  learning/runtime_snapshot.json=X  vs  episode <id>:=Y`。
+**这是有意的保守报告**（`winter_agent_v2/state_truth.py:956-972`：把"快照的当前页"与"最近一条
+episode 的 `state_after`"对比，不一致就报一行；docstring 原话 *"rather than letting the window pick
+whichever it read last"*）—— 符合操作者"**显示的状态必须能说出出处**"的规则。**不是缺陷。**
+
+**为什么不一致是常态**：一次 run（一个 `episode_id`）有**十几行** step，`page_after` 在 run **内部**就会变
+（实测那条 `20261011_072740_949262` 有 18 行：`HOME→MAP→INTEL→POPUP→EXPLORATION→MARCH→UNKNOWN→MAP`，
+**最后一步 `BACK: POPUP → MAP` 与快照一致**）⇒ **被比中的往往是中间某一步**，而快照写于**另一个时刻**
+⇒ **时序差，不是真冲突**。
+
+**唯一可改进处**：报告里没把"两个读数的时间差"一起显示 ⇒ 读者会以为真冲突。
+**改它 = 改控制面代码**（`state_truth.py` 在 `CONTROL_PLANE_PATHS` 里 ⇒ 必须 repin + 重启面板），
+**按合理默认本轮不改，仅记录。**
+
+### 2026-10-11 · ~~P0 worker 异常退出会让 AUTO 静默停摆~~ → **✅ 已修并已落地**（`2b85647a`）
+
+**现象**（08:00 实测）：`workers: 0`、`snapshot 401s old`、`agent_state=IDLE`；三个账本一起停在相邻的分钟
+（`goal_state` 07:53:54 / `episodes` 07:53:38 / `snapshot` 07:54:51）；**`panel.log` 停在 07:52:30**，而面板
+进程全程 `alive=True`。
+
+**根因**：`control_panel.py::_drain_events` 的 `try` **只捕 `queue.Empty`**，而**重排在 `try` 之后** ⇒
+处理任何**单个**事件时抛异常都会让 **drain 整体断掉**；面板跑在 `pythonw` 下，traceback 无处可去 ⇒ 静默。
+
+**修法**：每个事件各自 `try`（坏 payload 被点名、批次继续）+ 重排移进 `finally`（handler 失败也继续）。
+**只动循环，不动任何事件的含义**；**只检测与上报，不自动重启该轮**（那属于改 round loop，故意不做）。
+
+**验证**：`tests/test_the_drain_survives_a_bad_event.py`（2 条，含逐字复现旧 body 的正向对照）；
+`commit 2b85647a` → repin `CLEAN_OUTSIDE_DATA` → `--check-only` `WORKTREE_CLEAN=true` →
+面板重启（pid 27024，`runtime_loaded_revision = 2b85647a…`）；回归 `71 passed`。
+
+**仍然有效的老坑**：判「还活着吗」看**产出物新鲜度**（多个账本是否同停），不要只看进程 `alive`。
 
 ### 第 24 轮（2026-09-16 20:2x GMT+8）—— 能力总表 + MAIL 落地
 

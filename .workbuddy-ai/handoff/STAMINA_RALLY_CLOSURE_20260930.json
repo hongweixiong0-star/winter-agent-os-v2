@@ -1,0 +1,60 @@
+{
+  "main_commit": "49a7e8205c12285cf971e2c5af6f28e86f47b17c",
+  "production_pin_commit": "49a7e8205c12285cf971e2c5af6f28e86f47b17c",
+  "targeted_regression": {
+    "passed": 129,
+    "subtests_passed": 48
+  },
+  "measurements": [
+    {
+      "role_id": "1061663148",
+      "evidence_file": "dataset\\raw\\stamina_polar_rally\\run_20260930T202620\\creation_verifier_replay.json",
+      "evidence_kind": "REAL_GAME_EXECUTION_WITH_SCREENSHOT_REPLAY_OF_UPDATED_READER",
+      "stamina_before": 284,
+      "stamina_after": 259,
+      "march_before": 0,
+      "march_after": 1,
+      "capacity": 6,
+      "proof": {
+        "ownership": "SELF",
+        "target_type": "POLAR_TERROR",
+        "remaining_seconds": 178,
+        "source": "OWN_MARCH_HUD_TRANSITION_RALLY_TIMER_AND_STAMINA_DEBIT"
+      },
+      "goal_complete": false
+    },
+    {
+      "role_id": "1063040265",
+      "evidence_file": "dataset\\raw\\stamina_polar_rally\\run_20260930T204116\\creation_verifier_replay.json",
+      "evidence_kind": "REAL_GAME_EXECUTION_WITH_SCREENSHOT_REPLAY_OF_UPDATED_READER",
+      "stamina_before": 268,
+      "stamina_after": 243,
+      "march_before": 1,
+      "march_after": 2,
+      "capacity": 6,
+      "proof": {
+        "ownership": "SELF",
+        "target_type": "POLAR_TERROR",
+        "remaining_seconds": 178,
+        "source": "OWN_MARCH_HUD_TRANSITION_RALLY_TIMER_AND_STAMINA_DEBIT"
+      },
+      "goal_complete": false
+    }
+  ],
+  "auto_snapshot": {
+    "agent_state": "GOAL_RUNNING",
+    "runtime_thread_alive": true,
+    "scheduler_loop_alive": true,
+    "role_id": "1061663148",
+    "current_goal": "LANCER_CAMP_TRAINING",
+    "current_skill": "OPEN_COMPLETED_TRAINING_CAMP_LANCER",
+    "reason": "completed_lancer_camp_entry_focuses_its_barracks_before_claim_or_restart",
+    "updated_at": "2026-09-30T12:59:27.102254+00:00"
+  },
+  "remaining": [
+    "Newest row-binding verifier needs a subsequent ordinary AUTO rally execution; replay passes on both real captures.",
+    "Recall not used: real idle slots were available. Two existing recall recognition tests fail; not silently classified as fixed.",
+    "Two complete stamina goals are not claimed: measured balances remained above 30."
+  ],
+  "preservation": "Original dirty runtime/knowledge data and untracked formation_policy.py preserved; only explicitly scoped changes committed."
+}

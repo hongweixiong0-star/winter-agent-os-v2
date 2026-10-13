@@ -4,6 +4,43 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
+## 手写：**✅ 提交已落地（2026-10-11 07:28）—— 下一动作不再是提交**
+
+> 本节原写于 00:58，当时 22 条脏路径未提交、重启面板会 `PinError`。**07:28 已按操作者指令执行完毕。**
+
+**已完成（三步链路）**：`commit 6dfa1da5` → `repin` = **`RESULT: CLEAN_OUTSIDE_DATA`** →
+`--check-only` = **`WORKTREE_CLEAN=true`** → `check_mainline.py` = **`MAINLINE_OK`** →
+面板重启（`panel_restart.py --restart --force`，新 pid **9988**，`CONTROL_PLANE_RELOAD_REQUIRED.json`
+被机制自行 retire ⇒ 证明面板确实加载了新代码）。
+**回退凭据**：备份在 `E:/tmp/wb_backup_20261011_0727/`；`git revert 6dfa1da5` 可整体回退。**未 push。**
+
+### NEXT EXACT STEP（现在）—— 三条路，**都需要外部输入**，没有一条能自主完成
+
+1. **设备侧**（`USE_FREE_ARENA_ATTEMPTS` / `LABYRINTH_DAILY` 的 `world.attempts` reader；三个商店页身份）
+   —— **这不是一次导航能收尾的，它是完整的能力开发周期**，所以**没有擅自开工**：
+   `live-verification` 的原话是"真机是校准工具，不是探索工具"，而这里要的正是**探索**（去一个当前
+   没有 reader 的页面）；且导航之后还要写 reader → 测试 → 提交 → 真机验证，**一轮做不完**。
+   **启动条件**：① 操作者许可动真机（`DEVELOPMENT_VALIDATION` + `validation_scope`）；
+   ② 接受 AUTO 让位（`DeviceLease`）；③ 按 `winter-capability-intake-ladder` 的阶梯走
+   （说明书 → Candidate → 真机校准），**不要**用"看到就跑"的方式接能力。
+2. **待裁决三件**：`pages.json` 与 `Page` 的 15 名分歧；90 个候选无试跑路径；设备上第二个自动化的处置。
+   **都需要操作者决定，不是执行问题。**
+3. **第三把尺子**（切到「运行·目标」tab 后重新截图）—— **受阻的是点击，不是观察**（08:10 更正）：
+   - **抓图有解**：`ImageGrab`（抓屏幕）会失败（`screen grab failed`；`GetForegroundWindow()=0`，而
+     `OpenInputDesktop` 仍非 0），但 **`PrintWindow(hwnd, hdc, PW_RENDERFULLCONTENT)` 能通** ——
+     实测 `rc=1`、859 行读回、画面拿到。脚本在 `E:/tmp/capture_printwindow.py`。
+     **它没调 `SetProcessDPIAware` ⇒ 图是 150% 缩放（1376×859 vs 窗口 2064×1289），做 OCR 要按 1.5 换算。**
+   - **切 tab 仍不行**：Tk 自绘的 tab（枚举 736 个子控件 → **729 个 `TkChild`、0 个 `SysTabControl32`**）
+     只能点击，而点击需要前台窗口。
+   - **坐标已备好**（OCR 面板自己的窗口图，1:1 映射，窗口原点 (156,152)）：`总览` (225,568) ·
+     **`运行·目标` (322,557)** · `运行·策略` (456,557) · `运行·活动` (590,557) · `能力` (702,557) ·
+     `自动开发` (814,557) · `系统` (925,557)。
+   - **面板与 AUTO 均无恙**（pid **9988** 存活、`GOAL_RUNNING`）。
+   - **⇒ 桌面一可见：点 (322,557) → 跑 `python _capture_panel_window.py` 即闭环。**
+
+**仍然有效的老坑（保留）**：`verify_pin()` 只放行 `config/knowledge/learning/dataset`，任何代码脏都 raise。
+**⇒ 若再有未提交的代码改动，在提交之前绝不要重启面板。**
+
 ## 手写：快捷面板作为城内状态源与入口（2026-09-23 深夜，issue #116）——**读到了却丢掉**
 
 两处断点，都在"读数到手又丢掉"这一族。① **状态丢弃**：`ocr.py::_with_quick_panel` 只并 `camps` —— 面板展开的 **57 帧**里
@@ -1353,17 +1390,17 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 
 WHY: 4 goal(s) BLOCKED, 9 PARTIAL, mean implementation coverage 0.7083. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 255 in the last 2 day(s), 332 all-time, last seen 2026-10-02T12:20:03.392522+00:00
+CURRENT ROOT CAUSE: GIANT_BEAST_SEARCH_NOT_PROVEN — 150 in the last 2 day(s), 164 all-time, last seen 2026-10-11T09:24:02.519152+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 1515
-LAST PRODUCTION EPISODE: {"skill": "DISMISS_DAILY_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-10-02T12:44:56.542993+00:00", "episode_id": "20261002_204428_500709", "before_screenshot": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_204428_500709\\20261002_204428_500709_step_003_before_20261002T124453073135.png", "after_screenshot": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_204428_500709\\20261002_204428_500709_step_003_after_settle_retry_20261002T124454825074.png"}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 332, "recent": 255, "last_seen": "2026-10-02T12:20:03.392522+00:00", "dates": {"2026-09-28": 3, "2026-09-29": 2, "2026-09-30": 155, "2026-10-01": 67, "2026-10-02": 105}, "undated": 0, "top_skills": [["TRY_ORDINARY_CONTROL", 98], ["SELECT_RESOURCE", 86], ["SELECT_BEAST_TARGET_MAMMOTH", 34]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-30T12:44:56.542993+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+CURRENT DIRTY FILES: 1389
+LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-10-11T09:29:00.345277+00:00", "episode_id": "20261011_172738_866458", "before_screenshot": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_172738_866458\\20261011_172738_866458_step_004_before_20261011T092853016380.png", "after_screenshot": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_172738_866458\\20261011_172738_866458_step_004_after_20261011T092854351456.png"}
+TOP FAILURE: {"failure_type": "GIANT_BEAST_SEARCH_NOT_PROVEN", "count": 164, "recent": 150, "last_seen": "2026-10-11T09:24:02.519152+00:00", "dates": {"2026-10-05": 4, "2026-10-06": 2, "2026-10-07": 2, "2026-10-08": 6, "2026-10-10": 99, "2026-10-11": 51}, "undated": 0, "top_skills": [["SUBMIT_GIANT_BEAST_SEARCH", 164]]}
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-10-09T09:29:00.345277+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY', 'TRAVEL_SUPPLY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('CLAIM_TRAVEL_SUPPLY_FREE', 1), ('OPEN_ARENA', 1), ('OPEN_EVENT', 1)]
 DESIGN-BLOCKED (not implementable from the draft alone; each needs a live frame of its page first): CHECK_ALLIANCE_EVENT [NOT_REGISTERED] — requires semantic(s) `ALLIANCE_EVENT_ENTRY` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; CLAIM_EVENT_TIER [NOT_REGISTERED] — requires semantic(s) `EVENT_TIER_CLAIMABLE` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; READ_BEAR_TIMER [NOT_REGISTERED] — requires semantic(s) `BEAR_TIMER` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; READ_COUNTER [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined; READ_TIMER [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined; USE_ACTIVITY_ATTEMPT [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined ... and 14 more
-NEVER EXECUTED SKILLS (first 12): ['ALLIANCE_ALLY_GIFT_CLAIM', 'ALLIANCE_GIFTS', 'ALLIANCE_HELP', 'ALLIANCE_TECH_CONTRIBUTE', 'ASSIGN_GATHER_HERO', 'BEAR_AUTO_JOIN', 'BEAST_HUNT', 'BUILDING_UPGRADE', 'CANCEL_DUPLICATE_TARGET', 'CHECK_MARCH', 'CLAIM_LOGIN_GIFT', 'CLAIM_REWARD']
+NEVER EXECUTED SKILLS (first 12): ['ALLIANCE_GIFTS', 'ALLIANCE_HELP', 'ALLIANCE_TECH_CONTRIBUTE', 'ASSIGN_GATHER_HERO', 'BEAR_AUTO_JOIN', 'BEAST_HUNT', 'BUILDING_UPGRADE', 'CANCEL_DUPLICATE_TARGET', 'CHECK_MARCH', 'CLAIM_LOGIN_GIFT', 'CLAIM_OFFLINE_REWARDS', 'CLAIM_REWARD']
 
 NEXT EXACT ACTION: Do not implement a design-blocked skill from its draft. The cheapest real progress is to obtain a live frame of the page the skill needs (a read-only discovery probe), design the missing semantic from that evidence, then implement. Failing that, take the highest-value *live-evidenced* defect from 04_OPEN_ISSUES — those are already proven by production episodes.
 
