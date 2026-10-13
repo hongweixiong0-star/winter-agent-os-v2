@@ -1182,6 +1182,30 @@ class OCRPageClassifier:
         )
         if bear_trap_detail:
             found.append(Page.ALLIANCE)
+        # The task board is the one page whose two identities are both drawn at once: its own
+        # centred heading, and the *other* tab along the bottom edge, which is always visible. The
+        # precise rule above already answered "which tab is selected" from the top band, so the
+        # generic keyword table must not let the bottom tab vote as well -- `RULES` maps `每日任务`
+        # to `Page.DAILY`, and on the 成长任务 board that string is on screen as the inactive tab.
+        #
+        # Measured 2026-10-10 on dataset/evidence/daily_panel_observe_20261006T105705/
+        # p1_after_entry_tap.png, whose own production_reading.json recorded page=UNKNOWN,
+        # confidence=0.0: both candidates reached `len(set(found)) != 1` and the frame was left
+        # unnamed even though it prints 成长任务 as its heading. Removing just the bottom-band
+        # `每日任务` token makes the same frame resolve to Page.GROWTH_TASKS, which is what this
+        # keeps. Only the task-board pair is affected, and only when the precise rule fired.
+        if task_page is not None:
+            found = [candidate for candidate in found
+                     if candidate is not Page.DAILY and candidate is not Page.GROWTH_TASKS]
+            found.append(task_page)
+        elif task_heading_tokens:
+            # A task-board label IS on screen, but the top band decided nothing - so every task
+            # label present is an inactive tab. That is exactly the "incomplete or conflicting
+            # evidence" case: a tab that is always drawn cannot say which page this is, and the
+            # honest answer is UNKNOWN rather than whichever tab happened to be read. Without this
+            # the generic table below would still name Page.DAILY from that tab alone.
+            found = [candidate for candidate in found
+                     if candidate is not Page.DAILY and candidate is not Page.GROWTH_TASKS]
         calendar_entry = event_calendar.read_calendar_entry(eligible, frame_size=frame_size)
         if len(set(found)) != 1:
             # Hybrid vision may already have a reliable Home/Map page template even when this
@@ -1340,9 +1364,34 @@ class OCRPageClassifier:
             # preview title from creating an actionable minimum-guarantee goal.
             events["calendar"] = calendar_reading
         if regular_event_hub.get("recognized") is True:
+            printed = event_calendar.read_printed_reservation(eligible)
+            if printed is not None:
+                regular_event_hub = {**regular_event_hub, "printed_reservation": printed}
             events["regular_events_hub"] = regular_event_hub
+            # The client's own 预约自动开启 line, put on the event record it belongs to.  It is
+            # MERGED IN and never creates that record: a bear record carrying a schedule but no
+            # window state would let ``rally.bear_phase`` answer DISCOVERED from a clock rather
+            # than from what the client drew, and inventing a phase is what §二 forbids.  When
+            # the record does exist, this fills the field ``goal_library`` already reads
+            # (``bear.get("reserved_start_time")`` into PARTICIPATE_BEAR's evidence) and which
+            # nothing in the package was writing -- the four ``tools/`` probes were.
+            if printed is not None and isinstance(events.get("bear"), dict):
+                events["bear"] = {**events["bear"], **printed}
         if activity_strip.get("recognized") is True:
             events["activity_strip"] = activity_strip
+        # The map's 巨熊 popup is the OPEN window: it draws 等级N变异巨熊 and 剩余时间：HH:MM:SS.
+        # 剩余时间 is a duration, so this reading needs no timezone, and ``rally.bear_phase``
+        # answers ACTIVE for any positive remainder -- which is what puts PARTICIPATE_BEAR on the
+        # board READY with JOIN_RALLY instead of leaving the window unread.  Merged and never
+        # replaced: the alliance branch below writes the SCHEDULED phase (seconds_to_start) and
+        # this writes the RUNNING one, and a frame that shows one must not delete the other.
+        # Page-independent on purpose -- the popup is drawn over the map, not on the alliance
+        # page, and the reader refuses unless both the identity and a labelled clock are present.
+        from .rally import read_bear_popup_countdown
+        popup = read_bear_popup_countdown(eligible)
+        if popup is not None:
+            events["bear"] = {
+                **(events["bear"] if isinstance(events.get("bear"), dict) else {}), **popup}
         if page is Page.ALLIANCE:
             texts = [token.text for token in eligible]
             if bear_trap_detail:

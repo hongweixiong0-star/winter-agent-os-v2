@@ -99,6 +99,30 @@ class Skill:
                     and self.ui_change_tolerance and self.verifier and self.recovery)
 
 
+#: Values the episode ledger puts in its ``skill`` field that are **not skills**.
+#:
+#: The field carries three vocabularies.  Measured 2026-10-10 over 10,381 ledger rows: 88 distinct
+#: values, of which these four are not registry skills --
+#:
+#:   ``PRINTED_TAP`` / ``OBSERVE_ONLY``  a session *step kind* (``session_adapters.STEP_*``)
+#:   ``SAFE_STOP``                       a *decision outcome* (``brain.Decision("SAFE_STOP", …)``)
+#:   ``SELECT_QUICK_PANEL_CITY_TAB``     in no source file at all (one row, 2026-10-05, unresolved)
+#:
+#: Declared here, in the module that owns "what is a skill", because the alternative is what actually
+#: happened: every consumer decided for itself.  ``escalation_queue`` says *"仅启动、截图或 SAFE_STOP
+#: 不算真机尝试"* in a message while relying on an exact-name comparison to enforce it, and
+#: ``capability_gate`` collected these values into a Goal's attempted-skill set with no filter at all.
+#:
+#: Keeping it here also keeps it checkable: ``tests/test_the_ledger_skill_field_holds_one_vocabulary.py``
+#: asserts every ledger value is registered or declared, and that no entry has since become a skill.
+NON_SKILL_LEDGER_VALUES: frozenset[str] = frozenset({
+    "PRINTED_TAP",
+    "OBSERVE_ONLY",
+    "SAFE_STOP",
+    "SELECT_QUICK_PANEL_CITY_TAB",
+})
+
+
 class SkillRegistry:
     def __init__(self, skills: list[Skill]) -> None:
         self._skills = {skill.id: skill for skill in skills}

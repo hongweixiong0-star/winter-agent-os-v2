@@ -2,11 +2,10 @@
   "schema_version": "1.1",
   "topic": "BEAR_PARTICIPATION_CHAIN_STATUS",
   "written_at": "2026-10-05T21:25:00+08:00",
-  "updated_at": "2026-10-09T23:45:00+08:00",
-  "updated_by": "session 2026-10-09 (bear chain re-measurement)",
+  "updated_at": "2026-10-10T12:00:00+08:00",
+  "updated_by": "session 2026-10-10 (all three blockers landed; the calendar loop closed for the role that has run)",
   "question": "两个角色打巨熊，到底缺什么？",
   "one_line": "链路通的；缺的不是时序运气 —— 巨熊窗口在生产里被真机读到过 4 次，4 次都没有进入决策帧，所以 PARTICIPATE_BEAR 一次都没被生成。这是读数传递缺陷，不是运气。",
-
   "correction_20261009": {
     "what_was_wrong": "本文件 2026-10-05 的 the_gap.consequence 写的是『The agent participates only if it happens to be on the alliance war / rally list page during the window. It has never been.』—— 后半句是错的。",
     "what_the_frames_say": "agent 在窗口内确实到过集结页，而且窗口是活的：生产 episode 流里 state_after.events.bear 非空的记录共 4 条（67s / 73s / 165s / 13s），全部来自 LIVE_CLIENT_RALLY_ROW。",
@@ -14,7 +13,6 @@
     "why_it_looked_like_timing": "4 条读数都挂在非巨熊目标上（SCHEDULED_OFFICER_PROJECT / SCHEDULED_BROTHERS_IN_ARMS / OBSERVE_FISHING_STATE x2），skill 全是 BACK，观察到的变化是 PAGE_CHANGED —— 看起来像『随机路过』。但它们不是重试帧也不是陈旧帧，after_screenshot 是该步自己的 after，所以是真实到达，只是到达之后下一帧的 before 里 bear 已经没了。",
     "correction_of_the_correction": "本文件 2026-10-05 同时写着『the reader 不是原因』—— 这条仍然成立，本条更正不推翻它。reader 是对的：目标词表 RALLY_TARGET_WORDS[BEAR]=('变异巨熊','巨熊') 在 rally.py:193，2026-09-27 真机读到过『等级1变异巨熊』-> target_type=BEAR。"
   },
-
   "verified_working_20261005": {
     "reach_the_page": {
       "goal": "DISCOVER_BEAR_RALLY_LIST",
@@ -45,7 +43,6 @@
       "proof": "2026-10-05T12:39:52Z events.bear = {status: ACTIVE, remaining_seconds: 73, source: LIVE_CLIENT_RALLY_ROW}"
     }
   },
-
   "the_gap": {
     "statement": "PARTICIPATE_BEAR 只在 world.events['bear'] 已存在时才生成（goal_library.py:1567），而该字段只在 agent 站在会打印巨熊的页面上时才写入。所以驱动参战的那个目标，无法由揭示窗口的那次页面访问创建出来。",
     "consequence_corrected": "agent 确实到过那个页面（4 次，窗口都是活的），但读数没有进入下一帧的决策状态，所以目标从未生成、动作从未发出。",
@@ -70,14 +67,12 @@
       "role 1061663148's ability（它 13:26Z 那两帧就是带着活窗口的，能力未测得，不是缺失）"
     ]
   },
-
   "the_second_path_and_why_it_cannot_work": {
     "goal": "SCHEDULED_BEAR_HUNT",
     "episodes": 47,
     "result_split": "31 SUCCESS（全是 OPEN_HOME / BACK 的路由跳），16 FAILURE",
     "failure_breakdown": "14 x READ_EVENT_CALENDAR，failure_type=EVENT_CALENDAR_READ_NOT_PROVEN，verifier_evidence={'calendar_recognized': false, 'visible_dates': [], 'entry_count': 0}；1 x SAFE_STOP；1 x OPEN_HOME",
     "why_it_cannot_work": "READ_EVENT_CALENDAR 是全局活动日历的读者，而巨熊不是日历排期活动。外部一手确认：巨熊由联盟 R4/R5 手动开启狩猎陷阱，联盟冷却 47.5 小时（约每 2 天一次），开放窗口 30 分钟；官方指南明说『查看游戏内活动计时器和报名窗口』『设个提醒别错过开始』『官员公告时间』。所以窗口时间不在全局日历上，这条路读不到是结构性的。",
-
     "root_cause_wiring_20261010": {
       "verdict": "机制全都有，缺的是接线 —— 而且不是一处，是两处（§三·八 第十五条 的『字段没人消费』+『route 缺映射』）。",
       "already_correct_in_the_repo": {
@@ -103,7 +98,6 @@
         "why": "本条把下一步定成『补一条到达狩猎陷阱页的 route』。补做阶梯第 2 步（读 knowledge/external/external_capability_map.json 的 BEAR_TRAP_PARTICIPATION 卡片）后证明这是错的目标。",
         "kept_for": "留证：这说明跳过 reused_check / external prior 两步会导出看似合理但方向错误的结论。"
       },
-
       "correction_20261010_not_the_trap_page": {
         "what_was_wrong": "下一步不是『补一条到狩猎陷阱页的 route』。",
         "why": "阶梯第 2 步一打开 external_capability_map.json 就有答案：BEAR_TRAP_PARTICIPATION 卡片的 reuse_note（2026-10-05 按 reuse_check 裁决写回）已经写明『WHERE THE TIME IS ACTUALLY PUBLISHED』，并给出已 CONFIRMED 的读数。本次补做后确认：狩猎陷阱页读的是 cooldown / 距开始（registry next_open_condition 的读法），而【预约自动开启 <datetime>】这个排期公布在【常规活动】页的任务条里 —— 两者是不同的读数，排期以常规活动页为准。",
@@ -178,7 +172,6 @@
     ],
     "also_measured": "该目标 2026-10-05T12:21Z 之后再无 episode（10-06/10-07/10-08 各 0 条），而同一时期 agent 在跑。"
   },
-
   "the_budget_that_has_no_run_boundary": {
     "observation": "capability_bootstrap.DEFAULT_BUDGET 声明 max_bootstrap_visits_per_run=1、max_bootstrap_attempts=1，但两个计数器都没有可用的运行边界。",
     "evidence": [
@@ -191,7 +184,473 @@
     "status": "NOT_FIXED_NEEDS_OPERATOR_DECISION",
     "why_not_fixed": "改的是 2026-10-01 操作者指令 §二十四 定下的预算，属设计决定；且 V2 当前未运行，改动无法实机验证。按 §三·八 第十九/二十条，先报冲突与替代方案，不擅自实现。"
   },
-
+  "the_wake_half_exists_and_has_no_feeder_20261010": {
+    "one_line": "『何时行动』那一半不是缺的 —— 它存在、已接线、也被消费。缺的是【巨熊印刷排期的那句话】没有一个生产读者，喂给它的是一条与巨熊无关的字段。",
+    "corrects": "external_capability_map.json 的 BEAR_TRAP_PARTICIPATION.current_gap 写『V2 has no time-window concept and no preemption』。本次代码级复核后，前半句不成立：时间窗概念存在。",
+    "correction_20261010b_the_reservation_is_only_a_priority": {
+      "what_i_got_imprecise": "本节标题写『the wake half exists and is consumed』。『被消费』成立，但消费它的方式不叫唤醒。",
+      "measured": "reserved_start 唯一的消费者是 runtime.py:1698 —— schedule.phase_at(moment) → event_schedule.PHASE_PRIORITY[phase] → 一个【优先级加成】。在 runtime.py 里对 reservation / reserved 做 wait / next_action / sleep / until 的搜索，命中 0 处。",
+      "what_the_design_intends": "ReadinessPhase 本身就是那条阶梯：IDLE < T30 < T15 < T5 < T1 < OPEN（event_schedule.py:55-63），与 bear_hunt_time_20260927_newaccount.json 的 wake_ladder 同构；event_schedule.py:116 的注释自称 reserved_start『is the only field that can produce a wake』。所以意图齐备，缺的是把 phase 变成一次真正的 wait/next_action_at。",
+      "why_this_decides_the_timezone_question": "为一个只会影响【已经醒着时的排序】的字段去声明客户端时区，不会让 agent【准时到场】。所以顺序必须是：① 先让 reserved_start 产生真正的 wait（§三·七 第十二条『定时用 next_action_at』）；② 再声明时区让它有值可填。反过来做只是把一个未完成的机制提前接上电。",
+      "note": "route_for('PARTICIPATE_BEAR') = 'ALLIANCE'（实测），所以 runtime.py:1676-1681 那段『BEAR_HUNT has no route』的注释是过时的 —— 它说的是 event_id，而该处检查的是 goal_id；readiness 加成对 PARTICIPATE_BEAR 不会被 route 挡住。",
+      "and_the_popup_route_does_not_need_any_of_this": "a70dc18f 读的是【正在看着的窗口】的剩余时长，直接给 bear_phase 一个 ACTIVE，因此产生的是【动作】而不是【唤醒】。巨熊链路现在有一条不依赖唤醒机制的动作路径。"
+    },
+    "what_exists": {
+      "the_reservation_field": "winter_agent_v2/event_schedule.py:123 RoleSchedule.reserved_start —— 注释自称『the only field that can produce a wake』（event_schedule.py:116）",
+      "the_writer_api": "event_schedule.py:858 record_reservation() 与 :893 record_live_countdown()；清空是一等操作（客户端倒计时消失就写 None，不留过期分钟）",
+      "the_consumer": "runtime.py:1677 起 event_schedule.load() → 算 ReadinessPhase → event_schedule.PHASE_PRIORITY[phase] 作为优先级加成（runtime.py:1704-1715）。所以预约确实会变成决策权重。",
+      "so_it_is_wired": true
+    },
+    "what_is_missing": {
+      "the_only_feeder": "record_live_countdown 全仓库只有一个调用点：runtime.py:5022。它的输入是 minimum —— 即 world.events[<event_id>][\"minimum_guarantee\"].seconds_to_start，source 写死为 LIVE_CLIENT_EXPLICIT_START_COUNTDOWN。也就是说：只有『当前活动面板』打印的倒计时能产生预约。",
+      "the_bear_s_own_sentence_has_no_reader": "巨熊的排期印成【预约自动开启：yyyy-MM-dd HH:mm】（CONFIRMED，见 bear_hunt_time_20260927_newaccount.json）。字符串『预约自动开启』在 winter_agent_v2/ 里出现 0 次；它只出现在四个一次性探针里：tools/bear_new_account_baseline.py:43、tools/bear_new_account_baseline_pass11.py:29/167/171、tools/bear_baseline_roleB.py:32、tools/bear_roleB_complete.py:37（均已带可用正则）。",
+      "consequence": "即使页签条现在走得通了（cbcb6d2e），生产里也没有人读它揭示出来的那一行。READ 与 USE 之间少的是【把探针里的那个读者抬成生产能力，并接到 record_reservation】。",
+      "note_on_evidences_page": "runtime.py:5022 那一处的 activity 来自 minimum，而 minimum 是当前活动面板；巨熊行动走的是常规活动的 tab body，不是 minimum_guarantee。两条数据源不是同一个。"
+    },
+    "correction_to_the_earlier_note_in_this_file": "本文件 proposed_minimal_fix 把下一步写成『让窗口读数跨帧』。按本节，跨帧那一步只解决 PARTICIPATE_BEAR 的生成；排期那一半要的是【一个生产读者 + 接到 record_reservation】。两件事都要做，但它们是不同的两处。",
+    "next_work_item": {
+      "shape": "把『预约自动开启』从 tools/ 探针抬成生产能力：在常规活动详情帧上解析该行 → 以 event_id=BEAR_HUNT、role_id 为键调用 event_schedule.record_reservation(source 标明来源)。不新增第二套时间真值，沿用 RoleSchedule.reserved_start。",
+      "reuse_available": "四个探针里的正则可直接作为先验（同游戏同分辨率 720×1280）；但探针用固定像素框取页签，正则本身不依赖坐标，可安全复用。",
+      "preconditions": [
+        "设备归属：本轮实测 AUTO 未运行（episodes.jsonl 末条 2026-10-08T23:19:53Z），但屏幕上出现了【铸匠的珍藏】付费弹窗（¥30.00 按钮），且 operator 的 com.xm.wujindongri 仍有 5 个进程 —— 动真机取帧前必须先清，付费按钮上误触的代价是真实货币",
+        "确认 event_schedule 的 RoleSchedule 是否已有 BEAR_HUNT 的行（避免与 minimum 那条互相覆盖）",
+        "走 winter-capability-intake-ladder 五步"
+      ],
+      "acceptance_criteria": {
+        "offline": "以 p11_bear_page.png 为输入，解析器必须给出 2026-09-27T20:30+08:00 这一绝对时刻；以一张没有该行的帧为输入必须返回 None 而不是编造。",
+        "live": "episode 流出现以 预约自动开启 为来源的预约写入，且 runtime.py:1677 起算出的 phase 因此改变；随后在窗口内出现真实 JOIN。"
+      }
+    }
+  },
+  "the_gate_is_built_for_the_wrong_state_20261010": {
+    "one_line": "到达巨熊的那条路，上游帧在项目自己的磁盘上就是全的（30+ 帧）；挡住的不是导航，是 ocr.py 那个门：它是为『还没开窗』设计的，窗口一开它反而认不出。",
+    "coverage_snapshot_20261010": {
+      "generator": "tools/build_capability_coverage.py（必须先跑再引用）",
+      "result": "total=20 fully_live_verified=2 partial=9 never_tried=4 blocked=4 degraded=1 missing=0",
+      "fully_live_verified_percent": 10.0,
+      "live_coverage_mean": 0.4012,
+      "highest_leverage_top3": [
+        "CHECK_ALLIANCE_EVENT —— blocks 2 goals: ALLIANCE_TIMED_EVENTS, PARTICIPATE_BEAR",
+        "CLAIM_EVENT_TIER —— blocks 2 goals: EVENT_MINIMUM_GUARANTEE, ALLIANCE_TIMED_EVENTS",
+        "READ_BEAR_TIMER —— blocks 2 goals: ALLIANCE_TIMED_EVENTS, PARTICIPATE_BEAR"
+      ],
+      "reading": "项目自己的杠杆排序前三全部落在巨熊/联盟活动这条链上，与本次审计独立一致。"
+    },
+    "the_route_frames_already_exist": {
+      "root": "dataset/raw/bear_live_20260909/ —— 2026-09-09 真机会话的完整证据根，30+ 帧 + _grid/",
+      "route_in_frames": [
+        "alliance_main_now.png（联盟主页）",
+        "alliance_territory.png / territory_actual.png（联盟领地）",
+        "special_buildings.png（特殊建筑：同时含『狩猎陷阱』与『前往』）",
+        "bear_trap_detail.png / bear_trap_loaded.png（窗口开着时的巨熊弹窗）"
+      ],
+      "also_present": "join_list_now.png, joined_bear_1/2/3.png, bear_rally_panel.png, join_green_search.png 等整条加入链",
+      "grid_overlays": "_grid/grid_bear_trap_detail.png, grid_bear_trap_detail_buttons.png（已做好的网格叠加）"
+    },
+    "what_bear_trap_detail_png_actually_is": {
+      "not_a_building_page": "它不是狩猎陷阱建筑页，而是【地图上的「等级1变异巨熊」弹窗】：熊的立绘 + 倒计时 00:13:54 + 两个按钮『伤害排行』『集结』；地图上另有『集结时间 00:13:15』与独立计时 00:00:14 / 00:00:02。",
+      "why_it_matters": "窗口开着时，页面给的是【到结束还有多久】（remaining_seconds）和一个『集结』按钮，不是『距开始』（seconds_to_start）。"
+    },
+    "the_garble": {
+      "measured": "对这四帧跑项目自己的 reader（executor_router._rapid_ocr_results）：bear_trap_detail.png 读出 'o将猎陷阱'，bear_trap_loaded.png 读出 'io将猎陷阱'，special_buildings.png 读出正确的 '狩猎陷阱'；bear_trap_entered.png 是 0 token 的过渡帧。",
+      "consequence": "ocr.py:1176 的 `\"狩猎陷阱\" in exact_texts` 是精确匹配，遇到 'o将猎陷阱' 直接不成立。"
+    },
+    "the_real_shape_of_the_gate_problem": {
+      "code": "ocr.py:1176-1182 —— bear_trap_detail = (\"狩猎陷阱\" in exact_texts) and any(marker in text for text in exact_texts for marker in (\"前往\",\"距开始\",\"距离开始\",\"狩猎陷阱详情\"))",
+      "measured_truth": [
+        "special_buildings.png 两个条件都满足（有『狩猎陷阱』也有『前往』）⇒ 门能过",
+        "bear_trap_detail.png / bear_trap_loaded.png：标签被读坏（o将猎陷阱 / io将猎陷阱），且【一个 marker 都没有】—— 因为窗口开着，页面给的是『集结』而不是『前往』⇒ 门必不过"
+      ],
+      "conclusion": "这个合取门是为『还没开窗』设计的（前往 / 距开始）。窗口一开，它两个条件同时失效。所以即使页签条、导航都通了，也读不到窗口内那一次。",
+      "second_order": "_explicit_start_seconds（ocr.py:820）只认『距开始/距离开始』两种标签，且注释明确说阶段计时是 deadline 不是 start time —— 所以它也不会从『00:13:54』这个到结束的倒计时产生 seconds_to_start。要做窗口内那次，必须读成 remaining_seconds。"
+    },
+    "why_i_did_not_patch_it": {
+      "reason": "把标签匹配改成宽容（例如按三字核心『猎陷阱』匹配）是我能写的最小改动，但【手上没有任何一帧能证明补了它就会生效】：那两帧的 marker 子句本来就不过。在没有可证明的样本上改识别，正是本会话三次更正（cc97315b → 782823b4 → 更正到第一版诊断）都源于的同一个错误。",
+      "what_would_make_it_patchable": "一次真机取帧，覆盖狩猎陷阱页的【两个状态】：开窗前（应出现『前往』/『距开始』）与窗口内（出现『集结』与到结束的倒计时）。有了这两帧，宽容匹配与 remaining_seconds 读法都能被证明或证伪。"
+    },
+    "next_capability": {
+      "name": "READ_BEAR_TIMER（项目自己 highest_leverage 的第 3 项，卡住 ALLIANCE_TIMED_EVENTS 与 PARTICIPATE_BEAR 两个目标）",
+      "shape": "识别巨熊弹窗（『等级N变异巨熊』+ 到结束的倒计时 + 『集结』按钮），把倒计时读成 events['bear'].remaining_seconds，使 rally.bear_phase 得到 ACTIVE，从而 PARTICIPATE_BEAR 以 READY 出现并带上 JOIN_RALLY。",
+      "why_this_is_cheaper_than_the_常规活动 route": "它走 remaining_seconds 即【相对量】，不需要【为客户端声明时区】那一步；那条路仍然卡在时区决定上。",
+      "reuse_available": "识别素材与整条加入链的帧都在 dataset/raw/bear_live_20260909/；加入机制 2026-09-27 已 LIVE_VERIFIED（knowledge/rally/rally_engine_rules.json#city_rally_badge）。",
+      "blocked_on": "设备。屏幕上有付费弹窗，且 operator 的 com.xm.wujindongri 仍在跑（5 个进程，7 小时未变）。"
+    }
+  },
+  "live_session_20261010T0745_what_the_client_actually_shows": {
+    "one_line": "第一次在当前客户端上做真机读数（此前三个提交都没有实机验证）。四条实测：向前滑动确实有效；今天条上没有巨熊；生产读者在这条上只读到 1 个页签并声称日历不可见；客户端自己印『北京时间』。",
+    "evidence_root": "dataset/evidence/live_regular_activity_20261010T0745/",
+    "frames": [
+      "city_after_clearing_the_purchase_popup.png —— 用 KEYCODE_BACK 清掉『铸匠的珍藏』付费弹窗后的城市视图（未用任何点击，因此不可能落到 ¥30.00 上）",
+      "regular_activity_before_swipe.png —— 常规活动页初始态",
+      "regular_activity_after_forward_swipe.png —— 向前滑一次后",
+      "regular_activity_forward_2.png / _forward_3.png —— 再滑两次（第 2、3 次后条不再变化 ⇒ 已到末端）"
+    ],
+    "1_向前滑动真的有效": {
+      "how": "adb input swipe 620 138 → 110 138，400ms（点的来源是识别出的 tabstrip_roi_norm 中线，不是固定像素）",
+      "result": "条从「日历 / [最强王国,选中] / 变革的乐章」整段滚到「决战王城 / 堡垒争夺 / 社区」",
+      "meaning": "cbcb6d2e 补的那个朝末端手势在真机上确实推动条 —— 这是它第一次得到实机证据（此前 124/349 次 NOT_PROVEN 全是朝起点方向）。"
+    },
+    "2_今天条上没有巨熊": {
+      "the_whole_strip_today": [
+        "日历",
+        "最强王国",
+        "变革的乐章",
+        "决战王城",
+        "堡垒争夺",
+        "社区"
+      ],
+      "巨熊行动": "不在条上（三次向前滑到底仍未见）",
+      "reading": "当前客户端没有挂着巨熊窗口。与外部证据一致：由 R4/R5 手动开启、联盟冷却约 47.5 小时，不是每天固定时刻。"
+    },
+    "3_生产读者读得出这条_我先前量错了函数": {
+      "correction": "本节的上一版(409fb44c / 71056664)写的是『THE PRODUCTION READER CANNOT READ THIS STRIP』。那是错的，原因是【我调用的是内层函数而不是生产入口】。",
+      "what_i_measured_wrong": "我直接调 event_calendar.read_regular_event_hub(整帧 tokens)，它只做整帧那一遍 OCR，得到 tabs=['变革的乐章']、calendar_tab_visible=False、两个滑动都是 None，于是我宣布生产读者读不出这条。",
+      "what_production_actually_does": "生产走的是 runtime._regular_event_hub_on_frame(runtime.py:2504)：整帧读一遍 → 若 recognized 且 calendar 不可见 且 没有滑动 → 【裁 tabstrip_roi_norm 再单独 OCR 一遍】→ 把裁剪内的框投回整帧坐标 → 合并后重新读。",
+      "verified_by_running_it": {
+        "how": "用真实方法 rt._regular_event_hub_on_frame(那一帧)，配一个把 recognize(frame, roi=...) 实现为『按 ROI 裁剪后再跑生产 OCR』的假服务",
+        "result": {
+          "display_name": "最强王国",
+          "tabs": [
+            "日历",
+            "变革的乐章"
+          ],
+          "calendar_tab_visible": true,
+          "scroll_to_start_norm": null,
+          "scroll_to_end_norm": null
+        },
+        "reading": "两个不同标签、日历可见、因此【正确地不授权滑动】。整条链路完全正常。"
+      },
+      "why_the_crop_is_needed_at_all": "RapidOCR 的检测器会把整帧缩到内部尺寸，720x1280 上的小标签因此检测不到。实测：整帧读不到『日历』，而裁出 (0,60)-(260,200) 后 1x 直读得到『日历』0.995。这正是 runtime.py:2441-2450 注释里已经记过的同一现象（『标签约 23px … 裁图就是修法，且不放大』），也正是一条既有测试的名字：test_partial_tab_ocr_is_lifted_from_crop_to_same_frame。",
+      "why_the_pinned_gate_is_right": "既然裁剪补齐存在，内层 read_regular_event_hub 的 >= 2 就是【保守的内层判断】而不是缺陷 —— 它只负责整帧那一遍，补齐由外层负责。71056664 的撤回因此是对的（虽然当时给的理由是错的）。",
+      "the_real_lesson": "宣布一个读者坏了之前，必须调【生产入口】，不是内层 helper。本条与 cc97315b / 782823b4 一起构成本会话的四次更正：三次在部分证据上，这一次是【量错了函数】。"
+    },
+    "4_客户端自己印出时区": {
+      "observed": "城市视图顶部通知条：『新增待办：据点争夺-3级科技工程站，将于北京时间2026-10-11 07:11:00 开启』（OCR 分两行读出，两行都含『北京时间』）",
+      "why_it_matters": "这是【客户端自己】给出的时区字样，比『此前所有探针都记 +08:00』强得多。timed_event_readiness 的 time_rule 禁止从本机时区推断游戏时区 —— 而『北京时间』不是推断，是客户端说的。",
+      "still_a_decision": "但本轮没有据此声明时区。理由见 cb6083ae：reserved_start 目前只产生优先级加成、不产生唤醒，而唤醒现在已由 b4704288 用【时长】给出，不需要时区。所以时区仍是可选项，不是阻塞项。"
+    },
+    "device_note": "本次是操作者明确授权后进行的（『弹窗你自己点掉』）。清弹窗只用 KEYCODE_BACK，全程没有一次点击落在付费按钮上。operator 的 com.xm.wujindongri 仍有 5 个进程在跑 —— 每次读数都受此影响，本目录的帧是唯一可用的当前客户端证据。"
+  },
+  "live_verification_20261010T0750_the_chain_ran_on_the_client": {
+    "one_line": "把三条提交拿到真机上串起来跑：生产入口、裁剪补齐、向前滑动、日历读者 —— 全部在当前客户端上通过；并且发现【巨熊行动的页签此刻就在条上】。",
+    "evidence_root": "dataset/evidence/live_regular_activity_20261010T0745/",
+    "how": "用真实 OCR 服务走生产入口：OCRService(RapidOCRBackend()) 塞进 rt.vision.ocr，再调 rt._regular_event_hub_on_frame(帧)。不是模拟，是生产那个函数。",
+    "1_生产入口在常规活动页上通过": {
+      "frame": "regular_activity_production_run.png",
+      "reading": {
+        "recognized": true,
+        "display_name": "最强王国",
+        "event_id": "STATE_VS_STATE",
+        "tabs": [
+          "日历",
+          "变革的乐章"
+        ],
+        "calendar_tab_visible": true,
+        "tab_positions_norm": {
+          "日历": [
+            0.19028,
+            0.13359
+          ],
+          "变革的乐章": [
+            0.74236,
+            0.13359
+          ]
+        },
+        "scroll_to_start_norm": null,
+        "scroll_to_end_norm": null
+      },
+      "proof_the_crop_pass_ran": "OCRService.timing_calls = 2（整帧 1 次 + ROI 裁剪 1 次）",
+      "why_it_matters": "这同时坐实了 01dbdc28 的更正：整帧读不到 日历，裁剪补齐把它拿回来了；而『不给滑动』是正确答案，因为 日历 就在屏上。"
+    },
+    "2_向前滑动的生产几何在真机上执行成功_cbcb6d2e": {
+      "steps": [
+        "向前滑到 日历 离开视野 → 生产读者给出 tabs=['决战王城','堡垒争夺','社区']、calendar_tab_visible=false、两个方向都有点",
+        "用【读者自己推导出的】朝起点点 (195,170)→(551,170) 执行一次",
+        "重新读那一帧 → tabs=['巨熊行动','决战王城']，条确实移动了"
+      ],
+      "frame": "regular_activity_after_production_derived_swipe.png",
+      "why_it_matters": "cbcb6d2e 的手势在此之前只有人工大滑动作为证据；这是第一次【由生产几何推导出的点】在真机上推动了条。"
+    },
+    "3_巨熊行动的页签此刻就在条上": {
+      "frame": "bear_tab_visible_on_strip.png",
+      "reading": "tabs=['巨熊行动','决战王城']，tab_positions_norm={'巨熊行动': [0.25556, 0.13359], '决战王城': [0.53194, 0.13281]}",
+      "corrects": "本节早前写『今天条上没有巨熊』。那是错的 —— 条的页签集合不是一条可以用滑动枚举完的固定线性表，我按『滑到底』枚举得出的全集是不完整的。",
+      "visual": "条上是 (!) | [熊头图标+巨熊行动] | [皇冠+决战王城] | [堡垒+堡垒争夺] | …",
+      "not_completed": "没能点进这个页签。推导出 (184,171) 之后点击，页面切到了【日历】视图而不是巨熊行动 —— 说明抓帧与点击之间条的位置变了。随后连点两次都停在日历视图。这一步留给下一次（或者由运行时自己走，它有当帧读数）。"
+    },
+    "3b_条是动态可滚的且会回到选中页签": {
+      "observed_tab_sets_across_seven_frames": [
+        "日历, 最强王国(选中), 变革的乐章",
+        "决战王城, 堡垒争夺, 社区",
+        "巨熊行动, 决战王城",
+        "变革的乐章, 联盟争霸赛",
+        "决战王城, 堡垒争夺, 社区",
+        "决战王城, 堡垒争夺",
+        "日历(选中), 最强王国, 变革的乐章   ← 自己回到选中页签"
+      ],
+      "conclusions": [
+        "条的页签集合不是一条固定线性表：不同帧上出现的组合不同，且出现了此前没见过的 联盟争霸赛。",
+        "条会【回到选中的页签】：我从 决战王城/堡垒争夺/社区 回到界面时，条已是 日历(选中)/最强王国/变革的乐章。",
+        "所以 巨熊行动 只出现在某些滚动位置 —— 它确实在表里，但不在每个位置上。"
+      ],
+      "operational_consequence": "要进巨熊页签，读与点必须发生在【同一帧】：先读到它在哪，再立刻点；抓帧与点击之间隔了一次 OCR（约 1.5s）加上条自身的回位，位置就可能已经变了。这正是运行时 read→decide→act 的形状，而不是人工多步操作的形状。",
+      "why_the_tap_failed_twice": [
+        "第一次：推导出 (184,171) 后点击，落到了 日历 —— 条在此期间回位了。",
+        "第二次（三次尝试的单进程循环）：三次抓帧里 巨熊行动 都不在可见页签中，循环按设计没有点。"
+      ],
+      "not_completed": "没有拿到【点进巨熊页并读到 预约自动开启】的真机证据。624de00f 的读者目前只有离线帧证据（2026-09-27 那张 p11_bear_page.png）。"
+    },
+    "3c_有界探针_同帧读点": {
+      "tool": "tools/probe_tap_a_regular_event_tab.py",
+      "shape": "取设备租约 → 循环（抓帧 → 用生产入口 _regular_event_hub_on_frame 读 → 若目标页签在 tab_positions_norm 里就【立刻】点 → 否则滑一格再看），最多 6 次；目标不在读数里就绝不点。",
+      "refusals_built_in": [
+        "目标不在当帧读数里 → 不点（『不在屏上』不是一个位置）",
+        "算出的点在读数报告的条带 band 之外 → 不点",
+        "滑动次数上限 6"
+      ],
+      "direction_rule": "与运行时一致：条动了就保持方向，条没动就翻向。写死一个方向会走离另一侧的目标 —— 实测 巨熊行动 在 决战王城 左边，固定朝末端滑 6 次都没看见它。",
+      "result_20261010T0755": "6 次尝试、两个方向，巨熊行动 都不在可见页签中 ⇒ 探针按设计【没有点】。今天这条条上拿不到它。",
+      "side_finding_stale_serial": {
+        "what": "config/v2.json 的 device.serial 仍是 127.0.0.1:7555，而这台机器上的设备是 emulator-5554。",
+        "observed": "探针第一次跑直接产出空截图，然后在很远的地方抛 PIL.UnidentifiedImageError —— 报错点离原因很远。",
+        "fix_in_the_probe": "加 resolve_serial()：配置里的串号若在连就用它，否则用唯一在连的设备，并把替换写进台账（serial / serial_substituted_for_config / configured_serial）。",
+        "not_fixed_in_config": "没有改 config/v2.json —— 那是生产配置，改它属于另一件事（而且运行时的取帧路径可能另有解析）。**记下来：它现在是过期的。**"
+      }
+    },
+    "3d_点进巨熊页并读到排期_624de00f 的真机端到端": {
+      "outcome": "成功。工具在同帧读到并点中了巨熊页签，随后 read_printed_reservation 从【当前客户端】读出排期。",
+      "the_frame_that_landed": {
+        "tabs": [
+          "决战王城",
+          "堡垒争夺",
+          "存戏",
+          "巨熊行动"
+        ],
+        "tapped": [
+          232,
+          171
+        ],
+        "inside_band": true,
+        "attempt": 14,
+        "step_px": 60
+      },
+      "and_the_step_size_was_the_whole_difference": {
+        "with_a_half_screen_step": "24 次尝试只在两个位置之间来回：变革的乐章/日历 与 决战王城/堡垒争夺/社区，12:12。巨熊行动 正好在两者之间，每一步都跨过去。",
+        "with_a_60px_step": "第 14 次就落在含 巨熊行动 的滚动位置上。",
+        "corroboration": "项目那个唯一到过该页的探针，自己的注释就是『walk the strip in 60 px nudges』。"
+      },
+      "the_page_after_the_tap": {
+        "title": "巨熊行动",
+        "body": "【变异巨熊】，可获得大量装备 / 联盟开启陷阱捕获 / 材料与奖励。/ 陷阱可持续30分钟，盟友协力造成的总伤害越高，奖励越多。",
+        "reservation_line": "预约自动开启： 2026-10-1120:30",
+        "buttons": [
+          "开启",
+          "伤害奖励",
+          "陷阱强化"
+        ],
+        "等级5": true
+      },
+      "the_reader_s_output": {
+        "reserved_start_time": "2026-10-11T20:30:00",
+        "reserved_start_raw": "预约自动开启： 2026-10-1120:30",
+        "reserved_start_source": "LIVE_CLIENT_PRINTED_RESERVATION",
+        "reserved_start_offset": null
+      },
+      "schedule_record": "knowledge/events/bear_hunt_time_20261010.json —— 巨熊行动 的窗口在北京时间 2026-10-11 20:30 开",
+      "evidence": [
+        "dataset/evidence/live_bear_page_20261010T0800/strip_before_tap_showing_bear_tab.png",
+        "dataset/evidence/live_bear_page_20261010T0800/bear_page_live_20261010.png"
+      ],
+      "motion_blur": "滚动中的页签标签 OCR 很抖（同一轮里读到 存戏/订动/决战王/争霸赛/盟争霸赛）。探针只在目标标签【出现】时点，并把当时的 tabs 全量写进台账，不做模糊匹配。",
+      "what_this_closes": "624de00f 在此之前只有 2026-09-27 那张离线帧作为证据；现在它有了当前客户端的真机证据，而且读出的 client_raw 与那次 CONFIRMED 记录同型（『预约自动开启： yyyy-MM-ddHH:mm』）。"
+    },
+    "4_日历读者在当前客户端上完全正常": {
+      "frame": "probe_frame.png（= 日历视图）",
+      "reading": {
+        "recognized": true,
+        "visible_dates_raw": [
+          "10/08",
+          "10/09",
+          "10/10",
+          "10/11",
+          "10/12",
+          "10/13",
+          "10/14"
+        ],
+        "entries": [
+          "DISCOVERED_EVENT_DC53E03FB8",
+          "DISCOVERED_EVENT_A33B0DC6E9",
+          "EXCLUSIVE_GEAR_FORGE",
+          "DISCOVERED_EVENT_6F33C054CA",
+          "DISCOVERED_EVENT_2CED2A762E",
+          "DISCOVERED_EVENT_6F33C054CA"
+        ]
+      },
+      "verify_conditions": "dates>=2 ✓ entries>=1 ✓ ⇒ 只差上层把这一帧判成 Page.EVENT",
+      "why_it_matters": "这正是生产里 14/14 全失败的那个读者（EVENT_CALENDAR_READ_NOT_PROVEN / calendar_recognized=false）。它没有坏 —— 那 14 次站在【HUB 帧】上，而站在【日历帧】上它读得完全正确。所以问题一直是【把读取票发到了哪一帧】，不是读者。"
+    },
+    "5_日历上今天的活动清单里没有巨熊": {
+      "listed_for_1010": [
+        "除雪小分队",
+        "神秘藏宝室",
+        "专属装备铸炼",
+        "英雄集结",
+        "旅途的收获",
+        "英雄集结"
+      ],
+      "client_clock_on_that_frame": "2026-10-10 07:52:18，且 星期六 10/10 为选中列",
+      "client_s_own_disclaimer": "页脚印着『所有活动的最终开放情况以游戏内为准』 —— 客户端自己声明日历不是权威。",
+      "reading": "今天排期里没有巨熊，但条的页签里【有】巨熊行动 —— 两者不矛盾（页签可以是因为冷却/可开启状态而在，而日历只列当天已排的活动）。这与外部证据一致：由 R4/R5 手动开启，不是日历排期。"
+    },
+    "6_日历的条目大多没被解析成已知活动": {
+      "observed": "6 条里 5 条是 DISCOVERED_EVENT_<hash>，只有 EXCLUSIVE_GEAR_FORGE 解析到了已知 id",
+      "note": "这是活动身份映射的覆盖缺口，不是读者缺陷；记下来因为 `advertised_but_unread_activities` 那类判断依赖它。"
+    }
+  },
+  "self_review_20261010T0809_the_new_wake_s_blast_radius": {
+    "why": "1a17741a 让排期第一次有可能写出一个【36 小时后】的唤醒。写完之后我先查它会不会把系统按到那时候 —— 这是实现后的复核，只不过复核的是调度面。",
+    "what_it_touches": [
+      "runtime.py:2086 —— 角色的 next_action_at = 该角色所有目标等待里最早的那个；我的排期进了这个集合",
+      "scheduler.py:690-697 —— waits = [role.next_action_at, 各目标 retry_after]，但它【只用来报告】 role_statuses 里的 wait_until，是遥测，不是过滤器 ⇒ 不会把角色按死",
+      "scheduler.py:743-755 —— wakeups 收集 role.next_action_at 与目标 retry_after，next_wakeup = min(wakeups)，并持久化进全局决策",
+      "tools/control_panel.py:718-735 —— 面板按 global_next_wakeup_at 等，但【只在 reason == GLOBAL_WAIT 时】；否则 30000ms"
+    ],
+    "the_guard_that_makes_it_safe": "control_panel.py 的最后一行是 return int(min(seconds, 24 * 60 * 60) * 1000) —— 上限 24 小时，注释写明『保留每天一次健康刷新，以防来源时间意外地远』。所以 36 小时会被砍到 24 小时：今天 08:09 等下去，明天约 08:09 必醒一次，而窗口在明天 20:30 ⇒ 仍在窗口之前。",
+    "the_other_half": "min(wakeups) 取【最早】的。只要该角色还有任何更近的等待（队列、计时器、退避），我的 36 小时就不参与决定；只有当巨熊确实是最近的那件事时它才决定 —— 而那正是唤醒要表达的意思。",
+    "verdict": "SAFE，且判据是两个具体事实（24 小时上限、只在 GLOBAL_WAIT 生效），不是一个印象。",
+    "not_measured": "没有跑起来验证。这是读代码 + 算术得到的结论；真实的一次 GLOBAL_WAIT 下的等待时长仍未实机观测。"
+  },
+  "system_was_down_32h_and_is_up_again_20261010T0813": {
+    "one_line": "V2 从 2026-10-09 07:21 起停了 32 小时；根因是那次启动走的是第三条路径（绕过 pin 校验、且活不过调用轮）。已用计划任务正确拉起，跑的是 3580bf27。",
+    "evidence_it_was_down": {
+      "episodes_last": "2026-10-08T23:19:53Z（= +08:00 的 10-09 07:19:53）",
+      "panel_log_last_lines": "2026-10-09 07:21:53 『运行环境预检通过』+『自动运行已启动』，此后一字不写",
+      "pump_json_mtime": "2026-10-09 07:21:55",
+      "panel_pid": "17248，alive=False",
+      "crashes": "目录为空 —— 没有崩溃报告"
+    },
+    "the_root_cause_reading": {
+      "signature": "启动入口技能第 8 步的三条判据同时成立：panel.log 最后一行是【正常循环行】而不是 traceback；crashes/ 没有该时间点的新文件；desktop_startup.log 里【没有】该次启动的 CODE_COMMIT 行（它只有计划任务那条路才写）。",
+      "conclusion": "那次启动是第三条路径 tools/panel_restart.py --start —— 它直接跑 control_panel.py，绕过 verify_pin，所以加载版本不可归因；而它【活不过发起它的那一轮】：宿主会回收整棵分离子进程树。",
+      "honesty": "这是从三条判据推断出来的，不是直接观测到的调用栈。但它解释了全部四个读数。"
+    },
+    "the_correct_start_and_its_readings": {
+      "command": "经计划任务启动（该入口由宿主提供的独立执行通道发出，不经过本会话的进程树）",
+      "desktop_startup_log_new_line": "[2026-10-10T08:13:04] CODE_COMMIT=3580bf27c61ef5d80d308f1663e4cf91fc912a06 WORKTREE_CLEAN=true DATA_ROOT=E:/无尽冬日智能体",
+      "launcher": "…/winter-prod-pinned/…/tools/launch_pinned_production.py —— 指向 pin 树",
+      "panel_pid": "27308，alive=True",
+      "pump_json_mtime": "2026-10-10 08:13:12（新鲜）",
+      "task_last_result": "267009 (0x41301) = 当前正在运行",
+      "preflight_line": "预检·核心：Runtime OK · MuMu OK (127.0.0.1:7555 [720,1280] 前台 com.gof.china)"
+    },
+    "live_behaviour_in_the_first_three_minutes": {
+      "episodes": "10371 -> 10380（+9）",
+      "sequence": [
+        "OPEN_EVENT_CALENDAR_FROM_HOME SUCCESS",
+        "OPEN_EVENT_CALENDAR_TAB SUCCESS",
+        "OPEN_EVENT_CALENDAR_DETAIL FAILURE x2",
+        "BACK FAILURE, BACK SUCCESS",
+        "OPEN_QUICK_PANEL SUCCESS, OPEN_TASK_FROM_QUICK_PANEL_BUILDING SUCCESS, OPEN_BUILDING_UPGRADE SUCCESS"
+      ],
+      "result_mix": "6 SUCCESS / 3 FAILURE",
+      "what_matters": "两次失败【没有挡住任何东西】—— 它退出来、换了目标、成功。这是本文件反复引用的那条不变量（一个任务失败不得挡住其他任务）第一次在实机上看得到。",
+      "the_two_failures_left_open": {
+        "skill": "OPEN_EVENT_CALENDAR_DETAIL",
+        "history": "全流 37 条，35 SUCCESS；仅有的 2 条 FAILURE 就是这两条",
+        "reasons": [
+          "open_next_uninspected_visible_calendar_entry",
+          "ONLINE_UNKNOWN_NAVIGATION:EVENT_CALENDAR_DETAIL_NOT_PROVEN"
+        ],
+        "not_attributed": "没有归因。两个候选：① 它就在我手动导航留下的【日历视图】上接着干活，而日历的 6 条 entry 里 5 条是 DISCOVERED_EVENT_<hash>（身份未解析），详情很可能没有可点的定位；② 我的改动弄坏了它。样本只有 2 条，不足以区分 —— 记下来，让它继续跑再看。"
+      }
+    },
+    "the_repeating_calendar_detail_failure_20261010T0820": {
+      "state": "启动后 21 条：14 SUCCESS / 7 FAILURE。失败有界 —— 撞一次、BACK 退出、换目标成功（最近 8 条是邮件链 MailClaim 连续成功）。没有卡死在同页。",
+      "two_failure_shapes": [
+        "SEMANTIC_TARGET_NOT_VERIFIED / UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING，且 after_screenshot 为空 ⇒ 连详情控件在哪都没解析出来，根本没点。",
+        "EVENT_CALENDAR_DETAIL_NOT_PROVEN，verifier 期望 expected_event_id=DISCOVERED_EVENT_DC53E03FB8 而 actual 为空 ⇒ 点了，详情没开。"
+      ],
+      "my_first_hypothesis_and_its_refutation_by_evidence": {
+        "hypothesis": "今天日历的 6 条 entry 里 5 条是 DISCOVERED_EVENT_<hash>（身份未解析），所以详情打不开 —— 是内容问题，不是我改的。",
+        "refuted": "查全流 OPEN_EVENT_CALENDAR_DETAIL 的 39 条：历史上的 DISCOVERED_EVENT_<hash> 详情【多次成功打开】—— BB2077C97D x3、E1FB4AC23A x3、4178AC2F00 x2、A33B0DC6E9 x2、6F33C054CA x2，全部 SUCCESS。所以『entry 是 DISCOVERED』不是失败原因。",
+        "kinds": "期望 id 类型分布：KNOWN 21 / DISCOVERED 16 / NONE 2；35 条 SUCCESS 里既有 KNOWN 也有 DISCOVERED。"
+      },
+      "what_the_evidence_actually_says": "失败的期望 id 是 DISCOVERED_EVENT_DC53E03FB8 —— 一个【历史集合里没有的新 hash】。而它被反复重试、从不前进到那些历史上能开的 entry。所以形状更像【卡在一个打不开的 entry 上反复试】，而不是内容或缺能力。",
+      "not_attributed": "仍未归因。我的改动没有碰 calendar_next_entry 的取序，也没有碰日历详情的语义解析路径；但『没碰』不是证据。要分清需要一次 A/B：在同一台机器上以改动前的提交跑一轮日历链。此刻不打断正在跑的轮次。",
+      "the_mechanism_found_20261010T0825": {
+        "the_tap_points_are_all_correct": "把失败那一帧上 6 条 entry 的 tap_norm 全画出来并目视核对：除雪 / 神秘藏宝室 / 专属装备铸炼 / 英雄集结 / 旅途的收获 / 英雄集结 六个红圈【全部落在对应条目上】。所以条目框的推导没有问题，不是『框错了所以点不到』。证据帧 dataset/evidence/live_bear_page_20261010T0800/calendar_tap_points_verified.png",
+        "what_the_frame_shows": "日历是 7 个日期列（10/08..10/14）。【除雪小分队】与【超值活动】是横贯整行的分区标题条；除雪是一条【窄条，画在最右的 10/14 列】，形状与其它条目不同。6 条 entry 的 details_observed 全部是 None。",
+        "the_actual_mechanism": "calendar_next_entry 只在 details_observed is not True 的条目里挑，所以它【每一次都挑第一条未检查的】—— 也就是除雪。除雪的详情开不出来（两次形状：一次是连控件都没定位到、无 after 帧；一次是点了但 verifier 找不到详情），于是下一次又是它。⇒ 这是一条【取序 + 无跳过】的链：一个打不开的条目会让后面五条永远轮不到。",
+        "why_it_is_not_my_change": "① 六个可点点经目视全部正确 ⇒ 几何/框的推导没坏，而我改的是【另一个读者】(read_regular_event_hub) 的几何守卫；② read_event_calendar 的条目提取我一行没动；③ 两次失败的形状（provider 定位不到控件 / verifier 找不到详情）都不经过我改的任何路径。",
+        "the_real_defect_and_its_bound": "真缺陷是【日历链没有『试过失败就跳过』】：一个坏的条目前置会挡住其余。但它【有界】—— 运行时撞两次就 BACK 退出、换别的目标成功（邮件链连续 8 条 SUCCESS），所以它拖慢而不是卡死整机。",
+        "proposed_fix_not_implemented": "方向：给 calendar_next_entry 一个【有界的跳过】—— 某条 entry 连续 N 次打不开就不再选它（N 小、且要对每条 entry 分别记，不能全局）。没做，因为①它要新状态，而 §三·八 第十四条要求先查有没有既有单一真值（details_observed 是最接近的，但它表示『看过』而不是『打不开』）；②明晚 20:30 的窗口比日历详情重要；③本会话已经证明在证据边界上赶工是错的。"
+      },
+      "top_thing_to_watch": "它是当前唯一重复的失败形状；明天的窗口更重要，所以先让它跑，但这条要盯着。"
+    },
+    "correction_the_serial_is_not_stale": {
+      "what_i_said_before": "本节早前（44a8e916）写『config/v2.json 的 device.serial 仍是 127.0.0.1:7555，而这台机器上的设备是 emulator-5554 ⇒ 它现在是过期的』。",
+      "what_is_true": "面板自己会 connect 那个串号。它起来之后 adb devices 同时列出 127.0.0.1:7555 和 emulator-5554，而且面板预检报 MuMu OK (127.0.0.1:7555)。",
+      "why_i_got_it_wrong": "我的探针用裸 adb devices 判断『在连的设备』，而没有人替它 connect 过 —— 那是【我的探针的视角】，不是配置的错。resolve_serial 的回退仍然有用（探针在面板没跑时确实需要它），但把它说成 config 过期是错的。"
+    }
+  },
+  "tomorrow_s_wake_has_no_reservation_20261010T0824": {
+    "one_line": "查持久化预约：两个【活跃角色】的 BEAR_HUNT reserved_start 都是 None。⇒ 明晚 20:00 不会有唤醒。原因是链条上游缺一环：没有任何东西会去读巨熊页。",
+    "the_state_measured": {
+      "file": "learning/timed_event_schedule.json（mtime 08:22:48，updated_at 2026-10-10T00:22:47Z）",
+      "active_roles": {
+        "1063040265": "BEAR_HUNT reserved_start=None, source=UNKNOWN",
+        "1061663148": "BEAR_HUNT reserved_start=None, source=UNKNOWN"
+      },
+      "stale_rows_still_present": [
+        "1171757165 BEAR_HUNT reserved=2026-09-28T20:00:00+08:00 source=CLIENT_DIRECT_SCHEDULE",
+        "ACCT1063040265-ROLEA BEAR_HUNT reserved=2026-09-27T20:30:00+08:00",
+        "ACCT1061663148-ROLEB BEAR_HUNT reserved=2026-09-27T21:00:00+08:00"
+      ],
+      "note_on_the_stale_rows": "它们在【旧的角色键】下（ACCT…-ROLEA/ROLEB、1171757165），运行时按 `{role_id}|{event_id}` 找，所以对活跃角色是惰性的；不是风险，但是需要清理的历史。活跃角色自己的行是 None（正确：还没读到窗口）。"
+    },
+    "why_it_is_none_and_that_is_a_chain_gap_not_a_bug": {
+      "the_wiring_needs_：": "1a17741a 只在【某一帧的 events['bear'] 带 reserved_start_time】时写预约。",
+      "reserved_start_time_is_written_by": "ocr.py 里常规活动的 hub 分支（624de00f）—— 它要求那一帧【就是巨熊行动页】，因为 预约自动开启 印在页体上。",
+      "so_the_chain_is": "要写出预约 ⇒ 必须先站在巨熊页上 ⇒ 而到达巨熊页要么靠 DISCOVER_BEAR_RALLY_LIST（红点门，且它开的是【集结列表】不是活动页，只能从 bear row 读出 ACTIVE），要么靠【在常规活动的页签条上选中巨熊页签】。",
+      "the_gap": "【没有任何目标会去『在常规活动页签条上找巨熊页签并选中它』】。运行时会到那条条上（DISCOVER_EVENT_CALENDAR 的 OPEN_EVENT_CALENDAR_FROM_HOME → OPEN_EVENT_CALENDAR_TAB，08:13 就走过），但它选的是【日历】页签，不是巨熊页签。所以读者写好了、接线写好了，却没有任何东西去喂它。",
+      "the_irony": "这正是本文件开头记录的同一个模式，第四次出现：【读者存在、接线存在、没人去喂】。区别是这次缺的不是读者也不是接线，而是【一个会去那一页的目标】。"
+    },
+    "what_it_would_take": {
+      "shape": "一个目标：在常规活动页签条上，若某个页签的标签对应【需要排期的活动】，选中它并读它的详情（于是 reserved_start_time 被写、预约被建、唤醒被设）。",
+      "which_ladder": "这是【目标侧】的接入，走 winter-goal-intake-ladder，不是能力侧 —— 因为技能（OPEN_* 页签、read_printed_reservation）和接线都已存在。",
+      "why_i_did_not_implement_it_now": [
+        "它要新目标 + 新路由判定，属于需要设计审查的改动（§三·八），而不是一个可以在 12 小时内盲改的东西。",
+        "系统【正在跑】，而且我刚刚改过调度面；再加一处并 repin 会在窗口前引入未验证的行为。",
+        "本会话已经三次证明在证据边界上赶工会付出代价 —— 而这一次的代价可能是明晚的窗口。"
+      ],
+      "what_can_still_be_done_without_new_code": "让运行时自己撞上：如果巨熊页签【恰好】在它经过条条时可见，而它不是只选日历页签…… 这不可控，所以不当作方案，只当作观察。"
+    },
+    "armed_at_0830_what_i_did_about_it": {
+      "what_i_did": "写了一个显式工具 tools/record_a_printed_reservation_from_a_frame.py，用它把【今天两张真机帧的读数】记成预约：reservation 帧 = 巨熊页（read_printed_reservation 读出 2026-10-11T20:30:00），clock 帧 = 日历页（read_event_calendar 读出 2026-10-10 07:52:18）。差值走【已测过的】seconds_until_a_printed_reservation，落库走【既有的】event_schedule.record_live_countdown。",
+      "why_this_is_not_a_shortcut": "项目一直是这么记真机读数的 —— bear_hunt_time_20260927_newaccount.json 由 V2 会话写、bear_hunt_time_20260928.json 由操作者写。这里只是把同一件事做成可复现的工具，并且 source 明写 RECORDED_FROM_CAPTURED_LIVE_FRAMES_BY_TOOL，好让以后的读者能分辨它不是 AUTO 循环的观察。",
+      "the_numbers": {
+        "reserved_local_from_the_client": "2026-10-11T20:30:00",
+        "client_clock_from_the_client": "2026-10-10 07:52:18",
+        "lead_seconds": 129870,
+        "written_reserved_start": "2026-10-11T12:30:26.415951+00:00",
+        "as_beijing": "2026-10-11 20:30:26",
+        "error_against_the_printed_minute": "约 26 秒 —— 来自时钟帧的年龄估计，对 T-30 的提前量无所谓"
+      },
+      "verified_after_writing": {
+        "persisted": "两个活跃角色（1063040265 / 1061663148）的 BEAR_HUNT 行都有 reserved_start，source=RECORDED_FROM_CAPTURED_LIVE_FRAMES_BY_TOOL，live_window_state=SCHEDULED_NOT_OPEN",
+        "the_ladder_climbs_on_schedule": {
+          "北京 20:00:26": "T30 (bonus 40)",
+          "北京 20:15:26": "T15 (bonus 200)",
+          "北京 20:25:26": "T5 (bonus 2000)",
+          "北京 20:29:26": "T1 (bonus 2000)"
+        },
+        "ladder_thresholds_checked": "_PHASE_LADDER = ((1,T1),(5,T5),(15,T15),(30,T30))，readiness_phase 按序取第一个 minutes_to_start <= threshold。用精确时刻复核过，阶梯没有偏移。",
+        "my_first_reading_of_the_ladder_was_wrong": "我第一次拿【整点分】去对比一个 20:30:26 的预约，得出『阶梯偏了 15 分钟』。是我用错了时间，不是阶梯的问题 —— 记在这里因为它和今天其它几次是同一类错误。"
+      },
+      "what_this_does_not_fix": "它没有补上那个缺失的目标。明天之后，如果那个目标还不存在，预约仍然只能靠人手记。工具的 docstring 里写清了这一点。"
+    },
+    "the_honest_statement_about_tomorrow": "按当前代码与状态，明晚 20:00 不会有唤醒把运行时叫起来，因为没有任何预约。先前那句『让它自己走完』的前提【不成立】—— 我查了状态才发现。"
+  },
   "role_status_20261005": {
     "1063040265": {
       "verdict": "READY",
@@ -206,14 +665,12 @@
       "detail": "recorded as BEAR_HUNT's measured role in knowledge/events/bear_hunt_time_20260928.json; the operator named two roles, so it is not reported by tools/bear_two_role_readiness.py"
     }
   },
-
   "user_policy_that_does_not_change": {
     "manual_join_required": true,
     "auto_join_supported_for_bear": false,
     "note": "BEAR_AUTO_JOIN's wording 『开启后自动加入冰原巨兽集结』 belongs to ICEFIELD_BEAST, not 巨熊行动",
     "source": "knowledge/events/bear_rally_rules.json"
   },
-
   "proposed_minimal_fix": {
     "status": "PROPOSED_NOT_IMPLEMENTED",
     "shape": "让『窗口是活的』这个读数能跨过一帧。当某帧的观察结果给出 events['bear'] 且 status=ACTIVE / remaining_seconds>0 时，把该事实带进下一步的决策状态（以 remaining_seconds 为有效上限，过期即失效），使 goal_library.py:1567 在紧随其后的一帧上能生成 PARTICIPATE_BEAR。",
@@ -231,7 +688,6 @@
       "窗口开着但当前不在集结页时，应该由谁导航过去（现有 DISCOVER 入口受 BTN_ALLIANCE_WAR 红点门限制，§七.1 又不许反复找还没出现的入口）"
     ]
   },
-
   "next_step": {
     "order": [
       "1. 先就 proposed_minimal_fix 的 open_design_questions 做设计决定（挂在哪、谁导航），再动代码",
@@ -241,7 +697,6 @@
     ],
     "command": "E:\\无尽冬日智能体\\.venv\\Scripts\\python.exe tools\\bear_two_role_readiness.py --verify-frames 3"
   },
-
   "sources": [
     "learning/episodes.jsonl（10371 条，本次全部重放）",
     "learning/goal_state.json",
@@ -261,5 +716,418 @@
     "winter_agent_v2/brain.py",
     "winter_agent_v2/verifier.py",
     ".workbuddy-ai/handoff/ACTIVITY_TICKET_ASKS_THE_WRONG_PAGE_20261005.md"
-  ]
+  ],
+  "the_wake_is_wired_at_the_panel_not_in_the_runtime_20261010T0852": {
+    "one_line": "我先前写的『reserved_start 唯一的消费者是优先级加成，wait/next_action 命中 0 处』是【搜索范围错误】。那次搜索只覆盖了 winter_agent_v2/，而消费它的那一半在 tools/control_panel.py —— AUTO 轮次之间的等待会被压到下一个阶梯边界。已用真状态文件在真实时刻上实测。",
+    "corrects": "本文件的 correction_20261010b_the_reservation_is_only_a_priority。那一条的『唯一的消费者是优先级加成』在当时是对的（加成确实只在 runtime.py:1715 被算），但它把结论扩大成了『没有真正的 wait』——这一步是错的。",
+    "why_my_search_missed_it": "我搜的是 `runtime.py` 这个文件里有没有 wait/sleep/next_action 消费 reserved。而唤醒的消费者根本不从 runtime.py 读盘：control_panel.py 自己在规划下一轮之前重新 `event_schedule.load()` 一次。按文件搜索回答的是『这个文件里有没有』，而我把它当成了『这个系统里有没有』。",
+    "the_chain_measured": {
+      "step_1": "tools/control_panel.py:9196 把 `bound_ms=activity_bounded_wait_ms` 传进 next_cycle_delay",
+      "step_2": "next_cycle_delay 在 control_panel.py:1363-1364 用 bound_ms 收紧 delay_ms（`delay_ms = int(bound_ms(delay_ms))`）",
+      "step_3": "activity_bounded_wait_ms 在 control_panel.py:1309-1318 调 event_schedule.bounded_poll_delay_seconds(ms/1000, event_schedule.load())",
+      "step_4": "bounded_poll_delay_seconds (event_schedule.py:266) = min(普通轮询间隔, seconds_until_next_transition)，后者取 min over roles 的『距下一个 T30/T15/T5/T1/OPEN 边界』",
+      "step_5": "所以预约确实会让面板【提前醒来】停在边界上，而不是等满普通间隔"
+    },
+    "the_second_half_that_makes_this_safe": "GLOBAL_WAIT 被登记在 runtime_snapshot.py:165 EXPECTED_NO_ACTION_STOPS 里（注释写明『the panel already plans a scheduled wakeup for it』）。它一度没被登记，于是 classify_stop_reason 落到 SYSTEM_FAILURE，面板 healthy=false，AUTO 被停 —— 而一旦被停，那个 scheduled wakeup 就永远跑不到。所以『会唤醒』与『醒了不被判成故障』是两件必须同时成立的事，第二件曾单独坏过。",
+    "the_measurement": {
+      "tool": "tools/probe_the_armed_reservation_reaches_the_ladder.py（本提交新增）",
+      "input": "真实状态文件 learning/timed_event_schedule.json，不是 fixture",
+      "route_check": "route_for('PARTICIPATE_BEAR') = 'ALLIANCE'（不为 None）⇒ runtime.py:1687 的 route 门不会挡住巨熊的加成",
+      "ladder_on_the_armed_reservation": {
+        "北京 2026-10-11 19:59:26 (T-31)": "IDLE bonus 0.0，wake 60s（正好落在 T-30）",
+        "北京 2026-10-11 20:00:26 (T-30)": "T30 bonus 40.0，wake 900s（落在 T-15）",
+        "北京 2026-10-11 20:15:26 (T-15)": "T15 bonus 200.0，wake 600s（落在 T-5）",
+        "北京 2026-10-11 20:25:26 (T-5)": "T5 bonus 2000.0，wake 240s（落在 T-1）",
+        "北京 2026-10-11 20:29:26 (T-1)": "T1 bonus 2000.0，wake 60s（落在 OPEN）",
+        "北京 2026-10-11 20:30:26 (OPEN)": "OPEN bonus 4000.0，wake none（窗口内交给普通轮询节奏）"
+      },
+      "the_capped_wait_table": {
+        "T-35 请求 600s": "→ 300s",
+        "T-17 请求 600s": "→ 120s",
+        "T-3 请求 600s": "→ 120s",
+        "T-0.5 请求 600s": "→ 30s",
+        "T+1 请求 600s": "→ 600s（前方无边界，保持普通轮询）"
+      },
+      "both_active_roles": "1063040265 与 1061663148 的 BEAR_HUNT 行都读到同一预约，阶梯一致；learning/roles/ 下正好是这两个 id，与键 `{role_id}|{event_id}` 的一半相吻合。"
+    },
+    "what_the_probe_also_settled_the_open_rung": "阶梯在 T-0 处返回 OPEN/4000，但 runtime.py:1704-1714 只有在【同一角色】也在 15 分钟内真机读到 live_window_state=OPEN 时才付这 4000。当前两个活跃角色的 live_window_state 都是 SCHEDULED_NOT_OPEN ⇒ OPEN 加成是 WITHHELD，这是【正确的】状态，不是缺陷：时钟可以把运行时叫醒，但它不能证明活动已经开。T30/T15/T5/T1 的 40/200/2000/2000 会照常发放；4000 需要现场证据。",
+    "what_this_still_does_not_fix": "喂给预约的那一环仍然只能靠人手（tools/record_a_printed_reservation_from_a_frame.py），因为【没有任何目标会去常规活动页签条上选中巨熊页签】—— 见本文件 tomorrow_s_wake_has_no_reservation_20261010T0824。本次证明的是【一旦预约在册，唤醒与加成两者都会发生】，不是【预约能自己产生】。",
+    "how_to_re_check": "python tools/probe_the_armed_reservation_reaches_the_ladder.py —— 退出码 0 表示在册预约仍能逐级登梯并收紧 AUTO 等待。"
+  },
+  "the_strip_debt_is_measured_and_the_fix_is_one_action_20261010T0905": {
+    "one_line": "把『缺一个会去巨熊页的目标』查到底了：**不是缺目标**。DISCOVER_EVENT_CALENDAR 已经会被产出（条带债务让 calendar_scan_due 一直为真），缺的是它手上没有【点某个具名页签】这个动作。而点下去需要的一切——逐页签坐标、滑出屏幕外的页签、点中后的读者与写预约的接线——今天都在。",
+    "how_it_was_measured": {
+      "tool": "tools/probe_what_the_event_strip_exposes.py（本提交新增，离线读今天的真机帧，不碰设备）",
+      "reader": "生产入口 runtime._regular_event_hub_on_frame（runtime.py:2504，含 ROI 裁图补读），不是内层 read_regular_event_hub",
+      "result": "9 帧中 8 帧被识别为常规活动 hub，8 帧都带逐页签坐标；巨熊行动 出现在 3 帧里",
+      "tap_points": {
+        "bear_tab_visible_on_strip.png": "巨熊行动 -> [0.25556, 0.13359]（同行 决战王城）",
+        "regular_activity_after_production_derived_swipe.png": "巨熊行动 -> [0.25556, 0.13359]",
+        "strip_before_tap_showing_bear_tab.png": "巨熊行动 -> [0.32153, 0.13398]（四页签帧：存戏/巨熊行动/决战王城/堡垒争夺）"
+      },
+      "the_strip_is_a_real_scroller": "同一屏在不同滚动位置给出三套页签：左端 [变革的乐章,日历]、一步之后 [决战王城,巨熊行动]、再往后 [决战王城,堡垒争夺,社区]。巨熊行动 与 决战王城 并排，不在最左 ⇒ 想点它必须先把它滑出来。",
+      "the_hub_identity_is_the_selected_event": "所有 hub 帧的 display_name/event_id 都是【当前选中】的活动（最强王国 / STATE_VS_STATE），不是条带内容。所以『读到一条条带读数』不等于『读到巨熊』。"
+    },
+    "the_chain_map": {
+      "geometry_for_a_named_tab": "event_calendar.py:694-697 已经产出 tab_positions_norm = {label: [x_norm, y_norm]}",
+      "production_entry": "runtime.py:2504 _regular_event_hub_on_frame",
+      "scroll_to_reveal": "skills.py:287 SCROLL_REGULAR_EVENT_TABS（已存在）",
+      "strip_band_guard": "event_calendar.py:698 tabstrip_roi_norm（点必须落在带内）",
+      "the_debt": "event_schedule.py:463-519 advertised_but_unread_activities —— **已经覆盖条带**（ACTIVITY_STRIP 的 entries 算展示、read_entries 算已读）",
+      "debt_keeps_the_scan_due": "event_schedule.py:545-551 calendar_scan_due 里有 advertised_but_unread_activities 这一项",
+      "credit_entry_for_a_strip_row": "event_schedule.py:767-808 —— 条带行唯一的记账入口是【该活动的 EVENT_DETAIL 读数且 calendar_origin != GRID_ENTRY】",
+      "what_only_exists_for_the_calendar_tab": "runtime.py:5453-5474 EVENT_CALENDAR_TAB 的目标写死读 calendar_tab_tap_norm；全仓库没有 TAB_BY_LABEL/SELECT_TAB 之类的通用动作",
+      "closest_sibling_prior": "runtime.py:5837-5881 BEAST_SEARCH_TAB —— 按本帧 OCR 读到的标签点页签；格子被裁时返回 None 让调用方去滑，而不是给一个裁一半的点"
+    },
+    "the_gap_in_one_sentence": "运行时会走到那条条上、会读它、会滑它，但**永远只选『日历』那一个页签**，所以条带上其它活动永远是『已展示、未读』，这笔债永远还不上。而 event_schedule.py:463 的 docstring 自己就写着『条带是唯一还欠着的一笔』。",
+    "the_ladder_verdict_not_a_new_goal": {
+      "分流判据": "『discover() 会不会产出这条 goal』——会。DISCOVER_EVENT_CALENDAR 在 calendar_scan_due 为真时就会被产出，而条带债务让它**已经**为真。",
+      "结论": "既有目标缺能力，走 winter-capability-intake-ladder；**不要加第二个目标**。",
+      "外部先验的支持": "knowledge/events/timed_event_readiness.json 把这件事建模成【排期 + 触发】（reservation_scope: PER_ROLE、next_open_condition），不是 goal。与本项目既有判断一致。"
+    },
+    "the_hazard_that_must_be_solved_in_the_same_change": {
+      "what": "条带行要被记账，需要一条 calendar_origin != GRID_ENTRY 的 EVENT_DETAIL 读数（event_schedule.py:767）。点中页签产生的是『hub 且选中该活动』，未必是 detail 读数。",
+      "consequence_if_ignored": "债务不清 ⇒ calendar_scan_due 永远为真 ⇒ DISCOVER_EVENT_CALENDAR 每 ~24 秒被重选。这正是 event_schedule.py:417-433 与 tools/strip_credit_convergence_check.py 记录过的循环。",
+      "acceptance_rule": "验收必须包含【债务下降且不再回升】，不能只验收『点到了那个页签』。现成检查器：tools/strip_credit_convergence_check.py。",
+      "second_hazard": "页签格子被裁一半时 OCR 框中心可能落在邻居上（runtime.py:5858-5869 记过：点 野兽 的可见窄条，选中的是 冰原巨兽）。所以点必须来自本帧且落在 tabstrip_roi_norm 带内。"
+    },
+    "where_the_design_is_written": ".workbuddy-ai/handoff/THE_STRIP_DEBT_HAS_NO_TAB_TAP_20261010.md（含五处最小改动、离线验收判据、设备门、以及明确不做的事）",
+    "status": "设计已定，**未实现**。第 4 步（实现）尚未开始；明晚窗口不依赖它（预约已在册）。",
+    "correction_20261010T0915_the_live_debt_is_the_grid_not_the_strip": {
+      "what_i_got_wrong": "本节上文写『条带债务让 calendar_scan_due 一直为真』。前半段（debt 覆盖条带）在代码上成立，但**把当前 scan_due=True 的成因记到了条带上**是错的。量了真实债务才知道成因是网格行。",
+      "the_measurement": {
+        "role_1063040265": {
+          "calendar_scan_due": true,
+          "grid_rows": 6,
+          "grid_rows_with_details_observed_true": 1,
+          "strip_entries_advertised": [
+            "STATE_VS_STATE"
+          ],
+          "strip_read_entries_credited": [
+            "STATE_VS_STATE",
+            "CANYON_CLASH"
+          ],
+          "debt": [
+            "DISCOVERED_EVENT_2CED2A762E",
+            "DISCOVERED_EVENT_A33B0DC6E9",
+            "DISCOVERED_EVENT_DC53E03FB8",
+            "EXCLUSIVE_GEAR_FORGE"
+          ]
+        },
+        "role_1061663148": {
+          "calendar_scan_due": true,
+          "grid_rows": 6,
+          "grid_rows_with_details_observed_true": 1,
+          "strip_entries_advertised": [
+            "STATE_VS_STATE"
+          ],
+          "strip_read_entries_credited": [
+            "CANYON_CLASH",
+            "ALLIANCE_MOBILIZATION",
+            "STATE_VS_STATE"
+          ],
+          "debt": [
+            "DISCOVERED_EVENT_2CED2A762E",
+            "DISCOVERED_EVENT_A33B0DC6E9",
+            "DISCOVERED_EVENT_DC53E03FB8",
+            "EXCLUSIVE_GEAR_FORGE"
+          ]
+        }
+      },
+      "three_consequences": [
+        "**条带今天一笔都不欠** —— STATE_VS_STATE 已在 read_entries 里。所以 event_schedule.py:463 的 docstring 那句『条带是唯一还欠着的一笔』**已经过时**（它描述的是写作当时的状态）。",
+        "让 calendar_scan_due 一直为真的是**网格行**：6 行都有 tap_norm，只有 1 行 details_observed=True，其余 4 个 id 从未被打开。",
+        "所以『加一个点条带页签的动作』**不会**清掉当前这笔债，也不会让扫描收敛。它解决的是另一半（让 AUTO 读到巨熊排期），但当前 scan_due 的成因不是它。"
+      ],
+      "the_general_rule": "债务是【按 event_id 去重】的：网格第 3 行与第 5 行同 id（DISCOVERED_EVENT_6F33C054CA，但 occurrence_key 不同：|10/08|10/11 与 |10/12|10/14），第 3 行 details_observed=True 就把两行一起算作已读。所以【行数】不等于【债务条目数】，诊断时不要按行数读。",
+      "two_entries_measured_for_the_next_step": {
+        "calendar_next_entry_always_takes_the_first": "event_schedule.py calendar_next_entry 的取法是 next(row for row in entries if details_observed is not True and tap_norm and event_id) —— **永远第一行**。当前两个角色都取 DISCOVERED_EVENT_DC53E03FB8（tap_norm=[0.87431, 0.38047]）。",
+        "how_often_it_has_been_tried": "全流 10004 条 episode 中，提到 OPEN_EVENT_CALENDAR_DETAIL 或 EVENT_CALENDAR_DETAIL_OPEN 的只有 49 条；其中 7 条带 UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING（最近一条 2026-10-10T00:38:10Z）。注意：PROVIDER_ANSWERED_NOTHING 的『整簇被一个常量覆盖』那个缺陷已由 4c62e600 修过（针对 TRY_ORDINARY_CONTROL/SEMANTIC_TARGET_NOT_VERIFIED），这里出现的是**另一条路径**，尚未归因。",
+        "the_grid_keeps_no_title": "每个网格行的 title_raw 都是 None —— 网格读出了 event_id 与 occurrence_key，却没留下被画出来的那个标题。诊断时看不到『这一行是什么活动』。"
+      },
+      "status_after_correction": "两件事要分开做：① 条带 → 让 AUTO 读到巨熊排期（本节的五处改动，见 handoff 文档）；② 网格 → 当前 scan_due 的真实成因，需先归因（A/B）再动。**不要因为设计文档里写着『条带』就把网格的账记到条带上。**"
+    }
+  },
+  "the_calendar_detail_refusal_was_unnamed_20261010T0945": {
+    "one_line": "把上一节量到的『4 个网格 id 从未被打开、scan_due 永远为真』做了 A/B 归因：拒绝本身是**对的**（那一帧上真有一个面板盖住了网格行），错的是**它没有名字** —— EVENT_CALENDAR_NEXT_DETAIL 的六个出口全是裸 return None，于是 ledger 只记下顾问那句通用的 PROVIDER_ANSWERED_NOTHING。已让六个出口各自报名。",
+    "the_symptom": {
+      "episodes": "全流 10004 条里，skill=OPEN_EVENT_CALENDAR_DETAIL 的只有 49 条：35 SUCCESS / 14 FAILURE",
+      "the_7": "其中 7 条带 UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING，decision_reason=ONLINE_UNKNOWN_NAVIGATION:EVENT_CALENDAR_DETAIL_NOT_PROVEN",
+      "the_recorded_shape": "result=FAILURE, failure_type=SEMANTIC_TARGET_NOT_VERIFIED, expected_result=registered_navigation_verifier",
+      "why_it_is_navigation_at_all": "skill_id 以 OPEN_ 开头 ⇒ _unknown_navigation_target 认为它是 navigation ⇒ 顾问**确实被问过**。所以这里不是 4c62e600 修过的『顾问从未被咨询却被记成它的答复』那个缺陷，而是同一家族的另一半：**解析器自己命名了原因，但那个名字没被留下**。"
+    },
+    "the_attribution_how": {
+      "tool": "tools/ab_which_calendar_detail_guard_refuses.py（本提交新增）",
+      "method": "把失败回合**自己的 before_screenshot** 喂进解析器用的同一个读者，然后逐条打印六个守卫的判定；并与同技能的 SUCCESS 帧并排跑（『它拒绝』只有在『这一帧它不拒绝』旁边才有意义）。全程离线读 PNG，不碰设备。",
+      "result_summary": "2 条 PROVIDER_ANSWERED_NOTHING 的帧 → 都是 GUARD_detail_overlay_open；4 条 SUCCESS 帧 → 都是 PASS"
+    },
+    "the_measured_cause": {
+      "the_frame": "那一帧 page=EVENT、calendar.recognized=True 且 **calendar.details_visible=True**，但 events 里**根本没有 calendar_detail 这个键**（存在的键是 activity_strip / calendar / regular_events_hub）。",
+      "what_it_means": "点日历网格的一行之后，落点是**该活动自己的页面**（所以 hub 读者认得它），而事件详情读者认不出那个面板。日历读者仍然看得到行，并且报 details_visible=True。⇒ 解析器拒绝去点是对的：有一个面板正盖在它被要求点的那些行上。",
+      "the_two_readers_disagree": "brain.decide 只有 detail.recognized 为真才会走 RETURN_EVENT_CALENDAR（brain.py:670），而解析器是拿 calendar 读数的 details_visible 拒绝的（runtime.py:5428 一带）。两个不同的读者、两个不同的字段；不一致时运行时被要求去开一个它正站着的详情。",
+      "a_hypothesis_i_killed": "我先怀疑是 ocr.py:1333 那个 `elif` 被上一支（active_event/minimum_guarantee）抑制了。实测 active_event=None 且 minimum_guarantee 不存在 ⇒ **这个假设是错的**，calendar_detail 缺席的原因就是详情读者没认出那个面板。"
+    },
+    "the_fix": {
+      "what_changed": "runtime.py 的 EVENT_CALENDAR_NEXT_DETAIL 分支：六个裸 return None 改成各自命名，并在复合守卫处拆成独立判断（**判定结果完全不变**，只有记录的名字变了）。",
+      "the_names": [
+        "RESOLVER:CALENDAR_DETAIL_NO_FRAME",
+        "RESOLVER:CALENDAR_DETAIL_WRONG_PAGE",
+        "RESOLVER:CALENDAR_DETAIL_GRID_NOT_READ",
+        "RESOLVER:CALENDAR_DETAIL_ALREADY_OPEN",
+        "RESOLVER:CALENDAR_DETAIL_NO_ROLE_OR_OCR",
+        "RESOLVER:CALENDAR_DETAIL_GRID_UNREADABLE",
+        "RESOLVER:CALENDAR_DETAIL_PANEL_ALREADY_VISIBLE",
+        "RESOLVER:CALENDAR_DETAIL_NO_UNINSPECTED_ROW",
+        "RESOLVER:CALENDAR_DETAIL_ROW_WITHOUT_TAP",
+        "RESOLVER:CALENDAR_DETAIL_POINT_OUTSIDE_FRAME",
+        "RESOLVER:CALENDAR_DETAIL_READER_RAISED"
+      ],
+      "why_naming_actually_surfaces": "resolve() 在调顾问**之前**读 locator_cause = self._resolution_error or RESOLVER:LOCATOR_MISSED，然后 _prefer_the_cause(locator_cause, 顾问答复)。该函数有明文规则：『a named locator cause outranks the question-level refusal; a generic RESOLVER:LOCATOR_MISSED does not』。所以命名之后 PROVIDER_ANSWERED_NOTHING 会被顶掉 —— 这不是装饰性改动。",
+      "what_it_does_not_do": "它**不**修那个循环。它让下一次出现时**可归因**：ledger 会直接说出是哪一支出卖了这个步骤。真正的修法（面板已可见时该做什么：退回、还是把那次观察记账）仍需另行设计，而那一步不能在窗口期盲改。"
+    },
+    "the_verification": {
+      "new_tests": "tests/test_recognition_error_attribution.py 新增 TheCalendarDetailExitsAreNamedTests（该文件已经拥有 RESOLVER:ORDINARY_* 家族，所以归在那里）",
+      "the_distinctness_test": "十个出口必须给出十个不同的码，且都以 RESOLVER:CALENDAR_DETAIL_ 开头",
+      "the_recorder_is_not_a_decision_test": "解析成功时仍返回同一个点（记录不得变成决策）",
+      "the_ab": {
+        "how": "回退 runtime.py 到 HEAD、重跑同一批、再恢复，并核 md5",
+        "selection": "-k 'calendar or resolve or semantic or nav or recognition or ordinary_control'",
+        "after_my_change": "15 failed, 580 passed",
+        "before_my_change": "17 failed, 578 passed",
+        "regressions": "FAILED-only-after 集合为**空**",
+        "the_two_differences": "恰好是我新加的两条测试在 HEAD 上失败（一个 10 个码必须互不相同、一个直接断言那一条实测码）。它们**应该**在改动前失败 —— 这正是它们不是空测试的证据。",
+        "pre_existing_red": "其余 15 条红在改动前后**完全一致**，与本改动无关；ERROR 集合也一致。",
+        "restore_verified": "runtime.py md5 3b33cbb5140b990cf6dc6f198b37e706，A/B 前后相同"
+      }
+    },
+    "the_next_step_this_opens": "现在『面板已经盖住网格』这件事有名有姓了。下一步是决定**该做什么**：当 calendar.details_visible=True 且 calendar_detail 缺席时，合理动作是退回日历（RETURN_EVENT_CALENDAR）还是把这次观察当作一次已读记账。这需要设计，不应在窗口期盲改。"
+  },
+  "the_calendar_preview_card_is_never_read_20261010T1005": {
+    "one_line": "把『网格里 4 个 id 从未被打开』查到根了：**点是对的**，浮起来的就是目标活动；但卡是一张 **overlay**，而读它的那一支以『网格没被识别』为前提 —— overlay 不会让背后的网格变得不可识别，所以那一支永远不执行，卡上印的『距离开始』永远读不到，那一行永远拿不到记账。**是一行条件写反了。**",
+    "how_it_was_settled": {
+      "what_i_did": "不再推理，直接看那张帧（多模态读图）。",
+      "frame": "dataset/raw/control_panel/runtime_auto/20261010_084940_792088/20261010_084940_792088_step_004_before_20261010T005039829501.png",
+      "what_the_frame_shows": [
+        "页头 常规活动；页签条 最强王国 | 变革的乐章；客户端时钟 2026-10-10 08:50:39",
+        "背后网格仍在画：10/08 … 10/14，星期六 10/10 选中",
+        "网格上浮着一张卡：『除雪小分队』/ 2026-10-13 00:00 - 2026-10-15 24:00 / 带上除雪器…… / 奖励 / 【距离开始：2 天 15:09:21】"
+      ],
+      "conclusion_1_pointing_was_correct": "目标是 DISCOVERED_EVENT_DC53E03FB8（display_name=除雪），浮起来的是『除雪小分队』—— 同一个活动。所以点没错。",
+      "conclusion_2_it_is_an_overlay_not_a_detail_page": "网格背后的行仍被读出（5 行而不是 6 行），calendar_detail 因此缺席。⇒ 任何『面板在就退回』式的修法都会把一张**刚刚正确打开**的卡退掉。",
+      "conclusion_3_the_card_prints_both_stamps_consistently": "08:50:39 + 2天15:09:21 = 2026-10-13 00:00:00，与卡上印的 2026-10-13 00:00 一致 —— 再一次支持『两个时间戳相减』的方法。"
+    },
+    "the_defect_one_guard_condition": {
+      "where": "winter_agent_v2/ocr.py:1282-1295",
+      "code": "if (page is Page.EVENT\n        and calendar_reading.get(\"recognized\") is not True      # ← 要求网格【没被识别】\n        and calendar_detail_reading.get(\"recognized\") is not True):\n    ...\n    seconds_to_start = self._explicit_start_seconds(eligible)   # :1295",
+      "why_it_never_runs_on_the_card": "卡帧上 calendar_reading.recognized **是 True**（背后 5 行仍被读出），所以这一支被整支跳过 ⇒ 卡的『距离开始』永远不会被读 ⇒ seconds_to_start 不算 ⇒ 没有记录产生 ⇒ 那一行不被记账 ⇒ 债务不降 ⇒ calendar_scan_due 仍为真 ⇒ 下一轮重来。",
+      "the_reader_already_exists": "ocr.py:820 `_explicit_start_seconds` 的注释就写着 『Read only a timer explicitly labeled 距开始/距离开始』，它也在 :1295 被调用 —— **只是被这一支的门挡住了**。所以缺的不是读者，是门。",
+      "the_general_rule": "预览卡是 overlay，**不会**让背后的网格变成不可识别。因此任何以『网格没被识别』为前提的分支，都不可能在卡出现时执行 —— 而卡出现恰恰就是『点对了一行』之后的状态。",
+      "what_the_gate_should_accept": "『有东西盖着网格』这个本帧可读的事实：calendar_reading.details_visible is True 且 entries 从 6 掉到 5。"
+    },
+    "the_loop_is_reproducible_every_round": {
+      "evidence": "tools/probe_whether_the_detail_flag_fires_on_a_plain_grid.py",
+      "shape": "连续 5 轮（00:46 / 00:49:40 / 00:50 / 00:54:20 / 00:54:50 各一轮）逐字重复：step_003 帧 = 网格 6 行 details_visible=False；step_004 帧 = 5 行 details_visible=True、无 calendar_detail。",
+      "why_that_matters": "每轮两步、同样失败 ⇒ 修好之后的效果可以直接用『轮数』量。",
+      "false_positive_check": "10 张识别帧中，details_visible=True 只出现在 5 张 step_004（点击之后）帧上，5 张网格帧全是 False —— **没有观察到假阳性**。样本仍然小（10 张），不得把『没见过』当成『不存在』。"
+    },
+    "the_retry_gate_i_decided_not_to_add": {
+      "the_tempting_change": "在 runtime.py:10954 的排队条件里加『语义必须在语义字典里』，让那 32 步不再发生。",
+      "why_not": [
+        "它让账本变安静，而不是让系统变好：循环本身没被修，scan_due 仍为真。",
+        "真正的问题是『这一步该做什么』（读卡 / 记一笔），不是『该不该重试』。",
+        "它是对决策链的改动，而明晚有一个已武装的窗口。"
+      ],
+      "the_measurement_that_supports_it_anyway": "tools/probe_the_model_only_navigation_retry.py：48 条走模型兜底的 episode 里，**字典里没有**的语义 32 条顾问作答 0 次；**字典里有**的语义 8 条作答 4 次。机制清楚：顾问产点的唯一来源是一次 _advised_control 调用，而这类控件靠测量几何定位，模型无从知道。数据留档，供以后决定。"
+    },
+    "status": "归因完成，**未改行为**。ocr.py / runtime.py / brain.py 均未改动。",
+    "where_the_design_is_written": ".workbuddy-ai/handoff/THE_CALENDAR_DETAIL_LOOP_ASKS_A_QUESTION_ALREADY_ANSWERED_20261010.md（含候选 A/B/C 的取舍、C 的验收判据、以及离线素材清单）"
+  },
+  "three_blockers_not_one_guard_and_the_third_is_identity_20261010T1025": {
+    "one_line": "我上一节写下『根因是一行条件写反了』—— **那句是残缺的**。量完之后是**三个**阻塞点叠在一起，而第三个（身份不稳定）才是债务永远清不掉的原因，**而且它不是放宽一个守卫能修的**。",
+    "corrects": "本节上一条 the_calendar_preview_card_is_never_read_20261010T1005 里 the_defect_one_guard_condition 的说法。门确实写反了，但那只是第一层。",
+    "the_three_blockers": {
+      "blocker_1_the_gate": {
+        "where": "ocr.py:1282-1286",
+        "measured": "卡帧 calendar.recognized=True ⇒ 那一支整支不执行 ⇒ 卡上的『距离开始』读不到",
+        "repairable": "yes —— 改门，让它接受『有东西盖着网格』"
+      },
+      "blocker_2_the_detail_reader": {
+        "where": "event_calendar.read_event_detail",
+        "measured": "在真卡帧上返回 **recognized=False**（网格帧同样是 False）",
+        "why_it_matters": "verify_event_calendar_detail_open 要求 after 帧的 calendar_detail.recognized 为真 ⇒ 这一步永远无法 verify ⇒ 那一行永远不被记账",
+        "repairable": "yes —— 教它认这种预览卡（它已经有处理『detail card 后面网格仍可见』的几何代码，见 event_calendar.py:1012-1016）"
+      },
+      "blocker_3_the_identity_is_not_stable": {
+        "where": "event_calendar.py:74 _event_id",
+        "the_code": "digest = hashlib.sha1(label.encode('utf-8')).hexdigest()[:10].upper(); return f'DISCOVERED_EVENT_{digest}'",
+        "measured": {
+          "grid 神秘藏宝室": "DISCOVERED_EVENT_A33B0DC6E9",
+          "card 神秘藏": "DISCOVERED_EVENT_2AE3F69AE7（DIFFERENT）",
+          "grid 旅途的收获": "DISCOVERED_EVENT_2CED2A762E",
+          "card 旅途的": "DISCOVERED_EVENT_80FDBE61F5（DIFFERENT）",
+          "survival_between_the_two_frames": "5 个 id 里只有 2 个存活（除雪、英雄集结）"
+        },
+        "why_it_explains_the_un_clearable_debt": "在册债务正好是按**网格帧**的 id 记的（2CED2A762E / A33B0DC6E9 / DC53E03FB8）。在任何把标签读短的帧上取得的读数，记的是债务从未听说过的 id ⇒ advertised_but_unread_activities 不可能下降 ⇒ calendar_scan_due 永久为真 ⇒ DISCOVER_EVENT_CALENDAR 反复被选中。",
+        "repairable": "**no** —— 需要改『发现式活动的身份如何得出』，不是改一个条件"
+      }
+    },
+    "the_general_rule": "只要身份是【OCR 文本的哈希】，它就随读取条件漂移 —— 而『读取条件』包括【有没有东西盖住它】。于是『点开一个覆盖物』这个动作**系统性地制造不匹配**。",
+    "the_candidate_for_a_stable_identity": "日期窗口 + 行槽位。理由：calendar_dates_raw 在两帧上是稳定的（除雪 10/13-10/14 两帧一致），而 display_name 不是（除雪 / 除雪小分队、神秘藏宝室 / 神秘藏）。代价：会改写已存 id 的含义，可能孤立历史记录 ⇒ **必须单独设计、单独验收**。",
+    "the_instrument": "tools/probe_whether_a_card_identity_matches_the_row.py（真帧、离线、给出三个阻塞点与两帧 id 存活率）",
+    "status": "归因完成；**ocr.py / event_calendar.py / runtime.py / brain.py 均未改动**。修法需要设计，不在窗口期顺手做。"
+  },
+  "impact_ranking_20261010T1035_the_calendar_loop_is_47_percent_of_failures": {
+    "one_line": "按 OPERATIONAL §20（失败优先开发，按影响排序）实测了整流：近 2 小时 281 步 / 55 失败（80.4% 成功），其中**一个循环独占 26 条（47%）**—— 而且它是**一个**成因，不是几个。**这条线程的优先级由测量确认了。**",
+    "the_window_measured": {
+      "episodes": 281,
+      "success": 226,
+      "failure": 55,
+      "success_rate": "80.4%",
+      "note": "台账第一条 2026-10-04，但近 12h 与近 2h 都是 281 条 —— 当前这次运行约从 2 小时前开始。"
+    },
+    "the_clusters": {
+      "1_calendar_loop": {
+        "failures": 26,
+        "share": "47%",
+        "skills": {
+          "OPEN_EVENT_CALENDAR_DETAIL / SEMANTIC_TARGET_NOT_VERIFIED / PROVIDER_ANSWERED_NOTHING": 13,
+          "OPEN_EVENT_CALENDAR_DETAIL / EVENT_CALENDAR_DETAIL_NOT_PROVEN": 8,
+          "OPEN_EVENT_CALENDAR_DETAIL / EVENT_CALENDAR_DETAIL_NOT_PROVEN / RESOLVER:CALENDAR_DETAIL_PANEL_ALREADY_VISIBLE": 5
+        },
+        "plus_the_downstream": "BACK / SAFE_BACK_NOT_PROVEN 13 条 —— 与日历失败**逐轮重叠 13/13**，即每轮第 5 步（第一次 BACK 的 verifier 没通过，第 6 步第二次 BACK 才成功）。所以它不是第二个问题，而是同一个循环的尾巴。",
+        "the_fixed_signature": [
+          "step 1 OPEN_EVENT_CALENDAR_FROM_HOME  SUCCESS",
+          "step 2 OPEN_EVENT_CALENDAR_TAB        SUCCESS",
+          "step 3 OPEN_EVENT_CALENDAR_DETAIL     FAILURE EVENT_CALENDAR_DETAIL_NOT_PROVEN",
+          "step 4 OPEN_EVENT_CALENDAR_DETAIL     FAILURE SEMANTIC_TARGET_NOT_VERIFIED",
+          "step 5 BACK                          FAILURE SAFE_BACK_NOT_PROVEN",
+          "step 6 BACK                          SUCCESS"
+        ],
+        "cadence": "约每 5 分钟一轮（00:14 / 00:19 / 00:22 / 00:27 / 00:30 / 00:34 / 00:38 / 00:42 / 00:46 / 00:50 / 00:55 / 01:01 / 01:06）",
+        "goal_attribution": "DISCOVER_EVENT_CALENDAR 26 条；其中 BACK 那一步按 best_goal 记到 AVOID_STAMINA_WASTE 10 条 / CLEAR_INTEL 3 条。"
+      },
+      "2_beast_search": {
+        "failures": 8,
+        "detail": "SUBMIT_GIANT_BEAST_SEARCH 5 + SELECT_BEAST_TARGET_MAMMOTH 3"
+      },
+      "3_the_rest": {
+        "failures": "各 1 条，共 9 条",
+        "examples": "DISMISS_DAILY_GENERIC_REWARD / EXPLORATION_IDLE_CLAIM / TRY_ORDINARY_CONTROL / OPEN_BEAST_SEARCH_TAB / OPEN_HOME 等"
+      }
+    },
+    "the_ranking_verdict": "日历循环是**第一优先**，且不是靠印象 —— 47% 的失败来自它，形状固定、逐轮复现、每 5 分钟一次。次优先是野兽搜索（8 条）。其余是长尾。",
+    "the_decision_this_opens": {
+      "a_the_root": "修身份（阻塞点 3）：让发现式活动的身份来自跨帧稳定的东西（候选：日期窗口 + 行槽位）。代价：改写已存 id 的含义，可能孤立历史记录 ⇒ 需要单独设计与验收。",
+      "b_the_existing_shape": "本文件与 event_schedule.py:417-433 已有**同型机制的现成先例**：`_unreachable_today()`。它存在的理由就是『一个真实游戏状态让债务无法清偿』（2026-10-03 STATE_VS_STATE 满员、看得见进不去）。今天这一批的形状是『卡能打开但身份读不出来 ⇒ 记账永远匹配不上』。用同一机制把它们按**当日**划出债务，`calendar_scan_due` 就能落回 false，循环立即停。",
+      "the_tension": "选 b 会让账本安静，而本项目刚立过『不要用更安静代替更好』的判据。但 b 不是隐藏：它是**声明**『今天这类活动本运行无法完成』，且 _unreachable_today 已经为此而存在。差别在于：(a) 修根、慢、有风险；(b) 立即止血、把根留成显式未结项。",
+      "what_decides_it": "**先量一件事：这些活动明天（换一天）是否会重新变成可清偿的。** 若会 ⇒ b 是安全的止血；若不会（身份漂移是常态）⇒ b 会每天重新划一次，那说明 (a) 才是必须做的，b 只是拖延。",
+      "status": "**未决定、未实现**。生产代码一行未改。"
+    }
+  },
+  "the_identity_must_change_and_option_b_is_ruled_out_20261010T1050": {
+    "one_line": "两个测量把下一步定死了：①**身份不改，循环不可能结束** —— 只把 detail 的 id 换成一个不同的哈希（其余字段全是真机读出来的原样），债务就不下降；②**『按当日划出债务』这个省事办法不成立** —— 这些 id 跨天存续（A33B0DC6E9 见于 10-07 与 10-10，EXCLUSIVE_GEAR_FORGE 见于 10-04/05/07/10），每天都会重新划一次，那是遮罩不是修复。",
+    "measurement_1_the_id_mismatch_blocks_the_credit": {
+      "tool": "tools/probe_whether_a_card_detail_credits_the_row.py",
+      "how_it_avoids_a_guessed_fixture": "第一版我从**猜的字段名**（activity_open_start_raw）造 fixture，rebinding 没触发 —— 那什么都证明不了，因为 rebinding 读的可能是别的字段（真机观测用的是 preview_start_raw / preview_end_raw）。第二版改成：从**活库**里取一条真实的 detail_observation，只把 event_id 换掉，其余字段一字不动，并把窗口对到目标行的日期上。",
+      "result": {
+        "real_detail": "event_id=DISCOVERED_EVENT_6F33C054CA, display_name=英雄集结, preview=2026-09-2800:00..2026-10-1124:00",
+        "target_row": "display_name=除雪, event_id=DISCOVERED_EVENT_DC53E03FB8, dates=[10/13,10/14]",
+        "debt_before": "('DISCOVERED_EVENT_DC53E03FB8',)",
+        "perturbed_id": "DISCOVERED_EVENT_1C9F9BD8F5（= sha1('除雪小分队')）",
+        "debt_after": "('DISCOVERED_EVENT_DC53E03FB8',)  ← 没降",
+        "matched_occurrence_key": null,
+        "strip_activity_credited": null
+      },
+      "conclusion": "记账**不是**足够按日期驱动的：id 不匹配就记不上。而在册债务按**网格帧**的 id 记 ⇒ 在任何『把标签读短』的帧上取得的读数记不上任何东西。"
+    },
+    "measurement_2_option_b_is_a_daily_mask": {
+      "the_option": "用**现成**的 _unreachable_today() 机制（event_schedule.py:417-433）把这类活动按**当日**划出债务 —— 它存在的理由就是『一个真实游戏状态让债务无法清偿』（2026-10-03 STATE_VS_STATE 满员：看得见、进不去）。循环会立即停。",
+      "why_it_fails_as_a_fix": {
+        "evidence": "按日统计这些 id 在台账里出现的日子",
+        "DISCOVERED_EVENT_A33B0DC6E9": "2026-10-07 与 2026-10-10（跨天存续）",
+        "EXCLUSIVE_GEAR_FORGE": "2026-10-04 / 10-05 / 10-07 / 10-10（跨 6 天）",
+        "DISCOVERED_EVENT_2CED2A762E / DC53E03FB8": "仅 2026-10-10（它们绑的是当期日期窗口，属正常换期）",
+        "conclusion": "既然 id 跨天存续，按日划出就会**每天重新划一次** ⇒ 循环每天照旧 ⇒ 那是遮罩，不是修复。"
+      },
+      "note_this_does_not_contradict_the_earlier_rejection": "之前拒绝的是『给模型兜底重试加字典门』（那会让失败数变少但循环仍在）。这里拒绝的是『按日划出债务』（每天重划）。两者是同一个判据的不同实例。"
+    },
+    "the_direction_that_remains": {
+      "must": "让**发现式活动的身份跨帧稳定**",
+      "candidate": "日期窗口 + 行槽位。calendar_dates_raw 在两帧上是稳定的（除雪 10/13-10/14 两帧一致），display_name 不是（除雪 / 除雪小分队）。",
+      "less_invasive_alternative_worth_considering": "不动 id 方案，改**读者**：当某行的标签被截断时，若它的日期窗口与一条已知行的窗口相同，就复用那条已知行的 id。这样读数会与库里的债务一致，而 id 方案不变。",
+      "the_risk_that_forces_a_migration_step": "**改 id 方案会在迁移期让情况更糟**：库里现存的债务 id 是按旧方案算的，新的读数会铸出新的 id ⇒ 保证不匹配。所以任何身份改动都必须**同时**给出旧 id 的别名/迁移，而不能只换算法。",
+      "status": "**方向已定（必须改身份），实现与迁移方案未设计**。生产代码一行未改。"
+    }
+  },
+  "the_credit_is_fixed_but_the_loop_continues_20261010T1128": {
+    "one_line": "记账那一环已修并离线验收通过（`f9b6ee60`），但**生产里循环照旧** —— 因为卡帧上**根本不会产生 detail 读数**，新回退没有东西可记。阻塞点 2 已精确诊断到三个判据全 False。诚实结论：这一步是**必要但不充分**。",
+    "what_was_fixed_and_verified": {
+      "commit": "f9b6ee60 fix(events): credit a detail by its own dates when OCR changed the identifier",
+      "located_at": "runtime.py:2424 与 event_schedule 的 EVENT_DETAIL 分支，两处都按 detail 自己的 event_id 过滤行",
+      "the_rule_applied": "_prior_calendar_row 的原话：『Date evidence is required when OCR changes an identifier.』",
+      "new_function": "event_schedule.row_covering_the_details_window(reading, rows) —— 用详情自印日期与未查看且有 tap_norm 的行相交，恰好一行才认",
+      "offline_acceptance": {
+        "tests": "tests/test_calendar_detail_attribution.py 12 passed（新增 7 条）",
+        "probe_before": "debt (X,) -> (X,)  matched_occurrence_key=None  exit 1",
+        "probe_after": "debt (X,) -> ()    matched_occurrence_key=X|10/13|10/14  exit 0",
+        "ab": "after 24 failed/769 passed vs before 29 failed/764 passed；FAILED-only-after = {} 零回归"
+      },
+      "guard_the_ab_forced": "第一版回退过宽，打破了 test_a_credit_is_refused_when_two_occurrences_of_one_event_are_uninspected：详情印的是整段档期，会与同一活动的另一次相撞。补上守卫 —— **只有当详情的 id 在行里一个都匹配不上时**回退才允许运行（即『标识符被改了』这一情形）。"
+    },
+    "but_production_shows_no_change": {
+      "measured_at": "2026-10-10T01:22Z（修好并 repin 之后）",
+      "episodes": [
+        "01:22:12 step 3 FAILURE EVENT_CALENDAR_DETAIL_NOT_PROVEN RESOLVER:CALENDAR_DETAIL_PANEL_ALREADY_VISIBLE",
+        "01:22:25 step 4 FAILURE SEMANTIC_TARGET_NOT_VERIFIED UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING"
+      ],
+      "debt_both_roles": "仍是那 4 个 id，逐字未变；calendar_scan_due 仍为 True",
+      "why": "卡帧上 read_event_detail 返回 recognized=False ⇒ events 里没有 calendar_detail ⇒ 没有任何 EVENT_DETAIL 观测到达存储层 ⇒ 新回退无从生效。**记账的路修好了，但走那条路的人还没出生。**"
+    },
+    "blocker_2_now_precisely_diagnosed": {
+      "frame": "20261010_084940_792088_step_004_before_20261010T005039829501.png",
+      "ocr_full_text_has": "常规活动 / 除雪小分队 / 除雪 / 神秘藏 / 2026-10-13 00:00 -2026-10-15 24:00 / 距离开始：2天15:09:21 / 奖励 / 英雄集结 …",
+      "the_three_predicates": {
+        "calendar_score_panel": "False —— 没有 我的积分/目标积分/本期英雄/阶段",
+        "explicit_calendar_detail": "False —— 没有 活动详情，没有 活动时间/开始时间/…，也没有 前往",
+        "identified_activity": "空 —— `_heading_scale_activity` 要求**已注册**的活动名，而 除雪小分队 未注册"
+      },
+      "so_the_card_is_unrecognisable_by_design": "详情读者要求『已注册的活动名』或『显式的详情/时间标签』；这张卡有**日期区间 + 距离开始**，却没有 活动时间 标签，标题也未注册。",
+      "the_clause_that_would_cover_it": "`date_range is not None and _COUNTDOWN_RE matches` —— 卡上印着 2026-10-13 00:00 -2026-10-15 24:00 与 距离开始：2天15:09:21，两条都在。**而且它不会在纯网格帧上误触发**：网格帧没有 date_range（这正是 details_visible=False 的原因）。",
+      "naming_is_already_handled": "标签选择那段（event_calendar.py:1012-1052）本来就处理『紧贴在日期区间上方的标题』，而 除雪小分队 正好就在区间上方 ⇒ **只缺识别判据，不缺取名逻辑**。",
+      "the_caution": "read_event_detail 的 docstring 警告过：能返回五个答案的规则不能用来**取名**。本子句只用于**识别**（是不是一张带排期的卡），取名仍走几何 ⇒ 不违反该警告。"
+    },
+    "the_honest_status": "阻塞点 1+2 决定『卡上的排期会不会被读出来』，阻塞点 3 决定『这一行会不会被记账』。本轮修了 3 的记账路径（必要且已验证），但循环要停，必须先让卡被读成一次 detail 观测。**生产代码已改的这一处，本身没有让循环变好，也没有让它变坏。**"
+  },
+  "the_calendar_loop_is_closed_20261010T1200": {
+    "one_line": "**循环关掉了。** 三个阻塞点全部落地后，角色 1061663148 在 01:51–01:52 走完一次**健康的 12 步扫描**（5 次『打开详情→退回』全部 SUCCESS），**六行全部记账**，`calendar_scan_due=False`、**债务 `()`** —— 这是第一次观测到它为空。修复落地后（01:51Z 起）**日历循环失败为 0**。",
+    "the_three_blockers_and_their_commits": {
+      "blocker_3_the_credit_path": "f9b6ee60 —— `event_schedule.row_covering_the_details_window` 等：用详情自印日期跨过 id 漂移（`_prior_calendar_row` 的原话：『Date evidence is required when OCR changes an identifier.』）。",
+      "blocker_2_the_card_was_not_read_as_a_detail": "8eb16ff7 —— `read_event_detail` 加『日期区间 + 距开始/倒计时 + 有候选标题』子句。同五张帧的读者 A/B：只改变卡帧一张，其余四张逐字不变。",
+      "blocker_1b_the_attribution_granularity": "af4c1186 —— 解析器把『它瞄准的那一行』记下来，归属优先用它（卡自印窗口须与该行相交）。卡的窗口粒度是『活动期』，不足以区分『哪一行』。"
+    },
+    "the_measured_outcome": {
+      "role_1061663148": {
+        "the_healthy_sweep": "01:51:55 OPEN_EVENT_CALENDAR_DETAIL SUCCESS（expected=DC53E03FB8 attributed=DC53E03FB8）→ 01:52:00 RETURN_EVENT_CALENDAR → 01:52:05 → 01:52:10 → 01:52:14 → 01:52:19 → 01:52:25 → 01:52:29 → 01:52:36 → 01:52:42，共 5 对，全部 SUCCESS。",
+        "grid": "六行全部 details_observed=True",
+        "debt": "()",
+        "calendar_scan_due": false
+      },
+      "role_1063040265": {
+        "state": "债务仍是那 4 个 id，scan_due 仍为 True",
+        "why_not_a_failure": "它自修复落地后**还没轮到日历轮次**（最后一次日历轮是 01:35，早于修复）。按同样路径它应当在下一次轮到时间样收敛 —— **这一点尚未观测到，不许当成已完成**。"
+      },
+      "the_loop_failures": {
+        "before": "每约 5 分钟一轮、每轮 2 条失败（step 3 EVENT_CALENDAR_DETAIL_NOT_PROVEN + step 4 SEMANTIC_TARGET_NOT_VERIFIED）；近 2 小时 281 步 / 55 失败（19.6%），其中日历 26 条（47%）",
+        "after": "**修复落地（01:51Z）之后日历循环失败 0 条**；最后一次日历失败在 01:48（修复前）",
+        "the_run_s_failure_rate": "近 10 分钟 55 步 / 5 失败（**9.1%**）；近 20 分钟 105 步 / 16 失败（15.2%）"
+      },
+      "why_the_remaining_rate_is_not_zero": "剩下的失败已经不是循环：近 10 分钟是 5 条各一次的杂项（CALENDAR 1 + BACK 1 + SELECT_INTEL_BEAST_MISSION 1 + START_RALLY 1 …），不是同一步骤每 5 分钟重演。"
+    },
+    "the_verification_that_this_is_the_real_path": {
+      "verifier_evidence": "每一步都能看到 `expected_event_id` 与 `attributed_event_id` **相等**（DC53E03FB8 / A33B0DC6E9 / EXCLUSIVE_GEAR_FORGE / 2CED2A762E / 6F33C054CA），而修复前 `attributed_event_id` 是空串。",
+      "the_A_B_for_each_step": "三次改动各做了独立 A/B（三文件回退到 HEAD、重跑同一批）：f9b6ee60 零回归；8eb16ff7 零回归；af4c1186 after 24 failed/775 passed vs before 25 failed/774 passed，FAILED-only-after = {}。",
+      "the_method_lesson": "**两次 A/B 曾无效**：pytest 跑到 100% 但 teardown 批量删 temp 被沙箱拦下 ⇒ 汇总行缺失、FAILED 列表截断 ⇒ `comm` 拿 30 条比 0 条，报出 29 条幻影回归。现在每侧都必须有汇总行且失败数 == FAILED 行数，并用 `--basetemp` 独立目录。"
+    },
+    "honest_status": "① 循环对已轮到的角色确实关掉了，且是**在账本里可验证的**（债务为空、expected==attributed、连续 SUCCESS）；② 另一个角色尚未轮到，**未观测到**它的收敛；③ 剩余失败率不再由循环主导。"
+  }
 }

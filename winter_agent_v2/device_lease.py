@@ -272,6 +272,22 @@ class DeviceLease:
         )
         self._lease_id = record.lease_id
         self._write(record, event="acquired")
+        # ``_write`` is deliberately tolerant -- it swallows ``OSError`` so that a lease problem can
+        # never take a run down -- but tolerant writing must not become a *silent* acquisition.
+        #
+        # Measured 2026-10-11, by doing it: this method was called with the ledger file as ``root``
+        # instead of the repository, so ``self.path`` resolved under a path whose parent is a file,
+        # ``mkdir`` raised, the raise was swallowed, and this method returned ``"acquired"`` anyway.
+        # No lock existed.  ``holder()`` was ``None`` for everyone, so gameplay never yielded -- and
+        # an action was then taken that everybody believed was under a lease.
+        #
+        # A lease that reports success without taking the lock is worse than a refusal: the whole
+        # point of the single-owner rule is that the other driver can *see* the claim.  So the claim
+        # is read back before it is believed.
+        confirmed = self.holder(now=moment)
+        if confirmed is None or confirmed.lease_id != record.lease_id:
+            return None, ("LOCK_NOT_WRITTEN: the lease could not be recorded at "
+                          f"{self.path}, so no lock exists and the device is NOT held")
         return record, "acquired"
 
     def release(

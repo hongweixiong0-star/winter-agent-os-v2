@@ -6170,6 +6170,29 @@ class ControlPanel:
     #: The frame's own reasons for holding a Goal back, in words.  A code that is not in
     #: here is shown as its own code rather than guessed at: an unrecognised reason is
     #: information, and inventing Chinese for it would destroy the one thing it carries.
+    #: ``GoalStatus`` -> the words the board prints.  Every member is listed.
+    #:
+    #: ``EXPIRED`` and ``SCHEDULED_NOT_OPEN`` were missing, so those rows printed the raw token
+    #: (measured 2026-10-10: 3 live rows read "EXPIRED").  A status table that can be incomplete
+    #: silently is the same failure as the 阻塞原因 column that could be empty silently, so it is a
+    #: named constant with a test that pins the full membership rather than a literal in a loop.
+    #:
+    #: ``UNKNOWN`` no longer reads "未知（引擎未判定）": that was false for most of the rows it
+    #: covered.  The engine *had* judged them -- ``prepared_only``, ``blocker``,
+    #: ``availability_state``, ``required_observation`` are on the records -- and what was missing
+    #: was the observation the judgement names.  The wording pointed at the scheduler instead of at
+    #: the missing fact.
+    GOAL_STATUS_ZH = {
+        "READY": "待执行",
+        "IN_PROGRESS": "进行中",
+        "COMPLETE": "✓ 完成",
+        "BLOCKED": "暂时阻塞",
+        "UNKNOWN": "未知（信息不足）",
+        "DISCOVERED": "已发现",
+        "EXPIRED": "窗口已结束",
+        "SCHEDULED_NOT_OPEN": "窗口未开启",
+    }
+
     GOAL_BLOCK_ZH = {
         "this_camp_is_training": "该兵营正在训练中（队列未空）",
         "camp_queue_busy": "兵营队列忙",
@@ -6177,6 +6200,14 @@ class ControlPanel:
         "timer_running": "计时器未到",
         "no_batch_available": "没有可执行批次",
         "no_free_march": "没有空闲行军位",
+        # The two tokens the 阻塞原因 column would otherwise print untranslated.  Found by running
+        # the fix against the live snapshot (2026-10-10) rather than by reading it: the rows whose
+        # detail had already been read carry ``condition="waiting_window"`` and nothing else, so the
+        # fallback printed the English token -- the same "raw token reaches the operator" defect the
+        # EXPIRED status had.  ``waiting_window`` is the project's existing name for this
+        # (``capability_bootstrap`` -> ``WAIT_UNTIL``); no new vocabulary is introduced.
+        "waiting_window": "等待开窗（细节已读到，等客户端公布窗口）",
+        "AWAITING_LIVE_CLIENT_READING": "等待本次真机读数",
     }
 
     @classmethod
@@ -6222,7 +6253,37 @@ class ControlPanel:
                 return "已判为阻塞，但这一次的读数没有带原因（证据为空）"
             if status in ("READY", "DISCOVERED"):
                 return "就绪 · 未被阻塞（未选中＝调度顺序，不是被拦）"
-            return "—"
+            # Third source, and the same lesson a third time: a Goal the library deliberately left
+            # un-actionable writes **its own** reason beside itself, and until now this cell read
+            # only ``blockers[id]`` and ``evidence.reason``/``condition`` **for BLOCKED rows**.
+            #
+            # Measured 2026-10-10 against the live snapshot: 13 of 22 rows rendered "—" while their
+            # own records carried the reason -- ``evidence.blocker`` ("missing production observation:
+            # world.attempts" on USE_FREE_ARENA_ATTEMPTS/LABYRINTH_DAILY), ``availability_state``
+            # (``AWAITING_LIVE_CLIENT_READING``) and ``required_observation`` (the sentence naming the
+            # observation the Goal is waiting for).  The operator's reading of "—" is "unknown", which
+            # is the one thing these rows were not.
+            #
+            # Nothing is invented here: each branch prints a field the runtime already wrote, and an
+            # explicit terminal case says so when the record is genuinely silent.
+            evidence = goal.get("evidence") if isinstance(goal.get("evidence"), dict) else {}
+            if status == "EXPIRED":
+                return "本场窗口已结束（不是被拦，也不是本次任务完成）"
+            if status == "SCHEDULED_NOT_OPEN":
+                return "窗口未开启 · 等待条件可验证"
+            blocker = str(evidence.get("blocker") or "").strip()
+            if blocker:
+                return cls.GOAL_BLOCK_ZH.get(blocker, blocker)
+            availability = str(evidence.get("availability_state") or "").strip()
+            required = str(evidence.get("required_observation") or "").strip()
+            if required:
+                return f"待观测：{required}"
+            condition_word = str(evidence.get("condition") or "").strip()
+            if condition_word:
+                return cls.GOAL_BLOCK_ZH.get(condition_word, condition_word)
+            if availability:
+                return f"{cls.GOAL_BLOCK_ZH.get(availability, availability)}（未记录具体待观测项）"
+            return "已判为不可执行，但这一次的读数没有带原因（证据为空）"
         capability = str(row.get("capability") or "").strip()
         state = str(row.get("state") or "").strip()
         until = str(row.get("until") or "").strip()
@@ -6238,6 +6299,73 @@ class ControlPanel:
         if until:
             parts.append(f" · 至 {until}")
         return "".join(parts)
+
+    @staticmethod
+    def _goal_board_meta_text(snapshot: dict, age_note: str) -> str:
+        """The board's one meta line: what was recognised, when, **and whether it is still current**.
+
+        ``age_note`` is appended unconditionally, because ``_source_age_note`` is empty when the
+        source is current.  This board was the third call site that forgot to ask -- the method's own
+        docstring names that exact failure ("eventually forgetting one -- which is how the columns
+        got into this state").  ``source_freshness`` budgets ``learning/goal_state.json`` at 900 s and
+        labels it 今日目标板; without this, a stopped writer left rows that read as live, which is the
+        "缓存冒充当前确认状态" that ``live-verification`` forbids.
+        """
+        try:
+            confidence = f"{float(snapshot.get('confidence', 0)):.0%}"
+        except (TypeError, ValueError):
+            # A malformed confidence must not blank the whole line, and it must not be rounded into
+            # a number either -- "无法读出" is the honest cell.
+            confidence = "无法读出"
+        return (
+            f"识别页面：{snapshot.get('page', 'UNKNOWN')} · 整帧识别置信度：{confidence}"
+            f"（这是页面识别，不是每个目标的置信度）· 时间：{snapshot.get('observed_at', '—')}"
+            + age_note
+        )
+
+    @staticmethod
+    def _goal_board_unreadable_text(exc_name: str, age_note: str) -> str:
+        """What the board says when the snapshot cannot be read at all.
+
+        ``GoalStateStore.write`` writes a temp file and ``replace``s it, so the file is never
+        half-written: an unreadable snapshot is a fault, not a race.  The old code returned here with
+        the previous rows and meta untouched, so a board whose source had stopped was
+        indistinguishable from a live one.
+        """
+        return f"今日目标快照读取失败：{exc_name}。本表当前没有真实读数。" + age_note
+
+    @staticmethod
+    def _goal_priority_cell(priority_value: Any) -> str:
+        """The 优先级 cell, or ``"—"`` when the library left the Goal unpriced.
+
+        The chain used to fall through to "P2" -- a real band -- so an unpriced Goal looked ranked.
+        Measured 2026-10-10: 13 of 22 live rows were unpriced and all 13 read "P2".  ``bool`` is
+        excluded explicitly because ``isinstance(True, int)`` is true.
+        """
+        if isinstance(priority_value, bool) or not isinstance(priority_value, (int, float)):
+            return "—"
+        if priority_value >= 2000:
+            return "P0"
+        if priority_value >= 500:
+            return "P1"
+        return "P2"
+
+    @staticmethod
+    def _goal_progress_cell(status_value: str, completion: Any) -> str:
+        """The 进度 cell.  A closed/unopened window is not a progress percentage.
+
+        ``GoalState.completion`` is ``1.0`` for an ``EXPIRED`` Goal by construction, so rendering it
+        as a percentage printed "100%" for a window that closed -- the exact conflation
+        ``GoalStatus.EXPIRED`` exists to remove.  The data is left alone; only the claim is withheld.
+        """
+        if status_value == "EXPIRED":
+            return "窗口已结束"
+        if status_value == "SCHEDULED_NOT_OPEN":
+            return "窗口未开启"
+        try:
+            return f"{float(completion or 0.0):.0%}"
+        except (TypeError, ValueError):
+            return "—"
 
     def _goal_row(self, cells: dict) -> tuple:
         """One table row, in the declared column order, from cells keyed by column name.
@@ -6257,10 +6385,32 @@ class ControlPanel:
         path = ROOT / "learning/goal_state.json"
         try:
             snapshot = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, json.JSONDecodeError) as exc:
+            # The write is atomic (temp file + ``replace``, ``goal_library.py``), so a snapshot that
+            # cannot be read is a fault and not a half-written file.  This used to ``return`` with
+            # the previous rows and meta left in place, which made a board whose source had stopped
+            # look exactly like a live one -- the failure ``source_freshness`` exists to name, and
+            # the one this round is about.  "Empty is not the same as nothing": the board says the
+            # read failed and keeps saying it until a snapshot arrives.
+            for item in self.goal_board.get_children():
+                self.goal_board.delete(item)
+            self.goal_board.insert("", "end", values=self._goal_row({
+                "goal": "读不到今日目标快照", "priority": "—", "status": PENDING,
+                "deadline": "—",
+                "blocked": f"learning/goal_state.json 读取失败（{type(exc).__name__}）",
+                "progress": "—", "next": "等待运行写出新的 GoalState", "category": "运行时",
+                "skills": "GoalLibrary / Scheduler",
+            }))
+            self.goal_board_meta.set(
+                self._goal_board_unreadable_text(
+                    type(exc).__name__, self._source_age_note("learning/goal_state.json"))
+            )
             return
         names = {"CLEAR_INTEL":"清空情报", "AVOID_STAMINA_WASTE":"避免体力溢出", "KEEP_TRAINING_PRODUCTIVE":"保持训练", "KEEP_RESEARCH_PRODUCTIVE":"保持研究", "KEEP_BUILDING_PRODUCTIVE":"保持建筑", "EVENT_MINIMUM_GUARANTEE":"活动低保"}
-        statuses = {"READY":"待执行", "IN_PROGRESS":"进行中", "COMPLETE":"✓ 完成", "BLOCKED":"暂时阻塞", "UNKNOWN":"未知（引擎未判定）", "DISCOVERED":"已发现"}
+        # ``EXPIRED`` and ``SCHEDULED_NOT_OPEN`` are two of ``GoalStatus``'s eight members.  They now
+        # live in ``GOAL_STATUS_ZH`` (a named constant, pinned by a test), instead of as a literal
+        # here where a missing member printed the raw token silently.
+        statuses = self.GOAL_STATUS_ZH
         goals = snapshot.get("goals", [])
         # The runtime's own deferral map, written beside the Goals it explains.  Absent on a
         # snapshot written by an older runtime, in which case every cell says so honestly
@@ -6279,10 +6429,9 @@ class ControlPanel:
             deadline = "—" if remaining is None else f"{int(remaining)//3600:02d}:{int(remaining)%3600//60:02d}"
             goal_id = goal.get("goal_id")
             category = "活动" if "EVENT" in str(goal_id) or "BEAR" in str(goal_id) else ("日常" if "INTEL" in str(goal_id) or "STAMINA" in str(goal_id) else "发展")
-            priority_value = goal.get("priority")
-            priority = "P0" if isinstance(priority_value, (int, float)) and priority_value >= 2000 else ("P1" if isinstance(priority_value, (int, float)) and priority_value >= 500 else "P2")
+            priority = self._goal_priority_cell(goal.get("priority"))
             evidence = goal.get("evidence", {}) if isinstance(goal.get("evidence"), dict) else {}
-            progress = f"{float(goal.get('completion',0)):.0%}"
+            progress = self._goal_progress_cell(str(goal.get("status") or ""), goal.get("completion"))
             if "points_missing" in evidence: progress += f" · 缺 {evidence['points_missing']}"
             skills = ", ".join(goal.get("available_skills", ())) or "待发现"
             self.goal_board.insert("", "end", values=self._goal_row({
@@ -6300,8 +6449,7 @@ class ControlPanel:
                         "KEEP_TRAINING_PRODUCTIVE": "训练", "KEEP_RESEARCH_PRODUCTIVE": "科研", "KEEP_BUILDING_PRODUCTIVE": "建筑"}.get(goal_id)
             if left_key in getattr(self, "today", {}): self.today[left_key].set(statuses.get(goal.get("status"), goal.get("status")))
         self.goal_board_meta.set(
-            f"识别页面：{snapshot.get('page','UNKNOWN')} · 整帧识别置信度：{float(snapshot.get('confidence',0)):.0%}"
-            f"（这是页面识别，不是每个目标的置信度）· 时间：{snapshot.get('observed_at','—')}"
+            self._goal_board_meta_text(snapshot, self._source_age_note("learning/goal_state.json"))
         )
 
     def _event_field_rows(self, box: Any, fields: tuple[tuple[str, str], ...]) -> None:
@@ -8969,19 +9117,52 @@ class ControlPanel:
         if self.repeat_after_id: self.root.after_cancel(self.repeat_after_id); self.repeat_after_id = None
 
     def _drain_events(self) -> None:
+        """Drain one batch of worker events -- and never let one bad event end the drain.
+
+        Measured 2026-10-11 08:00, unattended: the panel sat ten minutes with ``workers: 0``,
+        ``panel.log`` frozen at the last 「自动运行已启动」, and three ledgers stopped in adjacent
+        minutes (``goal_state`` 07:53:54 / ``episodes`` 07:53:38 / ``snapshot`` 07:54:51) while the
+        process stayed ``alive=True`` the whole time.  The round had started; the next thing it
+        should have written was 「本轮结束」, and it never came.
+
+        The shape of the hole: this loop drained inside one ``try`` whose only handler was
+        ``queue.Empty``, and the re-arm (``root.after(100, ...)``) sat *after* it.  So an exception
+        raised while handling **any** single event -- ``_apply_complete`` alone touches a dozen
+        fields, a funnel refresh and a file write -- propagated out, the re-arm never ran, and the
+        drain was over.  Stderr goes nowhere because the panel runs under ``pythonw``, so the round
+        ended in silence.  The panel's own rule is 「a halt must never be silent」 (it is written at
+        the ``⏹ 未进入下一轮`` line); this was the one exit that rule did not cover.
+
+        Two changes, both about the loop rather than about any event's meaning:
+        * each event is handled inside its own ``try``, so a bad one is named and the batch
+          continues -- one malformed payload must not cost the operator every later event;
+        * the re-arm is in a ``finally``, so the drain continues even if the handler itself fails.
+
+        The exception is *reported through the panel's own log* rather than swallowed: a refusal to
+        die quietly is the whole point.
+        """
         try:
             while True:
                 kind, data = self.events.get_nowait()
-                if kind == "refresh": self._apply_world(*data)
-                elif kind == "complete": self._apply_complete(*data)
-                elif kind == "note":
-                    self._append(str(data))
-                elif kind == "worker_failure":
-                    self._handle_worker_failure(data)
-                else:
-                    self._handle_runtime_error(str(data))
-        except queue.Empty: pass
-        self.root.after(100, self._drain_events)
+                try:
+                    if kind == "refresh": self._apply_world(*data)
+                    elif kind == "complete": self._apply_complete(*data)
+                    elif kind == "note":
+                        self._append(str(data))
+                    elif kind == "worker_failure":
+                        self._handle_worker_failure(data)
+                    else:
+                        self._handle_runtime_error(str(data))
+                except Exception as exc:  # noqa: BLE001 - one bad event must not end the drain
+                    self._append(
+                        f"⚠ 处理 {kind} 事件时出错（{type(exc).__name__}: {str(exc)[:160]}）；"
+                        "drain 继续。这一行是它唯一的记录 —— 在此修复前，这种异常会让 drain 停住、"
+                        "连续循环不再排下一轮，而面板看起来仍在运行。"
+                    )
+        except queue.Empty:
+            pass
+        finally:
+            self.root.after(100, self._drain_events)
 
     def _handle_worker_failure(self, data: dict) -> None:
         """Route a worker death by classification instead of one blunt counter.

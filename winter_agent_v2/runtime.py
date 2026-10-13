@@ -2426,6 +2426,48 @@ class LiveRuntime:
                     if len(candidates) == 1:
                         detail.update(matched_event_id=candidates[0].get("event_id"),
                                       matched_occurrence_key=candidates[0].get("occurrence_key"))
+                    else:
+                        # The card's own heading minted a different id for the same activity
+                        # (`_event_id` hashes the OCR label, and the card says 除雪小分队 where
+                        # the grid said 除雪), so the id test above can never find the row that
+                        # was tapped -- and the verifier reads THIS key, so leaving it empty
+                        # fails the step however well the store credits it.
+                        #
+                        # The row the run actually aimed at is the strongest evidence available
+                        # and it is already on hand: the resolver recorded it when it computed
+                        # the tap point, and ``verify_event_calendar_detail_open`` treats the
+                        # same row as ``expected_event_id``.  It is preferred over the window
+                        # fallback because the card's printed window is coarse -- measured
+                        # 2026-10-10, the 除雪 card's 10/13-10/15 overlaps THREE uninspected
+                        # rows (除雪 10/13-14, 专属装备铸炼 10/08-14, the second 英雄集结
+                        # 10/12-14), so a window-only rule correctly refuses and credits nothing.
+                        #
+                        # The row must still be uninspected, and the card's own printed window
+                        # must touch its dates: a tap that landed on something else must not be
+                        # credited to what it aimed at.
+                        aimed = getattr(self, "_calendar_detail_tap_row", None) or {}
+                        aimed_key = str(aimed.get("occurrence_key") or "")
+                        aimed_row = next(
+                            (row for row in rows
+                             if isinstance(row, Mapping)
+                             and aimed_key
+                             and str(row.get("occurrence_key") or "") == aimed_key
+                             and row.get("details_observed") is not True),
+                            None,
+                        )
+                        if (aimed_row is not None
+                                and event_schedule.detail_window_touches(detail, aimed_row)):
+                            detail.update(matched_event_id=aimed_row.get("event_id"),
+                                          matched_occurrence_key=aimed_key)
+                        # Gated on the id matching nothing at all: when it does match a row,
+                        # the identifier was not changed and the ambiguous case must stay
+                        # ambiguous (see the same guard in ``event_schedule``).
+                        elif not any(str(row.get("event_id") or "") == str(detail.get("event_id") or "")
+                                     for row in rows):
+                            covering = event_schedule.row_covering_the_details_window(detail, rows)
+                            if covering is not None:
+                                detail.update(matched_event_id=covering.get("event_id"),
+                                              matched_occurrence_key=covering.get("occurrence_key"))
                 detail["calendar_origin"] = "GRID_ENTRY"
             events["calendar_detail"] = detail
         elif calendar.get("recognized") is True:
@@ -5034,6 +5076,39 @@ class LiveRuntime:
                     state=window_state, source="LIVE_CLIENT_EVENT_WINDOW_OBSERVATION",
                     role=role, alliance=alliance, now=observed,
                 )
+            # A reservation the client PRINTED carries no offset, so on its own it cannot drive
+            # a wake: event_goal.Activity.window refuses a stamp without one, and the project's
+            # time rule forbids inferring the game's zone from this machine's.  Its difference
+            # from the client's OWN clock can, and both are already on file -- the calendar
+            # reading carries current_game_datetime_raw, and its observed_at says how old that
+            # clock is.  Nothing here assumes a timezone; the two stamps are subtracted.
+            printed = events.get("bear")
+            reserved = (printed.get("reserved_start_time")
+                        if isinstance(printed, Mapping) else None)
+            if reserved:
+                grid = event_schedule.latest_calendar_snapshot(role_id) or {}
+                clock = grid.get("current_game_datetime_raw")
+                try:
+                    read_at = datetime.fromisoformat(str(grid.get("observed_at") or ""))
+                except (TypeError, ValueError):
+                    read_at = None
+                # No readable age means no answer, deliberately.  A clock from an hour ago
+                # treated as "now" would overstate the lead by that hour, and acting an hour
+                # early is worse than not acting: the window would be read as still ahead.
+                if read_at is not None:
+                    if read_at.tzinfo is None:
+                        read_at = read_at.replace(tzinfo=timezone.utc)
+                    lead = event_schedule.seconds_until_a_printed_reservation(
+                        str(reserved), str(clock) if clock else None,
+                        client_now_age_seconds=max(0.0, (observed - read_at).total_seconds()),
+                    )
+                    if lead is not None:
+                        event_schedule.record_live_countdown(
+                            schedules, role_id=role_id, event_id="BEAR_HUNT",
+                            seconds_to_start=lead,
+                            source="LIVE_CLIENT_PRINTED_RESERVATION_MINUS_CLIENT_CLOCK",
+                            role="AUTO", alliance=None, now=observed,
+                        )
             event_schedule.save(schedules)
         except Exception:  # noqa: BLE001 -- event-clock persistence must never block AUTO
             return
@@ -5387,36 +5462,80 @@ class LiveRuntime:
             # The store supplies only inspected-state attribution. Positions and
             # occurrence identity are reread from the current visible calendar;
             # stale taps from a prior scan never enter this resolver.
+            #
+            # Every exit names itself, for the reason ``_ordinary_control_target`` documents at
+            # length: a bare ``None`` leaves ``_resolution_error`` empty, ``resolve`` then reads
+            # ``RESOLVER:LOCATOR_MISSED`` -- the family's fallback rather than an answer -- and
+            # ``_prefer_the_cause`` lets the advisor's generic reply replace it.  Measured
+            # 2026-10-10: 7 live episodes carried ``UNKNOWN_NAV:PROVIDER_ANSWERED_NOTHING`` for
+            # this semantic.  Replaying their own before-frames offline
+            # (``tools/ab_which_calendar_detail_guard_refuses.py``) showed the real cause was
+            # ``details_visible`` being True while ``calendar_detail`` was never read at all:
+            # the tap had landed on the activity's own page, so the calendar reader still saw
+            # rows but the detail reader saw no panel.  The refusal was correct; only its name
+            # was lost.  ``_prefer_the_cause`` gives a named locator cause precedence over the
+            # question-level refusal, so naming these is what makes the next one answerable.
+            def _no(code: str):
+                """Return no point, and say which of this branch's exits it was."""
+                self._resolution_error = code
+                return None
+
             events = frame.events or {}
             calendar = events.get("calendar") or {}
             detail = events.get("calendar_detail") or {}
-            if (frame.page is not Page.EVENT or frame_path is None
-                    or not isinstance(calendar, Mapping) or calendar.get("recognized") is not True
-                    or (isinstance(detail, Mapping) and detail.get("recognized") is True)):
-                return None
+            if frame_path is None:
+                return _no("RESOLVER:CALENDAR_DETAIL_NO_FRAME")
+            if frame.page is not Page.EVENT:
+                return _no("RESOLVER:CALENDAR_DETAIL_WRONG_PAGE")
+            if not isinstance(calendar, Mapping) or calendar.get("recognized") is not True:
+                return _no("RESOLVER:CALENDAR_DETAIL_GRID_NOT_READ")
+            if isinstance(detail, Mapping) and detail.get("recognized") is True:
+                return _no("RESOLVER:CALENDAR_DETAIL_ALREADY_OPEN")
             role_id = self._calendar_role_id()
             ocr = self._ocr_service()
             if not role_id or ocr is None:
-                return None
+                return _no("RESOLVER:CALENDAR_DETAIL_NO_ROLE_OR_OCR")
             from .event_calendar import read_event_calendar
             try:
                 current = read_event_calendar(
                     ocr.recognize(Path(frame_path)).tokens,
                     frame_size=read_frame_size(Path(frame_path)), frame_path=Path(frame_path),
                 )
-                if current.get("recognized") is not True or current.get("details_visible") is True:
-                    return None
+                if current.get("recognized") is not True:
+                    return _no("RESOLVER:CALENDAR_DETAIL_GRID_UNREADABLE")
+                if current.get("details_visible") is True:
+                    # The grid's own reader reports a detail/overlay region while no
+                    # ``calendar_detail`` was read, so a panel is already covering the rows this
+                    # resolver is being asked to tap.  Tapping now would land on the panel, not
+                    # on a row.  Kept as a refusal for that reason, and named so the ledger can
+                    # tell it apart from "the reader found nothing".
+                    return _no("RESOLVER:CALENDAR_DETAIL_PANEL_ALREADY_VISIBLE")
                 row = event_schedule.calendar_next_entry(role_id, current.get("entries") or ())
                 if (not isinstance(row, Mapping) or not row.get("occurrence_key")
                         or not row.get("event_id") or not row.get("title_box")):
-                    return None
+                    return _no("RESOLVER:CALENDAR_DETAIL_NO_UNINSPECTED_ROW")
                 point = row.get("tap_norm")
                 if not isinstance(point, (tuple, list)) or len(point) != 2:
-                    return None
+                    return _no("RESOLVER:CALENDAR_DETAIL_ROW_WITHOUT_TAP")
                 target = tuple(float(value) for value in point)
             except (OSError, TypeError, ValueError):
-                return None
-            return target if all(0.0 <= value <= 1.0 for value in target) else None
+                return _no("RESOLVER:CALENDAR_DETAIL_READER_RAISED")
+            if not all(0.0 <= value <= 1.0 for value in target):
+                return _no("RESOLVER:CALENDAR_DETAIL_POINT_OUTSIDE_FRAME")
+            # Record the row this tap is aimed at.  Attribution cannot re-derive which row a
+            # card belongs to from the card's own heading -- the heading mints a different id
+            # for the same activity -- and the card's printed window is coarse enough to
+            # overlap several rows, so the run keeps what it aimed at and
+            # ``_read_due_calendar_entry`` checks the card against it.  This is the same row
+            # ``verify_event_calendar_detail_open`` already treats as ``expected_event_id``.
+            #
+            # Set only on the way out with a real point, so a refused resolution cannot leave a
+            # row recorded that was never tapped.
+            self._calendar_detail_tap_row = {
+                "occurrence_key": str(row.get("occurrence_key") or ""),
+                "event_id": str(row.get("event_id") or ""),
+            }
+            return target
         if semantic in {"EVENT_CALENDAR_TAB", "REGULAR_EVENT_TABS_SCROLL_CURRENT"}:
             # Its template art also appears on HOME. The tab exists only inside
             # the recognized regular-event detail or calendar page.

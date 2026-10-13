@@ -558,6 +558,14 @@ def _calendar_row_days(row: Mapping[str, Any]) -> tuple[str, ...]:
     return tuple(str(value) for value in values if value)
 
 
+#: A day the detail page printed for itself, as ``YYYY-MM-DD``.
+#:
+#: Deliberately trailing-context-free: the live client's raw reads arrive as
+#: ``2026-09-2800:00`` and ``2026-10-1124:00`` -- the date and the clock run together with no
+#: separator -- so requiring something after the day would refuse the real strings.
+_CALENDAR_YMD_RE = re.compile(r"(\d{4})\s*-\s*(\d{1,2})\s*-\s*(\d{1,2})")
+
+
 def _calendar_day_key(token: Any) -> tuple[int, int] | None:
     """``(month, day)`` from either spelling the client prints, or ``None`` if it is not a day.
 
@@ -603,6 +611,79 @@ def _row_carrying_the_details_dates(
         if wanted <= row_days:
             candidates.append(row)
     return candidates[0] if len(candidates) == 1 else None
+
+
+def detail_window_touches(reading: Mapping[str, Any], row: Mapping[str, Any]) -> bool:
+    """Whether the detail's OWN printed window names a day this row also carries.
+
+    One definition of "touches", shared by the unique-match fallback below and by the runtime's
+    attribution of a card to the row it aimed at.  Two copies of this test would drift, and the
+    whole point of it is that it is the same evidence in both places.
+    """
+    wanted = _detail_window_days(reading)
+    if not wanted:
+        return False
+    row_days = {key for key in (_calendar_day_key(day) for day in _calendar_row_days(row))
+                if key is not None}
+    return bool(row_days & wanted)
+
+
+def row_covering_the_details_window(
+    reading: Mapping[str, Any], old_rows: list[dict],
+) -> dict | None:
+    """The one uninspected grid row whose dates the detail's OWN printed window touches.
+
+    Why this exists, and why it drops the identifier
+
+        ``_event_id`` hashes the OCR label (``event_calendar.py:74``), so the same activity
+        gets a different id depending on how much of its label a frame happened to read.  The
+        grid read ``除雪``; the preview card that opens over it read ``除雪小分队``; their ids
+        are ``DISCOVERED_EVENT_DC53E03FB8`` and ``DISCOVERED_EVENT_1C9F9BD8F5``.  Every
+        id-based path then finds nothing and the row is never credited, so the debt cannot
+        fall and the calendar goal is re-selected every few minutes.
+
+        ``_prior_calendar_row`` already states the rule for this situation -- "Date evidence is
+        required when OCR changes an identifier" -- and that is exactly what this applies.
+        ``_row_carrying_the_details_dates`` is the neighbouring function and deliberately does
+        NOT do this: it reconciles two *date derivations of one identifier*, so it filters on
+        ``event_id``.  This one reconciles two *identifiers for one activity*, so it must not.
+
+    What keeps it from guessing
+
+        It is closed on both sides, on the same terms as its neighbour: the detail must name a
+        real day, and **exactly one** uninspected row may overlap it.  Two rows that fit is a
+        coin flip, and a coin flip credits nothing.  The window is an overlap rather than a
+        containment test because the card prints its whole run (``2026-10-13 00:00`` to
+        ``2026-10-15 24:00``) while the grid row lists only the days it shows (``10/13``,
+        ``10/14``) -- requiring containment would refuse the very card this was written for.
+    """
+    wanted = _detail_window_days(reading)
+    if not wanted:
+        return None
+    candidates: list[dict] = []
+    for row in old_rows:
+        if row.get("details_observed") is True or not row.get("tap_norm"):
+            continue
+        if detail_window_touches(reading, row):
+            candidates.append(row)
+    return candidates[0] if len(candidates) == 1 else None
+
+
+def _detail_window_days(reading: Mapping[str, Any]) -> set[tuple[int, int]]:
+    """Every ``(month, day)`` the detail page printed for itself.
+
+    Read from the raw fields the detail reader fills, never from the identifier: this is the
+    evidence that survives the label being truncated.
+    """
+    days: set[tuple[int, int]] = set()
+    for key in ("preview_start_raw", "preview_end_raw",
+                "activity_open_start_raw", "activity_open_end_raw",
+                "registration_start_raw", "registration_end_raw",
+                "battle_start_raw", "battle_end_raw"):
+        text = str(reading.get(key) or "")
+        for match in _CALENDAR_YMD_RE.finditer(text):
+            days.add((int(match.group(2)), int(match.group(3))))
+    return days
 
 
 def _prior_calendar_row(row: Mapping[str, Any], old_rows: list[dict]) -> dict | None:
@@ -760,6 +841,20 @@ def record_calendar_snapshot(
             # that one is what advances the scan, and a credited row is never chosen again.
             matched = next((row for row in old_rows if row.get("event_id") == event_id
                             and row.get("details_observed") is not True), None)
+        if matched is None and reading.get("calendar_origin") == "GRID_ENTRY":
+            # Date evidence, for the one case it is the only evidence left: the detail's own
+            # identifier matches **no** row at all, which is what a truncated label produces
+            # (grid 除雪 -> ...DC53E03FB8, card 除雪小分队 -> ...1C9F9BD8F5).
+            #
+            # The ``id_is_known`` guard is load-bearing and was added because an earlier
+            # version of this fallback broke
+            # ``test_a_credit_is_refused_when_two_occurrences_of_one_event_are_uninspected``:
+            # when the detail's id DOES match rows, the identifier was not changed, and a
+            # detail's printed window is coarse enough (it spans the whole preview run) to
+            # overlap the wrong occurrence of the same event.  That case must keep crediting
+            # nothing, so the fallback only applies where the id cannot answer at all.
+            if not any(str(row.get("event_id") or "") == event_id for row in old_rows):
+                matched = row_covering_the_details_window(reading, old_rows)
         if matched is not None:
             matched.update({"details_observed": True, "details_observed_at": moment.isoformat(),
                             "detail_evidence_ref": evidence_ref, "detail_observation": reading})
@@ -881,6 +976,60 @@ def record_reservation(
         schedule.alliance = alliance
     schedules[key] = schedule
     return schedule
+
+
+def seconds_until_a_printed_reservation(
+    reserved_local: str | None,
+    client_now_local: str | None,
+    *,
+    client_now_age_seconds: float = 0.0,
+) -> int | None:
+    """How long until a reservation the CLIENT printed, using only what the client printed.
+
+    Both stamps come off the client and carry no offset, so their difference is a duration and
+    needs no timezone.  That matters here for a specific reason: the client prints 预约自动开启 as
+    a naive local time, the project's time rule forbids inferring the game's zone from this
+    machine's, and ``event_goal.Activity.window`` refuses a stamp without an offset -- so a naive
+    reservation cannot become a wake on its own.  Its difference from the client's own clock can.
+
+    ``client_now_age_seconds`` is how long ago the clock was read.  The clock and the reservation
+    are printed on different pages (measured 2026-10-10: the calendar view prints
+    ``2026-10-10 07:52:18`` while the 巨熊行动 page prints only ``预约自动开启：``), so the two
+    readings are seconds to minutes apart and the elapse has to come off the difference.  A few
+    minutes of error against a lead measured in hours is the trade that keeps the timezone out of
+    it.
+
+    ``None`` when either stamp is missing or unparseable, or when the reservation is not in the
+    future.  A negative answer is "this already happened", which is not a countdown.
+    """
+    if not reserved_local or not client_now_local:
+        return None
+    try:
+        reserved = datetime.fromisoformat(str(reserved_local).replace("/", "-"))
+    except (TypeError, ValueError):
+        return None
+    parsed_now = _parse_client_clock(client_now_local)
+    if parsed_now is None:
+        return None
+    remaining = (reserved - parsed_now).total_seconds() - max(0.0, float(client_now_age_seconds))
+    if remaining <= 0:
+        return None
+    return int(round(remaining))
+
+
+def _parse_client_clock(value: str | None) -> datetime | None:
+    """The client's clock, naive, from either shape it is drawn in.
+
+    ``2026-10-10 07:52:18`` on the calendar view; ``09-09 21:16:07`` on the map popup, where the
+    year is absent and must not be invented -- that shape answers ``None`` rather than guessing.
+    """
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text.replace("/", "-"))
+    except ValueError:
+        return None
 
 
 def record_live_countdown(
