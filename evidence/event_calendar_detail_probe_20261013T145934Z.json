@@ -1,0 +1,615 @@
+{
+  "generated_at": "2026-10-13T14:59:35+00:00",
+  "stamp": "20261013T145934Z",
+  "steps": [
+    {
+      "tag": "00_start",
+      "text": "常规活动 30 王国移民 联盟大作战 2026-10-1322:59:35 星期日 星期- 星期二 星期三 星期四 星期五 星期六 10/11 10/12 10/13 10/14 10/15 10/16 10/17 除雪"
+    },
+    {
+      "tag": "01_home",
+      "text": "X 17:09 32/32 9658.9万 29.9万 58,103,831 -7.9 统帅8 93 常规活动 超值活动 5.2亿 32/除雪小分队 银霜商铺 00:01:21 对我来说达足 10 生 5 将军医所升到2"
+    },
+    {
+      "tag": "02_hub",
+      "text": "常规活动 军备竞演 黎明的愿景 兵工厂争夺战 评级：优秀 规则 商店 战绩 1111 投票结束倒计时 01:00:18 联盟实力排行榜前20名的联盟才能参加。 您已投票 投票"
+    },
+    {
+      "tag": "03_calendar_tab",
+      "semantic": "TAB_EVENT_CALENDAR",
+      "distance": 0,
+      "tap": [
+        136,
+        142
+      ]
+    },
+    {
+      "tag": "04_grid",
+      "text": "常规活动 30 王国移民 联盟大作战 2026-10-1323:00:14 星期日 星期- 星期二 星期三 星期四 星期五 星期六 10/11 10/12 10/13 10/14 10/15 10/16 10/17 除雪小分队 除雪小分队 "
+    },
+    {
+      "tag": "05_calendar_read",
+      "recognized": true,
+      "entries": 6,
+      "next_detail_event_id": null,
+      "visible_dates": [
+        "10/11",
+        "10/12",
+        "10/13",
+        "10/14",
+        "10/15",
+        "10/16",
+        "10/17"
+      ]
+    },
+    {
+      "tag": "06_chosen_entry",
+      "event_id": "DISCOVERED_EVENT_1C9F9BD8F5",
+      "tap": [
+        392,
+        487
+      ],
+      "label": "None"
+    },
+    {
+      "tag": "07_after_tap",
+      "text": "常规活动 30 王国移民 联盟大作战 2026-10-1323:00:18 星期日 星期- 星期二 星期三 星期四 星期五 星期六 10/11 10/12 10/13 10/14 10/15 10/16 10/17 除雪小分队 除雪小分队 "
+    },
+    {
+      "tag": "08_detail_read",
+      "recognized": true,
+      "event_id": "DISCOVERED_EVENT_1C9F9BD8F5",
+      "matched_event_id": null,
+      "display_name": "除雪小分队"
+    },
+    {
+      "tag": "09_after_back",
+      "text": "常规活动 30 王国移民 联盟大作战 2026-10-1323:00:21 星期日 星期- 星期二 星期三 星期四 星期五 星期六 10/11 10/12 10/13 10/14 10/15 10/1"
+    }
+  ],
+  "conditions": {
+    "1_before_and_after_are_EVENT": true,
+    "2_calendar_recognized": true,
+    "3_calendar_detail_recognized": true,
+    "4_identity_matches": true
+  },
+  "strip_walks": [
+    {
+      "direction": 1,
+      "step": 0
+    },
+    {
+      "direction": 1,
+      "step": 1
+    },
+    {
+      "direction": 1,
+      "step": 2
+    },
+    {
+      "direction": 1,
+      "step": 3
+    },
+    {
+      "direction": 1,
+      "step": 4
+    },
+    {
+      "direction": 1,
+      "step": 5
+    },
+    {
+      "direction": 1,
+      "step": 6
+    },
+    {
+      "direction": 1,
+      "step": 7
+    },
+    {
+      "direction": -1,
+      "step": 0
+    },
+    {
+      "direction": -1,
+      "step": 1
+    }
+  ],
+  "calendar_tab_match": {
+    "semantic": "TAB_EVENT_CALENDAR",
+    "distance": 0,
+    "center_norm": [
+      0.18958333333333333,
+      0.1109375
+    ]
+  },
+  "calendar": {
+    "kind": "CALENDAR_GRID",
+    "recognized": true,
+    "source": "LIVE_CLIENT_OCR",
+    "confidence": 0.9953729808330536,
+    "visible_dates_raw": [
+      "10/11",
+      "10/12",
+      "10/13",
+      "10/14",
+      "10/15",
+      "10/16",
+      "10/17"
+    ],
+    "date_columns": [
+      {
+        "date_raw": "10/11",
+        "weekday_raw": "星期日",
+        "center_x_norm": 0.09236
+      },
+      {
+        "date_raw": "10/12",
+        "weekday_raw": "星期二",
+        "center_x_norm": 0.22708
+      },
+      {
+        "date_raw": "10/13",
+        "weekday_raw": "星期二",
+        "center_x_norm": 0.36319
+      },
+      {
+        "date_raw": "10/14",
+        "weekday_raw": "星期三",
+        "center_x_norm": 0.5
+      },
+      {
+        "date_raw": "10/15",
+        "weekday_raw": "星期四",
+        "center_x_norm": 0.63681
+      },
+      {
+        "date_raw": "10/16",
+        "weekday_raw": "星期五",
+        "center_x_norm": 0.77431
+      },
+      {
+        "date_raw": "10/17",
+        "weekday_raw": "星期六",
+        "center_x_norm": 0.91042
+      }
+    ],
+    "current_game_date_raw": "2026-10-13",
+    "current_game_datetime_raw": "2026-10-13 23:00:14",
+    "time_zone": null,
+    "entries": [
+      {
+        "event_id": "DISCOVERED_EVENT_1C9F9BD8F5",
+        "display_name": "除雪小分队",
+        "title_confidence": 0.9920440316200256,
+        "title_registered": false,
+        "icon_identity": null,
+        "icon_observed": false,
+        "calendar_date_raw": "10/13",
+        "calendar_end_date_raw": "10/15",
+        "calendar_dates_raw": [
+          "10/13",
+          "10/14",
+          "10/15"
+        ],
+        "bar_bounds_norm": [
+          0.29306,
+          0.68333
+        ],
+        "occurrence_key": "DISCOVERED_EVENT_1C9F9BD8F5|10/13|10/15",
+        "tap_norm": [
+          0.54479,
+          0.38027
+        ],
+        "title_box": [
+          [
+            328.0,
+            469.0
+          ],
+          [
+            457.0,
+            471.0
+          ],
+          [
+            456.0,
+            505.0
+          ],
+          [
+            328.0,
+            502.0
+          ]
+        ],
+        "preview_start_raw": null,
+        "preview_end_raw": null,
+        "registration_start_raw": null,
+        "registration_end_raw": null,
+        "battle_start_raw": null,
+        "battle_end_raw": null,
+        "current_open_state": "UNKNOWN",
+        "countdown_raw": null,
+        "source": "LIVE_CLIENT_OCR"
+      },
+      {
+        "event_id": "DISCOVERED_EVENT_2EDCFF202D",
+        "display_name": "盈途轻歌",
+        "title_confidence": 0.9977153837680817,
+        "title_registered": false,
+        "icon_identity": null,
+        "icon_observed": false,
+        "calendar_date_raw": "10/13",
+        "calendar_end_date_raw": "10/17",
+        "calendar_dates_raw": [
+          "10/13",
+          "10/14",
+          "10/15",
+          "10/16",
+          "10/17"
+        ],
+        "bar_bounds_norm": [
+          0.29306,
+          0.96389
+        ],
+        "occurrence_key": "DISCOVERED_EVENT_2EDCFF202D|10/13|10/17",
+        "tap_norm": [
+          0.68403,
+          0.49727
+        ],
+        "title_box": [
+          [
+            439.0,
+            620.0
+          ],
+          [
+            546.0,
+            620.0
+          ],
+          [
+            546.0,
+            653.0
+          ],
+          [
+            439.0,
+            653.0
+          ]
+        ],
+        "preview_start_raw": null,
+        "preview_end_raw": null,
+        "registration_start_raw": null,
+        "registration_end_raw": null,
+        "battle_start_raw": null,
+        "battle_end_raw": null,
+        "current_open_state": "UNKNOWN",
+        "countdown_raw": null,
+        "source": "LIVE_CLIENT_OCR"
+      },
+      {
+        "event_id": "DISCOVERED_EVENT_BED42A5F8E",
+        "display_name": "银霜商铺",
+        "title_confidence": 0.9921082705259323,
+        "title_registered": false,
+        "icon_identity": null,
+        "icon_observed": false,
+        "calendar_date_raw": "10/13",
+        "calendar_end_date_raw": "10/17",
+        "calendar_dates_raw": [
+          "10/13",
+          "10/14",
+          "10/15",
+          "10/16",
+          "10/17"
+        ],
+        "bar_bounds_norm": [
+          0.29167,
+          0.95278
+        ],
+        "occurrence_key": "DISCOVERED_EVENT_BED42A5F8E|10/13|10/17",
+        "tap_norm": [
+          0.68403,
+          0.5875
+        ],
+        "title_box": [
+          [
+            440.0,
+            737.0
+          ],
+          [
+            545.0,
+            737.0
+          ],
+          [
+            545.0,
+            767.0
+          ],
+          [
+            440.0,
+            767.0
+          ]
+        ],
+        "preview_start_raw": null,
+        "preview_end_raw": null,
+        "registration_start_raw": null,
+        "registration_end_raw": null,
+        "battle_start_raw": null,
+        "battle_end_raw": null,
+        "current_open_state": "UNKNOWN",
+        "countdown_raw": null,
+        "source": "LIVE_CLIENT_OCR"
+      },
+      {
+        "event_id": "EXCLUSIVE_GEAR_FORGE",
+        "display_name": "专属装备铸炼",
+        "title_confidence": 0.9751570125420889,
+        "title_registered": true,
+        "icon_identity": null,
+        "icon_observed": false,
+        "calendar_date_raw": "10/11",
+        "calendar_end_date_raw": "10/17",
+        "calendar_dates_raw": [
+          "10/11",
+          "10/12",
+          "10/13",
+          "10/14",
+          "10/15",
+          "10/16",
+          "10/17"
+        ],
+        "bar_bounds_norm": [
+          0.01667,
+          0.98333
+        ],
+        "occurrence_key": "EXCLUSIVE_GEAR_FORGE|10/11|10/17",
+        "tap_norm": [
+          0.54653,
+          0.70391
+        ],
+        "title_box": [
+          [
+            318.0,
+            886.0
+          ],
+          [
+            469.0,
+            886.0
+          ],
+          [
+            469.0,
+            916.0
+          ],
+          [
+            318.0,
+            916.0
+          ]
+        ],
+        "preview_start_raw": null,
+        "preview_end_raw": null,
+        "registration_start_raw": null,
+        "registration_end_raw": null,
+        "battle_start_raw": null,
+        "battle_end_raw": null,
+        "current_open_state": "UNKNOWN",
+        "countdown_raw": null,
+        "source": "LIVE_CLIENT_OCR"
+      },
+      {
+        "event_id": "DISCOVERED_EVENT_6F33C054CA",
+        "display_name": "英雄集结",
+        "title_confidence": 0.9957595765590668,
+        "title_registered": false,
+        "icon_identity": null,
+        "icon_observed": false,
+        "calendar_date_raw": "10/12",
+        "calendar_end_date_raw": "10/17",
+        "calendar_dates_raw": [
+          "10/12",
+          "10/13",
+          "10/14",
+          "10/15",
+          "10/16",
+          "10/17"
+        ],
+        "bar_bounds_norm": [
+          0.15556,
+          0.98333
+        ],
+        "occurrence_key": "DISCOVERED_EVENT_6F33C054CA|10/12|10/17",
+        "tap_norm": [
+          0.61389,
+          0.79336
+        ],
+        "title_box": [
+          [
+            389.0,
+            999.0
+          ],
+          [
+            495.0,
+            999.0
+          ],
+          [
+            495.0,
+            1032.0
+          ],
+          [
+            389.0,
+            1032.0
+          ]
+        ],
+        "preview_start_raw": null,
+        "preview_end_raw": null,
+        "registration_start_raw": null,
+        "registration_end_raw": null,
+        "battle_start_raw": null,
+        "battle_end_raw": null,
+        "current_open_state": "UNKNOWN",
+        "countdown_raw": null,
+        "source": "LIVE_CLIENT_OCR"
+      },
+      {
+        "event_id": "DISCOVERED_EVENT_DF9542AD3C",
+        "display_name": "征程的宝藏",
+        "title_confidence": 0.9966631293296814,
+        "title_registered": false,
+        "icon_identity": null,
+        "icon_observed": false,
+        "calendar_date_raw": "10/12",
+        "calendar_end_date_raw": "10/17",
+        "calendar_dates_raw": [
+          "10/12",
+          "10/13",
+          "10/14",
+          "10/15",
+          "10/16",
+          "10/17"
+        ],
+        "bar_bounds_norm": [
+          0.15556,
+          0.98333
+        ],
+        "occurrence_key": "DISCOVERED_EVENT_DF9542AD3C|10/12|10/17",
+        "tap_norm": [
+          0.61667,
+          0.88281
+        ],
+        "title_box": [
+          [
+            380.0,
+            1115.0
+          ],
+          [
+            508.0,
+            1115.0
+          ],
+          [
+            508.0,
+            1145.0
+          ],
+          [
+            380.0,
+            1145.0
+          ]
+        ],
+        "preview_start_raw": null,
+        "preview_end_raw": null,
+        "registration_start_raw": null,
+        "registration_end_raw": null,
+        "battle_start_raw": null,
+        "battle_end_raw": null,
+        "current_open_state": "UNKNOWN",
+        "countdown_raw": null,
+        "source": "LIVE_CLIENT_OCR"
+      }
+    ],
+    "entry_count": 6,
+    "details_visible": false,
+    "source_evidence": {
+      "heading": "常规活动",
+      "date_anchor_count": 7,
+      "frame_size": [
+        720,
+        1280
+      ]
+    }
+  },
+  "chosen_entry": {
+    "event_id": "DISCOVERED_EVENT_1C9F9BD8F5",
+    "display_name": "除雪小分队",
+    "title_confidence": 0.9920440316200256,
+    "title_registered": false,
+    "icon_identity": null,
+    "icon_observed": false,
+    "calendar_date_raw": "10/13",
+    "calendar_end_date_raw": "10/15",
+    "calendar_dates_raw": [
+      "10/13",
+      "10/14",
+      "10/15"
+    ],
+    "bar_bounds_norm": [
+      0.29306,
+      0.68333
+    ],
+    "occurrence_key": "DISCOVERED_EVENT_1C9F9BD8F5|10/13|10/15",
+    "tap_norm": [
+      0.54479,
+      0.38027
+    ],
+    "title_box": [
+      [
+        328.0,
+        469.0
+      ],
+      [
+        457.0,
+        471.0
+      ],
+      [
+        456.0,
+        505.0
+      ],
+      [
+        328.0,
+        502.0
+      ]
+    ],
+    "preview_start_raw": null,
+    "preview_end_raw": null,
+    "registration_start_raw": null,
+    "registration_end_raw": null,
+    "battle_start_raw": null,
+    "battle_end_raw": null,
+    "current_open_state": "UNKNOWN",
+    "countdown_raw": null,
+    "source": "LIVE_CLIENT_OCR"
+  },
+  "detail": {
+    "kind": "EVENT_DETAIL",
+    "recognized": true,
+    "event_id": "DISCOVERED_EVENT_1C9F9BD8F5",
+    "display_name": "除雪小分队",
+    "activity_open_start_raw": null,
+    "activity_open_end_raw": null,
+    "registration_start_raw": null,
+    "registration_end_raw": null,
+    "battle_start_raw": null,
+    "battle_end_raw": null,
+    "preview_start_raw": "2026-10-13 00:00",
+    "preview_end_raw": "2026-10-15 24:00",
+    "countdown_raw": null,
+    "unlabeled_timer_raw": null,
+    "stage_timer_raw": null,
+    "stage_label": null,
+    "current_open_state": "UNKNOWN",
+    "registration_entry_visible": false,
+    "preparation_entry_visible": false,
+    "participation_entry_visible": true,
+    "reward_entry_visible": true,
+    "time_zone": null,
+    "source": "LIVE_CLIENT_OCR",
+    "time_zone_source": "UNKNOWN"
+  },
+  "expected_event_id": "DISCOVERED_EVENT_1C9F9BD8F5",
+  "actual_event_id": "DISCOVERED_EVENT_1C9F9BD8F5",
+  "attributed_event_id": "",
+  "first_failing_condition": null,
+  "root_cause": {
+    "concluded_at": "2026-10-13T15:20:00+08:00",
+    "symptom": "OPEN_EVENT_CALENDAR_DETAIL failed 46 times (23 in the last 2 days); every failure is EVENT_CALENDAR_DETAIL_NOT_PROVEN with an identity mismatch.",
+    "probe_result": "This probe reproduced the whole production path and ALL FOUR verifier conditions PASSED (first_failing_condition=None): readers and verifier are not broken.",
+    "why_the_probe_passed_but_production_fails": "Today's first grid entry (除雪小分队, 1C9F9BD8F5) is OPEN, so its detail page prints a preview window (2026-10-13 00:00 - 2026-10-15 24:00) and the calendar title was read in full, so the exact-event-id path matched. Production picks the first STORE-uninspected entry, which is usually a NOT-YET-OPEN event - exactly the case whose attribution cannot succeed.",
+    "chain": [
+      "1. The resolver taps event_schedule.calendar_next_entry() = the first entry the STORE says is uninspected. Uninspected entries are mostly future events (open ones get inspected and stop being the next one).",
+      "2. For a not-yet-open event the detail page prints no preview window, so match_calendar_detail_to_entry() bails at the start/end None check -> returns None -> attributed_event_id stays empty (observed empty in all sampled failures).",
+      "3. The exact-id path cannot rescue it because _event_id() is sha1(OCR title)[:10] for unregistered events, and the calendar-side title is frequently a PARTIAL read: the failing frame shows the same real event as 除雪 (DC53E03FB8) on the calendar and 除雪小分队 (1C9F9BD8F5) on the detail -> two different ids for one event.",
+      "4. next_detail_event_id is never written anywhere in the codebase (only read by the verifier), so the verifier's expectation always falls back to the first entry with tap_norm and details_observed not True, taken from the before-frame calendar."
+    ],
+    "secondary_defect_seen_in_the_same_frame": "The 2026-10-10 grid listed DISCOVERED_EVENT_6F33C054CA (英雄集结) TWICE with different date ranges (10/08..10/11 and 10/12..10/14) - one event_id for two occurrences. occurrence_key exists for this, but any consumer keyed on event_id alone will conflate them.",
+    "fix_direction": "Do not gate attribution on the presence of a preview window: an unambiguous unique name match should be attributable on its own, and the not-yet-open case is precisely the one that needs it. Keep the date-overlap check as a tie-breaker/confirmation, not as a precondition. Separately, identity must not rest on a partial OCR string - either read the full bar text on the calendar side or reconcile by prefix/subset before hashing.",
+    "evidence": [
+      "evidence/event_calendar_detail_probe_20261013T145934Z.json (this probe: all four conditions PASS)",
+      "episode 20261010_093019_922115 (expected DC53E03FB8 / actual 1C9F9BD8F5, attributed empty)",
+      "offline re-read of that episode's before/after frames (entries + tap_norm)",
+      "winter_agent_v2/event_calendar.py: _event_id (sha1 of the label), match_calendar_detail_to_entry (date-overlap precondition), runtime.py:5121 EVENT_CALENDAR_NEXT_DETAIL resolver",
+      "learning/timed_event_schedule.json: DISCOVERED_EVENT_DC53E03FB8 carries current_blocker EVENT_NOT_OPEN (observed 2026-10-12T12:19:46Z)"
+    ]
+  }
+}
