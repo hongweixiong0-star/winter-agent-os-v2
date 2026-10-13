@@ -53,6 +53,8 @@ from typing import Any, Iterable, Mapping, Sequence
 
 from PIL import Image
 
+from .retention import delete_past_the_hosts_gate
+
 #: Where candidates live.  ``knowledge/perception/candidates`` is the operator's own path, and
 #: it is deliberately outside ``dataset/raw`` -- the retention pass prunes that tree, and a
 #: candidate that gets pruned before it is verified is a candidate nobody ever sees again.
