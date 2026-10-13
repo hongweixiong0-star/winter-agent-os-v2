@@ -1,23 +1,36 @@
 {
  "schema_version": "1.0",
  "generated_by": "winter_agent_v2.knowledge_preload.KnowledgeStore.write_index",
- "generated_at": "2026-09-29T12:31:30.951071+00:00",
+ "generated_at": "2026-10-13T16:43:18.804636+00:00",
  "note": "derived from knowledge/preload/*.json -- not a skill registry and not a lifecycle authority; delete any row and it returns from the files",
  "acquired_vs_external": "the point of this index is that acquisition_rung should drift toward 1-5 over time: external priors are a starting cost, not a permanent one",
  "summary": {
-  "records": 2,
+  "records": 3,
   "by_status": {
-   "UNVERIFIED": 2
+   "UNVERIFIED": 3
   },
   "by_acquisition_rung": {
-   "1": 1,
-   "4": 1
+   "4": 1,
+   "1": 2
   },
-  "sufficient": 0,
+  "sufficient": 1,
   "with_conflicts": 0,
   "awaiting_calibration": 0
  },
  "records": [
+  {
+   "capability": "ECONOMY_RESEARCH",
+   "capability_id": "CAP-E07",
+   "status": "UNVERIFIED",
+   "weakest_field": "UNVERIFIED",
+   "source_type": "LEGACY_VERIFIED_ASSET",
+   "acquisition_rung": 4,
+   "sufficient": true,
+   "missing_fields": [],
+   "conflicts": [],
+   "live_calibration_status": "PENDING_RESEARCH",
+   "updated_at": "2026-10-13T16:43:18.804636+00:00"
+  },
   {
    "capability": "TROOP_SELECT",
    "capability_id": "CAP-G09",
@@ -31,27 +44,22 @@
    ],
    "conflicts": [],
    "live_calibration_status": "",
-   "updated_at": "2026-09-29T12:31:30.951071+00:00"
+   "updated_at": "2026-10-13T16:35:09.752463+00:00"
   },
   {
-   "capability": "ECONOMY_RESEARCH",
-   "capability_id": "CAP-E07",
+   "capability": "ALLIANCE_TECH",
+   "capability_id": "CAP-S04",
    "status": "UNVERIFIED",
    "weakest_field": "UNVERIFIED",
-   "source_type": "LEGACY_VERIFIED_ASSET",
-   "acquisition_rung": 4,
+   "source_type": "LIVE_VERIFIED_ASSET",
+   "acquisition_rung": 1,
    "sufficient": false,
    "missing_fields": [
-    "preconditions",
-    "navigation",
-    "actions",
-    "success_state",
-    "verifier_prior",
-    "recovery_prior"
+    "preconditions"
    ],
    "conflicts": [],
-   "live_calibration_status": "PENDING_RESEARCH",
-   "updated_at": "2026-09-18T19:08:56.139093+00:00"
+   "live_calibration_status": "",
+   "updated_at": "2026-10-10T02:43:07.754323+00:00"
   }
  ]
 }
