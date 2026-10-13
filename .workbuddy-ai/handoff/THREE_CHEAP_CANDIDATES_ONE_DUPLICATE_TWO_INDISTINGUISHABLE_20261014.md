@@ -66,8 +66,40 @@ token 命中的是 `CLAIM_OFFLINE_REWARDS` / `BTN_CLAIM_OFFLINE_REWARDS` ——
 - **没有**手改 `capability_catalog.json`（生成物）。
 - **没有**顺手把 `CLAIM_ONLINE_REWARD` 判成重名（token 命中不等于同一件事）。
 
-## 五、这条留给下一个人的一句话
+## 五、⚠️ **更正**（同日补测）：这是**个例**，不是系统性"目录侧"问题
 
-**"只缺一个字段"不等于"可以便宜地补上"。** 这四个候选真正的问题是
-**总表 token 与项目自己的规范能力映射（`capability_skill_map.json`）没有对齐**，
-而那是**目录侧**的问题 —— 补它的正确位置是那份映射或生成器，**不是**给每个 token 造一条预载记录。
+本文件第五节写过"这四个的真正问题是总表 token 与规范能力映射没对齐 —— 那是**目录侧**的事"。
+**那句话把一个个例说成了模式。补测把它收回来：**
+
+对全部 **522** 行、**452 行 `existing_skill` 为空**做**精确同名**检查
+（不做 token 信袋匹配 —— skill 的反模式清单明禁）：
+
+| 检查 | 命中 |
+|---|---:|
+| `code` 恰好是一个**注册技能** id（`Skill(...)`） | **7**（全部是 `CLAIM_REWARD`） |
+| `code` 恰好是一个 `knowledge/skills/*.json` 文件名 | **0** |
+| `code` 恰好是一个**规范能力名**（`capability_skill_map`） | **3** |
+
+而这 **10 条没有一条是真漏接**：
+
+- 7 条 `CLAIM_REWARD`（`CAP-X06/AE06/AI08/AO05/AR06/AT04/AV06`）：`CLAIM_REWARD` 是**12 个
+  `schedulable=False` 通用助手之一**，不是可调度能力 ⇒ 与它同名**不等于**它是这 7 个能力的实现。
+- 3 条 `READ_FREE_ATTEMPTS` / `START_ARENA` / `VERIFY_ARENA_RESULT`：它们属于 goal
+  `USE_FREE_ARENA_ATTEMPTS`，而**规范映射自己就写着** `status: BLOCKED`、
+  `implemented_by: None`、`live_verified_by: None`、attempts 0 ⇒ **两边一致**，就是**真没实现**。
+
+⇒ **结论（负结果）**：总表那 452 个空 `existing_skill` **不是同名 join 漏接造成的**，
+覆盖率数字**没有**被一个命名缺陷压低。**`CAP-B15` 是孤例，不是模式。**
+（也正因为如此，**不该**去"修目录" —— 没有可修的系统性缺陷。）
+
+## 六、这条留给下一个人的一句话（修订版）
+
+**"只缺一个字段"不等于"可以便宜地补上"。**
+
+- 对 `CLAIM_IDLE_REWARD` 这一个 token：它是一个**孤立的别名**（真身在
+  `EXPLORATION_IDLE_CLAIM`，且规范映射早就记对了）。要消掉它得动**总表那一行的别名关系**，
+  而那需要一条独立证据说明"这就是同一个能力"—— 现有三条证据（技能文件 / 真机结果 / 规范映射）
+  **已经够了**，所以这一步是可以做的；**本轮没做**，因为它要改的是生成物或生成器，属于单独审阅。
+- 对另外三个：**先别动** —— 分不开的两个不能当两件事预载，第三个（online vs offline）还缺一条独立证据。
+- 但**不要**把它说成"目录系统性错位"：补测（第六节）证明 452 个空 `existing_skill` 里
+  **没有一条**是同名 join 漏接。
