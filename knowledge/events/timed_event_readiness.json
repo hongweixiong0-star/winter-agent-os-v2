@@ -62,7 +62,7 @@
       "expected_window": "UNKNOWN",
       "start": null,
       "end": null,
-      "next_open_condition": "CLIENT DIRECT SCHEDULE 2026-09-27T01:01+08:00: 常规活动 → 巨熊行动 prints '预约自动开启：2026-09-28 20:00'. reserved_start in learning/timed_event_schedule.json updated to 2026-09-28T20:00:00+08:00 with source=CLIENT_DIRECT_SCHEDULE (confidence CONFIRMED). The previous cooldown-derived value 2026-09-27T12:59:58+08:00 is INVALIDATED/COOLDOWN_END_DERIVED and must not be used by the Scheduler. Evidence: knowledge/events/bear_hunt_time_20260928.json (supersedes bear_hunt_time_20260926.json). T-30 re-read required; it checks for drift, it does not reset confirmation unless the client disagrees. || CLIENT PRINTED SCHEDULE 2026-10-13T22:12+08:00（探针只读取证）：联盟首页公告块自印 `1.【巨熊行动】20：30`（同屏日期头 `10月13日·周二`）。这是**第三次**客户端读数指向 20:30（前两次：2026-09-27 读 `预约自动开启 2026-09-28 20:00` 属旧号；本号 [ioi] 2026-09-27 读 20:30、2026-10-10 由工具录制 reserved_start=2026-10-11T12:30:26Z=20:30+08:00）。⚠️ 公告行**没有显式日期**，且取证时刻已过 20:30 ⇒ 「今天这一场已结束」是由帧上日期头 + 观测时刻推出的**推断**，不是客户端读数；**不得据此写 start/end，也不得据此手改 learning/timed_event_schedule.json 的 reserved_start**（该字段按 schema 只能由工具从「常规活动→巨熊行动」的完整日期读数写入）。⇒ **下一步必须做的**：走 常规活动→巨熊行动 重读「预约自动开启：<日期> <时间>」，用工具更新预约，再跑 T-30 唤醒梯。证据：evidence/alliance_event_entry_discovery_20261013_141222.json。",
+      "next_open_condition": "CLIENT DIRECT SCHEDULE 2026-09-27T01:01+08:00: 常规活动 → 巨熊行动 prints '预约自动开启：2026-09-28 20:00'. reserved_start in learning/timed_event_schedule.json updated to 2026-09-28T20:00:00+08:00 with source=CLIENT_DIRECT_SCHEDULE (confidence CONFIRMED). The previous cooldown-derived value 2026-09-27T12:59:58+08:00 is INVALIDATED/COOLDOWN_END_DERIVED and must not be used by the Scheduler. Evidence: knowledge/events/bear_hunt_time_20260928.json (supersedes bear_hunt_time_20260926.json). T-30 re-read required; it checks for drift, it does not reset confirmation unless the client disagrees. || CLIENT PRINTED SCHEDULE 2026-10-13T22:12+08:00（探针只读取证）：联盟首页公告块自印 `1.【巨熊行动】20：30`（同屏日期头 `10月13日·周二`）。这是**第三次**客户端读数指向 20:30（前两次：2026-09-27 读 `预约自动开启 2026-09-28 20:00` 属旧号；本号 [ioi] 2026-09-27 读 20:30、2026-10-10 由工具录制 reserved_start=2026-10-11T12:30:26Z=20:30+08:00）。⚠️ 公告行**没有显式日期**，且取证时刻已过 20:30 ⇒ 「今天这一场已结束」是由帧上日期头 + 观测时刻推出的**推断**，不是客户端读数；**不得据此写 start/end，也不得据此手改 learning/timed_event_schedule.json 的 reserved_start**（该字段按 schema 只能由工具从「常规活动→巨熊行动」的完整日期读数写入）。⇒ **下一步必须做的**：走 常规活动→巨熊行动 重读「预约自动开启：<日期> <时间>」，用工具更新预约，再跑 T-30 唤醒梯。证据：evidence/alliance_event_entry_discovery_20261013_141222.json。 || T-15/T-30 RECHECK ATTEMPTED 2026-10-13T22:33+08:00（tools/bear_roleA_t15_check.py，只读+正规 DeviceLease，finally 已归还）：**预约未能重读** —— 常规活动横条里只见到 `兵工广争夺战 / 黎明的愿景 / 军备竞演(01:25:52)`，**未见「巨熊行动」页签**；模板匹配 0.7222（阈值 0.72，边缘命中）落到了军备竞演页，故 reserve_time 为空、ROLE_A_TIME_RECHECK=false。⇒ **这是「没读到」，不是「没有」**：不得据此推断任何开放/结束状态。同帧另观测到**与巨熊无关的活集结**（联盟战争→集结：`等级6冰霜古猿 12/15 集结中00:00:40`、`等级7霜鳞避役 13/15 坐标(647,468) 集结中00:01:00`，且有「开启后自动加入**冰原巨兽**集结」开关）——**野兽/冰原巨兽集结 ≠ 巨熊行动窗口**，不得把前者当成后者已开放。角色已核实：`[ioi]零氪纯盾流 / 账号 1063040265 / 联盟 ioi / 王国 4298`。证据：learning/bear_roleA_t15_check.json + dataset/evidence/bear_roleA_t15_20261013T143346Z/。**下一步仍是**：在「巨熊行动」页签可见时重读「预约自动开启：<日期> <时间>」，用工具更新预约。",
       "open_criterion": "联盟/联盟领地/特殊建筑/狩猎陷阱 页面显示开放；或联盟集结列表出现等级1变异巨熊目标",
       "close_criterion": "UNKNOWN — 未捕获结束态 UI",
       "entry_navigation": [
@@ -119,7 +119,9 @@
         "集结列表滚动 —— 容器已可从帧推导，但滚动手势未在真机执行过",
         "真机预约已建立，但尚未经历一次真实开放窗口",
         "T5/T1 生产排序接线 — 路由已实测为 'ALLIANCE'（2026-09-26），剩余缺口仅为真实开放窗口内的执行证据",
-        "T-30 重读「常规活动→巨熊行动」的预约自动开启（2026-10-13 公告再次自印 20:30，但预约台账里本号 reserved_start 仍是 2026-10-11，已过期）"
+        "T-30 重读「常规活动→巨熊行动」的预约自动开启（2026-10-13 公告再次自印 20:30，但预约台账里本号 reserved_start 仍是 2026-10-11，已过期）",
+        "T-30 重读「常规活动→巨熊行动」的预约自动开启（2026-10-13 复检失败：横条里没有巨熊行动页签，模板边缘命中落到军备竞演 ⇒ reserve_time 为空，属「没读到」不是「没有」）",
+        "冰原巨兽/野兽集结与巨熊行动窗口必须分开判定（2026-10-13 实测：联盟战争→集结同时存在等级6冰霜古猿/等级7霜鳞避役的活集结，而巨熊预约读不到）"
       ],
       "source": [
         "LIVE_CLIENT",
