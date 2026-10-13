@@ -38,19 +38,57 @@ AVOID_STAMINA_WASTE 的 evidence 声明 stamina_sink ∈ {INTEL, GIANT_BEAST}   
 
 ⚠️ 口径：这也说明**先按 episode 归一化是不够的** —— 10-10 的绝对量上涨里，有一部分正是"会话占比"变了。
 
-## 三、据此能说的、和不能说的
+## 三、这条路怎么被选中的（代码已闭合）与**为什么不能被归因**（本轮的第二件事）
+
+`runtime._stamina_route`（`runtime.py:1722-1744`）：
+
+```python
+intel = data.get('intel_state') or {}                      # ← 读的是 goal.evidence，不是 state_before
+runnable_intel = (not intel_blocked and intel.get('status')=='AVAILABLE'
+                  and intel.get('untried_pins', intel.get('pins', 1)) != 0)
+sink = choose_stamina_goal(current, 'AVAILABLE' if runnable_intel else 'NOT_AVAILABLE', ...)
+```
+
+而 `operations_policy.choose_stamina_goal`（`:58-79`）的顺序是：
+`stamina<30 → NONE` ｜ `intel AVAILABLE → **INTEL**` ｜ 无空闲行军 → WAIT ｜
+**`giant_beast_ready → GIANT_BEAST`** ｜ `beast_ready → BEAST_HUNT` ｜ 否则 STAMINA_BLOCKED。
+⇒ **GIANT_BEAST 是"情报跑不了之后的兜底"**，不是首选。
+
+**时间上确实吻合**（`state_before.intel.status` 的出现次数）：
+
+| 日期 | `AVAILABLE` | `BLOCKED` | 极地会话 |
+|---|---:|---:|---:|
+| 10-08 | 553 | 11 | 19 |
+| 10-10 | 1007 | **344** | **119** |
+| 10-11 | 315 | **111** | 55 |
+
+**但这一条我无法用数据坐实，原因是记账缺口，不是一个猜测**：
+
+1. 决策真正读的字段是 **`best_goal.evidence['intel_state']`**，而 episode 只存 `state_before/state_after`——
+   我上面那张表用的是 `state_before.intel.status`，**两者不是同一个字段**。⇒ 那张表只能算**旁证**。
+2. `_stamina_route` 把结论写进 `data.update(stamina_sink=…, stamina_sink_reason=…)`（`runtime.py:1739`），
+   而 **`stamina_sink_reason` 在整个 episode 流里出现 0 次** —— 它只活在会话 data 里，从不落盘。
+3. 于是"这一次为什么选 GIANT_BEAST 而不是 INTEL"这个**每个读账本的人都会问的第一个问题**，
+   在账本里**没有答案**。
+
+⇒ 这是与 `verifier_evidence` 为空、`recognition_error` 缺失**同一类**的记账缺口，只是深了一层：
+**上一轮修的是"verifier 不说原因"，这一层是"路由器不说原因"**。
+
+## 四、据此能说的、和不能说的
 
 - **能说**：verifier 是对的；失败是**结果半**（找不到目标），不是路由半（tab 一直是对的）。
   `WB-1002-11` 在 2026-10-02 两帧上得到的结论（"地图平移到空白处，verifier 说的是真话"）
   在**全量数据上成立**，而且这次是全量。
-- **不能说**：是哪一次提交改了会话开启比例。窗口是 **10-08 23:19 → 10-10 01:58**（32 小时停机期间），
-  候选 `1733cbe8 feat(activity): a SCHEDULED_* ticket asks the page its read can actually run on`、
-  `b4704288 feat(bear): a window that has not opened names when to come back`、
-  `6dfa1da5 fix(board+gate): …`，**未裁定**。
+- **不能说（且原因已定位到记账缺口，不是我偷懒）**：**会话占比为什么涨，账本回答不了** ——
+  决策读的 `evidence['intel_state']` 与 `stamina_sink_reason` **都不落盘**（见第三节）。
+  因此"是哪一次提交改了它"这个问题**在补上这笔账之前无法用数据裁定**；窗口是
+  10-08 23:19 → 10-10 01:58（32 小时停机期间），**未裁**。
+  另：`operations_policy.py` 在 10-07~10-11 **没有任何提交**，`BLOCKED` 的识别也没有
+  （`git log -S MASTER_BOUNTY / BATTLE_FAILED` 皆空）⇒ 不是这两处改的。
 - **§10 分类未定**：若"当前没有冰原巨兽可找"，它属 `EXPECTED_NO_ACTION`（正常，换 Goal），
   而不是 `CAPABILITY_GAP`。判定它需要先知道**冰原巨兽现在是否存在** —— **这一步要真机**。
 
-## 四、本轮改的代码（提交 `d3b41ce6`）
+## 五、本轮改的代码（提交 `d3b41ce6`）
 
 `SUBMIT_GIANT_BEAST_SEARCH` 的验证曾是一行 lambda：`ok` 用
 `before.resource_selected_tab=='GIANT_BEAST' and (title_text or has_rally)`，而**原因串**只看
@@ -64,6 +102,13 @@ AVOID_STAMINA_WASTE 的 evidence 声明 stamina_sink ∈ {INTEL, GIANT_BEAST}   
 （全部 206 次尝试 tab 都对 ⇒ 历史上 0 次）。所以这次改动**不给当前数据新增任何原因**，
 它的价值是：让下一次 tab 真的选错时能被记成路由失败，以及让这条搜索的结局从此可读。
 
-## 五、未做
+## 六、未做 / 下一件事
 
 没有改会话的行为、没有动 pin、没有重开任何既有簇、没有改 `AVOID_STAMINA_WASTE` 的调度。
+
+**下一件事（最小、且能一次解开这一类问题）**：把 `_stamina_route` 的决策**落盘** ——
+把 `stamina_sink` 与 `stamina_sink_reason`（以及 `runnable_intel` 的判据）写进 episode。
+它与 `WB-1002-11` 给 recognition 加 `recognition_error` 是**同一个动作**：先让路由器会说话，
+再谈为什么选错。**本轮没有做**，因为它要动 episode 的 schema（不是只加一个 detail 字典），
+且改 schema 属于要被单独审阅的一类改动 —— 与 `verify_giant_beast_search` 那种"只加 evidence"
+不同。
