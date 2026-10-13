@@ -1422,6 +1422,53 @@ def verify_beast_search_submitted(before: WorldState, after: WorldState) -> Veri
     )
 
 
+def verify_giant_beast_search(before: WorldState, after: WorldState) -> VerificationResult:
+    """Prove the 搜索 tap put a *giant* beast target on the map.
+
+    Two unrelated defects used to share one reason here, and the result carried no
+    detail at all.  Measured 2026-10-14 over the whole production stream: **all 164**
+    episodes carrying ``GIANT_BEAST_SEARCH_NOT_PROVEN`` had an empty
+    ``verifier_evidence``, and the reason ignored ``before`` entirely -- so "the
+    giant-beast tab was never selected" (a route/precondition failure) and "the
+    search returned no target" (a result failure) were the same string, on the
+    project's single largest failure cluster.  That is the defect
+    ``_recognition_error`` fixed one layer up, and ``tools/audit_escalation_premises``
+    could not even reach it because the verifier said nothing.
+
+    The split is by ``before`` because the two halves are facts about different
+    frames: the selected tab belongs to the frame the tap started from, the target
+    card to the frame it produced.  ``GIANT_BEAST_SEARCH_NOT_PROVEN`` keeps its name
+    for the result half, so the existing counter keeps its meaning and only the
+    mislabelled half moves out of it.
+    """
+    before_ok = before.resource_selected_tab == "GIANT_BEAST"
+    result = after.beast_search_result if isinstance(after.beast_search_result, dict) else {}
+    result_ok = bool(result.get("title_text") or result.get("has_rally"))
+    ok = before_ok and result_ok
+    # The reason is chosen by the same facts as ``ok``, never by a looser test: the
+    # old expression asked only whether ``beast_search_result`` was truthy, so a step
+    # that FAILED on the tab could still be filed under the success-sounding
+    # ``GIANT_BEAST_SEARCH_RESULT``.
+    if ok:
+        reason = "GIANT_BEAST_SEARCH_RESULT"
+    elif not before_ok:
+        reason = "GIANT_BEAST_TAB_NOT_SELECTED"
+    else:
+        reason = "GIANT_BEAST_SEARCH_NOT_PROVEN"
+    return VerificationResult(
+        ok,
+        reason,
+        {
+            "before_tab": before.resource_selected_tab,
+            "before_tab_is_giant_beast": before_ok,
+            "title_text": result.get("title_text"),
+            "has_rally": bool(result.get("has_rally")),
+            "result_keys": sorted(result),
+            "after_page": after.page.value,
+        },
+    )
+
+
 def verify_march_page_open(before: WorldState, after: WorldState) -> VerificationResult:
     """Prove the resource-detail Gather control opened the march formation page.
     ``MARCH_PAGE_NOT_OPEN`` used to be one opaque reason covering two unrelated
