@@ -45,7 +45,10 @@ if str(ROOT) not in sys.path:
 MAX_ATTEMPTS = 6
 def attached_serials(adb: str) -> list[str]:
     """Which devices adb currently sees as usable."""
-    done = subprocess.run([adb, "devices"], capture_output=True, text=True, check=False)
+    from winter_agent_v2.winproc import hidden_kwargs
+
+    done = subprocess.run([adb, "devices"], capture_output=True, text=True, check=False,
+                          **hidden_kwargs())
     rows = [line.split() for line in done.stdout.splitlines()[1:]]
     return [row[0] for row in rows if len(row) >= 2 and row[1] == "device"]
 
@@ -84,6 +87,7 @@ def main(argv: list[str]) -> int:
     from winter_agent_v2.device_lease import DeviceLease
     from winter_agent_v2.ocr import OCRService, RapidOCRBackend
     from winter_agent_v2.runtime import LiveRuntime
+    from winter_agent_v2.winproc import hidden_kwargs
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     evidence = ROOT / "dataset" / "evidence" / f"tap_regular_event_tab_{stamp}"
@@ -112,16 +116,17 @@ def main(argv: list[str]) -> int:
             path = evidence / f"{tag}.png"
             with open(path, "wb") as handle:
                 subprocess.run([adb, "-s", serial, "exec-out", "screencap", "-p"],
-                               stdout=handle, check=False)
+                               stdout=handle, check=False, **hidden_kwargs())
             return path
 
         def tap(x: int, y: int) -> None:
             subprocess.run([adb, "-s", serial, "shell", "input", "tap", str(x), str(y)],
-                           check=False)
+                           check=False, **hidden_kwargs())
 
         def swipe(x1: int, y1: int, x2: int, y2: int) -> None:
             subprocess.run([adb, "-s", serial, "shell", "input", "swipe",
-                            str(x1), str(y1), str(x2), str(y2), "400"], check=False)
+                            str(x1), str(y1), str(x2), str(y2), "400"], check=False,
+                           **hidden_kwargs())
 
         towards_end = True
         previous_tabs: list[str] = []
