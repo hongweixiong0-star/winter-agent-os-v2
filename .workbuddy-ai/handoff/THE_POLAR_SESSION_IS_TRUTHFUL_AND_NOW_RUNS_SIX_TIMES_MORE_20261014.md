@@ -102,13 +102,31 @@ sink = choose_stamina_goal(current, 'AVAILABLE' if runnable_intel else 'NOT_AVAI
 （全部 206 次尝试 tab 都对 ⇒ 历史上 0 次）。所以这次改动**不给当前数据新增任何原因**，
 它的价值是：让下一次 tab 真的选错时能被记成路由失败，以及让这条搜索的结局从此可读。
 
-## 六、未做 / 下一件事
+## 六、这件事**本轮已经做了**（更正本文件上一版的"未做"）
+
+上一版这里写的是"没做，因为要动 schema、需单独审阅"。**本轮把它做了**（提交 `37d26b79`）。
+理由：`WB-1002-11` 就是对**同一个 dataclass** 单独加了一个字段（`recognition_error`），
+所以这在**项目自己的先例之内**；我原先的谨慎过了头。
+
+做法，以及那个差点写错的陷阱：
+
+- `learning.Episode` 加 `stamina_sink` / `stamina_sink_reason`（默认 `""`，纯增字段；
+  存储走 `asdict`，因此不需要改 writer）。
+- `runtime._stamina_route_reason(evidence)` 从**被选中的那个 goal** 的 evidence 读回。
+  **故意不写在 `_stamina_route` 方法里**：它有 **3 个调用点**，其中两个
+  （`runtime.py:1263`、`:2753`）在**遍历整个 goal 板** —— 写在方法内会盖上"循环里最后一个
+  goal"的值。那会往账本里写**错值**，比不写更糟。已在 `_sync_brain_goal` 按 goal 清一次、
+  在每步边界（与另外两个 recorder 并列）清一次。
+- 测试 `tests/test_the_stamina_route_records_its_own_choice.py`（**6 项**，含这个循环陷阱）。
+
+**证据等级：`UNIT_TEST_PASS`** —— 最低一级。字段的**真实取值只能在下次真机运行里看到**，
+而设备锁在 MANUAL。**这次提交让问题可被回答，不等于回答了它。**
+
+A/B：`tests/test_learning_loop_wiring.py` 的两处红是**既有的**，不是这次改的 ——
+把我的 `learning.py`+`runtime.py` 改动 stash 掉重跑，复现**完全相同**的
+`ProductionRuntimeWriteError`（`learning/ui_venus_online.jsonl` 未被 `_REDIRECTS` 覆盖），
+且恢复后 diff 统计一致。
+
+## 七、未做
 
 没有改会话的行为、没有动 pin、没有重开任何既有簇、没有改 `AVOID_STAMINA_WASTE` 的调度。
-
-**下一件事（最小、且能一次解开这一类问题）**：把 `_stamina_route` 的决策**落盘** ——
-把 `stamina_sink` 与 `stamina_sink_reason`（以及 `runnable_intel` 的判据）写进 episode。
-它与 `WB-1002-11` 给 recognition 加 `recognition_error` 是**同一个动作**：先让路由器会说话，
-再谈为什么选错。**本轮没有做**，因为它要动 episode 的 schema（不是只加一个 detail 字典），
-且改 schema 属于要被单独审阅的一类改动 —— 与 `verify_giant_beast_search` 那种"只加 evidence"
-不同。
