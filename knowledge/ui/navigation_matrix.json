@@ -3,11 +3,11 @@
   "generated_by": "tools/ui_navigation_matrix.py",
   "contract_file": "skill_factory.py",
   "counts": {
-    "skills": 152,
-    "schedulable": 140,
+    "skills": 153,
+    "schedulable": 141,
     "navigation_like_entries": 73,
     "schedulable_navigation_entries": 71,
-    "distinct_targets": 124,
+    "distinct_targets": 125,
     "semantics_with_templates": 293,
     "semantics_with_templates_and_no_skill": 217
   },
@@ -1680,6 +1680,17 @@
       "navigation_like": false
     },
     {
+      "skill": "SCROLL_QUICK_PANEL_BACK",
+      "source_page": "HOME",
+      "action": "SWIPE:QUICK_PANEL_SCROLL_BACK_CURRENT",
+      "target": "QUICK_PANEL_SCROLL_BACK_CURRENT",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_quick_panel_scrolled_back",
+      "visual_evidence": "SWIPE",
+      "navigation_like": false
+    },
+    {
       "skill": "SCROLL_QUICK_PANEL_TASKS",
       "source_page": "HOME",
       "action": "SWIPE:QUICK_PANEL_SCROLL_CURRENT",
@@ -1852,7 +1863,7 @@
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "verify_mail_report_tab_selected",
-      "visual_evidence": 1,
+      "visual_evidence": 2,
       "navigation_like": true
     },
     {
