@@ -25,16 +25,17 @@ from tools.audit_escalation_premises import audit
 
 
 def _created(key: str, *, condition: str, failure_type: str, goal: str,
-             recorded_at: str = "2026-10-01T00:00:00+00:00") -> dict:
+             recorded_at: str = "2026-10-01T00:00:00+00:00",
+             skill: str = "SKILL") -> dict:
     return {
         "event": "escalation_created", "key": key, "capability": "CAP",
-        "condition": condition, "failure_type": failure_type, "skill": "SKILL",
+        "condition": condition, "failure_type": failure_type, "skill": skill,
         "goal": goal, "recorded_at": recorded_at,
     }
 
 
-def _episode(goal: str, progress: bool, at: str) -> dict:
-    return {"goal_id": goal, "goal_progress": progress, "recorded_at": at}
+def _episode(goal: str, progress: bool, at: str, skill: str = "SKILL") -> dict:
+    return {"goal_id": goal, "goal_progress": progress, "recorded_at": at, "skill": skill}
 
 
 class EscalationPremiseAuditTest(unittest.TestCase):
@@ -112,6 +113,27 @@ class EscalationPremiseAuditTest(unittest.TestCase):
             episodes=[_episode("G", True, "2026-10-05T00:00:00+00:00")],
         )
         self.assertEqual(self._verdicts(root)["A"], "ADVANCED_BEFORE_FILING")
+
+    def test_a_claim_about_a_hop_that_never_runs_is_not_waiting_on_a_frame(self):
+        """``SKILL_NEVER_DISPATCHED`` is a stronger statement than "needs a frame".
+
+        Measured 2026-10-14, five of the seventeen pending records name a skill with
+        zero episodes in the whole stream.  A recognition claim about a hop nothing
+        dispatches is not waiting on a frame -- it is waiting on the hop existing, and
+        the two send a reader to different places.
+        """
+        root = self._root(
+            ledger=[
+                _created("B", condition="UNKNOWN_UI",
+                         failure_type="QUICK_PANEL_CITY_TAB_NOT_PROVEN", goal="G",
+                         skill="SELECT_QUICK_PANEL_CITY_TAB"),
+            ],
+            # The skill that ran is a different one, so the named hop has zero episodes.
+            episodes=[_episode("G", True, "2026-10-05T00:00:00+00:00", skill="OPEN_HOME")],
+        )
+        rows = audit(root)
+        self.assertEqual(rows[0]["premise"], "SKILL_NEVER_DISPATCHED")
+        self.assertEqual(rows[0]["skill_episodes"], 0)
 
     def test_settled_records_are_not_part_of_the_board(self):
         """A record a job already finished is not a gap the gate is waiting on.

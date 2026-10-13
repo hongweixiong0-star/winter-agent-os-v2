@@ -58,16 +58,17 @@ def _moment(value: object) -> datetime | None:
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
-def scan_stream(path: Path) -> tuple[dict[str, dict[str, object]], dict[str, int]]:
-    """``(progress_by_goal, episodes_by_failure_type)`` in one pass.
+def scan_stream(path: Path) -> tuple[dict[str, dict[str, object]], dict[str, int], dict[str, int]]:
+    """``(progress_by_goal, episodes_by_failure_type, episodes_by_skill)`` in one pass.
 
     Streamed, because the episode ledger is ~135 MB; a whole-file ``json.loads``
-    would put the peak in the hundreds of MB for no reason.  Both answers come from
-    the same scan because both are ranked decisions and splitting them across two
-    passes over a 135 MB file would be the expensive kind of tidy.
+    would put the peak in the hundreds of MB for no reason.  All three answers come
+    from the same scan because all three are ranked decisions and splitting them
+    across three passes over a 135 MB file would be the expensive kind of tidy.
     """
     progress: dict[str, dict[str, object]] = {}
     failures: dict[str, int] = {}
+    skills: dict[str, int] = {}
     with path.open(encoding="utf-8", errors="replace") as handle:
         for line in handle:
             line = line.strip()
@@ -82,6 +83,9 @@ def scan_stream(path: Path) -> tuple[dict[str, dict[str, object]], dict[str, int
             failure = str(episode.get("failure_type") or "")
             if failure:
                 failures[failure] = failures.get(failure, 0) + 1
+            skill = str(episode.get("skill") or "")
+            if skill:
+                skills[skill] = skills.get(skill, 0) + 1
             goal = str(episode.get("goal_id") or "")
             if not goal:
                 continue
@@ -92,13 +96,13 @@ def scan_stream(path: Path) -> tuple[dict[str, dict[str, object]], dict[str, int
                 at = _moment(episode.get("recorded_at"))
                 if at is not None and (row["last_advanced"] is None or at > row["last_advanced"]):  # type: ignore[operator]
                     row["last_advanced"] = at
-    return progress, failures
+    return progress, failures, skills
 
 
 def audit(root: Path) -> list[dict[str, object]]:
     ledger = EscalationLedger(root / "learning/workbuddy_escalations.jsonl")
     snapshot = fold(ledger.events())
-    progress, failures = scan_stream(root / "learning/episodes.jsonl")
+    progress, failures, skills = scan_stream(root / "learning/episodes.jsonl")
 
     rows: list[dict[str, object]] = []
     for record in snapshot.records.values():
@@ -124,6 +128,10 @@ def audit(root: Path) -> list[dict[str, object]]:
             # stream.  A record whose failure never recurred cannot be worth a
             # device slice however true its premise still is.
             "failure_episodes": failures.get(str(getattr(record, "failure_type", "")), 0),
+            # How often the skill the record names has run at all.  Zero is a
+            # stronger statement than "not yet re-observed": the claim cannot be
+            # tested against the stream because nothing reaches that code.
+            "skill_episodes": skills.get(str(getattr(record, "skill", "")), 0),
         }
         # The verdict.  Only a ``NO_GOAL_PROGRESS`` record claims "no part of it
         # advanced", so only that claim can be tested against goal progress.
@@ -135,7 +143,14 @@ def audit(root: Path) -> list[dict[str, object]]:
         # reason" mistake this project has already paid for once.  That claim needs a
         # frame, so it gets its own verdict rather than a borrowed one.
         if str(getattr(record, "failure_type", "")) != "NO_GOAL_PROGRESS":
-            row["premise"] = "RECOGNITION_CLAIM_NEEDS_A_FRAME"
+            # ...unless the named skill has never run, which is worth saying first:
+            # a recognition claim about a hop nothing dispatches is not waiting on a
+            # frame, it is waiting on the hop existing.  Measured 2026-10-14, five of
+            # the seventeen pending records name a skill with zero episodes.
+            row["premise"] = (
+                "SKILL_NEVER_DISPATCHED" if not row["skill_episodes"]
+                else "RECOGNITION_CLAIM_NEEDS_A_FRAME"
+            )
         elif seen is None:
             # A goal absent from the stream never ran -- a third answer, not a quiet "no".
             row["premise"] = "GOAL_NEVER_RAN"
@@ -173,19 +188,20 @@ def main() -> int:
         counts[str(row["premise"])] = counts.get(str(row["premise"]), 0) + 1
     print(f"  by premise              : {counts}")
     print()
-    print(f"  {'premise':<32} {'failure_type':<38} {'n_fail':>6} {'goal adv/n':<12} filed")
+    print(f"  {'premise':<30} {'skill':<38} {'n_fail':>6} {'skill_eps':>9} filed")
     for row in rows:
         print(
-            f"  {str(row['premise']):<32} {str(row['failure_type'] or '-'):<38} "
-            f"{row['failure_episodes']:>6} "
-            f"{str(row['episodes_advanced']) + '/' + str(row['episodes']):<12} "
+            f"  {str(row['premise']):<30} {str(row['skill'] or '-'):<38} "
+            f"{row['failure_episodes']:>6} {row['skill_episodes']:>9} "
             f"{str(row['filed'])[:10]}"
         )
     print()
-    print("  n_fail = how many production episodes carried this record's failure_type.")
-    print("           A *generic* type (SEMANTIC_TARGET_NOT_VERIFIED) is shared by many")
-    print("           skills, so for those rows read n_fail as an upper bound on this")
-    print("           record's own share, not as this record's count.")
+    print("  n_fail    = how many production episodes carried this record's failure_type.")
+    print("              A *generic* type (SEMANTIC_TARGET_NOT_VERIFIED) is shared by many")
+    print("              skills, so for those rows read n_fail as an upper bound on this")
+    print("              record's own share, not as this record's count.")
+    print("  skill_eps = how many production episodes ran the skill this record names.")
+    print("              Zero means the hop never runs, so the claim cannot be re-tested at all.")
     print()
     print("  FALSIFIED_SINCE_FILING         : the goal advanced after the record was filed, so")
     print("                                   'no part of it advanced' is no longer true of the client.")
@@ -194,6 +210,8 @@ def main() -> int:
     print("  ADVANCED_BEFORE_FILING         : advanced, but only before this record -- premise stands.")
     print("  RECOGNITION_CLAIM_NEEDS_A_FRAME: a *_NOT_PROVEN claim about what the client drew;")
     print("                                   progress cannot test it, only a frame can.")
+    print("  SKILL_NEVER_DISPATCHED         : the skill the record names has zero episodes in")
+    print("                                   the stream, so nothing reaches that claim at all.")
     return 0
 
 
