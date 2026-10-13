@@ -1435,6 +1435,14 @@ def verify_giant_beast_search(before: WorldState, after: WorldState) -> Verifica
     ``_recognition_error`` fixed one layer up, and ``tools/audit_escalation_premises``
     could not even reach it because the verifier said nothing.
 
+    Which half actually fired, stated so nobody reads this as bigger than it is: the
+    **evidence** half fired on all 164.  The **mislabelling** half is latent -- all
+    206 recorded attempts had ``before.resource_selected_tab == 'GIANT_BEAST'`` and
+    every failure ends on ``Page.MAP`` with ``resource_search_open`` still true, i.e.
+    the tab was always right and the client simply found no target.  So this change
+    adds no new reason to the current data; it stops a future wrong tab from being
+    counted as a result, and it makes the search's outcome legible at all.
+
     The split is by ``before`` because the two halves are facts about different
     frames: the selected tab belongs to the frame the tap started from, the target
     card to the frame it produced.  ``GIANT_BEAST_SEARCH_NOT_PROVEN`` keeps its name
