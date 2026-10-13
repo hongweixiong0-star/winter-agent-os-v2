@@ -226,6 +226,23 @@ def _recognition_error(router_error: Any, resolver_error: Any) -> str:
     return str(router_error or "") or str(resolver_error or "")
 
 
+def _stamina_route_reason(evidence: Any) -> tuple[str, str]:
+    """``(sink, why)`` the stamina route chose, read off the *selected* goal's evidence.
+
+    ``_stamina_route`` writes both onto the goal it decided for, so reading them back from
+    that goal's evidence is what makes the recorder unambiguous.  The method itself is
+    deliberately not the place to record: two of its three callers walk the whole goal
+    board, so a recorder inside it would stamp whichever goal happened to be last in the
+    loop rather than the one the step ran under.
+
+    ``("", "")`` when the goal carries no decision -- a step that is not on the stamina
+    route -- which is the honest "nothing was decided here", the same convention
+    ``recognition_error`` uses for an empty value.
+    """
+    data = evidence if isinstance(evidence, Mapping) else {}
+    return str(data.get("stamina_sink") or ""), str(data.get("stamina_sink_reason") or "")
+
+
 #: The one guard name that is a statement about the *question* rather than about the failure.
 #:
 #: ``_unknown_navigation_target`` answers it before it can ask anything: ``navigation`` is
@@ -1762,8 +1779,16 @@ class LiveRuntime:
             return
 
         route = route_for(best_goal.goal_id)
+        # Cleared for every goal, not only the stamina one: a step that is not on the
+        # stamina route must not inherit the previous step's sink.  Read back from the
+        # selected goal's own evidence, because two of ``_stamina_route``'s three callers
+        # walk the whole board and would otherwise leave the loop's last goal standing.
+        self._stamina_sink, self._stamina_sink_reason = "", ""
         if best_goal.goal_id == "AVOID_STAMINA_WASTE":
             route = self._stamina_route(best_goal, gate)
+            self._stamina_sink, self._stamina_sink_reason = _stamina_route_reason(
+                getattr(best_goal, "evidence", None)
+            )
 
         changed = (
             self.brain.current_goal != route
@@ -3274,6 +3299,13 @@ class LiveRuntime:
                 getattr(self, "_router_recognition_error", ""),
                 getattr(self, "_resolution_error", ""),
             ),
+            # Which stamina sink the route chose for this step, and why.  On the ledger's
+            # largest failure cluster this is the only record of *why* the step was on this
+            # hop at all: ``SUBMIT_GIANT_BEAST_SEARCH`` is reached only as the fallback after
+            # INTEL, so without these two fields "why GIANT_BEAST and not INTEL this time"
+            # cannot be asked of the data.  Empty on a step that is not stamina-routed.
+            stamina_sink=getattr(self, "_stamina_sink", ""),
+            stamina_sink_reason=getattr(self, "_stamina_sink_reason", ""),
         )
         try:
             self.episode_store.append(episode)
@@ -10423,9 +10455,11 @@ class LiveRuntime:
             )
             started_at = time.monotonic()
             # Fresh per step, so a later successful step can never inherit the previous step's
-            # refusal.  Both are recorders: they change no verdict and no returned point.
+            # refusal or its route choice.  All three are recorders: they change no verdict
+            # and no returned point.
             self._resolution_error = ""
             self._router_recognition_error = ""
+            self._stamina_sink, self._stamina_sink_reason = "", ""
             # ``decision`` was already made above and the backend router below
             # was built from it, so it is handed to the scheduler rather than
             # recomputed.  ``RuleBrain.decide`` mutates run-scoped state (the

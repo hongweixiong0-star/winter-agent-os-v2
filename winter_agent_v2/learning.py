@@ -83,6 +83,25 @@ class Episode:
     #:
     #: Empty means "nothing was refused" -- a step that resolved, or one that never asked.
     recognition_error: str = ""
+    #: Which stamina sink the route chose for this step, and why -- only meaningful on
+    #: an ``AVOID_STAMINA_WASTE`` step, empty otherwise.
+    #:
+    #: ``keep_marching``/``failure_type`` say *that* a step failed.  Measured 2026-10-14:
+    #: the ledger's largest failure cluster (``GIANT_BEAST_SEARCH_NOT_PROVEN``, 164 of 206
+    #: attempts) is produced by ``SUBMIT_GIANT_BEAST_SEARCH``, which
+    #: ``operations_policy.choose_stamina_goal`` reaches only as the FALLBACK after INTEL --
+    #: so the first question the cluster raises, "why GIANT_BEAST and not INTEL this time",
+    #: is a question about a *route decision* the episode did not record.
+    #: ``runtime._stamina_route`` already computes it and writes it into the goal's own
+    #: evidence (``stamina_sink``/``stamina_sink_reason``), where it never reached disk: the
+    #: field appears **0 times** in the whole stream.  The verifier learned to speak in
+    #: ``d3b41ce6``; this is the router learning to speak, one layer below it.
+    #:
+    #: Recorded from the *selected* goal's evidence only.  ``_stamina_route`` also has two
+    #: per-goal loop callers (``runtime.py`` where the board is re-ranked), and a recorder
+    #: inside the method would have stamped whichever goal happened to be last in the loop.
+    stamina_sink: str = ""
+    stamina_sink_reason: str = ""
     action_backend: str = ""
     executor_latency_ms: float | None = None
     # Which tree revision this run imported its code from.  Stamped per run, because
