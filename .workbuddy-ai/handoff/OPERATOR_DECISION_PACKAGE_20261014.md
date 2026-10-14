@@ -21,7 +21,7 @@
 | 项 | 内容 |
 |---|---|
 | **问题** | 是否把 `learning/MODE_STATE.json` 从 `MANUAL` 切回 `AUTO`（释放 `user_latch`）？ |
-| **证据** | `user_latch=true`，`started_at=2026-10-12T12:22:30Z`，`reason` 写明是操作员为"人工真机校准会话"让出设备。**一切真机验证**都卡在这；17 条待办里 6 条指名要一帧真机。 |
+| **证据** | `user_latch=true`，`started_at=2026-10-12T12:22:30Z`，`reason` 写明是操作员为"人工真机校准会话"让出设备。**一切真机验证**都卡在这；17 条待办里 6 条指名要一帧真机。**⚠️ 2026-10-14 复核补充：AUTO 线程本身也没在跑** —— `learning/runtime_snapshot.json` 实读 `runtime_thread_alive=False`、`scheduler_loop_alive=False`、`agent_state=IDLE`、最后 tick 停在切 MANUAL 的那一刻（`2026-10-12T12:21:24Z`）⇒ **只翻 `MODE_STATE` 不会恢复 AUTO，还要重新起面板/运行时**。见 `AUTO_IS_DOWN_THE_BEAR_PROVIDER_IS_INERT_AND_A_BUDGET_TEST_PINS_A_FICTION_20261014.md` §一。 |
 | **选项** | ① 现在解锁；② 等这次真机校准会话结束再解锁；③ 只在**一个受控窗口**内解锁（例如下一个巨熊窗口）。 |
 | **建议（非约束）** | 若近期目标就是「巨熊准时参战」，**③ 最省**：链路在代码里已齐（见 D-B 同源 handoff `THE_BEAR_CHAIN_IS_BUILT_AND_HAS_NEVER_RUN_20261014.md`），只差"活的窗口 × AUTO 同框"一次。 |
 | **不决定的代价** | 主路线**冻结**：所有"下一步"都退化成设备侧，离线只能做诊断，不能产生 LIVE 证据。 |
@@ -105,7 +105,7 @@
 | ~~D-G~~ | ~~`pages.json` 与 `Page` 的 **15 名分歧**~~ → **✅ 2026-10-14 已复核，见 §四·补** | — |
 | ~~D-H~~ | ~~**90 个候选无试跑路径**~~ → **✅ 2026-10-14 已复核（逐字复现），见 §四·补²** | — |
 | D-I | 设备上**第二个自动化**的处置 | `03_NEXT_ACTION.md:47`、`10_LAST_HANDOFF.md:228` |
-| **D-K**（新） | **`BEAR_AUTO_JOIN` 不在可派发集**：巨熊链**是否必须切**这个开关？（未定论，见 §四·补²） | 本文件 §四·补² |
+| ~~D-K~~（新） | ~~**`BEAR_AUTO_JOIN` 不在可派发集**~~ → **✅ 2026-10-14 已答：链不需要它，不是阻塞点**（见 §四·补³） | — |
 
 ### §四·补 · D-G 已复核（2026-10-14）
 
@@ -142,6 +142,32 @@
 - 池里**冻结的变成两个**：`RESEARCH: 566` 与 **`OPEN_QUICK_PANEL: 12`**（§12.5 只点了前者），
   两者都在"12 eligible"名单里 ⇒ §12.5 点名的"blocked candidate is invisible"**仍活**。
 见 `THE_NINETY_BLOCKED_CANDIDATES_REPRODUCE_AND_TWO_FREEZE_20261014.md`。
+
+### §四·补³ · D-K 已答（2026-10-14）：巨熊链**不需要** `BEAR_AUTO_JOIN`
+
+**答案：不是阻塞点。** `PARTICIPATE_BEAR` 的路由用
+`BEAR_SKILLS = {START_RALLY, JOIN_RALLY, OPEN_BEAR_RALLY_LIST}`（三个都已在
+`LiveRuntime.VERIFIED_ATOMIC`），**不含** `BEAR_AUTO_JOIN`。自动加入只是 playbook 的一条
+**策略分支**（"auto_join_on → 先观察、JOINED 直接 PASS"）；读不到它只意味着**少一条快路**，
+链仍走 LIST_DYNAMIC 手工加入。
+
+**顺带查实**：`ALLIANCE_TIMED_EVENTS` provider 的 `READY` 分支**不可达且惰性** ——
+它要的 `auto_join_enabled` / `joinable_rally_count` **生产里零写入**
+（前者只有测试造过，后者全仓无键位写入），而 `provider_state` **全仓零消费者**、控制台也不显示；
+可用的读取器却在闲置（`rally.RallyListReading.joinable_bears()`、`bear_state.read_state_from_image()`）。
+⇒ **没有接线**：接上去的产物无人消费 = churn；要让计数有意义，先得给它一个**真消费者**（设计决定）。
+见 `AUTO_IS_DOWN_THE_BEAR_PROVIDER_IS_INERT_AND_A_BUDGET_TEST_PINS_A_FICTION_20261014.md` §二。
+
+### §四·补⁴ · D-D 补充（2026-10-14）：预算有**第二个**生产读者，且测试钉了**虚构**
+
+- **更正**：`max_bootstrap_visits_per_run` **不是"只有一个调用方"** ——
+  `runtime.py:2245-2255` 的 `_learning_window_open` **也读它**，而且**它同样读到 0**
+  （`_bootstrap_state()` 丢掉 `__run__`）⇒ 每进程第一次调用**恒 True**。
+  上一轮结论（"真正的界是 `_learning_window_used`"）**对**，但读数**不完**。
+- **假信心**：`tests/test_learning_window.py:56` 用 `_Harness`，而它的 `_bootstrap_state()`
+  **只是 `return self._state`**、**绕过**真实过滤器 ⇒ 该测试断言的"预算拒绝"**生产里不可能发生**
+  （生产 `visits` 恒 0）。改它触及"预算该不该咬合"这个**设计决定** ⇒ 本轮**未改**。
+- ⇒ D-D 的处置因此**多一层**：删死支（①）会**碰红**那个测试 ⇒ 必须先决定预算的去留。
 
 ---
 
