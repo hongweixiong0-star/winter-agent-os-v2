@@ -6,31 +6,32 @@
 
 ## 手写：**2026-10-14 状态 —— 先读这一节**
 
-- **`check_mainline.py` = `MAINLINE_OK`**；pin HEAD == manifest == 镜像 `main`；
-  `launch_pinned_production.py --check-only` → `WORKTREE_CLEAN=true`；公开镜像**已推送、`in_sync`**。
-- **设备仍在 MANUAL**（`learning/MODE_STATE.json` 的 `user_latch=true`，2026-10-12 起）
-  ⇒ **一切真机相关的下一步都还卡在这里，只有操作者能解除**。
-- **预载闸门被 17 条记录关着**（`reason=REAL_GAP_WAITING`）。闸门是**零容忍**的
-  （`capability_bootstrap.py:1133`：`pending_records > 0` 即不派单）。实测这 17 条里
-  **11 条无法靠"再跑一次"消掉**（6 条前提已被生产数据证伪、3 条点名的技能全流 0 次、
-  2 条 goal 从未跑）。**退役它们需要给台账加一个诚实的词** —— 现有 8 个 outcome 没有一个能表达
-  "前提已不成立、且没有任何 job 跑过"，而"机制上可以、词表上不诚实"是**操作者的决定**。
-  见 `THE_PRELOAD_ROUTE_IS_STRUCTURALLY_STUCK_20261014.md` 与
-  `RETIRING_A_STALE_RECORD_NEEDS_THE_OPERATORS_WORD_20261014.md`。
-- **头号任务（巨熊准时参战）**：**链路在代码里是齐的** —— 窗口内读数（`remaining_seconds`）、
-  相位（`bear_phase`）、"印出预约减客户端自己的钟"的唤醒、目标生成（`goal_library`）四段都复核过，
-  其中三段是**实测**；而 `PARTICIPATE_BEAR` 至今 **0 次**（10436 条流）⇒
-  **阻塞是"活的窗口与 AUTO 从来没有同时出现过"，不是能力缺口**。
-  见 `THE_BEAR_CHAIN_IS_BUILT_AND_HAS_NEVER_RUN_20261014.md`。
-- 📌 **待操作者裁决的决定已收进一页**：`OPERATOR_DECISION_PACKAGE_20261014.md`
-  （此前散在六份 handoff 里）。最省的一条路是 **D-A 解锁设备 ＋ D-B 加退役词** 一起下
-  ⇒ 主路线的两个堵点同时解除。**闸门是零容忍的 ⇒ 单退役 11 条不打开闸门**（还剩 6 条要真机）。
-- 🧹 **收尾必须 `cp` 到 pin 树并提交 `.workbuddy-ai/memory/`**：会话写在**数据根**、提交只能在
-  **pin 树** —— 这条不对称已让长期记忆**攒了 8 天没提交**（+10,293 行，10-14 才补入库 `80172006`）。
-  且**数据根不是它自己 HEAD 的检出**（`tests/` 曾少 192 条，已修）：`check_mainline.py` 与
-  `WORKTREE_CLEAN` **只看 pin 树**，数据根**完全在盲区**。见
-  `THE_DATA_ROOT_HOLDS_UNCOMMITTED_LONG_TERM_MEMORY_20261014.md` 与
-  `THE_DATA_ROOT_IS_NOT_A_CHECKOUT_OF_ITS_OWN_HEAD_20261014.md`。
+- **`check_mainline.py` = `MAINLINE_OK`**（pin==manifest==镜像）；`--check-only` → `WORKTREE_CLEAN=true`。
+  ⚠️ **推送常被网络挡住**（GitHub TLS 握手失败，记 `GIT_SYNC_PENDING`）——**本地提交是安全的**，
+  网络恢复后 `tools/git_sync.py push` 即补上；**别把"推不上"当成工作没做**。
+- 🔴 **AUTO 循环根本没在跑**：`learning/runtime_snapshot.json` 实读 `runtime_thread_alive=False`、
+  `scheduler_loop_alive=False`、`agent_state=IDLE`、最后 tick 停在切 MANUAL 那刻。
+  **面板 / 模拟器 / adb 都活着**（`pythonw`×3、`MuMuVMMHeadless`、5037 LISTENING）。
+  **恢复三步**：① 放 latch / 切回 AUTO（让 `machine_is_ours` 为真）→
+  ② **总览页点「开始自动运行」**（`control_panel.py:6015` 的 `self.start`）→
+  ③ **验收看 `runtime_thread_alive` 与 `scheduler_loop_alive` 都变 true** ——**不是**看 `mode==AUTO`
+  （面板 docstring 自己就警告过这个混淆）。见
+  `AUTO_IS_DOWN_THE_BEAR_PROVIDER_IS_INERT_AND_A_BUDGET_TEST_PINS_A_FICTION_20261014.md`。
+- **设备仍 MANUAL**（`learning/MODE_STATE.json` 的 `user_latch=true`，2026-10-12 起，
+  理由写明由操作者校准后切回）⇒ **一切真机相关的下一步都卡在这里**。
+- ⚠️ **结构事实（新，别再踩）**：pin 树里 **`knowledge` / `learning` / `dataset` / `config` 四个是指向数据根的
+  NTFS junction（同一份内容、两个路径）**；其余（`winter_agent_v2`/`tests`/`tools`/`docs`/`.workbuddy*`）才是**独立副本**。
+  ⇒ **对那四个别做 `git checkout --` / `git restore`**（会改共享运行态，两树同时受影响）；
+  也**别**再把它们的 diff 当"两棵树的漂移"分析。见 `THE_FOUR_DATA_DIRS_ARE_JUNCTIONS_NOT_TWO_COPIES_20261014.md`。
+- 🧹 **收尾（只对真实目录才需要）**：`cp` 到 pin 树提交 **`.workbuddy-ai/memory/` 与 `.workbuddy/memory/`**
+  —— 数据根写、pin 树提交的不对称已让它们**攒了 8~10 天**（10-14 才补入库 `80172006`/`b01da4ca`）→
+  `repin` → 镜像 `git merge --ff-only` → `check_mainline`。
+- **预载闸门被 17 条记录关着**（零容忍：`capability_bootstrap.py:1133`）；**11 条无法靠重跑消掉**
+  （6 条前提已被证伪、3 条技能 0 次、2 条 goal 从未跑）；退役需给台账加**诚实的词**，
+  且**必要不充分**（还剩 6 条要真机）。见 `THE_PRELOAD_ROUTE_IS_STRUCTURALLY_STUCK_20261014.md`。
+- **头号任务（巨熊准时参战）**：链路**代码齐 + 6 个测试**；`PARTICIPATE_BEAR` 至今 **0 次**
+  ⇒ 阻塞是"**活的窗口 × AUTO 从未同框**"。**D-K 已答**：链**不需要** `BEAR_AUTO_JOIN`。
+- 📌 **待裁决的决定收在一页**：`OPERATOR_DECISION_PACKAGE_20261014.md`；最省是 **D-A ＋ D-B** 一起下。
 - ⚠️ **读下面 2026-10-11 那两段时先对照本节**：其中的"**未 push**"、"**`crashes/` 不存在**"、
   "**RR-001 最该先看**"三处**都已过时**（镜像已同步；`crashes/` 现有 52 个现场；RR-001 已修）。
 
