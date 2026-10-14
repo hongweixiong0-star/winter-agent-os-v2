@@ -21,7 +21,7 @@
 | 项 | 内容 |
 |---|---|
 | **问题** | 是否把 `learning/MODE_STATE.json` 从 `MANUAL` 切回 `AUTO`（释放 `user_latch`）？ |
-| **证据** | `user_latch=true`，`started_at=2026-10-12T12:22:30Z`，`reason` 写明是操作员为"人工真机校准会话"让出设备。**一切真机验证**都卡在这；17 条待办里 6 条指名要一帧真机。**⚠️ 2026-10-14 复核补充：AUTO 线程本身也没在跑** —— `learning/runtime_snapshot.json` 实读 `runtime_thread_alive=False`、`scheduler_loop_alive=False`、`agent_state=IDLE`、最后 tick 停在切 MANUAL 的那一刻（`2026-10-12T12:21:24Z`）⇒ **只翻 `MODE_STATE` 不会恢复 AUTO，还要重新起面板/运行时**。见 `AUTO_IS_DOWN_THE_BEAR_PROVIDER_IS_INERT_AND_A_BUDGET_TEST_PINS_A_FICTION_20261014.md` §一。 |
+| **证据** | `user_latch=true`，`started_at=2026-10-12T12:22:30Z`，`reason` 写明是操作员为"人工真机校准会话"让出设备。**一切真机验证**都卡在这；17 条待办里 6 条指名要一帧真机。**⚠️ 2026-10-14 复核补充：AUTO 线程本身也没在跑** —— `learning/runtime_snapshot.json` 实读 `runtime_thread_alive=False`、`scheduler_loop_alive=False`、`agent_state=IDLE`、最后 tick 停在切 MANUAL 的那一刻（`2026-10-12T12:21:24Z`）。**面板 / 模拟器 / adb 都活着**（`pythonw`×3、`MuMuVMMHeadless`、5037 LISTENING）⇒ **只翻 `MODE_STATE` 不会恢复 AUTO**（mode 只管权限）；缺的是**总览页点「开始自动运行」**（`control_panel.py:6015`）；**验收看 `runtime_thread_alive` 与 `scheduler_loop_alive` 都变 true**（不是看 mode==AUTO）。见 `AUTO_IS_DOWN_THE_BEAR_PROVIDER_IS_INERT_AND_A_BUDGET_TEST_PINS_A_FICTION_20261014.md` §一。 |
 | **选项** | ① 现在解锁；② 等这次真机校准会话结束再解锁；③ 只在**一个受控窗口**内解锁（例如下一个巨熊窗口）。 |
 | **建议（非约束）** | 若近期目标就是「巨熊准时参战」，**③ 最省**：链路在代码里已齐（见 D-B 同源 handoff `THE_BEAR_CHAIN_IS_BUILT_AND_HAS_NEVER_RUN_20261014.md`），只差"活的窗口 × AUTO 同框"一次。 |
 | **不决定的代价** | 主路线**冻结**：所有"下一步"都退化成设备侧，离线只能做诊断，不能产生 LIVE 证据。 |

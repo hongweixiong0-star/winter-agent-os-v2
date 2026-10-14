@@ -24,7 +24,34 @@ last_action_time     = '2026-10-11T09:28:54Z'
 还要**重新起面板/运行时**。本文件把这条写成事实，免得下一个人只翻模式就以为恢复了。
 
 （也正因为如此，本轮**没有**去翻 `MODE_STATE`：翻它既违反操作者自己写的"校准完成后由用户切回"，
-又**事实上无效** —— 没有线程。）
+又**不足以恢复 AUTO**。）
+
+### 一·补：**恢复 AUTO 的准确步骤**（本轮补测，更正上一版的措辞）
+
+上一版写"还要**重起面板/运行时**"——**方向对，措辞不准**。2026-10-14 12:5x 补测：
+
+| 组件 | 实测 |
+|---|---|
+| 面板进程 | **在跑**（`pythonw` ×3，最老 start `2026-10-12 20:56`）|
+| 模拟器 | **在跑**（`MuMuVMMHeadless` ×1）|
+| ADB | **在跑**（5037 LISTENING，pid 1776）|
+| AUTO 循环 | **停着**（`runtime_thread_alive=False` / `scheduler_loop_alive=False`）|
+
+而 `MODE_STATE` **只管权限、不管循环存活** —— 面板自己的 docstring 就是这么写的：
+> "机器状态 already carries the loop's real liveness, so the headline must not imply
+> 'running' purely from the mode … the record said AUTO while the panel had been down 53 minutes."
+
+**循环的启动入口是一个显式按钮**：`tools/control_panel.py:6015`
+`ttk.Button(controls, text="开始自动运行", command=self.start)`（总览页，`03_NEXT_ACTION.md` 也提过
+"AUTO 面板进程仍是停止状态，需显式启动"）。
+
+⇒ **准确的恢复步骤**（三步）：
+1. **模式**：操作者把 latch 放掉（或面板切回 AUTO）——这让 `machine_is_ours` 为真；
+2. **启动循环**：在面板总览页点 **「开始自动运行」**（`self.start`）——这一步才是恢复 AUTO；
+3. **验收**：`learning/runtime_snapshot.json` 的 **`runtime_thread_alive` 与 `scheduler_loop_alive` 都变 true**
+   （这才是"在跑"的判据；**不要**拿 mode==AUTO 当运行证明 —— 那正是上面那段 §9 谎话）。
+
+**所以面板本身不用重起**（它活着）；缺的是第 2 步那个显式启动。
 
 ## 二、巨熊就绪 provider 的 `READY` 分支：**不可达，而且惰性 ⇒ D-K 有答案了**
 
