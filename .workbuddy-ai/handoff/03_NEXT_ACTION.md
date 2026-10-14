@@ -9,6 +9,12 @@
 - **`check_mainline.py` = `MAINLINE_OK`**（pin==manifest==镜像）；`--check-only` → `WORKTREE_CLEAN=true`。
   ⚠️ **推送常被网络挡住**（GitHub TLS 握手失败，记 `GIT_SYNC_PENDING`）——**本地提交是安全的**，
   网络恢复后 `tools/git_sync.py push` 即补上；**别把"推不上"当成工作没做**。
+- 🔴 **全量测试是红的**（**这是本会话最大的发现**）：`301 failed / 29 errors / 5401 passed`——
+  **此前因为"全量跑不出汇总行"而完全看不见**。分布 **60+ 文件、无单文件主导**；
+  **两类成因并存**：① **真失败**（单独跑也红，如 `test_live_runtime.py` 12 红）＋
+  ② **order/状态依赖**（如 `test_suite_isolation.py` 单独 18 绿、全量 3 红）。
+  29 个 error 的机制已定位（`_REDIRECTS` 未覆盖内联路径）。**先修那 29 个，再分组归因 299。**
+  见 `THE_FULL_SUITE_IS_RED_AND_WHY_20261014.md`（含"给下一个人的最短路径"）。
 - 🔴 **AUTO 循环根本没在跑**：`learning/runtime_snapshot.json` 实读 `runtime_thread_alive=False`、
   `scheduler_loop_alive=False`、`agent_state=IDLE`、最后 tick 停在切 MANUAL 那刻。
   **面板 / 模拟器 / adb 都活着**（`pythonw`×3、`MuMuVMMHeadless`、5037 LISTENING）。

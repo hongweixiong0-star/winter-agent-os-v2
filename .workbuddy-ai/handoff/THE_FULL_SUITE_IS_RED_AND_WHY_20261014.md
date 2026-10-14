@@ -184,6 +184,52 @@ FileNotFoundError: ...\Temp\tmp068y_s2a\action_latency.jsonl
 
 **未做**：**没改任何代码/测试**；全量仍在跑（**85%**，228 F 时）。
 
+### 三·补⁵：全量结束 —— **301 failed / 29 errors**，分布**广而长尾**，且**有 order 依赖**（终稿）
+
+重跑结束（27:12）：`301 failed, 5401 passed, 71 skipped, 29 errors, 1013 subtests passed`。
+（与首轮 `299 failed` 差 **2 个** ⇒ **有轻微 flaky**。）
+
+**失败按文件分布（前 10，全表 60+ 个文件）**：
+
+```
+26 test_unknown_ai_channel        14 test_ui_collection         14 test_session_outcome_persistence
+12 test_live_runtime              11 test_unknown_page_exploration  11 test_refusal_yields_the_cycle
+10 test_capability_gate            9 test_quick_panel_handle     9 test_interactive_unknown_element
+ 7 test_runtime_bootstrap_integration  6 test_reward_popup_source  6 test_camp_fight_refusal_recovery …
+```
+
+⇒ **没有任何单文件占主导**（最大 26/299 ≈ 9%）⇒ 是**广谱**的，不是"几个文件坏了"。
+
+**⭐ 新证据：存在 order/状态依赖的失败。**
+`tests/test_suite_isolation.py`（就是那个断言"测试不许写活运行态"的**自检**）
+**单独跑 = 18 passed**，但在**全量里 3 个 FAILED** ⇒
+**有测试把全局状态泄漏给后面的测试**，被泄漏者才失败。
+
+**与上一条并列的**：`tests/test_live_runtime.py` **单独跑也 12 failed** ⇒ **既有"单独就跑不过"的真失败，也有"只在全量里才失败"的 order 依赖**。**两类并存。**
+
+## 四·终：能说 / 不能说（把话说满，但不越界）
+
+- **能说**：① 全量 **301 failed / 29 errors / 5401 passed**（此前**看不到**）；
+  ② 分布**广、长尾、无单文件主导**；
+  ③ 成因**异质且两类并存**：**真失败**（`test_live_runtime` 单独也红：计数器、`IndexError`、
+  缺 `episodes.jsonl`/`action_latency.jsonl`）**＋ order 依赖**（`test_suite_isolation` 单独绿、全量红）；
+  ④ **一个已定位的具体机制**：`HUD_STAMINA_ROI` 那个 54×24 小裁片，生产 OCR **读出 0 个 token**，
+  放大 6× 才读出（§三·补³）；⑤ 29 个 error 的机制是"内联路径未被 `_REDIRECTS` 覆盖"（§二）。
+- **不能说**：299/301 里**各成因的占比**（要逐类分组 + traceback，**本轮没做完**）；
+  也**不能说"生产代码坏了"**（有相当一部分是**测试侧**的 order/隔离问题）。**两者都还是开放的。**
+
+## 五·给下一个人的最短路径（**未做**）
+
+1. **先把 29 个 error 修掉**（机制已定位、改动小、只在测试期生效）——见 §二。
+2. **再分失败**：按 `--tb=line` 的**首行类型**分组（`AssertionError` / `IndexError` / `FileNotFoundError` / …），
+   每组抽 2~3 条带 traceback 复现；
+3. **单独跑每个"只在全量红"的文件**（如 `test_suite_isolation.py`）验证 order 依赖，
+   用 `-p no:randomly`（本来就没装）或二分法找**污染者**；
+4. **HUD ROI 那条**（§三·补³）单独跟：它是"读不出"，且**要真机**才能定 ROI 该是多少。
+
+**方法论教训（本会话最大的一个）**：**"全量跑不出汇总行"这件事本身，藏了 300 个红。**
+一个"看不见"的度量，比一个"红着但看得见"的度量危险得多。
+
 ### 三·补：重跑进行中的**实时进度**（已有证据）
 
 后台重跑用 `-q`（一测一字符）。跑到 **~26%** 时读了一次输出：
