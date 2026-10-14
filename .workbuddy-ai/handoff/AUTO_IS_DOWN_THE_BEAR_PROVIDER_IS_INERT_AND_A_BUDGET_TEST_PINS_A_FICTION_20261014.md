@@ -58,6 +58,33 @@ last_action_time     = '2026-10-11T09:28:54Z'
 ⇒ 它**只负责启动面板**，**不带**"起 AUTO"这个动作；而面板**已经在跑** ⇒
 **真正要做的只有那一次界面点击**（或以后给面板加一个 CLI 入口 —— 那才是可自动化的路）。
 
+### 一·补² · 让"起 AUTO"**可脚本化** —— 提案（**本轮没做**）
+
+**为什么值得做**：AUTO 一旦意外停掉，**只有人去点那个按钮**才能恢复 —— 这挡住了"长期无人值守"本身。
+
+**机制已查清**（读 `winter_agent_v2/runtime_reload.py` 的 docstring）：
+> AUTO 的**每个 cycle 都是一个全新的子进程** —— 面板用
+> `self.repeat_after_id = self.root.after(5000, self.start)` **每 5 秒重新拉起 `tools/run_live.py`**。
+
+⇒ 所以 `self.start`（按钮 `command=self.start`）**调用一次就会自我续排**；要"起 AUTO"只需**触发一次 `self.start`**。
+
+**项目里已有现成的文件式请求机制可扩展**（不要另造第二套）：
+`winter_agent_v2/runtime_reload.py` 的 `ReloadSignal`：`REQUEST_KIND = "RUNTIME_RELOAD_REQUIRED"`、
+`request(job_id, reason, evidence)` / `pending()` / `clear(reason)`，面板在 tick 里消费（`control_panel.py:8211-8320`）。
+
+**两条候选形状**（都属设计决定，未实施）：
+1. **加一个请求 kind**（例 `AUTO_START_REQUESTED`）到同一套 `ReloadSignal` 模式，面板 tick 读到就调一次 `self.start()`；
+   —— 优点是**复用单一真值**（§三·八 第十四条），缺点是面板 tick 里多一个消费者。
+2. **给启动器加开关**（例 `launch_pinned_production.py --start`），把它透传给面板，面板起来后自动调一次 `self.start()`；
+   —— 优点是改动面更小，缺点是**只在面板启动时有效**（不能给"已经跑着的面板"下命令）。
+
+**可验证性（关键）**：这条改动**可以真机验证而无需"放行设备"** —— 因为
+**mode 门只管动作、不管循环存活**；实施后重启面板、写一次请求，
+**看 `runtime_snapshot.json` 的 `runtime_thread_alive` / `scheduler_loop_alive` 是否变 true** 即可。
+
+**本轮没做的理由**（明确）：它要**重启面板**（一次生产操作）并**在你机器上拉起 AUTO 进程**，
+而这正是操作者手动 latch 想独占的东西 ⇒ **属你的决定**，不是我在离线里能替你按的键。
+
 ## 二、巨熊就绪 provider 的 `READY` 分支：**不可达，而且惰性 ⇒ D-K 有答案了**
 
 **两个operand 在生产里都没人写**（全仓实读）：
