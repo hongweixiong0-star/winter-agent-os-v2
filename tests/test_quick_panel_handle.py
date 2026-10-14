@@ -18,6 +18,8 @@ from __future__ import annotations
 
 import sys
 import unittest
+
+import pytest  # noqa: E402
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -90,6 +92,24 @@ def _skip_without(*labels: str):
 #: smaller than the device -- so it is also the cross-check that the shape, not the scale, is what
 #: the locator reads.
 OPERATOR_FRAME = ROOT / "dataset/raw/reference/quick_panel_handle_collapsed_20260922.jpg"
+
+# Every frame above is resolved by ``_fixture`` globbing ``dataset/raw/**``, which retention
+# rotates: a missing frame makes ``_fixture`` return ``None`` (correctly) and the tests then call
+# ``.seek()`` on it, so they failed with ``AttributeError: 'NoneType' object has no attribute
+# 'seek'`` -- a missing fixture wearing an attribute error's clothes.  Measured 2026-10-15.  The
+# guard keys on the resolved constants rather than on paths, because the glob is what decides.
+_MISSING_FIXTURES = tuple(
+    name for name, value in (
+        ("COLLAPSED_FRAME", COLLAPSED_FRAME),
+        ("COLLAPSED_MAP_FRAME", COLLAPSED_MAP_FRAME),
+        ("EXPANDED_FRAME", EXPANDED_FRAME),
+        ("NO_HANDLE_FRAME", NO_HANDLE_FRAME),
+    ) if value is None
+)
+pytestmark = pytest.mark.skipif(
+    bool(_MISSING_FIXTURES),
+    reason=f"missing fixture(s) {_MISSING_FIXTURES} (retention rotated dataset/raw)",
+)
 
 
 def _runtime(*, goal="KEEP_TRAINING_PRODUCTIVE", goal_id="", ocr=None):
