@@ -84,6 +84,28 @@ if (
 **判断法与 `test_reward_claim_verifier` 那次同源**：先看代码的 reason/注释，
 代码常已写明"这是故意的 + 为什么"，然后回去看**测试缺了哪个前置**。
 
+### 已补完（同轮后续）：**门其实都过了** ⇒ 病因在更早的分支或分支顺序
+
+读全之后，该分支是：
+
+```python
+if world.page is Page.MAP:                 # ← 嵌在 "page is MAP" 里
+    if (
+        self.claim_free_stamina            # 默认 False（brain.py:116）…
+        and self.current_goal != "SPEND_STAMINA"
+        and not self.stamina_panel_checked
+        and not world.resource_search_open
+        and self._supply_may_be_due()      # 未知即"到期"
+    ):
+```
+
+而测试侧：`page=Page.MAP`（:87）、`kwargs.setdefault("claim_free_stamina", True)`（:109）、
+`RuleBrain(current_goal="INTEL", claim_free_stamina=True)`（:154）——**门都满足**。
+
+⇒ **所以病因不在这个分支的前置**，而在**更早的分支**或**分支顺序**（某个更早的 `if` 先把它截走了，
+那条路最终走到 `OPEN_HOME`）。**⇒ 新接力点：从 `decide()` 的入口往下读，
+看 MAP 页上有哪些分支排在 `world.page is Page.MAP` 这个块**之前**，哪一条会产出 `OPEN_HOME`。**
+
 ---
 
 ## 三、判断"大脑选了别的技能"这类的方法（这是剩余工作的主要动作）
