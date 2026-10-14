@@ -28,6 +28,8 @@ import sys
 import tempfile
 import time
 import unittest
+
+import pytest  # noqa: E402
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -45,6 +47,15 @@ from winter_agent_v2.skills import v2_registry  # noqa: E402
 UNKNOWN_FRAME = ROOT / (
     "dataset/raw/control_panel/runtime_auto/20260922_125214_770769/"
     "20260922_125214_770769_step_001_after_refresh_2_20260922T045309420387.png"
+)
+
+# The frame this file reads lives under ``dataset/raw/**``, which retention rotates (measured
+# 2026-10-15: it is gone); the reader returns None for a frame it cannot open, so the tests failed
+# with ``NoneType`` attribute errors rather than a FileNotFoundError.  A module-level skip is the
+# honest state until it can be re-captured on a live device.
+pytestmark = pytest.mark.skipif(
+    not (UNKNOWN_FRAME.is_file() and SILENT_UNKNOWN_FRAME.is_file()),
+    reason=f"missing fixture {UNKNOWN_FRAME} (retention rotated dataset/raw)",
 )
 
 #: The other real unnamed screen (the battle overlay): OCR reads 对战 / 自动 / X2 and none of them is
