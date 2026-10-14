@@ -25,6 +25,12 @@
 - 📌 **待操作者裁决的决定已收进一页**：`OPERATOR_DECISION_PACKAGE_20261014.md`
   （此前散在六份 handoff 里）。最省的一条路是 **D-A 解锁设备 ＋ D-B 加退役词** 一起下
   ⇒ 主路线的两个堵点同时解除。**闸门是零容忍的 ⇒ 单退役 11 条不打开闸门**（还剩 6 条要真机）。
+- 🧹 **收尾必须 `cp` 到 pin 树并提交 `.workbuddy-ai/memory/`**：会话写在**数据根**、提交只能在
+  **pin 树** —— 这条不对称已让长期记忆**攒了 8 天没提交**（+10,293 行，10-14 才补入库 `80172006`）。
+  且**数据根不是它自己 HEAD 的检出**（`tests/` 曾少 192 条，已修）：`check_mainline.py` 与
+  `WORKTREE_CLEAN` **只看 pin 树**，数据根**完全在盲区**。见
+  `THE_DATA_ROOT_HOLDS_UNCOMMITTED_LONG_TERM_MEMORY_20261014.md` 与
+  `THE_DATA_ROOT_IS_NOT_A_CHECKOUT_OF_ITS_OWN_HEAD_20261014.md`。
 - ⚠️ **读下面 2026-10-11 那两段时先对照本节**：其中的"**未 push**"、"**`crashes/` 不存在**"、
   "**RR-001 最该先看**"三处**都已过时**（镜像已同步；`crashes/` 现有 52 个现场；RR-001 已修）。
 
