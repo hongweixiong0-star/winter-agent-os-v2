@@ -54,6 +54,38 @@ return Decision("OPEN_MAIL", "mail_entry_has_a_badge", world.confidence, "mail_p
 
 ---
 
+## 二·补²：第二个已追到**一半**的样例（2026-10-15）—— 卡在我上下文耗尽，接力点写清楚
+
+`test_stamina_check_without_a_read.py:163`（`test_the_gauge_is_tapped_when_the_number_was_not_read`）：
+
+```
+AssertionError: 'OPEN_HOME' != 'OPEN_STAMINA_SOURCES'
+```
+
+大脑的对应分支在 `brain.py:2881–2893`，产出 `OPEN_STAMINA_SOURCES` 需要**同时**满足：
+
+```python
+if (
+        …（**2881 行往上还有若干条我没读到**）…
+        and self.current_goal != "SPEND_STAMINA"
+        and not self.stamina_panel_checked
+        and not world.resource_search_open
+        and self._supply_may_be_due()
+):
+    self.stamina_panel_checked = True
+    return Decision("OPEN_STAMINA_SOURCES", "free_stamina_gift_not_yet_checked_this_run", …)
+```
+
+**已排除的一条**：`_supply_may_be_due()` —— 它的 docstring 明写
+"**Unknown is always due**（未知时钟一律算可能到了；这是优化，未知时钟不能用来跳过礼物）"。⇒ 不是它。
+
+**⇒ 接力点**：读 `brain.py` **2881 行往上那几条 `if (` 条件**，以及**该分支是否嵌在 `world.page is Page.MAP` 里**
+（若嵌着，而测试的 `WorldState` 不在 MAP，就会落到 `OPEN_HOME` —— `OPEN_HOME` 正是"回首页"）。
+**判断法与 `test_reward_claim_verifier` 那次同源**：先看代码的 reason/注释，
+代码常已写明"这是故意的 + 为什么"，然后回去看**测试缺了哪个前置**。
+
+---
+
 ## 三、判断"大脑选了别的技能"这类的方法（这是剩余工作的主要动作）
 
 以 `test_reward_claim_verifier.py:123` 为例：
