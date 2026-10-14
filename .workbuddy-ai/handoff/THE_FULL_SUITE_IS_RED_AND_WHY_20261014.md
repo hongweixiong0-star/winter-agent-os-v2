@@ -156,6 +156,34 @@ AssertionError: None != 'CAMP_PANEL_HUD'  # camp.stamina.get("source")
 **不是逐条的业务逻辑回归**；但**具体占比**要等全量结束、把失败按"是否依赖 HUD 读数"分组才能说。
 **在那之前不改任何生产代码。**
 
+### 三·补⁴：**没有单一共因** —— 失败是**异质的**（2026-10-14 晚，第二份抽样）
+
+抽最大的那一簇 `tests/test_live_runtime.py`（映射里 12 个 F），`--tb=line` 看原因：
+
+```
+AssertionError: 0 != 1 : one back recovers, no more
+AssertionError: 0 != 2 : recovery is bounded per run
+IndexError: tuple index out of range          (test_live_runtime.py:185)
+FileNotFoundError: ...\Temp\tmp010jfviu\episodes.jsonl
+FileNotFoundError: ...\Temp\tmp068y_s2a\action_latency.jsonl
+```
+
+⇒ **这一簇与 HUD OCR 无关**，而且是**三种不同的成因**：
+① **计数器不符**（0 != 1/2，runtime 没做出预期的恢复/动作）；
+② **`IndexError`**（真代码错误）；
+③ **文件不存在**——**测试期望 runtime 写出的 `episodes.jsonl` / `action_latency.jsonl` 没被写出来**。
+
+⚠️ ③ 值得单独警觉：它有两种可能，**要 traceback 才能分开** ——
+(a) runtime 根本没写；或 (b) **写了、但写到了 `conftest` 重定向后的位置**（`_REDIRECTS` 会
+`setattr` 模块常量到 `TEST_RUNTIME_ROOT`，而测试期望的是**它自己的 tmp**）。
+**若是 (b)，那就是"重定向与自管路径的测试相冲突"这一族** —— 与 §三·补² 的假设**同源但不同面**
+（不是"守卫拒绝"，而是"重定向改了路径"）。
+
+**⇒ 修正 §三·补²/³ 的措辞**：我先前两次都在找**一个**共因。现在有证据说**不止一个**：
+**299 是异质的**（OCR 读数、计数器、真异常、缺账本 …）。**分组归因要靠全量清单 + traceback，不靠猜。**
+
+**未做**：**没改任何代码/测试**；全量仍在跑（**85%**，228 F 时）。
+
 ### 三·补：重跑进行中的**实时进度**（已有证据）
 
 后台重跑用 `-q`（一测一字符）。跑到 **~26%** 时读了一次输出：
