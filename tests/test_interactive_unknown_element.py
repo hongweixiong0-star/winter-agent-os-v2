@@ -31,6 +31,8 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -45,6 +47,16 @@ from winter_agent_v2.skills import v2_registry  # noqa: E402
 REAL_FRAME = ROOT / (
     "dataset/raw/control_panel/runtime_auto/20260922_123407_610951/"
     "20260922_123407_610951_step_011_after_refresh_2_20260922T043904261212.png"
+)
+
+# Every class in this file reads that one frame, and ``dataset/raw/**`` is rotated by retention
+# (measured 2026-10-14: the directory is there, the frames are not), so a missing fixture would
+# otherwise fail every test below with ``FileNotFoundError`` -- which reads as a code fault and is
+# not one.  Re-capturing it needs a live device; until then a module-level skip is the honest
+# state, and it is the same call ``tests/test_camp_panel_stamina.py`` makes per class.
+pytestmark = pytest.mark.skipif(
+    not REAL_FRAME.is_file(),
+    reason=f"missing fixture {REAL_FRAME} (retention rotated dataset/raw)",
 )
 
 #: A button-shaped box in the middle of a 720x1280 frame: 120 px wide, 40 px tall.
