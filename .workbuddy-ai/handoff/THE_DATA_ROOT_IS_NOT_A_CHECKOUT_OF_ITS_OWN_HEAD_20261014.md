@@ -83,3 +83,21 @@ git checkout -- tests/     # 数据根；index == HEAD
 没删它们（可能是开发中的 WIP）；没动 pin 树；没动 `learning/`（50 个删除）与
 `dataset/`（95 个修改）等**数据目录**（那是运行态，不擅自恢复）；
 没改 `check_mainline.py` 或 `WORKTREE_CLEAN`（它们**按设计**只看 pin 树）。
+
+## 八、跟进（2026-10-14 晚）：`tools/` 也一并复原了
+
+同一把尺子 —— 数据根的**代码目录**会旧，而 `tests/` / `tools/` 是**真实目录（各自两份）**，
+`winter_agent_v2/` 本来就与 HEAD 一致。`tools/` 原来有 **5 个 tracked-dirty**：
+
+| 状态 | 文件 | 性质 |
+|---|---|---|
+| ` D` | `tools/explore_step.py` | 磁盘上被**删** |
+| ` M` | `tools/invariant_review.py` | 只差**一个空行**（噪声） |
+| ` M` | `launch_gui_model_server.py` · `profile_gui_model_context.py` · `register_daily_tab_template.py` | **净删除** ⇒ 磁盘是旧版 |
+
+已 `git checkout -- tools/`（数据根）⇒ **tracked 部分现在与 HEAD 一致**，`explore_step.py` 已复原，
+**79 个 untracked 草稿工具原样保留**（未动）。⇒ 数据根**代码目录**（`winter_agent_v2`/`tests`/`tools`）**全部对上 HEAD**。
+
+⚠️ **仍在盲区的两类**：① 那 **6 个 untracked 测试**（3 个红，属草稿，**未提交也未删**）；
+② **四个 junction 目录**（`knowledge`/`learning`/`dataset`/`config`）**不该被"复原"** —— 它们是共享运行态，
+见 `THE_FOUR_DATA_DIRS_ARE_JUNCTIONS_NOT_TWO_COPIES_20261014.md`。
