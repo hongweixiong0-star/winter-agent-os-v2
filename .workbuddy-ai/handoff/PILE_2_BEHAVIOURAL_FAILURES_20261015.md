@@ -22,6 +22,38 @@
 | `test_reward_claim_verifier.py` | `'SAFE_STOP' != 'OPEN_MAIL'` | 大脑选了别的技能 | 见 §三 |
 | `test_building_upgrade_entry_target.py` | `AssertionError: the evidence frame for this change has been rotated away` | **自述缺帧** | **不动它**——它已经把问题说清楚了 |
 
+## 二·补：一个**已定到根因**的样例（2026-10-15）—— 不是回归，是"测试早于那次改动"
+
+`test_reward_claim_verifier.py:123` 的 `'SAFE_STOP' != 'OPEN_MAIL'` **根因已查明**：
+
+```python
+# winter_agent_v2/brain.py:1246
+mail_gate = entry_badges.entry_gate("MAIL_ROUTINE", getattr(world, "red_dots", None))
+if mail_gate[0] != entry_badges.PRESENT:
+    return Decision("SAFE_STOP", f"mail_entry_badge_{mail_gate[0].lower()}_this_frame", 1.0, "switch_task")
+return Decision("OPEN_MAIL", "mail_entry_has_a_badge", world.confidence, "mail_page_open")
+```
+
+**代码里那段注释写明这是故意的**（1240–1245 行）：
+
+> UNKNOWN 和缺失台账过去会落到 OPEN_MAIL……但**对一个存在意义就是那个红点的任务，读不出也不是许可**，
+> 为了查明而去开页面就是"周期性访问"换了个名字。入口画在 HOME 上，循环常驻那里，读数可以免费重取；
+> **这一轮让给别的目标。**
+
+而测试建的状态是 `home = WorldState(page=Page.HOME, confidence=0.99)` —— **没有 `red_dots`**
+⇒ `entry_gate` 得 UNKNOWN ⇒ 大脑**正确地** SAFE_STOP。
+
+**⇒ 定性：`AssertionError` 是"测试早于那次有意改动"，不是回归。**
+**修法（未做）**：给测试的 `home` 补上 `red_dots`（一个表示邮件入口 PRESENT 的读数）再断言 `OPEN_MAIL`；
+**或**把这条改成断言"读不出 ⇒ SAFE_STOP"（那才是现在的契约）。
+**两种都行，但必须选一种**——**不能**改成迎合代码的模糊断言。
+
+⚠️ **这个样例给出了可推广的排查法**：
+**先在 `brain.py` 里搜那条 `Decision` 的 reason 字符串**（本例 `mail_entry_badge_*`），
+**代码往往已经在注释里写明了"这是故意的 + 为什么"** ⇒ 那就不必去找回归了，直接看测试缺了什么字段。
+
+---
+
 ## 三、判断"大脑选了别的技能"这类的方法（这是剩余工作的主要动作）
 
 以 `test_reward_claim_verifier.py:123` 为例：
