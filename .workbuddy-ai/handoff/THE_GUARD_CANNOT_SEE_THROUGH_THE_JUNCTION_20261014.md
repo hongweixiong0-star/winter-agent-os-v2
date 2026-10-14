@@ -67,6 +67,24 @@ if relative.split("/", 1)[0] not in GUARDED_TREES:  # ("learning", "config")
 - **不能说**：**剩余那约 10 个 error**（缺 `dataset/raw/...` 帧）能不能修——**要看那帧是否本机还在**；
   以及 pin 树里"守卫失效"是否还有**别的**后果（本轮只测了 `test_suite_isolation` 这一处）。
 
+### 四·补：那约 10 个 error 的成因也查清了 —— **帧被 retention 删了**
+
+`tests/test_semantic_dictionary_upgrade.py:50` 硬编码：
+
+```
+dataset/raw/control_panel/runtime_auto/20260921_213506_694242/
+   20260921_213506_694242_step_001_before_20260921T133510479855.png
+```
+
+**实测**：`runtime_auto/` 下有 **7428** 个同级目录，而**这个目录存在、但里面没有那个 PNG**。
+⇒ **帧被删了** —— `dataset/raw/**` 是 **gitignored + 会被 retention 轮转**（`D-013`）。
+⇒ 凡是**硬编码 `dataset/raw/...` 路径**的测试，都会在帧被轮转后**变成 error**（不只是这一处）。
+
+**该修的方向（未做）**：把它改成**缺帧就 `SkipTest`** —— 这正是同项目的成熟写法
+（`tests/test_camp_panel_stamina.py` 的 `setUpClass` 就是 `if not frame.is_file(): raise unittest.SkipTest(...)`）。
+**skip 是诚实的**（帧真不在）；继续 error 只是噪声。
+**⚠️ 但在全量重跑期间不动 `tests/`**（免得污染这次测量）——**等它跑完再改**。
+
 ## 五、未做
 
 **没提交 pin 树里那条"守卫看不见 junction"的修复**（改 `classify_production_write` 属**改守卫语义**，
