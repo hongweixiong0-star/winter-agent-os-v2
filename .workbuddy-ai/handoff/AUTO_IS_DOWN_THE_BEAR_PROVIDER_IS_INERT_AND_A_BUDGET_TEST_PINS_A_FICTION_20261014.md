@@ -53,6 +53,11 @@ last_action_time     = '2026-10-11T09:28:54Z'
 
 **所以面板本身不用重起**（它活着）；缺的是第 2 步那个显式启动。
 
+**补：没有 CLI 捷径**（2026-10-14 查 `launch_pinned_production.py --help`）——
+它的自述是"**Launch the control panel only**"，`--check-only` 是"verify pin and mounts **without starting AUTO**"。
+⇒ 它**只负责启动面板**，**不带**"起 AUTO"这个动作；而面板**已经在跑** ⇒
+**真正要做的只有那一次界面点击**（或以后给面板加一个 CLI 入口 —— 那才是可自动化的路）。
+
 ## 二、巨熊就绪 provider 的 `READY` 分支：**不可达，而且惰性 ⇒ D-K 有答案了**
 
 **两个operand 在生产里都没人写**（全仓实读）：
