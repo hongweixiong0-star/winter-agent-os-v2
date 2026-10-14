@@ -42,6 +42,20 @@ conftest.ProductionRuntimeWriteError: PRODUCTION_RUNTIME_FILES_TOUCHED_BY_TESTS 
    —— 效果**只在测试期**（同一 fixture 会在 teardown 还原），**不影响生产**；
 2. 找出那个**没传 `state_path`/`root` 隔离**的测试，让它传临时路径 —— 治标，但更窄。
 
+**修法 1 的精确形状（设计已核完，等重跑结束再落）**：
+
+- **要提升的**：`gui_model_service.py` 里有**两条**内联路径在 `learning/` 下（不只是状态文件）：
+  ```
+  self.state_path = state_path or (self.root / "learning/control_panel/gui_model_service.json")
+  self.log_path   = log_path   or (self.root / "learning/control_panel/gui_model_launcher.log")
+  ```
+  ⇒ **两条都要**提升为模块常量（否则修完状态路径、日志路径仍会 tripping）。
+- **为什么提升后重定向就能生效**：`_runtime_relative()`（`tests/conftest.py:78`）= `TEST_RUNTIME_ROOT / relative`，
+  而 `TEST_RUNTIME_ROOT` 是 `tempfile.mkdtemp()` ⇒ **绝对路径**；
+  于是 `self.root / <绝对常量>` 依 `pathlib` 语义**取绝对的那个** ⇒ 写到临时树。**已核，成立。**
+- **`_REDIRECTS` 加两行**（`("winter_agent_v2.gui_model_service", "<常量>", "<live 相对路径>", True)`）。
+- 依据：守卫自己的报错就写了 "add its module constant to `_REDIRECTS`; **do not weaken the guard**"。
+
 ## 三、299 个 `failed` **尚未定性**（不猜）
 
 已后台重跑并保留**完整清单**（`--tb=no`，输出到 `E:/tmp/wb_pytest_full.txt`），
