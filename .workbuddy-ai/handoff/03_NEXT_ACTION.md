@@ -4,6 +4,27 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
+## 手写：**2026-10-14 状态 —— 先读这一节**
+
+- **`check_mainline.py` = `MAINLINE_OK`**；pin HEAD == manifest == 镜像 `main`；
+  `launch_pinned_production.py --check-only` → `WORKTREE_CLEAN=true`；公开镜像**已推送、`in_sync`**。
+- **设备仍在 MANUAL**（`learning/MODE_STATE.json` 的 `user_latch=true`，2026-10-12 起）
+  ⇒ **一切真机相关的下一步都还卡在这里，只有操作者能解除**。
+- **预载闸门被 17 条记录关着**（`reason=REAL_GAP_WAITING`）。闸门是**零容忍**的
+  （`capability_bootstrap.py:1133`：`pending_records > 0` 即不派单）。实测这 17 条里
+  **11 条无法靠"再跑一次"消掉**（6 条前提已被生产数据证伪、3 条点名的技能全流 0 次、
+  2 条 goal 从未跑）。**退役它们需要给台账加一个诚实的词** —— 现有 8 个 outcome 没有一个能表达
+  "前提已不成立、且没有任何 job 跑过"，而"机制上可以、词表上不诚实"是**操作者的决定**。
+  见 `THE_PRELOAD_ROUTE_IS_STRUCTURALLY_STUCK_20261014.md` 与
+  `RETIRING_A_STALE_RECORD_NEEDS_THE_OPERATORS_WORD_20261014.md`。
+- **头号任务（巨熊准时参战）**：**链路在代码里是齐的** —— 窗口内读数（`remaining_seconds`）、
+  相位（`bear_phase`）、"印出预约减客户端自己的钟"的唤醒、目标生成（`goal_library`）四段都复核过，
+  其中三段是**实测**；而 `PARTICIPATE_BEAR` 至今 **0 次**（10436 条流）⇒
+  **阻塞是"活的窗口与 AUTO 从来没有同时出现过"，不是能力缺口**。
+  见 `THE_BEAR_CHAIN_IS_BUILT_AND_HAS_NEVER_RUN_20261014.md`。
+- ⚠️ **读下面 2026-10-11 那两段时先对照本节**：其中的"**未 push**"、"**`crashes/` 不存在**"、
+  "**RR-001 最该先看**"三处**都已过时**（镜像已同步；`crashes/` 现有 52 个现场；RR-001 已修）。
+
 ## 手写：**✅ 提交已落地（2026-10-11 07:28）—— 下一动作不再是提交**
 
 > 本节原写于 00:58，当时 22 条脏路径未提交、重启面板会 `PinError`。**07:28 已按操作者指令执行完毕。**
@@ -959,11 +980,21 @@ DISPATCH_MARCH          MARCH->MAP
 
 ### 1. 队列留了三件明确交接
 
-1. **RR-001（`0bi`，最该先看）**：`unexpected_worker_exits` 有两个写入方且规则不一致
-   —— 带分类的路径只计 `WORKER_CRASH`，兜底路径**凡非 fatal 全计**。
-   `crashes/` 不存在、`latest.log` 0 字节 ⇒ **历史 15 不是「15 次崩溃」**。
-   修复位置在 `tools/control_panel.py`，**超出该 Order 的授权文件范围** ⇒ 未动手，见 `REVIEW_REQUESTS.md`。
-   ⚠ 72h 验收要求 `unexpected_worker_exits = 0`，而**一个把环境失败也算崩溃的计数器永远到不了 0**。
+1. **RR-001 —— ✅ 已修（2026-10-14 复核）**。原症状：两条写入路径规则不一致（带分类的只计
+   `WORKER_CRASH`、兜底路径"凡非 fatal 全计"）。**现在两处调同一个判据** ——
+   `tools/control_panel.py:9183/9229` 调 `runtime_snapshot.counts_as_unexpected_worker_exit()`
+   （`:9191/:9237` 累加），并有 `tests/test_worker_exit_semantics.py` 钉住
+   ⇒ **这条不再是"最该先看"的待办**（与本文件 `WB-R19-RUNTIME-EXIT-SEMANTICS = DONE` 本就一致）。
+   - 同时更正本文原话："`crashes/` 不存在"**已不成立**：现在有 **52 个现场**，
+     其中 `WORKER_RESULT_MISSING` **34/52（65%）**，且 **10-10 仍在发生**（修过之后）。
+     现场能记下"死了"，**记不下"哪一步为什么"**（`last_20_events` 来自 MAA 日志）。详见
+     `THE_DOMINANT_CRASH_MODE_SURVIVED_ITS_FIX_20261014.md`。
+   - ⚠️ **但 72h 验收仍有问题，只是原因不同**：`unexpected_worker_exits` **累计且全仓库无复位点**
+     （两处都是 `previous + 1`；历史值见 `REVIEW_REQUESTS.md:72`"保留不变"），现读 **59**
+     ⇒ 对一台历史上死过一次 worker 的机器，`= 0` **再也不可能成立** ⇒ **那道门永远不会开**。
+     面板侧阈值**已经**改成"相对本窗口首见值的增长"（`control_panel.py:5723-5735`），
+     **标准本身**（`OPERATIONAL.md:14`、`docs/PROGRESS_2026_09_14.md:81`）仍写 `= 0`；
+     改不改是操作者的决定。详见 `THE_72H_ACCEPTANCE_CANNOT_BE_MET_BY_CONSTRUCTION_20261014.md`。
 2. **`0bj` / `WB-0AZ`**：建议 Codex 改成 `WAITING_FOR_NATURAL_STATE`
    （BLOCKED 卡今日已自然出现 ≥2 次），或先裁决「按 `大师悬赏` 弹窗的 `前往查看` 是否可接受」。
 3. **队列自己的前提要重算**：`WB-EXECUTOR-EVIDENCE-AUDIT` 的 before_metric
