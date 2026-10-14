@@ -56,6 +56,25 @@ conftest.ProductionRuntimeWriteError: PRODUCTION_RUNTIME_FILES_TOUCHED_BY_TESTS 
 - **`_REDIRECTS` 加两行**（`("winter_agent_v2.gui_model_service", "<常量>", "<live 相对路径>", True)`）。
 - 依据：守卫自己的报错就写了 "add its module constant to `_REDIRECTS`; **do not weaken the guard**"。
 
+### 二·补：这不是孤例 —— 受守卫树的**覆盖面**（只读审计，2026-10-14）
+
+对 `winter_agent_v2/*.py` grep `learning/`/`config/` 下的路径字面量：
+
+| | 条数 |
+|---|---:|
+| 路径字面量总数 | **53** |
+| `_REDIRECTS` 覆盖 | **21** |
+| **未被覆盖** | **36** |
+
+未覆盖的里包括本轮的 `learning/control_panel/gui_model_service.json`（与 `..._launcher.log`），
+也包括 `learning/MODE_STATE.json`、`learning/runtime_snapshot.json`、`learning/goal_state.json`、
+`learning/role_identity.json` … 等**看起来很可能被测试写**的路径。
+
+⚠️ **但要分清**：守卫只在**测试真的去写**它们时才 trip。所以这 36 条是"**可能 trip 的面**"，
+**不是"已经 trip 的清单"** —— 本轮全量实测到的**只是 1 条**（`gui_model_service.json`）。
+⇒ **修的时候以实测为准**：先修实测 trip 的那条（提升常量 + 加 `_REDIRECTS`），
+再考虑是否扩面；**不要**因为审计出 36 条就一次改 36 处。
+
 ## 三、299 个 `failed` **尚未定性**（不猜）
 
 已后台重跑并保留**完整清单**（`--tb=no`，输出到 `E:/tmp/wb_pytest_full.txt`），
