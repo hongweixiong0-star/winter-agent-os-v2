@@ -238,7 +238,12 @@ def test_the_record_is_durable_and_names_what_it_is_about(tmp_path: Path) -> Non
 
 
 def test_a_missing_record_is_not_an_error(tmp_path: Path) -> None:
-    service = GuiModelService(tmp_path, config_path=write_config(tmp_path))
+    # An explicit, never-written ``state_path`` (the sibling below does the same).  Relying on the
+    # *default* path being absent made this test depend on session-global state: the default is a
+    # module constant the suite's write guard redirects into one scratch tree shared by every test,
+    # so it stopped reading as "missing" as soon as another test wrote it.
+    service = GuiModelService(tmp_path, config_path=write_config(tmp_path),
+                              state_path=tmp_path / "never_written.json")
     assert service.record() == {}
 
 

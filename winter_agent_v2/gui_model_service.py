@@ -108,6 +108,14 @@ STARTUP_GRACE_SECONDS = 120.0
 #: blocking probe on this thread is a window that stops updating.
 HEALTH_TIMEOUT_SECONDS = 3.0
 
+#: Where the service records its own state and the launcher's log, relative to the project root.
+#: Module constants rather than inline literals **so the test suite can divert them**: every write
+#: under ``learning/`` is refused by the guard in ``tests/conftest.py`` unless a redirect covers
+#: it, and before this hoist a test that ticked the panel tripped that guard on both paths (29
+#: errors, 2026-10-14).  ``tests/conftest.py``'s ``_REDIRECTS`` points these at a scratch tree.
+DEFAULT_STATE_RELATIVE = "learning/control_panel/gui_model_service.json"
+DEFAULT_LOG_RELATIVE = "learning/control_panel/gui_model_launcher.log"
+
 #: The launcher, relative to the project root.  Spawned as a script so the *measured* profile
 #: (``-ngl 30``, f16 KV, 32K, the image-token floor) lives in exactly one place; a second copy
 #: of those numbers here is the drift this project's module docstrings argue against.
@@ -183,10 +191,10 @@ class GuiModelService:
     ) -> None:
         self.root = Path(root)
         self.state_path = Path(state_path) if state_path else (
-            self.root / "learning/control_panel/gui_model_service.json"
+            self.root / DEFAULT_STATE_RELATIVE
         )
         self.log_path = Path(log_path) if log_path else (
-            self.root / "learning/control_panel/gui_model_launcher.log"
+            self.root / DEFAULT_LOG_RELATIVE
         )
         self.launcher = Path(launcher) if launcher else (self.root / LAUNCHER_RELATIVE)
         # ``sys.executable`` and not a literal: the panel is launched by the production

@@ -172,6 +172,21 @@ _REDIRECTS: tuple[tuple[str, str, str, bool], ...] = (
     # from the pytest process against the shared data root.  That is not a log line -- it asks
     # the *running* panel to restart, so a test run could have replaced production mid-round.
     ("winter_agent_v2.control_plane_reload", "MARKER_ROOT", ".", False),
+    # The panel's local-model service: its own state file and the launcher's log.  Both used to
+    # be inline literals under ``learning/control_panel/`` with no module constant, so no redirect
+    # covered them and the write guard refused a test that ticked the panel -- 29 errors on
+    # 2026-10-14, the first full run whose summary was not swallowed.  Hoisted to module constants
+    # in ``gui_model_service``.
+    #
+    # NOT seeded, and that is load-bearing: a redirect target is ABSOLUTE, and ``GuiModelService``
+    # joins its default to the caller's ``root`` (``root / DEFAULT_STATE_RELATIVE``).  ``root /
+    # <absolute>`` is just ``<absolute>``, so the redirect wins over the caller's root.  Seeding
+    # the live file therefore hands a test that asked for *its own* empty root a full record set --
+    # ``test_gui_model_service.py::test_a_missing_record_is_not_an_error`` caught exactly that.
+    ("winter_agent_v2.gui_model_service", "DEFAULT_STATE_RELATIVE",
+     "learning/control_panel/gui_model_service.json", False),
+    ("winter_agent_v2.gui_model_service", "DEFAULT_LOG_RELATIVE",
+     "learning/control_panel/gui_model_launcher.log", False),
 )
 
 
