@@ -102,9 +102,26 @@
 
 | # | 事项 | 记录处 |
 |---|---|---|
-| D-G | `pages.json` 与 `Page` 的 **15 名分歧** | `03_NEXT_ACTION.md:47` |
+| ~~D-G~~ | ~~`pages.json` 与 `Page` 的 **15 名分歧**~~ → **✅ 2026-10-14 已复核，见 §四·补** | — |
 | D-H | **90 个候选无试跑路径** | `03_NEXT_ACTION.md:47` |
 | D-I | 设备上**第二个自动化**的处置 | `03_NEXT_ACTION.md:47`、`10_LAST_HANDOFF.md:228` |
+
+### §四·补 · D-G 已复核（2026-10-14）
+
+**结论**：分歧就是 **15 个名字**（`Page` 枚举 22 · `pages.json` 29 · 交 18）——
+只在枚举 **4** 个（`LOADING` `MAINTENANCE` `PET_TREASURE` `UNKNOWN`）；
+只在清单 **11** 个（`ARENA` `BEAR` `DANGER_TRAVEL` `ENDLESS_JOURNEY` `GIANT_BEAST` `PET` `PROFILE` `SETTINGS` `SNOWFIELD_TRAVEL` `UNDERGROUND_EXPLORATION` `VIP`）。
+
+**要决定的是**：两套里哪一套**权威**。`knowledge/ui/pages.json` 的 `pages` 是
+`capability_bootstrap.py:1493-1527` 那个 drift 闸门的**唯一**词表（spec 的 `required_page`
+不在其中即报"没有 reader 能读出它"）。而清单比枚举**多 11 个** ⇒ 对那 11 个名字闸门**过宽**：
+会放行"声明了、却没人能读出"的 spec。**潜在，不是现行**：今天 **0 条 spec** 声明这 11 个名字
+（已逐一实测）；反向那 4 个里 `PET_TREASURE` 是真页面却不在清单 ⇒ 声明它会被**误报**。
+见 `THE_PAGE_VOCABULARIES_DIVERGE_BY_FIFTEEN_NAMES_20261014.md`。
+
+**选项**：① 闸门改按 `Page` 枚举（或枚举 ∩ 清单）校验；② 明确 `pages.json` 是"已知/超前清单"、
+不作判据，另立字段表达"计划中"；③ 不动，只记录。
+**建议（非约束）**：因读取器**只能**返回枚举，**①** 更贴事实；但改的是闸门 → 应单独审。
 
 ---
 
