@@ -30,12 +30,29 @@ import json
 import sys
 import tempfile
 import unittest
+
+import pytest  # noqa: E402
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
+
+#: The channel the three dispatch classes below exercise.  ``workbuddy_channel.enabled`` was set
+#: false by operator directive 2026-09-25 §1 (the automatic WorkBuddy model-call channel is
+#: retired; WorkBuddy stays a tool a person drives).  The directive keeps the *code and its
+#: tests* because ``workbuddy_bridge``/``unknown_dispatch`` are public components other paths
+#: import -- so these tests are kept and skip while it is off, rather than being deleted.  They
+#: run again the moment it is switched back on; that is the point of keying the guard to the
+#: switch instead of to a date in the past.
+_CHANNEL_ENABLED = bool(json.loads((ROOT / "config/v2.json").read_text(encoding="utf-8"))
+                        .get("workbuddy_channel", {}).get("enabled"))
+_CHANNEL_RETIRED_SKIP = pytest.mark.skipif(
+    not _CHANNEL_ENABLED,
+    reason="workbuddy_channel.enabled is false (operator directive 2026-09-25 §1): the dispatch "
+           "these tests exercise is retired; re-enabling the channel runs them again",
+)
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -193,6 +210,7 @@ def _seed_question(root: Path, *, key: str, goal: str, frame: Path) -> unknown_a
     return request
 
 
+@_CHANNEL_RETIRED_SKIP
 class DispatchTests(unittest.TestCase):
     """Item 一: a pending question becomes exactly one job, within bounds, and never blocks."""
 
@@ -909,6 +927,7 @@ class PanelClockTests(unittest.TestCase):
             self.assertIn(key, source)
 
 
+@_CHANNEL_RETIRED_SKIP
 class GroundingTests(unittest.TestCase):
     """Item 三: three bases, all measured on the current frame, and nothing else."""
 
@@ -1035,6 +1054,7 @@ class GroundingTests(unittest.TestCase):
         self.assertEqual(region["text"], "已完成本期挑战")
 
 
+@_CHANNEL_RETIRED_SKIP
 class AdvisedTapTests(unittest.TestCase):
     """Items 二/四/五 and the live wire, on the real frame the AUTO asked about."""
 
