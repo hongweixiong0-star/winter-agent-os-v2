@@ -26,6 +26,17 @@
 | **建议（非约束）** | 若近期目标就是「巨熊准时参战」，**③ 最省**：链路在代码里已齐（见 D-B 同源 handoff `THE_BEAR_CHAIN_IS_BUILT_AND_HAS_NEVER_RUN_20261014.md`），只差"活的窗口 × AUTO 同框"一次。 |
 | **不决定的代价** | 主路线**冻结**：所有"下一步"都退化成设备侧，离线只能做诊断，不能产生 LIVE 证据。 |
 
+### D-L · 是否让「起 AUTO」**可脚本化**（2026-10-14 新增，提案）
+
+| 项 | 内容 |
+|---|---|
+| **问题** | 要不要给面板加一个"脚本可触发 AUTO 启动"的入口？否则 **AUTO 一旦停掉，只有人去点按钮才能恢复**。 |
+| **证据** | AUTO 循环 = `self.root.after(5000, self.start)` **自我续排**（每 cycle 一个全新 `run_live.py` 子进程，见 `runtime_reload.py` docstring）；而"起 AUTO"今天**只有**按钮 `command=self.start`（`control_panel.py:6015`）——`launch_pinned_production.py` 只**启动面板**（`--check-only` 明说 "without starting AUTO"）。项目**已有**文件式请求机制 `runtime_reload.ReloadSignal`（`request`/`pending`/`clear`，面板 tick 已消费）**可复用**。见 `AUTO_IS_DOWN_..._20261014.md` §一·补²。 |
+| **选项** | ① 加一个 `AUTO_START_REQUESTED` kind（复用现有信号；面板 tick 读到就调一次 `self.start()`）；② 启动器加 `--start` 透传（改动更小，但**只对新起的面板有效**，给已在跑的面板下不了命令）；③ 不做（维持"必须有人点按钮"）。 |
+| **可验证性** | **不需要放行设备**：mode 门只管动作、不管循环存活 ⇒ 重启面板 + 写一次请求后，看 `runtime_snapshot.json` 的 `runtime_thread_alive` / `scheduler_loop_alive` 是否变 true。 |
+| **建议（非约束）** | **①**（复用单一真值，且能给**已在运行的**面板下命令）。 |
+| **不决定的代价** | AUTO 停掉后**无法自动恢复** —— 与项目的"长期无人值守"目标正面冲突。 |
+
 ### D-B · 是否给台账加一个**诚实的"退役"outcome 词**
 
 | 项 | 内容 |
@@ -184,6 +195,7 @@
 | **D-E 标 LEGACY** | 历史指标口径自解释 | —— |
 | **D-F 超时** | 减少 `LOCAL_GUI_MODEL_UNAVAILABLE`（若确为超时） | —— |
 | **D-J 回归口径** | "回归通过"有了**可复现的计数**（树/cwd 固定） | —— |
+| **D-L 起 AUTO 可脚本化** | AUTO 停掉后可**自动恢复**（不必人手点按钮） | ——（不需放行设备即可验证） |
 
 **已结（无需裁决，只留档）**：**D-G**（两套页面词汇表差 15 名；`pages.json` 是那个 drift 闸门的**唯一**词表，
 比 `Page` 枚举多 11 个 ⇒ 那 11 个名字上闸门**潜在过宽**，今天 0 条 spec 受影响）、
