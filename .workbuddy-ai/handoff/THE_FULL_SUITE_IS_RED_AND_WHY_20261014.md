@@ -86,6 +86,35 @@ conftest.ProductionRuntimeWriteError: PRODUCTION_RUNTIME_FILES_TOUCHED_BY_TESTS 
 
 **在分布出来之前，本文件不把 299 说成"回归"，也不说成"环境性"** —— 两者都还没证据。
 
+### 三·补²：分布**已提前拿到**（用新工具从进度流反推）+ 一个强假设
+
+**新工具** `tools/map_pytest_progress.py`（本会话新写、已验证）：因为**顺序是确定的**
+（没装 `pytest-randomly`），`-q` 的**第 N 个结果字符 = 第 N 个收集到的测试** ⇒
+把"进度流"与 `--collect-only` 的清单对齐，就能**从已捕获的输出里反推失败清单**（无需重跑，
+正好治项目记录里的"**全量跑不出汇总行**"）。已验证收集侧：pin 树 **5753**、数据根 **5799**。
+
+**用它对 51% 处的那份输出反推**（数据根，`--root "E:/无尽冬日智能体"`）得到 **179 个失败**，
+分布**横跨 40+ 个文件**：
+
+```
+12 test_live_runtime            11 test_refusal_yields_the_cycle   10 test_capability_gate
+ 9 test_quick_panel_handle       9 test_interactive_unknown_element  8 test_panel_architecture_view(E)
+ 6 test_camp_fight_refusal_recovery  5 test_intel_pin_exhaustion      5 test_entry_badges
+ 5 test_daily_tab_selection       5 test_battle_unknown_recovery     5 test_a_panel_mid_slide_…  …
+```
+
+⇒ **不是几个文件坏了，是**系统性**的**（~4.4% 匀速、遍及全局）。
+
+**⭐ 强假设（本轮最有价值的一条）**：`tests/conftest.py` 的写入守卫对**未被 `_REDIRECTS` 覆盖**的
+`learning/`、`config/` 写入是 **`raise`（拒绝）**，而 raise 发生在**写之前** ⇒
+**一个走到这种写入的测试会直接 FAIL**，不只是 teardown 报 error。
+若如此，则 **299 个失败里有相当一部分与那 29 个 error 是同一个根因**：
+**`_REDIRECTS` 的覆盖面落后于代码**（本轮审计：53 条字面量、覆盖 21、**36 条未覆盖**）。
+
+**⚠️ 这是假设，不是结论。** 证法很简单：等本轮全量结束后，
+挑几个失败测试**单独带 traceback 重跑**（`--tb=short`），看失败里有没有
+`ProductionRuntimeWriteError`。**有 ⇒ 根因确认，且修覆盖面就能同时清掉大部分红；没有 ⇒ 另找。**
+
 ### 三·补：重跑进行中的**实时进度**（已有证据）
 
 后台重跑用 `-q`（一测一字符）。跑到 **~26%** 时读了一次输出：
