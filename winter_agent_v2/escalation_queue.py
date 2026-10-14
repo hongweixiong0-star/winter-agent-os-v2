@@ -244,6 +244,16 @@ DONE = "DONE"
 FAILED = "FAILED"
 BLOCKED = "BLOCKED"
 COOLDOWN = "COOLDOWN"
+# Terminal, and deliberately *not* one of the two states ``pending()`` counts.  It means: the
+# premise this record was filed under has since been falsified by production data -- the goal
+# advanced after it was filed, the skill it names has zero episodes, or the goal never ran at
+# all -- so no development job can retire it and re-offering it would write the same refusal on
+# every cycle.  Before this state existed, the eight outcomes available could not say that:
+# ``FAILED`` says a job ran and lost, ``BLOCKED`` says something external is in the way, and
+# neither is true of a record whose premise is simply no longer true.  Measured 2026-10-14: 11 of
+# the 17 pending records are exactly this, and the zero-tolerance preload gate
+# (``capability_bootstrap.preload_gate``) refused every dispatch while they sat in ``NEW``.
+FALSIFIED = "FALSIFIED"
 # A gateway state, not a lifecycle state: a job that was stopped is settled as FAILED
 # (see the ``job_state`` branch in ``fold``).  Named here because the reconciler writes
 # it into the ledger verbatim.
@@ -960,6 +970,20 @@ def fold(events: Iterable[Mapping[str, Any]]) -> "EscalationSnapshot":
             record = get(key)
             record.state = BLOCKED
             record.notes.append(f"blocked: {event.get('reason', '')}")
+            continue
+
+        if kind == "premise_falsified":
+            # Retire a record whose premise production data has falsified.  Terminal on purpose:
+            # ``pending()`` counts NEW and QUEUED only, so this is what takes a record off the
+            # queue without pretending a job ran (``FAILED``) or that something external is in the
+            # way (``BLOCKED``).  The premise and the measurement travel with the row, so a reader
+            # sees *why* it was retired instead of inferring it from an absence.
+            record = get(key)
+            record.state = FALSIFIED
+            record.notes.append(
+                f"premise falsified: {event.get('reason', '')} "
+                f"(premise={event.get('premise', '')}, measured_at={event.get('measured_at', '')})"
+            )
             continue
 
         if kind == "cooldown_started":
@@ -2905,6 +2929,9 @@ class EscalationQueueAdapter:
         Records whose condition is not one of the five are left out on purpose: they
         were refused on creation for a reason that has not changed, and re-offering them
         would write the same refusal on every cycle.
+
+        A record retired as :data:`FALSIFIED` is out for the same reason and a stronger
+        one -- its premise is no longer true, so there is nothing left to dispatch.
         """
         records = (snapshot or self.ledger.snapshot()).records.values()
         waiting = [

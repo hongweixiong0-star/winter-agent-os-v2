@@ -44,6 +44,14 @@
 
 ### D-B · 是否给台账加一个**诚实的"退役"outcome 词**
 
+> **✅ 2026-10-14 已做**：给升级台账加了终态 **`FALSIFIED`**（`escalation_queue.py`）＋ 新事件
+> `premise_falsified`（`fold` 里一个分支，**只追加、不改写**，append-only 不变）＋ 工具
+> `tools/retire_falsified_records.py`（**默认干跑**，`--apply` 才写）＋ 测试
+> `tests/test_escalation_premise_falsified.py`（4 条，与既有 98 条队列测试一起 **102 passed**）。
+> **已应用**：11 条记录退役 ⇒ **pending 17 → 6**（`audit_escalation_premises.py` 实测）。
+> ⚠️ **闸门是零容忍的，所以还没开**：剩下 6 条（3 `HOLDS_NEVER_ADVANCED` + 3 `RECOGNITION_CLAIM_NEEDS_A_FRAME`）
+> **都要真机才能定** —— 而真机现在**正在跑 AUTO** ⇒ 这 6 条是下一步唯一能靠设备推进的事。
+
 | 项 | 内容 |
 |---|---|
 | **问题** | 是否为升级台账增加一个能如实表达「**前提已不成立、且没有任何 job 跑过**」的 outcome（例 `NO_LONGER_REPRODUCIBLE`），并让新词在下游映射处显式走「**什么都不做**」分支？ |
