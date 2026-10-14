@@ -265,6 +265,23 @@ class TheSharedDialogIsLabelledByItsSignalsNotItsContentsTests(unittest.TestCase
 
 
 class TheMailInboxIsNotARewardDialogTests(unittest.TestCase):
+    # The frames this class reads were rotated away by retention (measured 2026-10-15: the
+    # ``reward_popup_source_20260917`` directory holds only ``04_…``; ``01_``/``02_``/``03_`` are
+    # gone), so its tests failed with ``FileNotFoundError`` -- which reads as a code fault and is
+    # not one.  The guard is class-level on purpose: the sibling class below has a *real* failure
+    # (``AssertionError: True is not false``) that must stay visible, so a module-level skip would
+    # have hidden it.
+    REQUIRED = (
+        ROOT / "dataset/raw/control_panel/runtime_auto/20260920_123335_422288/"
+        "20260920_123335_422288_step_001_before_20260920T043338114548.png",
+    )
+
+    @classmethod
+    def setUpClass(cls):
+        for frame in cls.REQUIRED:
+            if not frame.is_file():
+                raise unittest.SkipTest(
+                    f"missing fixture {frame} (retention rotated the truth_audit run)")
     """Labelled negative: an ordinary mail inbox, with no dialog on it.
 
     The label is the evidence, not the file name -- the screenshot shows 邮件,
