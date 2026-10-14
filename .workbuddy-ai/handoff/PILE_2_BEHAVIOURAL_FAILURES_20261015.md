@@ -106,6 +106,30 @@ if world.page is Page.MAP:                 # ← 嵌在 "page is MAP" 里
 那条路最终走到 `OPEN_HOME`）。**⇒ 新接力点：从 `decide()` 的入口往下读，
 看 MAP 页上有哪些分支排在 `world.page is Page.MAP` 这个块**之前**，哪一条会产出 `OPEN_HOME`。**
 
+### ✅ 追到了（同轮收口）：`OPEN_HOME` 来自**日历扫描**分支，**抢在体力检查之前**
+
+`grep -n '"OPEN_HOME"' brain.py` 列出全部 9 个产出点，其中 **`brain.py:731–734`** 是：
+
+```python
+if world.page is Page.MAP and entry.get("visible") is True:
+    return Decision("OPEN_EVENT_CALENDAR_FROM_MAP", "calendar_scan_due_and_entry_seen_on_current_map_frame", …)
+if world.page is Page.MAP:
+    return Decision("OPEN_HOME", "calendar_scan_due_but_entry_not_visible_on_map_return_to_city", …)
+```
+
+⇒ **"日历扫描到期、但当前 MAP 帧上看不到活动入口" ⇒ 大脑决定"回城找入口"**，
+而这条分支**排在 2867 行那个体力块之前** ⇒ **抢走了**这一轮。
+测试**没给日历状态**（"未知即到期"是该项目的惯例，见 `_supply_may_be_due` 的
+"Unknown is always due"）⇒ **这条分支必然命中**。
+
+**⇒ 定性：又是"测试没给全状态"**（不是回归）。
+**修法**：测试应**声明日历今天已扫过**（或给出一个已扫的日历状态），让日历分支不抢——
+**改测试，并把"为什么要这个状态"写进注释**。**不要**改大脑的优先级。
+
+⚠️ **注意**：`grep -n '"OPEN_HOME"' brain.py` 有 **9 个产出点**（mail/exploration/daily/alliance/
+building/research/calendar×2/…），**`OPEN_HOME` 本身不是线索**——要**结合 `current_goal` 去筛**
+（本例 goal=INTEL，但命中的是**与 goal 无关的日历分支**）。这是这次追因最反直觉的一点。
+
 ---
 
 ## 三、判断"大脑选了别的技能"这类的方法（这是剩余工作的主要动作）
