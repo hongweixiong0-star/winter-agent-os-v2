@@ -101,3 +101,17 @@ git checkout -- tests/     # 数据根；index == HEAD
 ⚠️ **仍在盲区的两类**：① 那 **6 个 untracked 测试**（3 个红，属草稿，**未提交也未删**）；
 ② **四个 junction 目录**（`knowledge`/`learning`/`dataset`/`config`）**不该被"复原"** —— 它们是共享运行态，
 见 `THE_FOUR_DATA_DIRS_ARE_JUNCTIONS_NOT_TWO_COPIES_20261014.md`。
+
+### `.gitignore` **不能一键复原**（它双向分叉了，本轮一个字没动）
+
+数据根的 `.gitignore` **506 行**，HEAD 的 **575 行**，numstat `7 ins / 76 del`：
+
+- **磁盘有、HEAD 没有的 7 行** = 一条 **`p2p_agent/src/` 忽略规则**（注释自称 "added 2026-10-07"）——
+  即**本地新增、从未提交**（`git show HEAD:.gitignore | grep p2p_agent` ⇒ **无**）。
+- **HEAD 有、磁盘没有的 76 行** = 一大块"运行时产物"忽略规则（`dataset/exploration/**`、
+  `/dataset/raw/autogen/`、`/dataset/candidate/template_manifest.json` …，即 2026-10-06 收敛那批）。
+
+⇒ **两边都不是对方的超集** ⇒ **`git checkout -- .gitignore` 会丢掉那条本地 p2p 规则**；
+而直接提交它又会**未经确认地改变 ignore 行为** —— 因为 `p2p_agent/` 下**当前没有任何文件被跟踪**
+（`git ls-files p2p_agent/` 为空），与那条注释"其余（config/adapter/…）照常跟踪"**不符**。
+**所以本轮不动它**，只记录；要动，先确认那条 p2p 规则到底要不要。
