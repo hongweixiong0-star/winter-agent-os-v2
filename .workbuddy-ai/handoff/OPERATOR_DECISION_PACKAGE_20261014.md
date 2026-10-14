@@ -18,6 +18,11 @@
 
 ### D-A · 是否解除 MANUAL，解锁设备
 
+> **✅ 2026-10-14 23:07 已解除**（操作员授权"可以随便用真机"）：`mode_state.switch(MODE_AUTO, BY_USER)`
+> ＋ 重启面板 ⇒ **AUTO 已连续运行**（`agent_state=AUTO_RUNNING`）。见 `AUTO_IS_RUNNING_20261014.md`。
+> ⚠️ 面板是**开发工具**拉起的（`schtasks` 被安全策略挡）⇒ Soak 记 `DEVELOPMENT_ENV_LIMITATION`，
+> **请用 `Start-Winter-Agent-V2.cmd` 双击重拉一次**让验收算数。
+
 | 项 | 内容 |
 |---|---|
 | **问题** | 是否把 `learning/MODE_STATE.json` 从 `MANUAL` 切回 `AUTO`（释放 `user_latch`）？ |

@@ -15,14 +15,15 @@
   ② **order/状态依赖**（如 `test_suite_isolation.py` 单独 18 绿、全量 3 红）。
   29 个 error 的机制已定位（`_REDIRECTS` 未覆盖内联路径）。**先修那 29 个，再分组归因 299。**
   见 `THE_FULL_SUITE_IS_RED_AND_WHY_20261014.md`（含"给下一个人的最短路径"）。
-- 🔴 **AUTO 循环根本没在跑**：`learning/runtime_snapshot.json` 实读 `runtime_thread_alive=False`、
-  `scheduler_loop_alive=False`、`agent_state=IDLE`、最后 tick 停在切 MANUAL 那刻。
-  **面板 / 模拟器 / adb 都活着**（`pythonw`×3、`MuMuVMMHeadless`、5037 LISTENING）。
-  **恢复三步**：① 放 latch / 切回 AUTO（让 `machine_is_ours` 为真）→
-  ② **总览页点「开始自动运行」**（`control_panel.py:6015` 的 `self.start`）→
-  ③ **验收看 `runtime_thread_alive` 与 `scheduler_loop_alive` 都变 true** ——**不是**看 `mode==AUTO`
-  （面板 docstring 自己就警告过这个混淆）。见
-  `AUTO_IS_DOWN_THE_BEAR_PROVIDER_IS_INERT_AND_A_BUDGET_TEST_PINS_A_FICTION_20261014.md`。
+- ✅ **AUTO 在跑**（2026-10-14 23:19 起）：`agent_state=AUTO_RUNNING`、`runtime_thread_alive=True`、
+  `scheduler_loop_alive=True`、**连续在跑**（约 1–2 分钟一轮）。
+  **配方 = ① 用 `mode_state.switch(MODE_AUTO, …)` 把模式切回 AUTO（并清 `user_latch`）→ ② 重启面板**
+  （面板**启动时会自动起 AUTO**：`auto_execution` + `operator_intent=RUNNING` + 连续运行 + 预检通过）。
+  ⚠️ **面板这次是我直接拉起的**（`schtasks` 被安全策略列入黑名单）⇒ 属"**开发工具启动**"，
+  **验收 Soak 会记 `DEVELOPMENT_ENV_LIMITATION`；方便时请用 `Start-Winter-Agent-V2.cmd` 双击重拉一次**。
+  见 `AUTO_IS_RUNNING_20261014.md`（含我前面两条错判的更正：**起 AUTO 不是只有按钮一条路**）。
+  ⚠️ **但活不会自己来**：预载闸门仍被 **17 条**记录关着（`GATE_REFUSED`），每轮都是"切换角色后刷新"，
+  **没有 goal/skill 在跑** ⇒ 这正是 **D-B** 那个堵点。
 - **设备仍 MANUAL**（`learning/MODE_STATE.json` 的 `user_latch=true`，2026-10-12 起，
   理由写明由操作者校准后切回）⇒ **一切真机相关的下一步都卡在这里**。
 - ⚠️ **结构事实（新，别再踩）**：pin 树里 **`knowledge` / `learning` / `dataset` / `config` 四个是指向数据根的
