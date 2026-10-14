@@ -115,6 +115,47 @@ conftest.ProductionRuntimeWriteError: PRODUCTION_RUNTIME_FILES_TOUCHED_BY_TESTS 
 挑几个失败测试**单独带 traceback 重跑**（`--tb=short`），看失败里有没有
 `ProductionRuntimeWriteError`。**有 ⇒ 根因确认，且修覆盖面就能同时清掉大部分红；没有 ⇒ 另找。**
 
+### 三·补³：**假设已被证伪**，且**摸到真正的根因方向**（2026-10-14 晚）
+
+**① 证伪**：单跑 `tests/test_camp_panel_stamina.py`（`--tb=short`），失败**不是**守卫拒绝，而是**真断言**：
+
+```
+AssertionError: None != 9                 # camp.stamina.get("current")
+AssertionError: None != 'CAMP_PANEL_HUD'  # camp.stamina.get("source")
+```
+
+⇒ **不是"守卫引起失败"**。失败是"**该读到的数没读到**"。而且该测试**没被 skip**
+（它的 `setUpClass` 在 `production_vision()` 为 None 或 fixture 缺失时会 skip）⇒ **OCR 栈与 fixture 都在**。
+
+**② 一步步摸到根因方向**（都是只读探针）：
+
+| 探针 | 结果 |
+|---|---|
+| `production_vision().observe(MAP_FRAME)` | `stamina={}`（**空的**） |
+| 全帧 OCR（`recognize(frame)`） | **29 个 token，中文正常** ⇒ **OCR 引擎是活的** |
+| `recognize(frame, HUD_STAMINA_ROI)` | **`[]`（零 token）** |
+| **手动裁 ROI（px 28,96,82,120）并放大 6× 再 OCR** | **`[('6', 0.997)]`** ← 读出来了 |
+
+⇒ **`HUD_STAMINA_ROI` 那个 54×24 的小裁片，生产路径的 OCR 读不出任何东西；放大 6 倍才读得出。**
+而项目自己的 `D-021` 早就写过"**小号文字必须走专用 ROI OCR，不能依赖全屏结果**"——
+现在这条路的**反例出现了**：**ROI OCR 本身在一个 54×24 的裁片上返回空**
+（全帧有 29 个 token，说明引擎没问题，是**这个尺寸/这条裁片**读不出）。
+
+**⚠️ 两个必须分开的保留**：
+1. **读出来的值是 `'6'`，而测试期望 `9`** ⇒ 即使放大，**ROI 与当年也不再逐字一致**
+   （ROI 现为 `w_norm=0.075`→54px；`test_camp_panel_stamina.py` 的 docstring 记的是 px 70 右边界、即 42px）。
+   ⇒ **是 ROI 变了、还是引擎版本变了，本地判不了 —— 要真机**。
+2. `CAMP_PANEL_HUD` 这个 source **确实存在于代码里**（`ocr.py:6088`）⇒ **不是"没实现"**。
+
+**③ 一个结构性旁证**：重跑到 **72%** 那一行是
+`....................FFFF.FFFFFFFFFFFFFF................` —— **18 个连续 F** ⇒
+失败**不是纯散布**，而是"**大部分散布 + 若干按文件成簇**"。这与"一个共因（ROI 读不出）
+命中所有依赖 HUD 读数的测试"相符，也与"某些文件另有一处共因"相符。
+
+**⇒ 阶段性结论（谨慎版）**：299 里**至少有一部分**是"**HUD 小字号 ROI OCR 读不出**"这一个**运行/引擎层**共因，
+**不是逐条的业务逻辑回归**；但**具体占比**要等全量结束、把失败按"是否依赖 HUD 读数"分组才能说。
+**在那之前不改任何生产代码。**
+
 ### 三·补：重跑进行中的**实时进度**（已有证据）
 
 后台重跑用 `-q`（一测一字符）。跑到 **~26%** 时读了一次输出：
