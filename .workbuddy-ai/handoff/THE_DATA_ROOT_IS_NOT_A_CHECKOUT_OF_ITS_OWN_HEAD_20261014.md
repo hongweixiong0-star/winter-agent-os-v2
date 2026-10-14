@@ -115,3 +115,19 @@ git checkout -- tests/     # 数据根；index == HEAD
 而直接提交它又会**未经确认地改变 ignore 行为** —— 因为 `p2p_agent/` 下**当前没有任何文件被跟踪**
 （`git ls-files p2p_agent/` 为空），与那条注释"其余（config/adapter/…）照常跟踪"**不符**。
 **所以本轮不动它**，只记录；要动，先确认那条 p2p 规则到底要不要。
+
+## 九、那 3 个红测试**不是回归**（2026-10-14 晚，逐条看懂了断言）
+
+数据根那 **6 个 untracked 测试**里红的 3 个，本轮读懂了它们在断言什么：
+
+| 文件 | 断言内容 | 性质 |
+|---|---|---|
+| `test_template_lifecycle_precedence.py`（2 红） | 同一语义有 `CANDIDATE/VERIFIED/STABLE` 三条记录时，`vision.find` 应**按层优先**（先 STABLE、只在该层无命中才降到下层）。测试把 `_find_in_roi` 打桩，**在下层被搜时直接 `self.fail`** | **未实现特性的规格**（tier precedence；现实现是一次把候选交给 `_find_in_roi`，顺序不同） |
+| `test_empty_task_page_recovery.py`（1 红） | MAIL 页"全领完"且无可选 goal 时，`runtime.run(max_actions=1)` 应**回 HOME** | 未完成的行为规格 |
+
+⇒ **三个都是"规格先行、实现未做"，不是当前代码的回归。** 而且它们**未跟踪** ⇒
+**pin 树的规范集（5753）里没有它们**；**只有从数据根跑**才会多出这 3 个红。
+**这正是 D-J 的又一条理由**：从数据根跑 = 规范集 ＋ 草稿，**红点与总数都不可比**。
+
+**未做**：没提交它们（提交会让套件变红）、没删它们（是 WIP）、**没去实现那条 tier precedence**
+（改 `vision.find` 属生产感知链，需要回归 + 真机验证，不在离线可声称的范围内）。
