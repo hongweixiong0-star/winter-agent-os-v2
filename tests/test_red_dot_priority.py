@@ -21,6 +21,8 @@ from __future__ import annotations
 import json
 import sys
 import unittest
+
+import pytest  # noqa: E402
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -48,6 +50,19 @@ from winter_agent_v2.goal_library import (  # noqa: E402
 from winter_agent_v2.models import Page, WorldState  # noqa: E402
 
 RUNTIME = ROOT / "dataset/raw/control_panel/runtime_auto"
+
+# Both frames this file reads live under ``dataset/raw/**``, which retention rotates (measured
+# 2026-10-15: the directories are there, the frames are not), so every test below failed with
+# ``FileNotFoundError`` -- which reads as a code fault and is not one.  Re-capturing them needs a
+# live device; until then a module-level skip is the honest state.
+_FRAMES = (
+    RUNTIME / "20260923_000206_train/20260923_000206_train_step_001_after_20260922T160220374378.png",
+    RUNTIME / "20260923_001936_231102/20260923_001936_231102_step_001_before_20260922T161941349297.png",
+)
+pytestmark = pytest.mark.skipif(
+    not all(frame.is_file() for frame in _FRAMES),
+    reason=f"missing fixture(s) under {RUNTIME} (retention rotated dataset/raw)",
+)
 MAIL_DOT_DRAWN = RUNTIME / "20260923_000206_train/20260923_000206_train_step_001_after_20260922T160220374378.png"
 MAIL_NO_DOT = RUNTIME / "20260923_001936_231102/20260923_001936_231102_step_001_before_20260922T161941349297.png"
 
