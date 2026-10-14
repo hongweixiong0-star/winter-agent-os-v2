@@ -26,10 +26,11 @@
   ⚠️ **面板这次是我直接拉起的**（`schtasks` 被安全策略列入黑名单）⇒ 属"**开发工具启动**"，
   **验收 Soak 会记 `DEVELOPMENT_ENV_LIMITATION`；方便时请用 `Start-Winter-Agent-V2.cmd` 双击重拉一次**。
   见 `AUTO_IS_RUNNING_20261014.md`（含我前面两条错判的更正：**起 AUTO 不是只有按钮一条路**）。
-  ⚠️ **但活不会自己来**：预载闸门仍被 **17 条**记录关着（`GATE_REFUSED`），每轮都是"切换角色后刷新"，
-  **没有 goal/skill 在跑** ⇒ 这正是 **D-B** 那个堵点。
-- **设备仍 MANUAL**（`learning/MODE_STATE.json` 的 `user_latch=true`，2026-10-12 起，
-  理由写明由操作者校准后切回）⇒ **一切真机相关的下一步都卡在这里**。
+  **闸门仍被 6 条记录关着**（`GATE_REFUSED`；原 17 条里的 11 条已于 2026-10-15 按新终态 `FALSIFIED` 退役，
+  见 `OPERATOR_DECISION_PACKAGE_20261014.md` 的 D-B）——剩下那 6 条**都要真机新证据**。
+- **设备已交还 AUTO**（2026-10-14 23:07 起）：`MODE_STATE.json` 为 `mode=AUTO`、`user_latch=false`，
+  history 有 `MANUAL->AUTO by USER` 一条；**操作员 22:56 授权"可以随便用真机"**。
+  ⇒ **真机相关的下一步现在都解锁了**（不再卡在 MANUAL）。
 - ⚠️ **结构事实（新，别再踩）**：pin 树里 **`knowledge` / `learning` / `dataset` / `config` 四个是指向数据根的
   NTFS junction（同一份内容、两个路径）**；其余（`winter_agent_v2`/`tests`/`tools`/`docs`/`.workbuddy*`）才是**独立副本**。
   ⇒ **对那四个别做 `git checkout --` / `git restore`**（会改共享运行态，两树同时受影响）；
@@ -43,6 +44,12 @@
 - **头号任务（巨熊准时参战）**：链路**代码齐 + 6 个测试**；`PARTICIPATE_BEAR` 至今 **0 次**
   ⇒ 阻塞是"**活的窗口 × AUTO 从未同框**"。**D-K 已答**：链**不需要** `BEAR_AUTO_JOIN`。
 - 📌 **待裁决的决定收在一页**：`OPERATOR_DECISION_PACKAGE_20261014.md`；最省是 **D-A ＋ D-B** 一起下。
+- ✅ **已有定时盯盘（2026-10-15 建）**：自动化 `0a15208e-…`「**Winter Agent OS V2 运行时与巨熊窗口盯盘**」，
+  **每 2 小时一次、只读**——查 AUTO 存活、**巨熊窗口**（bear/巨熊/rally/participate）、
+  `episodes.jsonl` 是否首次超过 **10436**、Gateway、pending 是否 > **6**。
+  **只在有变化/异常时展开报告**。⇒ **不要重复建它**；也**不要**因为"没动静"以为它没在跑。
+- ⚠️ **改 `03_NEXT_ACTION.md` / 长 handoff 时注意**：**上下文接近上限时大段 Edit 容易截断**（本会话犯过一次，
+  把 AUTO bullet 截断并造出重复段落）——**改完立刻 `sed -n '起,止p'` 校验结构**。
 - ⚠️ **读下面 2026-10-11 那两段时先对照本节**：其中的"**未 push**"、"**`crashes/` 不存在**"、
   "**RR-001 最该先看**"三处**都已过时**（镜像已同步；`crashes/` 现有 52 个现场；RR-001 已修）。
 
