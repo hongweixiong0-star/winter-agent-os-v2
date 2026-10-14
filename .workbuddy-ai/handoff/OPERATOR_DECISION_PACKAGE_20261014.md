@@ -103,8 +103,9 @@
 | # | 事项 | 记录处 |
 |---|---|---|
 | ~~D-G~~ | ~~`pages.json` 与 `Page` 的 **15 名分歧**~~ → **✅ 2026-10-14 已复核，见 §四·补** | — |
-| D-H | **90 个候选无试跑路径** | `03_NEXT_ACTION.md:47` |
+| ~~D-H~~ | ~~**90 个候选无试跑路径**~~ → **✅ 2026-10-14 已复核（逐字复现），见 §四·补²** | — |
 | D-I | 设备上**第二个自动化**的处置 | `03_NEXT_ACTION.md:47`、`10_LAST_HANDOFF.md:228` |
+| **D-K**（新） | **`BEAR_AUTO_JOIN` 不在可派发集**：巨熊链**是否必须切**这个开关？（未定论，见 §四·补²） | 本文件 §四·补² |
 
 ### §四·补 · D-G 已复核（2026-10-14）
 
@@ -122,6 +123,25 @@
 **选项**：① 闸门改按 `Page` 枚举（或枚举 ∩ 清单）校验；② 明确 `pages.json` 是"已知/超前清单"、
 不作判据，另立字段表达"计划中"；③ 不动，只记录。
 **建议（非约束）**：因读取器**只能**返回枚举，**①** 更贴事实；但改的是闸门 → 应单独审。
+
+### §四·补² · D-H 已复核（2026-10-14）
+
+**结论**：D-H **没有被推翻，逐字复现**。用同一条只读脚本
+（`knowledge/ui/screenshot_audit/_scripts/measure_candidate_trials_20261010.py`）重跑：
+**102 候选 · 12 合格 · 90 被挡 = 78 `semantic_contract_incomplete` + 10 `no_bound_verifier`
++ 2 `risk_not_allowed:MEDIUM_COMBAT`**。出处 `V2_FINAL_ACCEPTANCE_REPORT.md` §12.5
+已带 2026-10-11 的更正块。⇒ **处置不变**：让那 78 个可试需**逐条撰写 semantic contract**，
+而"按相似度映射＝猜测"被项目禁止 ⇒ 仍是**决策**，不是执行。
+
+**顺路两件（性质不同）**：
+- ✅ **候选闸门不挡巨熊链**：`OPEN_BEAR_RALLY_LIST` / `START_RALLY` / `JOIN_RALLY`
+  **都在 `LiveRuntime.VERIFIED_ATOMIC`**（虽状态为 CANDIDATE）⇒ 走生产派发，不受候选池限制。
+- ⚠ **`BEAR_AUTO_JOIN` 两条路都派不发**：既不在 `VERIFIED_ATOMIC`、也不在 `BEAR_SKILLS`，
+  而它有生产状态守卫（`executor_router.py:679`）、巨熊 playbook 前置里要"看 AUTO_JOIN 状态"。
+  **是否构成缺口未定论**（手工加入可绕开）——列在 D-I 之后供裁。
+- 池里**冻结的变成两个**：`RESEARCH: 566` 与 **`OPEN_QUICK_PANEL: 12`**（§12.5 只点了前者），
+  两者都在"12 eligible"名单里 ⇒ §12.5 点名的"blocked candidate is invisible"**仍活**。
+见 `THE_NINETY_BLOCKED_CANDIDATES_REPRODUCE_AND_TWO_FREEZE_20261014.md`。
 
 ---
 
