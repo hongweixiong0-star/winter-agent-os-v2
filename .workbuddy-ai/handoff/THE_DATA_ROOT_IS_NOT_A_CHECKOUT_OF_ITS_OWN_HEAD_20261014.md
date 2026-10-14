@@ -1,0 +1,85 @@
+# 数据根**不是它自己 HEAD 的检出**：测试少跑 192 条，且有 6 个测试**不在库里**（2026-10-14）
+
+> 从上一轮的巨熊证据（工具不在库）顺下去，扩到"代码侧还有哪些被引用的东西其实不在库"。
+> 结论比预期重：**数据根 `E:\无尽冬日智能体` 的 `tests/` 工作树停在 2026-10-08 之前**，
+> 而它的 HEAD 是当前的 ⇒ **从数据根跑回归会少跑 192 条测试**；另有 6 个测试文件根本没进库。
+
+---
+
+## 一、怎么发现的
+
+- 读 handoff `THE_BEAR_ASSETS_EXIST_AND_NOBODY_READS_THEM_20261014.md` 引用的
+  `tests/test_runtime_capability_discovery_lane.py`（它被写成"钉着这条巷子"）——
+  核实发现该文件 **`git cat-file -e HEAD:…` 不存在** ⇒ **未跟踪**。
+- 于是把范围放大：**数据根与 pin 树，谁的 `tests/` 与 HEAD 一致？**
+
+## 二、实测：两棵树的测试数不一样
+
+| 树 | 分支 | `tests/` 工作树 | `pytest --collect-only` |
+|---|---|---|---|
+| **pin 树**（生产 pin） | `codex/production-pin-recovery` | **干净**（`git status` = 0） | **5753** |
+| **数据根** | `main` | **19 个 tracked 测试被删、16 个是旧版** | **5561** |
+
+⇒ **差 192 条。** 而且方向明确是"数据根更旧"：
+
+- 全部 35 个差异文件的 diff 都是**删除多于新增**（合计 **4653 删除 / 51 新增**）⇒ 磁盘是旧版；
+- 逐字证据：`tests/test_local_planner.py` 磁盘版是旧名
+  `test_a_screen_cannot_consume_the_whole_run`，而 HEAD 是操作者 **2026-10-08 指令**更新后的
+  `test_a_screen_is_stopped_by_no_progress_not_by_a_step_count`（`max_steps_per_run=5`）。
+  ⇒ **数据根的 `tests/` 停在 2026-10-08 之前。**
+- 对照组：**`winter_agent_v2/` 在数据根是干净的**（`git status` = 0）⇒ **代码是新的、测试是旧的。**
+
+## 三、为什么一直没被发现
+
+`check_mainline.py` 与 `WORKTREE_CLEAN` **只看 pin 树**（实测 pin 树 `WORKTREE_CLEAN=true`）。
+数据根工作树的漂移**对这两把尺子完全不可见** —— 与上一轮那个"只在数据根的工具"**同一个盲区**。
+
+## 四、本轮做的修复（可复现）
+
+数据根的 `tests/` 差异**全是"磁盘更旧"**（含那 51 处新增也经逐行确认为旧版残留），
+**没有任何本地新工作可丢** ⇒ 从 HEAD 恢复是安全的：
+
+```
+恢复前：5561 tests collected
+git checkout -- tests/     # 数据根；index == HEAD
+恢复后：5799 tests collected
+```
+
+**5799 = 5753（HEAD 的规范集）+ 46（下面 §五 那 6 个未跟踪测试）。**
+⇒ 所以 **`66bf7630` 的规范测试数是 5753**。
+
+## 五、残留：**6 个测试文件不在库里**（3 个还是红的）
+
+数据根里仍有 6 个 `?? tests/*.py`（**全部不在 HEAD**）：
+
+| 文件 | 结果 |
+|---|---|
+| `test_runtime_capability_discovery_lane.py` | 通过 —— **但 handoff 把它当"钉着"的测试引用**（见下） |
+| `test_unknown_learning.py` · `test_role_goal_state_store.py` · `test_open_quick_panel_skill.py` | 通过 |
+| `test_empty_task_page_recovery.py` | **失败**（1） |
+| `test_template_lifecycle_precedence.py` | **失败**（2） |
+
+跑这 6 个：**`3 failed, 43 passed`**。⇒ 它们是**本地草稿/WIP**，**不是库里的测试**。
+
+⚠️ **证据完整性问题**：`tests/test_runtime_capability_discovery_lane.py` 在
+`THE_LEARNING_BUDGET_CLAUSE_IS_UNREACHABLE_IN_PRODUCTION_20261014.md` 里被写成
+"这条巷子有测试钉着（`tests/test_runtime_capability_discovery_lane.py`）"。
+**它确实通过，但它不在库里** ⇒ 该"钉住"**不可从库里重现**（新克隆/pin 树都没有它）。
+这与上一轮"回放工具不在库"是**同一族**：**引用的东西不在库**。
+
+## 六、影响与建议（**未做**）
+
+1. **回归计数取决于你在哪棵树跑**：pin 树 5753、数据根（恢复后）5799、
+   数据根（恢复前）5561。**引用"N passed"时要说明树与 cwd**，否则数字不可比。
+2. 数据根是 `.venv` 所在、也是文档里那条回归命令的 cwd
+   （`03_NEXT_ACTION.md:1981`：`"E:/dongri-mumu-bot/.venv/Scripts/python.exe" -m pytest tests -q --basetemp="…tools/_pt_tmp"`）
+   ⇒ **文档化的回归正是从数据根跑的** ⇒ 历史"回归通过"很可能是**在少 192 条的旧集上**测的。
+   **建议**：要么固定从 pin 树（用数据根的 venv）跑，要么每次先 `git checkout -- tests/` 对齐。
+3. **别把数据根里的 untracked 测试/工具当库里的**：它们不随镜像、不进克隆。
+
+## 七、未做
+
+没提交那 6 个未跟踪测试（**3 个是红的**，属草稿，提交会让套件变红）；
+没删它们（可能是开发中的 WIP）；没动 pin 树；没动 `learning/`（50 个删除）与
+`dataset/`（95 个修改）等**数据目录**（那是运行态，不擅自恢复）；
+没改 `check_mainline.py` 或 `WORKTREE_CLEAN`（它们**按设计**只看 pin 树）。
