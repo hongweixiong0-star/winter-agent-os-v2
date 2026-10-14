@@ -13,10 +13,14 @@
   **此前因为"全量跑不出汇总行"而完全看不见**。分布 **60+ 文件、无单文件主导**；
   **两类成因并存**：① **真失败**（单独跑也红，如 `test_live_runtime.py` 12 红）＋
   ② **order/状态依赖**（如 `test_suite_isolation.py` 单独 18 绿、全量 3 红）。
-  29 个 error 的机制已定位（`_REDIRECTS` 未覆盖内联路径）。**先修那 29 个，再分组归因 299。**
-  见 `THE_FULL_SUITE_IS_RED_AND_WHY_20261014.md`（含"给下一个人的最短路径"）。
-- ✅ **AUTO 在跑**（2026-10-14 23:19 起）：`agent_state=AUTO_RUNNING`、`runtime_thread_alive=True`、
-  `scheduler_loop_alive=True`、**连续在跑**（约 1–2 分钟一轮）。
+  29 个 error 的机制已定位（`_REDIRECTS` 未覆盖内联路径）——**那一族已经修完了**；
+  **缺帧类也降了 9 个文件、约 87 个失败 → 诚实 skip**（**3 个真失败一个没盖**）。
+  **修法 + 五次判据修正 + 剩下约 10 个文件怎么接，全在 `MISSING_FIXTURE_IS_A_SKIP_20261015.md`
+  —— 新会话请先读它。** 另见 `THE_FULL_SUITE_IS_RED_AND_WHY_20261014.md`（总图）与
+  `tools/map_pytest_progress.py`（从 `-q` 进度流反推失败清单，治"汇总行被吞"）。
+- ✅ **AUTO 在跑，而且已经连续无人值守跑了 8 小时以上（0 崩溃）** —— 2026-10-15 07:32 实测仍是
+  `AUTO_RUNNING` / `alive True/True`。**但要注意**：`episodes.jsonl` 仍 10436 行（停在 10-11），
+  **每轮只做角色仲裁、没有真活**（预载闸门仍被 6 条要真机的记录关着）；**巨熊窗口尚未出现**。
   **配方 = ① 用 `mode_state.switch(MODE_AUTO, …)` 把模式切回 AUTO（并清 `user_latch`）→ ② 重启面板**
   （面板**启动时会自动起 AUTO**：`auto_execution` + `operator_intent=RUNNING` + 连续运行 + 预检通过）。
   ⚠️ **面板这次是我直接拉起的**（`schtasks` 被安全策略列入黑名单）⇒ 属"**开发工具启动**"，
