@@ -184,6 +184,44 @@ FileNotFoundError: ...\Temp\tmp068y_s2a\action_latency.jsonl
 
 **未做**：**没改任何代码/测试**；全量仍在跑（**85%**，228 F 时）。
 
+### 三·补⁶：**一个很可能是主因的发现：测试用的帧被 retention 删掉了**（2026-10-14 晚）
+
+**线索**：`grep -l "dataset/raw/" tests/*.py` ⇒ **76 个测试文件**引用 `dataset/raw/`。
+
+**逐个验**（抽 `tests/test_entry_badges.py`，映射里它 5 个 F）：
+
+```
+它用  RUNTIME/"20260923_015029_train/20260923_015029_train_step_005_before_...png"
+
+frame exists?      NO        ← 文件不在
+its dir exists?    YES       ← 目录在，但里面空了
+```
+
+**单跑它，5 个失败全是同一种**：
+
+```
+FileNotFoundError: ...\dataset\raw\control_panel\runtime_auto\20260923_000206_train\..._step_001_after_....png
+5 failed, 25 passed, 10 subtests passed
+```
+
+⇒ **失败的原因不是断言不成立，是"它要读的那一帧已经被删了"。**
+
+**为什么会删**：`dataset/raw/**` 是**运行时捕获区**，会被 `retention` 轮转；而
+`PROTECTED_DIRECTORY_NAMES`（`D-004`）保护的是 `dataset/verified / production / normalized / external`，
+**不含 `raw`**。⇒ **测试把 fixture 放在了一个会被清掉的目录里。**
+（对照：`test_camp_panel_stamina.py` 用的是 `dataset/truth_audit/...`，本会话实测那帧**还在**。）
+
+**⇒ 这很可能解释 299 里的**一大块**：** 60+ 个失败文件里，有多少是"缺帧"这一种，
+**要看正在跑的那次 `--tb=line` 全量**（按 `FileNotFoundError` + `dataset/raw/` 计数）——**本轮未完成**。
+
+**两个候选修法（都未做，都要先量占比）**：
+1. **把 fixture 迁到受保护区**（`dataset/truth_audit/` 这类**命名回归 fixture** 已经在用且存活）
+   —— 治本，但 76 个文件要动；
+2. **保护 `raw` 下被测试引用的那些子目录** —— 改动小，但要把"哪些帧是 fixture"表达出来。
+
+⚠️ **注意**：这条与 §三·补⁴ 的 `FileNotFoundError`（`tmpXXX/episodes.jsonl`）**不是同一件事** ——
+那个是**临时目录里该被写出的账本**，这个是**仓里的 fixture 帧**。**两条都要分开记。**
+
 ### 三·补⁵：全量结束 —— **301 failed / 29 errors**，分布**广而长尾**，且**有 order 依赖**（终稿）
 
 重跑结束（27:12）：`301 failed, 5401 passed, 71 skipped, 29 errors, 1013 subtests passed`。
