@@ -75,3 +75,61 @@ retirement is a config-gated off-switch on one call site, not a removal of a sub
 takes an injectable `advisor=` and `run_live.py` builds the planner from config, so the runtime
 itself never learns a model name. Acceptance levels and the live evidence:
 `docs/LOCAL_PLANNER_ACCEPTANCE.md`.
+
+## 5. Why `learning/unknown_dispatch.jsonl` goes quiet — and why that is not a fault
+
+Added 2026-10-10, after this exact question was asked and investigated from scratch ("the dispatch
+loop has not run for 17 days — fix it"). The answer is that **it is not broken**, and the fact was
+not written down anywhere, which is what made it cost an investigation.
+
+**Measured, not inferred:**
+
+| reading | value |
+|---|---|
+| the channel's only periodic trigger | the WorkBuddy automation **`404bbf18-5dcd-4f94-a091-b40ea26dc614`「UNKNOWN 问题通道：自动派发与结算」** (`FREQ=HOURLY;INTERVAL=1`) — status **`PAUSED`** |
+| the panel tick that supersedes it | alive: `unknown_ticks = 1353`, `unknown_last = 20:13:49`, i.e. it ran ~30 s before it was read |
+| what that tick does | `worker(submit=False)` — reconcile only, and it says so: `unknown_note = "channel retired (local planner answers in-cycle); 14 question(s) waiting, 0 in flight"` |
+| the switch that makes it submit nothing | `config/v2.json -> workbuddy_channel.enabled = false`, `retired_at 2026-09-25` (this section's §3) |
+| last write to the ledger | `2026-09-23T19:54:40` — i.e. the silence starts at the retirement, not at a crash |
+
+**So: two independent stops, and both are deliberate.** The submitter is off by the config switch,
+and the hourly automation that used to drive `tools/unknown_ai_worker.py --once` is `PAUSED`. A
+silent `unknown_dispatch.jsonl` is the **expected** reading of that combination. The panel tick still
+reconciles, so a job placed before the retirement would still be settled rather than holding the
+in-flight slot for ever.
+
+**Do not "fix" either one without being asked.** Resuming the automation would run
+`unknown_ai_worker.py --once`, which under `enabled = false` reconciles and returns
+`skipped: WORKBUDDY_CHANNEL_RETIRED` — no functional change, because the panel already reconciles
+every `UNKNOWN_EVERY = 8` ticks. Re-enabling `workbuddy_channel.enabled` would violate the
+2026-09-25 directive and re-enter the route §1 measured to a dead end.
+
+**The rule this cost an investigation to re-learn** — the project already wrote it down for the other
+automation, in `.workbuddy-ai/handoff/04_OPEN_ISSUES.md` (items `0ap` / `0az`), after the same
+confusion recurred four times: *"不要因为它不产出新 episode 就判定自动化故障…先查状态是不是 PAUSED"*.
+This section applies that rule to the UNKNOWN channel, whose paused state was **not** recorded
+anywhere until now.
+
+**Where to look first, in this order:**
+
+1. `automation_update` `list` — is `404bbf18-…「UNKNOWN 问题通道：自动派发与结算」` `ACTIVE` or `PAUSED`?
+2. `learning/control_panel/pump.json` — `unknown_ticks` / `unknown_last` / `unknown_note`. Fresh
+   values with `submitted: 0` mean **the loop is running and correctly idle**, not broken.
+3. `config/v2.json -> workbuddy_channel.enabled`.
+
+**What the accumulated `learning/unknown_requests/*.json` records are.** They are *not* a queue
+waiting for the retired channel. The runtime consults the in-cycle local planner **first**
+(`runtime.py` → `advisor.take_request(request, ...)`), and writes a request file **only when the
+planner returns `None`** (`if advice is None: advisor.ask(request)`). So a file means *the local
+model declined this screen* — which is exactly the not-authored evaluation corpus
+`tools/benchmark_gui_unknown.py` scores the local model on, and the reason
+`winter_agent_v2/retention.py::unknown_request_evidence()` keeps those frames. Keep them; they are
+the local model's exam paper, not a stuck backlog.
+
+**One honest caveat about that corpus:** 8 of the 15 records on disk (2026-10-10) have already lost
+their frame, and a record whose frame is gone cannot be scored — `tools/unknown_chain_check.py`
+reports it as *"the frame this question is about is gone: it cannot be replayed, only re-asked"*.
+Those 8 predate `unknown_request_evidence()`; the 7 that survive are all covered by it. Worth a
+periodic count of "records that still have a frame", because that number, not the record count, is
+the size of the usable corpus.
+
