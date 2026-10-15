@@ -45,6 +45,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import traceback
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -3013,7 +3014,12 @@ class KnowledgeBootstrapController:
                 now=now, plan=plan, mode=mode, questions=questions, arm_reason=arm_reason
             )
         except Exception as exc:  # noqa: BLE001
-            return f"dispatch failed: {type(exc).__name__}: {exc}"
+            # The name and the message say *what* failed; only the frame says *where*.
+            # Same blind spot as the role switch (see role_switch_controller.py): one string
+            # standing for a fault in any of a dozen call sites.
+            where = traceback.extract_tb(exc.__traceback__)[-1]
+            return (f"dispatch failed: {type(exc).__name__}: {exc} "
+                    f"@{where.filename}:{where.lineno}")
         if observation.preloaded:
             return f"job dispatched ({mode})"
         # The gate's own sentence, not a bare "refused": which of the five reasons
@@ -3085,7 +3091,9 @@ class KnowledgeBootstrapController:
             self._last = report
             self.write_state(now=moment, scanner=scanner, note=summary)
         except Exception as exc:  # noqa: BLE001 - a hook must never break reconciliation
-            return f"completion hook failed: {type(exc).__name__}: {exc}"
+            where = traceback.extract_tb(exc.__traceback__)[-1]
+            return (f"completion hook failed: {type(exc).__name__}: {exc} "
+                    f"@{where.filename}:{where.lineno}")
         return summary
 
     # -- coverage (operator §十一) -----------------------------------------
