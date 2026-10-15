@@ -2047,3 +2047,19 @@ payload 换成真机有效的 `tools/run_intel_pins.py`，并**用 `list` 复核
   托管 Python 3.13 **没有 PIL**。
 - 脚本里**不要用 `date`/`head`/`tail`** 之类外部命令（不存在）。
 - 验收扫描：`tools/run_gather_acceptance.py --runs N`，每轮约 1–2 分钟。
+
+---
+
+## ⚠️ 2026-10-15 18:0x 追加更正（与本文件开头那条 AUTO 说明冲突时，**以本段为准**）
+
+1. **前面写的"面板 12:06 关闭、AUTO 只跑了 ≈12.8 小时"是错的。**
+   全量日志里 `13:01:35 / 13:36:12 / 13:39:32 / 14:22:30` 都有本轮结束记录 ⇒ **12:06 后它又起来了，14:22 仍在跑**。
+   错因：只看 `tail` 一段就下结论（与我批评过的"只看过期快照"同类）。**判据要看全量、按行号核。**
+2. **❗ 真 bug（未修）**：角色切换**反复抛 `UnboundLocalError`**：
+   `⚠ 本轮结束：切换到角色 … 暂未成功，已停止旧页面操作并按退避时间重试：ROLE SWITCH EXCEPTION:UnboundLocalError`
+   而**角色仲裁是 AUTO 现在唯一在做的事** ⇒ **AUTO 目前唯一的活动其实是坏的**，一直在退避重试。
+   **候选点**：`winter_agent_v2/global_scheduler_state.py` 的 `begin_role_switch`(624) /
+   `commit_role_switch`(648) / `abort_role_switch`(705)，找出只在部分分支赋值的局部变量。
+   **这是当前最值得修的一处**（比清测试更直接影响系统行为）。
+3. 巨熊窗口：全量日志 **0 条** bear/rally 记录 ⇒ **今天约 14:00 那次 AUTO 没参与**；`episodes.jsonl` 仍 10436。
+4. 快照曾出现 **`RECOVERING`** 状态（非 AUTO_RUNNING）⇒ 它在从某次崩溃恢复。
