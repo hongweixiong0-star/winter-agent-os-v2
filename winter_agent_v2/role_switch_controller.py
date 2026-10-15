@@ -14,6 +14,7 @@ import json
 from pathlib import Path
 import re
 import time
+import traceback
 from typing import Any, Callable, Mapping
 
 import numpy as np
@@ -350,8 +351,18 @@ class RoleSwitchController:
                 evidence=tuple(evidence), elapsed_seconds=self.monotonic() - started,
             )
         except Exception as exc:  # noqa: BLE001 - a failed switch must abort, never leak stale state
-            return self._abort(target_role_id, f"ROLE_SWITCH_EXCEPTION:{type(exc).__name__}",
-                               evidence, started)
+            # The reason used to carry only the exception's *name*, and the panel renders it with
+            # underscores as spaces, so one string -- ``ROLE SWITCH EXCEPTION:UnboundLocalError`` --
+            # stood for three different faults: a path the 2026-10-08 fix missed, a build older
+            # than that fix, and any genuinely new break.  Measured again 2026-10-15, still
+            # firing, and un-diagnosable for exactly that reason.  The failing frame is the cheap
+            # discriminator, and the reason is the only thing that reaches the log, so it rides
+            # along.  ``exc.__traceback__`` is never None here: this is the handler for ``exc``.
+            where = traceback.extract_tb(exc.__traceback__)[-1]
+            return self._abort(
+                target_role_id,
+                f"ROLE_SWITCH_EXCEPTION:{type(exc).__name__}@{where.filename}:{where.lineno}",
+                evidence, started)
 
     def _abort(self, target_role_id: str, reason: str, evidence: list[str], started: float) -> RoleSwitchResult:
         actual = ""
