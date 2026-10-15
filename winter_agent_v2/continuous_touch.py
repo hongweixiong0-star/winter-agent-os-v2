@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import threading
 import time
+import traceback
 import weakref
 from dataclasses import dataclass, field
 from enum import Enum
@@ -283,7 +284,15 @@ class ContinuousTouchSession:
     def __exit__(self, exc_type, exc, tb) -> bool:
         if self.holds_finger:
             if exc_type is not None:
-                self.abort(f"EXCEPTION_{exc_type.__name__}")
+                # ``tb`` is handed to us by the interpreter and used to be ignored, so the only
+                # thing recorded was the exception's *name* -- the same blind spot the role switch
+                # had (see ``role_switch_controller.py``: one name stood for three different
+                # faults).  The abort reason is what reaches the log, so the frame rides along.
+                where = traceback.extract_tb(tb)[-1] if tb is not None else None
+                self.abort(
+                    f"EXCEPTION_{exc_type.__name__}"
+                    + (f"@{where.filename}:{where.lineno}" if where is not None else "")
+                )
             else:
                 self.end(reason="CONTEXT_EXIT")
         if self._closed_at is None:
