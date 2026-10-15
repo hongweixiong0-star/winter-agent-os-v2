@@ -20,8 +20,13 @@
   主要形态是"**大脑选了别的技能**"，判断法与"三条不要做的事"在 **`PILE_2_BEHAVIOURAL_FAILURES_20261015.md`**
   （**读它，不要再找缺帧**）。 另见 `THE_FULL_SUITE_IS_RED_AND_WHY_20261014.md`（总图）与
   `tools/map_pytest_progress.py`（从 `-q` 进度流反推失败清单，治"汇总行被吞"）。
-- ✅ **AUTO 在跑，而且已经连续无人值守跑了 8 小时以上（0 崩溃）** —— 2026-10-15 07:32 实测仍是
-  `AUTO_RUNNING` / `alive True/True`。**但要注意**：`episodes.jsonl` 仍 10436 行（停在 10-11），
+- ✅ **AUTO 在跑（但"在跑"必须实测，别信状态字）**：2026-10-14 23:19 起连续跑了 **≈12.8 小时**
+  （到 **10-15 12:06 面板自行关闭**），**17:58 已重启**并确认健康（`IDLE`/`alive True/True`/快照新鲜 6 秒/轮次正常）。
+  ⚠️ **判断存活只能看 `learning/runtime_snapshot.json` 的 `updated_at` 是否新鲜**（>5 分钟可疑、>30 分钟判定已停），
+  **不能只看 `agent_state=AUTO_RUNNING`** —— 12:06 那次快照**一直写着 AUTO_RUNNING**，把我和盯盘都骗过一轮。
+  ⚠️ **12:06 那次死因很可能是我自己的启动方式**：用后台任务起的启动命令，**父任务被回收时面板被一起收掉**；
+  而 `schtasks`（计划任务）与脱离式启动**都被本机安全策略挡着** ⇒ **只有操作员双击 `Start-Winter-Agent-V2.cmd` 才真长期**。
+  **但仍要注意**：`episodes.jsonl` 仍 10436 行（停在 10-11），
   **每轮只做角色仲裁、没有真活**（预载闸门仍被 6 条要真机的记录关着）；**巨熊窗口尚未出现**。
   **配方 = ① 用 `mode_state.switch(MODE_AUTO, …)` 把模式切回 AUTO（并清 `user_latch`）→ ② 重启面板**
   （面板**启动时会自动起 AUTO**：`auto_execution` + `operator_intent=RUNNING` + 连续运行 + 预检通过）。
