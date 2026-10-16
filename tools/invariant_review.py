@@ -376,12 +376,25 @@ def no_production_orphan_module() -> tuple[str, str]:
     measured = [name for name in modules if name not in imported]
     known = [name for name in measured if name in KNOWN_PRODUCTION_ORPHANS]
     fresh = [name for name in measured if name not in KNOWN_PRODUCTION_ORPHANS]
+    # The pinned set is the union measured across both checkouts (see the constant's comment),
+    # so a name pinned for one tree can be *connected* in the other.  The report must say which
+    # half each name is in: a reader comparing the printed count against the pinned tuple
+    # otherwise sees a contradiction, and ``test_the_known_debt_is_printed_even_when_it_passes``
+    # asserts every pinned name stays visible in the detail -- printing the connected half is
+    # how that stays true without hiding the orphan half.
+    connected = [name for name in KNOWN_PRODUCTION_ORPHANS if name not in measured]
     if fresh:
-        return FAIL, (f"{len(fresh)} module(s) newly imported by no production file: "
-                      f"{', '.join(fresh)}  (known debt: {len(known)} -- "
-                      f"{', '.join(known) or 'none'})")
-    return PASS, (f"no new orphan module ({len(modules)} production modules; "
-                  f"{len(known)} known and printed: {', '.join(known) or 'none'})")
+        detail = (f"{len(fresh)} module(s) newly imported by no production file: "
+                  f"{', '.join(fresh)}  (known debt: {len(known)} -- "
+                  f"{', '.join(known) or 'none'}")
+        if connected:
+            detail += f"; pinned but connected in this tree: {', '.join(connected)}"
+        return FAIL, detail + ")"
+    detail = (f"no new orphan module ({len(modules)} production modules; "
+              f"{len(known)} known and printed: {', '.join(known) or 'none'}")
+    if connected:
+        detail += f"; pinned but connected in this tree: {', '.join(connected)}"
+    return PASS, detail + ")"
 
 
 CHECKS = (

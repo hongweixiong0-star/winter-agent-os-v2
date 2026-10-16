@@ -61,6 +61,18 @@ def _executor(device, resolver, backend: str) -> Executor:
                     backend=backend)
 
 
+def _pipeline_wrote_it(entry: dict) -> bool:
+    """Whether ``pipeline_autogen`` has written this entry's evidence.
+
+    The pair below is the one fingerprint every one of its writes carries, across both of its
+    paths: the installed-tool path adds ``tool_generated_node`` and the V2-native path adds
+    ``pipeline_node_path``, but both always write ``autogen_node_count`` and ``autogen_note``.
+    Measured 2026-10-16 over the whole table: 24 entries, zero exceptions.
+    """
+    evidence = entry.get("evidence") or {}
+    return "autogen_node_count" in evidence or "autogen_note" in evidence
+
+
 class RoutingTableTests(unittest.TestCase):
     def test_unknown_skill_keeps_the_historical_adb_path(self) -> None:
         table = RoutingTable(skills={})
@@ -89,10 +101,26 @@ class RoutingTableTests(unittest.TestCase):
         P0 -- the letter that tells the operator this went through the full
         measurement gate. The flag exists because otherwise "preferred MAA" is
         the only signal, and a generated node would read as promoted.
+
+        Re-derived 2026-10-16: the set used to be every ``preferred MAA,
+        promoted false`` entry, and that was wider than the pipeline.
+        ``DISPATCH_MARCH`` was registered by a hand-run OCR batch (commit
+        ``c70f2654``) and carries the *gap queue's* own P0 verbatim
+        (``pipeline_gap_queue.json`` row 0: ``"priority": "P0"``, note "P0 gap
+        BTN_DISPATCH") -- a different field's meaning, not a promotion claim,
+        and no pipeline write ever touches it.  The membership test is now the
+        pipeline's own fingerprint (``_pipeline_wrote_it``): measured on the
+        table, 24 entries carry it and all 24 pass every assertion below; the
+        three ``promoted false`` non-pipeline entries (``DISPATCH_MARCH``,
+        ``OPEN_RESEARCH``, ``RESEARCH``) are out of scope by construction.
         """
         table = RoutingTable.load()
         autogen = {sid: entry for sid, entry in table.skills.items()
-                   if entry.get("preferred") == MAA and entry.get("promoted") is False}
+                   if entry.get("preferred") == MAA and entry.get("promoted") is False
+                   and _pipeline_wrote_it(entry)}
+        # A membership test that quietly matched nothing would make every assertion below
+        # vacuous, which is the failure shape this re-derivation exists to avoid.
+        self.assertTrue(autogen, "the pipeline's own writes must be in the table")
         for skill_id, entry in autogen.items():
             self.assertEqual(entry.get("fallback"), ADB, skill_id)
             self.assertNotEqual(entry.get("migration_priority"), "P0", skill_id)
