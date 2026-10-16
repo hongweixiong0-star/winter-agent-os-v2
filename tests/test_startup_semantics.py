@@ -356,6 +356,17 @@ class AutostartGateTest(unittest.TestCase):
         cls._log_patch.start()
         cls._ledger_patch.start()
         cls._pump_patch.start()
+        # ``unittest`` does not call ``tearDownClass`` when ``setUpClass`` raises, so the four
+        # starts above need a stop that survives that path.  Measured 2026-10-16: this class's
+        # ``ControlPanel`` construction raised a Tk error on this host, ``tearDownClass`` was
+        # skipped, and ``PUMP_STATE_PATH`` stayed pointing at this class's temp directory for
+        # the rest of the session -- ``test_suite_isolation`` caught a pump heartbeat in the
+        # wrong directory and a redirected-path check against a dead temp path.  The root cause
+        # is fixed (the panel's preview image now binds to its own widget), and this makes the
+        # consequence impossible if it ever raises again.  ``patch.stop`` is idempotent, so the
+        # stops in ``tearDownClass`` remain harmless for the passing path.
+        for _started in (cls._state_patch, cls._log_patch, cls._ledger_patch, cls._pump_patch):
+            cls.addClassCleanup(_started.stop)
         try:
             cls.root = tk.Tk()
         except Exception as exc:  # noqa: BLE001 - no display

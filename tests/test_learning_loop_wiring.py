@@ -39,6 +39,7 @@ if str(ROOT) not in sys.path:
 from winter_agent_v2 import page_knowledge, skill_repair, unknown_learning  # noqa: E402
 from winter_agent_v2 import ui_venus_repair  # noqa: E402
 from winter_agent_v2.brain import RuleBrain  # noqa: E402
+from winter_agent_v2.learning import EpisodeStore  # noqa: E402
 from winter_agent_v2.models import Page, WorldState  # noqa: E402
 from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
 
@@ -142,6 +143,15 @@ def _runtime(*, ocr, learned: unknown_learning.VerifiedStepLedger) -> LiveRuntim
     # which the tests below set) and the section-14 contract row -- and a test that redirected only
     # the first would quietly write into the repo, which conftest's production-write guard catches.
     runtime._repair_contract_ledger = root / "ui_venus_repair.jsonl"
+    # The online ledger is the third output, and it derives its root from the episode store
+    # (``_learning_event``: ``Path(store.path).resolve().parents[1]``) -- so a runtime without
+    # one writes ``learning/ui_venus_online.jsonl`` into the repo.  Measured 2026-10-16: the
+    # guard refused that write, the reuse lookup caught the refusal and DEFERRED to the
+    # ordinary path, and ``test_the_second_encounter_does_not_ask_the_model`` read "the
+    # learned action must be taken, not deferred" as failed -- one missing store behind both a
+    # red test and a stray production-write record.  ``<root>/learning/`` keeps the ledger's
+    # production shape inside this harness's own directory.
+    runtime.episode_store = EpisodeStore(root / "learning" / "episodes.jsonl")
     return runtime
 
 

@@ -9575,7 +9575,16 @@ class ControlPanel:
         # -- which mattered a lot when a window drag re-rendered this continuously.
         image.thumbnail((width, height), Image.Resampling.BILINEAR)
         canvas = Image.new("RGB", (width, height), "#070b10"); canvas.paste(image, ((width-image.width)//2, (height-image.height)//2))
-        self.preview_photo = ImageTk.PhotoImage(canvas); self.preview.configure(image=self.preview_photo, text="")
+        # ``master=self.preview``, not the default root.  Without it, ``ImageTk.PhotoImage``
+        # attaches the picture to ``tkinter._default_root`` -- which is whichever ``Tk()`` was
+        # created FIRST in this process and is never re-pointed.  In the test suite an earlier
+        # class's root answers that description, so the image lands in its interpreter and
+        # configuring a widget of this panel's own root fails with
+        # ``image "pyimageN" doesn't exist`` -- measured 2026-10-16 on this host: 9 errors in
+        # test_startup_semantics and 8 in test_panel_architecture_view, and reproduced 1:1 in
+        # a two-root snippet (unbound: "pyimage1 doesn't exist"; master=widget: OK).  A picture
+        # should always belong to the interpreter of the widget it is shown in.
+        self.preview_photo = ImageTk.PhotoImage(canvas, master=self.preview); self.preview.configure(image=self.preview_photo, text="")
 
     def _recognition(self) -> str:
         w = self.latest_world

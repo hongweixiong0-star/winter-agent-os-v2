@@ -74,15 +74,29 @@ class ShapeTaxonomyTest(unittest.TestCase):
 
 
 class AdapterBindingTest(unittest.TestCase):
-    def test_the_three_adapters_are_found_with_the_argument_they_inject(self):
+    #: The adapters the runtime carries today, split by what they inject (measured 2026-10-16
+    #: through ``adapter_bindings()`` itself).  The three this audit was written for inject a
+    #: field read off the before-frame.  The two rally adapters arrived later (2026-09-24,
+    #: ``24b42935``, the bear-rally chain) and inject the rally kind they were registered with
+    #: -- a constant, not a frame field -- so the blanket "reads the before frame" assertion
+    #: this test began with no longer describes every adapter and is now stated per group.
+    BEFORE_FRAME_ADAPTERS = ("BUILDING_UPGRADE", "RESEARCH", "TRAIN_TROOPS")
+    CONSTANT_ADAPTERS = {"JOIN_RALLY": '"BEAR"', "START_RALLY": '"BEAR"'}
+
+    def test_the_adapters_are_found_with_the_argument_they_inject(self):
         adapters = audit.adapter_bindings()
         self.assertEqual(
             set(adapters),
-            {"BUILDING_UPGRADE", "RESEARCH", "TRAIN_TROOPS"},
+            set(self.BEFORE_FRAME_ADAPTERS) | set(self.CONSTANT_ADAPTERS),
         )
-        for binding in adapters.values():
-            self.assertTrue(binding.reads_before_frame, binding.skill)
-            self.assertTrue(binding.injected.startswith("str(before."), binding.skill)
+        for skill in self.BEFORE_FRAME_ADAPTERS:
+            binding = adapters[skill]
+            self.assertTrue(binding.reads_before_frame, skill)
+            self.assertTrue(binding.injected.startswith("str(before."), skill)
+        for skill, injected in self.CONSTANT_ADAPTERS.items():
+            binding = adapters[skill]
+            self.assertFalse(binding.reads_before_frame, skill)
+            self.assertEqual(binding.injected, injected, skill)
 
     def test_each_adapter_names_a_real_verifier(self):
         shapes = audit.verifier_shapes()
@@ -144,11 +158,18 @@ class CurrentTreeTest(unittest.TestCase):
             self.assertNotIn("verifier", ",".join(row.missing), skill)
 
     def test_build_and_train_need_nothing_but_a_live_success(self):
+        # Both need the same two preconditions; the live success then separated them.  Measured
+        # 2026-10-16 through this audit: BUILDING_UPGRADE is still at 0 dated successes, and
+        # TRAIN_TROOPS now has 33 -- the training chain reached L5 on 2026-09-27 (``8ff10b85``)
+        # and the ledger has counted it since.  The property is therefore proven for one of the
+        # two and remains the open item for the other; asserting 0 for both would pin a fact
+        # that stopped being true and hide the one this pair was waiting for.
         for skill in ("BUILDING_UPGRADE", "TRAIN_TROOPS"):
             row = self.by_skill[skill]
             self.assertTrue(row.vision_target, skill)
             self.assertEqual(row.missing, (), skill)
-            self.assertEqual(row.live_success, 0, skill)
+        self.assertEqual(self.by_skill["BUILDING_UPGRADE"].live_success, 0)
+        self.assertGreaterEqual(self.by_skill["TRAIN_TROOPS"].live_success, 1)
 
     def test_research_still_lacks_its_action_target(self):
         # BTN_START_RESEARCH has no template at all yet (2026-09-17), so RESEARCH
@@ -158,9 +179,11 @@ class CurrentTreeTest(unittest.TestCase):
         self.assertEqual(row.missing, ("vision_target",))
 
     def test_the_unreachable_families_are_measured_not_assumed(self):
-        # Move a name out of these sets when the runtime gains that shape.
+        # Move a name out of these sets when the runtime gains that shape -- and that is what
+        # happened to ``verify_rally_joined``: the JOIN_RALLY adapter (2026-09-24, ``24b42935``)
+        # binds it, so it left PARAMETER and the not-unreachable rule below keeps it out.
         self.assertIn("verify_beast_hunt", self.families.get("PARAMETER", []))
-        self.assertIn("verify_rally_joined", self.families.get("PARAMETER", []))
+        self.assertNotIn("verify_rally_joined", self.families.get("PARAMETER", []))
         self.assertIn("verify_alliance_tech_contribution", self.families.get("FRAME", []))
         self.assertIn("verify_gathering", self.families.get("STATE", []))
 
@@ -175,10 +198,14 @@ class CurrentTreeTest(unittest.TestCase):
                 self.assertGreaterEqual(row.live_success, 0)
 
     def test_the_group_the_operator_cares_about_is_non_empty(self):
+        # "Ready but no live success", and the group member this test was written around has
+        # left it: TRAIN_TROOPS measured 33 dated successes on 2026-10-16, so it is no longer
+        # unproven and the assertion for it flipped.  BUILDING_UPGRADE is still the exemplar --
+        # and the group itself is still substantial, which is the property this pins.
         ready = [r for r in self.rows if r.ready_but_unproven and r.live_success == 0]
         names = {r.skill for r in ready}
         self.assertIn("BUILDING_UPGRADE", names)
-        self.assertIn("TRAIN_TROOPS", names)
+        self.assertNotIn("TRAIN_TROOPS", names)
         self.assertTrue(len(ready) >= 10)
 
 
@@ -191,9 +218,12 @@ class CommandTest(unittest.TestCase):
         payload = json.loads(buf.getvalue())
         self.assertIn("unreachable_verifiers", payload)
         self.assertEqual(set(payload["lambda_adapters"]),
-                         {"BUILDING_UPGRADE", "RESEARCH", "TRAIN_TROOPS"})
+                         {"BUILDING_UPGRADE", "RESEARCH", "TRAIN_TROOPS",
+                          "JOIN_RALLY", "START_RALLY"})
+        # 21, re-measured 2026-10-16 (was 18 on 2026-09-17): the verifier file gained names
+        # since, and two left the unbound side because the rally adapters bind them.
         self.assertEqual(
-            sum(len(v) for v in payload["unreachable_verifiers"].values()), 18)
+            sum(len(v) for v in payload["unreachable_verifiers"].values()), 21)
 
     def test_the_plain_report_runs_and_names_the_adapters(self):
         buf = io.StringIO()
