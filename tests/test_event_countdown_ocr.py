@@ -26,14 +26,24 @@ def test_state_of_power_stage_timer_stays_an_end_deadline_not_a_start_time():
 
 
 def test_discovered_event_alias_uses_registry_identity_and_explicit_start_timer():
+    # A registered alias drawn at heading scale *with* frame geometry is a page-identity
+    # reading, so the frame routes to the calendar detail (measured rule, aab0dbb8: one
+    # heading names exactly one activity).  The two no-geometry tests above are the
+    # complement: the same texts without boxes stay on the minimum_guarantee branch.
     heading = ((102.0, 214.0), (219.0, 214.0), (219.0, 258.0), (102.0, 258.0))
     world = classify("常规活动", "联盟总动员", "距开始 02:00:00",
                      boxes=[(), heading, ()], frame_size=(720, 1280))
     assert world.page is Page.EVENT
-    minimum = world.events["minimum_guarantee"]
-    assert minimum["event_id"] == "ALLIANCE_MOBILIZATION"
-    assert minimum["seconds_to_start"] == 7200
-    assert minimum["remaining_seconds"] is None
+    detail = world.events["calendar_detail"]
+    assert detail["recognized"] is True
+    assert detail["event_id"] == "ALLIANCE_MOBILIZATION"
+    # 距开始 02:00:00 is an explicit start countdown.  It is kept raw, and it is never
+    # confused with a stage deadline -- the detail branch reads no seconds on its own.
+    assert detail["countdown_raw"] == "02:00:00"
+    assert detail["stage_timer_raw"] is None
+    assert detail["current_open_state"] == "SCHEDULED_NOT_OPEN"
+    # The routing is if/elif, so a detail frame never doubles as an active-event panel.
+    assert "minimum_guarantee" not in world.events
 
 
 def test_rotating_event_names_are_resolved_only_by_exact_registered_aliases():
@@ -44,7 +54,8 @@ def test_rotating_event_names_are_resolved_only_by_exact_registered_aliases():
         ("Brothers in Arms", "BROTHERS_IN_ARMS"),
     ):
         world = classify("常规活动", title, boxes=[(), heading], frame_size=(720, 1280))
-        assert world.events["minimum_guarantee"]["event_id"] == event_id
+        # Heading-scale alias => the detail container, and only the exact alias resolves.
+        assert world.events["calendar_detail"]["event_id"] == event_id
 
 
 def test_small_event_tab_does_not_override_the_active_event_heading():
@@ -53,8 +64,13 @@ def test_small_event_tab_does_not_override_the_active_event_heading():
     world = classify("常规活动", "联盟总动员", "军备竞演", "00:38:40",
                      boxes=[(), tab, heading, ()], frame_size=(720, 1280))
     assert world.page is Page.EVENT
-    assert world.events["minimum_guarantee"]["event_id"] == "ARMAMENT_COMPETITION"
-    assert world.events["minimum_guarantee"]["remaining_seconds"] == 2320
+    detail = world.events["calendar_detail"]
+    # The heading (军备竞演, heading box) wins over the small tab (联盟总动员); the tab
+    # is navigation, not identity.
+    assert detail["event_id"] == "ARMAMENT_COMPETITION"
+    # 00:38:40 carries no label; it is preserved verbatim and never promoted to a
+    # start clock.
+    assert detail["unlabeled_timer_raw"] == "00:38:40"
 
 
 def test_bear_trap_start_countdown_is_role_ready_input():
