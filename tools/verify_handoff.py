@@ -48,7 +48,12 @@ GENERATED_MARKERS = {
 }
 START_HERE_TRAPS = ["coreutils", "PowerShell", "dongri-mumu-bot", "MuMuManager"]
 HANDWRITTEN = {
-    "00_MASTER_RULES.md": ["顶层架构冻结", "Semantic", "Verifier", "真实支付", "72"],
+    # Re-pointed 2026-10-16: this file has been a pointer since 2026-10-06 -- the rule body
+    # moved to ``.workbuddy-ai/rules/OPERATIONAL.md`` (commit 5f9b968b, per
+    # docs/RULES_AUDIT_2026-10-05.md) -- so the old needles naming the body's content made
+    # this check a permanent red against a file that is doing its job.  The needles now guard
+    # the pointer's own hand-written content: the destination, the migration, and its audit.
+    "00_MASTER_RULES.md": ["已迁至", "OPERATIONAL.md", "RULES_AUDIT_2026-10-05"],
     "03_NEXT_ACTION.md": ["手写", "坑"],
     "04_OPEN_ISSUES.md": ["P0"],
     "06_DECISIONS.md": ["D-013", "D-001"],
