@@ -25,7 +25,16 @@ from .global_scheduler_state import GlobalSchedulerStateStore
 
 AVATAR_TEMPLATE_DIR = Path("knowledge/ui/role_switch/avatar_templates")
 PAID_OFFER_CLOSE_TEMPLATE = AVATAR_TEMPLATE_DIR / "paid_offer_close.png"
+# The store-season close glyph.  Measured 2026-10-17 (frame
+# 20261016T230937_518330Z_post_login.png, the 万象杂货铺 login offer): the control is a
+# white ✕ with NO dark outline on a deep-blue ground, while ``paid_offer_close.png`` carries
+# the older outlined glyph -- 0.36 self-band score in the old band and 0.82 in the widened
+# one, i.e. never past the 0.88 threshold, so every role switch aborted with
+# TARGET_ROLE_HOME_NOT_OBSERVED and the two roles stopped rotating (0 successes in 43 h,
+# 165 failures in 7 h).  This template self-matches the frame at 1.00.  Both glyphs stay in
+# the list: a style that was live once can return.
 PAID_OFFER_CLOSE_FALLBACKS = (
+    AVATAR_TEMPLATE_DIR / "paid_offer_close_store.png",
     Path("dataset/candidate/templates/btn_close__step_001_before__0.png"),
 )
 ROLE_AVATAR_THRESHOLD = 0.94
@@ -48,7 +57,12 @@ PAID_OFFER_CLOSE_VERIFY_TIMEOUT = 8.0
 # control outside it; and a crop that no longer fits fails closed -- no match,
 # no tap, the role switch aborts exactly as it does today -- instead of tapping
 # somewhere unintended.
-PAID_OFFER_CLOSE_ROI = {"x_norm": 0.62, "y_norm": 0.04, "w_norm": 0.38, "h_norm": 0.26}
+# The top edge moved 0.04 -> 0.0 on 2026-10-17: the 万象杂货铺 header draws its ✕ at
+# y_norm 0.026, above the old edge, which is why the close control could not be found at all
+# (frame 20261016T230937_518330Z_post_login.png: old band 0.36 / this band 0.82 for the old
+# glyph, 1.00 for the store-season one).  Nothing interacts above the money surface, so the
+# extension adds only the header row.
+PAID_OFFER_CLOSE_ROI = {"x_norm": 0.62, "y_norm": 0.0, "w_norm": 0.38, "h_norm": 0.30}
 
 
 @dataclass(frozen=True)

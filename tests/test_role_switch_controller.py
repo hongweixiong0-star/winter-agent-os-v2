@@ -615,3 +615,43 @@ def test_the_avatar_fallback_switch_completes_instead_of_raising(tmp_path, monke
     state = store.load()
     assert state.active_role_id == "role-b"
     assert state.role_switch_success_count == 1
+
+
+def test_the_store_season_close_glyph_is_found_at_the_top_of_the_header(tmp_path, monkeypatch):
+    """Measured 2026-10-17: the 万象杂货铺 login offer draws its ✕ at y_norm 0.026, above
+    the old band's 0.04 top edge, with no dark outline.
+
+    The old crop scored 0.36 there (0.82 even after widening, still under the 0.88
+    threshold), so ``_close_paid_offer`` returned False on every attempt and each role
+    switch aborted with ``TARGET_ROLE_HOME_NOT_OBSERVED`` -- 0 successes in 43 h and 165
+    failures in 7 h.  This pins the two halves of the repair: the band reaches the control,
+    and the store-season glyph matches through the real matcher (not a stub).
+    """
+    import shutil
+    from winter_agent_v2.role_switch_controller import PAID_OFFER_CLOSE_ROI
+
+    _store, controller = _role_switch_fixture(tmp_path)
+    # Ship the real store-season template into the fixture's root, where the fallback
+    # lookup will find it (relative paths resolve against ``self.root``).
+    target = tmp_path / "knowledge/ui/role_switch/avatar_templates/paid_offer_close_store.png"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile("knowledge/ui/role_switch/avatar_templates/paid_offer_close_store.png", target)
+
+    # A synthetic frame that carries the real glyph at the live frame's position
+    # (200,13) within the band: frame coords (446+200, 13) = (646, 13).
+    glyph = Image.open(target).convert("RGB")
+    frame = Image.new("RGB", (720, 1280), (60, 80, 130))
+    left = round(PAID_OFFER_CLOSE_ROI["x_norm"] * 720)
+    frame.paste(glyph, (left + 200, 13))
+    frame_path = tmp_path / "store-offer.png"
+    frame.save(frame_path)
+
+    clicks = []
+    monkeypatch.setattr(controller, "_click", lambda x, y: clicks.append((x, y)) or True)
+    monkeypatch.setattr(controller, "_capture", lambda _label: tmp_path / "after.png")
+    monkeypatch.setattr(controller, "_text", lambda _path: "主城 统帅")  # offer is gone
+
+    assert controller._close_paid_offer(frame_path) is True
+    assert clicks and clicks[0][1] >= 13, (
+        f"the tap must land on the glyph at the top of the header, got {clicks}"
+    )
