@@ -538,6 +538,11 @@ def test_runtime_persists_shared_action_outcome_and_episode_progress_by_goal(tmp
     runtime.role_scope = "FRESH_RUNTIME"
     runtime.execution_mode = "PRODUCTION"
     runtime.trace_id = runtime.job_id = runtime.capability = runtime.expected_after_version = ""
+    # The advised-step join reads this on every recorded episode (``_settle_advised_step``),
+    # upstream of its empty-id early return; declare it here the way ``__init__`` does -- an
+    # instance attribute set there does not exist on a ``__new__``-built fixture (measured
+    # 2026-10-16).
+    runtime._advised_request_id = ""
     runtime._fold_control_experience = lambda **_kwargs: None
     runtime._collect_ui_evidence = lambda **_kwargs: None
     runtime._collect_page_evidence = lambda **_kwargs: None

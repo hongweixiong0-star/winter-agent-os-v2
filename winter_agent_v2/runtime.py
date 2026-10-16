@@ -831,6 +831,13 @@ class LiveRuntime:
         #: every resolution with ``_advised_request_id``, for the same reason: a step that resolved
         #: nothing must not be credited with the previous step's answer.
         self._advised_learn_context: dict[str, Any] = {}
+        #: The request id of the advice the current step is allowed to settle, cleared with the
+        #: context above.  Read by ``_settle_advised_step`` -- which runs on every step that
+        #: records an episode -- so it must exist before the first step, not only after an answer
+        #: was accepted.  The attribute was written only at the accept/clear points, and a
+        #: ``LiveRuntime.__new__`` fixture that drives ``_record_episode`` directly met the
+        #: missing name first (measured 2026-10-16, test_global_dual_role_scheduler).
+        self._advised_request_id = ""
         #: Section 15's numerator and denominator, counted where the decision is actually made:
         #: ``_learned_model_calls`` counts model consultations on a screen this project had already
         #: solved, and ``_learned_unknown_screens`` counts every solved screen reached.  Two
