@@ -34,6 +34,7 @@ Machine-detected issues (recomputed every run):
 | P1-4 | **待批堆**：1094 untracked / 119 modified / 57 deleted | **清单已产出，待批** | 见 `UNTRACKED_AND_PENDING_INVENTORY_20261016.md`（分类+逐组建议）。**首要项**：`config/v2.json` 的 10-08 模型切换（Qwen3.6-35B-A3B @ llama.cpp:18080）已执行 8 天、未入库——旧 config 指向已删除的 UI-Venus。本轮已按"引用完整性/全绿活规格"先例纳入：4 个被引用工具、6 个草稿测试、tier 规格 |
 | ~~P1-5~~ | 测试套件"隔离绿、套件红"（模块级 `_METER_KINDS` 跨测试残留） | **✅ 已修 2026-10-16** | conftest 新增 autouse `_reset_module_state`（`8bdd49b2`）；毒探针成对验证后移除 |
 | ~~P1-6~~ | **GIANT 搜索无结果的跨-run 重试**（10-09~10-11 窗口 150 次 episode，第一大 live 簇） | **✅ 已实现 2026-10-16（`842364a1`）** | `_giant_stamina_failed` 改为读**持久冷却**（`learning/giant_search_cooldown.json`，TTL=1h——"找不到"≠"不可用"）：150 次/2 天 → 每小时最多 1 次；"无记忆=再试"（缺失/损坏→False，杜绝永久 DEFER）。3 守卫 + 四态探针 + runtime 回归 132 passed。帧证：客户端确实没找到（`20261010_085450_380404` step_014 前后帧无卡无动物，冰原巨兽 tab 高亮）。同窗口的 `SELECT_BEAST_TARGET_MAMMOTH` ×143 失败**已于 10-16 修复**（`3101830c`：面板吞地图点击——156 次尝试 100% 分离：12 成功全裸地图 / 143 失败全面板开） |
+| ~~P1-7~~ | **10-17 夜巡发现的三层连坐**：活动 hub 识别阈值 0.9x（旧布局拟合）→ ①日历 66 连败 ②scroll 17/18 败 ③两角色为日历 HARD_EVENT_PREEMPT 抖动、**43h 零成功切换**（failure +165/7h） | **✅ 两轮修复均已发布并验证 2026-10-17** | ①`a224af14`：hub 标题阈值 0.65x（实测 38px 大标题 vs 29px 标题 = 0.76 比值）→ **生产验证 2/2 成功**；②`93076d69`：切换弹窗"万象杂货铺"✕ 换季样式（无描边、y 0.026）+ band 0.04→0.0 → **首成功 commit（07:50:59，43h 纪录打破）**，成功率恢复中。守卫：`test_a_hub_whose_titles_are_smaller_than_its_heading_is_still_recognised`、`test_the_store_season_close_glyph_is_found_at_the_top_of_the_header` |
 
 ### 2026-10-11 · P0（新增）—— 生产树脏 ⇒ `PinError` 窗口
 
