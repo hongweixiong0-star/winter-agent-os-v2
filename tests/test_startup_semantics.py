@@ -392,6 +392,25 @@ class AutostartGateTest(unittest.TestCase):
                 cls.panel_obj.pump.stop()
             except Exception:  # noqa: BLE001
                 pass
+            # ``__init__`` starts a third thread -- the closure-card publisher -- and this
+            # teardown used to miss it.  It lives in the process-global ``_CLOSURE_PROBES``
+            # registry, so it then read the live ledger for the rest of the session; measured
+            # 2026-10-16, the full suite died at 55% with that thread mid-``tail_jsonl`` while
+            # a test opened a RapidOCR session, and this class is one of the two that
+            # construct a real window without stopping it.  The panel's own close path stops
+            # exactly these three (``probes`` / ``pump`` / ``closure_probe``); the teardown
+            # now matches it.
+            try:
+                cls.panel_obj.closure_probe.stop()
+            except Exception:  # noqa: BLE001
+                pass
+            # And the fourth thread: the control-plane probe (git subprocesses + sha256),
+            # created per panel at ControlPanel.__init__ and missed by the same teardown
+            # (measured 2026-10-16: two of these stayed alive after a 139-test panel run).
+            try:
+                cls.panel_obj.control_plane_probe.stop()
+            except Exception:  # noqa: BLE001
+                pass
         if cls.root is not None:
             cls.root.destroy()
         if cls._state_patch is not None:

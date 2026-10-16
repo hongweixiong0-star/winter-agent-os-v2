@@ -617,6 +617,21 @@ class PanelIntegrationTest(unittest.TestCase):
                 cls.panel.pump.stop()
             except Exception:  # noqa: BLE001
                 pass
+            # The third thread the window starts (the closure-card publisher, in the
+            # process-global ``_CLOSURE_PROBES`` registry); see the same stop in
+            # test_startup_semantics for the measured full-suite crash it caused when
+            # missed.  The panel's own close path stops all three together.
+            try:
+                cls.panel.closure_probe.stop()
+            except Exception:  # noqa: BLE001
+                pass
+            # And the fourth thread: the control-plane probe (git subprocesses + sha256),
+            # created per panel at ControlPanel.__init__ and missed by the same teardown
+            # (measured 2026-10-16: two of these stayed alive after a 139-test panel run).
+            try:
+                cls.panel.control_plane_probe.stop()
+            except Exception:  # noqa: BLE001
+                pass
         if cls.root is not None:
             cls.root.destroy()
         if getattr(cls, "_log_patch", None) is not None:
