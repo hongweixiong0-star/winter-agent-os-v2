@@ -27,7 +27,7 @@
 | # | 类别 | 实测发现 | 量 |
 |---|---|---|---|
 | 1 | **玩法存在，无 Skill** | BLOCKED 4 Goal 的**无实现 capability**：`USE_FREE_ARENA_ATTEMPTS`（3 个：OPEN/READ/SELECT）+ `LABYRINTH_DAILY`（全）+ `TRAVEL_SUPPLY`（全）+ `ALLIANCE_TIMED_EVENTS`（3 个）+ `EVENT_MINIMUM_GUARANTEE` 的 5/7（OPEN_PAGE/READ_RULES/READ_PROGRESS/READ_TIMER/CLAIM_TIER）+ `PARTICIPATE_BEAR` 的 2 个（CHECK_BEAR_PHASE/SELECT_TROOP_PRESET）+ `DAILY` 的 READ_DAILY_PROGRESS | **~15 capability** |
-| 2 | Skill 存在，未注册 | **初步 0**（`full_auto` 的 BOARD_ONLY_NO_SKILL=0）；**待一轮 registry×map 对表复核** | 0? |
+| 2 | Skill 存在，未注册 | **复核通过：0**（r200 源码级对表：skills.py 注册 **136** 个；capability_skill_map 编排引用 38 个；`map 有但 registry 无`=**0**。其余 98 个为原子/工具层 skill——正常分层，非断链） | **0** |
 | 3 | 已注册，无完整执行链 | **CANDIDATE 类**（有实现、live 未验证）：READ_INTEL_LIST / VERIFY_GATHERING / START_BUILD / OPEN_RESEARCH / START_RESEARCH / DISMISS_MAIL_REWARD / ALLIANCE_TECH_CONTRIBUTE / PLAY_NORMAL_FISHING_LEVEL / READ_FISHING_STATE(LIVE_TRIED 1-0) 等 | **~9-12** |
 | 4 | 缺页面/控件证据 | bootstrap projection `MISSING_OBSERVATION=63` + BLOCKED-"无实现"面 | 63（投影） |
 | 5 | 缺前置/Verifier/Recovery | ⭐ **bootstrap projection `MISSING_VERIFIER=115`**（最坏情况投影——**最大缺口面**） | 115（投影） |
