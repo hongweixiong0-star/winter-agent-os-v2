@@ -26,7 +26,9 @@ measurement behind each one:
 
 The green tick is **not** asserted as a control anywhere: its centre has been tapped and measured a
 dead end (``brain._QUICK_PANEL_ROW_CLAIM_SKILL`` records it), so the tests below pin that a tick row is
-neither entered nor collected -- and that refusing it does not turn into the detour either.
+neither entered nor collected -- and that when the goal still has to reach its camp, the route that
+runs is the 2026-09-25 reach route (``..._uses_power_route_to_reach_camp``), whose reason names the row,
+not the retired state-learning detour.
 """
 
 from __future__ import annotations
@@ -166,16 +168,21 @@ def test_a_row_scrolled_out_of_view_is_unknown_never_absent():
 # --------------------------------------------------------------- §一.6 / §五  the detour is a fallback
 
 
-def test_a_panel_that_answered_the_state_is_not_re_opened_as_an_overview():
-    """The heart of §五: the 实力详情 route exists to learn a state that is already on the frame.
+def test_a_done_row_routes_to_its_camp_without_re_learning_its_state():
+    """§五, refined 2026-09-25 (commit 159ba02f): the 实力详情 chain is a *reach* route now.
 
-    Which of the two refusals answers is the frame's business, and both are fine: the row branch names
-    the barracks and its own word, the route branch names the reading that answered.  What is not fine
-    is the route being walked at all.
+    The old shape of this test refused ``OPEN_POWER_OVERVIEW`` outright here.  What the route
+    is today is not the state-learning refresh the file's header forbids -- the panel has
+    already described all three barracks on this frame, and asking again is the 100%-failure
+    detour -- but the supported way to *reach* a camp whose row draws no enterable control
+    (the client's tick).  The distinction survives in the reason itself: the row's name and
+    the client's own word travel with it, and the goal still steps aside rather than ending
+    the batch.
     """
     decision = brain_for("TRAIN").decide(home(REAL_PANEL), v2_registry())
-    assert decision.skill != "OPEN_POWER_OVERVIEW"
-    assert "quick_panel" in decision.reason
+    assert decision.skill == "OPEN_POWER_OVERVIEW"
+    assert "uses_power_route_to_reach_camp" in decision.reason
+    assert "shield_camp" in decision.reason and "已完成" in decision.reason
     assert is_fatal_stop(decision.reason) is False, "it steps aside; it does not end the batch"
 
 
@@ -194,10 +201,21 @@ def test_the_lab_reading_also_stops_the_research_detour():
 
 
 def test_the_panel_is_not_answering_when_it_is_closed_so_the_proven_route_runs():
-    """§一.6 -- and the reason says which case it is rather than naming the route alone."""
+    """§一.6, refined 2026-09-22: a closed panel is asked *once* first, and the fallback says why.
+
+    A closed panel with a readable handle is not "the panel did not serve" yet -- it is the
+    goal's own board with its lid down, and the measured handle is one tap.  So the first ask
+    is the open (``OPEN_QUICK_PANEL``, budgeted per goal); once that ask is spent and the
+    panel still is not serving, the proven route takes over, and its reason names that case
+    rather than the route alone.
+    """
     closed = {"open": False, "handle": {"state": "COLLAPSED"}, "rows": []}
-    decision = brain_for("RESEARCH").decide(home(closed), v2_registry())
-    assert decision.skill in {"TRY_ORDINARY_CONTROL", "OPEN_POWER_OVERVIEW"}
+    brain = brain_for("RESEARCH")
+    first = brain.decide(home(closed), v2_registry())
+    assert first.skill == "OPEN_QUICK_PANEL"
+    assert "quick_panel" in first.reason
+    second = brain.decide(home(closed), v2_registry())
+    assert second.skill in {"TRY_ORDINARY_CONTROL", "OPEN_POWER_OVERVIEW"}
 
 
 def test_a_goal_the_panel_does_not_serve_keeps_the_proven_route():
@@ -243,15 +261,19 @@ def test_a_goal_never_acts_on_a_look_alike_row_it_does_not_own():
     assert "lancer" in decision.reason
 
 
-def test_a_tick_row_is_neither_entered_nor_collected_nor_a_reason_to_detour():
+def test_a_tick_row_is_neither_entered_nor_collected_and_the_route_says_why():
     """The tick's own centre has been tapped and collected nothing; the row is not an enter target.
 
-    Refusing it must not become the detour either: the state is on the frame (this is §五), and the
-    加成总览 route measured 100% failure while doing that.
+    What follows the refusal is the 2026-09-25 reach route (commit 159ba02f): the goal still
+    needs to get to its barracks, and the power-details chain is the supported way there when
+    the row draws no enterable control.  The file's own concern survives in the reason -- the
+    route is taken ``to_reach_camp`` with the row named, not as the state-learning refresh
+    that measured 100% failure.
     """
     decision = brain_for("TRAIN").decide(home(REAL_PANEL), v2_registry())
     assert decision.skill != "OPEN_TASK_FROM_QUICK_PANEL_SHIELD"
-    assert decision.skill != "OPEN_POWER_OVERVIEW"
+    assert decision.skill == "OPEN_POWER_OVERVIEW"
+    assert "to_reach_camp" in decision.reason
 
 
 # --------------------------------------------------------------- §六 / §八.7 / §八.8

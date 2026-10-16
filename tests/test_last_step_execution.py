@@ -433,9 +433,13 @@ class TheQuickPanelOpeningTests(unittest.TestCase):
                       "an arrow that does not open the page must hand back to the proven route")
 
     def test_a_closed_panel_is_opened_instead_of_stopping(self):
+        # The ask used to be the generic ``TRY_ORDINARY_CONTROL``; since 2026-09-22 the handle
+        # is a measured control (``HANDLE_TRIANGLE_SCAN`` with its own ``box_norm``) and the
+        # ask names it.  What this test is about did not change: a closed panel with a
+        # readable handle gets opened rather than ending the run.
         brain = _brain("TRAIN")
         decision = brain.decide(self._home(self.CLOSED, {"queue_available": False}), v2_registry())
-        self.assertEqual(decision.skill, "TRY_ORDINARY_CONTROL", decision.reason)
+        self.assertEqual(decision.skill, "OPEN_QUICK_PANEL", decision.reason)
         self.assertIn("quick_panel", decision.reason)
 
     def test_the_open_panel_is_read_and_not_toggled_again(self):
@@ -451,12 +455,17 @@ class TheQuickPanelOpeningTests(unittest.TestCase):
         self.assertEqual(decision.skill, "OPEN_POWER_OVERVIEW", decision.reason)
 
     def test_the_opening_is_bounded(self):
+        # The ceiling moved with the ask: from the ordinary-scan budget to a per-goal panel
+        # budget (brain.py's ``MAX_PANEL_OPEN_ATTEMPTS_PER_GOAL``, measured 2026-09-23 22:30
+        # where one goal's failed scan starved another's open).  The property is the same
+        # one -- a panel that will not open must not become a tap loop -- and the frame
+        # here reads its queue as busy, so once the ask is spent the route stops honestly.
         brain = _brain("TRAIN")
         frame = self._home(self.CLOSED, {"queue_available": False})
-        for _ in range(brain.MAX_ORDINARY_ATTEMPTS):
-            self.assertEqual(brain.decide(frame, v2_registry()).skill, "TRY_ORDINARY_CONTROL")
+        for _ in range(brain.MAX_PANEL_OPEN_ATTEMPTS_PER_GOAL):
+            self.assertEqual(brain.decide(frame, v2_registry()).skill, "OPEN_QUICK_PANEL")
         decision = brain.decide(frame, v2_registry())
-        self.assertNotEqual(decision.skill, "TRY_ORDINARY_CONTROL",
+        self.assertNotEqual(decision.skill, "OPEN_QUICK_PANEL",
                             "the budget is what keeps this from becoming a tap loop")
 
 
@@ -890,20 +899,21 @@ class TheTickRowIsNotAnEnterTargetTest(unittest.TestCase):
         )
 
     def test_a_done_row_is_not_entered(self):
-        """A row the client marked done is not an enter target -- and not a reason to go and look.
+        """A row the client marked done is not an enter target -- and not a dead end either.
 
-        The second half changed 2026-09-23 (operator §五/§六).  What this test pinned before was that
-        the tick row is refused, which it still is; what it asserted *instead* was
-        ``OPEN_POWER_OVERVIEW`` with ``quick_panel_shield_camp_is_idle`` -- i.e. the refusal was
-        expressed as the 加成总览 detour, and that detour is measured 100% failure
-        (``POWER_DETAILS_NOT_PROVEN``, 20 of 20 in the corpus) while the panel had already said what
-        the barracks' state is.  So the refusal is now a non-fatal stop: the goal steps aside and
-        another selectable task gets the cycle.
+        The row is refused as an *entry*: the tick has been tapped and measured a dead end
+        (the 2026-09-23 18:54:27 frame this class is named for).  What runs instead was
+        settled twice after that: 2026-09-23 made the refusal a non-fatal stop, and
+        2026-09-25 (commit 159ba02f, "route completed camps through live controls")
+        replaced that with the route asserted here -- the goal still has to *reach* its
+        barracks, and the supported way there is the power-details chain.  That is
+        navigation, not the state-learning refresh the detour used to be, and the reason
+        carries the row's name and the client's own word so the ledger keeps both.
 
-        Note which state this is: ``control=DONE`` means the client *did* draw something in the row's
-        control slot (its tick), which is why this is not the §一.6 fallback case.  A row the panel did
-        not draw at all, or one whose slot is empty (``control=NONE``), still hands back to the proven
-        route -- ``TheQuickPanelOpeningTests`` pins both of those.
+        Note which state this is: ``control=DONE`` means the client *did* draw something in the
+        row's control slot (its tick), which is why this is not the plain §一.6 fallback case.
+        A row the panel did not draw at all, or one whose slot is empty (``control=NONE``),
+        still hands back to the proven route -- ``TheQuickPanelOpeningTests`` pins both.
         """
         from winter_agent_v2.brain import RuleBrain
         from winter_agent_v2.runtime_snapshot import is_fatal_stop
@@ -913,11 +923,9 @@ class TheTickRowIsNotAnEnterTargetTest(unittest.TestCase):
         brain.current_goal = "TRAIN"
         decision = brain.decide(self._state("DONE"), v2_registry())
         self.assertNotEqual(decision.skill, "OPEN_TASK_FROM_QUICK_PANEL_SHIELD")
-        self.assertEqual(decision.skill, "SAFE_STOP")
-        self.assertEqual(
-            decision.reason,
-            "quick_panel_row_shield_camp_reads_已完成_and_draws_no_enter_control",
-        )
+        self.assertEqual(decision.skill, "OPEN_POWER_OVERVIEW")
+        self.assertIn("uses_power_route_to_reach_camp", decision.reason)
+        self.assertIn("已完成", decision.reason, "the row's own word travels with the reason")
         self.assertFalse(is_fatal_stop(decision.reason), "it steps aside, it does not end the batch")
 
     def test_a_row_with_a_located_arrow_is_still_entered(self):
