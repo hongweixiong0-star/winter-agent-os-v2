@@ -1972,7 +1972,15 @@ class OCRPageClassifier:
 # green pill runs to about x 88 -- so the extra width is margin for the detector, not content.
 # It matters because AVOID_STAMINA_WASTE spends or stops spending on this number, and a
 # dropped digit reads as "nearly empty" when stamina is in fact plentiful.
-HUD_STAMINA_ROI = {"x_norm": 0.040, "y_norm": 0.0755, "w_norm": 0.075, "h_norm": 0.019}
+# Re-measured 2026-10-16, and the 0.075 width had cost the single-digit reads: the two
+# ``stamina_check_live_20260915`` frames (a true ``9``, the number the whole affordability
+# gate turns on) returned NO tokens at all through this ROI, while a box that starts 5 px
+# further in and ends 9 px short of the pill's edge reads them back -- and keeps every frame
+# of both 2026-09 history families correct.  The matrix over the eight known-truth frames
+# (9, 9, 382, 527, 527, 527, 200, 295): the old box read None/None/382/527/527/502/200/295,
+# this one reads 9/9/382/527/527/502/200/295 -- the 502 frame is the known misread the
+# dropped-digit guard documents as deliberately uncaught, unchanged by either box.
+HUD_STAMINA_ROI = {"x_norm": 34 / 720, "y_norm": 96 / 1280, "w_norm": 40 / 720, "h_norm": 28 / 1280}
 
 # The march counter ("5/6") beside the 行军 label.  Measured live: px
 # 200-244 x 228-255 on 720x1280.  It is read from its own ROI rather than from

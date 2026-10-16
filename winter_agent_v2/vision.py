@@ -1677,9 +1677,24 @@ class SemanticWorldVision:
         # at the quit dialog's own branch is what makes the two mutually
         # exclusive -- an ``if/elif`` on either order hands one of them the
         # other's answer.
+        #
+        # The recall confirmation joins the same question-resolution on
+        # 2026-10-16, and that is a fix rather than a tidy-up: measured on the
+        # three archived frames, the recall dialog's own title matches
+        # ``POPUP_TITLE_RECALL`` at d=0 but the pair below was asked FIRST and
+        # answered ``POPUP_EXIT_CONFIRM`` at d=2 -- i.e. every recall dialog was
+        # handed to the quit-dialog handler.  The three-way matrix:
+        #
+        #     recall frame      RECALL d=0   EXIT d=2   DUPLICATE no match
+        #     同一目标 dialog    DUPLICATE d=0  EXIT d=2   RECALL no match
+        #     确认退出游戏 dialog EXIT d=4     RECALL no match, DUPLICATE no match
+        #
+        # so the nearest of the three is the identity for all three frames, and
+        # the older two readings are unchanged.
         question = nearest_question(
             "POPUP_DUPLICATE_TARGET_TITLE",
             "POPUP_EXIT_CONFIRM",
+            "POPUP_TITLE_RECALL",
         )
         if question == "POPUP_DUPLICATE_TARGET_TITLE":
             return WorldState(
@@ -1693,6 +1708,12 @@ class SemanticWorldVision:
                 popup="EXIT_CONFIRM",
                 confidence=0.99,
             )
+        if question == "POPUP_TITLE_RECALL":
+            return WorldState(
+                page=Page.POPUP,
+                popup="MARCH_RECALL",
+                confidence=0.99,
+            )
         if match("HIGH_RISK_REAL_MONEY_OFFER") and match("REAL_MONEY_PRICE_BUTTON"):
             return WorldState(
                 page=Page.POPUP,
@@ -1702,8 +1723,12 @@ class SemanticWorldVision:
             )
         if match("HIGH_RISK_PURCHASE"):
             return WorldState(page=Page.POPUP, popup="PURCHASE_POPUP", confidence=0.99)
-        # The recall confirmation is checked before the other confirmations so a
-        # shared blue 确定 button can never be attributed to the wrong dialog.
+        # The recall confirmation is normally resolved above, inside the
+        # question trio -- that is where its title now competes on distance
+        # against the other two confirm dialogs.  This branch stays as the
+        # fallback for a frame whose title matches while none of the trio's
+        # other members is asked (measured 2026-10-16: reachable only if the
+        # question block is edited, which is why it is kept and not deleted).
         # The title 召回 is the identifying evidence, and it only appears in
         # this dialog (see tools/register_recall_templates.py, which also
         # asserts the negative control: neither template matches a map frame).
