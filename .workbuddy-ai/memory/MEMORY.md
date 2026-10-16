@@ -13552,3 +13552,33 @@ progress.json.needs_user_approval = [
   **MAA 通道** vs ADB input tap 实证（4/4 vs 0/6——底栏按钮类）；Manual 模式检查；BACK 是顽抗弹窗的解。
 - **存档/释放**：桌面 archive ~925MB + V2 out/tmp ~463MB **均达释放门槛、均待操作员授权**（清单落盘）。
 - **设备**：本时段全程零消耗/零付费；熊窗口四巡（10:20-11:29）均未开；行军队列 1-6 空闲多次实证。
+
+---
+
+## 2026-10-16 续：回归三裁 + 全量红单根扫除（r252-r258）
+
+**提交系**：`9b062374`（B 类契约）· `131ac733`（路由复活守卫）· `0617ae84`（hub 头重裁）·
+`403d19a7`（beast 输入钉住）· `4218fca3`（套件隔离两修）。
+
+**五条可复用教训（都有实测量支撑）**：
+
+1. **退役节点的"复活"洞**：`pipeline_autogen.wire()` 的 protected 只护 `existed=True`——已删除的
+   语义（退役=del recognition + 证据留 evidence）成了"新案"，运行时 hook 的自触发
+   （"runtime unresolved"）会把它重新写回（10-10 实测 3 条目）。守卫=`DEMOTED_SEMANTIC_KEEPS_ITS_RETIREMENT`
+   （按 demotion 记录点名语义；解除=清记录+做该理由指定的 A/B）。**"删除即防复活"的假设必须由代码强制**。
+2. **pHash 裁剪带里"同布局异文字"被稀释**：8×8 下 tab 条/装饰带处处相似（"深蓝底亮斑"），
+   把标题差异 16→8 恰压阈值。**判据：裁剪止于语义本体**（超值活动 hub 头=arrow+完整标题，去 tab）。
+   定裁剪用**总体**（3297 帧：真帧 0/像帧 ≥12，空档 1..11），不用单帧。
+3. **全量套件的红是"输入泄漏"为主**：① 测试套件会继承活 MODE_STATE（MANUAL⇒所有 run 驱动测试
+   steps=[]）——conftest 重定向表须含 mode_state 两别名（runtime 有自己的 alias 绑定）、**不播种**
+   （缺失=§11 AUTO 缺省）；② stub 缺后加 writer：直调=AttributeError，吞异常路径=断言未写入文件，
+   **两种表象同一根**；③ 播种的 `event_schedule` 把 DISCOVER_EVENT_CALENDAR 定价 1000 抢走循环
+   （camp/refusal fixture 族残余，逐文件裁定批次待做）。
+4. **改测试前的"生产未断"证法**：实机帧复放（今日 EVENT 帧仍产 minimum_guarantee）+ 源码出处提交
+   （aab0dbb8 量过）+ 互斥结构（if/elif）；三者齐才动测试。
+5. **探针自身也要钉 store**：plain python 探针不享 conftest 保护——一次不当探针就写进了生产
+   fairness 账本（量小、如实记录）。**探针运行 LiveRuntime.run() 前必须钉 mode+fairness**。
+
+**基线数字**：全量既有红 `233 F / 5402 P / 28 E`（10_LAST_HANDOFF:210）；本时段首跑 219 F；
+conftest/stub 修复后终值见 `learning/_full_suite_final2.txt`。定向电池全绿清单见
+`.workbuddy/memory/2026-10-16.md` r258。

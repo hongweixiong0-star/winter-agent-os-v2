@@ -138,3 +138,31 @@
 - `beast_card_runtime_recovery`：`run.steps[0]` **IndexError**（步骤链空）——**循环未走出第一步**，
   行为路径已变——需 live/回放复核（最谨慎类）。
 - 裁决：C 类=**行为/判定演进**（非"更新测试"也非"回退源码"的简单二选），随批次逐条实测复核。
+
+**B 类执行完成（r252，提交 `9b062374`）**：
+- 改测试前先验生产不断：今日真实 EVENT 帧（`dataset/exploration/20261016T0322xx`）复放仍产出
+  `minimum_guarantee`（rem=45445）；路由细化只影响 heading 尺度帧（出处 `aab0dbb8`，量过）；
+- 三测试改读 `calendar_detail` 等价断言 + 单容器互斥断言；`test_event_countdown_ocr.py` **10 passed**。
+
+**C 类复核完成一件、并修正结论（r253，提交 `131ac733`）——"测试滞后"初判部分不成立**：
+- `blind_node`×2 + `recognition_backend_declaration`×1 三红测试追到**真缺陷**：
+  10-10 12:46 autogen 把 **3 个已退役节点重写回**（QUICK_PANEL_ROW_BUILDING、REGULAR_EVENT_ENTRY×2），
+  违反"LEGACY 旁不得留节点"表级不变量——退役脚本（10-05）原文防的正是"later fallback 复活"，
+  但 `wire()` 的 protected 只护 `existed=True`（洞）；
+- 修复：`wire()` 守卫 `DEMOTED_SEMANTIC_KEEPS_ITS_RETIREMENT` + 状态修复（保留全部溯源）+
+  derive 拒绝可见化；六文件批 **52 passed / 1 skipped**、脚本式退休测试 **PASS 9/9**；
+- **C 类收口（r254/r255，提交 `0617ae84` / `403d19a7`）**：
+  - `alliance_verifier`×1：根治=超值活动头部模板**含 tab 条**把像帧距离稀释到恰阈值 8（help 帧被先 claim）；
+    re-crop 去 tab（3297 帧总体：真帧 0 / 像帧 ≥12，空档 1..11）——**不是"页面身份演进"**；
+  - `beast_card_runtime_recovery`×3：根因=①运行循环读 MANUAL 闩锁（harness 未钉）②fairness 账本共享
+    （目标选择读生产历史）③`backs==1` 断言晚于 two-step exit/yield 两次有意演进——harness 钉双 store +
+    改钉"beast 规则恰一次 + 诚实终局"；**4 passed**。
+- ⇒ **A/B/C 三类全部裁定并修复完成**：A4（r251）· B3（r252/9b062374）· C5+（r253/r254/r255）。
+- **全量套件基线厘清（r256）**：既有基线 `233 failed / 5402 passed / 28 errors`（10_LAST_HANDOFF:210），
+  本时段首跑 219/5343/29 ⇒ 全量为"已知红环境"，*真度量=定向电池*；本时段电池全绿。
+- **全量红单根大扫除（r257，`4218fca3`）**：抽诊两族——① `test_live_runtime` 12 红 = mode 记录
+  未进 conftest 重定向表（本机 MANUAL ⇒ 每个 run 驱动测试 instantly yield）→ 表加两别名、不播种
+  （缺失=§11 AUTO 缺省）→ **12 passed**；② `test_session_outcome_persistence` 14 红 = stub 缺 4 个
+  后加 writer（吞异常设计 ⇒ 断言未写入文件）→ 4 个 no-op 修 → **16 passed**；
+  五族批 45→33 ⇒ **余量为独立批次**（各文件自己的共享输入故事；首例=播种的 `event_schedule`
+  使 DISCOVER_EVENT_CALENDAR 定价 1000 抢循环）——**逐文件裁定，不在本轮盲修**。
