@@ -131,3 +131,10 @@
 - 4 文本（带"联盟总动员" tab 框）→ **路由到 `calendar_detail`**（`recognized=True`，`event_id` 依旧正确）；
 - ⇒ **源码的分帧路由已细化**（"带 tab 的活动详帧"走 calendar_detail 分支），**旧测试的期望键过时**——
   归 B 类"更新测试"（行为正确、键契约演进），随批次执行。
+
+**C 类实描（r249——两例各有证据）**：
+- `alliance_verifier`：素材帧 `live_alliance_help.png` 在（223KB），但**现今 observe 判 `Page.EVENT`**
+  （`alliance={}`）——**页面身份判定已变**（帧被重新归类）⇒ 测试期望的 `alliance.auto_help_active` 无从产出；
+- `beast_card_runtime_recovery`：`run.steps[0]` **IndexError**（步骤链空）——**循环未走出第一步**，
+  行为路径已变——需 live/回放复核（最谨慎类）。
+- 裁决：C 类=**行为/判定演进**（非"更新测试"也非"回退源码"的简单二选），随批次逐条实测复核。
