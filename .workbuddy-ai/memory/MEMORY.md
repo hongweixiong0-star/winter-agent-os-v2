@@ -13617,3 +13617,37 @@ conftest/stub 修复后终值见 `learning/_full_suite_final2.txt`。定向电�
 `learning/_full_suite_final5.txt` 进行中（无新红假设下预期 ≈60 红）。
 pending：帧腐烂长尾 · 读数漂移（daily_panel）· reward_popup 语义裁定 · 设备帧
 （READ_ALLIANCE_EVENT_TIMER / CLAIM_EVENT_TIER）· 释放授权（桌面 archive ~925MB + out/tmp ~463MB）。
+
+---
+
+## 2026-10-16 续三：终值批与 7 单红批（r272-r273）
+
+**提交系**：`5888243a`/`b8860ae7`/`2d0a9308`/`6472b8fc`/`172129cf`（终值批：含三处生产修复——
+HUD_STAMINA_ROI 宽改 (34,96,74,124)、召回弹窗三问互斥、激活阶梯 pending 记版本）；
+`a3e05b09`/`573e1e1b`/`cb0effa8`/`6c5d252e`（7 单红批）· `aaf925b3`（本段日志）。
+
+**新增可复用教训（接续 1-8）**：
+
+9. **目录守卫是死的**：retention 删文件留空目录 ⇒ `is_dir()` 永不触发。守卫必须查**它真正读的那个
+   文件**（第 2 次出现此物种：gather_dispatch + 本批 building 帧）。同理，**数据修正会随当日 churn
+   丢失**——恢复靠备份 + record 级相等断言。
+10. **测试前提横跨多层裁决时，先追 commit 级时间线**（延伸教训 3）：`cb716da2`(09-17) 把 tab 记录插
+    在旧 activity 分支前——击穿 daily 两文件前提且当时未同步；`6863b779`(09-30) 把 goal 交接从 brain
+    迁到 runtime sink——beast 两文件断言旧世界。**`git log -S` 追到"哪一侧的改动"再改断言**；本轮
+    7 红里 5 红属此类。
+11. **同一语义的两个词典 API 不得混用**：`known_activities()`（plannable，仅 REVIEWED/VERIFIED）
+    vs `registry_activities()`（identity，含 DISCOVERED）。**先问"被测读者用的是哪个"**——reader 的
+    `_event_label_index` 建自后者（`ALLIANCE_MOBILIZATION` 是 DISCOVERED lead 但必须可解析）。
+12. **不可恢复的红必须降为命名 skip**：fail-loudly 只适用于"可解决的证据缺失"。帧被剪 + 全盘无副本
+    ⇒ `archived()` 查询 + 命名 skip（查询式在副本回归时自动重新武装）；「产品行为弄红测试=训练人忽
+    略红」是文件作者自己写下的另一半。
+13. **源码级断言要防"注释误撞"**：旧表达式退役后，`assertNotIn` 的检查串用**带前缀的表达式形**
+    （`primary.resource_beast_tab and beacon_beast`），让 ocr.py 里解释该缺陷的注释（裸名引用）保
+    持合法。
+
+**数字**：final5 终值 61 F → r272 清 24（14 红 + 10 errors，`learning/_full_suite_final5.txt`）→
+r273 清 7 单红（17 文件回归环 185 passed / 14 skipped）。剩余 ≈30 红（capability_gate 2=文档化红、
+template_lifecycle_precedence 2=WIP 不动、余为长尾单红）。
+**pending（更新版）**：帧腐烂长尾（fixture 生命周期 = 红皮书登记的系统级项，两个候选修法未做）·
+设备帧（READ_ALLIANCE_EVENT_TIMER / CLAIM_EVENT_TIER）· 释放授权（桌面 archive ~925MB + out/tmp ~463MB）·
+未跟踪 WIP 逐文件裁定（8 测试 + ~80 tools）。【已清：读数漂移 daily_panel ✓ · reward_popup 语义裁定 ✓】
