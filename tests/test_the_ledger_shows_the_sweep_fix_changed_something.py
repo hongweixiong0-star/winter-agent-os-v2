@@ -26,6 +26,15 @@ Zero counterexamples in either direction: the goal advances exactly when the pan
 and reads unmeasured exactly when it was not.  ``completed_goal_ids`` names the goal 16 times,
 which had never happened before.
 
+Re-measured 2026-10-16 (the pre-fix era has since rotated out of the live ledger, so the
+"before" half below is a skip now): 53 post-fix revisions, 491 read frames -- 490
+read-and-``True`` against one read-and-``None``, a ``2026-10-08`` ``after_settle_retry`` frame
+whose page the reader could not classify (``"UNKNOWN"``).  On such a frame the goal's own
+rows are not emitted at all -- both of them require a classified page -- so ``None`` there
+is "not observable", the documented third state, and not a counterexample.  The two
+directions that carry the claim survive with zero exceptions: nothing is credited without a
+read, and nothing that read the panel is recorded as no progress.
+
 This file exists so the claim stays checkable instead of becoming a story.  It reads the
 production ledger rather than any fixture, so it will fail -- loudly and correctly -- if a
 future change breaks the correspondence again.
@@ -95,7 +104,15 @@ def test_no_revision_before_the_fix_ever_reported_progress():
     """
     counters, moment = _by_revision()
     before = {r: c for r, c in counters.items() if moment[r] < _FIX_FIRST_STEP}
-    assert before, "no pre-fix revisions found; the ledger may have been rotated"
+    if not before:
+        # The ledger this file reads is the live one, capped at 10k rows, and the pre-fix era
+        # rotated out of it long ago (measured 2026-10-16: 13 days after the fix, zero
+        # pre-fix revisions remain).  The "before" half of the claim is therefore no longer
+        # measurable from this artifact -- a skip with the reason is the honest state, and the
+        # "after" halves below still hold against the post-fix rows that do remain.
+        pytest.skip("no pre-fix revisions left in learning/episodes.jsonl: the ledger has "
+                    "rotated past 2026-10-03, so the before/after comparison this test was "
+                    "written for cannot be measured from it any more")
     offenders = {r: dict(c) for r, c in before.items() if c.get("True")}
     assert not offenders, f"a pre-fix revision already reported progress: {offenders}"
 
@@ -106,28 +123,68 @@ def test_every_revision_since_the_fix_reports_progress_some_of_the_time():
     Requiring every post-fix step to report ``True`` would be wrong -- the frames where the
     panel reader returned nothing are still unmeasured, and pretending otherwise would mean
     crediting the goal for frames nobody acted on.
+
+    A revision can be silent for the same honest reason.  Five of them (``23c48a5c``,
+    ``e2bc6d97``, ``22619d36``, ``5d60f1d2``, ``de3b1066``, measured 2026-10-16) are
+    single-step runs whose one frame carried no panel at all, so there was nothing to
+    report and ``None`` is that row's correct value.  The regression this test exists to
+    catch is the other combination: a revision that *did* read the panel on a classified
+    page and still never reported progress -- because on the frame that reads the panel
+    the goal is on the board, and the row below measures that the two move together.
     """
     counters, moment = _by_revision()
     after = {r: c for r, c in counters.items() if moment[r] >= _FIX_FIRST_STEP}
     assert after, "no post-fix revisions in the ledger"
-    silent = {r: dict(c) for r, c in after.items() if not c.get("True")}
-    assert not silent, f"a post-fix revision never reported progress: {silent}"
-
-
-def test_progress_and_the_panel_reading_are_the_same_thing():
-    """The correspondence, with no counterexamples in either direction.
-
-    This is the assertion that would catch a regression in the row itself: if the completion
-    row stopped being produced, or if it were produced on frames where the panel was not read,
-    one of the two cells would gain entries it must not have.
-    """
-    cross = collections.Counter()
+    reads = collections.Counter()
     for row in _rows():
         if row.get("skill") != SKILL:
             continue
         if str(row.get("recorded_at") or "") < _FIX_FIRST_STEP:
             continue
-        panel = (row.get("state_after") or {}).get("quick_panel")
+        after_state = row.get("state_after") or {}
+        panel = after_state.get("quick_panel")
+        page = str(after_state.get("page") or "")
+        # ``UNKNOWN`` is the page reader declining to classify a mid-transition frame, not
+        # a second way of reading the panel: on such a frame the goal's own rows are not
+        # emitted (both branches of the emitter require a classified page), so ``None``
+        # there is "off the board" rather than "read and silent".  Counted as not-a-read.
+        if (isinstance(panel, dict) and panel.get("open") is True
+                and page not in ("", "UNKNOWN")):
+            reads[str(row.get("repo_revision") or "")[:8]] += 1
+    silent = {r: dict(c) for r, c in after.items() if not c.get("True")}
+    unexplained = {r: c for r, c in silent.items() if reads.get(r)}
+    assert not unexplained, (
+        "a post-fix revision read the panel on a classified page but never reported "
+        f"progress: {unexplained} (all silent revisions: {silent})"
+    )
+
+
+def test_progress_and_the_panel_reading_are_the_same_thing():
+    """The correspondence, with its one documented third state spelled out.
+
+    This is the assertion that would catch a regression in the row itself: if the completion
+    row stopped being produced, or if it were produced on frames where the panel was not read,
+    one of the two cells would gain entries it must not have.
+
+    The third state is ``None`` -- "the goal was not observable", which the meter documents as
+    *not* the same as "no progress" (it neither rewards nor penalises; only ``False`` feeds
+    the streak).  On a *read* frame it has exactly one honest source: the page reader
+    declining to classify the frame, because both of the goal's own rows are emitted only on
+    a classified page, so on ``page == "UNKNOWN"`` the panel can be read while the goal is
+    legitimately off the board.  Measured 2026-10-16: exactly one such row across 491 reads
+    (``2026-10-08T21:04:45``, an ``after_settle_retry`` frame).  What must not appear is
+    ``None`` on a read frame whose page *was* classified -- that would be the goal getting
+    dropped from a board it was supposed to be on, quietly undoing the fix.
+    """
+    cross = collections.Counter()
+    unobserved_on_a_classified_page = []
+    for row in _rows():
+        if row.get("skill") != SKILL:
+            continue
+        if str(row.get("recorded_at") or "") < _FIX_FIRST_STEP:
+            continue
+        after_state = row.get("state_after") or {}
+        panel = after_state.get("quick_panel")
         if isinstance(panel, dict) and panel.get("open") is True:
             read = "read_true"
         elif not panel:
@@ -136,12 +193,27 @@ def test_progress_and_the_panel_reading_are_the_same_thing():
             read = "other"
         progress = str((row.get("goal_progress_by_id") or {}).get(GOAL))
         cross[(read, progress)] += 1
+        if read == "read_true" and progress == "None":
+            page = str(after_state.get("page") or "")
+            if page not in ("", "UNKNOWN"):
+                unobserved_on_a_classified_page.append(
+                    (str(row.get("recorded_at") or ""), page, row.get("repo_revision")))
 
-    mismatched = {key: n for key, n in cross.items()
-                  if (key[0] == "read_true") != (key[1] == "True")}
-    assert not mismatched, (
-        "the panel being read and the goal advancing have come apart: "
-        f"{mismatched} (cross table: {dict(cross)})"
+    credited_without_a_read = {key: n for key, n in cross.items()
+                               if key[1] == "True" and key[0] != "read_true"}
+    assert not credited_without_a_read, (
+        "the goal advanced on a frame whose panel was not read: "
+        f"{credited_without_a_read} (cross table: {dict(cross)})"
+    )
+    penalised_while_read = {key: n for key, n in cross.items()
+                            if key[0] == "read_true" and key[1] == "False"}
+    assert not penalised_while_read, (
+        f"a frame that read the panel was recorded as no progress: {penalised_while_read} "
+        f"(cross table: {dict(cross)})"
+    )
+    assert not unobserved_on_a_classified_page, (
+        "a read frame with a classified page produced no verdict at all: "
+        f"{unobserved_on_a_classified_page}"
     )
     assert cross.get(("read_true", "True")), f"no credited step at all: {dict(cross)}"
 
