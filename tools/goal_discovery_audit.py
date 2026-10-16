@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -83,13 +84,56 @@ PROBES: tuple[tuple[str, WorldState], ...] = (
 )
 
 
+def _fresh_stamp() -> str:
+    """An ``observed_at`` the fishing branch will read as current (its window is 10 minutes)."""
+    return datetime.now(timezone.utc).isoformat()
+
+
+#: The second probe family, added 2026-10-16 for branches that read a **provider parameter** of
+#: ``discover()`` rather than a WorldState field.  Measured on the four goals the WorldState-only
+#: probes could not reach: three of them (the fishing pair and the mobilization adapter) *do*
+#: have branches -- so declaring them "no branch" gaps would have been false -- but the fishing
+#: branch reads ``fishing_pressures`` and both read a populated ``role_id``, neither of which a
+#: WorldState can carry.  Each entry is ``(label, world, discover-kwargs)``; a branch fed no
+#: reading emits nothing, which is exactly the state the first family measured before this
+#: existed.  (``TRAVEL_SUPPLY``, the fourth, has no branch anywhere -- it stays a declared gap.)
+PROVIDER_PROBES: tuple[tuple[str, WorldState, dict], ...] = (
+    # A stale verdict (the event not open): the branch emits OBSERVE_FISHING_STATE.
+    ("fishing.observed-stale", WorldState(page=Page.MAP),
+     {"role_id": "PROBE", "fishing_pressures": {"PROBE": {
+         "observed_at": "2026-10-15T00:00:00+00:00", "event_live_open": False}}}),
+    # Fresh, open, zero bait: the branch emits USE_NORMAL_FISHING_BAIT on its BLOCKED lane.
+    # Every bait lane carries the same goal id, and the id is what this audit collects.
+    ("fishing.bait-blocked", WorldState(page=Page.MAP),
+     {"role_id": "PROBE", "fishing_pressures": {"PROBE": {
+         "observed_at": _fresh_stamp(),
+         "event_live_open": True, "bait_current": 0, "bait_cap": 10}}}),
+    # A recognized, role-tagged mobilization reading with an accepted ICELFIELD_BEAST task
+    # row.  The row is a Mapping and carries its own ``task_id``: the adapter skips bare
+    # strings and rows without an id (measured while writing this probe).
+    ("events.alliance_mobilization", WorldState(
+        page=Page.MAP,
+        events={"alliance_mobilization": {
+            "recognized": True, "role_id": "PROBE", "status": "OPEN",
+            "tasks": [{"task_type": "ICEFIELD_BEAST", "task_id": "PROBE-1",
+                       "status": "ACCEPTED"}]}}),
+     {"role_id": "PROBE"}),
+)
+
+
+def all_probes() -> list[tuple[str, WorldState, dict]]:
+    """Both probe families, normalised to ``(label, world, discover-kwargs)``."""
+    return ([(label, world, {}) for label, world in PROBES]
+            + list(PROVIDER_PROBES))
+
+
 def discoverable_goals() -> dict[str, list[str]]:
     """``goal_id -> the probes that produced it``, by probing the real engine."""
     library = GoalLibrary()
     out: dict[str, list[str]] = {}
-    for label, world in PROBES:
+    for label, world, kwargs in all_probes():
         try:
-            goals = library.discover(world)
+            goals = library.discover(world, **kwargs)
         except Exception as exc:  # noqa: BLE001 - a probe that crashes is a finding, not a stop
             out.setdefault(f"<probe crashed: {type(exc).__name__}>", []).append(label)
             continue
@@ -197,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
                            "event/deadline producer"}
             for name in sorted(defined)
         },
-        "probes_run": [label for label, _ in PROBES],
+        "probes_run": [label for label, _world, _kwargs in all_probes()],
     }
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=1))
@@ -209,7 +253,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  observed right now : {report['currently_observed_count']}")
     print()
     print("  -- discoverable, with the probe that proves it --")
-    probe_labels = {label for label, _ in PROBES}
+    probe_labels = {label for label, _world, _kwargs in all_probes()}
     for name in sorted(discoverable):
         probes = discoverable[name]
         if set(probes) == probe_labels:

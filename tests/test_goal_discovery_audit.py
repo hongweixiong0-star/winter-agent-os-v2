@@ -41,14 +41,21 @@ from winter_agent_v2.skills import v2_registry as _v2_registry  # noqa: E402
 #: periodic observation producer, or an event/deadline producer (operator §7).  Listed one at a
 #: time on purpose: when this list changes, someone decided it should, and the reason belongs
 #: next to the name.
+#:
+#: Re-derived 2026-10-16, from the audit's own measurement (``python tools/goal_discovery_audit.py``):
+#:
+#: * three names left because the engine gained reachable branches -- ``USE_FREE_ARENA_ATTEMPTS``,
+#:   ``LABYRINTH_DAILY`` and ``ALLIANCE_TIMED_EVENTS`` all come out of the probe set now;
+#: * three names never belonged: the two fishing goals and
+#:   ``ALLIANCE_MOBILIZATION_ICEFIELD_BEAST`` have had branches all along, but the WorldState-only
+#:   probes could not feed their *providers* (``fishing_pressures``; a populated ``role_id`` plus
+#:   the mobilization reading), so they read as "no branch" when the truth was "probe gap" --
+#:   ``audit.PROVIDER_PROBES`` now carries those inputs, and each of the three is measured
+#:   discoverable by the probe named in the audit's own output.
 KNOWN_MISSING = {
-    # Attempt-limited activities: the state that matters is a counter, not a queue, and
-    # nothing reads the counter yet.
-    "USE_FREE_ARENA_ATTEMPTS": "no rule reads world.attempts",
-    "LABYRINTH_DAILY": "no rule reads world.attempts",
-    # Event-gated, so the entry is a producer rather than a reading.
-    "ALLIANCE_TIMED_EVENTS": "event/deadline producer missing (only the stamina goal's bear "
-                             "window is read today)",
+    "TRAVEL_SUPPLY": "the map defines three capabilities and goal_library's route map names the "
+                     "goal, but no branch anywhere emits the GoalState -- a route with no "
+                     "producer, which is the original 未读取 failure this audit exists for",
 }
 
 
