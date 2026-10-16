@@ -1937,6 +1937,24 @@ def verify_event_page_open(before: WorldState, after: WorldState) -> Verificatio
     )
 
 
+def verify_alliance_day_read(before: WorldState, after: WorldState) -> VerificationResult:
+    """A no-input alliance-day read passes when the alliance page carried at least one row.
+
+    Sibling of ``verify_regular_event_card_read``: at least one numbered event row with its
+    bracket names, on the alliance page.  A header alone is not the list and does not pass.
+    """
+    events = after.events if isinstance(after.events, dict) else {}
+    block = events.get("alliance_day") if isinstance(events, dict) else None
+    rows = list((block or {}).get("events") or ()) if isinstance(block, dict) else []
+    named = [row for row in rows if isinstance(row, dict) and row.get("names")]
+    ok = after.page is Page.ALLIANCE and bool(named)
+    return VerificationResult(
+        ok,
+        "OK" if ok else "ALLIANCE_DAY_READ_NOT_PROVEN",
+        {"row_count": len(rows), "named_count": len(named)},
+    )
+
+
 def verify_event_calendar_open(before: WorldState, after: WorldState) -> VerificationResult:
     """The regular-events entry succeeds only when its actual client page is observed."""
     calendar = (after.events or {}).get("calendar") if isinstance(after.events, dict) else None
