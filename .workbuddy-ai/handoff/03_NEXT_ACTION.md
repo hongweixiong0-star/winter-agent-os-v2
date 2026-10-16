@@ -9,7 +9,8 @@
 - ✅ **全量红已收口**：final6 = `4 failed / 5571 passed / 262 skipped`（10-16，28m）；四个红在当天全部
   收口——tier 规格×2→**实现**（`17fbb9f9`，规格同时从草稿纳入规范集）、`_METER_KINDS` 跨测试残留→
   **conftest 机制修**（`8bdd49b2`）、HUD guard→重推导（`8bdd49b2`）。**final7 终局全量**（含全部改动）
-  见 `learning/_full_suite_final7.txt`。10-14 的红皮书 / 两本分诊手册（`THE_FULL_SUITE_IS_RED_AND_WHY`、
+  = **`5575 passed / 262 skipped / 0 failed / 0 errors`（EXIT=0）**——见 `learning/_full_suite_final7.txt`。
+  10-14 的红皮书 / 两本分诊手册（`THE_FULL_SUITE_IS_RED_AND_WHY`、
   `MISSING_FIXTURE...`、`PILE_2...`）**诊断已全部消化**——不用再按它们找活。
 - ⚠️ **C 盘 200G 满事件（10-16）**：工具链一度 ENOSPC 死锁（bash 起不来、编辑报 checkpoint 失败），
   以"截断通道"自救释放 ~5.9GB（陈旧 sandbox/trace 日志、pip/npm 缓存；**用户数据分毫未动**）。

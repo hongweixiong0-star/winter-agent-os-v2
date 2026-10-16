@@ -13,7 +13,8 @@
 **本会话做了什么**：把红皮书登记的全量红从 **301F+29E（10-14）** 收敛到 **final6 的 4F**，
 最后 4 个也在当天全部收口（tier 规格→实现 `17fbb9f9`；`_METER_KINDS` 跨测试残留→conftest
 机制修 `8bdd49b2`；HUD guard→重推导 `8bdd49b2`）。收口后 **tests/ 下 untracked=0**（6 个草稿
-规格+4 个被引用工具已按先例纳入），**final7 终局全量**见 `learning/_full_suite_final7.txt`。
+规格+4 个被引用工具已按先例纳入），**final7 终局全量 = `5575 passed / 262 skipped /
+0 failed / 0 errors`（EXIT=0）**——见 `learning/_full_suite_final7.txt`。
 细节与教训见 `04_OPEN_ISSUES.md` P1-5、`03_NEXT_ACTION.md` 首节、`MEMORY.md` 续四（教训 9-14）。
 
 **两件需要操作员知晓的事**：

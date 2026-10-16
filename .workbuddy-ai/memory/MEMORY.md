@@ -13679,7 +13679,7 @@ template_lifecycle_precedence 2=WIP 不动、余为长尾单红）。
     `cb716da2`/`6863b779` 同款模式第 3、4 例）。
 
 **数字**：final5 61F+10E → final6 **4F**（5571P/262S；含 2 个 tier 规格——启动后已实现、单测已绿）→
-final7 全量终局进行中（`learning/_full_suite_final7.txt`）。
+**final7 全量终局 = `5575 passed / 262 skipped / 0 failed / 0 errors`（EXIT=0）**——见 `learning/_full_suite_final7.txt`。
 **pending（更新版）**：C 盘根治（Desktop 15G / hiberfil.sys 13.4G / AppData 52.8G——**用户决策**，
 见 `04_OPEN_ISSUES.md` P1-3）· 待批堆（`UNTRACKED_AND_PENDING_INVENTORY_20261016.md`；**首要**：
 `config/v2.json` 的 10-08 模型切换未入库）· 设备帧（READ_ALLIANCE_EVENT_TIMER / CLAIM_EVENT_TIER）·
