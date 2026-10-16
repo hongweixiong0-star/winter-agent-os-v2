@@ -40,7 +40,12 @@ from winter_agent_v2.skills import v2_registry  # noqa: E402
 
 TICKETS = ("CLEAR_INTEL", "KEEP_TRAINING_PRODUCTIVE", "KEEP_RESEARCH_PRODUCTIVE",
            "MAIL_ROUTINE", "DAILY_ACTIVITY_TARGET", "ALLIANCE_ROUTINE",
-           "CLAIM_EXPLORATION_IDLE")
+           "CLAIM_EXPLORATION_IDLE",
+           # The building queue joined the waiting family when it got its route and its
+           # entry step (2026-10-05 era); measured 2026-10-16 its ticket sits at priority
+           # 20.0, behind the whole sweep band (113.3-165.7), so it sorts last.  Its ratio
+           # below is the placeholder that keeps that position in the expected order.
+           "KEEP_BUILDING_PRODUCTIVE")
 
 
 def test_the_swept_goals_leave_a_panel_they_do_not_own():
@@ -113,12 +118,26 @@ def _dotted_entries() -> dict:
     }
 
 
-def test_seven_overdue_tickets_are_ordered_by_how_long_they_have_waited():
-    """The rotation, as the scheduler actually sees it."""
+def test_seven_overdue_tickets_are_ordered_by_how_long_they_have_waited(monkeypatch):
+    """The rotation, as the scheduler actually sees it (eight tickets since the queue joined).
+
+    ``calendar_scan_due`` is pinned False, measured necessity (2026-10-16): this suite's
+    runtime root starts with no calendar read on record, so the *daily maintenance* ticket
+    (``DISCOVER_EVENT_CALENDAR`` when its read is due) sat on every board in these tests
+    and took ``best()`` -- which is the same environment dependence the 2026-10-05 fixtures
+    pinned away.  The rotation claim is about the overdue-ticket family; the due-calendar
+    ticket is a different, deliberately higher-priority member that does not coexist with
+    a finished sweep.
+    """
+    monkeypatch.setattr("winter_agent_v2.event_schedule.calendar_scan_due",
+                        lambda role_id: False)
     ratios = {"intel": 6.0, "training": 5.0, "research": 4.0, "mail": 3.0,
-              "daily": 2.0, "alliance": 1.0, "exploration": 0.5}
+              "daily": 2.0, "alliance": 1.0, "exploration": 0.5,
+              # Not a sweep ratio: the queue ticket's own pricing (measured 20.0) keeps it
+              # below the whole sweep band, which 0.0 reproduces in the expected order.
+              "building": 0.0}
     observations = {d: {"reading": {}, "overdue": True, "overdue_ratio": r}
-                    for d, r in ratios.items()}
+                    for d, r in ratios.items() if d != "building"}
     library = GoalLibrary()
     goals = library.discover(
         WorldState(page=Page.MAP, march_used=2, march_max=3, red_dots=_dotted_entries()),
@@ -140,7 +159,8 @@ def ratios_rank(goal_id: str, ratios: dict[str, float]) -> float:
     field = {"CLEAR_INTEL": "intel", "KEEP_TRAINING_PRODUCTIVE": "training",
              "KEEP_RESEARCH_PRODUCTIVE": "research", "MAIL_ROUTINE": "mail",
              "DAILY_ACTIVITY_TARGET": "daily", "ALLIANCE_ROUTINE": "alliance",
-             "CLAIM_EXPLORATION_IDLE": "exploration"}[goal_id]
+             "CLAIM_EXPLORATION_IDLE": "exploration",
+             "KEEP_BUILDING_PRODUCTIVE": "building"}[goal_id]
     return ratios[field]
 
 

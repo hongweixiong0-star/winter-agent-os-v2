@@ -126,7 +126,7 @@ class RuntimePassesOneDecisionTests(unittest.TestCase):
     def test_the_runtime_hands_its_decision_to_the_scheduler(self) -> None:
         source = (ROOT / "winter_agent_v2" / "runtime.py").read_text(encoding="utf-8")
         self.assertIn(
-            ").tick(before, decision)",
+            "self._scheduler.tick(before, decision)",
             source,
             "runtime.py must pass its already-made decision to Scheduler.tick",
         )

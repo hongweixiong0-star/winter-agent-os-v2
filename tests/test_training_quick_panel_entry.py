@@ -2,11 +2,16 @@ from tests.test_quick_panel_is_the_state_source import brain_for, home, v2_regis
 
 
 def test_a_measured_quick_panel_handle_is_not_blocked_by_exhausted_generic_exploration():
+    # The ask used to be the generic ``TRY_ORDINARY_CONTROL`` scan; since 2026-09-22 the
+    # handle is a measured control and the ask names it (``OPEN_QUICK_PANEL``), and it is
+    # deliberately not gated on ``ordinary_attempts``.  What this test is about survives
+    # unchanged: a *measured* handle must still be asked for even when the generic
+    # exploration budget is spent.
     brain = brain_for("TRAIN")
     brain.ordinary_scan_exhausted = True
     closed_panel = {"open": False, "handle": {"state": "COLLAPSED"}, "rows": []}
     decision = brain.decide(home(closed_panel), v2_registry())
-    assert decision.skill == "TRY_ORDINARY_CONTROL"
+    assert decision.skill == "OPEN_QUICK_PANEL"
     assert "quick_panel" in decision.reason
 
 

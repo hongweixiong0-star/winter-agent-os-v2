@@ -265,9 +265,13 @@ class DomainsThatOnlyExistedWhenRead(unittest.TestCase):
     discovery entries, because nothing ever read those pages, so the condition was never true and
     the goal never existed.  Operator §九 names intel, training and research as the priority.
 
-    ``KEEP_BUILDING_PRODUCTIVE`` is deliberately absent from SWEEP_ROUTINES: ``OPEN_BUILDING`` is
-    not a registered skill and ``RuleBrain`` has no BUILD route, so a ticket for it would point at
-    nothing.  That is asserted here so the gap stays visible instead of looking covered.
+    ``KEEP_BUILDING_PRODUCTIVE`` used to be deliberately absent from SWEEP_ROUTINES, and the
+    reason was asserted here so the gap stayed visible instead of looking covered: ``OPEN_BUILDING``
+    was unregistered and ``RuleBrain`` had no BUILD route, so a ticket for it would point at
+    nothing.  The gap has since been closed -- the building work gave the routine a route, an
+    entry step and a deliberately low discovery price -- so the test below pins the closed state
+    (and the ``OPEN_BUILDING`` name still has not registered; the route reaches the sheet through
+    ``OPEN_BUILDING_UPGRADE`` and reads the upgrade control from the selected-building frame).
     """
 
     SWEPT = ("CLEAR_INTEL", "KEEP_TRAINING_PRODUCTIVE", "KEEP_RESEARCH_PRODUCTIVE")
@@ -317,11 +321,22 @@ class DomainsThatOnlyExistedWhenRead(unittest.TestCase):
         assert busy["KEEP_RESEARCH_PRODUCTIVE"].status is GoalStatus.BLOCKED
         assert busy["KEEP_RESEARCH_PRODUCTIVE"].evidence["condition"] == "queue_busy"
 
-    def test_building_stays_out_because_it_has_no_route_or_skill(self):
+    def test_building_is_in_the_sweep_because_the_gap_was_closed(self):
+        """The instruction the old version of this test ended with: "if this registers, add
+        the sweep".  The sweep was added; the entry skill is ``TRY_ORDINARY_CONTROL`` -- a
+        registered, VERIFIED_ATOMIC bounded observation step (the sibling test above checks
+        that for every member) -- and the 20.0 discovery price is deliberate: the comment in
+        the table says the ticket must not pull AUTO home while an executable task is
+        available.
+        """
         registry = v2_registry()
-        self.assertIsNone(registry.get("OPEN_BUILDING"), "if this registers, add the sweep")
-        self.assertNotIn("KEEP_BUILDING_PRODUCTIVE",
-                         {r.goal_id for r in SWEEP_ROUTINES})
+        building = next((r for r in SWEEP_ROUTINES if r.goal_id == "KEEP_BUILDING_PRODUCTIVE"),
+                        None)
+        self.assertIsNotNone(building, "the building gap was closed; its ticket must be in the sweep")
+        self.assertEqual(building.entry_skill, "TRY_ORDINARY_CONTROL")
+        self.assertIsNotNone(registry.get(building.entry_skill))
+        self.assertIn(building.entry_skill, LiveRuntime.VERIFIED_ATOMIC)
+        self.assertEqual(building.discovery_value, 20.0, "low on purpose: observation only")
 
 
 class AStatusWordIsNotACount(unittest.TestCase):
