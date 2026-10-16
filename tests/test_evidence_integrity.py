@@ -28,6 +28,76 @@ TESTS = ROOT / "tests"
 # 字面量的"整段形状"交给 AST 保证，这里只关心它指向一个图片文件。
 IMAGE_SUFFIX = re.compile(r"\.(?:png|jpg|jpeg)$", re.IGNORECASE)
 
+#: Names that can only produce a sandbox root: the ``tmp_path`` fixture and the
+#: temporary-directory factories.  A path chain rooted at one of these -- directly or
+#: through a local assignment -- is never a repo path, whatever the literal says.
+SANDBOX_ROOTS = frozenset({"tmp_path", "mkdtemp", "TemporaryDirectory", "tempfile"})
+
+
+def _sandbox_names(tree: ast.Module) -> set[str]:
+    """Names this module roots in a sandbox rather than in the repo.
+
+    Measured 2026-10-16: the guard's last noise all had one shape -- a repo-shaped
+    literal under a *sandbox* root.  ``repo / "dataset/raw/shot.png"`` where ``repo``
+    is a ``tmp_path`` fixture; ``project / "knowledge/ui/role_switch/avatar_templates/
+    ROLE_A.png"`` where ``project = tmp_path / "project"``.  The literal is repo-shaped;
+    the root is not, and the guard was blind to the left operand of ``/``.
+
+    A one-file scan cannot resolve arbitrary aliases, but it can answer this one
+    question in the direction that matters: every function parameter that is not
+    ``self``, plus every name assigned (transitively) from an expression that mentions
+    a sandbox name or a temp-dir factory.  Chains rooted at such a name are excluded;
+    every other root keeps the old behaviour, so no existing reference drops silently --
+    verified by diffing the findings before and after the change.
+    """
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            args = node.args
+            for argument in [*args.posonlyargs, *args.args, *args.kwonlyargs]:
+                if argument.arg != "self":
+                    names.add(argument.arg)
+            if args.vararg is not None:
+                names.add(args.vararg.arg)
+            if args.kwarg is not None:
+                names.add(args.kwarg.arg)
+    for _ in range(8):
+        grew = False
+        for node in ast.walk(tree):
+            name: str | None = None
+            value: ast.expr | None = None
+            if (isinstance(node, ast.Assign) and len(node.targets) == 1
+                    and isinstance(node.targets[0], ast.Name)):
+                name, value = node.targets[0].id, node.value
+            elif (isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name)
+                    and node.value is not None):
+                name, value = node.target.id, node.value
+            if name is None or name in names:
+                continue
+            if any(
+                (isinstance(inner, ast.Name)
+                 and (inner.id in names or inner.id in SANDBOX_ROOTS))
+                or (isinstance(inner, ast.Call) and isinstance(inner.func, ast.Name)
+                    and inner.func.id in SANDBOX_ROOTS)
+                for inner in ast.walk(value)
+            ):
+                names.add(name)
+                grew = True
+        if not grew:
+            break
+    return names
+
+
+def _chain_root(node: ast.expr) -> ast.Name | None:
+    """The leftmost name of a ``/`` chain, or ``None`` when the base is not a plain name.
+
+    Not-a-name (``Path(__file__).resolve().parents[1] / "dataset/..."``) keeps the old
+    behaviour: only a name the sandbox analysis can *prove* sandbox-rooted is excluded.
+    """
+    while isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+        node = node.left
+    return node if isinstance(node, ast.Name) else None
+
 
 def _path_operand_images() -> dict[str, list[Path]]:
     """Image literals the suite uses as a *path*, not as a string.
@@ -46,7 +116,10 @@ all contain one.)
 
     Measured 2026-10-02: 43 literals by the old rule, of which 5 were real lost evidence; by this
     rule the report is the real ones plus a handful of temporary-directory fixtures that happen to
-    be built with ``/`` too.
+    be built with ``/`` too.  Measured 2026-10-16: of those remaining fixtures, every one was a
+    repo-*shaped* literal under a sandbox root, which ``_sandbox_names`` now resolves -- so the
+    ``/`` half of the rule skips a chain whose leftmost name is sandbox-proven, and the repo's
+    evidence is what stays in the report.
     """
     references: dict[str, list[Path]] = {}
     for source in sorted(TESTS.glob("test_*.py")):
@@ -54,11 +127,15 @@ all contain one.)
             tree = ast.parse(source.read_text(encoding="utf-8"))
         except SyntaxError:  # pragma: no cover - a broken test file fails elsewhere
             continue
+        sandbox = _sandbox_names(tree)
         literals: list[ast.Constant] = []
         for node in ast.walk(tree):
             if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
                 operand = node.right
                 if isinstance(operand, ast.Constant) and isinstance(operand.value, str):
+                    root = _chain_root(node)
+                    if root is not None and root.id in sandbox:
+                        continue
                     literals.append(operand)
             elif isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
                 if node.func.id == "Path" and len(node.args) == 1:

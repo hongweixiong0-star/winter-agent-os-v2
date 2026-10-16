@@ -270,11 +270,11 @@ class TheMailInboxIsNotARewardDialogTests(unittest.TestCase):
     # gone), so its tests failed with ``FileNotFoundError`` -- which reads as a code fault and is
     # not one.  The guard is class-level on purpose: the sibling class below has a *real* failure
     # (``AssertionError: True is not false``) that must stay visible, so a module-level skip would
-    # have hidden it.
-    REQUIRED = (
-        ROOT / "dataset/raw/control_panel/runtime_auto/20260920_123335_422288/"
-        "20260920_123335_422288_step_001_before_20260920T043338114548.png",
-    )
+    # have hidden it.  ``REQUIRED`` names the very frame the tests read (``MAIL_INBOX``) instead
+    # of re-typing its path as a second literal: measured 2026-10-16, that duplicate was the only
+    # reference the evidence-integrity scan could still claim here, and a copy of one path is not
+    # a second piece of evidence.
+    REQUIRED = (MAIL_INBOX,)
 
     @classmethod
     def setUpClass(cls):

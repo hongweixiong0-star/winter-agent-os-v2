@@ -42,14 +42,15 @@ from winter_agent_v2.ocr import (  # noqa: E402
     read_quick_panel,
 )
 from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
+from tests.archived_frames import archived, require  # noqa: E402
 
 DICTIONARY = ROOT / "knowledge/ui/semantic_dictionary.json"
 
-#: The one real capture of the expanded 快捷面板 this project owns.
-PANEL_FRAME = ROOT / (
-    "dataset/raw/control_panel/runtime_auto/20260921_213506_694242/"
-    "20260921_213506_694242_step_001_before_20260921T133510479855.png"
-)
+#: The one real capture of the expanded 快捷面板 this project owns.  A lookup, not a claim:
+#: measured 2026-10-16, the capture TTL pruned this episode before anyone copied it to a
+#: protected tree, so the classes that read it skip -- naming what is gone -- instead of
+#: erroring in ``setUpClass`` on a frame nobody can read.
+PANEL_FRAME = archived("*_step_001_before_20260921T133510479855.png")
 #: A real frame where the client draws the training button's own label, used to prove the button is
 #: still identifiable after the countdown was taken out of its identity.
 TRAIN_BUTTON_FRAME = ROOT / "dataset/raw/live_train_selection_available.png"
@@ -189,6 +190,7 @@ class PanelReadingTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        require(("the expanded quick-panel capture", PANEL_FRAME))
         cls.ocr_service = _ocr()
         cls.panel = read_quick_panel(PANEL_FRAME, cls.ocr_service)
 
@@ -260,6 +262,7 @@ class DictionaryConsumerTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        require(("the expanded quick-panel capture", PANEL_FRAME))
         cls.ocr_service = _ocr()
         cls.panel = read_quick_panel(PANEL_FRAME, cls.ocr_service)
         cls.world = WorldState(page=Page.MAP, quick_panel=cls.panel)

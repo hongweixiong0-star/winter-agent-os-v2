@@ -33,25 +33,24 @@ import pytest  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tests.archived_frames import archived, require  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
+
+#: The recorded frames of episode ``20261003_223009_533887`` -- looked up by the timestamp in
+#: their names, because the capture TTL pruned the episode on 2026-10-16 before anyone copied
+#: it to a protected tree (measured: ``find`` over the whole checkout finds none of the three).
+#: A lookup is not a claim: the tests below skip -- naming what is gone -- and run again the
+#: moment a copy reappears under the rotation directory.
 
 #: The recorded after-frame of ``SELECT_TRAINING_CAMP``: 射手营 selected, queue free.  This is
 #: the frame production read and got no train point from.
-AVAILABLE_FRAME = Path(
-    r"E:\无尽冬日智能体\dataset\raw\control_panel\runtime_auto\20261003_223009_533887"
-    r"\20261003_223009_533887_step_014_after_refresh_1_20261003T143313279833.png"
-)
+AVAILABLE_FRAME = archived("*_step_014_after_refresh_1_20261003T143313279833.png")
 #: The next step's before-frame: same page, same state.
-AVAILABLE_FRAME_2 = Path(
-    r"E:\无尽冬日智能体\dataset\raw\control_panel\runtime_auto\20261003_223009_533887"
-    r"\20261003_223009_533887_step_015_before_20261003T143314860184.png"
-)
+AVAILABLE_FRAME_2 = archived("*_step_015_before_20261003T143314860184.png")
 #: The 盾兵营 frame: a queue running (status=IN_PROGRESS), which is what the old condition did
 #: cover.
-BUSY_FRAME = Path(
-    r"E:\无尽冬日智能体\dataset\raw\control_panel\runtime_auto\20261003_223009_533887"
-    r"\20261003_223009_533887_step_014_before_20261003T143308507286.png"
-)
+BUSY_FRAME = archived("*_step_014_before_20261003T143308507286.png")
 
 
 def _vision():
@@ -74,8 +73,7 @@ def _vision():
 class TheTrainableBarracksHandsOverItsPointTests:
     def test_the_frame_production_could_not_train_from_now_carries_the_point(self):
         """The regression, on the recorded frame, through the whole stack."""
-        if not AVAILABLE_FRAME.is_file():
-            pytest.skip("archived frame missing")
+        require(("the SELECT_TRAINING_CAMP after-frame", AVAILABLE_FRAME))
         state = _vision().observe(AVAILABLE_FRAME)
         training = state.training or {}
         assert training.get("status") == "AVAILABLE", training
@@ -87,9 +85,9 @@ class TheTrainableBarracksHandsOverItsPointTests:
 
     def test_both_recorded_available_frames_agree(self):
         """Two consecutive frames of the same page must not disagree about the control."""
-        frames = [f for f in (AVAILABLE_FRAME, AVAILABLE_FRAME_2) if f.is_file()]
-        if len(frames) < 2:
-            pytest.skip("archived frames missing")
+        require(("the SELECT_TRAINING_CAMP after-frame", AVAILABLE_FRAME),
+                ("the following before-frame", AVAILABLE_FRAME_2))
+        frames = [AVAILABLE_FRAME, AVAILABLE_FRAME_2]
         vision = _vision()
         points = []
         for frame in frames:
@@ -101,8 +99,7 @@ class TheTrainableBarracksHandsOverItsPointTests:
 
     def test_a_busy_queue_still_reads_its_timer(self):
         """The half the old condition did cover must not regress."""
-        if not BUSY_FRAME.is_file():
-            pytest.skip("archived frame missing")
+        require(("the busy-queue frame", BUSY_FRAME))
         training = _vision().observe(BUSY_FRAME).training or {}
         assert training.get("status") == "IN_PROGRESS", training
         assert training.get("timer"), training

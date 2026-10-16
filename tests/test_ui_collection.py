@@ -38,20 +38,20 @@ from winter_agent_v2 import ui_collection  # noqa: E402
 from winter_agent_v2.models import Decision, ExecutionResult, Page, VerificationResult, WorldState  # noqa: E402
 from winter_agent_v2.models import Action  # noqa: E402
 from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
+from tests.archived_frames import archived  # noqa: E402
 
 #: A real live frame, already used elsewhere in the suite: 720x1280, with the training page's
-#: three camp tabs and the running queue on it.
-FRAME = ROOT / (
-    "dataset/raw/control_panel/runtime_auto/20260922_123407_610951/"
-    "20260922_123407_610951_step_011_after_refresh_2_20260922T043904261212.png"
-)
+#: three camp tabs and the running queue on it.  A lookup, not a claim: measured 2026-10-16,
+#: the capture TTL pruned this episode before anyone copied it to a protected tree, so
+#: ``archived`` answers ``None`` until a copy reappears.
+FRAME = archived("*_step_011_after_refresh_2_20260922T043904261212.png")
 
 # The frame this file reads lives under ``dataset/raw/**``, which retention rotates (measured
 # 2026-10-15: it is gone), so the tests that read it failed -- as ``NoneType`` attribute errors,
 # because the collection returns None for a frame it cannot open.  A module-level skip is the
 # honest state until it can be re-captured on a live device.
 pytestmark = pytest.mark.skipif(
-    not FRAME.is_file(),
+    FRAME is None or not FRAME.is_file(),
     reason=f"missing fixture {FRAME} (retention rotated dataset/raw)",
 )
 

@@ -3,16 +3,19 @@ from pathlib import Path
 from winter_agent_v2.models import Page, WorldState
 from winter_agent_v2.ocr import HybridVision
 from winter_agent_v2.runtime import LiveRuntime
+from tests.archived_frames import archived, require
 from tests.live_stack import production_vision
 
 
 ROOT = Path(__file__).resolve().parents[1]
-LIVE_DETAILS = ROOT / "dataset/raw/control_panel/runtime_auto/20260925_003829_467215/20260925_003829_467215_step_005_after_refresh_2_20260924T164034575653.png"
+#: A lookup, not a claim: measured 2026-10-16, the capture TTL pruned this episode before
+#: anyone copied it to a protected tree, so the two tests skip -- naming what is gone --
+#: instead of returning green on a frame nobody read.
+LIVE_DETAILS = archived("*_step_005_after_refresh_2_20260924T164034575653.png")
 
 
 def test_current_account_power_details_are_recognized_and_rows_are_read_from_this_frame():
-    if not LIVE_DETAILS.exists():
-        return
+    require(("the power-details frame", LIVE_DETAILS))
     production = production_vision()
     if production is None:
         return
@@ -48,8 +51,7 @@ def test_current_account_power_details_are_recognized_and_rows_are_read_from_thi
 
 
 def test_power_category_action_refuses_a_wrong_page_even_with_the_live_frame():
-    if not LIVE_DETAILS.exists():
-        return
+    require(("the power-details frame", LIVE_DETAILS))
     production = production_vision()
     if production is None:
         return

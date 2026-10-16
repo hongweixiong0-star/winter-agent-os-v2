@@ -60,14 +60,15 @@ from winter_agent_v2 import page_knowledge, ui_collection, unknown_advisor, unkn
 from winter_agent_v2.models import Action, Decision, ExecutionResult, Page, WorldState  # noqa: E402
 from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
 from winter_agent_v2.skills import v2_registry  # noqa: E402
+from tests.archived_frames import archived, require  # noqa: E402
 
 #: The real frame the live AUTO filed its first unanswered question about (goal DAILY, page read as
 #: UNKNOWN with the title 燃霜矿区).  Its own OCR read the four right-hand labels 说明/奖励/指南/历史排名
 #: -- each of which has a wordless icon directly above it, which is the anchor case of item 三.
-EVENT_FRAME = ROOT / (
-    "dataset/raw/control_panel/runtime_auto/20260922_163010_905874/"
-    "20260922_163010_905874_step_002_before_20260922T083049654040.png"
-)
+#: A lookup, not a claim: measured 2026-10-16, the capture TTL pruned this episode before anyone
+#: copied it to a protected tree, so the classes that read it require it explicitly -- the channel
+#: is retired today, and the frame has to be re-captured before it is switched back on.
+EVENT_FRAME = archived("*_step_002_before_20260922T083049654040.png")
 
 #: Measured on that frame with the production OCR (the live request's own ``ocr_boxes``).
 EXPLAIN_BOX = {
@@ -194,12 +195,17 @@ class _StubBridge:
         )
 
 
-def _seed_question(root: Path, *, key: str, goal: str, frame: Path) -> unknown_advisor.UnknownRequest:
+def _seed_question(root: Path, *, key: str, goal: str, frame: Path | None) -> unknown_advisor.UnknownRequest:
     request = unknown_advisor.build_request(
         unknown_type=unknown_advisor.UNKNOWN_CONTROL,
         page_label="UNKNOWN",
         page_key="UNKNOWN::燃霜矿区",
-        frame_path=frame,
+        # ``or ""``: ``build_request`` digests the frame, and its ``frame_digest`` takes a path
+        # or a string -- a missing file is an OSError it handles, but ``None`` is a TypeError it
+        # does not.  The retired-shape tests seed a question for its *shape*, not for its frame,
+        # so an absent capture is cited as the empty string (measured 2026-10-16: the archived
+        # lookup answers None once retention has taken the episode).
+        frame_path=frame or "",
         goal=goal,
         ocr_texts=(EXPLAIN_BOX["text"],),
         ocr_boxes=(EXPLAIN_BOX,),
@@ -213,6 +219,10 @@ def _seed_question(root: Path, *, key: str, goal: str, frame: Path) -> unknown_a
 @_CHANNEL_RETIRED_SKIP
 class DispatchTests(unittest.TestCase):
     """Item 一: a pending question becomes exactly one job, within bounds, and never blocks."""
+
+    @classmethod
+    def setUpClass(cls):
+        require(("the 燃霜矿区 event frame", EVENT_FRAME))
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -933,6 +943,7 @@ class GroundingTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        require(("the 燃霜矿区 event frame", EVENT_FRAME))
         cls.ocr = _ocr()
 
     def test_a_region_anchored_to_real_text_resolves(self):
@@ -1060,6 +1071,7 @@ class AdvisedTapTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        require(("the 燃霜矿区 event frame", EVENT_FRAME))
         cls.ocr = _ocr()
 
     def setUp(self):

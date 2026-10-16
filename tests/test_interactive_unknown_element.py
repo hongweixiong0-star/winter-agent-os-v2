@@ -42,12 +42,14 @@ from winter_agent_v2.brain import RuleBrain  # noqa: E402
 from winter_agent_v2.models import Action, Decision, ExecutionResult, Page, VerificationResult, WorldState  # noqa: E402
 from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
 from winter_agent_v2.skills import v2_registry  # noqa: E402
+from tests.archived_frames import archived  # noqa: E402
 
 #: A real live capture of the training page (720x1280), already used elsewhere in this suite.
-REAL_FRAME = ROOT / (
-    "dataset/raw/control_panel/runtime_auto/20260922_123407_610951/"
-    "20260922_123407_610951_step_011_after_refresh_2_20260922T043904261212.png"
-)
+#: A lookup, not a claim: measured 2026-10-16, the capture TTL pruned this episode before
+#: anyone copied it to a protected tree, so ``archived`` answers ``None`` until a copy
+#: reappears -- and the module-level skip below says so instead of failing with
+#: ``FileNotFoundError``, which reads as a code fault and is not one.
+REAL_FRAME = archived("*_step_011_after_refresh_2_20260922T043904261212.png")
 
 # Every class in this file reads that one frame, and ``dataset/raw/**`` is rotated by retention
 # (measured 2026-10-14: the directory is there, the frames are not), so a missing fixture would
@@ -55,7 +57,7 @@ REAL_FRAME = ROOT / (
 # not one.  Re-capturing it needs a live device; until then a module-level skip is the honest
 # state, and it is the same call ``tests/test_camp_panel_stamina.py`` makes per class.
 pytestmark = pytest.mark.skipif(
-    not REAL_FRAME.is_file(),
+    REAL_FRAME is None or not REAL_FRAME.is_file(),
     reason=f"missing fixture {REAL_FRAME} (retention rotated dataset/raw)",
 )
 

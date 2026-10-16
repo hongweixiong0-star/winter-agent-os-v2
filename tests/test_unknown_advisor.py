@@ -41,28 +41,28 @@ from winter_agent_v2 import page_knowledge, ui_collection, unknown_advisor  # no
 from winter_agent_v2.models import Decision, ExecutionResult, Page, VerificationResult, WorldState  # noqa: E402
 from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
 from winter_agent_v2.skills import v2_registry  # noqa: E402
+from tests.archived_frames import archived  # noqa: E402
 
 #: The real unnamed screen whose own words DO name a tap-safe control (领取) -- the one the live
 #: AUTO acted on.  On this frame the existing methods answer, so no question is asked (§一).
-UNKNOWN_FRAME = ROOT / (
-    "dataset/raw/control_panel/runtime_auto/20260922_125214_770769/"
-    "20260922_125214_770769_step_001_after_refresh_2_20260922T045309420387.png"
-)
-
-# The frame this file reads lives under ``dataset/raw/**``, which retention rotates (measured
-# 2026-10-15: it is gone); the reader returns None for a frame it cannot open, so the tests failed
-# with ``NoneType`` attribute errors rather than a FileNotFoundError.  A module-level skip is the
-# honest state until it can be re-captured on a live device.
-pytestmark = pytest.mark.skipif(
-    not (UNKNOWN_FRAME.is_file() and SILENT_UNKNOWN_FRAME.is_file()),
-    reason=f"missing fixture {UNKNOWN_FRAME} (retention rotated dataset/raw)",
-)
+#: A lookup, not a claim: measured 2026-10-16, the capture TTL pruned this episode before
+#: anyone copied it to a protected tree.
+UNKNOWN_FRAME = archived("*_step_001_after_refresh_2_20260922T045309420387.png")
 
 #: The other real unnamed screen (the battle overlay): OCR reads 对战 / 自动 / X2 and none of them is
 #: an ordinary action this project may tap, so this is the frame that has to ask.
-SILENT_UNKNOWN_FRAME = ROOT / (
-    "dataset/raw/control_panel/runtime_auto/20260922_114218_071725/"
-    "20260922_114218_071725_step_004_after_20260922T034320650029.png"
+SILENT_UNKNOWN_FRAME = archived("*_step_004_after_20260922T034320650029.png")
+
+# The frames this file reads live under ``dataset/raw/**``, which retention rotates (measured
+# 2026-10-15: they are gone; 2026-10-16: no copy survives anywhere in the checkout), so the tests
+# skip -- naming what is gone -- instead of failing with ``NoneType`` attribute errors, which read
+# as a code fault and are not one.  The guard sits below both definitions so the condition cannot
+# depend on short-circuit order.
+pytestmark = pytest.mark.skipif(
+    not (UNKNOWN_FRAME is not None and UNKNOWN_FRAME.is_file()
+         and SILENT_UNKNOWN_FRAME is not None and SILENT_UNKNOWN_FRAME.is_file()),
+    reason="missing fixture (retention rotated dataset/raw): the two unnamed-screen frames "
+           "are no longer on this machine",
 )
 
 #: What the live frame really shows, measured with the production OCR: the 领取 button's own box.

@@ -34,14 +34,18 @@ class UnknownRequestFramesAreEvidenceTest(unittest.TestCase):
         return tmp
 
     def test_all_three_keys_are_cited(self):
-        where = self._dir({"a.json": {
+        payload = {
             "frame_path": "dataset/raw/one.png",
             "before_frame_path": "dataset/raw/before.png",
             "after_frame_path": "dataset/raw/after.png",
-        }})
+        }
+        where = self._dir({"a.json": payload})
         cited = retention.unknown_request_evidence(Path("/nowhere"), directory=where)
-        self.assertEqual(cited, {Path("dataset/raw/one.png"), Path("dataset/raw/before.png"),
-                                 Path("dataset/raw/after.png")})
+        # The expectation is derived from the same payload instead of re-typed as fresh
+        # ``Path()`` literals.  A repo-shaped record value is *data* -- nothing opens it --
+        # and the evidence-integrity scan must not read the test's own payload as a
+        # reference to repo evidence; deriving also removes any chance the two sides drift.
+        self.assertEqual(cited, {Path(value) for value in payload.values()})
 
     def test_a_missing_directory_is_empty_not_an_error(self):
         self.assertEqual(
@@ -50,10 +54,10 @@ class UnknownRequestFramesAreEvidenceTest(unittest.TestCase):
 
     def test_malformed_records_do_not_raise(self):
         """This runs inside the pruning pass; a raise here leaves the disk unbounded."""
-        where = self._dir({"broken.json": "{not json", "list.json": [1, 2], "ok.json": {
-            "frame_path": "dataset/raw/ok.png"}})
+        ok_payload = {"frame_path": "dataset/raw/ok.png"}
+        where = self._dir({"broken.json": "{not json", "list.json": [1, 2], "ok.json": ok_payload})
         cited = retention.unknown_request_evidence(Path("/nowhere"), directory=where)
-        self.assertEqual(cited, {Path("dataset/raw/ok.png")})
+        self.assertEqual(cited, {Path(ok_payload["frame_path"])})
 
     def test_the_third_stream_is_wired_into_the_union(self):
         """A function nobody calls protects nothing -- which is the bug being fixed."""

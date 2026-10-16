@@ -36,6 +36,7 @@ from winter_agent_v2.skills import Skill, SkillRegistry  # noqa: E402
 from winter_agent_v2.ocr import OCRResult, OCRToken  # noqa: E402
 from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
 from winter_agent_v2.verifier import verify_ordinary_control_tried  # noqa: E402
+from tests.archived_frames import archived  # noqa: E402
 
 #: A real captured frame -- the scan needs a real image so ``read_frame_size`` can turn
 #: pixel boxes into normalized ones.  Kept outside ``dataset/raw`` (see the retention note
@@ -535,13 +536,12 @@ class PrintedExitOnTheRealFrameTests(unittest.TestCase):
     this frame.
     """
 
-    FRAME = ROOT / (
-        "dataset/raw/control_panel/runtime_auto/20260922_123407_610951/"
-        "20260922_123407_610951_step_011_after_refresh_2_20260922T043904261212.png"
-    )
+    # A lookup, not a claim: measured 2026-10-16, the capture TTL pruned this episode before
+    # anyone copied it to a protected tree; the guard below skips -- naming what is gone.
+    FRAME = archived("*_step_011_after_refresh_2_20260922T043904261212.png")
 
     def test_the_client_instruction_supplies_the_point(self):
-        if not self.FRAME.exists():
+        if self.FRAME is None or not self.FRAME.exists():
             self.skipTest("the live capture was pruned by the retention policy")
         import json
 
@@ -703,13 +703,12 @@ class TroopWordDerivationTests(unittest.TestCase):
 class MarksmanCampPageFrameTests(unittest.TestCase):
     """The 射手营 page, on the frame that produced the failure above."""
 
-    FRAME = ROOT / (
-        "dataset/raw/control_panel/runtime_auto/20260922_131903_427429/"
-        "20260922_131903_427429_step_013_after_refresh_2_20260922T052412735195.png"
-    )
+    # A lookup, not a claim: measured 2026-10-16, the capture TTL pruned this episode before
+    # anyone copied it to a protected tree; the guard below skips -- naming what is gone.
+    FRAME = archived("*_step_013_after_refresh_2_20260922T052412735195.png")
 
     def test_the_marksman_page_is_named_and_attributed(self):
-        if not self.FRAME.exists():
+        if self.FRAME is None or not self.FRAME.exists():
             self.skipTest("the live capture was pruned by the retention policy")
         import json
 
