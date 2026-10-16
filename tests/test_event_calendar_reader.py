@@ -81,3 +81,55 @@ def test_a_date_range_without_a_countdown_is_not_a_detail():
 def test_a_bare_window_naming_no_activity_is_not_a_detail():
     """A stray range and countdown must not promote a frame that names nothing."""
     assert _recognised(title=False)["recognized"] is False
+
+
+# ---------------------------------------------------------------------------------------------
+# The hub under the truck-event season.
+#
+# Measured 2026-10-17 on the live client (frame 20261017_072552_941991 step_001_after): the
+# regular-events hub headed 常规活动 draws its page heading at 38 px and the activity titles
+# beneath it (联盟大作战, 凛风攻城战) at 29 px -- a 0.76x ratio.  The title predicate required
+# 0.9x, so every title failed, the hub went unrecognised, and OPEN_EVENT_CALENDAR_FROM_HOME
+# reported EVENT_CALENDAR_NOT_OPEN every ~5 minutes (67 such failures overnight).
+# ---------------------------------------------------------------------------------------------
+
+from winter_agent_v2.event_calendar import read_regular_event_hub  # noqa: E402
+
+
+def _hub_tokens(*, title_height=29):
+    return [
+        token("常规活动", 100, 22, 125, 38),                 # page heading, 38 px
+        token("联盟大作战", 100, 155, 122, title_height),
+        token("凛风攻城战", 480, 155, 158, title_height),
+        token("我的货车", 110, 236, 82, 34),
+        token("他人货车", 320, 236, 82, 34),
+        token("通商时间：16：33：28", 240, 330, 240, 25),
+        token("剩余发车次数：4/4", 260, 1151, 240, 27),
+    ]
+
+
+def test_a_hub_whose_titles_are_smaller_than_its_heading_is_still_recognised():
+    hub = read_regular_event_hub(_hub_tokens(), frame_size=(720, 1280))
+    assert hub["recognized"] is True
+    assert hub["reason"] == "CURRENT_HEADING_TAB_AND_EVENT_BODY"
+    labels = [tab["label"] for tab in hub["tabs"]]
+    assert "联盟大作战" in labels and "凛风攻城战" in labels
+    assert hub["body_evidence"]
+
+
+def test_a_label_under_the_two_percent_floor_is_not_a_title():
+    """The 2%-of-frame floor (25.6 px at 720x1280) still keeps small labels out.
+
+    Every title-row candidate is shrunk below the floor, so no title exists and the hub
+    stays unrecognised -- the shape the floor exists to reject.
+    """
+    tokens = [
+        token("常规活动", 100, 22, 125, 38),
+        token("联盟大作战", 100, 155, 122, 24),
+        token("凛风攻城战", 480, 155, 158, 24),
+        token("我的货车", 110, 238, 82, 24),
+        token("他人货车", 320, 238, 82, 24),
+        token("剩余发车次数：4/4", 260, 1151, 240, 27),
+    ]
+    hub = read_regular_event_hub(tokens, frame_size=(720, 1280))
+    assert hub["recognized"] is False

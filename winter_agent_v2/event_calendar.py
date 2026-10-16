@@ -645,7 +645,15 @@ def read_regular_event_hub(
 
     titles = sorted((r for r in rows if navigation_label(r["label"])
                      and r["top"] > heading["bottom"] + heading["height"]
-                     and r["height"] >= max(height * 0.02, heading["height"] * 0.9)
+                     # 0.65x, not 0.9x -- measured 2026-10-17 on the live hub (frame
+                     # 20261017_072552_941991 step_001_after): heading 常规活动 is 38 px and
+                     # the titles beneath it (联盟大作战, 凛风攻城战) are 29 px, a 0.76x
+                     # ratio.  The 0.9x bound encoded an older near-equal layout; under the
+                     # truck-event season it failed every title, so the hub went unrecognized
+                     # and OPEN_EVENT_CALENDAR_FROM_HOME reported EVENT_CALENDAR_NOT_OPEN every
+                     # ~5 minutes.  The 2%-of-frame floor (25.6 px at 720x1280) still keeps
+                     # body labels out.
+                     and r["height"] >= max(height * 0.02, heading["height"] * 0.65)
                      and r["y"] <= height * 0.5), key=lambda r: r["y"])
     body_markers = ("积分", "排名", "奖励", "可接次数", "已完成", "进行中",
                     "活动时间", "剩余", "阶段", "前往", "任务")
