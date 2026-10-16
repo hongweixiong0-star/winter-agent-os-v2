@@ -41,23 +41,39 @@ from winter_agent_v2.vision import SemanticROIVision, SemanticWorldVision
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "dataset" / "candidate" / "template_manifest.json"
-ARCHIVE = ROOT / "dataset" / "truth_audit" / "daily_tasks_tab_20260916"
+#: Re-based 2026-10-16 onto the client's *current* layout.  The 2026-09-16 pair (which these
+#: constants used to name) draws the tab bar 116 px to the right of where the client draws it
+#: today -- ``tools/register_daily_tab_template.py`` re-registers from the 2026-10-06 pair for
+#: exactly that reason ("the pill now spans x 365..588 ... moved left by 116"), and a test
+#: pinned to the old frames measures a layout the templates no longer describe (distance 32
+#: against a threshold of 6: every find returned None).  These are the frames the registration
+#: itself is built from, and both are tracked under truth_audit.
+ARCHIVE = ROOT / "dataset" / "truth_audit" / "daily_tasks_tab_20261006"
 
-# The client's own before/after pair, 40 s and one tap apart.
-ON_CHAPTER_TAB = ARCHIVE / "01_before_20260916_134609.png"
-ON_DAILY_TAB = ARCHIVE / "02_after_tap_20260916_134609.png"
+# The client's own before/after pair, one tap apart.
+ON_CHAPTER_TAB = ARCHIVE / "01_before_unselected.png"
+ON_DAILY_TAB = ARCHIVE / "02_after_selected.png"
 
-# The 每日任务 pill: x 481..704, y 1091..1173 on the 720x1280 client.
-PILL_CENTRE = (592 / 720, 1132 / 1280)
+# The registered tap centre of the 每日任务 pill on the current layout: the registration's
+# box is (365, 1091, 554, 1173) [right edge stops before the claimable badge's x 564..582]
+# and the pill spans x 365..588, so px (459, 1132) sits on it -- printed by the registration
+# tool as "tap centre px=(459,1132)".
+PILL_CENTRE = (459 / 720, 1132 / 1280)
 
 
 def _semantic() -> SemanticROIVision:
     return SemanticROIVision(MANIFEST)
 
 
-def _panel(tab: str, status: str = "AVAILABLE", claimable: int = 0) -> WorldState:
-    return WorldState(page=Page.DAILY, daily={"tab": tab, "status": status,
-                                              "claimable_count": claimable}, confidence=0.99)
+def _panel(tab: str, status: str = "AVAILABLE", claimable: int = 0, *,
+           page: Page = Page.DAILY) -> WorldState:
+    # ``page`` became a parameter with 7caf38cc (2026-09-28): the 章节任务 tab gained its own
+    # page identity (``Page.GROWTH_TASKS``), and the tab-switch verifier now names both halves
+    # of the measured transition -- the panel opened on 章节任务 reads GROWTH_TASKS, the one on
+    # 每日任务 reads DAILY.  The brain tests below still pass DAILY for a "NOT_TASKS" panel
+    # because they only read the ``daily`` dict; the verifier test passes the real page.
+    return WorldState(page=page, daily={"tab": tab, "status": status,
+                                        "claimable_count": claimable}, confidence=0.99)
 
 
 class TheTwoTabStatesAreDistinguishableTests(unittest.TestCase):
@@ -143,7 +159,11 @@ class RealWorkIsNotShadowedTests(unittest.TestCase):
 
 class TheVerifierReadsTheDrawnStateTests(unittest.TestCase):
     def test_the_measured_transition_is_proven(self):
-        result = verify_daily_tab_selected(_panel("NOT_TASKS"), _panel("TASKS"))
+        # The before panel carries ``Page.GROWTH_TASKS``: since 7caf38cc the 章节任务 tab has
+        # its own page identity, and the verifier asks for both halves of the measured
+        # transition (GROWTH_TASKS + NOT_TASKS -> DAILY + TASKS), not just the tab strings.
+        result = verify_daily_tab_selected(_panel("NOT_TASKS", page=Page.GROWTH_TASKS),
+                                           _panel("TASKS"))
         self.assertTrue(result.ok, result.evidence)
         self.assertEqual(result.reason, "OK")
 
