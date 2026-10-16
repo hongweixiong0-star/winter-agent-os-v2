@@ -55,6 +55,12 @@ PANEL_FRAMES = (
 #: HUD the entry sits on, and the world map with the panel closed.
 CITY_FRAME = KEY / "login_gift_CITY_BEFORE_ENTRY_20260924T055934.png"
 MAP_FRAME = KEY / "map_hud_panel_closed_20260924T040458.png"
+#: A third screen the hub's header template must never claim: the alliance-help page, whose own
+#: anchor matches at distance 0 but which shares the back-arrow/title shell (measured 2026-10-16,
+#: the same shape on the 2026-09-15 capture; see the header-record note in the manifest).
+ALLIANCE_HELP_FRAME = (
+    ROOT / "dataset/truth_audit/alliance_gifts_chain_20260915/04_alliance_help_page_live.png"
+)
 
 OBSERVATION_REASON = "unclaimed_activity_panel_is_observed_before_any_flow_leaves_it"
 
@@ -106,6 +112,26 @@ class ThePanelHasItsOwnIdentity(unittest.TestCase):
         world_map = self.vision.observe(MAP_FRAME)
         self.assertIs(world_map.page, Page.MAP, f"map frame -> {world_map.page}")
 
+    def test_a_subpage_sharing_the_header_shell_is_not_this_panel(self) -> None:
+        """The arrow plus a four-glyph heading is a *shell*, not an identity (2026-10-16).
+
+        The header crop used to carry the first tab of the strip, and at size 8 the strip is
+        "bright blobs on dark blue" on every page, so a look-alike subpage -- 联盟互助, whose
+        own anchor matches at distance 0 -- measured exactly 8 against a threshold of 8 and was
+        claimed as this hub before its own branch could run (the same shape on the 2026-09-15
+        frame below).  The crop now stops after the complete heading: over a 3297-frame corpus
+        sample every genuine hub frame scores 0-2 and every look-alike >= 12.  The positive side
+        of this control is ``test_the_login_gift_panel_is_named_event_with_its_panel`` above.
+        """
+        _require(ALLIANCE_HELP_FRAME)
+        state = self.vision.observe(ALLIANCE_HELP_FRAME)
+        self.assertIsNot(state.page, Page.EVENT, f"alliance-help frame -> {state.page}")
+        self.assertNotEqual(
+            dict(state.events or {}).get("hub"),
+            "SUPER_ACTIVITY",
+            f"a look-alike subpage was claimed as the hub: {state.events}",
+        )
+
 
 class AJustOpenedPanelIsObservedFirst(unittest.TestCase):
     """Defect 2: the first step on the panel is an observation, whoever holds the cycle.
@@ -113,11 +139,12 @@ class AJustOpenedPanelIsObservedFirst(unittest.TestCase):
     2026-09-24 refinement, measured on the same client: the observation is not the
     *end* of the story, it is the front of it.  A panel the client marks with its
     gold claim ring is free to act on -- the first answer is the claim skill, for
-    every goal, exactly as the observation guard intended ("observed and verified
-    before any flow is allowed to change it", and then acted on).  The property
-    below therefore runs on BOTH panel states: the claimable one, and the claimed
-    one (04_claim_final, ring gone) which has nothing to act on and must be
-    observed and left, never tapped a second time.
+    every goal that does not have a route of its own away from here (the productive
+    city routes return instead, 2026-09-30), exactly as the observation guard
+    intended ("observed and verified before any flow is allowed to change it", and
+    then acted on).  The property below therefore runs on BOTH panel states: the
+    claimable one, and the claimed one (04_claim_final, ring gone) which has
+    nothing to act on and must be observed and left, never tapped a second time.
     """
 
     CLAIMED_FRAME = (
@@ -140,8 +167,15 @@ class AJustOpenedPanelIsObservedFirst(unittest.TestCase):
             "the claimed fixture must NOT draw the ring; the day was claimed 2026-09-24"
         )
 
+    #: The productive city routes are deliberately NOT in these lists: since 2026-09-30
+    #: (``3b1762c2``) TRAIN/RESEARCH/BUILDING/GATHER_RESOURCE/GIANT_BEAST/BEAST_HUNT/INTEL
+    #: return from an unrelated event session instead of claiming or observing there.  That
+    #: exception is pinned by ``test_a_productive_route_returns_from_the_session_untouched``
+    #: below and by ``test_validation_route_focus``.
+    LEFT_ALONE_GOALS = (None, "MAIL", "DAILY_ACTIVITY_TARGET", "ALLIANCE_ROUTINE")
+
     def test_a_claimable_panel_is_claimed_by_whatever_holds_the_cycle(self) -> None:
-        for goal in (None, "MAIL", "DAILY_ACTIVITY_TARGET", "ALLIANCE_ROUTINE", "TRAIN"):
+        for goal in self.LEFT_ALONE_GOALS:
             with self.subTest(goal=goal):
                 decision = _decide(goal, self.panel)
                 self.assertEqual(decision.skill, "CLAIM_LOGIN_GIFT", f"goal={goal}")
@@ -153,9 +187,10 @@ class AJustOpenedPanelIsObservedFirst(unittest.TestCase):
         goal-less fallback.  The same panel is also closed by a *committed* goal's own branch
         (measured here: ``BACK / mail_goal_leaves_a_panel_it_does_not_own``), so the guard has to
         answer for every goal rather than for the fallback alone.  Run on the CLAIMED panel:
-        a panel with nothing to claim is the one the guard exists for.
+        a panel with nothing to claim is the one the guard exists for.  The productive city
+        routes are the one deliberate exception -- see ``LEFT_ALONE_GOALS``.
         """
-        for goal in (None, "MAIL", "DAILY_ACTIVITY_TARGET", "ALLIANCE_ROUTINE", "TRAIN"):
+        for goal in self.LEFT_ALONE_GOALS:
             with self.subTest(goal=goal):
                 decision = _decide(goal, self.claimed_panel)
                 self.assertEqual(
@@ -165,6 +200,18 @@ class AJustOpenedPanelIsObservedFirst(unittest.TestCase):
                     f"{decision.reason}",
                 )
                 self.assertEqual(decision.reason, OBSERVATION_REASON)
+
+    def test_a_productive_route_returns_from_the_session_untouched(self) -> None:
+        """The 2026-09-30 exception (``3b1762c2``), pinned on these fixtures as well.
+
+        ``TRAIN`` (representative of the seven productive routes) neither claims nor observes
+        here: its own work is elsewhere and the panel is an unrelated session, so it returns --
+        on BOTH panel states, and with the client's own Back rather than a tap.
+        """
+        for panel in (self.panel, self.claimed_panel):
+            decision = _decide("TRAIN", panel)
+            self.assertEqual(decision.skill, "BACK")
+            self.assertEqual(decision.reason, "selected_goal_leaves_unrelated_event_session")
 
     def test_the_observation_is_bounded_to_one_step_per_run(self) -> None:
         """One observation, not a loop: the next step is the ordinary flow's own answer.

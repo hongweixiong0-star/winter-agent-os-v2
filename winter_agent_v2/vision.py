@@ -2368,6 +2368,14 @@ class SemanticWorldVision:
         # burst and on the previous round's frame both match at distance 0 while the MAP frame and
         # the city frame are rejected outright.
         #
+        # Measured again 2026-10-16, because the header band's own right edge was lying: the crop
+        # carried the first tab of the strip, and at size 8 the strip is "bright blobs on dark
+        # blue" on every page, diluting the heading mismatch 16 -> 8 -- exactly the threshold --
+        # on look-alike subpages (联盟互助 / 常规活动), so the alliance-help frame, whose own
+        # anchor matches at distance 0, was claimed here and never reached its branch.  The crop
+        # now stops after the complete heading (tab strip excluded): over a 3297-frame sample
+        # every genuine hub frame scores 0-2 and every look-alike >= 12.
+        #
         # The two negatives are the project's own map/city discriminator, reused rather than
         # re-invented: the world map draws the return-to-city control (``BTN_OPEN_HOME``) where the
         # city draws the map button (``PAGE_MAP``), so the two are mutually exclusive and neither
