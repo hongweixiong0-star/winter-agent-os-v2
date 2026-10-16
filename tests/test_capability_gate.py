@@ -20,6 +20,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
+from winter_agent_v2 import event_schedule
 from winter_agent_v2 import goal_utility
 from winter_agent_v2 import observation_store
 from winter_agent_v2.skills import v2_registry
@@ -658,15 +659,40 @@ def offline_runtime_state(temp: Path, observations: dict | None = None):
         observation_store.record(domain, reading, path=empty)
     fairness = Path(temp) / "fairness.json"
     fairness.write_text("{}", encoding="utf-8")
+    # The third machine-owned ranking input, added 2026-10-16 after it was measured stealing
+    # these fixtures' cycles: with no calendar snapshot for the fixture's scope,
+    # ``calendar_scan_due`` answers True, the goal library puts
+    # ``DISCOVER_EVENT_CALENDAR`` on the board priced 300/450/250 -- a total of **1000**,
+    # "catalogue price only" -- and it outbids every 180-500 ticket these tests are written
+    # around ("chose DISCOVER_EVENT_CALENDAR (1000; catalogue price only)").  The three
+    # 2026-10-05..09 runs that ended here had never met it because the goal's pricing is from
+    # 2026-10-03.  The snapshot below is "the calendar was read today and holds nothing":
+    # a fresh empty grid for the unscoped-client bucket, which is the same shape
+    # ``record_calendar_snapshot`` writes and which ``calendar_scan_due`` answers False for
+    # (observed now; no pending rows; no strip record to be stale against; nothing advertised).
+    schedule = Path(temp) / "event_schedule.json"
+    schedule.write_text(json.dumps({
+        "calendar_observations": {
+            event_schedule.GLOBAL_CALENDAR_SCOPE: {
+                "CALENDAR_GRID": {
+                    "observed_at": datetime.now(timezone.utc).isoformat(),
+                    "entries": [],
+                },
+            },
+        },
+    }, ensure_ascii=False), encoding="utf-8")
     previous_store = observation_store.STATE_PATH
     previous_fairness = goal_utility.STATE_PATH
+    previous_schedule = event_schedule.STATE_PATH
     observation_store.STATE_PATH = empty
     goal_utility.STATE_PATH = fairness
+    event_schedule.STATE_PATH = schedule
     try:
         yield
     finally:
         observation_store.STATE_PATH = previous_store
         goal_utility.STATE_PATH = previous_fairness
+        event_schedule.STATE_PATH = previous_schedule
 
 
 #: Readings that leave exactly one kind of work on a MAP frame: everything else is known to be busy
@@ -689,7 +715,16 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
         base = {
             "compositions": {"AVOID_STAMINA_WASTE": GoalComposition(
                 "AVOID_STAMINA_WASTE", "ANY_OF", ("SPEND_STAMINA_ON_BEAST",))},
-            "capabilities": {"SPEND_STAMINA_ON_BEAST": (BLOCKED, "repair budget exhausted", None)},
+            # No capability blocker here since 2026-10-16, and the removal is the measurement:
+            # since the 2026-10-08 exemption (``_selectable``) a beast-capability deferral is
+            # lifted for a goal that has another verified sink, and this fixture's world always
+            # has one -- intel unavailable, so ``choose_stamina_goal`` picks the verified
+            # GIANT_BEAST sink and the goal is exempted by design, not deferred.  Asserting
+            # "deferred" against a capability blocker therefore pinned a behaviour the design
+            # deliberately retired; the deferral this class is about still exists for the
+            # goal's own no-progress fact, which no sink test may lift (see
+            # ``TheStaminaSinkExemptionIsNotAGoalLevelExcuseTests`` for the pair).
+            "capabilities": {},
             # Anchored to the live clock, not to the module-level ``NOW``: ``LiveRuntime``
             # reads real time (runtime.py calls ``blocks()`` without ``now=``), so a
             # literal instant drifts past BLOCKED_PROBE_MINUTES and the goal silently
@@ -740,7 +775,11 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
         device, run, _rows = self._run(states, self._gate())
         self.assertEqual(len(run.deferrals), 1)
         self.assertEqual(run.deferrals[0]["goal_id"], "AVOID_STAMINA_WASTE")
-        self.assertEqual(run.deferrals[0]["state"], BLOCKED)
+        # ``DEFERRED``, not ``BLOCKED``: the deferral this fixture now raises is the goal's own
+        # no-progress fact (see ``_gate``), whose state names a wait-with-a-date rather than a
+        # capability wall.  ``until`` is that date.
+        self.assertEqual(run.deferrals[0]["state"], DEFERRED)
+        self.assertTrue(run.deferrals[0]["until"])
 
     def test_the_deferral_hop_closes_the_search_panel_before_it_leaves(self):
         """Measured 2026-09-23: eight consecutive runs died at exactly this hop.
@@ -851,16 +890,22 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
             WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6, confidence=0.99),
             WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6, confidence=0.99),
         ]
-        device, run, _rows = self._run(states, CapabilityGate.empty(), observations=NOTHING_ELSE_TO_DO)
+        device, run, _rows = self._run(
+            states, CapabilityGate.empty(), observations=NOTHING_ELSE_TO_DO,
+            # ``START_RALLY`` joins the allowed set the same way the gather skills did: the
+            # route chooses its own first step, the test must not disallow it (2026-10-16).
+            allowed_skills=GATHER_ROUTE | {"START_RALLY"})
         self.assertEqual(run.deferrals, ())
         # The assertion is that the gate left the goal alone, and the skill is the *first step of
-        # that goal's route* rather than one skill name.  ``SCAN_MAP_FOR_BEAST`` cannot be step one
-        # any more and that is not a regression: the beast route now begins by opening the client's
-        # own resource-search panel with the 野兽 tab chosen (``beast_search_starts_by_opening_the_client_search``),
-        # which the probe confirms for both ``AVOID_STAMINA_WASTE`` and ``BEAST_HUNT`` on a MAP frame
-        # with a free march slot.  Pinning the old name would have been asserting a route that no
-        # longer exists.
-        self.assertIn(run.steps[0].decision.skill, GATHER_ROUTE,
+        # that goal's route* rather than one skill name.  That step has moved twice with the
+        # route itself and both earlier names are recorded here for the same reason: the beast
+        # route once began by opening the client's own resource-search panel with the 野兽 tab
+        # chosen (``beast_search_starts_by_opening_the_client_search``), and since the stamina
+        # route picks the verified GIANT_BEAST sink for this world (``choose_stamina_goal``:
+        # intel unavailable, giant not failed) the first step is ``START_RALLY`` --
+        # ``giant_stamina_shared_rally_session``.  Pinning an old name would have been asserting
+        # a route that no longer exists.
+        self.assertIn(run.steps[0].decision.skill, GATHER_ROUTE | {"START_RALLY"},
                       "an allowed goal must take its own route's first step")
         self.assertIsNotNone(run.steps[0].execution, "and it must really be issued")
 
@@ -941,16 +986,39 @@ class EpisodeMeasurementTests(unittest.TestCase):
         self.assertTrue(written["deferred_goals"][0]["reason"])
 
     def test_a_verifier_pass_without_goal_progress_is_recorded_as_such(self):
-        # The after-frame shows the search panel open, which is what ``SEARCH_RESOURCE``'s verifier
-        # reads -- that is the step this route really takes first on a MAP frame with a free march
-        # slot.  Stamina is unchanged, so the action lands and the goal does not move, which is the
-        # pair this test exists to keep apart.
+        # Re-fixtured 2026-10-16.  This used to run on a SEARCH_RESOURCE after-frame, because
+        # that was the step the goal took first on a MAP frame back then.  The stamina route
+        # moved on: with intel unavailable ``choose_stamina_goal`` now picks the verified
+        # GIANT_BEAST sink for this world, so ``AVOID_STAMINA_WASTE`` leads with ``START_RALLY``
+        # (``giant_stamina_shared_rally_session``) -- the step was disallowed, the run stopped
+        # before acting, no episode was written and the read below died on a missing file.
+        # The pair under test is unchanged: a verifier pass without goal movement.  The
+        # after-frame now carries what START_RALLY's verifier reads (a self-owned BEAR rally
+        # with a running countdown); stamina is unchanged, so the action lands and the goal
+        # does not move.
         states = [
             WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6, confidence=0.99),
             WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6,
-                       resource_search_open=True, confidence=0.99),
+                       alliance={"rally": {"ownership": "SELF", "remaining_seconds": 3600,
+                                           "target_type": "BEAR"}},
+                       confidence=0.99),
         ]
         device = FakeDevice()
+        # KNOWN RED (2026-10-16, last step of this re-fixture).  ``START_RALLY``'s action is
+        # ``TAP_SEMANTIC:BTN_START_RALLY``, and that name resolves from the *image* (a template
+        # on the bear panel), while this harness's frames are empty files written by
+        # ``FakeDevice.screenshot`` -- so the step dies at ``SEMANTIC_TARGET_NOT_VERIFIED``
+        # before any verification, exactly as its stderr shows.  The route steps that used to
+        # make this fixture work (``SEARCH_RESOURCE`` and the rest of the gather route) resolve
+        # from *world readings* and need no picture, which is why the original fixture passed.
+        # Three ways out, in the order this project would try them: (a) find a
+        # world-reading-based sink for ``AVOID_STAMINA_WASTE`` on this world -- not identified
+        # in this pass (the giant sink leads to an image-resolved rally button, the intel sink
+        # to its own page route); (b) drive ``_record_episode`` directly the way
+        # ``test_session_outcome_persistence`` does -- loses the run-level integration this
+        # test is about; (c) archive a real frame carrying ``BTN_START_RALLY`` under
+        # ``dataset/truth_audit`` and hand it to the vision stub.  Left red with the diagnosis
+        # rather than re-pointed at a weaker assertion.
         with TemporaryDirectory() as temp:
             path = Path(temp) / "episodes.jsonl"
             with offline_runtime_state(Path(temp), NOTHING_ELSE_TO_DO):
@@ -962,17 +1030,25 @@ class EpisodeMeasurementTests(unittest.TestCase):
                     sleeper=lambda _seconds: None,
                     episode_store=EpisodeStore(path),
                     capability_gate=CapabilityGate.empty(),
-                ).run(max_actions=1, allowed_skills=GATHER_ROUTE)
+                ).run(max_actions=1, allowed_skills=GATHER_ROUTE | {"START_RALLY"})
             row = json.loads(path.read_text(encoding="utf-8").splitlines()[0])
         self.assertIs(row["verifier_ok"], True, "the action itself landed")
         self.assertIs(row["goal_progress"], False, "...and the goal did not move")
         self.assertEqual(row["goal_id"], "AVOID_STAMINA_WASTE")
 
     def test_a_goal_that_moved_is_recorded_as_progress(self):
+        # Re-fixtured with its sibling above (2026-10-16): the goal's route now leads with
+        # START_RALLY on this world, so the after-frame carries the rally reading its verifier
+        # wants and the stamina drop is what marks the goal as moved.  Shares its sibling's
+        # KNOWN RED blocker (the rally button resolves from the image; the fake frames are
+        # empty) -- read the block comment above ``test_a_verifier_pass_without_...`` for the
+        # three candidate fixes.
         states = [
             WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6, confidence=0.99),
             WorldState(page=Page.MAP, stamina={"current": 437}, march_used=1, march_max=6,
-                       resource_search_open=True, confidence=0.99),
+                       alliance={"rally": {"ownership": "SELF", "remaining_seconds": 3600,
+                                           "target_type": "BEAR"}},
+                       confidence=0.99),
         ]
         device = FakeDevice()
         with TemporaryDirectory() as temp:
@@ -986,7 +1062,7 @@ class EpisodeMeasurementTests(unittest.TestCase):
                     sleeper=lambda _seconds: None,
                     episode_store=EpisodeStore(path),
                     capability_gate=CapabilityGate.empty(),
-                ).run(max_actions=1, allowed_skills=GATHER_ROUTE)
+                ).run(max_actions=1, allowed_skills=GATHER_ROUTE | {"START_RALLY"})
             row = json.loads(path.read_text(encoding="utf-8").splitlines()[0])
         self.assertIs(row["goal_progress"], True)
 
