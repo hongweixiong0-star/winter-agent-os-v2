@@ -4,6 +4,31 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
+## 手写：**2026-10-16 状态 —— 最新，先读这一节**
+
+- ✅ **全量红已收口**：final6 = `4 failed / 5571 passed / 262 skipped`（10-16，28m）；四个红在当天全部
+  收口——tier 规格×2→**实现**（`17fbb9f9`，规格同时从草稿纳入规范集）、`_METER_KINDS` 跨测试残留→
+  **conftest 机制修**（`8bdd49b2`）、HUD guard→重推导（`8bdd49b2`）。**final7 终局全量**（含全部改动）
+  见 `learning/_full_suite_final7.txt`。10-14 的红皮书 / 两本分诊手册（`THE_FULL_SUITE_IS_RED_AND_WHY`、
+  `MISSING_FIXTURE...`、`PILE_2...`）**诊断已全部消化**——不用再按它们找活。
+- ⚠️ **C 盘 200G 满事件（10-16）**：工具链一度 ENOSPC 死锁（bash 起不来、编辑报 checkpoint 失败），
+  以"截断通道"自救释放 ~5.9GB（陈旧 sandbox/trace 日志、pip/npm 缓存；**用户数据分毫未动**）。
+  **根因项待操作员**：Desktop 15G、hiberfil.sys 13.4G（`powercfg /h off`）、AppData 52.8G、
+  .codex sessions 2.8G。详见 `04_OPEN_ISSUES.md` P1-3。
+- ⚠️ **待批堆**（1094 untracked / 119 modified / 57 deleted）：分类清单+逐组建议在
+  `UNTRACKED_AND_PENDING_INVENTORY_20261016.md`。**首要**：`config/v2.json` 的 10-08 模型切换
+  （Qwen3.6-35B-A3B @ llama.cpp:18080）已执行 8 天、未入库（旧 config 指向已删除的 UI-Venus）。
+- 🧭 **覆盖率口径的下一步**：NEVER_TRIED 5 个（KEEP_RESEARCH_PRODUCTIVE / ALLIANCE_TIMED_EVENTS /
+  ALLIANCE_MOBILIZATION_ICEFIELD_BEAST / OBSERVE_FISHING_STATE / USE_NORMAL_FISHING_BAIT——**需真机**）；
+  BLOCKED 3 个（USE_FREE_ARENA_ATTEMPTS / LABYRINTH_DAILY / TRAVEL_SUPPLY——**需新实现**）。
+  报告：`docs/CAPABILITY_COVERAGE.md`。
+- 忠实记录：10-15 12:37 操作员把 `MODE_STATE` 闩为 MANUAL（"work buddy 使用"）；**发 AUTO 前先按
+  下一节（10-14 快照）的配方切 AUTO + 重启面板**。
+
+### 历史：2026-10-14 快照（其"全量红"判断已被 10-16 取代；**结构事实与收尾项仍有效**）
+
+**以下为 10-14 原文（保留）：**
+
 ## 手写：**2026-10-14 状态 —— 先读这一节**
 
 - **`check_mainline.py` = `MAINLINE_OK`**（pin==manifest==镜像）；`--check-only` → `WORKTREE_CLEAN=true`。
