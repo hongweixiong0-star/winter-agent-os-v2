@@ -145,3 +145,49 @@
   附本轮帧 `dataset/exploration/20261016T021932` 等 4 组）。
 
 **刷新后的 CHECK_ALLIANCE_EVENT 判据**：identity（联盟页列表）✓ 实测；timer=**待有活动时**再验。
+
+---
+
+# 批 3（r205）：其余 19 份 · 按族并入（全部候选至此覆盖）
+
+> 覆盖：CLAIM_VIP_FREE / READ_FREE_ATTEMPTS / OPEN_BUILDING / OPEN_RESEARCH / OPEN_TRAINING /
+> PROMOTE_TROOPS / READ_DAILY_PROGRESS / OPEN_EVENT / READ_EVENT_{LIST,PROGRESS,REWARD_TIERS,RULES,TIMER} /
+> READ_INTEL_LIST / SELECT_INTEL / EXECUTE_INTEL / JOIN_POLAR_TERROR_RALLY / VERIFY_ARENA_RESULT /
+> VERIFY_LABYRINTH_RESULT。
+
+## 15. EVENT 读取族（7 份——EVENT_MINIMUM_GUARANTEE 的"读取面"开门砖）
+`OPEN_EVENT`（EVENT 页导航）+ `READ_EVENT_{LIST,RULES,PROGRESS,TIMER,REWARD_TIERS}`（五读取）。
+- **目标**：读面五件套逐一成立（该 goal 的 MISSING 恰在此）。
+- **需采事实**：活动页每张卡打开后的"规则/进度/时间/奖励层"文本样例（≥1 活动全链）。
+- **成功判据**：五读数互不矛盾且与视觉交叉（照片级）。
+- **风险**：纯只读为主；**不点任何"领取/购买"**（领取另由 CLAIM_EVENT_TIER 验）。**停止**：页面无对应区 → 记录布局事实。
+
+## 16. INTEL 族（3 份——注意与已 VERIFIED 的 INTEL 链并存）
+`READ_INTEL_LIST` / `SELECT_INTEL` / `EXECUTE_INTEL`。
+- **目标**：与既有 VERIFIED 链（OPEN_INTEL→SELECT_INTEL_BEAST_MISSION→…）**对照**，确认这 3 份是"同链候选实现"还是"更泛化实现"；**先对表再验**（别造第二条链）。
+- **需采事实**：灯塔 Intel 列表页元素；选择行为差异点。
+- **成功判据**：若与既有链重复 → **标记 `SUBSET_OF_EXISTING`**（撤销候选而非重复建设）；若更泛化 → 按 plan 验。
+- **风险**：只读+选择；**停止**：确认冗余即止。
+
+## 17. 生产族（5 份——与既有 VERIFIED 重叠度核验）
+`OPEN_BUILDING` / `OPEN_RESEARCH` / `OPEN_TRAINING` / `PROMOTE_TROOPS` / `READ_DAILY_PROGRESS`。
+- **目标**：**先核冗余**（BUILDING_UPGRADE/TRAIN_TROOPS/OPEN_DAILY 已 VERIFIED）——这些候选是"同功能候选实现"吗？
+- **成功判据**：分组标记：`SUBSET_OF_EXISTING`（撤）/ `NEW_CAPABILITY`（按 plan 验）。
+- **风险**：核验以**源码+文档对照**为主（零设备）；仅 NEW 才排真机。**停止**：分组完成即止。
+
+## 18. JOIN_POLAR_TERROR_RALLY
+- **目标**：与 JOIN_BEAR_RALLY **同构核验**（北极恐怖 vs 巨熊）——复用其判据（MARCHING/头像/计数）。
+- **需采事实**：Polar Terror 集结条目（开放时）；与 bear 集结的界面差异。
+- **风险**：同 bear 规则（开放时才做、不付费）。**停止**：同 bear。
+- **注**：其 goal（ALLIANCE_MOBILIZATION_ICEFIELD_BEAST 类）与深渊龙龟现场（r203）关联。
+
+## 19. VERIFY 双子（VERIFY_ARENA_RESULT / VERIFY_LABYRINTH_RESULT）
+- **目标**：两战斗的结果判据（页态/计数/记录）。
+- **依赖**：**在 START_ARENA / START_LABYRINTH 验证之后**执行（本双子紧随其后）。
+- **成功判据**：结果态与次数计数互证（照片级）。
+- **风险**：只读（结果页）。
+
+## 20. VIP·FREE 双子（CLAIM_VIP_FREE / READ_FREE_ATTEMPTS）
+- **CLAIM_VIP_FREE**：**VIP 页"免费"项**的识别与领取（**同 OPEN_VIP 的缰绳：严禁购买**；无 FREE 标识不点）。
+- **READ_FREE_ATTEMPTS**：各玩法"免费次数"读法的**泛化器**（Arena/Labyrinth/VIP 共用计数读法）——
+  以 ARENA/LABYRINTH 的实采为训练集，**先读数后泛化**。
