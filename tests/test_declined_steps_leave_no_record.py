@@ -44,6 +44,19 @@ What this pins, and what it refuses to pin:
 It deliberately does **not** prescribe the fix, because there are two honest ones (record a
 non-executed episode, or record the refusal in the decision ledger) and choosing between
 them is a contract question about what an episode is allowed to mean.
+
+**Re-derived 2026-10-16.**  Both measured claims have moved with the product, which is
+what the paragraph above asked for:
+
+* "``SAFE_STOP`` zero times" became **six rows** (2026-10-05 x2, 2026-10-08 x4, every one
+  ``skill_not_ready`` on ``SCHEDULED_FISHING_TOURNAMENT``) -- the non-executed-episode
+  option, in its honest shape.  The first test now guards that shape instead of the
+  silence: a refusal row carries its reason and nothing that could read as an action.
+* the orphan rate over the last reconcilable 600 decisions is **4.3%** (was 11.5%), and
+  the window must be bounded by the episode ledger's own horizon: on 2026-10-15 12:37 the
+  operator took the device (``MODE_STATE`` MANUAL, "work buddy 使用"), so the episode
+  ledger legitimately stopped growing -- counting decisions newer than the last episode
+  measures the freeze, not the gap (it read 100.0% before the bound).
 """
 
 import json
@@ -69,30 +82,52 @@ def _rows(path):
     return out
 
 
-def test_safe_stop_is_never_an_episode_in_the_production_ledger():
-    """The structural fact: a refusal is not one of the recorded steps.
+def test_a_refusal_row_is_a_record_never_an_action():
+    """``SAFE_STOP`` may appear as a non-executed episode now -- and only in that shape.
 
-    This is not a complaint, it is the measurement the next step needs.  If a future change
-    starts recording it, this test is the one that should fail and say why -- because the
-    rest of the argument here depends on the silence being real and continuing.
+    The 2026-10-03 version of this file measured ``SAFE_STOP`` at zero rows and said so on
+    the record ("If a future change starts recording it, this test is the one that should
+    fail and say why").  The change arrived on its own schedule -- six rows, 2026-10-05 x2
+    and 2026-10-08 x4, every one ``skill_not_ready`` on ``SCHEDULED_FISHING_TOURNAMENT`` --
+    and every one is the "record a non-executed episode" half of the two honest fixes the
+    docstring listed.  So what is pinned now is the *shape* that keeps such a row honest:
+    the reason is there, and nothing in the row can be read as an action.
     """
     episodes = _rows(EPISODES)
     if not episodes:
         return  # no production ledger on this machine; nothing to measure
-    skills = {str(row.get("skill")) for row in episodes}
-    assert "SAFE_STOP" not in skills, (
-        "SAFE_STOP now appears as an episode skill; the orphan-rate argument in this file's "
-        "docstring has to be re-derived against the new ledger"
+    refusals = [row for row in episodes if str(row.get("skill")) == "SAFE_STOP"]
+    for row in refusals:
+        assert row.get("decision_reason"), (
+            f"a refusal row without a reason says nothing: {row}"
+        )
+        assert row.get("failure_type") == "NO_EXECUTION", row
+        assert not (row.get("action") or {}), (
+            f"a refusal row must not look like an action: {row.get('action')!r}"
+        )
+        assert row.get("verifier_ok") is None, (
+            f"nothing ran, so there is no verdict to record: {row}"
+        )
+    assert len(refusals) < max(50, len(episodes) // 100), (
+        f"refusal rows should stay the exception, not the norm: "
+        f"{len(refusals)} of {len(episodes)}"
     )
 
 
 def test_the_measured_orphan_rate_is_the_size_of_the_gap():
-    """11.5% over the last 600 decisions, measured the way the docstring describes.
+    """4.3% over the last 600 *reconcilable* decisions (re-derived 2026-10-16).
 
     Written as a range rather than an exact figure on purpose: this is a live ledger that
     keeps growing, so pinning the precise number would make the test rot.  What must not
     drift is the order of magnitude -- if orphan decisions become rare, something changed
     and the reasoning here needs revisiting.
+
+    The window is bounded by the episode ledger's own horizon, and that bound is the
+    re-derivation: only a decision that *predates the last episode* can be reconciled with
+    it, because a decision newer than every episode has, by construction, no episodes after
+    it to look at.  Measured 2026-10-16 without the bound: 100.0%, while the device was
+    MANUAL and the episode ledger had legitimately stopped growing -- the test was
+    measuring the freeze, not the gap.
     """
     episodes = _rows(EPISODES)
     decisions = _rows(DECISIONS)
@@ -100,18 +135,25 @@ def test_the_measured_orphan_rate_is_the_size_of_the_gap():
         return
     stamps = [str(row.get("recorded_at") or "") for row in episodes]
     goals = [str(row.get("goal_id") or "") for row in episodes]
+    freeze = max(stamps)
+
+    reconcilable = [row for row in decisions if str(row.get("at") or "") <= freeze]
+    if len(reconcilable) < 200:
+        return  # the reconcilable window itself has rotated out of the capped ledger
+    window = reconcilable[-600:]
 
     orphans = 0
-    for row in decisions[-600:]:
+    for row in window:
         at = str(row.get("at") or "")
         chosen = str(row.get("chosen") or "")
         start = next((i for i, t in enumerate(stamps) if t >= at), len(stamps))
         if chosen not in goals[start:start + 6]:
             orphans += 1
-    rate = orphans / 600.0
+    rate = orphans / float(len(window))
     assert 0.03 < rate < 0.35, (
-        f"orphan decision rate is {rate:.1%} over the last 600 decisions; the argument in "
-        "this file's docstring assumes a double-digit rate concentrated in one family"
+        f"orphan decision rate is {rate:.1%} over the last {len(window)} reconcilable "
+        "decisions; the argument in this file's docstring assumes a double-digit rate "
+        "concentrated in one family"
     )
 
 

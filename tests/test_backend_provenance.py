@@ -27,6 +27,7 @@ import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from winter_agent_v2 import control_experience
 from winter_agent_v2.brain import RuleBrain
@@ -34,6 +35,21 @@ from winter_agent_v2.executor import Executor
 from winter_agent_v2.learning import EpisodeStore
 from winter_agent_v2.models import Action, Page, WorldState
 from winter_agent_v2.runtime import LiveRuntime
+
+
+def _intel_route_only(runtime, goals, _deferrals):
+    """Offer the intel goal this file's scenarios are about, until it is held back.
+
+    Measured 2026-10-16: without the pin the board's top slot went to
+    ``DISCOVER_EVENT_CALENDAR`` (1000) in one scenario and ``KEEP_RESEARCH_PRODUCTIVE``
+    (250) in the other, and the runs answered under *their* routes -- the step was never
+    attempted at all in the first case, and the second left the beast page as a
+    research-goal Back recorded as ``SAFE_BACK_NOT_PROVEN``.  The scenarios are about what
+    a step *records*, not about which goal wins the slot, so the selector is pinned --
+    the same measured reason ``test_refusal_yields_the_cycle`` pins its selector for.
+    """
+    return [goal for goal in goals
+            if goal.goal_id == "CLEAR_INTEL" and goal.goal_id not in runtime._yielded_goals]
 
 
 class _Device:
@@ -143,15 +159,16 @@ class CauseOneTheFramesStillHaveAChannelTests(unittest.TestCase):
             previous_ledger = control_experience.STATE_PATH
             control_experience.STATE_PATH = Path(temp) / "control_experience.json"
             try:
-                LiveRuntime(
-                    device=device,
-                    vision=_Vision(states),
-                    semantic_vision=_NoMatch(),
-                    capture_dir=Path(temp),
-                    brain=brain or RuleBrain(current_goal="INTEL"),
-                    sleeper=lambda _seconds: None,
-                    episode_store=EpisodeStore(path),
-                ).run(max_actions=1, allowed_skills=allowed)
+                with patch.object(LiveRuntime, "_selectable", _intel_route_only):
+                    LiveRuntime(
+                        device=device,
+                        vision=_Vision(states),
+                        semantic_vision=_NoMatch(),
+                        capture_dir=Path(temp),
+                        brain=brain or RuleBrain(current_goal="INTEL"),
+                        sleeper=lambda _seconds: None,
+                        episode_store=EpisodeStore(path),
+                    ).run(max_actions=1, allowed_skills=allowed)
             finally:
                 control_experience.STATE_PATH = previous_ledger
             if not path.exists():
