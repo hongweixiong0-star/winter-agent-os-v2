@@ -129,6 +129,7 @@ from .verifier import (
 from .verifier import (
     verify_event_calendar_open, verify_event_calendar_tab_open,
     verify_event_calendar_read, verify_event_calendar_detail_open,
+    verify_regular_event_card_read,
     verify_event_calendar_returned, verify_training_batch_claimed,
     verify_free_hero_recruit, verify_quick_panel_scrolled,
     verify_quick_panel_pet_entry_opened, verify_gathering, verify_regular_event_tabs_scrolled,
@@ -543,6 +544,7 @@ class LiveRuntime:
         "OPEN_EVENT_CALENDAR_TAB": verify_event_calendar_tab_open,
         "SCROLL_REGULAR_EVENT_TABS": verify_regular_event_tabs_scrolled,
         "READ_EVENT_CALENDAR": verify_event_calendar_read,
+        "READ_REGULAR_EVENT_CARD": verify_regular_event_card_read,
         "OPEN_EVENT_CALENDAR_DETAIL": verify_event_calendar_detail_open,
         "RETURN_EVENT_CALENDAR": verify_event_calendar_returned,
         "OPEN_INTEL_HERO_JOURNEY_TARGET": verify_intel_hero_target_open,
