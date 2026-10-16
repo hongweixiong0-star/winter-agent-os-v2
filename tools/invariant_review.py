@@ -105,6 +105,42 @@ def one_scheduler() -> tuple[str, str]:
     return FAIL, f"scheduler-like classes: {choosers}"
 
 
+def one_executor() -> tuple[str, str]:
+    """§三: one execution chain.  Measured as structure, not as a promise.
+
+    The count that matters is where ``Executor`` objects are *constructed*: the decision
+    layer (brain, skills, vision, scheduler, verifier) must never build one -- it asks the
+    router, which is the single entry -- so a construction site outside ``runtime.py`` /
+    ``executor_router.py`` is the second chain this invariant forbids (tests and tools may
+    build their own stubs).  Also checks the class itself is defined exactly once; two
+    ``class Executor`` definitions would be two chains before any call site matters.
+    """
+    package = ROOT / "winter_agent_v2"
+    definitions: list[str] = []
+    calls: list[tuple[str, int]] = []
+    for path in sorted(package.glob("*.py")):
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef) and node.name == "Executor":
+                definitions.append(path.name)
+            elif (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                  and node.func.id == "Executor"):
+                calls.append((path.name, node.lineno))
+    if len(definitions) != 1:
+        return FAIL, f"class Executor defined {len(definitions)} time(s): {definitions}"
+    allowed = {"runtime.py", "executor_router.py"}
+    outside = [(name, line) for name, line in calls if name not in allowed]
+    if outside:
+        return FAIL, ("Executor constructed outside the execution layer: "
+                      + ", ".join(f"{name}:{line}" for name, line in outside))
+    sites = sorted({name for name, _ in calls})
+    return PASS, (f"class Executor defined once ({definitions[0]}); "
+                  f"{len(calls)} construction site(s), all in {sites}")
+
+
 def unknown_learning_reachable() -> tuple[str, str]:
     """Can an UNKNOWN goal with a safe entry become work the chooser will take (§5/§6)?"""
     goal = _unknown("REACHABLE", value=1200)
@@ -255,13 +291,35 @@ def deadline_can_preempt() -> tuple[str, str]:
 
 
 def global_wait_only_when_truly_idle() -> tuple[str, str]:
-    """§18: GLOBAL_WAIT requires that *nothing* -- productive, discovery, learning -- remains."""
-    source = (ROOT / "winter_agent_v2/brain.py").read_text(encoding="utf-8", errors="replace")
-    if 'GLOBAL_WAIT' not in source:
-        return UNMEASURED, "no GLOBAL_WAIT token in brain.py; the decision lives elsewhere"
-    # An UNKNOWN with a safe entry counts as discovery work, so it must not precede GLOBAL_WAIT.
-    return UNMEASURED, ("GLOBAL_WAIT exists; whether it is reached while an explore-ready goal "
-                        "remains needs the live decision path, not a source scan")
+    """§18: GLOBAL_WAIT requires that *nothing* -- productive, discovery, learning -- remains.
+
+    Measured from the ledgers the decision path itself writes, not from a source scan.  The
+    original version looked for the token in ``brain.py`` and found none -- the decision moved
+    (that is exactly what "the decision lives elsewhere" meant), and it lives in
+    ``scheduler.py``, where ``reason = "GLOBAL_WAIT"`` is only reached after the
+    refresh-required / capability-gap / candidate-gap branches have excluded every "there was
+    work" case.  Every wait is then persisted to ``learning/global_scheduler_state.json``,
+    whose ``global_wait_with_runnable_goal_count`` counts exactly the violation §18 names: a
+    global wait recorded while a runnable Goal existed.
+    """
+    source = (ROOT / "winter_agent_v2/scheduler.py").read_text(encoding="utf-8", errors="replace")
+    if 'reason = "GLOBAL_WAIT"' not in source:
+        return UNMEASURED, ("no GLOBAL_WAIT reason in scheduler.py; the decision moved again -- "
+                            "re-point this check before trusting its silence")
+    ledger = ROOT / "learning/global_scheduler_state.json"
+    if not ledger.is_file():
+        return UNMEASURED, "learning/global_scheduler_state.json absent; no production evidence"
+    try:
+        payload = json.loads(ledger.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return UNMEASURED, f"learning/global_scheduler_state.json unreadable: {exc}"
+    waits = int(payload.get("global_wait_count") or 0)
+    with_work = int(payload.get("global_wait_with_runnable_goal_count") or 0)
+    if with_work > 0:
+        return FAIL, (f"GLOBAL_WAIT was declared {with_work} time(s) while a runnable Goal "
+                      f"existed (total waits {waits}) -- §18 forbids exactly this")
+    return PASS, (f"every recorded GLOBAL_WAIT was truly idle (waits={waits}, "
+                  f"with_runnable_goal=0)")
 
 
 def verifier_is_success_authority() -> tuple[str, str]:
@@ -277,11 +335,39 @@ def verifier_is_success_authority() -> tuple[str, str]:
 
 
 def model_failure_does_not_stop_auto() -> tuple[str, str]:
-    """Does a model/projection failure leave the run able to continue?"""
-    source = (ROOT / "winter_agent_v2/runtime.py").read_text(encoding="utf-8", errors="replace")
-    guarded = "except Exception as exc:  # noqa: BLE001 - a projection that crashes is a finding" in source
-    return (PASS, "the projection path is exception-guarded and returns the unprojected board"
-            ) if guarded else (UNMEASURED, "could not confirm the projection's failure path")
+    """§22 table: a model/planner failure must leave the run able to continue.
+
+    The model's failure surface is the advisor hand-off, not the projection: the projection
+    (``capability_bootstrap``) makes no model calls by its own contract, and its crashes are
+    *findings* the audit counts (``tools/full_auto_coverage_audit.py``: "a projection that
+    crashes is a finding") -- deliberately exposed rather than swallowed, so a crash can be
+    fixed instead of hiding.  The version this replaces searched runtime.py for exactly that
+    comment string, which has never lived there, so it could only ever answer UNMEASURED --
+    a check that looked like a gap in the runtime and was a gap in itself.
+
+    Measured by contract (the model endpoint is not reachable from this tool):
+    * ``ui_planner.take_request`` is typed ``-> Advice | None`` -- "or ``None`` to leave the
+      cycle without an answer" is its documented failure contract;
+    * the runtime's consumer turns ``None`` into "continue without an answer";
+    * the planner records its transport outcomes in its own ledger (``last_outcome``),
+      which is where a failed call is visible without raising.
+    """
+    planner = (ROOT / "winter_agent_v2/ui_planner.py").read_text(encoding="utf-8", errors="replace")
+    runtime_src = (ROOT / "winter_agent_v2/runtime.py").read_text(encoding="utf-8", errors="replace")
+    checks = {
+        "ui_planner.take_request returns None, not raises (typed contract)":
+            "-> unknown_advisor.Advice | None" in planner,
+        "the runtime consumer continues on None advice":
+            "if advice is None:" in runtime_src,
+        "the planner records transport failures in its ledger":
+            "last_outcome" in planner and "self.ledger.append" in planner,
+    }
+    failed = [name for name, ok in checks.items() if not ok]
+    if failed:
+        return FAIL, "model-failure contracts missing: " + "; ".join(failed)
+    return PASS, ("advisor failure yields None by contract, the consumer continues without an "
+                  "answer, and transport outcomes are recorded (not raised); the projection's "
+                  "crashes are findings by design and are counted, not swallowed")
 
 
 def no_single_role_blocks_other_role() -> tuple[str, str]:
@@ -450,7 +536,7 @@ def no_production_orphan_module() -> tuple[str, str]:
 
 CHECKS = (
     ("ONE_SCHEDULER", one_scheduler),
-    ("ONE_EXECUTOR", lambda: (UNMEASURED, "executor_router is the single entry; not re-verified here")),
+    ("ONE_EXECUTOR", one_executor),
     ("NO_PRODUCTION_ORPHAN_MODULE", no_production_orphan_module),
     ("KNOWN_FAST_PATH_MODEL_CALLS", known_fast_path_model_calls),
     ("UNKNOWN_LEARNING_REACHABLE", unknown_learning_reachable),
