@@ -214,3 +214,18 @@
    候选池清理（标注/归档这 7 份）列入**下批**（另有 33 份全池的同类对表可一并做）。
 2. **`READ_DAILY_PROGRESS` 升为当前候选池的第 1 优先真机项**（每日面板的"活跃度计数+奖励层"读取——
    DAILY_ACTIVITY_TARGET 的 75%→100% 缺口所在）。
+
+---
+
+# 全池对表（r207）：33 份的最终分层
+
+**方法**：名字级（skill_id vs `skills.py` 注册表全量）+ 语义级（r205b 已做的 8 份对表）。
+
+| 层 | 数量 | 明细 |
+|---|---|---|
+| **强重复**（同名已注册） | **2** | `OPEN_RESEARCH` / `READ_INTEL_LIST`——**同名同 id 的重复文件**；清理批次直接归档 |
+| **既有链重述**（异名但覆盖） | **5** | `SELECT_INTEL` / `EXECUTE_INTEL` / `OPEN_BUILDING` / `OPEN_TRAINING` / `PROMOTE_TROOPS`（r205b 判定） |
+| **有效候选**（待 live 验证） | **26** | ARENA×4 · LABYRINTH×4 · BEAR×2 · POLAR×1 · EVENT 读取×6 · 联盟活动×2 · CLAIM 类×3 · VIP×1 · FREE×2 · DAILY_PROGRESS×1 |
+
+**清理批建议**（下批执行，仅标注不删除）：7 份冗余 → `lifecycle: SUPERSEDED`（附录"被谁覆盖"），
+原文保留（审计可回溯）；26 份有效候选维持 `CANDIDATE`。
