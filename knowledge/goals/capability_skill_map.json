@@ -468,8 +468,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_MAIL",
           "live_verified_by": "OPEN_MAIL",
-          "attempts": 36,
-          "successes": 35,
+          "attempts": 37,
+          "successes": 36,
           "failures": 1,
           "evidence": "",
           "notes": ""
@@ -498,8 +498,8 @@
           "status": "STABLE",
           "implemented_by": "MAIL_CLAIM_REWARDS",
           "live_verified_by": "MAIL_CLAIM_REWARDS",
-          "attempts": 57,
-          "successes": 56,
+          "attempts": 58,
+          "successes": 57,
           "failures": 1,
           "evidence": "",
           "notes": ""
@@ -629,8 +629,8 @@
           "status": "STABLE",
           "implemented_by": "CLAIM_OFFLINE_REWARDS",
           "live_verified_by": "MAIL_CLAIM_REWARDS",
-          "attempts": 266,
-          "successes": 252,
+          "attempts": 267,
+          "successes": 253,
           "failures": 14,
           "evidence": "",
           "notes": ""
