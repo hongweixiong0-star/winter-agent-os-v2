@@ -19,12 +19,12 @@ Measured over the whole production ledger, the goals that have ever reported
         0  every SCHEDULED_* goal
 
 So the metric works -- it is not broken everywhere -- and one whole goal family is
-structurally excluded from it.  Both ``_append_scheduled_activities`` branches build their
-rows with a literal ``distance=1.0`` (``goal_library.py:2017`` and ``:2053``), so
-``1.0 < 1.0`` is False forever.  Fifty production episodes on the new revisions carry
-``goal_progress_by_id {"SCHEDULED_...": false}`` and ``goal_progress False``, and the honest
-reading of each is "the action landed, the goal did not move" -- which is true, and which
-was equally true before the change, because the number cannot express anything else.
+structurally excluded from it.  ``_append_known_activities`` builds its rows with a literal
+``distance=1.0`` (both branches), so ``1.0 < 1.0`` is False forever.  Fifty production
+episodes on the new revisions carry ``goal_progress_by_id {"SCHEDULED_...": false}`` and
+``goal_progress False``, and the honest reading of each is "the action landed, the goal did
+not move" -- which is true, and which was equally true before the change, because the
+number cannot express anything else.
 
 Why this matters beyond the number itself: ``no_progress_streak`` is incremented on every
 ``False`` (``runtime.py:9734``) and feeds the fairness bonus in ``goal_utility``.  A goal
@@ -46,6 +46,7 @@ The fix belongs where the reading is produced, not here.  What this file protect
 nobody "solves" the flat meter by editing a number.
 """
 
+from winter_agent_v2 import goal_library
 from winter_agent_v2.goal_library import GoalLibrary, progress_moved
 from winter_agent_v2.models import Page, WorldState
 
@@ -53,10 +54,18 @@ ROLE = "1061663148"
 
 
 def _rows():
+    """The two plannable activities this file's measurements run over.
+
+    Re-derived 2026-10-16: the fixture used CANYON_CLASH here, and that id's registry gate
+    is now ``DISCOVERED`` -- a lead, not a plan -- so it gets no ticket of its own
+    (``known_activities``: only REVIEWED/VERIFIED entries carry the plan §二 requires) and
+    the row simply did not exist.  The family under test is the plannable one, so the
+    fixture names plannable ids; a DISCOVERED id still reaches the board when the calendar
+    actually shows it, through the calendar-rows loop, which is a different fact.
+    """
     return [
         ("ICEBOUND_TREASURE", "冰封的宝藏"),
-        ("ICEBOUND_TREASURE_TRAINING", "寻宝特训"),
-        ("CANYON_CLASH", "峡谷会战"),
+        ("STATE_VS_STATE", "州对州"),
     ]
 
 
@@ -139,38 +148,44 @@ def test_an_unchanged_observation_reading_is_not_progress():
 
 
 
-def test_the_meter_changes_when_the_client_actually_answers():
+def test_the_meter_changes_when_the_client_actually_answers(monkeypatch):
     """The fix, as the ledger will see it.
 
     Seeded with the state a run has when the activity has been advertised but never read;
     the same goal, re-read after the calendar or the live page supplied a reading, moves
     from "not seen" to "seen".  That is a real state change produced by a current-frame
     reader, which is the only thing allowed to produce one.
+
+    ``_strip_read_entries`` is pinned empty (2026-10-16): the role's activity strip is
+    read from the live learning state, and this test's snapshot is a fixture -- without
+    the pin the answer would depend on what the last real run left on the strip, which
+    is the environment dependence the suite's redirects exist to remove.
     """
+    monkeypatch.setattr(goal_library, "_strip_read_entries", lambda role_id: [])
     unseen = _scheduled_goals([("ICEBOUND_TREASURE", "冰封的宝藏")])
-    target = next(g for g in unseen if g.goal_id == "SCHEDULED_CANYON_CLASH")
+    target = next(g for g in unseen if g.goal_id == "SCHEDULED_STATE_VS_STATE")
     assert target.evidence.get("calendar_observation") is None
 
     from winter_agent_v2.goal_library import _METER_KINDS, _meter_for, meter_kind
 
-    before = {"SCHEDULED_CANYON_CLASH": _meter_for(target)}
-    assert before["SCHEDULED_CANYON_CLASH"] == 0.0, "advertised but never read"
-    _METER_KINDS["SCHEDULED_CANYON_CLASH"] = meter_kind(target)
+    before = {"SCHEDULED_STATE_VS_STATE": _meter_for(target)}
+    assert before["SCHEDULED_STATE_VS_STATE"] == 0.0, "advertised but never read"
+    _METER_KINDS["SCHEDULED_STATE_VS_STATE"] = meter_kind(target)
     try:
         seen = next(g for g in _scheduled_goals(
-            [("CANYON_CLASH", "峡谷会战"), ("ICEBOUND_TREASURE", "冰封的宝藏")]
-        ) if g.goal_id == "SCHEDULED_CANYON_CLASH")
+            [("STATE_VS_STATE", "州对州"), ("ICEBOUND_TREASURE", "冰封的宝藏")]
+        ) if g.goal_id == "SCHEDULED_STATE_VS_STATE")
         assert seen.evidence.get("calendar_observation") is not None
 
         after = _scheduled_goals(
-            [("CANYON_CLASH", "峡谷会战"), ("ICEBOUND_TREASURE", "冰封的宝藏")]
+            [("STATE_VS_STATE", "州对州"), ("ICEBOUND_TREASURE", "冰封的宝藏")]
         )
-        assert progress_moved(before, after, "SCHEDULED_CANYON_CLASH") is True, (
+        assert progress_moved(before, after, "SCHEDULED_STATE_VS_STATE") is True, (
             "being read for the first time is progress on a goal whose whole purpose is to "
             "be read; reporting False here is what demoted it 66 times in a day"
         )
     finally:
-        _METER_KINDS.pop("SCHEDULED_CANYON_CLASH", None)
+        _METER_KINDS.pop("SCHEDULED_STATE_VS_STATE", None)
 
 
 def test_a_goal_with_its_own_meter_is_untouched_by_the_new_reading():
@@ -193,7 +208,7 @@ def test_a_goal_with_its_own_meter_is_untouched_by_the_new_reading():
 
 
 
-def test_the_reading_that_would_distinguish_them_is_in_the_evidence():
+def test_the_reading_that_would_distinguish_them_is_in_the_evidence(monkeypatch):
     """What a real meter would be built from, and it already exists.
 
     ``calendar_observation`` is the difference between "this activity is a name in a
@@ -202,13 +217,15 @@ def test_the_reading_that_would_distinguish_them_is_in_the_evidence():
     so the information needed for progress is present and simply not wired to the meter.
 
     The comparison is between a row the calendar never showed and one it did.  It has to be
-    two separate calls because ``_append_scheduled_activities`` looks the row up by
+    two separate calls because ``_append_known_activities`` looks the row up by
     ``event_id``, so an activity absent from the snapshot is precisely the one whose
     ``calendar_observation`` is ``None`` -- which is what makes the two states
-    distinguishable at all.
+    distinguishable at all.  ``_strip_read_entries`` is pinned empty for the same reason
+    as the test above: the strip is live state, and this fixture is not.
     """
+    monkeypatch.setattr(goal_library, "_strip_read_entries", lambda role_id: [])
     unseen = {g.goal_id: g for g in _scheduled_goals([("ICEBOUND_TREASURE", "冰封的宝藏")])}
-    absent_row = unseen["SCHEDULED_CANYON_CLASH"]
+    absent_row = unseen["SCHEDULED_STATE_VS_STATE"]
     assert absent_row.evidence.get("calendar_observation") is None, (
         "an activity the calendar never showed is the one with nothing to compare"
     )
@@ -216,10 +233,10 @@ def test_the_reading_that_would_distinguish_them_is_in_the_evidence():
 
     seen = {
         g.goal_id: g for g in _scheduled_goals([
-            ("CANYON_CLASH", "峡谷会战"), ("ICEBOUND_TREASURE", "冰封的宝藏"),
+            ("STATE_VS_STATE", "州对州"), ("ICEBOUND_TREASURE", "冰封的宝藏"),
         ])
     }
-    seen_row = seen["SCHEDULED_CANYON_CLASH"]
+    seen_row = seen["SCHEDULED_STATE_VS_STATE"]
     assert seen_row.evidence.get("calendar_observation") is not None, (
         "once the activity has been seen, the evidence says so -- this is the state change "
         "a progress meter for this family would compare"
