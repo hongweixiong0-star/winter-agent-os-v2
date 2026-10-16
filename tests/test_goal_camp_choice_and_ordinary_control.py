@@ -627,7 +627,16 @@ class TrainingStartHopTests(unittest.TestCase):
         # The training branch's own reason, so a future rule that wins this frame is visible.
         self.assertEqual(decision.skill, "TRAIN_TROOPS")
 
-    def test_the_start_button_resolves_and_the_printed_word_agrees_with_it(self):
+    def test_the_start_button_resolves_and_the_pages_own_reading_agrees_with_it(self):
+        """Re-derived 2026-10-16: with the template gone, the page's own reading answers.
+
+        The resolver's ``BTN_START_TRAINING`` tier sits after the template and before the word
+        scan (``runtime.py``; its comment records this very frame as the catch when an earlier
+        ordering broke it), so the stripped-manifest answer is the frame's own
+        ``training.train_button_norm`` -- and the word scan is deliberately not reached, which
+        is why ``_printed_reads`` stays empty: a stronger layer had an opinion.  What the test
+        still guards is the agreement that matters -- both answers land on the button.
+        """
         import json
         import tempfile
 
@@ -656,15 +665,23 @@ class TrainingStartHopTests(unittest.TestCase):
         stripped = SemanticWorldVision(stripped_path)
         stripped_vision = self._vision(stripped)
         runtime2 = self._runtime(stripped_vision, stripped)
-        by_printed = runtime2._resolve_semantic_target(
+        by_reading = runtime2._resolve_semantic_target(
             "BTN_START_TRAINING", world, frame_path=self.FRAME
         )
-        self.assertIsNotNone(by_printed, "the client's own printed 训练 must locate the control")
-        self.assertTrue(runtime2._printed_reads)
+        self.assertIsNotNone(by_reading, "the page's own reading must locate the control")
+        self.assertEqual(
+            tuple(by_reading), tuple(world.training["train_button_norm"]),
+            "the fallback answer is the frame's own reading, not a re-derivation",
+        )
+        self.assertFalse(
+            runtime2._printed_reads,
+            "the word scan sits behind the page-reading tier by design; reaching it here "
+            "would mean the ordering regressed",
+        )
         # Both answers sit on the button: within ~1% of the frame, i.e. under 10 px on a 720-wide
         # client.  A disagreement that large would mean one of them is aiming at something else.
-        self.assertLess(abs(by_template[0] - by_printed[0]), 0.01)
-        self.assertLess(abs(by_template[1] - by_printed[1]), 0.02)
+        self.assertLess(abs(by_template[0] - by_reading[0]), 0.01)
+        self.assertLess(abs(by_template[1] - by_reading[1]), 0.02)
 
 
 class TroopWordDerivationTests(unittest.TestCase):
