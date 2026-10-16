@@ -4865,7 +4865,8 @@ class LiveRuntime:
             started = time.monotonic()
             state = self._annotate_gather_formation(state, frame_path)
             account("formation", (time.monotonic() - started) * 1000)
-            return self._read_due_calendar_entry(state, frame_path)
+            state = self._read_due_alliance_events(state, frame_path)
+        return self._read_due_calendar_entry(state, frame_path)
         goal = str(getattr(getattr(self, "brain", None), "current_goal", "") or "")
         page_hint = str(getattr(self, "_last_known_label", "") or "")
 
@@ -4926,7 +4927,30 @@ class LiveRuntime:
         started = time.monotonic()
         state = self._annotate_gather_formation(state, frame_path)
         account("formation", (time.monotonic() - started) * 1000)
+        state = self._read_due_alliance_events(state, frame_path)
         return self._read_due_calendar_entry(state, frame_path)
+
+    def _read_due_alliance_events(self, world: WorldState, frame: Path) -> WorldState:
+        """Read the alliance landing's day-event list on a frame that shows that page.
+
+        The sibling of ``_read_due_calendar_entry`` for the alliance surface: same OCR service,
+        same full-frame pass, same events container -- gated only on the page, because the
+        landing prints its list unconditionally (no due-calendar gate exists for it yet).  The
+        reader is pure over text and stores under ``alliance_day``; absence stays absence.
+        """
+        if world.page is not Page.ALLIANCE:
+            return world
+        ocr = self._ocr_service()
+        if ocr is None:
+            return world
+        from .alliance_event_reader import read_alliance_day
+        try:
+            block = read_alliance_day(ocr.recognize(frame).text)
+        except Exception:  # noqa: BLE001 -- a read must never take the loop down
+            return world
+        if not block:
+            return world
+        return replace(world, events={**(world.events or {}), "alliance_day": block})
 
     def _annotate_gather_formation(self, world: WorldState, frame_path: Path) -> WorldState:
         """Attach current-frame hero identities with role-scoped availability."""
