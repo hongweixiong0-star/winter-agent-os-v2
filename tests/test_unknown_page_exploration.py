@@ -49,25 +49,38 @@ from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
 from winter_agent_v2.scheduler import Scheduler  # noqa: E402
 from winter_agent_v2.skills import v2_registry  # noqa: E402
 
-#: The real unnamed screen: 720x1280, 挂机收益 with 领取, ✕ and the client's own footer line.
-#: Captured live on 2026-09-22, run 20260922_125214_770769, and referenced by an episode (so the
-#: retention pass keeps it).
-UNKNOWN_FRAME = ROOT / (
-    "dataset/raw/control_panel/runtime_auto/20260922_125214_770769/"
-    "20260922_125214_770769_step_001_after_refresh_2_20260922T045309420387.png"
+#: The real unnamed screen: the idle-income popup with 领取 and the client's own footer line.
+#:
+#: Re-archived 2026-10-16.  The originals (2026-09-22, run 20260922_125214_770769, under
+#: dataset/raw/control_panel/runtime_auto) were pruned by the runtime retention policy.  The
+#: comment here used to say "referenced by an episode (so the retention pass keeps it)" -- that
+#: guarantee is time-bounded (referenced_ttl_days=30, and the episode rotated out of the 10k
+#: ledger long before), so the frames went while their empty directories remained, which is
+#: what made this file fail instead of skip (the sibling ``test_unknown_advisor`` guards the
+#: same two frames and skips, which is why it went quiet instead).  ``test_evidence_integrity``
+#: is the suite's detector for exactly this rot; the pair now lives under a tracked truth_audit
+#: tree, outside every prune root, so it cannot rot again.  The replacement is the *same
+#: dialog*, captured 2026-09-28 in the ui_exploration corpus: 挂机收益 header, 挂机时间 timer,
+#: 领取 button, ✕.  Readings below are re-measured on the copy, not carried over.
+UNKNOWN_FRAME = (
+    ROOT / "dataset/truth_audit/unknown_page_refixture_20261016/key/"
+    "01_idle_income_popup_20260928.png"
 )
 
-#: A second unnamed screen, captured the same day: the battle overlay (对战), reached from a march.
-#: Different title, different screen -- which is what keeps the two apart in every key.
-SECOND_UNKNOWN_FRAME = ROOT / (
-    "dataset/raw/control_panel/runtime_auto/20260922_114218_071725/"
-    "20260922_114218_071725_step_004_after_20260922T034320650029.png"
+#: A second unnamed screen with a different title, keeping the two apart in every key.  It is also
+#: the frame where the close-glyph leg stays provable: on the idle-popup capture above the ✕ does
+#: not OCR to a glyph at all (measured 2026-10-16: 10 tokens, none a close glyph), while this one
+#: reads it as ``X``.
+SECOND_UNKNOWN_FRAME = (
+    ROOT / "dataset/truth_audit/unknown_page_refixture_20261016/key/"
+    "02_gear_forge_rules_20260928.png"
 )
 
-#: Where the client drew 领取 on UNKNOWN_FRAME, measured with the production OCR.  The resolver's
-#: answer is asserted against it at ~1% of the frame: the point has to be read off the live frame,
-#: not remembered.
-CLAIM_POINT = (0.5014, 0.723)
+#: Where the client drew 领取 on UNKNOWN_FRAME, measured with the production OCR on the
+#: re-archived copy (2026-10-16: 0.4993, 0.7191 -- within 3 px of the pruned original's
+#: 0.5014, 0.723, the same dialog drawn again).  The resolver's answer is asserted against it
+#: at ~1% of the frame: the point has to be read off the live frame, not remembered.
+CLAIM_POINT = (0.4993, 0.7191)
 
 
 def _ocr():
@@ -180,7 +193,7 @@ class UnnamedPageKeepsTheGoalTests(unittest.TestCase):
         self.assertEqual(runtime._ordinary_last["word"], "领取")
         # The read is visible in the run's own record, keyed by the screen and not just "UNKNOWN".
         self.assertTrue(runtime._printed_reads)
-        self.assertIn("UNKNOWN::挂机收益", runtime._printed_reads[0])
+        self.assertIn("UNKNOWN::挂机时间", runtime._printed_reads[0])
 
     def test_the_scheduler_gate_no_longer_refuses_the_one_skill_that_may_run_there(self):
         """Measured live 2026-09-22T07:18:40Z: the brain answered TRY_ORDINARY_CONTROL on an
@@ -285,8 +298,8 @@ class TheScreenItselfIsKeptTests(unittest.TestCase):
         pages = self.store.all()
         self.assertEqual(len(pages), 1)
         page = pages[0]
-        self.assertEqual(page.page_key, "UNKNOWN::挂机收益")
-        self.assertEqual(page.title, "挂机收益")
+        self.assertEqual(page.page_key, "UNKNOWN::挂机时间")
+        self.assertEqual(page.title, "挂机时间")
         self.assertGreater(page.title_confidence, 0.95)
         self.assertEqual(page.entry_page, "EXPLORATION")
         self.assertIn("EXPLORATION_IDLE_CLAIM", page.entry_trigger)
@@ -294,12 +307,29 @@ class TheScreenItselfIsKeptTests(unittest.TestCase):
         # The client's own controls, with their boxes -- not a guess about them.
         by_text = {item["text"]: item for item in page.controls}
         self.assertEqual(by_text["领取"]["kind"], "ACTION")
-        self.assertEqual(by_text["X"]["kind"], "CLOSE_GLYPH")
         self.assertIn("box_norm", by_text["领取"])
+        # The ✕ the client also draws is recorded on the frame whose glyph reads as one -- see
+        # ``test_the_close_glyph_the_client_draws_is_recorded_too`` below.  On this capture the
+        # ✕ does not OCR to a close glyph at all (measured 2026-10-16), and the honest record
+        # here is what the reader actually produced, not what the picture contains.
         # And the frame itself, copied out of the prunable tree.
         picture = Path(page.page_image_path)
         self.assertTrue(picture.exists())
         self.assertEqual(picture.name, "page.png")
+
+    def test_the_close_glyph_the_client_draws_is_recorded_too(self):
+        """The CLOSE_GLYPH leg of "the client's own controls, with their boxes".
+
+        Split off the main record test during the 2026-10-16 re-archiving: the idle-popup
+        capture's ✕ does not OCR to a glyph (10 tokens, none a close glyph), while the rules
+        screen below reads it as ``X`` -- so the leg is asserted where the frame supports it,
+        instead of being dropped or claimed against a frame that cannot carry it.
+        """
+        self.collect(frame=SECOND_UNKNOWN_FRAME)
+        page = self.store.all()[0]
+        by_text = {item["text"]: item for item in page.controls}
+        self.assertEqual(by_text["X"]["kind"], "CLOSE_GLYPH")
+        self.assertIn("box_norm", by_text["X"])
 
     def test_the_second_visit_folds_into_the_same_record(self):
         """§六: the same screen again must not start from zero -- or copy its picture again."""
@@ -342,7 +372,8 @@ class TheScreenItselfIsKeptTests(unittest.TestCase):
         self.collect(frame=SECOND_UNKNOWN_FRAME)
         keys = {page.page_key for page in self.store.all()}
         self.assertEqual(len(keys), 2, keys)
-        self.assertIn("UNKNOWN::挂机收益", keys)
+        self.assertIn("UNKNOWN::挂机时间", keys)
+        self.assertIn("UNKNOWN::专属装备铸炼", keys)
 
     def test_a_record_whose_picture_is_gone_is_not_knowledge_any_more(self):
         """The evidence is the record.  Measured live: an index outlived its own directory and
@@ -415,7 +446,7 @@ class TransitionLearningTests(unittest.TestCase):
             episode_id="run3",
             goal_id="CLAIM_EXPLORATION_IDLE",
         )
-        rows = self.ledger.rows_for("UNKNOWN", "挂机收益")
+        rows = self.ledger.rows_for("UNKNOWN", "挂机时间")
         self.assertEqual(len(rows), 1)
         row = rows[0]
         self.assertEqual(row.control, "ORDINARY_CONTROL[领取]")
@@ -499,7 +530,7 @@ class ReadingHelpersTests(unittest.TestCase):
     def test_the_title_is_the_largest_word_in_the_title_band(self):
         """Measured: the frame's *largest* text is the 领取 button at cy 0.72, not the title."""
         title = page_knowledge.read_title_candidate(UNKNOWN_FRAME, _ocr())
-        self.assertEqual(title["text"], "挂机收益")
+        self.assertEqual(title["text"], "挂机时间")
         self.assertLess(title["center_norm"][1], page_knowledge.TITLE_BAND_CY)
 
     def test_the_client_word_pages_of_the_dictionary_confirm_the_screen(self):
