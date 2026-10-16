@@ -10778,8 +10778,10 @@ class LiveRuntime:
             latency["semantic_click_retry_ms"] = (time.monotonic() - phase_started) * 1000
             latency["semantic_click_retries"] = click_result.retries if click_result else 0
             if click_result and click_result.observation.frame != delivery_initial_frame:
+                after = self._reject_a_dropped_digit(after)
                 goals_after = self._record_goals(after, frame=after_path)
             elif click_result and click_result.retries:
+                after = self._reject_a_dropped_digit(after)
                 goals_after = self._record_goals(after, frame=after_path)
             page_audit["verifier_result"] = {
                 "status": "PASS" if verification.ok else "FAIL", "ok": bool(verification.ok),

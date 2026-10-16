@@ -54,14 +54,23 @@ EPISODE = "20261002_172120_360764"
 RUN = ROOT / "dataset/raw/control_panel/runtime_auto" / EPISODE
 
 # ``dataset/raw/**`` is rotated by retention (measured 2026-10-15: the directory is there, the
-# frames are not), so without this every test below failed with ``FileNotFoundError`` -- which
-# reads as a code fault and is not one.  Re-capturing the run needs a live device; until then a
-# module-level skip is the honest state, the same call ``tests/test_camp_panel_stamina.py`` makes.
-pytestmark = pytest.mark.skipif(
-    not RUN.is_dir(),
-    reason=f"missing fixture run {RUN} (retention rotated dataset/raw)",
-)
+# frames are not), so the frame-dependent tests guard the FILE they actually read.  The module
+# used to gate everything on ``RUN.is_dir()``, and that check is unsound -- the retention pass
+# rotates the frames and leaves the episode *directory* behind, so the guard stayed quiet while
+# the frame it promised was gone (measured 2026-10-16: the directory is there and empty).  The
+# frame-free tests in this file (synthetic ``_formation()`` worlds) run regardless.
 FORMATION_FRAME = RUN / f"{EPISODE}_step_016_before_20261002T092406618948.png"
+
+
+def _the_archived_frames_record(runtime, world):
+    """The gather-formation record for the archived step-16 frame, or a skip when it is gone.
+
+    Skips rather than re-pinning: the record's subject is what the *reader* does with a real
+    formation page, and a stand-in frame would be testing a different reading.
+    """
+    if not FORMATION_FRAME.is_file():
+        pytest.skip(f"missing fixture frame {FORMATION_FRAME} (retention rotated dataset/raw)")
+    return runtime._annotate_gather_formation(world, FORMATION_FRAME).hero_troop["gather_formation"]
 
 # The formation as the run recorded it at step 16: one occupied slot holding the MEAT specialist,
 # two empty, observed on this very frame, under the role that is running.
@@ -131,8 +140,7 @@ class TheFormationRecordNamesItsSourceTest(unittest.TestCase):
     def test_an_unread_page_leaves_the_record_without_a_resource(self):
         runtime = self._runtime()
         world = WorldState(page=Page.MARCH, resource_target=None, timestamp="T", confidence=0.99)
-        annotated = runtime._annotate_gather_formation(world, FORMATION_FRAME)
-        record = annotated.hero_troop["gather_formation"]
+        record = _the_archived_frames_record(runtime, world)
         self.assertIsNone(record.get("resource_type"))
         self.assertEqual(record.get("resource_source"), "NONE")
 
@@ -141,8 +149,7 @@ class TheFormationRecordNamesItsSourceTest(unittest.TestCase):
         runtime = self._runtime()
         runtime._active_gather_resource = "WOOD"
         world = WorldState(page=Page.MARCH, resource_target=None, timestamp="T", confidence=0.99)
-        annotated = runtime._annotate_gather_formation(world, FORMATION_FRAME)
-        record = annotated.hero_troop["gather_formation"]
+        record = _the_archived_frames_record(runtime, world)
         self.assertNotEqual(record.get("resource_type"), "WOOD")
         self.assertEqual(record.get("resource_source"), "NONE")
 

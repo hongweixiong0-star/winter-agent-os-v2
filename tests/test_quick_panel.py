@@ -394,7 +394,11 @@ class TheButtonIsLocatedByItsChevronTests(unittest.TestCase):
         if not ROWS_WITH_BADGES.exists():
             self.skipTest(f"evidence frame missing: {ROWS_WITH_BADGES}")
         rows = self._rows(ROWS_WITH_BADGES)
-        self.assertEqual(set(rows), {"SHIELD_CAMP", "LANCER_CAMP", "MARKSMAN_CAMP", "RESEARCH"})
+        # The panel's own 建筑队列 row is one of its sections and draws the same chevron button
+        # as the rows below it (measured 2026-10-16: arrow_norm x 0.5618, w_norm 0.0569, exactly
+        # the other four rows' -- the row set grew a deliberate member, not a phantom).
+        self.assertEqual(set(rows),
+                         {"BUILDING", "SHIELD_CAMP", "LANCER_CAMP", "MARKSMAN_CAMP", "RESEARCH"})
         for key, row in rows.items():
             with self.subTest(row=key):
                 self.assertEqual(row["arrow_basis"], "ROW_BUTTON_SCAN", key)
@@ -474,7 +478,12 @@ class TheRowMustBeThePanelsOwnTests(unittest.TestCase):
             self.skipTest(f"evidence frame missing: {ROWS_SCROLLED}")
         rows = {str(row.get("key")): row
                 for row in (self.vision.observe(ROWS_SCROLLED).quick_panel or {}).get("rows") or []}
-        self.assertEqual(set(rows), {"RESEARCH", "ALLIANCE_DONATION", "HERO_RECRUIT", "MY_REWARDS"})
+        # The epic-recruit row (史诗招募) is the second 英雄招募 row the panel draws -- it is in
+        # the declared lower-row family alongside HERO_RECRUIT (measured 2026-10-16: IN_PROGRESS,
+        # its own countdown, its own chevron button).
+        self.assertEqual(set(rows),
+                         {"RESEARCH", "ALLIANCE_DONATION", "HERO_RECRUIT", "HERO_RECRUIT_EPIC",
+                          "MY_REWARDS"})
         research = rows["RESEARCH"]
         self.assertEqual(research["label"], "科技研究")
         self.assertEqual(research["source_word"], "空闲中")

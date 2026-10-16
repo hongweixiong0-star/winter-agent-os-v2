@@ -1129,5 +1129,19 @@
       "the_method_lesson": "**两次 A/B 曾无效**：pytest 跑到 100% 但 teardown 批量删 temp 被沙箱拦下 ⇒ 汇总行缺失、FAILED 列表截断 ⇒ `comm` 拿 30 条比 0 条，报出 29 条幻影回归。现在每侧都必须有汇总行且失败数 == FAILED 行数，并用 `--basetemp` 独立目录。"
     },
     "honest_status": "① 循环对已轮到的角色确实关掉了，且是**在账本里可验证的**（债务为空、expected==attributed、连续 SUCCESS）；② 另一个角色尚未轮到，**未观测到**它的收敛；③ 剩余失败率不再由循环主导。"
+  },
+  "the_two_activity_names_on_one_screen_20261010": {
+    "one_line": "同一帧上出现两个活动名，而客户端没说 `自动加入` 作用于哪一个。**只记录视觉事实，不产生任何点击规则。**",
+    "evidence_frame": "dataset/evidence/bear_join_once_20260927T212538/02_war.png",
+    "what_the_frame_prints": {
+      "the_rally_rows_target": "等级1变异巨熊",
+      "the_sentence_above_the_button": "开启后自动加入冰原巨兽集结",
+      "the_button": "自动加入"
+    },
+    "what_is_proven": "OBSERVED: 两个不同的活动名同时出现在这一帧上；`集结` 列表行的目标是 等级1变异巨熊。",
+    "what_is_NOT_proven": "UNKNOWN: `自动加入` 究竟作用于 变异巨熊（BEAR_HUNT）还是 冰原巨兽（GIANT_BEAST）。这一帧没有任何文字说明，两个名字分属词表里的两个不同页面。",
+    "classification": "NEEDS_LIVE_VERIFICATION",
+    "how_to_settle_it_on_a_live_pass": "抓一次 `自动加入` 的状态切换前后帧：若按钮自身印出状态（开/关），或页面任何位置写出目标活动名，即可判定；否则保持 UNKNOWN。**不得用离线推理替它选一个。**",
+    "why_not_resolved_offline": "本文件里 变异巨熊 与 冰原巨兽 是两条不同的活动记录；用一个名字覆盖另一个会制造假事实。"
   }
 }
