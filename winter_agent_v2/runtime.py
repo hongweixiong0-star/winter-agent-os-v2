@@ -4871,7 +4871,13 @@ class LiveRuntime:
             state = self._annotate_gather_formation(state, frame_path)
             account("formation", (time.monotonic() - started) * 1000)
             state = self._read_due_alliance_events(state, frame_path)
-        return self._read_due_calendar_entry(state, frame_path)
+            # This return belongs INSIDE the ``focus is None`` branch, and 88b4b043 (2026-10-16
+            # 12:31) dedented it by accident: it fired for a focus-carrying vision too, so the
+            # attention path below was dead code and ``state`` was unbound there -- every
+            # focus-aware observation raised UnboundLocalError.  AUTO was latched off at the
+            # time so production never met it; the two goal-attention wiring tests did (they
+            # are the tests for the code that went dead) and the full suite caught them red.
+            return self._read_due_calendar_entry(state, frame_path)
         goal = str(getattr(getattr(self, "brain", None), "current_goal", "") or "")
         page_hint = str(getattr(self, "_last_known_label", "") or "")
 
