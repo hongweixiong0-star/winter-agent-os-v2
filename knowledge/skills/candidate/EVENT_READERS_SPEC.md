@@ -63,3 +63,36 @@
 
 **接线序（下批候选）**：以 1（LIST）为最易（纯文字行）；3/4 次之（数字解析）；5 依赖阶段名集合；
 2 视滚动需求最后。接线提交前跑 `tools/invariant_review.py` 与相关测试（不新开闸门）。
+
+---
+
+# 接线评估（r212）：与 `READ_EVENT_CALENDAR` 的关系及最小接线序
+
+## 现状核对（读源码所得，非推测）
+
+- **V2 已有**：`READ_EVENT_CALENDAR`（skills.py:312，**已注册 CANDIDATE**；`Action("OBSERVE","EVENT_CALENDAR")`
+  ；verifier=`EVENT_CALENDAR_READ` **已绑** runtime.py:545）——它读的是**日历总览面**：
+  `events["calendar"] = {recognized, visible_dates_raw[≥2], entries[]}`（verifier.py:1995 判据）。
+- **5 份 READ_EVENT_*** 读的是**活动卡面**（规则/进度/档/时间）——**与 calendar 不同面，互补不重复**。
+- `skill_factory.py:60-64` 已存 5 份的 **prior 模板**（供生成/对照；未注册为 skill）。
+
+## 最小接线评估（结论）
+
+1. **不新增页面类型、不新增 OBSERVE 框架**：读面挂在既有 `world.events` 字典下扩展
+   （建议键：`events["card"] = {event_id?, my_score, tiers[], phase, remaining, tasks[]}`），
+   与 `events["calendar"]` 同级——**同一真值容器，符合"禁止第二套"**。
+2. **接入点**：EVENT 页既有识别分支处**顺带读卡面**（OBSERVE 零点击；与 calendar 读取同源帧）。
+3. **Verifier**：仿 `verify_event_calendar_read` 写一个 `EVENT_CARD_READ`（判据：page=EVENT +
+   至少 `my_score` 或 `remaining` 其一成立 + 字段互不矛盾）——**注册前先有此绑定**。
+4. **建议序**（对应本文件的 1-5）：
+   - **Step 1**：卡面四字段读取函数（纯函数，输入帧输出 dict）——**先做**（可单测，零生产影响）
+   - **Step 2**：接 `world.events["card"]` + `EVENT_CARD_READ` verifier（**接线提交**）
+   - **Step 3**：按规格第 2 条（RULES 滚动）在 Step 1 函数内补可见条数
+   - **Step 4**：注册 `READ_EVENT_*` 家族（**或**并入 calendar 家族的读面表述——**以 Step 2 实测为准**）
+5. **风险与边界**：全部 OBSERVE（零点击零消耗）；唯一"动作"类（前往侦察/领取）**不在本族**。
+
+## 影响审查（§三·八 九问简答）
+
+还能被发现吗✓（goal 不变）· 能进 Scheduler 吗✓（不碰 chooser）· 不做时能学吗✓（本族即学习入口）·
+失败会重试吗✓（COOLDOWN 既有）· Verifier 可达吗✓（Step 2 前置）· 一个失败挡其他吗✗（OBSERVE 级）·
+**是否形成永久不可达**✗（不新增过滤）。**结论：可安全推进，Step 1 为下一步起点。**
