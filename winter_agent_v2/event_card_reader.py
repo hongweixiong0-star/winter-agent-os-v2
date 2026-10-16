@@ -89,3 +89,21 @@ def read_event_card(text: str) -> dict:
     if tiers:
         out["tiers"] = tiers
     return out
+
+
+#: The gate for "this frame is showing a live event card", deliberately stronger than any
+#: single token: a lone 我的积分 row or a lone countdown can appear in other surfaces, so the
+#: gate asks for a scoring row *and* one more card-shaped signal.  The strings are the ones
+#: measured on 2026-10-16; the tabstrip-only frame (常规活动/联盟大作战/…) must fail it.
+def looks_like_event_card(text: str) -> bool:
+    """True when the frame's text carries a live event card, not just the tab strip."""
+    t = text or ""
+    has_score_row = "我的积分" in t
+    has_points_row = "点积分" in t
+    has_phase_timer = _PHASE_TIMER_RE.search(t) is not None
+    has_ladder = len(read_tiers(t)) >= 2
+    signals = sum((has_score_row, has_points_row, has_phase_timer, has_ladder))
+    # A bare tab strip (names only) has none of these; a real card measured live had three.
+    # 阶段+倒计时 is admitted on its own: the siege card (r210) carries it and nothing else
+    # card-shaped, and "<汉字>阶段 HH:MM:SS" has not been observed outside a live card.
+    return signals >= 2 or has_phase_timer

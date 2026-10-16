@@ -77,3 +77,29 @@ def test_full_card_combines_what_the_text_supports():
 def test_full_card_omits_unsupported_keys_entirely():
     card = read_event_card("常规活动 联盟大作战 凛风攻城战")
     assert card == {}
+
+
+from winter_agent_v2.event_card_reader import looks_like_event_card
+
+
+def test_card_gate_accepts_the_measured_alliance_war_card():
+    text = (
+        "我的积分：0\n"
+        "100 37,500 75,000 125,000 187,500\n"
+        "护送1次任意品质商旅 10,000点积分\n"
+    )
+    assert looks_like_event_card(text) is True
+
+
+def test_card_gate_rejects_a_bare_tab_strip():
+    assert looks_like_event_card("常规活动 联盟大作战 雪原商路 凛风攻城战") is False
+
+
+def test_card_gate_accepts_the_siege_card_without_a_score_row():
+    text = "凛风攻城战 侦察阶段 13:27:18 调配部队攻守据点，与对手联盟一决胜负！"
+    assert looks_like_event_card(text) is True
+
+
+def test_card_gate_rejects_single_weak_signal():
+    # One card-shaped token is not a card; the gate exists to keep the tail-call rare.
+    assert looks_like_event_card("我的积分：0") is False
