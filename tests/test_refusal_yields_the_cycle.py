@@ -47,6 +47,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from winter_agent_v2 import control_experience  # noqa: E402
+from winter_agent_v2 import semantic_executor  # noqa: E402
 from winter_agent_v2.brain import RuleBrain  # noqa: E402
 from winter_agent_v2.goal_library import GoalState, GoalStatus  # noqa: E402
 from winter_agent_v2.learning import EpisodeStore  # noqa: E402
@@ -71,12 +72,19 @@ class _FakeMatch:
 
 
 class _FakeSemantic:
-    #: BTN_CLOSE is in the set because the exit-sequence tests below drive a real
-    #: LEAVE_FOREIGN_LAYER step, whose whole point is the close in the layer's corner.
-    #: Without it the step answers SEMANTIC_TARGET_NOT_VERIFIED and the scenario degenerates
-    #: into "the close was never sendable", which is a different (and already tested) fact.
+    #: ``BTN_BACK_ARROW`` is in the set because the exit-sequence tests below drive a real
+    #: ``LEAVE_FOREIGN_LAYER`` step.  That skill aims at the alliance page's own exit, which
+    #: is the client's navigation arrow -- **not** ``BTN_CLOSE``.  Measured 2026-09-22
+    #: (commit f3028763): the alliance page draws no close button at all; its arrow is the
+    #: same control the mail page draws (phash distance 0 between the two, 32 against the
+    #: city and the map), and aiming at ``BTN_CLOSE`` was 7 ``SEMANTIC_TARGET_NOT_VERIFIED``
+    #: plus every ``SAFE_BACK_NOT_PROVEN`` in the window.  Without the arrow in this set the
+    #: step answers ``SEMANTIC_TARGET_NOT_VERIFIED`` and the scenario degenerates into "the
+    #: exit was never sendable", which is a different (and already tested) fact.
+    #: ``BTN_CLOSE`` stays for the popup-closing steps the fallback passes can reach.
     def find(self, _path, semantic):
-        return _FakeMatch() if semantic in {"BTN_ALLY_GIFT_CLAIM", "PAGE_MAP", "BTN_OPEN_HOME", "BTN_CLOSE"} else None
+        return _FakeMatch() if semantic in {"BTN_ALLY_GIFT_CLAIM", "PAGE_MAP", "BTN_OPEN_HOME",
+                                            "BTN_CLOSE", "BTN_BACK_ARROW"} else None
 
     semantic = property(lambda self: self)
     resource_tab_band = (0.0, 1.0)
@@ -317,11 +325,16 @@ class ABackThatDoesNotMoveTheClientDoesNotEndTheCycleTests(unittest.TestCase):
         step 1  BACK  ->  after page ALLIANCE   verifier SAFE_BACK_NOT_PROVEN
         stop_reason SAFE_BACK_NOT_PROVEN
 
-    The layer is a sub-page with its own X in the corner; a Back moves nothing.  The run
-    ended, and ``foreign_page_left`` was already set, so every later run answered
-    ``training_entry_not_verified`` without trying -- one unmovable layer cost the cycle
-    its training work permanently.  Two things had to change and both are asserted here:
-    the runtime must give the brain room for its second exit, and the brain must have one.
+    The layer is a sub-page whose exit a Back does not reach; a Back moves nothing.  The
+    exit itself was first read as a corner X and re-measured 2026-09-22 (commit f3028763):
+    the page draws no close button at all -- its exit is the client's own navigation
+    arrow, the same control the mail page draws.  ``LEAVE_FOREIGN_LAYER`` was repointed
+    to it, and the fake resolves the arrow; these tests assert the *sequence*, which is
+    the fact that did not change.  The run ended, and ``foreign_page_left`` was already
+    set, so every later run answered ``training_entry_not_verified`` without trying --
+    one unmovable layer cost the cycle its training work permanently.  Two things had to
+    change and both are asserted here: the runtime must give the brain room for its
+    second exit, and the brain must have one.
     """
 
     #: The goal from the live frame.  KEEP_TRAINING_PRODUCTIVE is what the 14:22 run selected,
@@ -358,12 +371,13 @@ class ABackThatDoesNotMoveTheClientDoesNotEndTheCycleTests(unittest.TestCase):
                 ).run(max_actions=max_actions)
         return device, run
 
-    def test_the_second_exit_is_the_close_not_a_repeated_back(self):
-        """The Back moves nothing, so the close is what the run must reach.
+    def test_the_second_exit_is_the_arrow_not_a_repeated_back(self):
+        """The Back moves nothing, so the layer's own exit is what the run must reach.
 
         Both frames are the alliance layer.  The first Back cannot change that, so the
-        only way this run touches the device twice is if the runtime handed the cycle
-        back and the brain answered the layer's own exit.
+        only way this run reaches a tap at all is if the runtime handed the cycle back
+        and the brain answered the layer's own exit -- the navigation arrow the client
+        itself draws (measured 2026-09-22), not a corner close: the layer draws none.
         """
         layer = alliance_gift("CLAIMED", buttons=0, claimed=2, progress=250)
         device, run = self._run([layer, layer, layer])
@@ -373,7 +387,7 @@ class ABackThatDoesNotMoveTheClientDoesNotEndTheCycleTests(unittest.TestCase):
         )
         self.assertGreaterEqual(
             len(device.taps), 1,
-            "the layer ignored the Back, so the close must actually be sent",
+            "the layer ignored the Back, so the layer's own exit must actually be sent",
         )
 
     def test_a_layer_that_answers_neither_exit_still_ends_honestly(self):
@@ -437,9 +451,12 @@ class AFailedStepHandsOverTheCycleTests(unittest.TestCase):
     FAILING = "ALLIANCE_ALLY_GIFT_CLAIM"
     CONTROL = "BTN_ALLY_GIFT_CLAIM"
     #: A second, *different* control on the same page, so the scenario can show the
-    #: handover reaching new work rather than tapping the same place again.
+    #: handover reaching new work rather than tapping the same place again.  The control
+    #: is the one ``LEAVE_FOREIGN_LAYER`` actually aims at: the alliance page's own
+    #: navigation arrow (measured 2026-09-22, commit f3028763), not a corner close --
+    #: the page draws none.
     OTHER = "LEAVE_FOREIGN_LAYER"
-    OTHER_CONTROL = "BTN_CLOSE"
+    OTHER_CONTROL = "BTN_BACK_ARROW"
 
     def _second_goal(self) -> GoalState:
         return GoalState(
@@ -507,7 +524,13 @@ class AFailedStepHandsOverTheCycleTests(unittest.TestCase):
     def test_a_failed_step_hands_the_cycle_to_the_next_goal(self):
         device, run, _ledger, rows = self._run(
             goals=[ONLY_GOAL, self._second_goal()], decisions=self._two_steps())
-        self.assertEqual(len(device.taps), 2,
+        # Two executed steps, and each step's own tap is followed by the bounded in-place
+        # retries of ``retry_authorized_semantic_click``: the fake frame never moves, so the
+        # world keeps reporting the action as pending and the click is repeated -- one tap
+        # plus ``MAX_SEMANTIC_CLICK_RETRY`` (2), per step.  Measured 2026-10-16: six taps.
+        # What the count is NOT: extra taps of the *first* goal's failing control -- that is
+        # what the rows assertion below exists to catch, and the pre-executor guard stops it.
+        self.assertEqual(len(device.taps), 2 * (1 + semantic_executor.MAX_SEMANTIC_CLICK_RETRY),
                          "the second goal must get its own cycle after the first one's step failed")
         self.assertEqual(run.stop_reason, "FORCED_VERIFIER_FAILURE",
                          "...and the run still ends with the real reason, not silence")
@@ -522,9 +545,16 @@ class AFailedStepHandsOverTheCycleTests(unittest.TestCase):
         on the very same control -- and with the guard removed the identical failing
         tap was issued once per goal.  A repeat at the same position is what the rule
         forbids, so the second attempt at the same control ends the run instead.
+
+        "A second attempt" is an *attempt*, not a raw tap count: one attempt carries its
+        own bounded in-place retries while the world still reads the action as pending
+        (see the sibling test), which is why the device shows more than one tap for the
+        one attempt that happened.  ``rows`` is where a second attempt would appear.
         """
         device, run, _ledger, rows = self._run(goals=[ONLY_GOAL, self._second_goal()])
-        self.assertEqual(len(device.taps), 1, "one tap, then the same control is left alone")
+        self.assertEqual(len(device.taps), 1 + semantic_executor.MAX_SEMANTIC_CLICK_RETRY,
+                         "one attempt -- its own tap plus the bounded in-place retries -- "
+                         "not one tap per goal")
         self.assertEqual(len(rows), 1)
         self.assertEqual(run.stop_reason, "FORCED_VERIFIER_FAILURE")
 
