@@ -41,6 +41,19 @@
 | `.workbuddy/` | 3 | `memory/automations/`×2、`suite_after.txt` | automations 保留；`suite_after.txt` 归档 |
 | `dataset/exploration/` | 1 目录 | | 审阅 |
 
+## C2. 跨树同步（pin 树）——**新发现（2026-10-16），不宜盲操作**
+
+- **pin 树**（`C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体`）：
+  - 代码侧落后数据根（HEAD `9ffaf237`，其近期提交全是 codex 的 `memory:` 工作）。
+  - **`memory/` 为双向差异**（已实测 `diff -rq`：9-13 起多文件两侧不同）——数据根写、
+    **pin 树由 codex 活跃维护**——**盲目 `cp` 覆盖会冲掉另一条维护线**。
+  - 10-14 记录的"cp 收尾"流程在当时成立，但两线已各自演化 → **需要一次专门的合并**
+    （逐文件比对取新，或先裁定哪侧为准），**列入待专门处理**。
+  - 结构提醒（10-14 事实）：pin 树的 `knowledge/learning/dataset/config` 是指向数据根的
+    **NTFS junction**（同一份内容）；`winter_agent_v2/tests/tools` 等才是独立副本 ——
+    **pin 树的代码推进（repin/镜像 merge/check_mainline）属"生产发布"动作**，待专门流程与时机，
+    **勿做 `git checkout --` 类回滚**（junction 会连带数据根）。
+
 ## D. 本轮已完成的裁定（参照先例）
 
 - **被引用即纳入**：4 个被生产注释引用的工具已提交（`d77fb067`：shop 三件套＋`diagnose_page_match`）。
