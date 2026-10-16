@@ -44,5 +44,7 @@
   ],
   "live_evidence": [],
   "confidence": 0.45,
-  "lifecycle": "CANDIDATE"
+  "lifecycle": "SUPERSEDED",
+  "superseded_by": "OPEN_TASK_FROM_QUICK_PANEL_BUILDING",
+  "superseded_at": "2026-10-16"
 }

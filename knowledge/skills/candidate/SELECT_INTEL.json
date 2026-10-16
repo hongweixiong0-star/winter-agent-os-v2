@@ -46,5 +46,7 @@
   ],
   "live_evidence": [],
   "confidence": 0.45,
-  "lifecycle": "CANDIDATE"
+  "lifecycle": "SUPERSEDED",
+  "superseded_by": "SELECT_INTEL_BEAST/FIREBEAST/RESCUE + SELECT_INTEL_PIN",
+  "superseded_at": "2026-10-16"
 }

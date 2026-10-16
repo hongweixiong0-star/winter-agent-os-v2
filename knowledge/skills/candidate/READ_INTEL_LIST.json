@@ -51,5 +51,7 @@
     "Replay now emits AVAILABLE + BEAST + list_read"
   ],
   "confidence": 0.85,
-  "lifecycle": "CANDIDATE"
+  "lifecycle": "SUPERSEDED",
+  "superseded_by": "READ_INTEL_LIST (skills.py:222, same id)",
+  "superseded_at": "2026-10-16"
 }

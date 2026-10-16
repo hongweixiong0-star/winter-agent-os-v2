@@ -49,5 +49,7 @@
   ],
   "live_evidence": [],
   "confidence": 0.45,
-  "lifecycle": "CANDIDATE"
+  "lifecycle": "SUPERSEDED",
+  "superseded_by": "EXECUTE_INTEL_RESCUE_SURVIVORS chain",
+  "superseded_at": "2026-10-16"
 }

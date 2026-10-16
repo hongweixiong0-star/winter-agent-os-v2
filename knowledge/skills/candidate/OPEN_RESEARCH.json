@@ -44,5 +44,7 @@
   ],
   "live_evidence": [],
   "confidence": 0.45,
-  "lifecycle": "CANDIDATE"
+  "lifecycle": "SUPERSEDED",
+  "superseded_by": "OPEN_RESEARCH (skills.py:374, same id)",
+  "superseded_at": "2026-10-16"
 }

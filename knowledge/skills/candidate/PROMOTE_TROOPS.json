@@ -44,5 +44,7 @@
   ],
   "live_evidence": [],
   "confidence": 0.45,
-  "lifecycle": "CANDIDATE"
+  "lifecycle": "SUPERSEDED",
+  "superseded_by": "TRAIN_TROOPS (promotes by description)",
+  "superseded_at": "2026-10-16"
 }

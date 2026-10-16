@@ -44,5 +44,7 @@
   ],
   "live_evidence": [],
   "confidence": 0.45,
-  "lifecycle": "CANDIDATE"
+  "lifecycle": "SUPERSEDED",
+  "superseded_by": "OPEN_INFANTRY_TRAINING / OPEN_POWER_OVERVIEW",
+  "superseded_at": "2026-10-16"
 }
