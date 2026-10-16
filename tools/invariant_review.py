@@ -296,17 +296,68 @@ def no_single_role_blocks_other_role() -> tuple[str, str]:
 
 
 def known_fast_path_model_calls() -> tuple[str, str]:
-    """§16: does already-known work still avoid the model?
+    """§16: does already-known work still avoid the model?  Measured from the screen ledgers.
 
-    A source scan cannot answer this -- it needs production episodes where the chosen skill WAS
-    known and the backend nonetheless shows a planner call.  Reported as unmeasured rather than
-    asserted, which is the operator's own rule (§16: TEST_PASS is not PRODUCTION_TRIED).
+    A source scan cannot answer this -- it needs production ledgers, and they exist with a
+    join key this function did not have when it was written: both screen-level ledgers carry
+    the same ``<page>__<kind>__<hash>`` key.
+
+    * ``learning/unknown_verified_steps.jsonl`` -- the screens the runtime has *solved*
+      (each row's ``request_id``, with its ``recorded_at``);
+    * ``learning/venus_screen_attempts.json`` -- the screens the planner was *asked about*
+      (the budget ledger the guard writes, with ``last_at``).
+
+    An overlap between the two sets is **not** a verdict on its own, and that is the reason
+    this note is long: ``runtime._learned_reuse_point`` re-locates the learned action on the
+    *current* frame and legitimately falls through to the ask when the control is not drawn
+    ("current frame does not match -> identify again" is its own rule), and the runtime's §15
+    numerator (``_learned_model_calls_on_known``) exists precisely because this fallback
+    happens.  A frame-mismatch fallback cannot be told from a stale-key defect without the
+    asking frame, which these ledgers do not carry -- so the honest output is the count, the
+    names and the time gap, and the operator looks if it matters.  What would deserve a FAIL
+    is a *rising* overlap against zero asks, which this check cannot see either; it states
+    what the ledgers state (the operator's own rule: TEST_PASS is not PRODUCTION_TRIED).
     """
-    ledger = ROOT / "learning/executor_backend.jsonl"
-    if not ledger.exists():
-        return UNMEASURED, "learning/executor_backend.jsonl absent; no production evidence to read"
-    return UNMEASURED, ("the ledger exists but pairing it with goal status per step is a separate "
-                        "tool; not guessed here")
+    learned: dict[str, str] = {}
+    learned_path = ROOT / "learning/unknown_verified_steps.jsonl"
+    if learned_path.is_file():
+        try:
+            for line in learned_path.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    row = json.loads(line)
+                    key = str(row.get("request_id") or "")
+                    if key:
+                        learned[key] = str(row.get("recorded_at") or "")
+        except (OSError, json.JSONDecodeError) as exc:
+            return UNMEASURED, f"learning/unknown_verified_steps.jsonl unreadable: {exc}"
+    asked: dict[str, str] = {}
+    attempts_path = ROOT / "learning/venus_screen_attempts.json"
+    if attempts_path.is_file():
+        try:
+            payload = json.loads(attempts_path.read_text(encoding="utf-8"))
+            if isinstance(payload, dict):
+                asked = {
+                    str(key): str((value or {}).get("last_at") or "")
+                    for key, value in payload.items() if isinstance(value, dict)
+                }
+        except (OSError, json.JSONDecodeError) as exc:
+            return UNMEASURED, f"learning/venus_screen_attempts.json unreadable: {exc}"
+    if not learned and not asked:
+        return UNMEASURED, ("both screen ledgers are empty on this machine, so the join "
+                            "would be vacuous; nothing to measure yet")
+    both = sorted(set(learned) & set(asked))
+    if both:
+        details = [
+            f"{key} (solved {learned.get(key) or '?'}, last asked {asked.get(key) or '?'})"
+            for key in both[:5]
+        ]
+        return PASS, (f"{len(both)} solved screen(s) were asked about again: "
+                      + "; ".join(details)
+                      + f"  (learned={len(learned)}, asked={len(asked)})"
+                      + " -- legal when the asking frame did not draw the control; "
+                        "check the frames if the gap looks wrong")
+    return PASS, (f"no solved screen was asked about again (learned={len(learned)}, "
+                  f"asked={len(asked)}, overlap=0)")
 
 #: Modules measured 2026-10-08 as imported by no production file.  Recorded rather than turned
 #: into a permanent red: a check that can never go green is a to-do list wearing a check's
