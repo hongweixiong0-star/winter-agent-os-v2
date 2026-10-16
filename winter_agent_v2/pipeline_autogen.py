@@ -642,6 +642,31 @@ class PipelineAutoGen:
             # Keep the generated artifact for review, while leaving the live route
             # byte-for-byte untouched. Priority alone cannot grant replacement rights.
             return False, f"PROTECTED_RECOGNITION_CONFLICT:{node.evidence['pipeline_node_path']}"
+        # A semantic that was measured and demoted stays demoted until a curator lifts the
+        # record deliberately.  The retirement scripts remove the node from ``recognition``
+        # and keep its provenance in ``evidence`` (demoted_at / demotion_reason /
+        # autogen_owned_recognition); this check is what makes that removal stick against
+        # THIS pipeline.  Without it the runtime hook's own trigger ("runtime unresolved
+        # after N attempt(s)") silently regenerates the very node the A/B had retired --
+        # measured 2026-10-10: three entries (QUICK_PANEL_ROW_BUILDING and
+        # REGULAR_EVENT_ENTRY under two skills) came back this way, each wiring a node whose
+        # demotion_reason had already shown the failure to be geometric -- re-cropping the
+        # same kind of node cannot fix a control that moves, so the write is refused and the
+        # candidate stays on disk.  To lift the demotion, erase its record and do the A/B
+        # the demotion_reason names; the same write then goes through.
+        demotion = entry.get("evidence") or {}
+        demoted_here = bool(demotion.get("demoted_at") or demotion.get("demotion_reason"))
+        names_this_semantic = node.semantic in set(
+            demotion.get("autogen_owned_recognition") or ()
+        ) or (
+            bool(demotion.get("demotion_reason"))
+            and node.semantic in str(demotion.get("demotion_reason"))
+        )
+        if not existed and demoted_here and names_this_semantic:
+            return False, (
+                "DEMOTED_SEMANTIC_KEEPS_ITS_RETIREMENT:"
+                f"{node.evidence.get('pipeline_node_path')}"
+            )
         if existed and not conflict:
             return True, "UNCHANGED"
         evidence = dict(entry.get("evidence", {}) or {})

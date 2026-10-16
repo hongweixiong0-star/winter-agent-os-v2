@@ -87,3 +87,63 @@ def test_the_declaration_follows_the_route_when_the_route_is_maa(tmp_path):
     route = json.loads(path.read_text(encoding='utf-8'))['skills']['SKILL_X']
     assert route['preferred'] == 'MAA'
     assert route['recognition_backend'] == 'MAA'
+
+
+def _demoted_payload():
+    """The measured demoted shape, as every retirement so far has left it.
+
+    ``recognition`` emptied, the route on ADB, the declaration LEGACY, and the demotion's own
+    record kept in ``evidence`` where the retirement scripts leave it.  Measured 2026-10-10:
+    against exactly this shape the runtime hook's regeneration trigger ("runtime unresolved
+    after N attempt(s)") re-wired QUICK_PANEL_ROW_BUILDING and REGULAR_EVENT_ENTRY (x2) --
+    three entries -- putting back the node the A/B had retired.
+    """
+    return {'version': 1, 'skills': {'SKILL_X': {
+        'preferred': 'ADB', 'fallback': 'ADB', 'recognition_backend': 'LEGACY',
+        'promoted': False, 'migration_priority': 'P3',
+        'evidence': {
+            'demoted_at': '2026-10-05T08:59:25Z',
+            'demotion_reason': 'The autogen node for BTN_X is position-blind for a control '
+                               'that moves: it carries a fixed roi while the panel draws the '
+                               'row wherever its own scroll leaves it.',
+            'autogen_owned_recognition': {'BTN_X': {'kind': 'TEMPLATE', 'template': 'old'}},
+        }}},
+        'not_migrated': {'SKILL_X_RECOGNITION': {'semantic': 'BTN_X'}}}
+
+
+def test_a_measured_demotion_is_not_resurrected_by_a_regeneration(tmp_path):
+    """The retirement removed the node; the pipeline's own trigger must not put it back.
+
+    Without this check the removal does not stick: the very failure the demotion was measured
+    from ("runtime unresolved") is what fires the regeneration, so the node comes back on the
+    next occurrence unless the record itself refuses the write.  The candidate stays on disk
+    for review, and the entry stays byte-for-byte untouched -- same refusal shape as
+    ``PROTECTED_RECOGNITION_CONFLICT``.
+    """
+    path = tmp_path / 'backend_routing.json'
+    path.write_text(json.dumps(_demoted_payload()), encoding='utf-8')
+    original = path.read_bytes()
+    generated = node('fresh-crop')
+    ok, reason = PipelineAutoGen(project_root=tmp_path, routing_path=path).wire(generated)
+    assert not ok
+    assert reason.startswith('DEMOTED_SEMANTIC_KEEPS_ITS_RETIREMENT:'), reason
+    assert path.read_bytes() == original, 'a refused write must not touch the routing file'
+    assert (tmp_path / generated.evidence['pipeline_node_path']).exists()
+
+
+def test_a_demotion_naming_another_semantic_does_not_block_the_new_one(tmp_path):
+    """The refusal is scoped to the demoted semantic, so the check cannot over-block.
+
+    A skill can retire one semantic and later legitimately carry a node for a different one;
+    keying the refusal on "the entry has a demotion record" alone would forbid that forever.
+    """
+    path = tmp_path / 'backend_routing.json'
+    path.write_text(json.dumps(_demoted_payload()), encoding='utf-8')
+    other = GeneratedNode(
+        semantic='BTN_Y', skill_id='SKILL_X', kind='TEMPLATE',
+        routing_node={'kind': 'TEMPLATE', 'template': 'other'},
+        pipeline_node={'recognition': 'TemplateMatch', 'template': 'other'})
+    ok, reason = PipelineAutoGen(project_root=tmp_path, routing_path=path).wire(other)
+    assert ok is True, reason
+    route = json.loads(path.read_text(encoding='utf-8'))['skills']['SKILL_X']
+    assert set(route['recognition']) == {'BTN_Y'}

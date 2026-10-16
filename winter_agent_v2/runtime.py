@@ -3947,10 +3947,14 @@ class LiveRuntime:
             node.evidence["trigger"] = f"runtime unresolved after {attempts + 1} attempt(s): {reason}"
             node.evidence["validation"] = "GENERATED_ONLY"
             ok, verdict = gen.wire(node, note="runtime-derived from an unresolved control")
-            if ok:
-                self.recently_autogen.append({"semantic": semantic, "skill_id": skill_id,
-                                              "kind": node.kind, "verdict": verdict,
-                                              "frame": str(captured)})
+            # A refusal is recorded too, with its reason: the protected-conflict and
+            # demoted-semantic refusals mean a node was deliberately NOT wired, and
+            # "silently nothing happened" is a failure mode this project has paid for.
+            # Same convention as the repair path's "(not wired)" verdict.
+            self.recently_autogen.append({"semantic": semantic, "skill_id": skill_id,
+                                          "kind": node.kind if ok else f"{node.kind}_REFUSED",
+                                          "verdict": verdict if ok else f"{verdict} (not wired)",
+                                          "frame": str(captured)})
         except Exception as exc:  # noqa: BLE001 - a heuristic must not stop a production run
             # A derivation that fails must never end a real run, but "silently
             # nothing happened" is its own failure mode: the first version of this

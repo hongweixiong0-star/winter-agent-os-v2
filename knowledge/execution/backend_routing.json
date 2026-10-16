@@ -251,25 +251,24 @@
       }
     },
     "OPEN_EVENT_CALENDAR_FROM_HOME": {
-      "recognition": {},
       "preferred": "ADB",
       "fallback": "MAA",
       "recognition_backend": "LEGACY",
       "migration_priority": "P3",
       "evidence": {
-        "generated_at": "2026-09-25T18:27:49.269147+00:00",
-        "source": "winter_agent_v2.pipeline_autogen (TOOL_SHAPED OCR node + V2_NATIVE template)",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_home.png",
+        "generated_at": "2026-10-08T21:50:44.564053+00:00",
+        "source": "winter_agent_v2.pipeline_autogen V2_NATIVE fallback (generator unavailable)",
+        "frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_054936_645410\\autogen\\20261008_215042_REGULAR_EVENT_ENTRY.png",
         "observed_text": "常规活动",
         "observed_box": [
           633,
           179,
-          68,
+          67,
           23
         ],
         "ocr_score": 0.9984,
-        "expand": 22,
-        "validation": "NONE",
+        "expand": 20,
+        "validation": "GENERATED_ONLY",
         "harvest_page": "home",
         "harvest_score": 0.9984,
         "positive_frames": [
@@ -294,7 +293,7 @@
           "corpus_sufficient": false
         },
         "autogen_node_count": 1,
-        "autogen_note": "harvested+validated",
+        "autogen_note": "runtime-derived from an unresolved control",
         "demotion_reason": "The autogen node for REGULAR_EVENT_ENTRY was harvested from a single 2026-09-25 frame (roi x 632..699, y 101..185, \"validation\": \"NONE\") and it is a moving navigation label, so a fixed rect is the wrong shape for it. Measured 2026-10-03 over every episode the ledger holds: 638 steps, ALL of them on the MAA backend -- ADB was never called once -- 612 succeeded and 26 failed, each of the 26 carrying MAA_TEMPLATE:NO_MATCH with scores spread across 0.4175..0.6909 against the 0.7 gate; not one attempt ever crossed it. The recall failure is geometric, not a threshold: on the frame that stopped production (720x1280) the frame's own OCR reads the 常规活动 label at (0.925, 0.14883) = px (666, 191) with confidence 0.9983, and the roi covers y 101..185, so the node was looking 6 px above the control it was supposed to match. This semantic is therefore NOT migrated: ADB is preferred and the recognition is the V2 semantic vision, which consumes the frame's own events.calendar_entry.tap_norm (guarded to visible + CURRENT_FRAME_OCR on HOME/MAP) rather than a stored offset. The template image is kept so a re-measurement starts from the picture.",
         "measured_record": {
           "measured_at": "2026-10-03",
@@ -330,30 +329,54 @@
             1280
           ],
           "template_kept_at": "dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png"
-        }
+        },
+        "tool_generated_node": null,
+        "active_node_source": "V2_NATIVE_FALLBACK",
+        "generator_tool": "",
+        "trigger": "runtime unresolved after 1 attempt(s): SEMANTIC_TARGET_NOT_VERIFIED",
+        "pipeline_node_path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\autogen\\pipeline_nodes\\regular_event_entry__ca65aa1c38.json",
+        "pipeline_node_sha1": "ca65aa1c38",
+        "autogen_owned_recognition": {
+          "REGULAR_EVENT_ENTRY": {
+            "kind": "TEMPLATE",
+            "template": "REGULAR_EVENT_ENTRY",
+            "threshold": [
+              0.7,
+              0.75
+            ],
+            "source_template": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\candidate\\autogen\\regular_event_entry__autogen_04f2f219.png",
+            "roi": [
+              565,
+              111,
+              155,
+              159
+            ]
+          }
+        },
+        "re_retired_at": "2026-10-16T05:27:56Z",
+        "re_retirement_reason": "The 2026-10-10 runtime regeneration re-wired this semantic although the demotion above was measured; re-applied by _re_retire_the_resurrected_nodes.py. pipeline_autogen.wire() now refuses to re-wire a semantic whose demotion record names it (DEMOTED_SEMANTIC_KEEPS_ITS_RETIREMENT).  The regenerated node's provenance (generated_at / frame / pipeline_node_path) is kept in this evidence."
       },
       "promoted": false
     },
     "OPEN_EVENT_CALENDAR_FROM_MAP": {
-      "recognition": {},
       "preferred": "ADB",
       "fallback": "MAA",
       "recognition_backend": "LEGACY",
       "migration_priority": "P3",
       "evidence": {
-        "generated_at": "2026-09-25T18:27:49.480478+00:00",
-        "source": "winter_agent_v2.pipeline_autogen (TOOL_SHAPED OCR node + V2_NATIVE template)",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_home.png",
+        "generated_at": "2026-10-08T22:34:59.104890+00:00",
+        "source": "winter_agent_v2.pipeline_autogen V2_NATIVE fallback (generator unavailable)",
+        "frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_063412_777788\\autogen\\20261008_223457_REGULAR_EVENT_ENTRY.png",
         "observed_text": "常规活动",
         "observed_box": [
-          633,
-          179,
-          68,
-          23
+          625,
+          177,
+          80,
+          25
         ],
-        "ocr_score": 0.9984,
-        "expand": 22,
-        "validation": "NONE",
+        "ocr_score": 0.9967,
+        "expand": 20,
+        "validation": "GENERATED_ONLY",
         "harvest_page": "home",
         "harvest_score": 0.9984,
         "positive_frames": [
@@ -378,7 +401,7 @@
           "corpus_sufficient": false
         },
         "autogen_node_count": 1,
-        "autogen_note": "harvested+validated",
+        "autogen_note": "runtime-derived from an unresolved control",
         "demotion_reason": "The autogen node for REGULAR_EVENT_ENTRY was harvested from a single 2026-09-25 frame (roi x 632..699, y 101..185, \"validation\": \"NONE\") and it is a moving navigation label, so a fixed rect is the wrong shape for it. Measured 2026-10-03 over every episode the ledger holds: 638 steps, ALL of them on the MAA backend -- ADB was never called once -- 612 succeeded and 26 failed, each of the 26 carrying MAA_TEMPLATE:NO_MATCH with scores spread across 0.4175..0.6909 against the 0.7 gate; not one attempt ever crossed it. The recall failure is geometric, not a threshold: on the frame that stopped production (720x1280) the frame's own OCR reads the 常规活动 label at (0.925, 0.14883) = px (666, 191) with confidence 0.9983, and the roi covers y 101..185, so the node was looking 6 px above the control it was supposed to match. This semantic is therefore NOT migrated: ADB is preferred and the recognition is the V2 semantic vision, which consumes the frame's own events.calendar_entry.tap_norm (guarded to visible + CURRENT_FRAME_OCR on HOME/MAP) rather than a stored offset. The template image is kept so a re-measurement starts from the picture.",
         "measured_record": {
           "measured_at": "2026-10-03",
@@ -414,7 +437,32 @@
             1280
           ],
           "template_kept_at": "dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png"
-        }
+        },
+        "tool_generated_node": null,
+        "active_node_source": "V2_NATIVE_FALLBACK",
+        "generator_tool": "",
+        "trigger": "runtime unresolved after 1 attempt(s): SEMANTIC_TARGET_NOT_VERIFIED",
+        "pipeline_node_path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\autogen\\pipeline_nodes\\regular_event_entry__429fc2bec6.json",
+        "pipeline_node_sha1": "429fc2bec6",
+        "autogen_owned_recognition": {
+          "REGULAR_EVENT_ENTRY": {
+            "kind": "TEMPLATE",
+            "template": "REGULAR_EVENT_ENTRY",
+            "threshold": [
+              0.7,
+              0.75
+            ],
+            "source_template": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\candidate\\autogen\\regular_event_entry__autogen_96727d9f.png",
+            "roi": [
+              557,
+              109,
+              163,
+              161
+            ]
+          }
+        },
+        "re_retired_at": "2026-10-16T05:27:56Z",
+        "re_retirement_reason": "The 2026-10-10 runtime regeneration re-wired this semantic although the demotion above was measured; re-applied by _re_retire_the_resurrected_nodes.py. pipeline_autogen.wire() now refuses to re-wire a semantic whose demotion record names it (DEMOTED_SEMANTIC_KEEPS_ITS_RETIREMENT).  The regenerated node's provenance (generated_at / frame / pipeline_node_path) is kept in this evidence."
       },
       "promoted": false
     },
@@ -548,26 +596,9 @@
       "promoted": false
     },
     "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT": {
-      "recognition": {
-        "QUICK_PANEL_ROW_HERO_RECRUIT": {
-          "kind": "TEMPLATE",
-          "template": "QUICK_PANEL_ROW_HERO_RECRUIT",
-          "threshold": [
-            0.7,
-            0.75
-          ],
-          "source_template": "dataset/candidate/autogen/quick_panel_row_hero_recruit__autogen_59891485.png",
-          "roi": [
-            0,
-            448,
-            268,
-            166
-          ]
-        }
-      },
-      "preferred": "MAA",
+      "preferred": "ADB",
       "fallback": "ADB",
-      "recognition_backend": "MAA",
+      "recognition_backend": "LEGACY",
       "migration_priority": "P3",
       "evidence": {
         "generated_at": "2026-09-28T10:34:16.074456+00:00",
@@ -631,7 +662,41 @@
         "pipeline_node_sha1": "d2d6c02978",
         "tool_candidate_path": "dataset/raw/autogen/pipeline_nodes/quick_panel_row_hero_recruit__tool_ocr__4ffaa95561.json",
         "tool_candidate_sha1": "4ffaa95561",
-        "autogen_overwritten_at": "2026-09-28T10:34:16.074456+00:00"
+        "autogen_overwritten_at": "2026-09-28T10:34:16.074456+00:00",
+        "demoted_at": "2026-10-05T08:59:25Z",
+        "demotion_reason": "The autogen node for QUICK_PANEL_ROW_HERO_RECRUIT (runtime-repaired from a failing node (validation NONE, corpus_sufficient false)) is position-blind for a control that moves: it carries a fixed roi [0, 448, 268, 166], while the quick panel draws this row wherever its own scroll happens to leave it -- the failing episodes' own state_before.reads it at [0.5618, 0.3648], and across the recorded rows the row's y wanders. Measured 2026-10-05: 326 attempts of OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT, 79 failed with SEMANTIC_TARGET_NOT_VERIFIED, duration 0.06-0.13 s and an EMPTY after_screenshot (no tap was sent at all), every one carrying MAA_TEMPLATE:NO_MATCH:score=0.2762:gate=0.7/0.75 -- i.e. the miss is geometric, not a threshold question. The route preferred MAA, and a recognition miss on the MAA path does not fall through (deliberately: a position-blind matcher must not become a blind tap), so the runtime resolver that reads the row off the current frame was never consulted. The A/B the operator's rule demands is recorded in _ab_quick_panel_row_routing.py: with ADB preferred, LiveRuntime._resolve_semantic_target('QUICK_PANEL_ROW_HERO_RECRUIT') answers from the frame's own row.arrow_norm on 247/247 of the frames MAA got right AND on 79/79 of the frames it missed. So the node is not worse than the legacy matcher: nothing is lost and 79 taps are gained. This semantic is therefore NOT migrated. The template image is kept at dataset/candidate/autogen/quick_panel_row_hero_recruit__autogen_59891485.png; to migrate it, locate the row on the current frame (its y is already read) rather than cropping one, then draw it on real frames and A/B it against the V2 reader.",
+        "measured_record": {
+          "attempts": 326,
+          "failures": 79,
+          "successes": 247,
+          "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+          "recognition_error": "MAA_TEMPLATE:NO_MATCH:score=0.2762:gate=0.7/0.75",
+          "after_screenshot": "EMPTY (no tap sent)",
+          "duration_seconds": [
+            0.062,
+            0.13
+          ],
+          "measured_at": "2026-10-05T08:59:25Z",
+          "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT",
+          "node_roi": [
+            0,
+            448,
+            268,
+            166
+          ],
+          "frame_declared_control_norm": [
+            0.5618,
+            0.3648
+          ],
+          "adb_ab": {
+            "success_side_answered": 247,
+            "success_side_total": 247,
+            "failure_side_answered": 79,
+            "failure_side_total": 79,
+            "failure_side_silent": 0,
+            "instrument": "_ab_quick_panel_row_routing.py"
+          }
+        }
       },
       "promoted": false
     },
@@ -2455,6 +2520,153 @@
         "autogen_node_count": 1,
         "autogen_note": "runtime-derived from an unresolved control"
       }
+    },
+    "OPEN_TASK_FROM_QUICK_PANEL_BUILDING": {
+      "preferred": "ADB",
+      "fallback": "ADB",
+      "recognition_backend": "LEGACY",
+      "promoted": false,
+      "migration_priority": "P3",
+      "evidence": {
+        "generated_at": "2026-10-10T04:46:29.569479+00:00",
+        "source": "winter_agent_v2.pipeline_autogen V2_NATIVE fallback (generator unavailable)",
+        "tool_generated_node": null,
+        "active_node_source": "V2_NATIVE_FALLBACK",
+        "generator_tool": "",
+        "frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261010_124510_282986\\autogen\\20261010_044627_QUICK_PANEL_ROW_BUILDING.png",
+        "observed_text": "队列1",
+        "observed_box": [
+          198,
+          347,
+          53,
+          26
+        ],
+        "ocr_score": 0.9978,
+        "expand": 20,
+        "validation": "GENERATED_ONLY",
+        "trigger": "runtime unresolved after 1 attempt(s): SEMANTIC_TARGET_NOT_VERIFIED",
+        "pipeline_node_path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\autogen\\pipeline_nodes\\quick_panel_row_building__c5799a7b99.json",
+        "pipeline_node_sha1": "c5799a7b99",
+        "autogen_owned_recognition": {
+          "QUICK_PANEL_ROW_BUILDING": {
+            "kind": "TEMPLATE",
+            "template": "QUICK_PANEL_ROW_BUILDING",
+            "threshold": [
+              0.7,
+              0.75
+            ],
+            "source_template": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\candidate\\autogen\\quick_panel_row_building__autogen_055cdeb6.png",
+            "roi": [
+              130,
+              279,
+              189,
+              162
+            ]
+          }
+        },
+        "autogen_node_count": 1,
+        "autogen_note": "runtime-derived from an unresolved control",
+        "demoted_at": "2026-10-05T08:59:25Z",
+        "demotion_reason": "The autogen node for QUICK_PANEL_ROW_BUILDING (autogenerated at runtime from an unresolved control (validation GENERATED_ONLY, generator unavailable)) is position-blind for a control that moves: it carries a fixed roi [130, 279, 189, 162], while the quick panel draws this row wherever its own scroll happens to leave it -- the failing episodes' own state_before.reads it at [0.5618, 0.343], and across the recorded rows the row's y wanders. Measured 2026-10-05: 357 attempts of OPEN_TASK_FROM_QUICK_PANEL_BUILDING, 103 failed with SEMANTIC_TARGET_NOT_VERIFIED, duration 0.06-0.13 s and an EMPTY after_screenshot (no tap was sent at all), every one carrying MAA_TEMPLATE:NO_MATCH:score=0.4621:gate=0.7/0.75 -- i.e. the miss is geometric, not a threshold question. The route preferred MAA, and a recognition miss on the MAA path does not fall through (deliberately: a position-blind matcher must not become a blind tap), so the runtime resolver that reads the row off the current frame was never consulted. The A/B the operator's rule demands is recorded in _ab_quick_panel_row_routing.py: with ADB preferred, LiveRuntime._resolve_semantic_target('QUICK_PANEL_ROW_BUILDING') answers from the frame's own row.arrow_norm on 254/254 of the frames MAA got right AND on 86/103 of the frames it missed (17 unanswered, which were already failures). So the node is not worse than the legacy matcher: nothing is lost and 86 taps are gained. This semantic is therefore NOT migrated. The template image is kept at dataset/candidate/autogen/quick_panel_row_building__autogen_055cdeb6.png; to migrate it, locate the row on the current frame (its y is already read) rather than cropping one, then draw it on real frames and A/B it against the V2 reader.",
+        "measured_record": {
+          "attempts": 357,
+          "failures": 103,
+          "successes": 254,
+          "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+          "recognition_error": "MAA_TEMPLATE:NO_MATCH:score=0.4621:gate=0.7/0.75",
+          "after_screenshot": "EMPTY (no tap sent)",
+          "duration_seconds": [
+            0.062,
+            0.13
+          ],
+          "measured_at": "2026-10-05T08:59:25Z",
+          "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_BUILDING",
+          "node_roi": [
+            130,
+            279,
+            189,
+            162
+          ],
+          "frame_declared_control_norm": [
+            0.5618,
+            0.343
+          ],
+          "adb_ab": {
+            "success_side_answered": 254,
+            "success_side_total": 254,
+            "failure_side_answered": 86,
+            "failure_side_total": 103,
+            "failure_side_silent": 17,
+            "instrument": "_ab_quick_panel_row_routing.py"
+          }
+        },
+        "re_retired_at": "2026-10-16T05:27:56Z",
+        "re_retirement_reason": "The 2026-10-10 runtime regeneration re-wired this semantic although the demotion above was measured; re-applied by _re_retire_the_resurrected_nodes.py. pipeline_autogen.wire() now refuses to re-wire a semantic whose demotion record names it (DEMOTED_SEMANTIC_KEEPS_ITS_RETIREMENT).  The regenerated node's provenance (generated_at / frame / pipeline_node_path) is kept in this evidence."
+      }
+    },
+    "OPEN_COMPLETED_TRAINING_CAMP_LANCER": {
+      "recognition": {
+        "QUICK_PANEL_ROW_LANCER_CAMP_ENTRY": {
+          "kind": "TEMPLATE",
+          "template": "QUICK_PANEL_ROW_LANCER_CAMP_ENTRY",
+          "threshold": [
+            0.7,
+            0.75
+          ],
+          "source_template": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\candidate\\autogen\\quick_panel_row_lancer_camp_entry__autogen_a034077d.png",
+          "roi": [
+            132,
+            537,
+            185,
+            164
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P3",
+      "evidence": {
+        "generated_at": "2026-10-03T18:49:57.018957+00:00",
+        "source": "winter_agent_v2.pipeline_autogen V2_NATIVE fallback (generator unavailable)",
+        "tool_generated_node": null,
+        "active_node_source": "V2_NATIVE_FALLBACK",
+        "generator_tool": "",
+        "frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261004_024820_495219\\autogen\\20261003_184955_QUICK_PANEL_ROW_LANCER_CAMP_ENTRY.png",
+        "observed_text": "矛兵",
+        "observed_box": [
+          200,
+          605,
+          49,
+          28
+        ],
+        "ocr_score": 0.9848,
+        "expand": 20,
+        "validation": "GENERATED_ONLY",
+        "trigger": "runtime unresolved after 1 attempt(s): SEMANTIC_TARGET_NOT_VERIFIED",
+        "pipeline_node_path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\autogen\\pipeline_nodes\\quick_panel_row_lancer_camp_entry__266d7e8d63.json",
+        "pipeline_node_sha1": "266d7e8d63",
+        "autogen_owned_recognition": {
+          "QUICK_PANEL_ROW_LANCER_CAMP_ENTRY": {
+            "kind": "TEMPLATE",
+            "template": "QUICK_PANEL_ROW_LANCER_CAMP_ENTRY",
+            "threshold": [
+              0.7,
+              0.75
+            ],
+            "source_template": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\candidate\\autogen\\quick_panel_row_lancer_camp_entry__autogen_a034077d.png",
+            "roi": [
+              132,
+              537,
+              185,
+              164
+            ]
+          }
+        },
+        "autogen_node_count": 1,
+        "autogen_note": "runtime-derived from an unresolved control"
+      }
     }
   },
   "not_migrated": {
@@ -2487,6 +2699,16 @@
       "semantic": "REGULAR_EVENT_ENTRY",
       "measured_at": "2026-10-03",
       "reason": "The autogen node for REGULAR_EVENT_ENTRY was harvested from a single 2026-09-25 frame (roi x 632..699, y 101..185, \"validation\": \"NONE\") and it is a moving navigation label, so a fixed rect is the wrong shape for it. Measured 2026-10-03 over every episode the ledger holds: 638 steps, ALL of them on the MAA backend -- ADB was never called once -- 612 succeeded and 26 failed, each of the 26 carrying MAA_TEMPLATE:NO_MATCH with scores spread across 0.4175..0.6909 against the 0.7 gate; not one attempt ever crossed it. The recall failure is geometric, not a threshold: on the frame that stopped production (720x1280) the frame's own OCR reads the 常规活动 label at (0.925, 0.14883) = px (666, 191) with confidence 0.9983, and the roi covers y 101..185, so the node was looking 6 px above the control it was supposed to match. This semantic is therefore NOT migrated: ADB is preferred and the recognition is the V2 semantic vision, which consumes the frame's own events.calendar_entry.tap_norm (guarded to visible + CURRENT_FRAME_OCR on HOME/MAP) rather than a stored offset. The template image is kept so a re-measurement starts from the picture."
+    },
+    "OPEN_TASK_FROM_QUICK_PANEL_BUILDING_RECOGNITION": {
+      "semantic": "QUICK_PANEL_ROW_BUILDING",
+      "reason": "The autogen node for QUICK_PANEL_ROW_BUILDING (autogenerated at runtime from an unresolved control (validation GENERATED_ONLY, generator unavailable)) is position-blind for a control that moves: it carries a fixed roi [130, 279, 189, 162], while the quick panel draws this row wherever its own scroll happens to leave it -- the failing episodes' own state_before.reads it at [0.5618, 0.343], and across the recorded rows the row's y wanders. Measured 2026-10-05: 357 attempts of OPEN_TASK_FROM_QUICK_PANEL_BUILDING, 103 failed with SEMANTIC_TARGET_NOT_VERIFIED, duration 0.06-0.13 s and an EMPTY after_screenshot (no tap was sent at all), every one carrying MAA_TEMPLATE:NO_MATCH:score=0.4621:gate=0.7/0.75 -- i.e. the miss is geometric, not a threshold question. The route preferred MAA, and a recognition miss on the MAA path does not fall through (deliberately: a position-blind matcher must not become a blind tap), so the runtime resolver that reads the row off the current frame was never consulted. The A/B the operator's rule demands is recorded in _ab_quick_panel_row_routing.py: with ADB preferred, LiveRuntime._resolve_semantic_target('QUICK_PANEL_ROW_BUILDING') answers from the frame's own row.arrow_norm on 254/254 of the frames MAA got right AND on 86/103 of the frames it missed (17 unanswered, which were already failures). So the node is not worse than the legacy matcher: nothing is lost and 86 taps are gained. This semantic is therefore NOT migrated. The template image is kept at dataset/candidate/autogen/quick_panel_row_building__autogen_055cdeb6.png; to migrate it, locate the row on the current frame (its y is already read) rather than cropping one, then draw it on real frames and A/B it against the V2 reader.",
+      "measured_at": "2026-10-05T08:59:25Z"
+    },
+    "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT_RECOGNITION": {
+      "semantic": "QUICK_PANEL_ROW_HERO_RECRUIT",
+      "reason": "The autogen node for QUICK_PANEL_ROW_HERO_RECRUIT (runtime-repaired from a failing node (validation NONE, corpus_sufficient false)) is position-blind for a control that moves: it carries a fixed roi [0, 448, 268, 166], while the quick panel draws this row wherever its own scroll happens to leave it -- the failing episodes' own state_before.reads it at [0.5618, 0.3648], and across the recorded rows the row's y wanders. Measured 2026-10-05: 326 attempts of OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT, 79 failed with SEMANTIC_TARGET_NOT_VERIFIED, duration 0.06-0.13 s and an EMPTY after_screenshot (no tap was sent at all), every one carrying MAA_TEMPLATE:NO_MATCH:score=0.2762:gate=0.7/0.75 -- i.e. the miss is geometric, not a threshold question. The route preferred MAA, and a recognition miss on the MAA path does not fall through (deliberately: a position-blind matcher must not become a blind tap), so the runtime resolver that reads the row off the current frame was never consulted. The A/B the operator's rule demands is recorded in _ab_quick_panel_row_routing.py: with ADB preferred, LiveRuntime._resolve_semantic_target('QUICK_PANEL_ROW_HERO_RECRUIT') answers from the frame's own row.arrow_norm on 247/247 of the frames MAA got right AND on 79/79 of the frames it missed. So the node is not worse than the legacy matcher: nothing is lost and 79 taps are gained. This semantic is therefore NOT migrated. The template image is kept at dataset/candidate/autogen/quick_panel_row_hero_recruit__autogen_59891485.png; to migrate it, locate the row on the current frame (its y is already read) rather than cropping one, then draw it on real frames and A/B it against the V2 reader.",
+      "measured_at": "2026-10-05T08:59:25Z"
     }
   }
 }
