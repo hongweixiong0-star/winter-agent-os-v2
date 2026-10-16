@@ -127,7 +127,16 @@ class AnActivityRowSaysWhatMustBeReadTests(unittest.TestCase):
         )
         scheduled = [goal for goal in goals if goal.goal_id.startswith("SCHEDULED_")]
         self.assertTrue(scheduled)
-        silent = sorted(goal.goal_id for goal in scheduled
+        # Scoped to the rows that ARE waiting, which is what this test's own name says: a row
+        # already read (``LIVE_DETAIL_ALREADY_OBSERVED``) owes no reading and legitimately
+        # carries none.  The broad filter coincided when this was written because that day's
+        # live store held only awaiting rows; measured 2026-10-16 the store also carries six
+        # already-observed rows (发现事件 hunks, 专属装备铸炼, 决战王城), and flagging them
+        # would be asserting that a settled question stay open.
+        awaiting = [goal for goal in scheduled
+                    if (goal.evidence or {}).get("availability_state") == "AWAITING_LIVE_CLIENT_READING"]
+        self.assertTrue(awaiting, "no awaiting row in the live store: this test would be vacuous")
+        silent = sorted(goal.goal_id for goal in awaiting
                         if not (goal.evidence or {}).get("required_observation"))
         self.assertEqual(silent, [],
                          "a goal that is waiting for a live reading must say which reading")
@@ -140,10 +149,15 @@ class AnActivityRowSaysWhatMustBeReadTests(unittest.TestCase):
             role_id=ROLE,
             calendar_snapshot=snapshot,
         )
+        # "States what to read" is part of the premise in the message below and belongs in the
+        # filter (2026-10-16): a ``LIVE_DETAIL_ALREADY_OBSERVED`` row is UNKNOWN about its
+        # window and carries ``required_observation: None`` -- the ticket reads that field, so
+        # zero is its honest price, and the row this test exists for is the one that DECLARES.
         unknown = [goal for goal in goals
                    if goal.goal_id.startswith("SCHEDULED_")
-                   and str(getattr(goal.status, "value", goal.status)) == "UNKNOWN"]
-        self.assertTrue(unknown, "without an UNKNOWN row this test measures nothing")
+                   and str(getattr(goal.status, "value", goal.status)) == "UNKNOWN"
+                   and (goal.evidence or {}).get("required_observation")]
+        self.assertTrue(unknown, "without an UNKNOWN row that states what to read this test measures nothing")
         for goal in unknown:
             self.assertGreater(
                 goal_utility.observation_ticket(goal), 0.0,

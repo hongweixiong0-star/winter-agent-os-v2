@@ -43,6 +43,11 @@ def discovery(tmp_path, monkeypatch):
     runtime.bootstrap_state_path = tmp_path / "bootstrap.json"
     runtime._bootstrap_cooldowns = {}
     runtime._yielded_goals = set()
+    # ``_selectable`` records routed-less goals here and narrates each refused reason once;
+    # the production constructor and ``run()`` both create these, and this harness enumerates
+    # what the methods under test touch (2026-10-16).
+    runtime._unrouted_goals = set()
+    runtime._printed_deferrals = set()
     runtime.capability_gate = CapabilityGate.empty()
     runtime.execution_mode = "PRODUCTION"
     runtime.device_lease = None
@@ -91,7 +96,16 @@ def test_unrouted_arena_discovery_reaches_real_rank_and_global_scheduler(discove
     assert arena.evidence["bootstrap_entry_label"] == "竞技场"
     assert arena.evidence["bootstrap_frame_id"] == FrameIdentity.of(discovery.frame).frame_id
 
-    board = GoalLibrary().rank(runtime._selectable(goals, []), discovery.world, fairness={})
+    # "Priced but not selectable", the two halves 164de5e5 (2026-10-02) settled: the ticket
+    # keeps an unrouted goal on the board, and the refusal lives at the selection boundary,
+    # recorded by name.  This test used to feed ``_selectable``'s output into ``rank``, which
+    # was neutral before that commit and is empty after it -- the unrouted arena row is
+    # refused on purpose (``_sync_brain_goal`` must never be handed a null route), so the
+    # board below comes from the projection directly, which is what "keeps it on the board"
+    # means, and the refusal is asserted first.
+    assert runtime._selectable(goals, []) == []
+    assert ARENA_GOAL in runtime._unrouted_goals
+    board = GoalLibrary().rank(goals, discovery.world, fairness={})
     assert board[0][0].goal_id == ARENA_GOAL
     runtime._sync_brain_goal(board[0][0], runtime._gate())
     assert runtime.brain.current_goal is None  # No invented production route.
@@ -161,10 +175,24 @@ def test_bootstrap_only_lifts_local_gap_not_development_or_reload_gate(
     gate.reload_pending = reload_pending
     gate.blocks = Mock(return_value=Deferral(ARENA_GOAL, state, "confirmed blocker"))
     discovery.runtime.capability_gate = gate
+    runtime = discovery.runtime
     deferrals = []
-    selected = discovery.runtime._selectable([arena], deferrals)
-    assert bool(selected) is expected
-    assert bool(deferrals) is not expected
+    selected = runtime._selectable([arena], deferrals)
+    # The lift itself is what this test is about, and since 164de5e5 (2026-10-02) it is
+    # observed at the next boundary rather than at ``selected``: a lifted goal is no longer
+    # deferred, and it then dies at the unrouted refusal -- ``USE_FREE_ARENA_ATTEMPTS``
+    # carries no route by design, so it is refused whatever the gate said.  Before that
+    # commit the goal survived all the way to ``selected`` and ``bool(selected) is expected``
+    # stated the same fact; now the pair below does, without weakening it: COOLDOWN lifts
+    # (not deferred, recorded as unrouted), the other two do not (deferred, never reaching
+    # the unrouted record).
+    assert selected == []
+    if expected:
+        assert deferrals == []
+        assert ARENA_GOAL in runtime._unrouted_goals
+    else:
+        assert [item.goal_id for item in deferrals] == [ARENA_GOAL]
+        assert ARENA_GOAL not in runtime._unrouted_goals
 
 
 def test_attempt_budget_is_persisted_only_to_test_store_and_blocks_reentry(discovery):
@@ -256,7 +284,13 @@ def test_registered_event_name_or_alias_matches_only_current_safe_entry(discover
     discovery.table.return_value = [{**discovery.entry, "id": "CURRENT_MOBILIZATION",
                                     "semantic": "ALLIANCE_MOBILIZATION_ENTRY", "text": "联盟总动员"}]
     goals = projected(discovery, [event])
-    assert route_for(goal_id) is None
+    # ``EVENT`` since 164de5e5 (2026-10-02, "20 activity rows were unroutable"): every
+    # ``SCHEDULED_{event_id}`` row carries a *declared* route so it can be priced and observed,
+    # and this test's own commit (5c818ed4, same day) predates that.  What the assertion was
+    # reaching for -- "an observation ticket is not authorization" -- is carried by the rows
+    # below: DISCOVERED rather than READY, observation-only, participation not authorized, and
+    # one bounded control.
+    assert route_for(goal_id) == "EVENT"
     assert goals[0].goal_id == goal_id
     assert goals[0].status is GoalStatus.DISCOVERED
     assert goals[0].available_skills == ("TRY_ORDINARY_CONTROL",)
@@ -283,4 +317,9 @@ def test_unidentified_event_or_unmatched_name_cannot_authorize_entry(discovery, 
                       evidence=evidence)
     discovery.table.return_value = [{**discovery.entry, "text": "联盟总动员"}]
     assert projected(discovery, [event])[0] is event
-    assert discovery.runtime._bootstrap_diagnostics[0]["reason"] == "MISSING_NAVIGATION"
+    # ``MISSING_SKILL``, not ``MISSING_NAVIGATION``: the goal gained its declared ``EVENT``
+    # route in 164de5e5 (2026-10-02), so the reason the projection refuses to lift it moved
+    # from "no route" to "no skill" (``available_skills=()`` above).  The property is the
+    # one this test exists for and it is unchanged: an unidentified event or an unmatched
+    # name leaves the goal exactly as it found it.
+    assert discovery.runtime._bootstrap_diagnostics[0]["reason"] == "MISSING_SKILL"

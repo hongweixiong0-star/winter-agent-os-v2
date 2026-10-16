@@ -895,6 +895,13 @@ class LiveRuntime:
             dict(role_session_policy) if isinstance(role_session_policy, Mapping) else None
         )
         self._fairness_store_path: Path | None = None
+        # ``_selectable`` refuses a routed-less goal by recording it here, and ``run()`` resets
+        # the set per run.  Declared at construction as well so the method is total: the
+        # integration tests drive ``_selectable`` directly (the established pattern -- see
+        # ``test_scheduled_goals_are_routable``), and without this line every one of them died
+        # on AttributeError instead of measuring the selection they exist for (six tests in
+        # ``test_runtime_bootstrap_integration``, measured 2026-10-16).
+        self._unrouted_goals: set[str] = set()
         self.role_catalog = tuple(dict(row) for row in role_catalog if isinstance(row, Mapping))
         self.role_switch_controller = role_switch_controller
         self.role_switch_cost = max(0.0, float(role_switch_cost or 0.0))
