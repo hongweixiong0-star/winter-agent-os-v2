@@ -26,6 +26,14 @@ Machine-detected issues (recomputed every run):
 
 ## 手写：未决问题
 
+### 2026-10-16 · P1（新增）—— C 盘满与待批堆
+
+| # | 问题 | 状态 | 备注 |
+|---|---|---|---|
+| P1-3 | **C 盘 200G 满**（工具链一度 ENOSPC 死锁：bash 起不来、编辑报 checkpoint 失败） | **已缓解，未根治** | 本轮以"截断通道"自救释放 ~5.9GB（陈旧 sandbox/trace 日志、pip/npm 缓存——**用户文档/代码/配置/会话数据未动**）；根因项**待用户决策**：Desktop 15GB、hiberfil.sys 13.4GB（可 `powercfg /h off`）、AppData 52.8GB（MathWorks/Programs 等）、.codex sessions 2.8GB |
+| P1-4 | **待批堆**：1094 untracked / 119 modified / 57 deleted | **清单已产出，待批** | 见 `UNTRACKED_AND_PENDING_INVENTORY_20261016.md`（分类+逐组建议）。**首要项**：`config/v2.json` 的 10-08 模型切换（Qwen3.6-35B-A3B @ llama.cpp:18080）已执行 8 天、未入库——旧 config 指向已删除的 UI-Venus。本轮已按"引用完整性/全绿活规格"先例纳入：4 个被引用工具、6 个草稿测试、tier 规格 |
+| ~~P1-5~~ | 测试套件"隔离绿、套件红"（模块级 `_METER_KINDS` 跨测试残留） | **✅ 已修 2026-10-16** | conftest 新增 autouse `_reset_module_state`（`8bdd49b2`）；毒探针成对验证后移除 |
+
 ### 2026-10-11 · P0（新增）—— 生产树脏 ⇒ `PinError` 窗口
 
 | # | 问题 | 状态 | 备注 |
