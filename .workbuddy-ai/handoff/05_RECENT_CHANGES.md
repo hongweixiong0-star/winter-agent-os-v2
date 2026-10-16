@@ -6,40 +6,40 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
-- `d54d9e9f 2026-10-14T00:37:37+08:00 docs(memory): the machine is parked in MANUAL, and only the operator can release it`
-- `08b74eb6 2026-10-14T00:34:09+08:00 docs(memory): wiring closes at 3, and all three are attributed`
-- `44a60663 2026-10-14T00:33:25+08:00 fix(wiring): the swept-in tab probe must hide its adb console, like every other call site`
-- `0993ac1d 2026-10-14T00:29:42+08:00 docs(memory): wiring is down to 5, and the merge itself armed the preload mechanism`
-- `4523c192 2026-10-14T00:26:42+08:00 chore(wiring): regenerate the navigation matrix and bind SimpleNamespace in the A/B tool`
-- `20514489 2026-10-14T00:23:37+08:00 docs(memory): the prune delete-gate fix, with its A/B and regression numbers`
-- `3b196b6c 2026-10-14T00:23:19+08:00 fix(retention): prune() must import the host's delete gate, not call a name it never bound`
-- `27b7fde7 2026-10-14T00:12:36+08:00 docs(memory): the production pin is merged into main, and a latent NameError sits on the retention path`
-- `821472c5 2026-10-13T23:57:54+08:00 merge: bring the production pin (codex/production-pin-recovery) back into main`
-- `e9b7e984 2026-10-13T23:49:49+08:00 correction(events): that root cause was already known and already fixed on the pin branch`
-- `51d536c9 2026-10-13T23:17:34+08:00 diag(events): the calendar detail chain is sound; identity-by-partial-OCR is what breaks it`
-- `cb825d74 2026-10-13T22:37:38+08:00 chore(events): the T-30 bear re-read was attempted and could not read the tab, so it stays owed`
+- `8a773882 2026-10-16T21:56:32+08:00 docs(fact-source): r274-r277 distilled -- six more measured lessons, and the pending list moves again`
+- `769efeee 2026-10-16T21:55:53+08:00 docs(handoff): the C:-full rescue and the pending pile enter the hand-written issues`
+- `917aa16a 2026-10-16T21:55:10+08:00 docs(coverage): the capability map regenerated against today's registry and episode stream`
+- `b3253856 2026-10-16T21:53:52+08:00 docs(memory): r277 -- final6's four reds closed (two implemented, two fixed at the mechanism)`
+- `8bdd49b2 2026-10-16T21:53:32+08:00 p2(regression triage): the meter table gets a per-test reset, and the HUD guard guards coverage now`
+- `36a8adf8 2026-10-16T21:34:19+08:00 docs(handoff): the pending pile measured -- 1094 untracked / 119 modified / 57 deleted, classified with per-group recommendations`
+- `d77fb067 2026-10-16T21:31:52+08:00 chore(tools): four referenced-but-untracked probes into the set -- the comments that cite them can be reached from a fresh checkout`
+- `f0c8c406 2026-10-16T21:18:18+08:00 docs(memory): r276 -- the tier search implemented, and six drafts promoted into the set`
+- `bd73a5a4 2026-10-16T21:17:43+08:00 chore(tests): six data-root drafts promoted to tracked specs -- all green, all guards of behaviour that exists`
+- `17fbb9f9 2026-10-16T21:15:56+08:00 feat(vision): the template lifecycle tiers are searched in order -- 规格先行, now implemented`
+- `cb699cd6 2026-10-16T21:09:53+08:00 docs(memory): r274-r275 -- the disk-full rescue, and eleven more reds across two batches`
+- `46a3408f 2026-10-16T21:08:37+08:00 p2(regression triage): two ticket tests follow 958fc9b3 -- the same commit, twenty-seven minutes late`
 
-Uncommitted changes: 1389
-- `M .gitignore`
-- ` M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
+Uncommitted changes: 1270
+- `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
-- ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M .workbuddy-ai/memory/2026-10-03.md`
-- ` M .workbuddy-ai/memory/2026-10-05.md`
-- ` M .workbuddy-ai/memory/MEMORY.md`
-- ` M .workbuddy/memory/2026-10-03.md`
-- ` M .workbuddy/memory/2026-10-05.md`
+- ` M .workbuddy/memory/2026-10-15.md`
 - ` M START_HERE.md`
 - ` M _capture_panel_window.py`
 - ` D backups/dataset_cleanup_20261006/template_manifest.json.bak`
+- ` D backups/dataset_cleanup_20261006/tmp_confirm.png`
+- ` D backups/dataset_cleanup_20261006/tmp_dispatch.png`
+- ` D backups/dataset_cleanup_20261006/tmp_research_row.png`
+- ` D backups/dataset_cleanup_20261006/tmp_research_row2.png`
+- ` D backups/dataset_cleanup_20261006/tmp_role.png`
+- ` D backups/dataset_cleanup_20261006/tmp_speedup.png`
+- ` M config/v2.json`
+- ` M dataset/README.md`
+- ` M dataset/candidate/.gitkeep`
+- ` M dataset/candidate/intel_live_20260909/labels.json`
+- ` M dataset/candidate/mail_dynamic_20260909/labels.json`
+- ` M dataset/normalized/.gitkeep`
+- ` M dataset/production/.gitkeep`
 <!-- /AUTO:recent_commits -->
 
 ---

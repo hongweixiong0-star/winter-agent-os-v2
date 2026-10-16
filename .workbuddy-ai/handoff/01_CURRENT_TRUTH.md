@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-10-13T16:40:13+00:00`
+- generated_at: `2026-10-16T13:56:51+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `d54d9e9f` on `main`
+- commit: `8a773882` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,29 +10,29 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 1249
-- HEAD: `d54d9e9f` — docs(memory): the machine is parked in MANUAL, and only the operator can release it (2026-10-14T00:37:37+08:00)
-- working tree: 1389 dirty file(s)
-  - `M .gitignore`
-  - ` M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
+- commits: 1493
+- HEAD: `8a773882` — docs(fact-source): r274-r277 distilled -- six more measured lessons, and the pending list moves again (2026-10-16T21:56:32+08:00)
+- working tree: 1270 dirty file(s)
+  - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
   - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
   - ` M .workbuddy-ai/commander/README.md`
-  - ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-  - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-  - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-  - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-  - ` M .workbuddy-ai/memory/2026-10-03.md`
-  - ` M .workbuddy-ai/memory/2026-10-05.md`
-  - ` M .workbuddy-ai/memory/MEMORY.md`
-  - ` M .workbuddy/memory/2026-10-03.md`
-  - ` M .workbuddy/memory/2026-10-05.md`
+  - ` M .workbuddy/memory/2026-10-15.md`
   - ` M START_HERE.md`
   - ` M _capture_panel_window.py`
   - ` D backups/dataset_cleanup_20261006/template_manifest.json.bak`
+  - ` D backups/dataset_cleanup_20261006/tmp_confirm.png`
+  - ` D backups/dataset_cleanup_20261006/tmp_dispatch.png`
+  - ` D backups/dataset_cleanup_20261006/tmp_research_row.png`
+  - ` D backups/dataset_cleanup_20261006/tmp_research_row2.png`
+  - ` D backups/dataset_cleanup_20261006/tmp_role.png`
+  - ` D backups/dataset_cleanup_20261006/tmp_speedup.png`
+  - ` M config/v2.json`
+  - ` M dataset/README.md`
+  - ` M dataset/candidate/.gitkeep`
+  - ` M dataset/candidate/intel_live_20260909/labels.json`
+  - ` M dataset/candidate/mail_dynamic_20260909/labels.json`
+  - ` M dataset/normalized/.gitkeep`
+  - ` M dataset/production/.gitkeep`
 
 ### A2. Public mirror
 
@@ -41,28 +41,28 @@ reports, not a side note. `remote_head` is the local remote-tracking ref: it is 
 fresh as the last fetch, and `tools/git_sync.py status` is what refreshes it.
 
 ```
-SYNC STATE at 2026-10-13T16:40:13+00:00
+SYNC STATE at 2026-10-16T13:56:51+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : d54d9e9f3721431ecc442e86ef5e9852287f214e
-remote_head       : 297af0d1c1d4ebfac2635f279c5f4cc0233ed936   (local remote-tracking ref; run tools/git_sync.py status to refresh)
-unpushed_commits  : 138   (behind: 0)
-git_dirty         : True (1389 path(s))
-last_push_at      : 2026-10-05T13:19:05.233600+00:00
+local_head        : 8a773882f8adf7332f92e21f6d22d14f668b4645
+remote_head       : 9ffaf237e539692d1d943726e499bcbfe50b2752   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+unpushed_commits  : 123   (behind: 7)
+git_dirty         : True (1270 path(s))
+last_push_at      : 2026-10-15T10:29:32.618849+00:00
 last_push_status  : PUSHED
-verdict           : LOCAL IS AHEAD by 138 commit(s) -- run `python tools/git_sync.py push`
+verdict           : LOCAL IS AHEAD by 123 commit(s) -- run `python tools/git_sync.py push`
 ```
 
 ## B. Runtime
 
 - agent_state: `IDLE`
 - runtime_thread_alive: False / scheduler_loop_alive: False
-- unexpected_worker_exits: 59
-- watchdog_restart_count: 62
+- unexpected_worker_exits: 64
+- watchdog_restart_count: 67
 - last_fatal_error: None
-- stop_reason: manually_owned_by_workbuddy
+- stop_reason: ROLE_SWITCH_FAILED:1061663148:TARGET_ROLE_HOME_NOT_OBSERVED
 - page: HOME  march: None/None
-- updated_at: 2026-10-13T13:47:43.054938+00:00
+- updated_at: 2026-10-15T12:38:00.944437+00:00
 
 ## C. Episode stream
 
@@ -74,10 +74,10 @@ verdict           : LOCAL IS AHEAD by 138 commit(s) -- run `python tools/git_syn
 
 ## D. Registry and lifecycle
 
-- registry total: 153  by_state: {'CANDIDATE': 102, 'VERIFIED': 47, 'BLOCKED': 4}
-- live dispatchable (verifier-backed): 141
+- registry total: 156  by_state: {'CANDIDATE': 105, 'VERIFIED': 47, 'BLOCKED': 4}
+- live dispatchable (verifier-backed): 144
 - BLOCKED skills: ['ALLIANCE_HELP', 'COLLECT_FINISHED_TRAINING_LANCER', 'COLLECT_FINISHED_TRAINING_MARKSMAN', 'COLLECT_FINISHED_TRAINING_SHIELD']
-- live_verified: **8**  stable: 58  degraded: 16  only_failed: 7  never_executed: 67
+- live_verified: **8**  stable: 58  degraded: 16  only_failed: 7  never_executed: 70
 
 ### Never executed
 
@@ -89,6 +89,7 @@ verdict           : LOCAL IS AHEAD by 138 commit(s) -- run `python tools/git_syn
 - `BEAST_HUNT` (VERIFIED)
 - `BUILDING_UPGRADE` (VERIFIED)
 - `CANCEL_DUPLICATE_TARGET` (VERIFIED)
+- `CHECK_ALLIANCE_EVENT` (CANDIDATE)
 - `CHECK_MARCH` (VERIFIED)
 - `CLAIM_LOGIN_GIFT` (CANDIDATE)
 - `CLAIM_OFFLINE_REWARDS` (CANDIDATE)
@@ -115,6 +116,7 @@ verdict           : LOCAL IS AHEAD by 138 commit(s) -- run `python tools/git_syn
 - `NAVIGATE_TO` (CANDIDATE)
 - `OPEN_ALLIANCE_GIFTS` (CANDIDATE)
 - `OPEN_ALLIANCE_TECH_FROM_HOME` (CANDIDATE)
+- `OPEN_EVENT` (CANDIDATE)
 - `OPEN_GATHER_HERO_PICKER` (CANDIDATE)
 - `OPEN_POWER_DETAILS` (CANDIDATE)
 - `OPEN_POWER_OVERVIEW` (CANDIDATE)
@@ -128,6 +130,7 @@ verdict           : LOCAL IS AHEAD by 138 commit(s) -- run `python tools/git_syn
 - `READ_COUNTER` (CANDIDATE)
 - `READ_EVENT_CALENDAR` (CANDIDATE)
 - `READ_INTEL_LIST` (CANDIDATE)
+- `READ_REGULAR_EVENT_CARD` (CANDIDATE)
 - `READ_TIMER` (CANDIDATE)
 - `RECALL_MARCH` (CANDIDATE)
 - `RECOVER_HOME` (CANDIDATE)
@@ -257,7 +260,7 @@ Failure | Count | Top skills
 ## F. Goal capability coverage
 
 - model: Goal -> Canonical Capability -> Registered Skill -> Production Evidence
-- summary: {"total": 20, "fully_live_verified": 2, "partial": 9, "never_tried": 4, "blocked": 4, "degraded": 1, "missing": 0, "fully_live_verified_percent": 10.0, "never_tried_percent": 20.0, "automation_coverage_mean": 0.7083, "live_coverage_mean": 0.4012}
+- summary: {"total": 20, "fully_live_verified": 2, "partial": 9, "never_tried": 5, "blocked": 3, "degraded": 1, "missing": 0, "fully_live_verified_percent": 10.0, "never_tried_percent": 25.0, "automation_coverage_mean": 0.7708, "live_coverage_mean": 0.4012}
 
 Goal | Status | Runtime | design | impl | live | stable | blocked by
 ---|---|---|---:|---:|---:|---:|---
@@ -272,9 +275,9 @@ DAILY_ACTIVITY_TARGET | PARTIAL | RUNTIME_DISCOVERED | 100% | 75% | 75% | 50% | 
 CLAIM_FREE_REWARDS | DEGRADED | RUNTIME_DISCOVERED | 100% | 100% | 100% | 50% | -
 CLAIM_EXPLORATION_IDLE | FULLY_LIVE_VERIFIED | RUNTIME_DISCOVERED | 100% | 100% | 100% | 100% | -
 ALLIANCE_ROUTINE | PARTIAL | NOT_A_RUNTIME_GOAL | 100% | 75% | 25% | 25% | ALLIANCE_HELP
-EVENT_MINIMUM_GUARANTEE | PARTIAL | RUNTIME_DISCOVERED | 100% | 17% | 17% | 17% | CLAIM_EVENT_TIER, OPEN_EVENT_PAGE, READ_EVENT_PROGRESS, READ_EVENT_RULES, READ_EVENT_TIMER
-ALLIANCE_TIMED_EVENTS | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | CHECK_ALLIANCE_EVENT, CLAIM_EVENT_TIER, READ_ALLIANCE_EVENT_TIMER
-PARTICIPATE_BEAR | PARTIAL | RUNTIME_DISCOVERED | 100% | 50% | 25% | 25% | CHECK_BEAR_PHASE, SELECT_TROOP_PRESET
+EVENT_MINIMUM_GUARANTEE | PARTIAL | RUNTIME_DISCOVERED | 100% | 83% | 17% | 17% | CLAIM_EVENT_TIER
+ALLIANCE_TIMED_EVENTS | NEVER_TRIED | RUNTIME_DISCOVERED | 100% | 33% | 0% | 0% | CLAIM_EVENT_TIER, READ_ALLIANCE_EVENT_TIMER
+PARTICIPATE_BEAR | PARTIAL | RUNTIME_DISCOVERED | 100% | 75% | 25% | 25% | SELECT_TROOP_PRESET
 ALLIANCE_MOBILIZATION_ICEFIELD_BEAST | NEVER_TRIED | RUNTIME_DISCOVERED | 100% | 100% | 0% | 0% | -
 OBSERVE_FISHING_STATE | NEVER_TRIED | RUNTIME_DISCOVERED | 100% | 100% | 0% | 0% | -
 USE_NORMAL_FISHING_BAIT | NEVER_TRIED | RUNTIME_DISCOVERED | 100% | 100% | 0% | 0% | -
@@ -297,8 +300,8 @@ TRAVEL_SUPPLY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | CLAIM_FREE_
 
 ## I. Latest runtime log
 
-- {"path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log", "modified_at": "2026-10-13T13:47:31+00:00", "size_bytes": 4598, "last_stop_reason": "manually_owned_by_workbuddy"}
-- recent crash reports: ['E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261010_113921_385181_auto_subprocess.json', 'E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261010_184425_589697_auto_subprocess.json', 'E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261010_184434_406371_auto_subprocess.json', 'E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261011_020049_242237_auto_subprocess.json', 'E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261011_053851_840529_auto_subprocess.json']
+- {"path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log", "modified_at": "2026-10-15T12:37:45+00:00", "size_bytes": 3607, "last_stop_reason": "ROLE_SWITCH_FAILED:1061663148:TARGET_ROLE_HOME_NOT_OBSERVED"}
+- recent crash reports: ['E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261015_072039_819773_auto_subprocess.json', 'E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261015_080009_621854_auto_subprocess.json', 'E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261015_180840_190109_auto_subprocess.json', 'E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261015_182349_369335_auto_subprocess.json', 'E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261015_185827_507369_auto_subprocess.json']
 
 ## J. Backend axis (MAA vs ADB)
 

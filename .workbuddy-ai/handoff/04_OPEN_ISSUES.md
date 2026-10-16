@@ -19,7 +19,7 @@ Machine-detected issues (recomputed every run):
 - `READ_FISHING_STATE` never succeeded (attempts=1, failure=1)
 - `SAFE_STOP` never succeeded (attempts=6, failure=6)
 - `START_RALLY` never succeeded (attempts=1, failure=1)
-- 1389 uncommitted file(s): ['M .gitignore', ' M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md']
+- 1270 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md', ' M .workbuddy/memory/2026-10-15.md', ' M START_HERE.md']
 <!-- /AUTO:open_issues -->
 
 ---

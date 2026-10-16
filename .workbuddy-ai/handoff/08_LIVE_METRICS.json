@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-10-13T16:40:13+00:00",
+  "generated_at": "2026-10-16T13:56:51+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "d54d9e9f",
+  "commit": "8a773882",
   "last_good_commit": "e4fd245",
-  "dirty_count": 1389,
+  "dirty_count": 1270,
   "episodes": {
     "total": 10436,
     "production": 10436,
@@ -16,19 +16,19 @@
     "mixed_case_rows": 0
   },
   "skills": {
-    "registry_total": 153,
+    "registry_total": 156,
     "by_state": {
-      "CANDIDATE": 102,
+      "CANDIDATE": 105,
       "VERIFIED": 47,
       "BLOCKED": 4
     },
-    "dispatchable": 141,
+    "dispatchable": 144,
     "counts": {
       "live_verified": 8,
       "stable": 58,
       "degraded": 16,
       "only_failed": 7,
-      "never_executed": 67
+      "never_executed": 70
     }
   },
   "top_failures": [
@@ -258,13 +258,13 @@
     "total": 20,
     "fully_live_verified": 2,
     "partial": 9,
-    "never_tried": 4,
-    "blocked": 4,
+    "never_tried": 5,
+    "blocked": 3,
     "degraded": 1,
     "missing": 0,
     "fully_live_verified_percent": 10.0,
-    "never_tried_percent": 20.0,
-    "automation_coverage_mean": 0.7083,
+    "never_tried_percent": 25.0,
+    "automation_coverage_mean": 0.7708,
     "live_coverage_mean": 0.4012
   },
   "goal_status": {
@@ -280,7 +280,7 @@
     "CLAIM_EXPLORATION_IDLE": "FULLY_LIVE_VERIFIED",
     "ALLIANCE_ROUTINE": "PARTIAL",
     "EVENT_MINIMUM_GUARANTEE": "PARTIAL",
-    "ALLIANCE_TIMED_EVENTS": "BLOCKED",
+    "ALLIANCE_TIMED_EVENTS": "NEVER_TRIED",
     "PARTICIPATE_BEAR": "PARTIAL",
     "ALLIANCE_MOBILIZATION_ICEFIELD_BEAST": "NEVER_TRIED",
     "OBSERVE_FISHING_STATE": "NEVER_TRIED",
@@ -304,20 +304,20 @@
   },
   "git_sync": {
     "branch": "main",
-    "local_head": "d54d9e9f3721431ecc442e86ef5e9852287f214e",
-    "remote_head": "297af0d1c1d4ebfac2635f279c5f4cc0233ed936",
-    "unpushed_commits": 138,
-    "behind": 0,
+    "local_head": "8a773882f8adf7332f92e21f6d22d14f668b4645",
+    "remote_head": "9ffaf237e539692d1d943726e499bcbfe50b2752",
+    "unpushed_commits": 123,
+    "behind": 7,
     "in_sync": false,
     "remote_url": "https://github.com/hongweixiong0-star/winter-agent-os-v2.git",
-    "last_push_at": "2026-10-05T13:19:05.233600+00:00",
+    "last_push_at": "2026-10-15T10:29:32.618849+00:00",
     "last_push_status": "PUSHED"
   },
   "runtime": {
     "agent_state": "IDLE",
-    "unexpected_worker_exits": 59,
-    "watchdog_restart_count": 62,
+    "unexpected_worker_exits": 64,
+    "watchdog_restart_count": 67,
     "last_fatal_error": null,
-    "stop_reason": "manually_owned_by_workbuddy"
+    "stop_reason": "ROLE_SWITCH_FAILED:1061663148:TARGET_ROLE_HOME_NOT_OBSERVED"
   }
 }
