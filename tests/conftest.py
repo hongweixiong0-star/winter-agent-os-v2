@@ -127,6 +127,21 @@ _REDIRECTS: tuple[tuple[str, str, str, bool], ...] = (
      "learning/knowledge_bootstrap/STATE.json", True),
     ("winter_agent_v2.pipeline_autogen", "DEFAULT_REPAIR_EVENTS_PATH",
      "learning/autogen_repair_events.jsonl", False),
+    # -- the mode record: which of the two modes owns the machine ------------------------
+    # NOT seeded, and that is load-bearing.  The live record says MANUAL whenever the
+    # operator has taken the machine, and the loop reads it fresh every cycle (spec §1) --
+    # so a suite that inherits the live record makes every run-driving test yield with
+    # ``manually_owned_by_workbuddy`` and empty steps before it decides anything.  Measured
+    # 2026-10-16: test_live_runtime 12 failures, and the same shape across the whole family.
+    # A *missing* record is the spec §11 fail-safe default (Auto), which is what a test
+    # wants: the mode a test runs under is the test's own input.  Tests that exercise the
+    # mode system hand the runtime their own path explicitly (``test_mode_state``'s
+    # ``_runtime_with``; the exploration tool's ``_require_manual_mode`` takes one), so
+    # nothing here weakens them.  Both names are listed because the runtime binds its own
+    # alias at import (``from .mode_state import DEFAULT_PATH as MODE_STATE_PATH``), which
+    # repointing the source module alone does not move.
+    ("winter_agent_v2.mode_state", "DEFAULT_PATH", "learning/MODE_STATE.json", False),
+    ("winter_agent_v2.runtime", "MODE_STATE_PATH", "learning/MODE_STATE.json", False),
     # -- knowledge / dataset candidates a test may "learn" into -------------------------
     ("winter_agent_v2.ui_collection", "CANDIDATE_ROOT",
      "knowledge/perception/candidates", True),

@@ -39,7 +39,20 @@ def _runtime(tmp_path: Path) -> SimpleNamespace:
         _multi_role_enabled=False,
         _fold_control_experience=lambda **kw: None,
         _collect_ui_evidence=lambda **kw: None,
+        _collect_page_evidence=lambda **kw: None,
         _failure_type_from=lambda execution: "NO_EXECUTION",
+        # The episode row is this file's subject; every *other* sink ``_record_episode``
+        # writes to is another layer's concern, so it gets a no-op the way the three
+        # writers above always did.  All four exist because of the trap the comment below
+        # names: they are called UNGUARDED at the tail of ``_record_episode`` (measured
+        # 2026-10-16 -- ``_note_step_for_planner`` landed 2026-10-01, 99a25365, and its
+        # absence raised AttributeError straight through the direct ``_record`` path,
+        # while the ``record_step`` path swallowed it and left the test asserting on a
+        # file that was never written).  A stub missing a writer must not decide silently.
+        _note_step_for_planner=lambda *a, **k: None,
+        _settle_advised_step=lambda *a, **k: None,
+        _note_learned_step=lambda *a, **k: None,
+        _maybe_request_repair=lambda *a, **k: None,
         episode_store=EpisodeStore(tmp_path / "episodes.jsonl"),
         task_completion_store=None,
         capture_dir=tmp_path,
