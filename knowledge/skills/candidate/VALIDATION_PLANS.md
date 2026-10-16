@@ -280,3 +280,24 @@
 - 操作员一句话（游戏内位置）；
 - `BTN_OPEN_ARENA` 语义在**未来帧**自然出现时的模板提取（UNKNOWN 宪法路径）；
 - 或某"玩法合集"类容器的后续发现。
+
+---
+
+# 全池状态总表（r223·33 份最终分布）
+
+| 状态 | 量 | 明细 |
+|---|---|---|
+| **SUPERSEDED**（冗余已标） | **7** | OPEN_RESEARCH · READ_INTEL_LIST（同名重复）+ SELECT_INTEL · EXECUTE_INTEL · OPEN_BUILDING · OPEN_TRAINING · PROMOTE_TROOPS（既有链重述） |
+| **LIVE-EVIDENCE 进行中**（素材齐/挂读已入产） | **6** | `READ_EVENT_{LIST,RULES,PROGRESS,TIMER,REWARD_TIERS}`（素材 5/5 ✓ + **卡面挂读与 verifier 已入 runtime**）+ `OPEN_EVENT`（页导航素材 ✓） |
+| **待入口（已止损，待新线索）** | **7** | OPEN_ARENA · SELECT_ARENA_OPPONENT · START_ARENA · VERIFY_ARENA_RESULT · OPEN_LABYRINTH · READ_LABYRINTH_ATTEMPTS · START_LABYRINTH（+ VERIFY_LABYRINTH_RESULT） |
+| **待窗口（集结类·现场无熊）** | **3** | JOIN_BEAR_RALLY · PREPARE_BEAR_MARCH（——）READ_BEAR_TIMER（素材部分）· JOIN_POLAR_TERROR_RALLY |
+| **待验证（容器可达）** | **10** | READ_ALLIANCE_EVENT_TIMER（素材有）· CLAIM_EVENT_TIER · CLAIM_FREE_REWARD · CLAIM_VIP_FREE · OPEN_VIP · READ_FREE_ATTEMPTS · READ_DAILY_PROGRESS · CHECK_ALLIANCE_EVENT（首验 ✓）· +2 |
+
+**关键读数**：
+- **已进入生产**：EVENT 读族（挂读在 `_read_due_calendar_entry`——第一件"活"的能力）；
+- **最接近入产的第二梯队**：READ_ALLIANCE_EVENT_TIMER / CHECK_ALLIANCE_EVENT（联盟页素材已有）；
+- **止损区**（7）：入口不在可达容器（ARENA/LABYRINTH 两家同因）；
+- **窗口区**（3）：只等游戏开放。
+
+**LABYRINTH 止损同步**：尝试=探险页×2 全读（无）· 常规活动卡组全滑（无"地心探险"）· 外部（wosguru 不可达）
+——**与 ARENA 同因同结论**（三条重开线索同用）。
