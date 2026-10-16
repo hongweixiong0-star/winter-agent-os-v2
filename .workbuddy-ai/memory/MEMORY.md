@@ -13651,3 +13651,37 @@ template_lifecycle_precedence 2=WIP 不动、余为长尾单红）。
 **pending（更新版）**：帧腐烂长尾（fixture 生命周期 = 红皮书登记的系统级项，两个候选修法未做）·
 设备帧（READ_ALLIANCE_EVENT_TIMER / CLAIM_EVENT_TIER）· 释放授权（桌面 archive ~925MB + out/tmp ~463MB）·
 未跟踪 WIP 逐文件裁定（8 测试 + ~80 tools）。【已清：读数漂移 daily_panel ✓ · reward_popup 语义裁定 ✓】
+
+---
+
+## 2026-10-16 续四：磁盘救援、11+4 红收口、tier 实现与规范集收敛（r274-r277）
+
+**提交系**：`86dea1cf`/`da9dcb83`/`b2fd48a2`（第二批 6 红）· `782aeca7`/`af8b56f1`/`d2fb5442`/`46a3408f`
+（第三批 6 红）· `17fbb9f9`（tier 实现）· `bd73a5a4`/`d77fb067`/`36a8adf8`（规格/工具/清单纳入）·
+`8bdd49b2`（final6 收口）· `917aa16a`（覆盖率）· `769efeee`（issues）。
+
+**新增可复用教训（接续 1-8）**：
+
+9. **"删除被禁≠无路可走——截断是写路径"**：C 盘满 + 沙盒 token（`XHW6515\CodexSandboxUsers`）禁删时，
+   "写/截断既有文件"被允许且截断不占新空间——分批截断陈旧诊断日志/cache 释放 5.9GB（用户数据分毫未动）。
+   **工具死锁时逐层取证**（报错文本→ACL→token 组）比反复重试有效。
+10. **"隔离绿、套件红"= 共享可变状态的指纹**：模块级 run-scoped 表（`_METER_KINDS`）被 runtime 驱动测试
+    写入后跨测试残留——**修在机制层**（conftest autouse `_reset_module_state`），不要在受害者上加防御；
+    毒探针成对验证（写毒＋自证未存活）后移除。
+11. **audit 的 probe 集是其"测量能力"的一部分**：分支可达但 probe 喂不进 provider 时，输出的是"探针
+    缺口"而非"引擎缺口"——修法是升级 probe（`PROVIDER_PROBES`），不是降判据。
+12. **判据要用被测对象自己的指纹**：autogen→`autogen_node_count/autogen_note`（非 `promoted:false`，
+    后者宽于 pipeline、会把 gap 队列语义的 P0 抓进来）；身份词典 vs 计划词典（`registry_activities` vs
+    `known_activities`）不得混用。
+13. **"规格先行"的债这样还**：实现规格＋把规格纳入版本管理**同一提交**（单 checkout 跑的规格=该判词诊断
+    的失败）；数据根草稿的裁定先例=**全绿＋活规格→纳入**、**被引用→纳入**（引用完整性）。
+14. **提交级时间差考古**能把"测试为何红"钉到分钟（`958fc9b3` 21:00 vs 两测试 20:33——27 分钟；
+    `cb716da2`/`6863b779` 同款模式第 3、4 例）。
+
+**数字**：final5 61F+10E → final6 **4F**（5571P/262S；含 2 个 tier 规格——启动后已实现、单测已绿）→
+final7 全量终局进行中（`learning/_full_suite_final7.txt`）。
+**pending（更新版）**：C 盘根治（Desktop 15G / hiberfil.sys 13.4G / AppData 52.8G——**用户决策**，
+见 `04_OPEN_ISSUES.md` P1-3）· 待批堆（`UNTRACKED_AND_PENDING_INVENTORY_20261016.md`；**首要**：
+`config/v2.json` 的 10-08 模型切换未入库）· 设备帧（READ_ALLIANCE_EVENT_TIMER / CLAIM_EVENT_TIER）·
+覆盖率 NEVER_TRIED 5 个（需真机：KEEP_RESEARCH、ALLIANCE_TIMED_EVENTS、MOBILIZATION_ICEFIELD_BEAST、
+OBSERVE_FISHING_STATE、USE_NORMAL_FISHING_BAIT）· BLOCKED 3 个（arena/labyrinth/travel——需新实现）。
