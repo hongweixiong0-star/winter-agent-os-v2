@@ -15,7 +15,10 @@
 机制修 `8bdd49b2`；HUD guard→重推导 `8bdd49b2`）。收口后 **tests/ 下 untracked=0**（6 个草稿
 规格+4 个被引用工具已按先例纳入），**final7 终局全量 = `5575 passed / 262 skipped /
 0 failed / 0 errors`（EXIT=0）**——见 `learning/_full_suite_final7.txt`。
-细节与教训见 `04_OPEN_ISSUES.md` P1-5、`03_NEXT_ACTION.md` 首节、`MEMORY.md` 续四（教训 9-14）。
+其后：`invariant_review` **16/0/0 全实测**；**两大 live 失败簇处理完毕**——`SELECT_BEAST_TARGET_MAMMOTH`
+×143 修复（`3101830c`，面板吞地图点击）、`GIANT_BEAST_SEARCH_NOT_PROVEN` ×150 跨-run 冷却
+（`842364a1`）；**生产发布闭环**（repin→`MAINLINE_OK`→`repo_revision` 实测生效，10-17 00:2x）。
+细节与教训见 `04_OPEN_ISSUES.md` P1-5/P1-6、`03_NEXT_ACTION.md` 首节、`MEMORY.md` 续四（教训 9-14）。
 
 **两件需要操作员知晓的事**：
 1. **C 盘 200G 满**（工具链一度 ENOSPC 死锁）：已以"截断通道"自救释放 ~5.9GB（陈旧日志/缓存，
@@ -26,9 +29,20 @@
    `UNTRACKED_AND_PENDING_INVENTORY_20261016.md`；**首要 = `config/v2.json` 的 10-08 模型切换
    （Qwen3.6-35B-A3B @ llama.cpp:18080）已执行 8 天、未入库**（旧 config 指向已删除的 UI-Venus）。
 
-**未完成/下一步**：覆盖率口径 NEVER_TRIED 5（需真机）+ BLOCKED 3（零起点实测：13 能力/0 技能/
-0 帧，需真机探索建技能）；设备在 MANUAL（10-15 12:37 操作员闩锁）；发 AUTO 前按 03 的 10-14 快照
-配方（切 AUTO + 重启面板）。
+**未完成/下一步（2026-10-17 00:30 更新——发布闭环后）**：
+
+- **已发布**：repin `9ffaf237→…→710fb988`，`check_mainline=MAINLINE_OK`；**生效已实测**
+  （episodes `repo_revision=710fb988`）；镜像 `main` 与主线 `codex/production-pin-recovery` 全同步。
+- **观察点（无需盯盘）**：①`SELECT_BEAST_TARGET_MAMMOTH` / `GIANT_BEAST_SEARCH_NOT_PROVEN` 复发计数
+  应停止增长（两个修复已在新码）；②NEVER_TRIED 5 的 live 计数（AUTO 自然遇到会推进）。
+- **设备现状（10-17 00:20 实测）**：**AUTO 正在运行**（`GOAL_RUNNING`/`AUTO_RUNNING`，面板跑 pin 树
+  `launch_pinned_production.py`）——设备窗口开着但被生产占用，**不抢设备**。
+- **待操作员**：C 盘根治（P1-3）· 待批堆其余（清单已分类）· pin 树 memory 合并（**双向差异，勿盲 cp**）。
+- **下一步候选**：BLOCKED 3 的真机探索（零起点：13 能力/0 技能/0 帧）· NEVER_TRIED 设备清单
+  （`docs/NEVER_TRIED_DEVICE_CHECKLIST_20261016.md`——设备空窗时执行）。
+- **铁律提醒**：pin 推进=生产发布（下次**代码**改动后 repin，纯文档提交不触发）；
+  跑全量测试时不要并行跑其它测试（会拖慢）；"待批堆"里的未提交修改会**硬阻塞 merge**，
+  发现"该提交而漏提交"立即补交。
 
 <!-- HANDWRITTEN:2026-10-04 operator-instruction-translation -->
 ## 2026-10-04 手写交接 — 操作者沟通规则（每个会话开工前先读这一节）
