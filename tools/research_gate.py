@@ -363,6 +363,36 @@ def check_runtime_has_no_network(report: Report) -> None:
     report.add("RUNTIME_HAS_NO_NETWORK", ok, detail)
 
 
+def _stored_click_keys(doc) -> list[str]:
+    """Keys that store a click point *as data*, anywhere in the structure.
+
+    The first version of the check below matched the file's *text*, and a knowledge file's
+    text legitimately mentions ``tap_norm``.  Measured 2026-10-16:
+    ``bear_participation_chain_status.json`` was flagged for prose like "把失败那一帧上 6 条
+    entry 的 tap_norm 全画出来并目视核对" and "calendar_next_entry 的取法是 ... tap_norm" --
+    notes that say exactly WHY a coordinate must come from the current frame, i.e. the
+    opposite of a stored point.  The charter forbids a record that *stores* a point as an
+    implementation basis, so the check now looks at keys: a ``tap_norm``/``click_norm``/fixed
+    coordinate KEY, not a mention in its prose.
+    """
+    found: list[str] = []
+
+    def walk(node) -> None:
+        if isinstance(node, dict):
+            for key, value in node.items():
+                name = str(key).strip().lower()
+                if "tap_norm" in name or "click_norm" in name or "fixed coordinate" in name \
+                        or "fixed_coordinate" in name:
+                    found.append(str(key))
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(doc)
+    return found
+
+
 def check_no_cross_version_coordinates(report: Report, *needles: str) -> None:
     """A stored absolute point is not a plan; the charter forbids it as an implementation basis."""
     suspicious = []
@@ -370,8 +400,7 @@ def check_no_cross_version_coordinates(report: Report, *needles: str) -> None:
         for path, doc in _iter_json(KNOWLEDGE / directory):
             if not _mentions(doc, *needles):
                 continue
-            text = json.dumps(doc, ensure_ascii=False).lower()
-            if "tap_norm" in text or "click_norm" in text or "fixed coordinate" in text:
+            if _stored_click_keys(doc):
                 suspicious.append(path.name)
     report.add("NO_STORED_CLICK_COORDINATE", not suspicious,
                "clean" if not suspicious else

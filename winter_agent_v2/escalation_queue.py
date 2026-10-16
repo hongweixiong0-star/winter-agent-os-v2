@@ -816,6 +816,12 @@ def fold(events: Iterable[Mapping[str, Any]]) -> "EscalationSnapshot":
             record.outcome = str(event.get("outcome") or record.outcome)
             record.version_since = _moment(event.get("version_since")) or record.version_since
             record.agent_report = str(event.get("agent_report") or record.agent_report)
+            # The versions the job produced, carried on the pending note as well as on the
+            # settle row: the activation rung compares the episode's commit against them,
+            # and a record that reached the pending rung without them was retired as
+            # UNACTIVATABLE on its next pass (measured 2026-10-16: 4 pending, 0 activated).
+            record.before_version = str(event.get("before_version") or record.before_version)
+            record.after_version = str(event.get("after_version") or record.after_version)
             record.notes.append(
                 f"version not active yet: {str(event.get('reason') or '')[:160]}"
             )
@@ -3281,6 +3287,17 @@ class EscalationQueueAdapter:
                     record, explanation,
                     version_since=_from_millis(status.first_terminal_at),
                     agent_report=status.result,
+                    # The activation rung compares an episode's commit against the version
+                    # this job produced, so that version has to be written here.  It was not,
+                    # and the consequence was measured on the live ledger (2026-10-16): 4
+                    # records entered VERSION_ACTIVATION_PENDING, **0** ever reached
+                    # version_active, and every one was retired on its next pass as
+                    # "UNACTIVATABLE: the job ended having recorded no version at all" --
+                    # the retired branch was doing its job on records this branch had
+                    # starved.  ``before``/``after`` are the same revisions the settle path
+                    # records; only the event kind differs.
+                    before=before,
+                    after=after,
                 )
                 continue
             self._settle(
@@ -3375,12 +3392,18 @@ class EscalationQueueAdapter:
         *,
         version_since: datetime | None,
         agent_report: str,
+        before: "RepoRevision | None" = None,
+        after: "RepoRevision | None" = None,
     ) -> None:
         """Record that the tree changed but nothing has loaded it yet.
 
         The job's own terminal time is written here rather than recomputed later: it is
         the boundary the re-measure has to use, and the only place it is known exactly
-        is the moment the gateway first reported it.
+        is the moment the gateway first reported it.  The two revisions ride along for
+        the same reason the settle path records them: the activation rung's whole
+        question is "is the episode's commit the version this job produced", and without
+        ``after_version`` on the record that question cannot be asked at all --
+        ``_activate_pending_versions`` retires exactly such records as UNACTIVATABLE.
         """
         try:
             self.ledger.append({
@@ -3395,6 +3418,8 @@ class EscalationQueueAdapter:
                 "outcome": VERSION_ACTIVATION_PENDING,
                 "version_since": version_since.isoformat() if version_since else "",
                 "agent_report": (agent_report or "")[:400],
+                "before_version": before.token if before is not None else "",
+                "after_version": after.token if after is not None else "",
             })
         except Exception:  # noqa: BLE001 - audit must not break the hook
             pass

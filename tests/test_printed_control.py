@@ -436,19 +436,37 @@ class ResolverOrderTests(unittest.TestCase):
         )
         self.assertIsNone(point)
 
-    def test_the_ledger_still_answers_a_control_nothing_is_printed_on(self):
-        """An undeclared, wordless control must not lose the layer that already worked."""
+    def test_the_ledger_answers_a_diagnostic_but_never_a_tap(self):
+        """Re-derived 2026-10-16 from the amendment that retired the tier (2026-09-24).
+
+        The old version of this test asserted the tap path still reuses the stored point --
+        "an undeclared, wordless control must not lose the layer that already worked".  The
+        amendment superseded that with a stronger rule and named this exact pattern (§一.5:
+        "模板、OCR 或语义识别失败后，回退到历史坐标"; §六: "现有坐标台账如仍承担生产点击定位，
+        应停止其直接输出点击目标的能力"): no arrangement of guards makes a stored coordinate a
+        reading of the current frame.  Measured over the real runtime logs before removal,
+        the tier had printed "reusing a measured position" 21 times -- 21 production taps
+        whose target was a coordinate, not a control.
+
+        What survives is the ledger's *answer* for a diagnostic reader (§六 keeps positions
+        for audit and failure reproduction).  Both halves are asserted: the tap path answers
+        None, and ``_remembered_control_center`` still answers with the measured point.
+        """
+        frame = WorldState(page=Page.MAP, confidence=0.99)
         runtime, _ocr = _runtime_with(
             (),
             ledger={
                 "MAP|BTN_NEVER_DECLARED": _ledger_entry("MAP", "BTN_NEVER_DECLARED", (0.9236, 0.9539))
             },
         )
-        point = runtime._resolve_semantic_target(
-            "BTN_NEVER_DECLARED", WorldState(page=Page.MAP, confidence=0.99), frame_path=MAP_FRAME
+        self.assertIsNone(
+            runtime._resolve_semantic_target("BTN_NEVER_DECLARED", frame, frame_path=MAP_FRAME),
+            "the tap path must not spend a coordinate measured on an earlier frame",
         )
-        self.assertIsNotNone(point)
-        self.assertAlmostEqual(point[0], 0.9236, places=3)
+        center = runtime._remembered_control_center("BTN_NEVER_DECLARED", frame)
+        self.assertIsNotNone(center, "the ledger still answers its own question (audit/forensics)")
+        self.assertAlmostEqual(center[0], 0.9236, places=3)
+        self.assertAlmostEqual(center[1], 0.9539, places=3)
 
     def test_nothing_answers_a_control_no_layer_knows(self):
         runtime, _ocr = self._runtime(())

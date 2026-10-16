@@ -151,9 +151,21 @@ class RefusalTest(unittest.TestCase):
         self.assertEqual(vision.observe(Path("x.png")).popup, "INTEL_BEAST_MISSION")
 
     def test_a_frame_that_is_not_a_dialog_is_not_read_at_all(self):
+        # A real blank frame, because the HOME pipeline now *reads pixels* on its way
+        # past -- the focused-camp halo check opens the image (measured 2026-10-16: a
+        # fake ``x.png`` path made that read raise FileNotFoundError).  What this test
+        # is about is unchanged: no OCR pass and no title typing on a non-dialog frame.
+        import tempfile
+
+        from PIL import Image
+
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        frame = Path(temp.name) / "x.png"
+        Image.new("RGB", (720, 1280), (0, 0, 0)).save(frame)
         state = WorldState(page=Page.HOME)
         vision, ocr = vision_for(state, "英雄之旅等级2")
-        self.assertEqual(vision.observe(Path("x.png")).page, Page.HOME)
+        self.assertEqual(vision.observe(frame).page, Page.HOME)
         self.assertEqual(ocr.calls, [], "no OCR pass on a non-dialog frame")
 
     def test_a_dialog_with_no_readable_title_is_left_alone(self):

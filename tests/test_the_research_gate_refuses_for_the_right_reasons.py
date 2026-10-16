@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tools.research_gate import (  # noqa: E402
     _goal_needles,
     _mentions,
+    _stored_click_keys,
     build_report,
 )
 
@@ -30,6 +31,28 @@ def _check(report, check_id: str):
         if c["check"] == check_id:
             return c
     return None
+
+
+class TheStoredPointCheckReadsKeysNotProse:
+    """Both directions of the refined matcher, measured 2026-10-16.
+
+    ``bear_participation_chain_status.json`` was flagged for prose that *mentions* tap_norm --
+    notes saying why a coordinate must come from the current frame, i.e. the opposite of a
+    stored point.  A record that stores a point as data must still be refused, so the
+    matcher is pinned in both directions rather than only in the direction that was fixed.
+    """
+
+    def test_a_prose_mention_is_not_a_stored_point(self):
+        doc = {"note": "把失败那一帧上 6 条 entry 的 tap_norm 全画出来并目视核对，全部落在对应条目上"}
+        assert _stored_click_keys(doc) == []
+
+    def test_a_real_key_is_a_stored_point(self):
+        doc = {"controls": {"BTN_X": {"tap_norm": [0.5, 0.4]}}}
+        assert _stored_click_keys(doc) == ["tap_norm"]
+
+    def test_a_key_buried_in_a_list_is_still_found(self):
+        doc = {"rows": [{"ok": True}, {"click_norm": [0.1, 0.2]}]}
+        assert _stored_click_keys(doc) == ["click_norm"]
 
 
 class TheGateFindsWhatIsActuallyThereTests:

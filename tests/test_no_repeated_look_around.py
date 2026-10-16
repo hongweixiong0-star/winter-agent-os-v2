@@ -339,7 +339,10 @@ class TheGateIsAtTheOneCallSiteTest(unittest.TestCase):
 
     def test_the_loop_consults_the_guard_before_it_acts_on_a_stop(self):
         source = (ROOT / "winter_agent_v2/runtime.py").read_text(encoding="utf-8")
-        decides = source.index("decision = leave if leave is not None else self.brain.decide(")
+        # The decision line grew a bootstrap fallback in front of the brain answer, so the
+        # anchor is the part that carries the claim: the brain's own answer is what the guard
+        # must be applied to.
+        decides = source.index("leave if leave is not None else self.brain.decide(")
         guarded = source.index("decision = self._stop_instead_of_looking_again(")
         acts = source.index('if decision.skill == "SAFE_STOP":', guarded)
         self.assertLess(decides, guarded,
