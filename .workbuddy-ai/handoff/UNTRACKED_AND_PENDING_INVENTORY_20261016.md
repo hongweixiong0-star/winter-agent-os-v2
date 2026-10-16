@@ -10,7 +10,7 @@
 
 | 项 | 规模 | 内容 | 建议 |
 |---|---|---|---|
-| `config/v2.json` | ±10 行 | **10-08 operator 指令落地**：运行时本地模型切至 Qwen3.6-35B-A3B（Q3_K_M）＋ llama.cpp 127.0.0.1:18080，UI-Venus 同指令删除；注释含完整测量（4.1GB 显存驻留、schema-valid 5.4s、`enable_thinking=false` 经 llama.cpp 才生效）。handoff 有专档 `MODEL_MIGRATION_UI_VENUS_20260930.md` | **建议提交**：已执行 8 天、旧 config 指向已删除的模型；不提交则 checkout 间配置不可比 |
+| ~~`config/v2.json`~~ | ±10 行 | 10-08 operator 指令落地：运行时本地模型切至 Qwen3.6-35B-A3B（Q3_K_M）＋ llama.cpp 127.0.0.1:18080，UI-Venus 同指令删除 | **✅ 已提交 2026-10-16（`bf0dc45e`）**——理由：指令已执行 8 天、生产在用（junction 同盘）、handoff 有专档；不提交则非本盘 checkout 指向已删除模型的旧配置 |
 | `START_HERE.md` | −47 行 | handoff 导航精简 | 审阅后提交 |
 | `.workbuddy-ai/commander/` 3 件 | 重构 −75 行 | codex 命令行档 | 审阅后提交 |
 | `.workbuddy/memory/2026-10-15.md` | 日志 | 昨日工作日志 | 与 10-16 日志同批提交 |
