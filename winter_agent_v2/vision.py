@@ -301,6 +301,19 @@ MAP_GOAL_WORDS: tuple[str, ...] = (
 )
 
 
+#: The template lifecycle tiers, highest first.  A semantic whose records span more than one
+#: tier is searched tier by tier (2026-10-16): a hit in a tier ends the search, so a lower tier
+#: is that tier's fallback and never a competitor for its hit.  Before this, all records of a
+#: semantic went to one ``_find_in_roi`` call and the minimum distance won regardless of tier --
+#: which let a freshly cut CANDIDATE outrank the VERIFIED template it was cut to replace.
+#:
+#: Measured on the manifest when this landed: 5 of 293 semantics carry mixed tiers, all of them
+#: CANDIDATE beside VERIFIED (one also beside an unlabelled row), and no STABLE row exists yet --
+#: the top tier is what a future promotion will use, not a state to invent now.  A row with no
+#: tier (absent or unknown ``status``) sits below every named tier: it has made no claim.
+TEMPLATE_TIER_ORDER: tuple[str, ...] = ("STABLE", "VERIFIED", "CANDIDATE")
+
+
 class SemanticROIVision:
     """Verify a semantic at its reviewed normalized ROI; it never performs actions."""
 
@@ -1343,7 +1356,15 @@ class SemanticROIVision:
         answer_key = (str(image_path), semantic)
         if answer_key in self._answers:
             return self._answers[answer_key]
-        result = self._find_in_roi(image_path, candidates, semantic)
+        # Tiered search (see ``TEMPLATE_TIER_ORDER``): highest tier first, and a hit in a tier
+        # ends the search.  Hitting a record that refuses to evaluate is not a hit, so the
+        # ``None`` from one tier still falls through to the next -- that is what makes a
+        # VERIFIED/CANDIDATE mix behave as "verified when it matches, candidate otherwise".
+        result = None
+        for rows in self._tiered_candidates(candidates):
+            result = self._find_in_roi(image_path, rows, semantic)
+            if result is not None:
+                break
         if result is None and semantic in self._sweeps_skipped:
             # A "not found" that came from a sweep this observation *declined to do* is not an
             # answer, and caching it as one is how the widening path silently stopped working:
@@ -1352,6 +1373,26 @@ class SemanticROIVision:
             return None
         self._answers[answer_key] = result
         return result
+
+    @staticmethod
+    def _tiered_candidates(candidates: list[dict]) -> list[list[dict]]:
+        """The candidates grouped by lifecycle tier, highest tier first.
+
+        A single-tier call -- 288 of the manifest's 293 semantics today -- yields one group
+        holding every candidate, in the original order, so its behaviour through
+        ``_find_in_roi`` (min distance within the group) is exactly what it was before tiers
+        were searched.  The unlabelled group goes last: a row with no ``status`` has made no
+        claim, so it can be a fallback but never a first choice.
+        """
+        buckets: dict[str, list[dict]] = {tier: [] for tier in TEMPLATE_TIER_ORDER}
+        unlabelled: list[dict] = []
+        for row in candidates:
+            status = str(row.get("status") or "").upper()
+            (buckets[status] if status in buckets else unlabelled).append(row)
+        groups = [buckets[tier] for tier in TEMPLATE_TIER_ORDER if buckets[tier]]
+        if unlabelled:
+            groups.append(unlabelled)
+        return groups
 
     def _find_in_roi(
         self, image_path: Path, candidates: list[dict], semantic: str
