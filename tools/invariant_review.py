@@ -322,6 +322,55 @@ def global_wait_only_when_truly_idle() -> tuple[str, str]:
                   f"with_runnable_goal=0)")
 
 
+def safety_and_liveness_both_hold() -> tuple[str, str]:
+    """§61 + §68: the liveness paths hold, and the safety side is not loosened to get them.
+
+    §61's table is the definition -- DEFER/COOLDOWN -> next Goal; a role with no work yields
+    to the other; an unavailable model defers the UNKNOWN while known work continues; a
+    failed Skill does not stop AUTO -- and §68's ``SAFETY_AND_LIVENESS_BOTH_HOLD`` adds the
+    other half: those continuations must not come from dismantling a gate.  The individual
+    paths each have their own check above; this composite measures their *coexistence*,
+    which is the property "both hold" actually names:
+
+    1. a goal at the repeat-failure ceiling (fairness row 1000) takes neither the other goal
+       nor itself off the board -- it stays retryable, with the penalty applied through the
+       same ``ledger=`` path the runtime uses rather than bypassed;
+    2. an UNKNOWN with no entry stays deferred while the known goal is selected: liveness
+       for the known side, no fabricated action for the unknown side;
+    3. the continuation ran through ``goal_utility.rank`` (the gate the scheduler calls),
+       and the runtime's own liveness evidence is recorded, not absent -- ``global_health``
+       in the scheduler ledger, the AUTO_ALIVE side of §61's P0s.
+
+    Liveness bought with a loosened gate would satisfy each half alone; only all three facts
+    together are the composite.
+    """
+    ledger: dict[str, goal_utility.GoalFairness] = {}
+    goal_utility.entry(ledger, "S_L_FAILED").no_progress_streak = 1000
+    board = [_known("S_L_FAILED", value=500, skill="S"), _known("S_L_NEXT", value=90, skill="S")]
+    ranked = [g.goal_id for g, _ in goal_utility.rank(
+        board, world=WorldState(page=Page.HOME), ledger=ledger)]
+    if "S_L_NEXT" not in ranked or "S_L_FAILED" not in ranked:
+        return FAIL, (f"a failing goal must not remove either side from the board: {ranked}")
+    known = _known("S_L_KNOWN", value=90, skill="S")
+    unknown = _unknown("S_L_UNKNOWN", value=1200)
+    ranked2 = [g.goal_id for g, _ in goal_utility.rank(
+        [unknown, known], world=WorldState(page=Page.HOME))]
+    if "S_L_KNOWN" not in ranked2 or "S_L_UNKNOWN" not in ranked2:
+        return FAIL, (f"the UNKNOWN must be deferred, not dropped, while known work runs: {ranked2}")
+    ledger_path = ROOT / "learning/global_scheduler_state.json"
+    health = ""
+    if ledger_path.is_file():
+        try:
+            health = str(json.loads(ledger_path.read_text(encoding="utf-8")).get("global_health") or "")
+        except (OSError, json.JSONDecodeError):
+            health = ""
+    if not health:
+        return FAIL, ("learning/global_scheduler_state.json carries no global_health -- the "
+                      "AUTO_ALIVE side of §61's P0s is not being recorded")
+    return PASS, (f"failed goal stays retryable and the next goal is selected ({ranked}); "
+                  f"UNKNOWN deferred with known work selected ({ranked2}); global_health={health}")
+
+
 def verifier_is_success_authority() -> tuple[str, str]:
     """Is the Verifier still the only thing that can call a step a success?"""
     try:
@@ -550,6 +599,7 @@ CHECKS = (
     ("OBSERVATION_TICKET_ROTATES", observation_ticket_does_not_starve_routine_work),
     ("MODEL_FAILURE_DOES_NOT_STOP_AUTO", model_failure_does_not_stop_auto),
     ("VERIFIER_REMAINS_SUCCESS_AUTHORITY", verifier_is_success_authority),
+    ("SAFETY_AND_LIVENESS_BOTH_HOLD", safety_and_liveness_both_hold),
 )
 
 
