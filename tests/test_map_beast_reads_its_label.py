@@ -230,8 +230,11 @@ class TheMapBeastIsAlsoReadByItsLabelTests(unittest.TestCase):
 
         Asserted against the source because the precedence *is* the call-site expression, and this
         is the property that keeps the LIVE_VERIFIED musk ox route untouched.  The expression is
-        bound to a local first because the same value now feeds ``beast_search_submitted`` as well
-        as ``beast``; the precedence itself is unchanged.
+        bound to a local first so no consumer can re-decide it; that local feeds ``beast``, and
+        the ``beast_search_submitted`` call sites were deliberately unbound from it on
+        2026-09-21 (both halves of the old pair were measured broken on a frame whose search had
+        visibly succeeded -- see ``ocr.py``) in favour of the client's own card title, which is
+        asserted below so the old pair cannot quietly come back.
         """
         source = (ROOT / "winter_agent_v2/ocr.py").read_text(encoding="utf-8")
         binding = r"beacon_beast = dict\(primary\.beast\) or beast_from_its_label\("
@@ -242,9 +245,22 @@ class TheMapBeastIsAlsoReadByItsLabelTests(unittest.TestCase):
         self.assertRegex(source, pattern,
                          "the fallback must be reached only when primary.beast is empty")
         self.assertEqual(len(re.findall(pattern, source)), 1)
-        # The local must be the value both call sites read, so neither can drift apart.
+        # The local must be the value the beast field reads, so it cannot drift.
         self.assertEqual(re.findall(r"beast=beacon_beast,", source), ["beast=beacon_beast,"])
-        self.assertRegex(source, r"primary\.resource_beast_tab and beacon_beast")
+        # Re-derived 2026-10-16.  This used to assert the pair
+        # ``beast_search_submitted=bool(primary.resource_beast_tab and beacon_beast)``; both
+        # halves scored broken on the result frame (the tab template went NO MATCH once the
+        # client moved 野兽, and the label reader looks for a map nameplate where the card
+        # prints 等级10麝牛), so the flag now reads the client's own card wherever it is set.
+        # The old pair must not come back -- it reported a visibly successful search as not
+        # submitted.  Asserted with its ``primary.`` prefix, which the explanatory comment
+        # in ``ocr.py`` does not carry, so the comment naming the defect stays legal.
+        self.assertNotIn("primary.resource_beast_tab and beacon_beast", source)
+        self.assertEqual(
+            len(re.findall(r'beast_search_submitted=bool\([a-z_]+\.get\("title_level"\)\)', source)),
+            2,
+            "both beast_search_submitted call sites must read the client's own card title",
+        )
 
 
 if __name__ == "__main__":

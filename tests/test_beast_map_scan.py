@@ -371,7 +371,17 @@ class OnlyTheOrdinaryBeastTabIsSearchedTests(unittest.TestCase):
             "switching tabs is not searching: spending the ticket here would forbid the search",
         )
 
-    def test_unreadable_beast_tabs_close_the_panel_and_handoff_instead_of_looping(self):
+    def test_unreadable_beast_tabs_stop_honestly_instead_of_looping(self):
+        """Re-derived 2026-10-16: the brain's half is the honest stop; the handoff moved to the sink.
+
+        The in-brain ``BACK + switch to SPEND_STAMINA`` handover this test was written for was
+        retired by ``6863b779`` (2026-09-30): goal handover now happens in the runtime's stamina
+        sink policy (``_stamina_route`` / ``_sync_brain_goal``), whose own tests live in
+        ``test_stamina_sink_routing.py``.  What survives on the brain's side is the part that
+        keeps the route from looping: an unreadable strip stops with its own measured reason --
+        no re-submitted search, no repeating pan, no silent route rewrite, and the search ticket
+        stays unspent -- and asking twice on the same frame gives the same answer.
+        """
         brain = RuleBrain(current_goal="BEAST_HUNT")
         brain.goal_id = "AVOID_STAMINA_WASTE"
         unreadable = WorldState(
@@ -384,16 +394,26 @@ class OnlyTheOrdinaryBeastTabIsSearchedTests(unittest.TestCase):
             confidence=0.99,
         )
 
-        close = brain.decide(unreadable, v2_registry())
-        self.assertEqual(close.skill, "BACK")
+        stop = brain.decide(unreadable, v2_registry())
+        self.assertEqual(stop.skill, "SAFE_STOP")
         self.assertEqual(
-            close.reason,
-            "unreadable_beast_tabs_close_panel_and_switch_to_intel",
+            stop.reason,
+            "beast_search_tabs_unreadable_without_stamina_handoff",
         )
-        self.assertEqual(brain.current_goal, "SPEND_STAMINA")
+        self.assertFalse(
+            brain.beast_search_used,
+            "an unreadable strip must not spend the search ticket",
+        )
+        self.assertEqual(
+            brain.current_goal, "BEAST_HUNT",
+            "the brain does not rewrite its own route; the sink policy decides what comes next",
+        )
 
-        handoff = brain.decide(replace(unreadable, resource_search_open=False), v2_registry())
-        self.assertEqual(handoff.skill, "OPEN_INTEL")
+        again = brain.decide(unreadable, v2_registry())
+        self.assertEqual(
+            (again.skill, again.reason), (stop.skill, stop.reason),
+            "the stop is a pure function of the frame: nothing here can become a loop",
+        )
 
     def test_a_panel_already_anchored_on_the_beast_tab_does_not_switch(self):
         """The other half: when the anchor is already 野兽 the route must submit directly.
