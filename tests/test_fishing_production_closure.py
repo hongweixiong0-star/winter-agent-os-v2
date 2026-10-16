@@ -24,7 +24,15 @@ def test_session_observation_does_not_invent_a_click_or_hide_a_failure(tmp_path,
     path = tmp_path / "episodes.jsonl"
     runtime = SimpleNamespace(
         _multi_role_enabled=False, _fold_control_experience=lambda **kw: None,
-        _collect_ui_evidence=lambda **kw: None, _failure_type_from=lambda execution: "NO_EXECUTION",
+        _collect_ui_evidence=lambda **kw: None, _collect_page_evidence=lambda **kw: None,
+        _failure_type_from=lambda execution: "NO_EXECUTION",
+        # The four unguarded tail writers ``_record_episode`` grew after this file was written
+        # (``_note_step_for_planner`` landed 2026-10-01, 99a25365); on this direct path their
+        # absence raised straight through, so six parametrisations died on AttributeError
+        # instead of measuring the row (2026-10-16).  Same no-op treatment as the sibling stub
+        # in ``test_session_outcome_persistence``.
+        _note_step_for_planner=lambda *a, **k: None, _settle_advised_step=lambda *a, **k: None,
+        _note_learned_step=lambda *a, **k: None, _maybe_request_repair=lambda *a, **k: None,
         episode_store=EpisodeStore(path), task_completion_store=None, capture_dir=tmp_path,
         device=SimpleNamespace(), code_revision="test", role_id="A", role_scope="ROLE_A",
         execution_mode="PRODUCTION", trace_id="", job_id="", capability="",

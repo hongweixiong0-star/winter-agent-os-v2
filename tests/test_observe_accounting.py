@@ -190,15 +190,31 @@ class ObserveAccountingTests(unittest.TestCase):
 class ProductionVisionWiringTests(unittest.TestCase):
     """The attention is only reachable if the object the loop watches exposes it."""
 
-    def test_hybrid_vision_does_not_expose_focus(self):
-        # Documenting the defect rather than asserting the desired behaviour: this is what makes
-        # ``getattr(self.vision, "focus", None)`` None in production today.  When ``HybridVision``
-        # gains a forwarder this test must change with it -- see ``SemanticWorldVision.focus``,
-        # which exists for exactly this reason.
-        from winter_agent_v2.ocr import HybridVision
+    def test_hybrid_vision_forwards_focus_to_the_semantic_reader(self):
+        # The defect this test used to document is fixed, and the fix is the change its own
+        # comment demanded: "When HybridVision gains a forwarder this test must change with
+        # it".  It gained one (the attention work needs ``getattr(vision, "focus", None)`` to
+        # reach the semantic matcher through the production composite).  Re-pinned 2026-10-16
+        # on the half that matters now: the call reaches the object the observation reads,
+        # arguments intact, and still without __getattr__ magic.
+        from winter_agent_v2.ocr import HybridVision, OCRService
 
-        self.assertFalse(hasattr(HybridVision, "focus"))
+        class _World:
+            def __init__(self) -> None:
+                self.focused: dict = {}
+
+            def focus(self, **kwargs) -> None:
+                self.focused = kwargs
+
+        world = _World()
+        hybrid = HybridVision(world, OCRService.__new__(OCRService))
+        self.assertTrue(hasattr(HybridVision, "focus"))
         self.assertFalse(hasattr(HybridVision, "__getattr__"))
+        hybrid.focus(goal="G", page_hint="H", reason="R", widen=True)
+        self.assertEqual(
+            world.focused,
+            {"goal": "G", "page_hint": "H", "reason": "R", "widen": True},
+        )
 
     def test_the_object_that_has_focus_is_the_one_the_observation_reads(self):
         from winter_agent_v2.ocr import HybridVision, OCRService

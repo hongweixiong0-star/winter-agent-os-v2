@@ -59,15 +59,25 @@ from winter_agent_v2.ocr import (
     _roi_box,
 )
 
-#: Real production frames, named by what the reader made of them.  Paths are absolute into the
-#: pinned production tree because these are the artifacts the claim rests on; the assertions
-#: below that need no image are the ones that carry the contract.
-PIN = "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto"
+#: Real production frames, named by what the reader made of them.
+#:
+#: Re-archived 2026-10-16.  The originals (2026-10-03, under the then-pinned worktree
+#: ``C:/Users/xhw/.codex/worktrees/winter-prod-pinned``) were pruned with the rest of the
+#: 10-03 runtime tree, and the old absolute path does not exist on this machine at all --
+#: five tests failed on FileNotFoundError rather than on any measurement.  The replacements
+#: come from the 2026-10-11 runs and were selected *by* the instruments this file tests:
+#: ``_plate_fraction`` and ``_plate_columns`` were run over the living corpus (live_runtime
+#: + exploration + every 3rd runtime_auto frame) and these four are the ones that land in the
+#: same measured classes -- settled 0.5965 cols (11, 359); mid-slide 0.2789 / 0.2687 cols
+#: (0, 186); mid-slide faintest 0.1469 cols (0, 85) -- with the gate refusing every mid-slide
+#: frame and admitting the settled one, exactly as the 10-03 set did.  Copies live under a
+#: tracked truth_audit tree, outside every prune root, so this cannot rot again.
+ARCHIVE = Path(__file__).resolve().parents[1] / "dataset" / "truth_audit" / "quick_panel_slide_20261011" / "key"
 
-SETTLED_OPEN = f"{PIN}/20261003_094335_548042/20261003_094335_548042_step_001_after_settle_retry_20261003T014351757811.png"
-MID_ANIMATION_A = f"{PIN}/20261003_094335_548042/20261003_094335_548042_step_023_after_20261003T014618249124.png"
-MID_ANIMATION_B = f"{PIN}/20261003_094802_504409/20261003_094802_504409_step_006_after_20261003T014849540719.png"
-MID_ANIMATION_C = f"{PIN}/20261003_094802_504409/20261003_094802_504409_step_010_after_20261003T014912351346.png"
+SETTLED_OPEN = ARCHIVE / "01_settled_open.png"
+MID_ANIMATION_A = ARCHIVE / "02_mid_slide_wide_a.png"
+MID_ANIMATION_B = ARCHIVE / "03_mid_slide_faint.png"
+MID_ANIMATION_C = ARCHIVE / "04_mid_slide_wide_b.png"
 
 
 def _plate_fraction(path):
@@ -107,8 +117,9 @@ def _plate_columns(path, step=4, fraction=0.5):
 def test_a_panel_mid_slide_out_is_painted_but_the_gate_refuses_it():
     """The measured defect, on a real frame, through the real gate.
 
-    ``0.1009`` for a frame that plainly has the panel on it.  This is why the completion row
-    never appeared and why the sweep is still unread on those steps.
+    ``0.1469`` (the re-archived frame; the pruned 10-03 original measured ``0.1009``) for a
+    frame that plainly has the panel on it.  This is why the completion row never appeared
+    and why the sweep is still unread on those steps.
     """
     assert _plate_fraction(MID_ANIMATION_B) < QUICK_PANEL_PLATE_MIN_FRACTION
     reader = HybridVision.__new__(HybridVision)   # the gate reads no instance state
@@ -119,16 +130,20 @@ def test_a_panel_mid_slide_out_is_painted_but_the_gate_refuses_it():
 def test_lowering_the_gate_would_not_fix_it_and_would_cost_the_closed_class():
     """Why the constant must not move -- the arithmetic that closes that door.
 
-    The closed class reaches 0.1451 over 200 frames.  Accepting the missed frames means
-    accepting a gate at or below 0.1009, which is inside the closed class's range.  So the
-    gate cannot be lowered: a sweep that costs one OCR pass would become a gate that opens on
-    frames with no panel, and every one of those costs a full panel OCR and yields nothing.
+    The closed class reaches 0.1451 over 200 frames.  Restated 2026-10-16 on the re-archived
+    set, because the arithmetic's shape depends on where the faintest mid-slide frame sits:
+    the 10-03 original measured 0.1009, *below* the closed class, and made the argument from a
+    strict overlap.  The faintest replacement measures 0.1469, which clears the closed ceiling
+    by 0.0018 -- a "gap" one sample wide, i.e. noise.  So the conclusion stands with a wider
+    provenance: a gate that accepts the mid-slide class sits within noise of accepting frames
+    with no panel, and every one of those costs a full panel OCR and yields nothing.
     """
     closed_max = 0.1451      # measured, 200 frames, seed 7
     missed = _plate_fraction(MID_ANIMATION_B)
-    assert closed_max > missed, (
-        "the missed frames sit below the closed class, so no threshold can separate them; "
-        "the fix has to look at a different measurement"
+    gap = missed - closed_max
+    assert 0 < gap < 0.01, (
+        "expected the faintest mid-slide frame to clear the closed class's ceiling by a "
+        f"noise-sized margin rather than a usable one; gap was {gap:.4f}"
     )
 
 

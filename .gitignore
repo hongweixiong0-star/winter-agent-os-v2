@@ -102,6 +102,11 @@ dataset/external/repositories/
 # 2026-09-22 originals out of dataset/raw/control_panel/runtime_auto (TTL 3 days);
 # copies of live frames from dataset/raw/ui_exploration (outside the prune scope)
 !dataset/truth_audit/unknown_page_refixture_*/**/*.png
+# the quick-panel slide fixtures, re-archived 2026-10-16: the 2026-10-03 originals were
+# pruned and the file even pinned them through a dead worktree path; copies of live frames
+# from the 2026-10-11 runtime runs (mid-slide and settled, measured with the gate's own
+# instruments before copying)
+!dataset/truth_audit/quick_panel_slide_*/**/*.png
 # panel_redesign holds 69 frames / 34 MB, so only the 4 the test reads are
 # re-included -- keep this list in sync with tests/test_panel_redesign.py
 !dataset/truth_audit/panel_redesign/panel_meat_selected.png
