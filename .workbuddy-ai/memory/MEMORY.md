@@ -13582,3 +13582,38 @@ progress.json.needs_user_approval = [
 **基线数字**：全量既有红 `233 F / 5402 P / 28 E`（10_LAST_HANDOFF:210）；本时段首跑 219 F；
 conftest/stub 修复后终值见 `learning/_full_suite_final2.txt`。定向电池全绿清单见
 `.workbuddy/memory/2026-10-16.md` r258。
+
+---
+
+## 2026-10-16 续二：回归扫尾双段（r259-r271）
+
+**提交系**：`1b3b2ec9`/`3006ffe7`/`0c61956c`（续扫七族 21 红）· `205e22bf`（slide/fishing/observe 10 红）·
+`322ba7e7`（ledger 第三态 3 红）· `4a335d68`（refusal）· `c1e305ed`（camp selector）·
+`b7421fe4`（intel 两级）· `601fcacd`（reach 路由+面板先问）· `93c1cd96`（stub 对象态）。
+
+**八条可复用教训（都有实测量支撑）**：
+
+1. **"一次执行=一次 tap"必须验证后再用**：执行层有三层重试——settle_retry（只重拍 after 帧）、
+   `retry_authorized_semantic_click`（世界仍报 pending ⇒ 原地重点击，1+MAX_SEMANTIC_CLICK_RETRY=3 次/步）、
+   leave-retry（BACK 未动 ⇒ 给 brain 第二出口）。**断言设备调用数前先查执行环**。
+2. **替身（stub/桩）对"对象态"属性必须显式声明**：`__getattr__` 落类查找对 `__init__` 级属性永久
+   miss（`_BoardStub.process`，`6dfa1da5` 的 board-meta 链暴露）；**实例级属性不会落到类**。
+3. **测试断言可横跨多轮裁决**：tick 行三轮（拒绝→09-23 SAFE_STOP→09-25 `159ba02f` reach 路由）、
+   面板关闭两轮（直接 fallback→先问一次 OPEN_QUICK_PANEL）。**修前把目标行为时间线钉到 commit 级
+   （`git log -S`），中间态≠终态**；测试命名也要跟裁决走（旧名=旧行为的断言）。
+4. **账本 `None` 是第三态不是反例**：`state_after.page="UNKNOWN"` = 该帧不可分类；目标行只在
+   classified page 发射 ⇒ 目标合法离板 ⇒ progress `None`（"不可观测"，不计 streak）。
+   **账本测试先对照状态机合法 None 出口（absent/never-read/kind 守卫）再判回归**。
+5. **高定价目标抢占的统一解法=钉 selector**（不逐个钉机器输入复现旧排序）：stub `_selectable` +
+   实测理由入 docstring（gate 读 `knowledge/**`，AUTO 在测试间重写它）。
+6. **噪声级断言**优于阈值断言：mid-animation gate gap 改 `0<gap<0.01`（实测 0.0018）——
+   同时排除 0（没测到）。
+7. **"修后变绿"要先证分离**：daily_tab 曾因 8×8 phash 把旧/新药丸深色片段互似（d=4）而假绿；
+   **必须用注册自身帧验证真分离**（d=0/None），工具幂等重跑。
+8. **新启用的类=新启用的资源**：激活"从未运行"的测试=把其全生命周期搬进套件（面板 4 线程）；
+   修一个"未运行"，必须审计它带入的副作用（线程/文件/端口）。
+
+**数字**：第四次全量 113 红；r265-r271 共修 54 红（21+10+23）；第五次全量
+`learning/_full_suite_final5.txt` 进行中（无新红假设下预期 ≈60 红）。
+pending：帧腐烂长尾 · 读数漂移（daily_panel）· reward_popup 语义裁定 · 设备帧
+（READ_ALLIANCE_EVENT_TIMER / CLAIM_EVENT_TIER）· 释放授权（桌面 archive ~925MB + out/tmp ~463MB）。
