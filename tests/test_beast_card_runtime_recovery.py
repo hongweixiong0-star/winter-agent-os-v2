@@ -23,7 +23,9 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
+from winter_agent_v2 import goal_utility, mode_state
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.models import Page, WorldState
 from winter_agent_v2.runtime import LiveRuntime
@@ -114,16 +116,34 @@ def _map() -> WorldState:
 
 
 def _run(states, max_actions, allowed):
+    """Drive the real loop with every shared input pinned, the way a device test pins its device.
+
+    Measured 2026-10-16, both halves.  The loop reads the mode record fresh every cycle (spec §1),
+    so a replay on a machine the operator has taken answers ``manually_owned_by_workbuddy`` with
+    ``steps[]`` empty and every assertion an IndexError.  And the fairness ledger is a *shared*
+    ranking input: ``test_live_runtime`` already pins it for the same reason ("sharing the repo's
+    learning files lets an earlier fake screen change which goal a later test sees"), but this
+    file predates that discipline -- its goal selection used to read production's own ranking
+    history, so the same scene could pick different goals from one run to the next.
+    """
     device = _FakeDevice()
     with TemporaryDirectory() as temp:
-        run = LiveRuntime(
-            device=device,
-            vision=_FakeVision(states),
-            semantic_vision=_FakeSemantic(),
-            capture_dir=Path(temp),
-            brain=RuleBrain(current_goal="INTEL"),
-            sleeper=lambda _seconds: None,
-        ).run(max_actions=max_actions, allowed_skills=allowed)
+        temp_path = Path(temp)
+        mode_path = temp_path / "MODE_STATE.json"
+        mode_state.switch(mode_state.MODE_AUTO, initiator=mode_state.BY_USER,
+                          reason="replay harness owns the mode input", path=mode_path)
+        with patch.object(goal_utility, "STATE_PATH", temp_path / "goal_fairness.json"), \
+             patch.object(goal_utility, "DECISIONS_PATH", temp_path / "decisions.jsonl"):
+            runtime = LiveRuntime(
+                device=device,
+                vision=_FakeVision(states),
+                semantic_vision=_FakeSemantic(),
+                capture_dir=temp_path,
+                brain=RuleBrain(current_goal="INTEL"),
+                sleeper=lambda _seconds: None,
+            )
+            runtime.mode_state_path = mode_path
+            run = runtime.run(max_actions=max_actions, allowed_skills=allowed)
     return device, run
 
 
@@ -147,23 +167,35 @@ class TheLoopItselfRecoversTests(unittest.TestCase):
 
     def test_a_back_that_changed_nothing_is_not_repeated(self):
         # Negative control for the ping-pong guard: if BACK lands back on the
-        # card, the loop must not press it again.
+        # card, the BEAST recovery must not press it again, and the run must end
+        # honestly rather than claim success or fall back to the pre-fix reason.
         #
-        # Measured behaviour (this replay): one BACK is spent, verification fails
-        # honestly with SAFE_BACK_NOT_PROVEN, and the run ends there.  So two
-        # independent mechanisms hold the guarantee -- the once-per-run flag, and
-        # the run ending on an unproven transition.  Reporting SAFE_BACK_NOT_PROVEN
-        # rather than a success is the point: the recovery must not claim to have
-        # worked when the client did not move.
+        # The property is scoped to the beast rule on purpose (updated 2026-10-16).  The
+        # older form of this test pinned ``device.backs == 1`` -- "one BACK is spent and
+        # the run ends there" -- which was measured when an unproven Back ended the run
+        # outright.  The loop has since evolved twice, deliberately and each with its own
+        # measurement: an unproven leaving skill is "the first half of a two-step exit"
+        # (2026-09-21, max_leave_retries), and a goal that refused on this screen steps
+        # aside for the next one (the yield system), so a *second* BACK can come from a
+        # *different* goal's own leave rule before the run ends.  What the guard exists
+        # for is that the beast recovery itself answers exactly once -- so that is what
+        # is asserted, together with the honest ending.
         device, run = _run([_card(), _card()], 3, {"BACK"})
 
-        self.assertEqual(device.backs, 1, "the recovery must not press BACK twice")
-        self.assertEqual(device.taps, [])
+        beast_backs = [
+            step for step in run.steps
+            if step.decision.reason == "beast_card_not_actionable_leaving_the_page"
+        ]
+        self.assertEqual(len(beast_backs), 1, "the beast recovery must not repeat")
+        self.assertEqual(device.taps, [], "the recovery must not tap a game control")
         self.assertFalse(run.steps[0].verification.ok, "BEAST->BEAST must not verify")
         self.assertEqual(run.steps[0].verification.reason, "SAFE_BACK_NOT_PROVEN")
         self.assertEqual(run.stop_reason, "SAFE_BACK_NOT_PROVEN")
         # It must not fall back to the pre-fix reason, which said nothing happened.
         self.assertNotEqual(run.stop_reason, "beast_not_actionable")
+        # And it must not burn the whole budget retrying: the run ends on the unproven
+        # transition, before max_actions.
+        self.assertLess(len(run.steps), 3)
 
     def test_an_actionable_card_is_still_marched_on_not_backed_out(self):
         # The recovery must not shadow real work: an available beast is hunted.
