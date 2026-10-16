@@ -98,6 +98,11 @@ _REDIRECTS: tuple[tuple[str, str, str, bool], ...] = (
     # -- learning: role/gameplay stores ------------------------------------------------
     ("winter_agent_v2.control_experience", "STATE_PATH",
      "learning/control_experience.json", True),
+    # The cross-run polar-search cooldown (GIANT_SEARCH_COOLDOWN_S).  The read answers False
+    # when the file is absent, so no seed is needed -- but without this line a test that drives
+    # a session failure would write the live learning directory, which the guards below refuse.
+    ("winter_agent_v2.runtime", "GIANT_COOLDOWN_PATH",
+     "learning/giant_search_cooldown.json", False),
     ("winter_agent_v2.observation_store", "STATE_PATH",
      "learning/observation_state.json", True),
     ("winter_agent_v2.goal_utility", "STATE_PATH",

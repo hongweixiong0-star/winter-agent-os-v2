@@ -1,5 +1,10 @@
+import json
+import tempfile
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from types import SimpleNamespace
 from dataclasses import replace
+from winter_agent_v2 import runtime as runtime_module
 from winter_agent_v2.runtime import LiveRuntime
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.models import WorldState,Page
@@ -210,3 +215,40 @@ def test_live_march_panel_rally_wait_blocks_second_start_even_with_free_slots(tm
     runtime._sync_brain_goal(goal,SimpleNamespace(capabilities={}))
     assert runtime.brain.current_goal=='STAMINA_WAIT'
     assert read_march_rally_wait(path,ocr,None)=={}
+
+
+def _cooldown_runtime(tmp_path, monkeypatch):
+    monkeypatch.setattr(runtime_module, "GIANT_COOLDOWN_PATH", tmp_path / "cooldown.json")
+    return object.__new__(LiveRuntime)
+
+
+def test_an_empty_giant_search_cools_down_across_runs(tmp_path, monkeypatch):
+    """150 episodes of the same empty search, because the flag reset at the top of every run.
+
+    Measured 2026-10-09..11 over the production stream: GIANT_BEAST_SEARCH_NOT_PROVEN x150,
+    every one an honest "the client found nothing" (the frames were observed and read) whose
+    only defect was repetition -- ``_giant_stamina_failed`` was reset at the top of every
+    ``run()``, so each new run started from the GIANT_BEAST sink again.  The cooldown is now
+    persisted, and this pins the cross-run read: a *different* run object must see it.
+    """
+    runtime = _cooldown_runtime(tmp_path, monkeypatch)
+    assert runtime._giant_search_cooldown_active() is False  # no memory yet
+    runtime._remember_giant_search_failure()
+    assert object.__new__(LiveRuntime)._giant_search_cooldown_active() is True
+
+
+def test_a_past_ttl_stamp_frees_the_sink(tmp_path, monkeypatch):
+    """A cooldown that cannot expire would be the permanent defer the rules forbid."""
+    runtime = _cooldown_runtime(tmp_path, monkeypatch)
+    (tmp_path / "cooldown.json").write_text(json.dumps({"failed_at": (
+        datetime.now(timezone.utc)
+        - timedelta(seconds=runtime_module.GIANT_SEARCH_COOLDOWN_S + 60)).isoformat()}),
+        encoding="utf-8")
+    assert runtime._giant_search_cooldown_active() is False
+
+
+def test_unreadable_cooldown_means_try_again_not_stay_away(tmp_path, monkeypatch):
+    """"No memory" must mean "try again", never "stay away" -- the file can be truncated."""
+    runtime = _cooldown_runtime(tmp_path, monkeypatch)
+    (tmp_path / "cooldown.json").write_text("not json", encoding="utf-8")
+    assert runtime._giant_search_cooldown_active() is False

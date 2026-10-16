@@ -67,6 +67,18 @@ ROLE_REFRESH_ONLY_REASONS = frozenset({
 #: the Role Session's own ``no_work_streak`` (2) opens the switch gate within this bound.
 MAX_ROLE_REFRESH_TICKS_PER_RUN = 3
 
+#: How long an empty polar search steps the GIANT_BEAST sink aside -- across runs, not just
+#: within one.  Measured 2026-10-09..11 over the production stream: the same empty search was
+#: attempted **150 times**, because the flag that steps it aside was reset at the top of every
+#: ``run()`` and every run started from the GIANT_BEAST sink again.  "Not found" is not
+#: "unavailable", so this is deliberately short: an hour of stepping aside, not a day.
+GIANT_SEARCH_COOLDOWN_S = 3600.0
+
+#: Where that cooldown lives.  A module constant (not a literal in the method) so
+#: ``tests/conftest.py::_REDIRECTS`` can point it at the scratch tree -- a test that drives a
+#: session must never touch the live file, and the redirects are how this project enforces it.
+GIANT_COOLDOWN_PATH = Path("learning/giant_search_cooldown.json")
+
 #: The operator's own verdict, used verbatim as the refusal reason so that it cannot be
 #: mistaken for a missing capability.  Directive FISHING TOURNAMENT — NORMAL BAIT MAX SCORE
 #: POLICY V2 §4 (2026-09-30) asks for exactly this string, and asks in the same breath that it
@@ -9081,6 +9093,39 @@ class LiveRuntime:
                                f"{type(exc).__name__}:{exc}")
             return None
 
+    def _giant_search_cooldown_active(self) -> bool:
+        """Whether an empty polar search is still inside its cross-run cooldown.
+
+        See ``GIANT_SEARCH_COOLDOWN_S`` for the 150-episode measurement.  Unreadable or
+        malformed state answers ``False``: "no memory" must mean "try again", never
+        "stay away" -- a cooldown that cannot expire would be the permanent defer the rules
+        forbid, and the file is exactly the sort of thing that gets truncated.
+        """
+        try:
+            payload = json.loads(GIANT_COOLDOWN_PATH.read_text(encoding="utf-8"))
+            failed_at = datetime.fromisoformat(str(payload.get("failed_at") or ""))
+            if failed_at.tzinfo is None:
+                return False
+            age = (datetime.now(timezone.utc) - failed_at).total_seconds()
+            return 0.0 <= age < GIANT_SEARCH_COOLDOWN_S
+        except (OSError, ValueError, json.JSONDecodeError, TypeError):
+            return False
+
+    def _remember_giant_search_failure(self) -> None:
+        """Persist the moment the polar search came back empty (see ``GIANT_SEARCH_COOLDOWN_S``).
+
+        A memory that cannot be written must never fail the step that is already recording a
+        session failure -- the same rule the other ledgers here follow.
+        """
+        try:
+            GIANT_COOLDOWN_PATH.parent.mkdir(parents=True, exist_ok=True)
+            GIANT_COOLDOWN_PATH.write_text(
+                json.dumps({"failed_at": datetime.now(timezone.utc).isoformat()}),
+                encoding="utf-8",
+            )
+        except OSError:
+            pass
+
     def run(
         self,
         *,
@@ -9101,7 +9146,10 @@ class LiveRuntime:
         # recomputed per step, and a twelve-step run printed the identical line twelve
         # times (measured 2026-09-18).
         self._printed_deferrals: set[str] = set()
-        self._giant_stamina_failed = False
+        # Cross-run, unlike the rest of this method's state: an empty polar search must not be
+        # re-attempted by the very next run (measured 150 times before this read the cooldown;
+        # see GIANT_SEARCH_COOLDOWN_S).
+        self._giant_stamina_failed = self._giant_search_cooldown_active()
         # The meters this run has read so far; see _remember_goal_meters.
         self._goal_meters: dict[str, float] = {}
         self._committed_goal = ""
@@ -10303,6 +10351,7 @@ class LiveRuntime:
                 if session_result is not None:
                     if selected_id == 'AVOID_STAMINA_WASTE' and (best_goal.evidence or {}).get('stamina_sink') == 'GIANT_BEAST' and not session_result.completed:
                         self._giant_stamina_failed = True
+                        self._remember_giant_search_failure()
                     metrics = dict(getattr(session_result, "metrics", {}) or {})
                     self._record_session_timeline("SESSION_ENDED",
                         session_id=session_result.session_id, goal_id=selected_id,
