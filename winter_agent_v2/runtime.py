@@ -2429,6 +2429,16 @@ class LiveRuntime:
         hub = self._regular_event_hub_on_frame(frame, result=result)
         if hub.get("recognized") is True:
             events["regular_events_hub"] = hub
+        # The live event card face (my score / tiers / phase+timer / task rows), read from the
+        # same full-frame OCR pass the hub just used.  Step 2 of EVENT_READERS_SPEC.md: a pure
+        # reader over text, gated so only a card-shaped frame pays for it, and stored beside the
+        # hub rather than in a second truth container.  Zero clicks; absence of a field stays
+        # absence (the reader never guesses).
+        from .event_card_reader import looks_like_event_card, read_event_card
+        if looks_like_event_card(result.text):
+            card = read_event_card(result.text)
+            if card:
+                events["regular_event_card"] = card
         if detail.get("recognized") is True:
             if calendar.get("details_visible") is True or pending:
                 events.pop("calendar", None)
