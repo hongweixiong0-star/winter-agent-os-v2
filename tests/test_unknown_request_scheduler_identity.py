@@ -20,7 +20,10 @@ def test_unknown_request_uses_selected_goal_and_confirmed_role(tmp_path):
     runtime._learned_ledger_rows = Mock(return_value=[])
     runtime._l1_state = Mock(return_value='current-state')
     runtime._ocr_service = Mock(return_value=None)
-    runtime._advice_evidence = Mock(return_value=([], [], [], ''))
+    # ``_advice_evidence`` returns (regions, boxes, texts, note) and its contract says the
+    # third is a tuple -- the caller concatenates a tuple onto it.  The stub used to hand
+    # back a list, which a later ``tuple(...) + texts`` correctly refused.
+    runtime._advice_evidence = Mock(return_value=([], [], (), ''))
     frame = tmp_path / 'fresh.png'
     frame.write_bytes(b'fresh frame')
     runtime._advised_control('UNKNOWN', 'Reward', frame, WorldState(page=Page.UNKNOWN), True)

@@ -37,10 +37,16 @@ from winter_agent_v2 import control_experience, observation_store  # noqa: E402
 from winter_agent_v2.models import Page, WorldState  # noqa: E402
 from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
 
-#: The two goals whose own route does NOT go through the blocking-popup branch on this frame: they
-#: answer ``OPEN_POWER_DETAILS`` instead.  Excluded from the offered board so the scenario under
-#: test is the measured one -- every offered goal asking for the same popup dismissal.
+#: The goals whose own route does NOT answer the blocking popup on this frame, so they are
+#: excluded from the offered board and the scenario under test is the measured one -- every
+#: offered goal asking for the same popup dismissal.  Two ways a route differs, both measured:
+#: ``KEEP_TRAINING_PRODUCTIVE``/``KEEP_RESEARCH_PRODUCTIVE`` answer ``OPEN_POWER_DETAILS``
+#: (2026-09-23), and an event-route ticket answers its own foreign-page leave -- ``BACK``,
+#: reason ``event_route_goal_leaves_a_page_it_cannot_act_on`` (2026-10-16,
+#: ``SCHEDULED_FISHING_TOURNAMENT`` on this board), which is correct of it and simply not this
+#: file's subject.
 OWNS_THE_PANEL = ("KEEP_TRAINING_PRODUCTIVE", "KEEP_RESEARCH_PRODUCTIVE")
+OWNS_ITS_OWN_EXIT = ("SCHEDULED_",)
 
 
 class _PopupClient:
@@ -89,9 +95,10 @@ class _PopupClient:
 
 
 def _offered(runtime, goals, _deferrals):
-    """The board, minus the two goals whose route is not the popup dismissal."""
+    """The board, minus the goals whose route is not the popup dismissal."""
     return [goal for goal in goals
             if goal.goal_id not in OWNS_THE_PANEL
+            and not goal.goal_id.startswith(OWNS_ITS_OWN_EXIT)
             and goal.goal_id not in runtime._yielded_goals]
 
 

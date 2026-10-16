@@ -35,7 +35,11 @@ class DeviceTests(unittest.TestCase):
         run.side_effect = subprocess.TimeoutExpired(["adb", "devices"], timeout=0.2)
         with self.assertRaisesRegex(RuntimeError, "ADB_COMMAND_TIMEOUT"):
             ADBDevice(Path("adb"), "a").resolve_connection(timeout_s=0.2)
-        self.assertLessEqual(run.call_args.kwargs["timeout"], 0.2)
+        # The value handed to subprocess is the *remaining budget* at the moment of the call,
+        # computed from deadline arithmetic -- so it carries float noise (measured
+        # 0.20000000001164153).  The claim is that it is the requested budget, not the
+        # default 20 s, and an epsilon is what makes that claim testable.
+        self.assertLessEqual(run.call_args.kwargs["timeout"], 0.2 + 1e-6)
 
     @patch("winter_agent_v2.device.subprocess.run")
     def test_no_online_device_probes_emulator_ports_before_failing(self, run):

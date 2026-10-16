@@ -37,6 +37,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from winter_agent_v2.winproc import hidden_kwargs  # noqa: E402
 
 #: pytest's progress characters, from `_pytest.terminal`.
 RESULT_CHARS = frozenset(".FEsxX")
@@ -67,6 +71,10 @@ def _collection_order(root: Path) -> list[str]:
     proc = subprocess.run(
         [sys.executable, "-m", "pytest", "tests", "--collect-only", "-q", "-p", "no:cacheprovider"],
         cwd=root, capture_output=True, text=True,
+        # The one runner's hidden-window flags: the output is captured, so hiding the window
+        # changes nothing about the answer -- and the wiring guard checks this mechanically
+        # for every subprocess call under ``tools/``.
+        **hidden_kwargs(),
     )
     return [ln.strip() for ln in proc.stdout.splitlines() if ln.strip().startswith("tests/")]
 
