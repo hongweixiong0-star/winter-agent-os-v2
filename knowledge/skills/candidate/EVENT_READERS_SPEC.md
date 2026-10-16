@@ -128,3 +128,24 @@
 
 **下一小步（Step 2-② 剩余）**：确认 **frame_text 的获取通道**（vision 内既有 OCR 文本读出——
 `self.semantic`/ocr 层现有 API），随后写最小 diff + `EVENT_CARD_READ` verifier。
+
+---
+
+# Step 2-② 定稿（r217）：接线设计裁决 → 选项 d
+
+**通道核对结果**：
+- 全帧文本的现有通道 = **`OCRService.recognize(image_path, roi=None)` → `OCRResult.text`**
+  （ocr.py:302-355：roi=None 即 FULL；截图哈希缓存；**独立服务**）。
+- **vision.py 内没有 OCRService**（vision 用 semantic 模板匹配，不做全帧 OCR）。
+  ⇒ **"在 2382 分支挂读"需要给 vision 注入 OCRService**（构造签名变化→波及全部调用方）——**不再是"小 diff"**。
+
+**裁决：选项 d（读面不进 vision）**：
+1. **零改动 `vision.py`**——页面判定保持原样；
+2. 卡面读取以**独立 OBSERVE 步**存在：`EVENT 帧 + OCRService(roi=None) → read_event_card() → events["card"]`；
+3. **挂点**：runtime 的 EVENT 帧后处理（或在读取器正式注册时由 Scheduler 以 OBSERVE 技能调度）——
+   **两者都先不接线**；本批只交付"读取器 + 判据 + 文档"三件套（已交付）。
+4. **理由**：最大兼容（不碰 vision 与其调用方签名）；与"读=OBSERVE"语义一致；
+   若未来证明"vision 内挂"更好，**届时再评估**（不现在赌）。
+
+**Step 2 状态**：①判据 ✓ · ②探路 ✓（接入点事实已明）· **接线实现明确推迟**（等 runtime 侧改动批次——
+那将是首次触及 runtime 的提交，需完整 §三·八 审查 + 回归）。
