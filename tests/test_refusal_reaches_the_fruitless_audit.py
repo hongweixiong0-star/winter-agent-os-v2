@@ -39,14 +39,20 @@ so the refused step's page, goal, skill and reason are all in ``audit_pages`` be
     if self.fruitless_audit_path is None or reason != self.NOTHING_LEFT_TO_LOOK_AT:
         return
 
-**One comparison, and it names exactly one refusal.**  Measured on the device: that reason
-appears in 681 ``auto_uptime`` rows **zero times**, and ``learning/fruitless_run_audit.jsonl``
-**does not exist at all** -- the channel is wired, configured, tested, and dead.
+**One comparison, and it named exactly one refusal.**  Measured on the device then: that
+reason appears in 681 ``auto_uptime`` rows **zero times**, and
+``learning/fruitless_run_audit.jsonl`` **does not exist at all** -- the channel was wired,
+configured, tested, and dead.  The follow-up is measured in ``runtime.append_fruitless_audit``'s
+own comment (2026-10-02 16:20-16:44): a refusal *yields* -- it does not end the run -- so
+"ended on a refusal" was the second wrong predicate, and the gate was widened to "did this run
+refuse anything".  The file has since written 22 rows (2026-10-02 → 2026-10-08), every one of
+them satisfying that predicate, and the first test below pins the widened contract instead of
+the channel's emptiness.
 
-These tests therefore pin the *shape* the wider gate has to produce, using the existing
-record's own field names.  They are deliberately not asking for a new ledger, a new field,
-or a new vocabulary: the project already has a complete answer to "what did the run refuse
-and why", and the fix is to stop it from being thrown away.
+These tests therefore pin the *shape* the gate produces, using the existing record's own field
+names.  They are deliberately not asking for a new ledger, a new field, or a new vocabulary:
+the project already has a complete answer to "what did the run refuse and why", and the fix was
+to stop it from being thrown away.
 """
 
 import json
@@ -54,34 +60,40 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FRUITLESS = ROOT / "learning/fruitless_run_audit.jsonl"
-UPTIME = ROOT / "learning/auto_uptime.jsonl"
 
 
-def test_the_refusal_channel_exists_but_has_never_run_on_the_device():
-    """The measured reason this is a fix rather than a new feature.
+def test_every_row_is_one_the_widened_gate_would_admit():
+    """Re-derived 2026-10-16, on the instruction the previous version of this test carried.
 
-    Configured (``run_live.py:423``), implemented (``runtime.py:8245``), asserted
-    (``tests/test_no_repeated_look_around.py``) -- and empty.  If the file starts appearing,
-    something already widened the gate, and this file's argument has to be re-derived.
+    It used to assert the file did not exist: the gate admitted exactly one reason
+    (``NOTHING_LEFT_TO_LOOK_AT``), that reason had never occurred, and "if the file starts
+    appearing, something already widened the gate, and this file's argument has to be
+    re-derived".  It did appear -- 22 rows, 2026-10-02 to 2026-10-08 -- written by the
+    widened gate (see the module docstring).  The predicate now is "did this run refuse
+    anything", so that is what each row is checked against: a row admitted by neither half
+    is a row no gate wrote, which is the same "something else writes it" alarm as before,
+    with the predicate that is actually in force.
     """
-    if not UPTIME.exists():
-        return
     rows = [
         json.loads(line)
-        for line in UPTIME.read_text(encoding="utf-8").splitlines()
+        for line in FRUITLESS.read_text(encoding="utf-8").splitlines()
         if line.strip()
-    ]
-    named = [
-        row for row in rows
-        if str(row.get("stop_reason") or "") == "NOTHING_LEFT_TO_LOOK_AT"
-    ]
-    assert not FRUITLESS.exists() or FRUITLESS.stat().st_size >= 0
-    if not named:
-        # The gate's own reason never occurred, so the file cannot have been written by it.
-        assert not FRUITLESS.exists(), (
-            "fruitless_run_audit.jsonl now has rows although the reason its gate admits never "
-            "occurred in the uptime ledger; something else writes it and the diagnosis here "
-            "is stale"
+    ] if FRUITLESS.exists() else []
+    if not rows:
+        # An empty channel is the state the file began with -- not a failure, but the next
+        # reader must know this fixture went quiet rather than stayed green by accident.
+        return
+    for row in rows:
+        found_nothing = str(row.get("final_reason") or "") == "NOTHING_LEFT_TO_LOOK_AT"
+        refused = any(
+            str(page.get("attempted_skill") or "") == "SAFE_STOP"
+            for page in (row.get("per_page") or [])
+            if isinstance(page, dict)
+        )
+        assert found_nothing or refused, (
+            "a row no version of the gate would admit: neither NOTHING_LEFT_TO_LOOK_AT nor "
+            "a SAFE_STOP refusal in its per_page -- "
+            f"run_id={row.get('run_id')!r} final_reason={row.get('final_reason')!r}"
         )
 
 

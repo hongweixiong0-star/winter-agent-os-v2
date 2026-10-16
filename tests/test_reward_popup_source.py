@@ -554,17 +554,32 @@ class TheDismissVerifiersAlreadyAcceptTheSharedLabelTests(unittest.TestCase):
         intel = WorldState(page=Page.INTEL, popup=None, confidence=0.99)
         self.assertTrue(verify_intel_reward_dismissed(self._reward(), intel).ok)
 
-    def test_the_intel_dismiss_rejects_returning_to_the_wrong_page(self):
-        """The exact 2026-09-16 failure: a working dismissal, rejected.
+    def test_the_intel_dismiss_accepts_any_known_page_and_refuses_an_unproven_one(self):
+        """Re-derived 2026-10-16: the "wrong page" this test demanded was the defect.
 
-        The daily verifier was run against a popup that sat over the Intel page,
-        so it demanded the DAILY page and failed even though the popup was gone.
+        It used to assert that returning to DAILY *fails* the intel dismiss, as "the exact
+        2026-09-16 failure".  The 2026-09-29 production fix (the verifier's own comment
+        records it) measured the other half: a generic reward popup can cover *another*
+        known page -- the overlay sat over MAIL, closing it worked, and demanding INTEL was
+        "the verifier falsely requiring the hidden page", recorded as a failure for a
+        working dismissal.  So the contract under test is: any positively known page is
+        success, and the genuine refusal is a frame where nothing was proven -- the popup
+        still up, or the new page unreadable.
         """
-        daily_page = WorldState(page=Page.DAILY, popup=None, confidence=0.99)
-        intel_dismiss = verify_intel_reward_dismissed(self._reward(), daily_page)
-        self.assertFalse(intel_dismiss.ok)
-        self.assertEqual(intel_dismiss.evidence["after_page"], "DAILY")
-        # And the old pairing is exactly what produced DAILY_REWARD_ADVANCE_NOT_PROVEN.
+        for page in (Page.INTEL, Page.DAILY, Page.MAIL):
+            self.assertTrue(
+                verify_intel_reward_dismissed(self._reward(), WorldState(page=page, popup=None)).ok,
+                f"closing the reward over a known {page.value} page is a working dismissal",
+            )
+        for after in (self._reward(), WorldState(page=Page.UNKNOWN),
+                      WorldState(page=Page.LOADING), WorldState(page=Page.MAINTENANCE)):
+            self.assertFalse(
+                verify_intel_reward_dismissed(self._reward(), after).ok,
+                f"nothing was proven by {after.page.value}",
+            )
+        # And the old pairing is exactly what produced DAILY_REWARD_ADVANCE_NOT_PROVEN:
+        # the daily verifier still refuses a non-daily landing, because that contract --
+        # unlike the intel one -- really is "come back to DAILY".
         daily_dismiss = verify_daily_reward_advanced(self._reward(), WorldState(
             page=Page.INTEL, popup=None, confidence=0.99))
         self.assertFalse(daily_dismiss.ok)
