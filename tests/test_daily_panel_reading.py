@@ -3,15 +3,17 @@
 `tests/test_daily_verifier.py` drives ``ReplayVision`` over ``tests/replay/labels.json`` -- it
 checks the *rules* against labels.  Nothing checked what the two real recognisers produce on a
 real frame, and that is where the defect this file guards was found: ``vision.py``'s template
-branches return literal dicts with hardcoded numbers at confidence 0.99, and on
-``live_daily_after_beast.png`` the template layer really does say ``activity: 70`` while the frame
+branches return literal dicts that were cut from a single panel, and on
+``live_daily_after_beast.png`` the template layer used to say ``activity: 70`` while the frame
 shows 270.
 
-``HybridVision`` hides that in the normal case, because it merges the OCR layer over the template
-layer key by key.  So the thing worth pinning is not "the template is wrong" -- it is that **the
-production reading is the measurement, not the constant**, and that the reading carries the task
-rows it read rather than a shape with no rows in it.  Both are asserted on the frame where the two
-layers disagree, which is the only frame where the distinction is visible.
+That *specific* separation ended on 2026-09-17 (``cb716da2``): the two 每日任务 tab records
+are registered before the old activity branches -- because 'page is DAILY' never meant 'the
+daily tab is showing' -- so the template layer stops at ``{"tab": "TASKS"}`` and publishes no
+activity at all on every live daily frame.  What survives, and what the tests below assert, is
+the separation the merge exists for: whatever the template layer carries (or fails to carry),
+the production reading must be the measurement -- the number the frame draws, plus the task
+rows it read.
 
 The frames are gitignored (``.gitignore:37  dataset/raw/**/*.png``), so on a checkout without them
 these tests skip with a reason instead of pretending to pass.
@@ -30,9 +32,14 @@ sys.path.insert(0, str(ROOT))
 
 #: A real 720x1280 daily frame.  Its label (tests/replay/labels.json) records activity 270 with
 #: claimed_milestones [40, 80, 120, 160, 215, 270] and next_milestone 325, so 270 is the truth
-#: this frame draws and 70 is the template layer's constant.
+#: this frame draws.
 FRAME = ROOT / "dataset" / "raw" / "live_daily_after_beast.png"
 MEASURED_ACTIVITY = 270
+
+#: The constant the template layer used to publish on this frame (cut from a 70-activity
+#: panel).  Unreachable since 2026-09-17 -- ``cb716da2`` put the tab records first -- but kept
+#: to name the defect this file was written for: the constant must never come back as the
+#: reading.
 TEMPLATE_CONSTANT_ACTIVITY = 70
 
 
@@ -59,24 +66,37 @@ def _hybrid():
 
 
 def test_the_production_reading_publishes_the_measurement_not_the_template_constant() -> None:
-    """The reading must be the number on the frame, never the value a template was cut from."""
+    """The reading must be the number on the frame, never a value a template was cut from.
+
+    Re-derived 2026-10-16.  The old form asserted ``template == 70`` against
+    ``production == 270``, and that separation ended with ``cb716da2`` (see the module
+    docstring): the template layer stops at its tab record and carries no activity on any
+    live daily frame, so the constant is unreachable.  The assertion kept is the one with
+    teeth in the new shape -- the template layer must **not** publish the measurement (it
+    cannot measure it), while the production reading must.  If a future change lets the
+    template layer measure this itself, re-point the assertions rather than deleting them.
+    """
     frame = _frame_or_skip()
     hybrid = _hybrid()
 
     template_daily = dict(hybrid.template_vision.observe(frame).daily or {})
     production_daily = dict(hybrid.observe(frame).daily or {})
 
-    # The two layers really do disagree on this frame, so the assertion below has teeth.
-    # If a future change makes them agree, this test should be re-pointed at a frame that
-    # still separates them rather than silently weakened -- so the disagreement is asserted.
-    assert template_daily.get("activity") == TEMPLATE_CONSTANT_ACTIVITY, (
-        "this frame no longer separates the two layers: the template layer used to say "
-        f"{TEMPLATE_CONSTANT_ACTIVITY}, it now says {template_daily.get('activity')!r}. "
-        "Re-point the test at a frame where they still disagree."
+    # The template layer is expected to stop at the tab record, having no activity read of
+    # its own -- neither the cut constant nor the measurement.
+    assert "activity" not in template_daily, (
+        "the template layer is not supposed to publish an activity on a live daily frame -- "
+        "it stops at its tab record; it now says "
+        f"{template_daily.get('activity')!r}. If the template layer gained a real activity "
+        "read, re-point this test at a frame where the two layers still disagree."
+    )
+    assert template_daily.get("tab") == "TASKS", (
+        "the frame draws 每日任务 as the selected tab and the template layer must say so; "
+        f"got {template_daily.get('tab')!r}"
     )
     assert production_daily.get("activity") == MEASURED_ACTIVITY, (
         "the production reading must be the number the frame draws "
-        f"({MEASURED_ACTIVITY}), not the template layer's constant "
+        f"({MEASURED_ACTIVITY}), not a constant a template was cut from "
         f"({TEMPLATE_CONSTANT_ACTIVITY}); got {production_daily.get('activity')!r}"
     )
 

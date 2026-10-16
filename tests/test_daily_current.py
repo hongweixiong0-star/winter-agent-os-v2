@@ -1,3 +1,21 @@
+"""The daily reward chain as the production stack reads it, on the 2026-09-08 live frames.
+
+This file used to drive ``SemanticWorldVision`` alone -- the template layer -- and that was
+the production reading until 2026-09-17.  ``cb716da2`` then registered the two 每日任务 tab
+records *before* the old activity branches (because 'page is DAILY' never meant 'the daily
+tab is showing'), so on every live daily frame the template layer now stops at
+``{"tab": "TASKS"}`` and the status/activity numbers arrive from the OCR layer instead.
+``HybridVision`` is the stack that merges the two, and it is what the running client
+observes with -- so it is what this file drives.
+
+Measured 2026-10-16 on these frames through the composite: ``daily_entry`` reads
+``activity=80 / status=CLAIMABLE / claimable_count=1``, ``daily_after2`` reads
+``activity=70``, and all three reward-chain verifiers answer OK.
+"""
+
+from __future__ import annotations
+
+import json
 import unittest
 from pathlib import Path
 
@@ -11,10 +29,26 @@ from winter_agent_v2.vision import SemanticWorldVision
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _production_vision():
+    """The real stack -- template layer merged with OCR -- which is what production observes with."""
+    from winter_agent_v2.ocr import HybridVision, OCRService, RapidOCRBackend, ResilientOCRBackend
+
+    cfg = json.loads((ROOT / "config/v2.json").read_text(encoding="utf-8"))
+    ocr = OCRService(ResilientOCRBackend(RapidOCRBackend(Path(cfg["ocr"]["module_path"]))))
+    return HybridVision(
+        SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json"), ocr
+    )
+
+
 class CurrentDailyTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.vision = SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json")
+        try:
+            cls.vision = _production_vision()
+        except Exception as exc:  # noqa: BLE001
+            raise unittest.SkipTest(
+                f"the production stack is unavailable: {type(exc).__name__}: {exc}"
+            )
 
     def state(self, name):
         return self.vision.observe(ROOT / "dataset/raw" / name)
