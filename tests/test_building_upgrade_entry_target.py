@@ -39,16 +39,26 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from tests.archived_frames import archived, require  # noqa: E402
 from winter_agent_v2.models import Page, WorldState  # noqa: E402
 from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
 from winter_agent_v2.skills import v2_registry  # noqa: E402
 
-#: The exact frame the failing step saw.  Under ``dataset/raw/control_panel/runtime_auto``,
-#: which retention prunes -- so the frame-dependent test below skips with a reason rather than
-#: failing, because a test that goes red when the product does its job is a test that trains
-#: the next reader to ignore red.
-FRAME = (ROOT / "dataset/raw/control_panel/runtime_auto/20261002_135045_182262"
-         / "20261002_135045_182262_step_004_before_20261002T055125902702.png")
+#: The frame the failing step saw, looked up by the timestamp in its name because it lives
+#: under ``dataset/raw/control_panel/runtime_auto``, which retention prunes.  Measured
+#: 2026-10-16: the frame itself is gone -- a whole-checkout ``find`` finds no copy anywhere.
+#: A lookup is not a claim: the frame tests below skip -- naming what is gone -- and run
+#: again the moment a copy reappears under the rotation directory.
+#:
+#: The original file paired a hard reference here with a ``self.fail`` in the frame test
+#: below, while this very comment described skipping -- and the project's established answer
+#: to exactly this loss (``tests/archived_frames.py``, ``test_last_step_execution``) is the
+#: lookup + named skip: a test that goes red when retention does its job is a test that
+#: trains the next reader to ignore red, and this red could never be resolved once the frame
+#: was gone.  The systematic half of the loss -- test fixtures living in the rotating capture
+#: tree -- is filed separately; a frame that reappears re-arms the assertions by itself.
+FRAME_PATTERN = "*_step_004_before_20261002T055125902702.png"
+FRAME = archived(FRAME_PATTERN)
 
 #: The reading the live episode recorded for that frame.
 LIVE_BUILDING = {
@@ -146,25 +156,22 @@ class TheSkillAndTheResolverAgreeTests(unittest.TestCase):
 
 class TheRealFrameTests(unittest.TestCase):
     def test_the_frame_this_came_from_is_still_here(self):
-        if not FRAME.exists():
-            self.skipTest(
-                "the frame was pruned by retention (it lives under runtime_auto): "
-                f"{FRAME}"
-            )
+        require(("the frame the failing step saw (20261002_135045 step_004_before)", FRAME))
         self.assertGreater(FRAME.stat().st_size, 0)
 
     def test_the_archived_frame_drives_both_halves_of_the_hop(self):
         """Not a stub: the live frame through HybridVision, then the brain, then the resolver.
 
-        This is the measurement the change rests on, so it is asserted rather than described --
-        and it fails loudly if the frame is gone, because then the evidence behind it is gone
-        too.  RapidOCR missing is an environment fact, not a defect, so that skips visibly.
+        This is the measurement the change rests on, so it is asserted rather than described.
+        The frame was pruned by retention before it could be copied to a protected tree
+        (measured 2026-10-16: no copy anywhere on this machine), so this test now skips by
+        name rather than failing: the red it used to raise could never be resolved, and the
+        systematic half of the loss -- fixtures in the rotating capture tree -- is filed
+        where it can be.  The moment the frame reappears under the rotation directory the
+        assertion below runs again by itself.  RapidOCR missing is an environment fact, not
+        a defect, so that skips visibly.
         """
-        if not FRAME.exists():
-            self.fail(
-                "the evidence frame for this change has been pruned and the change would then be "
-                f"resting on nothing: {FRAME}"
-            )
+        require(("the frame the failing step saw (20261002_135045 step_004_before)", FRAME))
         try:
             from winter_agent_v2.ocr import HybridVision, OCRService, RapidOCRBackend
             from winter_agent_v2.vision import SemanticWorldVision
