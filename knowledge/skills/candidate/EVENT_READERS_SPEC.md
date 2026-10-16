@@ -149,3 +149,20 @@
 
 **Step 2 状态**：①判据 ✓ · ②探路 ✓（接入点事实已明）· **接线实现明确推迟**（等 runtime 侧改动批次——
 那将是首次触及 runtime 的提交，需完整 §三·八 审查 + 回归）。
+
+---
+
+# Step 2 端到端回放（r219）：链路实证
+
+```
+输入帧：dataset/exploration/20261016T023240/before.png（凛风攻城战卡·实机帧）
+链路：OCRService(RapidOCR).recognize(frame).text → looks_like_event_card → read_event_card
+
+输出：
+  gate : True
+  card : {'phase': '侦察阶段', 'remaining': '13:27:18'}
+  （该卡无「我的积分」/档次——读取器如实**只输出两项**，不为凑字段编造）
+```
+
+**⇒ Step 2 全链闭环**：判据 ✓ · 挂读（runtime 同构 4 行）✓ · 三重验证（79 测试/invariant 11-0-4/§17 世界）✓ ·
+**端到端（真 OCR→真读取）✓**。下一步（另批次）：`EVENT_CARD_READ` verifier 函数（绑定待 OBSERVE 技能化时）。
