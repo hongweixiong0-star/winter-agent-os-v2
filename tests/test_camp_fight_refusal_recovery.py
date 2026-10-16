@@ -25,6 +25,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.models import Page, WorldState
@@ -117,6 +118,25 @@ def world_map(current: int = 8) -> WorldState:
     )
 
 
+def intel_route_only(runtime, goals, _deferrals):
+    """Offer only the intel goal this scenario is about, until it is held back.
+
+    The selector is stubbed, and the reason is measured rather than convenient: on
+    2026-10-16 the discovery for these frames listed fifteen goals -- CLEAR_INTEL
+    alongside KEEP_RESEARCH_PRODUCTIVE, DAILY_ACTIVITY_TARGET, KEEP_TRAINING_PRODUCTIVE,
+    DISCOVER_EVENT_CALENDAR (1000, catalogue price) and the SCHEDULED_* rows -- and
+    without this pin the top slot went to a different goal on every run, because which
+    one wins turns on the capability gate and the fairness ledger, and the running AUTO
+    rewrites both between test runs.  That is the same measured reason
+    ``test_refusal_yields_the_cycle`` pins its selector for.  This file is about the
+    refusal *route* -- the camp tap, the popup, and the free-stamina check, which
+    together are one goal's route -- and which goal wins the top slot is a different
+    question with its own tests.
+    """
+    return [goal for goal in goals
+            if goal.goal_id == "CLEAR_INTEL" and goal.goal_id not in runtime._yielded_goals]
+
+
 class TheRefusalOutranksTheGaugeTests(unittest.TestCase):
     """The brain half: a recorded refusal needs no reading at all."""
 
@@ -173,7 +193,8 @@ class TheRefusedFightIsRecoverableTests(unittest.TestCase):
         # what lets the route end on the free-stamina check instead of falling
         # through to the intel board.
         brain = RuleBrain(current_goal="INTEL", claim_free_stamina=True)
-        with TemporaryDirectory() as temp:
+        with TemporaryDirectory() as temp, \
+                patch.object(LiveRuntime, "_selectable", intel_route_only):
             run = LiveRuntime(
                 device=device,
                 vision=FakeVision(list(states)),
@@ -233,15 +254,26 @@ class TheRefusedFightIsRecoverableTests(unittest.TestCase):
         self.assertTrue(brain.camp_panel_refused)
 
     def test_the_refusal_is_bounded_per_run(self):
-        # With the bound at zero the route must not exist at all: the run ends
-        # on the refusal instead of continuing, which is the honest fallback if
-        # the recovery itself ever turns out to be wrong.
+        # With the bound at zero the *recovery channel* must not exist: no refusal is
+        # recorded on the brain, so a second sight of the camp panel would tap again
+        # instead of routing to the free stamina.  That is the honest fallback if the
+        # recovery itself ever turns out to be wrong.
+        #
+        # The ending is deliberately not asserted as "the run stops on the refusal" any
+        # more: since 2026-09-21 a failed step hands the cycle to the next task
+        # generically (``_yield_to_next_goal``; see ``test_refusal_yields_the_cycle``),
+        # so a budget of zero removes the channel, not the run's other work.  What this
+        # test owns is the channel: the flag stays down, and the step is still recorded
+        # as the honest refusal rather than as a success.
         run, _device, brain = self._run(
             self._refusal_then_free_stamina_check(), max_stamina_refusals=0
         )
-        self.assertEqual(len(run.steps), 1)
-        self.assertEqual(run.stop_reason, "INTEL_HERO_MARCH_REFUSED_FOR_STAMINA")
         self.assertFalse(brain.camp_panel_refused)
+        self.assertEqual(run.steps[0].decision.skill, "INTEL_HERO_START_MARCH")
+        self.assertFalse(run.steps[0].verification.ok)
+        self.assertEqual(run.steps[0].verification.reason, "INTEL_HERO_MARCH_REFUSED_FOR_STAMINA")
+        self.assertLessEqual(len(run.steps), 3,
+                             "and the generic handover stays inside the run's action budget")
 
     def test_the_popup_is_answered_by_the_brain_not_the_runtime(self):
         # The recovery must not press anything itself: the refusal leaves
@@ -262,7 +294,8 @@ class TheRefusedFightIsRecoverableTests(unittest.TestCase):
             world_map(),
         ]
         device = FakeDevice()
-        with TemporaryDirectory() as temp:
+        with TemporaryDirectory() as temp, \
+                patch.object(LiveRuntime, "_selectable", intel_route_only):
             run = LiveRuntime(
                 device=device,
                 vision=FakeVision(states),
