@@ -191,3 +191,26 @@
 - **CLAIM_VIP_FREE**：**VIP 页"免费"项**的识别与领取（**同 OPEN_VIP 的缰绳：严禁购买**；无 FREE 标识不点）。
 - **READ_FREE_ATTEMPTS**：各玩法"免费次数"读法的**泛化器**（Arena/Labyrinth/VIP 共用计数读法）——
   以 ARENA/LABYRINTH 的实采为训练集，**先读数后泛化**。
+
+---
+
+# 批 3·核验实测（r205）：INTEL 族 / 生产族冗余对表结果
+
+> 方法：spec 语义 vs `skills.py` 注册表逐条对表（零设备）。**结论先行：8 份中 7 份为既有能力重述。**
+
+| candidate | 既有注册对照 | 判定 |
+|---|---|---|
+| `READ_INTEL_LIST` | **同名同 id 已注册**（skills.py:222, CANDIDATE） | **SUBSET_OF_EXISTING**（重复文件） |
+| `SELECT_INTEL` | SELECT_INTEL_BEAST/FIREBEAST/RESCUE + `SELECT_INTEL_PIN`（均已注册） | **SUBSET_OF_EXISTING** |
+| `EXECUTE_INTEL` | EXECUTE_INTEL_RESCUE_SURVIVORS 等链（已注册） | **SUBSET_OF_EXISTING** |
+| `OPEN_BUILDING` | OPEN_TASK_FROM_QUICK_PANEL_BUILDING（已注册） | **SUBSET_OF_EXISTING** |
+| `OPEN_RESEARCH` | **同名同 id 已注册**（skills.py:374, CANDIDATE） | **SUBSET_OF_EXISTING**（重复文件） |
+| `OPEN_TRAINING` | OPEN_INFANTRY_TRAINING / OPEN_POWER_OVERVIEW（已注册/CANDIDATE） | **SUBSET_OF_EXISTING** |
+| `PROMOTE_TROOPS` | TRAIN_TROOPS（已 VERIFIED，含 promote） | **SUBSET_OF_EXISTING** |
+| **`READ_DAILY_PROGRESS`** | **注册表无**（同时是 `DAILY_ACTIVITY_TARGET` 的 BLOCKED 面） | **⭐ NEW_CAPABILITY（真缺口）** |
+
+**处置**：
+1. 7 份 SUBSET：**不做真机验证**（计划 16/17 达成预设目的——防止重复建设）；
+   候选池清理（标注/归档这 7 份）列入**下批**（另有 33 份全池的同类对表可一并做）。
+2. **`READ_DAILY_PROGRESS` 升为当前候选池的第 1 优先真机项**（每日面板的"活跃度计数+奖励层"读取——
+   DAILY_ACTIVITY_TARGET 的 75%→100% 缺口所在）。
