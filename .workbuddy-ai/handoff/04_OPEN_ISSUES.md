@@ -33,7 +33,7 @@ Machine-detected issues (recomputed every run):
 | P1-3 | **C 盘 200G 满**（工具链一度 ENOSPC 死锁：bash 起不来、编辑报 checkpoint 失败） | **已缓解，未根治** | 本轮以"截断通道"自救释放 ~5.9GB（陈旧 sandbox/trace 日志、pip/npm 缓存——**用户文档/代码/配置/会话数据未动**）；根因项**待用户决策**：Desktop 15GB、hiberfil.sys 13.4GB（可 `powercfg /h off`）、AppData 52.8GB（MathWorks/Programs 等）、.codex sessions 2.8GB |
 | P1-4 | **待批堆**：1094 untracked / 119 modified / 57 deleted | **清单已产出，待批** | 见 `UNTRACKED_AND_PENDING_INVENTORY_20261016.md`（分类+逐组建议）。**首要项**：`config/v2.json` 的 10-08 模型切换（Qwen3.6-35B-A3B @ llama.cpp:18080）已执行 8 天、未入库——旧 config 指向已删除的 UI-Venus。本轮已按"引用完整性/全绿活规格"先例纳入：4 个被引用工具、6 个草稿测试、tier 规格 |
 | ~~P1-5~~ | 测试套件"隔离绿、套件红"（模块级 `_METER_KINDS` 跨测试残留） | **✅ 已修 2026-10-16** | conftest 新增 autouse `_reset_module_state`（`8bdd49b2`）；毒探针成对验证后移除 |
-| P1-6 | **GIANT 搜索无结果的跨-run 重试**（10-09~10-11 窗口 150 次 episode，第二大 live 簇） | **已定性，待设计** | `_giant_stamina_failed` 为**实例级** → 每轮新 run 重新从 GIANT_BEAST sink 开始重尝；建议**持久化 + TTL 冷却**（"找不到"≠"不可用"——冷却时长是策略问题）。帧证：客户端确实没找到（`20261010_085450_380404` step_014 前后帧无卡无动物，冰原巨兽 tab 高亮）。另：同窗口的 `SELECT_BEAST_TARGET_MAMMOTH` ×143 失败**已于 10-16 修复**（`3101830c`：面板吞地图点击——156 次尝试 100% 分离：12 成功全裸地图 / 143 失败全面板开） |
+| ~~P1-6~~ | **GIANT 搜索无结果的跨-run 重试**（10-09~10-11 窗口 150 次 episode，第一大 live 簇） | **✅ 已实现 2026-10-16（`842364a1`）** | `_giant_stamina_failed` 改为读**持久冷却**（`learning/giant_search_cooldown.json`，TTL=1h——"找不到"≠"不可用"）：150 次/2 天 → 每小时最多 1 次；"无记忆=再试"（缺失/损坏→False，杜绝永久 DEFER）。3 守卫 + 四态探针 + runtime 回归 132 passed。帧证：客户端确实没找到（`20261010_085450_380404` step_014 前后帧无卡无动物，冰原巨兽 tab 高亮）。同窗口的 `SELECT_BEAST_TARGET_MAMMOTH` ×143 失败**已于 10-16 修复**（`3101830c`：面板吞地图点击——156 次尝试 100% 分离：12 成功全裸地图 / 143 失败全面板开） |
 
 ### 2026-10-11 · P0（新增）—— 生产树脏 ⇒ `PinError` 窗口
 
