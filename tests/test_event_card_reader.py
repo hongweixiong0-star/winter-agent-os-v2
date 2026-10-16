@@ -103,3 +103,37 @@ def test_card_gate_accepts_the_siege_card_without_a_score_row():
 def test_card_gate_rejects_single_weak_signal():
     # One card-shaped token is not a card; the gate exists to keep the tail-call rare.
     assert looks_like_event_card("我的积分：0") is False
+
+
+# --- verifier (verify_regular_event_card_read) ------------------------------------------
+
+from winter_agent_v2.models import Page, WorldState
+from winter_agent_v2.verifier import verify_regular_event_card_read
+
+
+def _state(page, events=None):
+    return WorldState(page=page, events=events or {})
+
+
+def test_verifier_passes_on_one_recognised_field():
+    after = _state(Page.EVENT, {"regular_event_card": {"phase": "侦查阶段", "remaining": "13:27:18"}})
+    result = verify_regular_event_card_read(_state(Page.EVENT), after)
+    assert result.ok is True
+    assert result.evidence["fields"] == ["phase"]
+
+
+def test_verifier_rejects_an_empty_card():
+    after = _state(Page.EVENT, {"regular_event_card": {}})
+    result = verify_regular_event_card_read(_state(Page.EVENT), after)
+    assert result.ok is False
+    assert result.reason == "EVENT_CARD_READ_NOT_PROVEN"
+
+
+def test_verifier_rejects_a_card_written_on_the_wrong_page():
+    after = _state(Page.MAP, {"regular_event_card": {"my_score": 0}})
+    assert verify_regular_event_card_read(_state(Page.EVENT), after).ok is False
+
+
+def test_verifier_rejects_when_no_card_key_exists():
+    after = _state(Page.EVENT, {"regular_events_hub": {"recognized": True}})
+    assert verify_regular_event_card_read(_state(Page.EVENT), after).ok is False

@@ -2006,6 +2006,28 @@ def verify_event_calendar_read(before: WorldState, after: WorldState) -> Verific
     )
 
 
+def verify_regular_event_card_read(before: WorldState, after: WorldState) -> VerificationResult:
+    """A no-input card-face read passes when the frame's card carried at least one field.
+
+    The sibling of ``verify_event_calendar_read`` for ``events["regular_event_card"]`` (the
+    runtime writes it in ``_read_due_calendar_entry``).  Deliberately weaker than the calendar
+    verifier in one direction and stronger in another: a card may honestly carry as few as one
+    recognised field (the siege card prints no score and no ladder), so the test is "at least
+    one field is present", not "all four"; but the page must still be EVENT and the value must
+    be a non-empty mapping -- an empty dict is a read that proved nothing and stays a failure.
+    """
+    events = after.events if isinstance(after.events, dict) else {}
+    card = events.get("regular_event_card") if isinstance(events, dict) else None
+    fields = ("my_score", "phase", "tiers", "tasks")
+    present = [key for key in fields if isinstance(card, dict) and key in card] if isinstance(card, dict) else []
+    ok = after.page is Page.EVENT and bool(present)
+    return VerificationResult(
+        ok,
+        "OK" if ok else "EVENT_CARD_READ_NOT_PROVEN",
+        {"card": card, "fields": present},
+    )
+
+
 def verify_event_calendar_detail_open(before: WorldState, after: WorldState) -> VerificationResult:
     calendar = (before.events or {}).get("calendar") if isinstance(before.events, dict) else None
     detail = (after.events or {}).get("calendar_detail") if isinstance(after.events, dict) else None
