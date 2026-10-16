@@ -20,9 +20,18 @@ def board(**extra):
 
 def test_exhaustion_is_not_goal_completion():
     state = board(untried_pins=0)
-    decision = RuleBrain(current_goal="INTEL").decide(state, v2_registry())
-    assert decision.reason == "intel_no_untried_pins"
-    assert decision.skill == "SAFE_STOP"
+    brain = RuleBrain(current_goal="INTEL")
+    # Exhaustion applies to the board, not to the AUTO cycle: the first sight leaves by
+    # the already measured INTEL -> MAP Back (``intel_board_exhausted_return_to_map``)
+    # so the same run can still discover ordinary map work, and only a *repeat* sight
+    # stops with ``intel_no_untried_pins``.  Neither is a completion: the goal must not
+    # be marked COMPLETE off an exhausted board.
+    first = brain.decide(state, v2_registry())
+    assert first.skill == "BACK"
+    assert first.reason == "intel_board_exhausted_return_to_map"
+    second = brain.decide(state, v2_registry())
+    assert second.skill == "SAFE_STOP"
+    assert second.reason == "intel_no_untried_pins"
     goals = {g.goal_id: g for g in GoalLibrary().discover(state)}
     assert goals["CLEAR_INTEL"].status.value != "COMPLETE"
 
@@ -60,18 +69,29 @@ def test_runtime_opens_once_then_defers_without_failed_execution(tmp_path):
     device = FakeDevice()
     opened = WorldState(page=Page.POPUP, popup="INTEL_MASTER_BOUNTY", confidence=0.99)
     runtime = LiveRuntime(
-        device=device, vision=FakeVision([board(), opened, board()]),
+        device=device,
+        vision=FakeVision([board(), opened, board(),
+                           WorldState(page=Page.MAP, confidence=0.99), board()]),
         semantic_vision=FakeSemantic(), capture_dir=tmp_path,
         brain=RuleBrain(current_goal="INTEL"), sleeper=lambda _: None,
     )
     with patch("winter_agent_v2.runtime.intel_pin_centers", return_value=[IntelPin(200, 600, "ORANGE", 900)]) as detect:
-        result = runtime.run(max_actions=2)
+        result = runtime.run(max_actions=3)
     assert result.stop_reason == "intel_no_untried_pins"
     assert len(device.taps) == 1
     assert result.steps[0].verification.ok
-    assert result.steps[1].execution is None
-    assert result.steps[1].before.intel["untried_pins"] == 0
-    assert detect.call_count == 2  # once per decision frame; no second resolver scan
+    # The first sight of the exhausted board leaves it by the measured INTEL -> MAP Back
+    # (bounded to once per run by the brain's own flag), and only the repeat sight
+    # defers -- with no execution at all, which is the "no failed execution" this test
+    # exists for.  Two scans per bare-intel decision frame (the planning copy and the
+    # goal-accounting stamp, both over the same path) and none for popup or map: three
+    # board frames, six scans.
+    assert result.steps[1].decision.reason == "intel_board_exhausted_return_to_map"
+    assert result.steps[1].verification.ok
+    assert len(device.backs) == 1
+    assert result.steps[2].execution is None
+    assert result.steps[2].before.intel["untried_pins"] == 0
+    assert detect.call_count == 6
 
 
 def test_existing_40px_boundary_and_new_pin(tmp_path):
@@ -104,11 +124,19 @@ def test_real_retained_board_exhaustion(tmp_path):
 
     device = RetainedFrameDevice()
     runtime = LiveRuntime(
-        device=device, vision=FakeVision([board(pins=len(pins))]),
+        device=device,
+        vision=FakeVision([board(pins=len(pins)),
+                           WorldState(page=Page.MAP, confidence=0.99),
+                           board(pins=len(pins))]),
         semantic_vision=FakeSemantic(), capture_dir=tmp_path,
         brain=RuleBrain(current_goal="INTEL"), sleeper=lambda _: None,
     )
     runtime._tapped_intel_pins = [(p.x, p.y) for p in pins]
-    result = runtime.run(max_actions=1)
+    result = runtime.run(max_actions=2)
     assert result.stop_reason == "intel_no_untried_pins"
     assert not device.taps
+    # The exhausted board costs the measured Back off the page, never a tap: the run
+    # leaves first (so map work stays reachable), and only the repeat sight stops.
+    assert result.steps[0].decision.reason == "intel_board_exhausted_return_to_map"
+    assert result.steps[0].verification.ok
+    assert result.steps[1].execution is None
