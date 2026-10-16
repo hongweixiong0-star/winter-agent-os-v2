@@ -87,16 +87,29 @@ class TheReadFollowsTheFrame(unittest.TestCase):
             self.assertEqual(found.available_skills, ())
 
     def test_the_ticket_keeps_its_place_on_the_board_in_every_frame(self):
-        """§5/§32: readiness changes, existence does not."""
+        """§5/§32: readiness changes, existence does not.
+
+        Re-derived 2026-10-16.  This used to assert ``status == UNKNOWN`` on every frame; 27
+        minutes after this file was written, 958fc9b3 ("an activity's own occurrence answers its
+        window") made ``window()`` report the *recorded occurrence's* own state instead of
+        discarding it ("reporting UNKNOWN ... left the ticket unable to say it was over"), so
+        BEAR_HUNT reads EXPIRED whenever its last recorded instance has ended.  That value is
+        the registry's measurement and moves with the next instance, so what is pinned is the
+        property instead: the value is the record's, identical on every frame -- which is
+        exactly what "readiness changes, existence does not" claims.
+        """
         counts = []
+        statuses = set()
         for world in (grid_frame(), hub_frame(), home_frame()):
             goals = emit(world)
             counts.append(len(goals))
             found = ticket(goals, "BEAR_HUNT")
-            self.assertEqual(found.status.value, "UNKNOWN")
+            statuses.add(found.status.value)
             self.assertTrue(found.evidence["required_observation"])
         # The registered activities are emitted identically; no frame drops one.
         self.assertEqual(len(set(counts)), 1)
+        # The window is the record's, not the frame's.
+        self.assertEqual(len(statuses), 1)
 
     def test_the_frame_predicate_reads_the_calendar_and_nothing_else(self):
         self.assertTrue(_frame_shows_calendar_grid(grid_frame()))

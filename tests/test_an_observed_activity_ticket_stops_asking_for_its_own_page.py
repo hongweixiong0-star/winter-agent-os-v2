@@ -141,14 +141,22 @@ class TheObservedTicketStopsAsking(unittest.TestCase):
         self.assertEqual(rows["SCHEDULED_CANYON_CLASH"]["reason"], "WAIT_UNTIL")
 
     def test_an_unobserved_ticket_still_reports_a_missing_observation(self):
-        """The other half of the same projection, so the change cannot be 'always WAIT_UNTIL'."""
+        """The other half of the same projection, so the change cannot be 'always WAIT_UNTIL'.
+
+        Re-derived 2026-10-16: this used CANYON_CLASH, whose registration gate is DISCOVERED --
+        and since 958fc9b3 (2026-10-05, "a lead is not a plan") a DISCOVERED activity does not
+        get a plan ticket of its own: it is emitted only when the current frame supplies it (a
+        calendar row or a strip read), which the sibling tests exercise directly.  With no frame
+        input the board carries the four plannable activities, so the unobserved half is asserted
+        on one of those -- the rule under test ("already on file") is the same for every ticket.
+        """
         goals = self.emit()
-        found = ticket(goals, "CANYON_CLASH")
+        found = ticket(goals, "FISHING_TOURNAMENT")
         projected = project_runtime_discovery(
             [found], SimpleNamespace(page=Page.HOME, events={}), role_id=ROLE, frame_id="f-1",
         )
         rows = {str(row.get("goal_id")): row for row in projected.diagnostics}
-        self.assertEqual(rows["SCHEDULED_CANYON_CLASH"]["reason"], "MISSING_OBSERVATION")
+        self.assertEqual(rows["SCHEDULED_FISHING_TOURNAMENT"]["reason"], "MISSING_OBSERVATION")
 
 
 if __name__ == "__main__":
