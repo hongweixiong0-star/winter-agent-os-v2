@@ -15,8 +15,10 @@ What these tests defend
 -----------------------
 * A fresh stored reading keeps the goal alive, and always above the sweep tickets -- stamina
   spending outranks browsing.
-* A *stale* reading does not: claiming stamina from an old frame is the same mistake in the other
-  direction, and the goal can simply come back when a frame carries the gauge.
+* A *stale* reading is not spent on: re-derived 2026-10-16, the goal comes back as the errand to
+  re-observe (``current: None`` + ``requires_live_observation`` + the two HUD-return skills)
+  rather than as absence carrying the old number -- "an expired gauge permits returning to the
+  HUD, never spending on its old value" (``goal_library``).
 * No reading at all is still no goal: this is not a licence to invent a number.
 * The goal's meter stays "how much is left to spend", not "did one hunt happen" -- the operator's
   §一 explicitly asks for the former.
@@ -57,8 +59,23 @@ def test_a_fresh_reading_keeps_the_goal_alive_off_the_map():
 
 
 def test_a_stale_reading_does_not_keep_it_alive():
-    """Refusing an old number is the other half: a stale frame is not evidence of now."""
-    assert stamina_goal(WorldState(page=Page.HOME), stored(547, overdue=True)) is None
+    """Refusing an old number is the other half: a stale frame is not evidence of now.
+
+    Re-derived 2026-10-16: the refusal is now its own goal shape rather than absence --
+    ``current: None`` with ``requires_live_observation`` and the two HUD-return skills
+    (``goal_library``: "An expired gauge permits returning to the HUD, never spending on its
+    old value").  The stale *number* is still refused; what deliberately stays alive is the
+    errand to go and read the gauge, which is the same reasoning that keeps the goal alive
+    off the map in the test above.
+    """
+    goal = stamina_goal(WorldState(page=Page.HOME), stored(547, overdue=True))
+    assert goal is not None, "an expired reading leaves the errand to re-read, not a spent number"
+    assert goal.evidence["current"] is None, "the old number must not be carried as state"
+    assert goal.evidence["requires_live_observation"] is True
+    assert set(goal.available_skills) == {"BACK", "OPEN_MAP"}, (
+        "the only licensed moves are the ones that reach the HUD"
+    )
+    assert goal.evidence.get("reused") is not True
 
 
 def test_no_reading_anywhere_is_still_no_goal():
@@ -78,12 +95,16 @@ def test_spending_stamina_outranks_browsing_panels():
     The world carries march data as well as stamina, because a goal that is not emitted cannot be
     compared: the first version of this test compared against ``KEEP_MARCHES_PRODUCTIVE`` in a
     world with no march reading, and it raised rather than asserting -- which is how it shipped red
-    for one commit.
+    for one commit.  The mail reading is on the frame for the same reason, and it has to be *live*
+    (2026-10-16): the entry-gated routines are badge-gated whenever the decision does not rest on
+    a reading taken on this frame, so a stored reading -- even a fresh one -- leaves
+    ``MAIL_ROUTINE`` unemitted and this comparison unavailable.
     """
     goals = {g.goal_id: g for g in GoalLibrary().discover(
-        WorldState(page=Page.HOME, march_used=2, march_max=3),
+        WorldState(page=Page.HOME, march_used=2, march_max=3, mail={"status": "UNREAD"}),
         observations=stored(547, overdue=False))}
     assert "KEEP_MARCHES_PRODUCTIVE" in goals, "the comparison needs both goals to exist"
+    assert "MAIL_ROUTINE" in goals, "and the browsing panel must be on the board too"
     assert goals["AVOID_STAMINA_WASTE"].priority > goals["MAIL_ROUTINE"].priority
     assert goals["AVOID_STAMINA_WASTE"].priority > goals["KEEP_MARCHES_PRODUCTIVE"].priority
 

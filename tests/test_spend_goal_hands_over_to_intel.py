@@ -1,4 +1,5 @@
-"""No beast in view: the spend goal hands over to the intel flow instead of stopping.
+"""No beast in view: the beast route stops with its measured reason -- the spend handover
+itself now lives in the stamina sink policy (see the re-derivation note below).
 
 The operator's rule for this round: 如果当前没有适合的普通野兽，尝试已有可靠能力能够执行的其他耗体力任务，
 例如符合条件的情报任务。
@@ -11,6 +12,15 @@ intel is AVAILABLE and LIVE_VERIFIED at 10-15 stamina per mission.
 
 The handover is bounded on purpose, and these tests pin every bound, because an unbounded handover
 would be a new way to spend stamina on a route nobody chose.
+
+**Re-derived 2026-10-16.**  The *in-brain* handover this file was written for was retired by
+``6863b779`` (2026-09-30, "Wire stamina policy to shared polar rally session and client search"):
+the give-up path now stops with its own measured reason (``verified_beast_target_not_visible``)
+and what happens *next* is the stamina **sink** policy's business -- ``knowledge/strategy/
+stamina_routes.json`` plus the runtime's ``_stamina_sink`` / ``_stamina_route``, whose own tests
+live in ``test_stamina_sink_routing.py``.  The two tests below were re-pointed to the contract
+that remains on the brain's side: the route stops honestly, leaves no switch behind, and asking
+twice gives the same answer.
 """
 
 from __future__ import annotations
@@ -108,33 +118,38 @@ class TheSpendGoalHandsOverToIntelTests(unittest.TestCase):
         self.assertEqual(decision.skill, "BACK")
         self.assertTrue(brain.beast_search_panel_left)
 
-    def test_after_the_budget_it_opens_the_intel_flow_instead_of_stopping(self):
-        brain = self._brain(goal="AVOID_STAMINA_WASTE", scans_used=SCAN_BUDGET)
-        decision = brain.decide(_on_map_after_search(), v2_registry())
-        self.assertEqual(
-            decision.skill, "OPEN_INTEL",
-            "no beast in view means another verified stamina task, not a safe stop",
-        )
-        self.assertEqual(brain.current_goal, "SPEND_STAMINA", "the route hands over")
-        self.assertTrue(brain.spend_route_switched)
+    def test_after_the_budget_the_route_stops_with_its_measured_reason(self):
+        """Re-derived 2026-10-16: the give-up is a stop, and the handover moved to the sink policy.
 
-    def test_the_handover_happens_once_per_run(self):
-        """The bound: a *second* give-up on the beast route is a stop, not another handover.
-
-        After the first handover the run is legitimately on the spend route, so it opens intel on
-        its own -- that is the route working, not the handover repeating.  What must not happen is
-        the beast route giving up twice and switching twice, so the second give-up is asserted
-        with the run put back on BEAST_HUNT.
+        The in-brain ``OPEN_INTEL`` handover was retired by ``6863b779``; what survives on the
+        brain's side is that the beast route gives up with its own measured reason instead of
+        silently rewriting its route.  Where the spend *goes* is the sink policy's decision
+        (``test_stamina_sink_routing.py``), not this branch's.
         """
         brain = self._brain(goal="AVOID_STAMINA_WASTE", scans_used=SCAN_BUDGET)
-        brain.decide(_on_map_after_search(), v2_registry())
-        self.assertTrue(brain.spend_route_switched)
+        decision = brain.decide(_on_map_after_search(), v2_registry())
+        self.assertEqual(decision.skill, "SAFE_STOP")
+        self.assertEqual(
+            decision.reason, "verified_beast_target_not_visible",
+            "the stop names what was measured, not what might happen next",
+        )
+        self.assertFalse(brain.spend_route_switched, "the switch is not the brain's to make any more")
 
-        brain.current_goal = "BEAST_HUNT"      # as if the run were back on the beast route
-        brain.goal_id = "AVOID_STAMINA_WASTE"
+    def test_a_second_give_up_is_the_same_measured_stop(self):
+        """Re-derived 2026-10-16: the once-per-run bound died with the handover it bounded.
+
+        What replaces it: the give-up is a pure stop -- asking twice gives the same answer and
+        touches no switch, so nothing in the brain can turn it into either a loop or a silent
+        route change.  The bound on *what happens next* now lives in the sink policy
+        (``test_stamina_sink_routing.py``).
+        """
+        brain = self._brain(goal="AVOID_STAMINA_WASTE", scans_used=SCAN_BUDGET)
+        first = brain.decide(_on_map_after_search(), v2_registry())
         second = brain.decide(_on_map_after_search(), v2_registry())
-        self.assertEqual(second.skill, "SAFE_STOP",
-                         "the handover is once per run; a second give-up is a stop")
+        self.assertEqual(first.skill, "SAFE_STOP")
+        self.assertEqual(second.skill, "SAFE_STOP")
+        self.assertEqual(second.reason, first.reason, "a give-up leaves no state behind")
+        self.assertFalse(brain.spend_route_switched)
 
     def test_another_goal_is_untouched_by_this_rule(self):
         """Only the goal whose purpose is to spend may be handed over.

@@ -1,4 +1,5 @@
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 from winter_agent_v2.models import MarchState, Page, WorldState
@@ -7,6 +8,35 @@ from winter_agent_v2.vision import ReplayVision
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _role_scoped_wood_formation(source_frame: str, observed_at: str) -> dict:
+    """The formation reading the live reader produces for an empty, current-role gather setup.
+
+    ``verify_wood_dispatch_from_march`` has required the spent formation to be THIS role's and
+    observed on THIS frame since 2026-10-02 (the WB-1002-16 refusal: a stale placeholder
+    resource comparison vetoed a payable dispatch).  The replay reader does not read hero
+    formations at all -- it reads ``marches``/``march_used``/the page fields -- so the state
+    gets the reading the live reader would have carried, stamped with the state's OWN
+    timestamp so the "observed now" clause is exact rather than accidental.  Empty slots plus
+    no confirmed specialist is ``READY_EMPTY``: the safe valid fallback the contract defines.
+    """
+    return {
+        "status": "OBSERVED",
+        "page": "PAGE_FORMATION",
+        "role_scope": "LIVE_OBSERVED",
+        "role_id": "1061663148",
+        "source_frame": source_frame,
+        "observed_at": observed_at,
+        "resource_source": "PAGE",
+        "resource_type": "WOOD",
+        "slots": [
+            {"slot": 1, "state": "EMPTY"},
+            {"slot": 2, "state": "EMPTY"},
+            {"slot": 3, "state": "EMPTY"},
+        ],
+        "empty_slots": [1, 2, 3],
+    }
 
 
 class NavigationVerifierTests(unittest.TestCase):
@@ -74,13 +104,18 @@ class NavigationVerifierTests(unittest.TestCase):
         self.assertTrue(verify_march_page_open(before, after).ok)
 
     def test_wood_march_dispatch_transition(self):
+        """The real transition, with the formation the verifier now requires (see the helper)."""
         replay = ReplayVision(ROOT / "tests/replay/labels.json")
         before = replay.observe(ROOT / "dataset/raw/live_attempt8_march.png")
         after = replay.observe(ROOT / "dataset/raw/live_attempt8_marching.png")
+        before = replace(before, hero_troop={"gather_formation": _role_scoped_wood_formation(
+            "live_attempt8_march.png", str(before.timestamp))})
         self.assertTrue(verify_wood_dispatch_from_march(before, after).ok)
 
     def test_first_live_march_is_valid_dispatch_evidence(self):
         before = WorldState(page=Page.MARCH, resource_target="WOOD", confidence=0.99)
+        before = replace(before, hero_troop={"gather_formation": _role_scoped_wood_formation(
+            "live-first-march", str(before.timestamp))})
         after = WorldState(
             page=Page.MAP,
             marches=(MarchState.MARCHING,),
