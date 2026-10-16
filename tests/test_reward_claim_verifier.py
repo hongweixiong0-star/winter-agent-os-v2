@@ -113,7 +113,11 @@ class RewardClaimVerifierTests(unittest.TestCase):
         self.assertEqual(RuleBrain(current_goal="MAIL").decide(clear, v2_registry()).reason, "mail_all_clear")
 
     def test_mail_atomic_navigation_claim_and_dismiss_verifiers(self):
-        home = WorldState(page=Page.HOME, confidence=0.99)
+        # The mail goal is entry-gated (operator rule: 无红点，就没有这个 Goal), so the HOME
+        # frame it opens from must carry the entry's own badge -- measured 2026-10-16: without
+        # it the brain answers SAFE_STOP / mail_entry_badge_unknown_this_frame.
+        home = WorldState(page=Page.HOME, confidence=0.99,
+                          red_dots={"BTN_OPEN_MAIL": {"state": "PRESENT"}})
         mail = WorldState(page=Page.MAIL, mail={"status":"CLAIMABLE", "active_tab":"SYSTEM", "tab_badges":{"SYSTEM":5}}, confidence=0.99)
         reward = WorldState(page=Page.POPUP, popup="MAIL_REWARD", mail={"claim_feedback":True}, confidence=0.99)
         self.assertTrue(verify_open_mail(home, mail).ok)

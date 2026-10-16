@@ -125,11 +125,20 @@ def test_every_strip_entry_resolves_to_a_registered_activity():
 
     This is the guard that keeps the reader honest: the strip proves *that an activity is
     advertised*, never *when it runs* or *what it costs*.
+
+    ``registry_activities()`` and not ``known_activities()``.  The reader's own resolver builds
+    its label index from ``registry_activities()`` (``event_goal._event_label_index``), and this
+    test names the same **identity** vocabulary: a frame that prints 联盟总动员 must resolve
+    even though that entry is a DISCOVERED lead.  ``known_activities()`` answers the different
+    question "may a *plan* be built from it" -- only REVIEWED/VERIFIED gates pass it, and the
+    measured point of this very strip is that ``ALLIANCE_MOBILIZATION`` is advertised while
+    being exactly such a lead.  Measured 2026-10-16: conflating the two APIs here was the only
+    thing failing -- the reader reports the id, and the registry knows it.
     """
     result = read_regular_event_activity_strip(
         calendar_grid_frame_tokens(), frame_size=FRAME_SIZE
     )
-    registered = {activity.event_id for activity in event_goal.known_activities()}
+    registered = {activity.event_id for activity in event_goal.registry_activities()}
     for entry in result["entries"]:
         assert entry["event_id"] in registered
         # A preview carries no clock.  The window stays the registry's to answer.
