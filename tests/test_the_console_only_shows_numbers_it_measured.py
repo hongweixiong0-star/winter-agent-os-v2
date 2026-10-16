@@ -332,6 +332,13 @@ class _BoardStub:
         object.__setattr__(self, "rows", [])
         object.__setattr__(self, "goal_board", self)
         object.__setattr__(self, "_panel_cls", panel_cls)
+        # The worker handle is an ``__init__``-level attribute, so it has to be stated on
+        # the stub itself rather than fallen through to the class -- the class never had
+        # it.  ``_freshness`` reads it to decide whether a stale source is stale *for a
+        # reason*, and this stub stands in for an object with no run in flight; the
+        # fall-through worked until the 2026-10-11 board-meta path (``6dfa1da5``) made
+        # the board read ``_freshness`` at all.
+        object.__setattr__(self, "process", None)
 
         class _Var:
             def __init__(self):
