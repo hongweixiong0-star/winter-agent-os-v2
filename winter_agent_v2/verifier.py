@@ -1922,6 +1922,21 @@ def verify_selected_building_upgrade_panel_opened(
     })
 
 
+def verify_event_page_open(before: WorldState, after: WorldState) -> VerificationResult:
+    """The regular-events page is open when the frame's page is the event family.
+
+    Deliberately page-level rather than structure-level (its calendar sibling asserts the grid):
+    OPEN_EVENT's job is only to get from HOME/MAP onto the events surface, whose several faces
+    -- calendar, hub, card -- all identify as Page.EVENT in the reader.
+    """
+    ok = before.page in {Page.HOME, Page.MAP} and after.page is Page.EVENT
+    return VerificationResult(
+        ok,
+        "OK" if ok else "EVENT_PAGE_NOT_OPEN",
+        {"page_before": before.page.value, "page_after": after.page.value},
+    )
+
+
 def verify_event_calendar_open(before: WorldState, after: WorldState) -> VerificationResult:
     """The regular-events entry succeeds only when its actual client page is observed."""
     calendar = (after.events or {}).get("calendar") if isinstance(after.events, dict) else None
