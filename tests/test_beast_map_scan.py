@@ -1113,5 +1113,46 @@ class TheSearchResultIsWhatTheRouteMarchesOnTests(unittest.TestCase):
         self.assertNotEqual(brain.decide(empty, v2_registry()).skill, "ATTACK_BEAST_CARD")
 
 
+class TheSearchPanelIsLeftBeforeTheMapTapTests(unittest.TestCase):
+    """The search panel swallows taps aimed at the map -- measured, and split perfectly.
+
+    Over the whole production stream (measured 2026-10-16): all **156** recorded
+    ``SELECT_BEAST_TARGET_MAMMOTH`` attempts divide cleanly -- **12 successes, every one
+    standing on a bare map**, and **143 failures, every one** with ``resource_search_open``
+    true, the verifier's own evidence saying ``before_visible=true / after_card=false`` (the
+    animal was drawn, the card never opened).  The tap landed on the panel, not the animal.
+
+    The polar route's search (``SUBMIT_GIANT_BEAST_SEARCH``) does not set
+    ``beast_search_used``, so the panel-leaving branch gated on that flag never fired for
+    it and the run walked into the tap with the panel still up, every time.  These tests pin
+    the fix -- one Back first -- and its flip side.
+    """
+
+    @staticmethod
+    def _mammoth(*, panel_open: bool) -> WorldState:
+        return WorldState(
+            page=Page.MAP, march_used=1, march_max=6,
+            beast={"visible_target": "MAMMOTH", "level": 5, "available": True,
+                   "source": "BEAST_LABEL", "table_level": 5, "level_matches_table": True},
+            resource_search_open=panel_open, confidence=0.99,
+        )
+
+    def test_the_panel_is_left_first_and_the_tap_follows_on_a_bare_map(self):
+        brain = RuleBrain(current_goal="BEAST_HUNT")
+        close = brain.decide(self._mammoth(panel_open=True), v2_registry())
+        self.assertEqual(
+            (close.skill, close.reason),
+            ("BACK", "close_search_panel_before_tapping_the_map_beast"),
+            "a tap aimed at the map with the panel up lands on the panel (143/143 measured)",
+        )
+        # The flip side, and the shape of all 12 successes: with the panel already down the
+        # tap is issued exactly as before.
+        tap = brain.decide(self._mammoth(panel_open=False), v2_registry())
+        self.assertEqual(
+            (tap.skill, tap.reason),
+            ("SELECT_BEAST_TARGET_MAMMOTH", "verified_visible_mammoth_target"),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -2901,6 +2901,39 @@ class RuleBrain:
                         self.pending_recall = True
                         return Decision("SELECT_MARCH_TO_RECALL", "stamina_goal_needs_a_slot_and_only_gathering_marches_remain", world.confidence, "recall_dialog_open")
                     return Decision("SAFE_STOP", "no_idle_march", 1.0, "wait_for_beast_slot")
+                # The search panel swallows taps aimed at the map.  Measured 2026-10-16 over
+                # the whole production stream: all 156 recorded SELECT_BEAST_TARGET_MAMMOTH
+                # attempts split perfectly -- 12 successes, every one standing on a bare map,
+                # and 143 failures, every one with ``resource_search_open`` true, the verifier's
+                # own evidence saying before_visible=true / after_card=false (the animal was
+                # drawn, the card never opened).  The tap landed on the panel, not the animal.
+                #
+                # The polar route's search (SUBMIT_GIANT_BEAST_SEARCH) does not set
+                # ``beast_search_used``, so the panel-leaving branch far above -- gated on that
+                # flag -- never fires for it, and the run walked into the tap below with the
+                # panel still up, every time.  One Back first: the map is exactly where the
+                # client left the animal, and the next decision taps it with nothing between.
+                # A Back that fails to move the client is refused by ``verify_safe_back`` (no
+                # different known page afterwards), so a stuck panel ends the step rather than
+                # ping-ponging.
+                #
+                # Only when the search has left nothing to read, its ticket was never spent by
+                # this route (the polar search does not set ``beast_search_used``; a search the
+                # ticket *was* spent on has its own target handling below, measured 2026-09-21
+                # on ``beast5_found.png``), and the next action really is the map tap.  Any
+                # non-empty search result (a solo-attack card, a rally card) is handled by its
+                # own branches, and a panel that is merely open -- tab not yet chosen, search
+                # not yet submitted -- belongs to the search chain, not here.
+                has_card = bool(world.beast_search_result or {})
+                if (world.resource_search_open and not has_card
+                        and not self.beast_search_used
+                        and (is_dispatchable(world.beast) or may_evaluate(world.beast))):
+                    return Decision(
+                        "BACK",
+                        "close_search_panel_before_tapping_the_map_beast",
+                        world.confidence,
+                        "resource_search_closed",
+                    )
                 # CAP-Z01: whether this is spendable is a property of the
                 # client's own beast table, not of a literal pair here.  The
                 # table currently allows exactly the live-verified musk ox, so
