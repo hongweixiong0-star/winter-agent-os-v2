@@ -20,7 +20,8 @@
   （Qwen3.6-35B-A3B @ llama.cpp:18080）已执行 8 天、未入库（旧 config 指向已删除的 UI-Venus）。
 - 🧭 **覆盖率口径的下一步**：NEVER_TRIED 5 个（KEEP_RESEARCH_PRODUCTIVE / ALLIANCE_TIMED_EVENTS /
   ALLIANCE_MOBILIZATION_ICEFIELD_BEAST / OBSERVE_FISHING_STATE / USE_NORMAL_FISHING_BAIT——**需真机**）；
-  BLOCKED 3 个（USE_FREE_ARENA_ATTEMPTS / LABYRINTH_DAILY / TRAVEL_SUPPLY——**需新实现**）。
+  BLOCKED 3 个（USE_FREE_ARENA_ATTEMPTS / LABYRINTH_DAILY / TRAVEL_SUPPLY——**零起点实测
+  2026-10-16：13 个 capability token、registry 0 技能、dataset 0 帧**——需真机探索并建技能）。
   报告：`docs/CAPABILITY_COVERAGE.md`。
 - 忠实记录：10-15 12:37 操作员把 `MODE_STATE` 闩为 MANUAL（"work buddy 使用"）；**发 AUTO 前先按
   下一节（10-14 快照）的配方切 AUTO + 重启面板**。
