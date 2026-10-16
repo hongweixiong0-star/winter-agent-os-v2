@@ -111,3 +111,20 @@
 - **推荐**：**方案 A**；其判据（"帧含 `我的积分：` 或页签行特征"）本身可用今天素材单测。
 - **Step 2 实施清单（下批）**：①写"卡面帧判据"纯函数+测试；②在 EVENT 分支尾随挂读（一次小 diff）；
   ③写 `EVENT_CARD_READ` verifier；④跑 `invariant_review` + 回归；⑤提交。
+
+---
+
+# Step 2-② 探路实测（r216）：回放确认接入点
+
+**方法**：以 `SemanticWorldVision(dataset/candidate/template_manifest.json)` 对
+`dataset/exploration/20261016T023240/before.png`（凛风攻城战卡帧）回放 `observe()`。
+
+**结果**：`page=Page.EVENT | confidence=0.99`；`events={"hub":"SUPER_ACTIVITY","panel":"SUPER_ACTIVITY","day_claim_visible":false}`
+——**"常规活动"卡帧走的就是 `PAGE_SUPER_ACTIVITY` 分支（vision.py:2382）**（该分支的锚是
+返回箭头+右缘"超值活动"标题，两页共有）。
+
+**⇒ 接入点确认**：在 2382 分支 `return WorldState(...)` 前挂尾随逻辑——
+`if looks_like_event_card(frame_text): events["card"] = read_event_card(frame_text)`。
+
+**下一小步（Step 2-② 剩余）**：确认 **frame_text 的获取通道**（vision 内既有 OCR 文本读出——
+`self.semantic`/ocr 层现有 API），随后写最小 diff + `EVENT_CARD_READ` verifier。
