@@ -551,9 +551,17 @@ class FakeSemantic:
     #: ``beast_search_starts_by_opening_the_client_search`` / ``idle_march_available``).  A fixture
     #: that cannot resolve it produces a step with no execution, which reads as "the run did nothing"
     #: rather than as "the fixture is out of date".
+    #:
+    #: ``BTN_START_RALLY`` joined for that same measured reason on 2026-10-16: since the stamina
+    #: route picks the verified GIANT_BEAST sink for this world (``choose_stamina_goal``: intel
+    #: unavailable, giant not failed -- ``6863b779``), the first step of ``AVOID_STAMINA_WASTE`` on
+    #: a MAP frame is ``START_RALLY`` (``giant_stamina_shared_rally_session``), and this name is
+    #: exactly its tap target.  Without it the step again had no execution, which the two
+    #: ``EpisodeMeasurementTests`` below misread as a route failure rather than a fixture gap.
     def find(self, _path, semantic):
         return (FakeMatch()
-                if semantic in {"BTN_OPEN_HOME", "PAGE_MAP", "BTN_OPEN_RESOURCE_SEARCH"}
+                if semantic in {"BTN_OPEN_HOME", "PAGE_MAP", "BTN_OPEN_RESOURCE_SEARCH",
+                                "BTN_START_RALLY"}
                 else None)
 
     semantic = property(lambda self: self)
@@ -990,35 +998,36 @@ class EpisodeMeasurementTests(unittest.TestCase):
         # that was the step the goal took first on a MAP frame back then.  The stamina route
         # moved on: with intel unavailable ``choose_stamina_goal`` now picks the verified
         # GIANT_BEAST sink for this world, so ``AVOID_STAMINA_WASTE`` leads with ``START_RALLY``
-        # (``giant_stamina_shared_rally_session``) -- the step was disallowed, the run stopped
-        # before acting, no episode was written and the read below died on a missing file.
-        # The pair under test is unchanged: a verifier pass without goal movement.  The
-        # after-frame now carries what START_RALLY's verifier reads (a self-owned BEAR rally
-        # with a running countdown); stamina is unchanged, so the action lands and the goal
+        # (``giant_stamina_shared_rally_session``).  That sink's own target is ``POLAR_TERROR``
+        # -- ``_stamina_route`` sets ``rally_target`` on the goal's evidence -- so the
+        # after-frame must carry a self-owned POLAR_TERROR rally with a running countdown,
+        # which is what the loop's ``verify_current_step`` reads through
+        # ``_verify_rally_action``.  Stamina is unchanged, so the action lands and the goal
         # does not move.
         states = [
             WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6, confidence=0.99),
             WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6,
                        alliance={"rally": {"ownership": "SELF", "remaining_seconds": 3600,
-                                           "target_type": "BEAR"}},
+                                           "target_type": "POLAR_TERROR"}},
                        confidence=0.99),
         ]
         device = FakeDevice()
-        # KNOWN RED (2026-10-16, last step of this re-fixture).  ``START_RALLY``'s action is
-        # ``TAP_SEMANTIC:BTN_START_RALLY``, and that name resolves from the *image* (a template
-        # on the bear panel), while this harness's frames are empty files written by
-        # ``FakeDevice.screenshot`` -- so the step dies at ``SEMANTIC_TARGET_NOT_VERIFIED``
-        # before any verification, exactly as its stderr shows.  The route steps that used to
-        # make this fixture work (``SEARCH_RESOURCE`` and the rest of the gather route) resolve
-        # from *world readings* and need no picture, which is why the original fixture passed.
-        # Three ways out, in the order this project would try them: (a) find a
-        # world-reading-based sink for ``AVOID_STAMINA_WASTE`` on this world -- not identified
-        # in this pass (the giant sink leads to an image-resolved rally button, the intel sink
-        # to its own page route); (b) drive ``_record_episode`` directly the way
-        # ``test_session_outcome_persistence`` does -- loses the run-level integration this
-        # test is about; (c) archive a real frame carrying ``BTN_START_RALLY`` under
-        # ``dataset/truth_audit`` and hand it to the vision stub.  Left red with the diagnosis
-        # rather than re-pointed at a weaker assertion.
+        # The blocker this fixture hit (2026-10-16, kept as the record): ``START_RALLY``'s action
+        # is ``TAP_SEMANTIC:BTN_START_RALLY`` and this harness's frames are empty files written by
+        # ``FakeDevice.screenshot``, so the step died at ``SEMANTIC_TARGET_NOT_VERIFIED`` before
+        # any verification.  The original fixture had passed because its route's steps resolved
+        # from *world readings*; the stamina route (``6863b779``) now leads with the rally button.
+        #
+        # Resolved the same day, by the first of the three candidate fixes the diagnosis listed:
+        # this harness resolves taps through ``FakeSemantic``, and that stub now answers
+        # ``BTN_START_RALLY`` exactly as it already answered the gather route's
+        # ``BTN_OPEN_RESOURCE_SEARCH`` -- a first-step target missing from the stub reads as "the
+        # run did nothing" rather than as "the fixture is out of date", which is the sibling
+        # entry's own measured reason.  Two halves, and the second was measured a step later:
+        # with the button resolvable the step lands, and the after-frame's rally identity must
+        # be the *sink's own* target (``POLAR_TERROR``) -- a ``BEAR`` rally made
+        # ``_verify_rally_action`` answer ``RALLY_CREATE_NOT_PROVEN`` on an action that had
+        # visibly succeeded, which is the same two-halves-one-hop shape this file keeps meeting.
         with TemporaryDirectory() as temp:
             path = Path(temp) / "episodes.jsonl"
             with offline_runtime_state(Path(temp), NOTHING_ELSE_TO_DO):
@@ -1037,17 +1046,16 @@ class EpisodeMeasurementTests(unittest.TestCase):
         self.assertEqual(row["goal_id"], "AVOID_STAMINA_WASTE")
 
     def test_a_goal_that_moved_is_recorded_as_progress(self):
-        # Re-fixtured with its sibling above (2026-10-16): the goal's route now leads with
-        # START_RALLY on this world, so the after-frame carries the rally reading its verifier
-        # wants and the stamina drop is what marks the goal as moved.  Shares its sibling's
-        # KNOWN RED blocker (the rally button resolves from the image; the fake frames are
-        # empty) -- read the block comment above ``test_a_verifier_pass_without_...`` for the
-        # three candidate fixes.
+        # Re-fixtured with its sibling above (2026-10-16): the goal's route leads with
+        # START_RALLY on this world, so the after-frame carries the reading the loop's own
+        # ``verify_current_step`` wants -- a self-owned POLAR_TERROR rally, the sink's target --
+        # and the stamina drop (457 -> 437) is what marks the goal as moved.  The sibling's
+        # block comment records the fixture blocker and its two-half resolution.
         states = [
             WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6, confidence=0.99),
             WorldState(page=Page.MAP, stamina={"current": 437}, march_used=1, march_max=6,
                        alliance={"rally": {"ownership": "SELF", "remaining_seconds": 3600,
-                                           "target_type": "BEAR"}},
+                                           "target_type": "POLAR_TERROR"}},
                        confidence=0.99),
         ]
         device = FakeDevice()
