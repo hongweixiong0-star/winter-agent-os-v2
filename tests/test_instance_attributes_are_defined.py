@@ -46,10 +46,20 @@ def _dangling_reads(path: Path) -> list[tuple[str, int]]:
     file, class-body names (an instance reads a class attribute through
     ``self``), method names, and explicit ``getattr(self, "X", ...)`` /
     ``setattr(self, "X", ...)`` guards.
+
+    **Call targets are excluded, and that is the division of labour rather than a
+    gap.**  ``tools/check_wiring.py`` audits dangling ``self.X()`` *calls* and
+    resolves base-class names across modules; this file is a one-file AST pass and
+    deliberately does not.  Measured 2026-10-16: without the exclusion, three
+    ``self.append(row)`` calls on ``Ledger`` subclasses (``ui_venus_offline.py``,
+    ``ui_venus_online.py``, ``ui_venus_repair.py``) were reported here as dangling
+    reads -- the method is defined, one module away, on the base class the module
+    docstring's "plain attribute comparison" case never included.
     """
     tree = ast.parse(path.read_text(encoding="utf-8"))
     defined: set[str] = set()
     read: dict[str, int] = {}
+    called: set[str] = set()
 
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef):
@@ -75,6 +85,10 @@ def _dangling_reads(path: Path) -> list[tuple[str, int]]:
             elif isinstance(node.ctx, ast.Load):
                 read.setdefault(node.attr, node.lineno)
 
+        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name) and node.func.value.id == "self"):
+            called.add(node.func.attr)
+
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
             if node.func.id in {"getattr", "setattr"} and len(node.args) >= 2:
                 owner, name = node.args[0], node.args[1]
@@ -84,7 +98,7 @@ def _dangling_reads(path: Path) -> list[tuple[str, int]]:
 
     return sorted(
         ((attr, line) for attr, line in read.items()
-         if attr not in defined and not attr.startswith("__")),
+         if attr not in defined and attr not in called and not attr.startswith("__")),
         key=lambda item: item[1],
     )
 
