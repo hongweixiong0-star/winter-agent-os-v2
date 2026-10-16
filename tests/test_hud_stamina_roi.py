@@ -98,11 +98,30 @@ class HudStaminaIsReadWholeTests(unittest.TestCase):
                     f"and this entry should be deleted",
                 )
 
-    def test_the_roi_is_still_wide_enough_for_the_measured_case(self):
-        """Cheap guard against the width being trimmed back without re-measuring."""
+    def test_the_roi_still_covers_the_measured_digit_span(self):
+        """Cheap guard against the crop being moved without re-measuring.
+
+        Re-derived 2026-10-16.  This used to assert ``w_norm >= 0.075``, because widening was
+        the 2026-09-19 fix and a narrow box is what dropped the trailing 7.  r272 re-measured
+        the frames and the crop changed shape: it is now (34, 96, 74, 124) -- *narrower* in
+        pixels than the 0.075 box, but its right edge sits further right (x 74, clearing the 7
+        the module docstring measures at x 63) and its left edge moved right off the noise it
+        was carrying.  On the eight-frame matrix of that commit every frame reads the same or
+        better than under the old box (two frames the old box could not read at all now read),
+        so width is no longer the property worth guarding -- the functional tests above do
+        that by reading the frames.  What a cheap check can still guard is coverage: neither
+        edge may be trimmed back inside the span the re-measurement established.
+        """
+        x0_px = HUD_STAMINA_ROI["x_norm"] * 720
+        x1_px = (HUD_STAMINA_ROI["x_norm"] + HUD_STAMINA_ROI["w_norm"]) * 720
+        self.assertLessEqual(
+            x0_px, 34 + 2,
+            "the left edge moved right of x 34, the start the r272 re-measurement measured",
+        )
         self.assertGreaterEqual(
-            HUD_STAMINA_ROI["w_norm"], 0.075,
-            "the HUD ROI was measured at 0.075 on real frames; narrowing it re-breaks 527 -> 52",
+            x1_px, 74 - 2,
+            "the right edge moved left of x 74, which is what clears the 7 at x 63; "
+            "trimming it re-breaks the 527 frames",
         )
 
 

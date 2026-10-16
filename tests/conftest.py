@@ -521,6 +521,42 @@ def _protect_the_live_learning_assets():
             )
 
 
+#: ``module_name -> attribute`` tables cleared before and after every test.  The first entry
+#: is also the measured reason this mechanism exists: ``_METER_KINDS`` is the run-scoped
+#: meter-kind table (written by ``runtime._remember_goal_meters``) held in a module global,
+#: so any runtime-driven test leaves entries behind for every later test in the same
+#: process.  A fixture test that means to simulate "a run from before the meter existed"
+#: then reads a leftover kind, and its honest ``None`` becomes ``False`` -- measured
+#: 2026-10-16 on ``test_a_constant_meter_can_never_report_progress``: green in isolation,
+#: red in the full suite, failing on exactly the leftover.
+_MODULE_STATE_RESETS: tuple[tuple[str, str], ...] = (
+    ("winter_agent_v2.goal_library", "_METER_KINDS"),
+)
+
+
+@pytest.fixture(autouse=True)
+def _reset_module_state():
+    """Clear the shared mutable tables before and after every test.
+
+    Function-scoped and autouse: the state is written by *other* tests' subjects (a real
+    ``LiveRuntime`` run), so no single test can own the cleanup, and a session-scoped sweep
+    would still let two tests inside one file poison each other.
+    """
+    tables: list[dict] = []
+    for module_name, attribute in _MODULE_STATE_RESETS:
+        try:
+            module = __import__(module_name, fromlist=["_"])
+        except Exception:  # noqa: BLE001 - a module that will not import owns no state here
+            continue
+        table = getattr(module, attribute, None)
+        if isinstance(table, dict):
+            tables.append(table)
+            table.clear()
+    yield
+    for table in tables:
+        table.clear()
+
+
 @pytest.fixture(scope="session")
 def test_runtime_root() -> Path:
     """The scratch tree every redirected runtime path lives under."""
