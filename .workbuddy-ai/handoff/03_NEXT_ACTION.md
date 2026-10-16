@@ -1484,12 +1484,12 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 
 WHY: 3 goal(s) BLOCKED, 9 PARTIAL, mean implementation coverage 0.7708. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: GIANT_BEAST_SEARCH_NOT_PROVEN — 150 in the last 2 day(s), 164 all-time, last seen 2026-10-11T09:24:02.519152+00:00
+CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 3 in the last 2 day(s), 295 all-time, last seen 2026-10-16T16:13:44.038238+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 1270
-LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-10-11T09:29:00.345277+00:00", "episode_id": "20261011_172738_866458", "before_screenshot": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_172738_866458\\20261011_172738_866458_step_004_before_20261011T092853016380.png", "after_screenshot": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_172738_866458\\20261011_172738_866458_step_004_after_20261011T092854351456.png"}
-TOP FAILURE: {"failure_type": "GIANT_BEAST_SEARCH_NOT_PROVEN", "count": 164, "recent": 150, "last_seen": "2026-10-11T09:24:02.519152+00:00", "dates": {"2026-10-05": 4, "2026-10-06": 2, "2026-10-07": 2, "2026-10-08": 6, "2026-10-10": 99, "2026-10-11": 51}, "undated": 0, "top_skills": [["SUBMIT_GIANT_BEAST_SEARCH", 164]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-10-09T09:29:00.345277+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+CURRENT DIRTY FILES: 1177
+LAST PRODUCTION EPISODE: {"skill": "TRY_ORDINARY_CONTROL", "result": "FAILURE", "recorded_at": "2026-10-16T16:13:44.038238+00:00", "episode_id": "20261017_001233_193195", "before_screenshot": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_001233_193195\\20261017_001233_193195_step_003_before_20261016T161321931049.png", "after_screenshot": ""}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 295, "recent": 3, "last_seen": "2026-10-16T16:13:44.038238+00:00", "dates": {"2026-10-05": 29, "2026-10-06": 4, "2026-10-07": 3, "2026-10-08": 179, "2026-10-10": 63, "2026-10-11": 14, "2026-10-16": 3}, "undated": 0, "top_skills": [["TRY_ORDINARY_CONTROL", 161], ["OPEN_HOME", 36], ["OPEN_EVENT_CALENDAR_DETAIL", 23]]}
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-10-14T16:13:44.038238+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY', 'TRAVEL_SUPPLY']
 MISSING SKILLS BY LEVERAGE: [('CLAIM_EVENT_TIER', 2), ('READ_COUNTER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('READ_ALLIANCE_EVENT_TIMER', 1), ('READ_BEAR_TIMER', 1), ('READ_TIMER', 1), ('ALLIANCE_HELP', 1), ('CLAIM_TRAVEL_SUPPLY_FREE', 1), ('OPEN_ARENA', 1), ('OPEN_LABYRINTH', 1)]

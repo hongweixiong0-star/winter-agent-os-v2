@@ -6,24 +6,24 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
-- `8a773882 2026-10-16T21:56:32+08:00 docs(fact-source): r274-r277 distilled -- six more measured lessons, and the pending list moves again`
-- `769efeee 2026-10-16T21:55:53+08:00 docs(handoff): the C:-full rescue and the pending pile enter the hand-written issues`
-- `917aa16a 2026-10-16T21:55:10+08:00 docs(coverage): the capability map regenerated against today's registry and episode stream`
-- `b3253856 2026-10-16T21:53:52+08:00 docs(memory): r277 -- final6's four reds closed (two implemented, two fixed at the mechanism)`
-- `8bdd49b2 2026-10-16T21:53:32+08:00 p2(regression triage): the meter table gets a per-test reset, and the HUD guard guards coverage now`
-- `36a8adf8 2026-10-16T21:34:19+08:00 docs(handoff): the pending pile measured -- 1094 untracked / 119 modified / 57 deleted, classified with per-group recommendations`
-- `d77fb067 2026-10-16T21:31:52+08:00 chore(tools): four referenced-but-untracked probes into the set -- the comments that cite them can be reached from a fresh checkout`
-- `f0c8c406 2026-10-16T21:18:18+08:00 docs(memory): r276 -- the tier search implemented, and six drafts promoted into the set`
-- `bd73a5a4 2026-10-16T21:17:43+08:00 chore(tests): six data-root drafts promoted to tracked specs -- all green, all guards of behaviour that exists`
-- `17fbb9f9 2026-10-16T21:15:56+08:00 feat(vision): the template lifecycle tiers are searched in order -- 规格先行, now implemented`
-- `cb699cd6 2026-10-16T21:09:53+08:00 docs(memory): r274-r275 -- the disk-full rescue, and eleven more reds across two batches`
-- `46a3408f 2026-10-16T21:08:37+08:00 p2(regression triage): two ticket tests follow 958fc9b3 -- the same commit, twenty-seven minutes late`
+- `d5cd458b 2026-10-17T00:13:01+08:00 docs(memory): the production release -- repin to today's code, mainline reconciled, MAINLINE_OK`
+- `710fb988 2026-10-17T00:09:59+08:00 docs(memory): the midnight watch -- AUTO is running (GOAL_RUNNING, snapshot 11s, episodes growing), and the device window is open`
+- `3301eb8e 2026-10-17T00:07:53+08:00 docs(memory): 10-17 opens with the mirror sync -- 138 commits pushed after the two tail-append conflicts merged in chronological order`
+- `26aeb349 2026-10-17T00:05:47+08:00 Merge origin/main: the codex line's seven commits (bootstrap frame-naming fix, the continuous-touch exit test, round-244 memory, handoff notes)`
+- `ee2a1da0 2026-10-17T00:03:39+08:00 docs(memory): the 10-15 log's tail, which had been left uncommitted -- the automation's first watch and the bear takeover`
+- `ac8e46c3 2026-10-17T00:00:36+08:00 docs(handoff): P1-6 closes -- both of the window's largest live clusters are now handled (143 fixed, 150 cooled)`
+- `842364a1 2026-10-17T00:00:12+08:00 fix(stamina): the empty polar search cools down across runs -- 150 repetitions of one honest failure`
+- `1098064f 2026-10-16T22:57:59+08:00 docs(handoff): the largest live cluster is adjudicated -- honest failure, retry design item; the second-largest is fixed`
+- `3101830c 2026-10-16T22:55:37+08:00 fix(beast): the search panel is left before the map beast is tapped -- 143 failures, one cause`
+- `fb67ba3d 2026-10-16T22:43:30+08:00 feat(review): SAFETY_AND_LIVENESS_BOTH_HOLD lands as a composite -- counts 16/0/0, and PRINCIPLES' stale note is corrected`
+- `6d49b4db 2026-10-16T22:38:41+08:00 feat(review): the last three UNMEASURED checks are measured -- counts move to 15/0/0`
+- `b22ed8d3 2026-10-16T22:29:13+08:00 feat(review): the section-16 check measures the two screen ledgers -- UNMEASURED becomes a real answer`
 
-Uncommitted changes: 1270
+Uncommitted changes: 1177
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/README.md`
-- ` M .workbuddy/memory/2026-10-15.md`
+- ` M .workbuddy/memory/2026-10-17.md`
 - ` M START_HERE.md`
 - ` M _capture_panel_window.py`
 - ` D backups/dataset_cleanup_20261006/template_manifest.json.bak`
@@ -33,13 +33,13 @@ Uncommitted changes: 1270
 - ` D backups/dataset_cleanup_20261006/tmp_research_row2.png`
 - ` D backups/dataset_cleanup_20261006/tmp_role.png`
 - ` D backups/dataset_cleanup_20261006/tmp_speedup.png`
-- ` M config/v2.json`
-- ` M dataset/README.md`
-- ` M dataset/candidate/.gitkeep`
-- ` M dataset/candidate/intel_live_20260909/labels.json`
-- ` M dataset/candidate/mail_dynamic_20260909/labels.json`
-- ` M dataset/normalized/.gitkeep`
-- ` M dataset/production/.gitkeep`
+- ` M dataset/truth_audit/local_planner_live/live.json`
+- ` M docs/DEVELOPMENT_FLOW.md`
+- ` M docs/LOCAL_PLANNER_ACCEPTANCE.md`
+- ` M docs/MODE_SYSTEM.md`
+- ` M docs/TOP_FAILURES.md`
+- ` M evidence/INDEX.json`
+- ` M knowledge/analysis/top_failures.json`
 <!-- /AUTO:recent_commits -->
 
 ---

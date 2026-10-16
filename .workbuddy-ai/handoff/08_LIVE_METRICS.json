@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-10-16T13:56:51+00:00",
+  "generated_at": "2026-10-16T16:14:57+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "8a773882",
+  "commit": "d5cd458b",
   "last_good_commit": "e4fd245",
-  "dirty_count": 1270,
+  "dirty_count": 1177,
   "episodes": {
-    "total": 10436,
-    "production": 10436,
-    "success": 9488,
-    "failure": 943,
-    "success_rate_over_decided": 0.9096,
+    "total": 10446,
+    "production": 10446,
+    "success": 9492,
+    "failure": 949,
+    "success_rate_over_decided": 0.9091,
     "modes": {
-      "PRODUCTION": 10436
+      "PRODUCTION": 10446
     },
     "mixed_case_rows": 0
   },
@@ -33,9 +33,76 @@
   },
   "top_failures": [
     {
+      "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+      "count": 295,
+      "recent": 3,
+      "last_seen": "2026-10-16T16:13:44.038238+00:00",
+      "dates": {
+        "2026-10-05": 29,
+        "2026-10-06": 4,
+        "2026-10-07": 3,
+        "2026-10-08": 179,
+        "2026-10-10": 63,
+        "2026-10-11": 14,
+        "2026-10-16": 3
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "TRY_ORDINARY_CONTROL",
+          161
+        ],
+        [
+          "OPEN_HOME",
+          36
+        ],
+        [
+          "OPEN_EVENT_CALENDAR_DETAIL",
+          23
+        ]
+      ]
+    },
+    {
+      "failure_type": "EVENT_CALENDAR_NOT_OPEN",
+      "count": 12,
+      "recent": 2,
+      "last_seen": "2026-10-16T16:08:29.687048+00:00",
+      "dates": {
+        "2026-10-08": 10,
+        "2026-10-16": 2
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "OPEN_EVENT_CALENDAR_FROM_MAP",
+          8
+        ],
+        [
+          "OPEN_EVENT_CALENDAR_FROM_HOME",
+          4
+        ]
+      ]
+    },
+    {
+      "failure_type": "REGULAR_EVENT_TABS_SCROLL_NOT_PROVEN",
+      "count": 1,
+      "recent": 1,
+      "last_seen": "2026-10-16T16:13:21.871917+00:00",
+      "dates": {
+        "2026-10-16": 1
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "SCROLL_REGULAR_EVENT_TABS",
+          1
+        ]
+      ]
+    },
+    {
       "failure_type": "GIANT_BEAST_SEARCH_NOT_PROVEN",
       "count": 164,
-      "recent": 150,
+      "recent": 0,
       "last_seen": "2026-10-11T09:24:02.519152+00:00",
       "dates": {
         "2026-10-05": 4,
@@ -56,7 +123,7 @@
     {
       "failure_type": "BEAST_TARGET_SELECTION_NOT_PROVEN",
       "count": 146,
-      "recent": 135,
+      "recent": 0,
       "last_seen": "2026-10-11T09:24:46.029368+00:00",
       "dates": {
         "2026-10-05": 1,
@@ -79,38 +146,9 @@
       ]
     },
     {
-      "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 292,
-      "recent": 77,
-      "last_seen": "2026-10-11T08:53:23.678490+00:00",
-      "dates": {
-        "2026-10-05": 29,
-        "2026-10-06": 4,
-        "2026-10-07": 3,
-        "2026-10-08": 179,
-        "2026-10-10": 63,
-        "2026-10-11": 14
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "TRY_ORDINARY_CONTROL",
-          159
-        ],
-        [
-          "OPEN_HOME",
-          36
-        ],
-        [
-          "OPEN_EVENT_CALENDAR_DETAIL",
-          23
-        ]
-      ]
-    },
-    {
       "failure_type": "SAFE_BACK_NOT_PROVEN",
       "count": 37,
-      "recent": 30,
+      "recent": 0,
       "last_seen": "2026-10-11T00:58:55.631257+00:00",
       "dates": {
         "2026-10-05": 2,
@@ -127,43 +165,9 @@
       ]
     },
     {
-      "failure_type": "EVENT_CALENDAR_DETAIL_NOT_PROVEN",
-      "count": 23,
-      "recent": 23,
-      "last_seen": "2026-10-10T01:48:15.333284+00:00",
-      "dates": {
-        "2026-10-10": 23
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "OPEN_EVENT_CALENDAR_DETAIL",
-          23
-        ]
-      ]
-    },
-    {
-      "failure_type": "INTEL_BEAST_TARGET_NOT_PROVEN",
-      "count": 20,
-      "recent": 19,
-      "last_seen": "2026-10-11T05:10:58.444256+00:00",
-      "dates": {
-        "2026-10-08": 1,
-        "2026-10-10": 17,
-        "2026-10-11": 2
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "OPEN_INTEL_BEAST_TARGET",
-          20
-        ]
-      ]
-    },
-    {
       "failure_type": "FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN",
       "count": 33,
-      "recent": 15,
+      "recent": 0,
       "last_seen": "2026-10-11T01:47:03.276004+00:00",
       "dates": {
         "2026-10-05": 6,
@@ -188,29 +192,44 @@
       ]
     },
     {
-      "failure_type": "BEAST_SEARCH_TAB_NOT_PROVEN",
-      "count": 17,
-      "recent": 13,
-      "last_seen": "2026-10-11T08:19:04.635193+00:00",
+      "failure_type": "OPEN_HOME_NOT_PROVEN",
+      "count": 30,
+      "recent": 0,
+      "last_seen": "2026-10-10T00:59:26.607087+00:00",
       "dates": {
-        "2026-10-05": 2,
+        "2026-10-05": 1,
         "2026-10-06": 1,
-        "2026-10-08": 1,
-        "2026-10-10": 6,
-        "2026-10-11": 7
+        "2026-10-08": 27,
+        "2026-10-10": 1
       },
       "undated": 0,
       "top_skills": [
         [
-          "OPEN_BEAST_SEARCH_TAB",
-          17
+          "OPEN_HOME",
+          30
+        ]
+      ]
+    },
+    {
+      "failure_type": "EVENT_CALENDAR_DETAIL_NOT_PROVEN",
+      "count": 23,
+      "recent": 0,
+      "last_seen": "2026-10-10T01:48:15.333284+00:00",
+      "dates": {
+        "2026-10-10": 23
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "OPEN_EVENT_CALENDAR_DETAIL",
+          23
         ]
       ]
     },
     {
       "failure_type": "NO_EXECUTION",
       "count": 22,
-      "recent": 8,
+      "recent": 0,
       "last_seen": "2026-10-11T07:20:13.566902+00:00",
       "dates": {
         "2026-10-05": 3,
@@ -233,23 +252,6 @@
         [
           "SEARCH_RESOURCE",
           5
-        ]
-      ]
-    },
-    {
-      "failure_type": "OPEN_MAP_NOT_PROVEN",
-      "count": 9,
-      "recent": 8,
-      "last_seen": "2026-10-10T23:02:33.765285+00:00",
-      "dates": {
-        "2026-10-08": 1,
-        "2026-10-10": 8
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "OPEN_MAP",
-          9
         ]
       ]
     }
@@ -291,9 +293,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 20549,
-    "present_on_disk": 20549,
-    "traceable_episodes": 10432,
+    "referenced_screenshots": 20566,
+    "present_on_disk": 20566,
+    "traceable_episodes": 10442,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -304,19 +306,19 @@
   },
   "git_sync": {
     "branch": "main",
-    "local_head": "8a773882f8adf7332f92e21f6d22d14f668b4645",
-    "remote_head": "9ffaf237e539692d1d943726e499bcbfe50b2752",
-    "unpushed_commits": 123,
-    "behind": 7,
-    "in_sync": false,
+    "local_head": "d5cd458b0946cdae2471a681665dafe3d6acceea",
+    "remote_head": "d5cd458b0946cdae2471a681665dafe3d6acceea",
+    "unpushed_commits": 0,
+    "behind": 0,
+    "in_sync": true,
     "remote_url": "https://github.com/hongweixiong0-star/winter-agent-os-v2.git",
     "last_push_at": "2026-10-15T10:29:32.618849+00:00",
     "last_push_status": "PUSHED"
   },
   "runtime": {
     "agent_state": "IDLE",
-    "unexpected_worker_exits": 64,
-    "watchdog_restart_count": 67,
+    "unexpected_worker_exits": 65,
+    "watchdog_restart_count": 68,
     "last_fatal_error": null,
     "stop_reason": "ROLE_SWITCH_FAILED:1061663148:TARGET_ROLE_HOME_NOT_OBSERVED"
   }

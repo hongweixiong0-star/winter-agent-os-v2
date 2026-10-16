@@ -6,12 +6,12 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **GIANT_BEAST_SEARCH_NOT_PROVEN** x164 all-time; recent=150 (last 2d), last seen 2026-10-11T09:24:02.519152+00:00 — SUBMIT_GIANT_BEAST_SEARCH(164)
-- **BEAST_TARGET_SELECTION_NOT_PROVEN** x146 all-time; recent=135 (last 2d), last seen 2026-10-11T09:24:46.029368+00:00 — SELECT_BEAST_TARGET_MAMMOTH(143), SELECT_BEAST_TARGET_LABELLED(3)
-- **SEMANTIC_TARGET_NOT_VERIFIED** x292 all-time; recent=77 (last 2d), last seen 2026-10-11T08:53:23.678490+00:00 — TRY_ORDINARY_CONTROL(159), OPEN_HOME(36), OPEN_EVENT_CALENDAR_DETAIL(23)
-- **SAFE_BACK_NOT_PROVEN** x37 all-time; recent=30 (last 2d), last seen 2026-10-11T00:58:55.631257+00:00 — BACK(37)
-- **EVENT_CALENDAR_DETAIL_NOT_PROVEN** x23 all-time; recent=23 (last 2d), last seen 2026-10-10T01:48:15.333284+00:00 — OPEN_EVENT_CALENDAR_DETAIL(23)
-- **INTEL_BEAST_TARGET_NOT_PROVEN** x20 all-time; recent=19 (last 2d), last seen 2026-10-11T05:10:58.444256+00:00 — OPEN_INTEL_BEAST_TARGET(20)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x295 all-time; recent=3 (last 2d), last seen 2026-10-16T16:13:44.038238+00:00 — TRY_ORDINARY_CONTROL(161), OPEN_HOME(36), OPEN_EVENT_CALENDAR_DETAIL(23)
+- **EVENT_CALENDAR_NOT_OPEN** x12 all-time; recent=2 (last 2d), last seen 2026-10-16T16:08:29.687048+00:00 — OPEN_EVENT_CALENDAR_FROM_MAP(8), OPEN_EVENT_CALENDAR_FROM_HOME(4)
+- **REGULAR_EVENT_TABS_SCROLL_NOT_PROVEN** x1 all-time; recent=1 (last 2d), last seen 2026-10-16T16:13:21.871917+00:00 — SCROLL_REGULAR_EVENT_TABS(1)
+- **GIANT_BEAST_SEARCH_NOT_PROVEN** x164 all-time; recent=0 (last 2d), last seen 2026-10-11T09:24:02.519152+00:00 — SUBMIT_GIANT_BEAST_SEARCH(164)
+- **BEAST_TARGET_SELECTION_NOT_PROVEN** x146 all-time; recent=0 (last 2d), last seen 2026-10-11T09:24:46.029368+00:00 — SELECT_BEAST_TARGET_MAMMOTH(143), SELECT_BEAST_TARGET_LABELLED(3)
+- **SAFE_BACK_NOT_PROVEN** x37 all-time; recent=0 (last 2d), last seen 2026-10-11T00:58:55.631257+00:00 — BACK(37)
 - `ALLIANCE_ALLY_GIFT_CLAIM` never succeeded (attempts=1, failure=1)
 - `OBSERVE_ONLY` never succeeded (attempts=4, failure=0)
 - `OPEN_ALLIANCE_RECOMMENDED_TECH_NODE` never succeeded (attempts=1, failure=1)
@@ -19,7 +19,7 @@ Machine-detected issues (recomputed every run):
 - `READ_FISHING_STATE` never succeeded (attempts=1, failure=1)
 - `SAFE_STOP` never succeeded (attempts=6, failure=6)
 - `START_RALLY` never succeeded (attempts=1, failure=1)
-- 1270 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md', ' M .workbuddy/memory/2026-10-15.md', ' M START_HERE.md']
+- 1177 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md', ' M .workbuddy/memory/2026-10-17.md', ' M START_HERE.md']
 <!-- /AUTO:open_issues -->
 
 ---
