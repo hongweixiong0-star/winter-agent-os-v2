@@ -1,0 +1,123 @@
+{
+ "skill_id": "VISIT_ALLIANCE_SHOP",
+ "name": "Visit 联盟商店 and buy only a 名称含统帅经验 item",
+ "goal": "Read 联盟商店's stock on the live client -- a page that is NOT reachable from the 商店 nav -- name every item from its own purchase overlay, buy exactly the slots the operator's policy names (名称含「统帅经验」) and nothing else, sweeping the list with a swipe because it is longer than one screen.",
+ "preconditions": [
+  "the client is on any page from which the HOME bottom nav can be reached (<=3 bounded back presses)",
+  "the 联盟 nav item is readable in the bottom band (exact token 联盟, 5th of 6)",
+  "the ALLIANCE page's tile grid renders (>=4 of its 8 tile names readable)",
+  "device lease held by a development owner, and AUTO has actually yielded (wait_for_the_device) -- a lease is a request, not a handover (measured 6 s and 22 s on two 2026-10-05 passes)"
+ ],
+ "required_page": "ALLIANCE_SHOP",
+ "required_state": {
+  "alliance_shop_open": true,
+  "tab_今日_selected": true,
+  "overlay_not_left_armed": true
+ },
+ "required_vision": [
+  "NAV_ALLIANCE_联盟 (HOME bottom nav, exact text; the ALLIANCE page's own header also reads 联盟, at y=41 -- the band filter keeps them apart)",
+  "TILE_联盟商店 (the ALLIANCE page's 2x4 tile grid; measured centre (246,938) on 720x1280)",
+  "SHOP_HEADER_联盟商店 (the shop page's own header, y=42, i.e. inside the top 12% of the frame)",
+  "SHOP_BANNER_下次刷新 (the self-refresh countdown, y=151 -- this page's second identity marker)",
+  "SHOP_TABS_今日/本周 (bottom band at y=1241..1246, i.e. inside y>=0.93*H=1190)",
+  "CARD_ANCHOR_剩余：N (one per card; 3 columns at x~139/360/580, rows at y=381/665/948 unscrolled)",
+  "OVERLAY_确定购买 with its orange price button (measured bbox [222,795,276,71], centre (361,831)) and its own ✕ (measured (654,431))",
+  "WALLET_ONE_NUMBER_ONLY (the single top-bar figure at x~630; the store's 钻石 slot at x~451 is NOT rendered here)"
+ ],
+ "required_actions": [
+  "reach the ALLIANCE page: tap the OCR box of the exact token 联盟 in the HOME bottom band, or a bounded back press then re-check (the store page must be left first: its bottom bar has no 联盟)",
+  "find the 联盟商店 tile from a fresh frame (up to 3 attempts -- the tile grid fades in) and tap its own OCR box; never a stored coordinate",
+  "confirm the shop page from BOTH its header (y<0.12*H) and its 下次刷新 banner",
+  "sweep: read the cards, open each card's own 确定购买 overlay to learn its name (the cards print no name), decide, and CLOSE the overlay before moving on",
+  "swipe up inside the grid to reveal the row the screen clipped, keeping only cards whose anchor is deeper than the deepest one already inspected -- derived from the frame, never a constant",
+  "buy only on 名称含统帅经验, through the client's own two-tap confirmation"
+ ],
+ "verification": [
+  "the item name is read from the client's own 确定购买 overlay, never from an icon guess -- 联盟商店's cards show icon + 剩余 + price and no name at all",
+  "the overlay seen by card N is proven to be card N's own: open_purchase refuses to read an overlay that was already on screen before it tapped, and every non-spending path closes the overlay it opened",
+  "BUY is reachable ONLY from a name containing 统帅经验, and 英雄经验 must never satisfy it (measured: the two bottles are one character apart)",
+  "the spend witness is the single top-bar number (x~630), read before and after; the store's 钻石 slot does not exist on this page",
+  "the pass ends with no purchase overlay armed (an armed dialog is what a later tap could spend from)"
+ ],
+ "failure_conditions": [
+  "ALLIANCE_ENTRY_FAILED",
+  "ALLIANCE_SHOP_TILE_NOT_FOUND:联盟商店",
+  "ALLIANCE_SHOP_DID_NOT_OPEN: the tile grid is still on screen",
+  "ALLIANCE_TAB_NOT_FOUND",
+  "PURCHASE_OVERLAY_NOT_OPENED",
+  "PRICE_BUTTON_NOT_FOUND",
+  "PRICE_UNREADABLE_ON_BUTTON",
+  "PURCHASE_OVERLAY_WOULD_NOT_CLOSE",
+  "LEFT_THE_PAGE_WHILE_DISMISSING",
+  "CONFIRM_AMOUNT_NOT_MATCHED",
+  "CONFIRM_BUTTON_DISAGREES",
+  "CONFIRM_DIALOG_STILL_OPEN"
+ ],
+ "recovery": [
+  "a card whose overlay will not open is reported NOT_EXECUTED and nothing at all is tapped for it",
+  "a leftover overlay (one already on screen before this card was tapped) is closed by its own ✕ before anything else, so it can never be read as this card's own",
+  "the body ladder is clamped to stay strictly above the bottom band, so a tap can never select 今日/本周 by accident -- the 4th row's anchor sits close to that band",
+  "the quantity slider on the overlay is never touched: the +/− controls sit above the price button and a stray tap on + was measured changing 4,000 to 20,000",
+  "every swipe is issued inside the grid, above the 今日/本周 strip, so no control is ever touched by one"
+ ],
+ "dependencies": [
+  "MaaExecutorAdapter (capture/click/swipe/press_back)",
+  "ocr_full.read_all",
+  "device_lease + shop_visit.wait_for_the_device",
+  "ShopVisitor + decide_alliance + top_bar_numbers + on_alliance_page + on_alliance_shop_page (winter_agent_v2/shop_visit.py)"
+ ],
+ "risk": "LOW_CONTROLLED_SPEND",
+ "confidence": 0.8,
+ "source": [
+  "LIVE_CLIENT",
+  "OPERATOR_POLICY_CONFIRMED"
+ ],
+ "status": "LIVE_TRIED",
+ "blocker": null,
+ "live_attempts": 2,
+ "live_successes": 1,
+ "verified_variant": "ALLIANCE_SHOP_2026_10_05",
+ "stable": false,
+ "branches": {
+  "reach_the_alliance_page": "LIVE_VERIFIED -- measured 2026-10-05: the HOME nav 联盟 was read at (536,1257) and one tap reached the ALLIANCE page with all 8 tile names readable",
+  "find_the_联盟商店_tile": "LIVE_VERIFIED -- the live OCR centre (246,938) matched the stored prior alliance_btn_shop__1ba620d5 exactly, drift (0,0)",
+  "open_the_shop_page": "LIVE_VERIFIED -- header 联盟商店 at (161,42) and the 下次刷新 banner at y=151 both read",
+  "read_every_slot": "LIVE_VERIFIED (after the ghost-overlay fix) -- see live_evidence",
+  "sweep_the_clipped_row": "PARTIAL -- measured that one swipe reveals a 4th row at anchor y=1101 and that a second swipe changes nothing; the sweep logic exists but its 'new row' filter is unexercised on a roll where the extra row decides BUY",
+  "buy_a_统帅经验_slot": "VERDICT_UNEXERCISED_PURCHASE_NOT_YET_MADE -- the rule fires (measured 2026-10-05 on the 今日 roll: 2 of the 9 visible slots decide BUY, 100点统帅经验 at 4,000 and at 2,000, both 剩余=5) but no purchase has been executed or wallet-verified yet",
+  "self_refresh": "NOT_APPLICABLE / MEASURED -- the page carries 下次刷新：+ a countdown (17:35:59 on 今日, 6天17:27:17 on 本周) instead of a control, so the operator's 无需刷新 is enforced by having nothing to tap"
+ },
+ "operator_policy": {
+  "name_contains": "统帅经验",
+  "verdict": "BUY (and nothing else is ever bought here)",
+  "otherwise": "SKIP",
+  "refresh": "none required -- the shop self-refreshes on a timer",
+  "currency_note": "the operator's zero-spend principle reserves diamonds for 统帅经验; this page does not render the diamond slot at all, and its single wallet number is the only thing a purchase here moves",
+  "uncovered_cases": "an unreadable name is reported ASK and nothing is bought"
+ },
+ "measured_ui_path": {
+  "entry_hop_1": "HOME bottom nav, 5th of 6 items (探险/英雄/背包/商店/联盟/野外); template BTN_OPEN_ALLIANCE roi_norm x=0.7097 y=0.9711 w=0.0694 h=0.0219; live OCR read the exact token 联盟 at (536,1257) on a 720x1280 frame",
+  "alliance_page": "header 联盟 at y=41; a 2-column x 4-row grid of eight labelled tiles: 联盟战争/联盟宝箱 (y~669), 联盟领地/据点争夺 (y~804), 联盟商店/联盟科技 (y~938), 实力排行/联盟互助 (y~1072); bottom tabs 成员/激励/设置 at y~1250",
+  "entry_hop_2": "the 联盟商店 tile label; measured centre (246,938), matching the stored prior alliance_btn_shop__1ba620d5 with drift (0,0)",
+  "shop_page": "header 联盟商店 at (161,42); a single top-bar figure at x~630 (coin icon, read 81,403, followed by a green +); the self-refresh banner 下次刷新：+ countdown at y=151; the store's 钻石 slot (x~451) is absent",
+  "shop_tabs": "今日 (x~185) / 本周 (x~534) at y=1241..1246, inside the bottom band (y>=0.93*H=1190) -- so the ladder clamp applies here exactly as it does on the store's tab strip",
+  "grid": "3 columns at x~139/360/580; unscrolled row anchors y=381/665/948 with a 4th row clipped by the bottom band; one swipe up (from (360,1050) to (360,420)) brings the 4th row to y=1101 and a second swipe changes nothing",
+  "stock_size": "今日 measured 12 slots over 4 rows; 本周 measured 9 slots over 3 rows with a clipped row below",
+  "overlay": "确定购买, identical geometry to 游荡商人/神秘商店: orange price button bbox [222,795,276,71] centre (361,831), ✕ at (654,431).  NEW on this page: the overlay carries a quantity slider (− / ‖ / + / a count box / max) between the description and the button; quantity 1 is the default",
+  "currency": "the price is printed on the button as white-on-orange; the purchasable priced in the shop's own coin; whether that single top-bar number is 联盟币 or 钻石 was not settled by a purchase"
+ },
+ "live_evidence": {
+  "ui_observation": "dataset/evidence/shop_observe_alliance_20261005T062243 -- first look: the two hops, the tile drift (0,0), the shop page's header/banner, 9 cards, and one overlay probe reading 1小时训练加速 @ 15,600",
+  "structure_observation": "dataset/evidence/shop_observe_alliance_20261005T062243 (--scroll --tab-shift) -- 今日 has 4 rows/12 slots reachable with one swipe; 本周 has its own stock (9 slots, -70%/-75% badges, 100,000/150,000 prices); the self-refresh countdown is 17:35:59 (今日) vs 6天17:27:17 (本周)",
+  "first_live_pass": "dataset/evidence/shop_visit_alliance_20261005T063527 -- 9 of 9 slots decided, 0 unreadable, 0 purchases, wallet 81,403 -> 81,403, taps_refused=0, touch balanced.  This pass is also the failure evidence for the ghost-overlay bug",
+  "ghost_overlay_frames": "s0_40_card_r0c2_buy0_0.png and s0_40_card_r1c0_buy0_0.png are byte-identical: r0c2 (BUY) left its overlay open and r1c0 then read it; s0_40_card_r1c2_buy0_0.png shows the same dialog with its quantity slider dragged to 5 (price 20,000 instead of 4,000), i.e. a card-directed tap landed on the dialog's +; s1_A9_final.png shows the pass ending with the dialog still armed"
+ },
+ "failure_patterns": [
+  "the ghost overlay (FIXED 2026-10-05): the decision branch dismissed only on non-BUY, so a BUY verdict in a read-only pass left 确定购买 armed, the next card's inspection found an orange button already on screen and reported the previous card's name and price as its own, taps aimed at later cards landed inside the open dialog (one hit + and set the amount to 5x), and the pass ended with the dialog armed.  Measured cost of the bug on this page: it turned a roll with TWO 统帅经验 slots into one reporting SEVEN, i.e. it would have bought five items that are not 统帅经验 while believing they were -- 1小时研究加速 @ 26,000, 5分钟训练加速 @ 1,300, 5分钟治疗加速 @ 2,200 and two others.  Fixed in two places on purpose: every non-spending path now closes the overlay, AND open_purchase refuses to read an overlay that was already on screen before it tapped.  Pinned by a structural AST test whose first version passed on the buggy code -- mutation-testing it by restoring the elif is what exposed that, and the test now checks the branch's SHAPE (the dismiss must be unconditional), not merely that a dismiss appears somewhere",
+  "the substring trap: the ALLIANCE page's own third-row tile is named 联盟商店, i.e. the same four characters as the shop page's header.  A page predicate keyed on the name alone would fire on both, so on_alliance_shop_page requires the header inside the top 12% AND the 下次刷新 banner",
+  "the two experience bottles: 英雄经验 (the Exp bottle that stands alone in the store's art) does not contain 统帅经验, so a rule written against the operator's words skips it -- but a rule keyed on 经验, or read off the icon, would spend on it.  This is the same near-miss the 游荡商人 module already documents",
+  "the single top-bar number: there is no 钻石 slot on this page, so a verifier that reads the *first* number as diamonds, or expects two numbers, reports nonsense about a correct pass",
+  "the list is longer than the screen: the unscrolled frame shows three complete rows and clips a fourth, so a name-based rule evaluated from one frame silently misses a row.  The sweep keeps only rows deeper than the deepest already inspected, and stops on its own when a swipe reveals nothing",
+  "the overlay's quantity slider: a stray tap on + changed the amount from 4,000 to 20,000.  The slider is never touched deliberately, and the ghost-overlay guard is what stops a card-directed tap from ever reaching it"
+ ]
+}

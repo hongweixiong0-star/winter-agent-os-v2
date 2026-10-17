@@ -1,0 +1,161 @@
+{
+  "skill_id": "READ_INTEL_LIST",
+  "name": "读取情报（灯塔）板：有几条任务、各自什么状态",
+  "goal": "CLEAR_INTEL",
+  "promoted_from": "knowledge/skills/candidate/READ_INTEL_LIST.json (lifecycle CANDIDATE, confidence 0.85)",
+  "preconditions": [
+    "reached Page.INTEL on the live client (proved by verify_open_intel, not by a remembered coordinate)",
+    "the board's own entry BTN_OPEN_INTEL_WILD_HUD present in the current frame (template lookup)",
+    "action-specific verifier exists before real try -- verify_open_intel / verify_intel_list_read"
+  ],
+  "required_page": "INTEL",
+  "required_state": {
+    "status": "AVAILABLE or CLAIMABLE or NOT_AVAILABLE",
+    "note": "the board reads CLAIMABLE when at least one mission is finished and 一键领取 is drawn; it does not stop being a list of missions when it does"
+  },
+  "required_vision": [
+    "PAGE_INTEL",
+    "INTEL_PIN_COUNT",
+    "INTEL_REFRESH_TIMER"
+  ],
+  "required_actions": [
+    "SCREENSHOT",
+    "OCR_INTEL_CARDS",
+    "COUNT_PINS",
+    "CLASSIFY_STATUS"
+  ],
+  "verification": {
+    "reached_the_board": "verify_open_intel(before = MAP frame, after = board frame) -> OK, live 2026-10-05T08:13Z and again at 08:17Z. This half is genuinely proven, twice.",
+    "read_the_list": "verify_intel_list_read -> ok=True on the 08:17Z capture (list_read=True, status=AVAILABLE) and ok=False on the 08:13Z capture (INTEL_LIST_UNKNOWN, because that reading carried no list_read). So the verifier is satisfiable, but only on the readings that happen to carry the count -- see failure_patterns[0]."
+  },
+  "success_conditions": [
+    "intel_count_and_status_known"
+  ],
+  "success_condition_status": {
+    "status_known": "YES -- measured live twice: status=CLAIMABLE at 08:13Z and AVAILABLE at 08:17Z, and stamina read off the frame both times (35, then 13).",
+    "count_known": "PARTLY, AND UNRELIABLY. At 08:17Z the reading carried a real count (pins=9, available_count=9) that AGREED with the detector's 9. At 08:13Z the SAME page carried no count at all -- {status, claimable_count, stamina}, with claimable_count=1 counting ready rewards, not missions -- while the board drew 7 pins. The count field arrives and leaves depending on whether a reward is ready.",
+    "honest_verdict": "PARTIAL. This is a Step, not a complete Skill. Walking to the board and reading its state is proven live twice; the COUNT half of intel_count_and_status_known is carried on some frames and dropped on others, so the condition cannot be relied on as written."
+  },
+  "risk": "LOW_READ_ONLY",
+  "spend": "none -- reaching and reading the board costs nothing; no pin was tapped, no mission dispatched, no reward claimed. Dispatching costs stamina irreversibly and is EXECUTE_INTEL's job; claiming is CLAIM_INTEL_REWARDS'.",
+  "confidence": 0.85,
+  "source": "LIVE_OBSERVED_2026-10-05T08:13+08:00",
+  "status": "LIVE_TRIED",
+  "lifecycle": "LIVE_TRIED",
+  "stable": false,
+  "blocker": "TWO measured defects, not one. (D1) The reading's SHAPE is unstable on the very page that carries the count: verify_intel_list_read requires intel['list_read'], and list_read appears ONLY on the frames where the pin counter also ran -- ocr.py:6116 gates that counter behind status == UNKNOWN, and the template layer answers CLAIMABLE before control reaches it. Measured on the same board four minutes apart: with a reward ready the reading was {status: CLAIMABLE, claimable_count: 1, stamina: 35} -- no count, no list_read -- while the board drew 7 pins; with nothing ready it was available_count=9, pins=9, list_read=True while the board drew 9 pins. (D2) The capability has never actually been executed: its ledger row under CLEAR_INTEL is 0 attempts / 0 successes / 0 failures, and the blocker's last_skill is OPEN_MAP -- an entry action, not a read. A first reading of this record claimed the verifier and the meter were mutually exclusive; a second live capture falsified that, because one frame did satisfy both. D1 is the measured cause; whether D1 explains D2 is a hypothesis, not a measurement.",
+  "live_attempts": 2,
+  "live_successes": 2,
+  "verified_variant": "board with 7 pins drawn, status=CLAIMABLE, claimable_count=1, stamina=35, 下次刷新 07:46:37, 一键领取 present; and four minutes later the same page with 9 pins, status=AVAILABLE, available_count=9, pins=9, list_read=True, stamina=13",
+  "branches": {
+    "board_is_claimable": "measured 2026-10-05 -- 一键领取 was drawn so status read CLAIMABLE. The board still held 7 pins. A claimable board is not an empty board.",
+    "board_pin_count_zero": "not observed. intel_pins.py records the mirror failure: a detector that drops real pins makes a full board read as empty and CLEAR_INTEL declares itself complete (live 2026-09-15 07:36).",
+    "round_cleared_awaiting_refresh": "recorded in knowledge/game/intel.json round_state (2026-09-20T14:48Z): the last pin on the board opened a BLOCKED 大师悬赏 and every later step passed its own verifier with goal_progress false. Pins do not disappear when a mission is consumed, so 'pins still on the board' never meant 'still beatable'.",
+    "master_bounty_is_not_beatable": "INTEL_MASTER_BOUNTY_20 recommended power 189,295,920 against this chief's 56,089,968 -- do not dispatch. Pre-excluded from this record, which taps nothing."
+  },
+  "operator_policy": {
+    "spend": "zero -- reading is free and this record is read-only",
+    "unstoppable_actions": "dispatching spends stamina irreversibly; it is out of scope here and is the reason this Step stops at reading"
+  },
+  "measured_ui_path": {
+    "the_walk": "HOME -> (PAGE_MAP, bottom-right 野外) -> MAP -> (BTN_OPEN_INTEL_WILD_HUD, wilderness HUD) -> INTEL. Three legal taps, each proved by the production observer on the next frame.",
+    "bottom_right_control_is_one_button_with_two_readings": "the manifest holds this at TWO ids because the client relabels it: on the map it is 城镇 (BTN_OPEN_HOME, bbox 0.85,0.91,0.148,0.088) and in the city it is 野外 (PAGE_MAP, bbox 0.851,0.908,0.145,0.09, whose own parent screenshot is legacy_home.png). Measured on the live city frame: PAGE_MAP matches at distance 0 with centre (665,1221); BTN_OPEN_HOME and BTN_OPEN_INTEL_WILD_HUD do not match at all.",
+    "entry_on_the_wilderness_hud": "BTN_OPEN_INTEL_WILD_HUD. bbox_norm x=0.865 y=0.635 w=0.12 h=0.075 -> centre (666,861). The live template lookup on the map frame returned exactly (666,861), i.e. distance 0 from the box midpoint. A second manifest record places the same element at (0.8736,0.7203) centre (663,956), so the control MOVES between frames -- which is why it must be located by template lookup and never from a stored coordinate.",
+    "frame": "720x1280",
+    "board_header": "情报 at (128,42); back arrow at the top-left",
+    "self_refresh_banner": "下次刷新:07:46:37 at (361,128), y_norm 0.10. The board carries its own countdown; there is no refresh control to press.",
+    "stamina_readout": "35 at (630,42), top-right. The OCR branch reads this (intel['stamina'], ocr.py:6086) and it is the ONLY field on this page OCR can supply.",
+    "pins_drawn": "SEVEN, measured by intel_pin_centers on the captured frame: (201,317) (185,361) (115,499) (162,582) (553,676) (155,685) (422,820). Colours seen: purple bodies and orange/gold bodies. Per knowledge/game/intel.json, colour is NOT a claimability signal -- decide from the card a tap opens, never from the colour.",
+    "claim_all": "一键领取 at (360,1128). NEVER tapped by this record.",
+    "bottom_left_progress": "20 at (58,1226) with 满级 at (217,1227) -- a maxed progress bar, not a mission count",
+    "bottom_right_counter": "拥有：24 at (642,1242) -- an inventory count, not a mission count",
+    "obscuring_notice": "a client toast is drawn across the middle of the board ('已开启精简模式使体验更流畅。您还可前往领主档案-设置-游戏设置中，选择更合适的帧率与画质来获得最佳体验！'). It is NOT part of the board and must not be read as a mission."
+  },
+  "refresh_schedule_observation": {
+    "measured": "local 2026-10-05 08:13, the board read 下次刷新:07:46:37, i.e. the next refresh lands at about local 16:00",
+    "relation_to_community_claim": "community sources say three refreshes a day at 00:00 / 08:00 / 16:00 UTC, which for this machine (UTC+8) is 08:00 / 16:00 / 00:00 local -- the 16:00 local reading AGREES with it",
+    "honest_status": "ONE observation that agrees, not a proof. knowledge/game/intel.json still says the absolute schedule 'remains version/server candidate', and that is still correct: the schedule must be re-read from the board's own countdown, never taken from this line."
+  },
+  "live_evidence": {
+    "observed_at": "2026-10-05T08:13+08:00 and again 2026-10-05T08:17+08:00",
+    "evidence_dir": [
+      "dataset/evidence/intel_panel_observe_20261005T081303  (the claimable board: no count in the reading)",
+      "dataset/evidence/intel_panel_observe_20261005T081721  (the same page four minutes later: count present)"
+    ],
+    "frames": {
+      "city_before": "n0_look.png -- production page HOME, conf 0.98",
+      "map_after_wilderness_tap": "n1_look.png -- production page MAP, conf 0.99",
+      "board_08_13": "20261005T081303/n2_look.png -- page INTEL, conf 0.99, reading carries no count",
+      "board_08_17": "20261005T081721/n1_look.png -- page INTEL, conf 0.98, reading carries available_count=9 / pins=9 / list_read=True",
+      "after_leaving": "b0_back.png -- production page MAP, both runs"
+    },
+    "taps": [
+      "run 1: (665,1221) PAGE_MAP -> (True, '')  [HOME -> MAP]; (666,861) BTN_OPEN_INTEL_WILD_HUD -> (True, '')  [MAP -> INTEL]",
+      "run 2: one press_back from a POPUP(INTEL_BEAST_MISSION) frame landed directly on INTEL -- no tap needed"
+    ],
+    "device_handover": "AUTO yielded after 2 s (run 1) and 3 s (run 2); owner DEVELOPMENT_VALIDATION, capability READ_INTEL_LIST. Both leases released with result=OBSERVED, release -> True.",
+    "production_reading_run1": {
+      "page": "INTEL",
+      "confidence": 0.99,
+      "intel_keys": ["claimable_count", "stamina", "status"],
+      "status": "CLAIMABLE",
+      "claimable_count": 1,
+      "stamina": 35,
+      "pins_detected_by_intel_pin_centers": 7,
+      "available_count": null,
+      "untried_pins": null,
+      "list_read": null
+    },
+    "production_reading_run2": {
+      "page": "INTEL",
+      "confidence": 0.98,
+      "intel_keys": ["available_count", "list_read", "pins", "refresh", "stamina", "status"],
+      "status": "AVAILABLE",
+      "list_read": true,
+      "pins": 9,
+      "available_count": 9,
+      "stamina": 13,
+      "refresh": "07:42:32",
+      "pins_detected_by_intel_pin_centers": 9,
+      "agreement": "AGREE -- the reading's own count equals what the detector sees"
+    },
+    "reproduce": [
+      "python tools/observe_intel_panel.py   (live, read-only, leases the device, taps nothing on the board)",
+      "python tools/probe_intel_list.py --limit 1 --verbose --corpus <frames>   (frame replay: production reading vs pin detector)",
+      "python tools/verify_intel_observation.py   (the Verifier's verdict on both halves)",
+      "python -m pytest tests/test_intel_list_reading.py -q   (the guards)"
+    ]
+  },
+  "failure_patterns": [
+    {
+      "id": "READING_SHAPE_DEPENDS_ON_WHETHER_A_REWARD_IS_READY",
+      "what": "the same page produces two different reading SHAPES. The OCR branch that counts pins (ocr.py:6116-6120) runs only when intel['status'] is UNKNOWN, and it is the only thing that writes pins / available_count / list_read. The template layer answers CLAIMABLE first whenever a reward is ready (BTN_INTEL_CLAIM_ALL, vision.py:2288), so on exactly those frames control never reaches the counter and the reading degrades to {status, claimable_count, stamina}.",
+      "measured": "one board, four minutes apart, both captured live 2026-10-05. 08:13Z -- 一键领取 drawn, status=CLAIMABLE, reading carried NO available_count / NO pins / NO list_read, board drew 7 pins. 08:17Z -- nothing claimable, status=AVAILABLE, reading carried available_count=9 / pins=9 / list_read=True, board drew 9 pins. Both frames are the same page.",
+      "why_it_has_not_bitten_yet": "it has bitten: verify_intel_list_read keys on list_read, so the verifier is satisfiable only on the half of the readings that happens to carry the count. That is how an episode can pass its verifier while the goal has nothing to report.",
+      "honest_status": "recorded, NOT fixed.",
+      "guard": "tests/test_intel_list_reading.py asserts the two shapes separately -- the claimable board must carry no count and no list_read, and the non-claimable board must carry both."
+    },
+    {
+      "id": "THE_CAPABILITY_HAS_NEVER_BEEN_EXECUTED",
+      "what": "under CLEAR_INTEL the ledger row for READ_INTEL_LIST is 0 attempts / 0 successes / 0 failures, while the blocker's last_skill is OPEN_MAP and its failure_signature is 'READ_INTEL_LIST|NO_GOAL_PROGRESS|OPEN_MAP'. The episodes were spending themselves on ENTRY actions (going to the map, opening the page) rather than on a read.",
+      "measured": "learning/goal_state.json blockers.CLEAR_INTEL, read 2026-10-05.",
+      "consequence": "the target of this chain is not 'a read that failed' but 'a read that was never made'. Whether that is downstream of the unstable reading shape above is a HYPOTHESIS -- it is not measured, and it is recorded as such."
+    },
+    {
+      "id": "PIN_COUNT_IS_GATED_ON_THE_STATUS_BEING_UNKNOWN",
+      "what": "the specific gate behind the pattern above: ocr.py:6116 runs _intel_pin_count only when the status is UNKNOWN. Measured over the intel corpus, TARGET_INTEL_BEAST_MISSION is the single most populated intel template (13 records: 10 + 3) and it sits ABOVE PAGE_INTEL -- the branch that yields status=UNKNOWN -- in vision.py's if-chain, so the counter is off precisely on the frames the template recognises best.",
+      "honest_status": "recorded, NOT fixed."
+    },
+    {
+      "id": "GOAL_IS_EMITTED_FROM_STATUS_ALONE_AND_IGNORES_THE_PAGE",
+      "what": "goal_library.py:1195-1196 emits CLEAR_INTEL whenever world.intel['status'] != 'UNKNOWN', with no test on world.page. A mission DIALOG frame carries intel={status: AVAILABLE, mission_type: HERO_JOURNEY, mission_level: 10} (vision.py:1734-1740) and therefore emits the goal -- on a frame where runtime.py:8994 can never stamp a meter, because page is POPUP and mission_type is set.",
+      "measured": "learning/goal_state.json CLEAR_INTEL carried exactly that reading while the runtime's own page was MAP: the goal's stored evidence came from a dialog frame, which is why its evidence dict has no untried_pins and its meter fell back to the constant distance 1.0.",
+      "consequence": "the goal spends part of its life on frames where it cannot report progress at all."
+    },
+    {
+      "id": "EXTERNAL_STAMINA_TABLES_ARE_NOT_A_RULE",
+      "what": "community sources give 'about 10 stamina per mission' and one explicitly states that exact per-mission-type stamina costs are not officially documented. This client has four measured values instead (knowledge/game/intel.json, VERIFIED): 炽红巨兽 10, 营救幸存者 12, 英雄之旅 10, 大师悬赏 10.",
+      "consequence": "per the standing order 真机观察 > Episode > CONFIRMED > OBSERVED > 官方 > 社区 > 视频 > 模型推测, nothing from the community tables is written here as fact."
+    }
+  ]
+}

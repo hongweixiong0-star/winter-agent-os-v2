@@ -1,0 +1,73 @@
+[utility] chose MAIL_ROUTINE (500; catalogue price only)
+[schedule] yield MAIL_ROUTINE -> DEFERRED on OPEN_MAIL: OPEN_MAIL failed its verifier (OPEN_MAIL_NOT_PROVEN); one step is not the whole run, so this task yields to the next one
+[utility] chose SHIELD_CAMP_TRAINING (90; catalogue price only)
+[schedule] yield SHIELD_CAMP_TRAINING -> DEFERRED on OPEN_POWER_OVERVIEW: OPEN_POWER_OVERVIEW failed its verifier (POWER_OVERVIEW_NOT_PROVEN); one step is not the whole run, so this task yields to the next one
+{
+  "nonfatal_verifier_failure": {
+    "steps": 3,
+    "stop": "OPEN_MAP_NOT_PROVEN",
+    "other_ready": "SHIELD_CAMP_TRAINING",
+    "yielded": [
+      "SHIELD_CAMP_TRAINING",
+      "MAIL_ROUTINE"
+    ]
+  },
+  "after_success_without_visible_target": [
+    {
+      "skill": "SCAN_MAP_FOR_BEAST",
+      "reason": "verified_beast_target_not_visible_scanning_map",
+      "confidence": 0.99,
+      "expected_result": "beast_target_resent"
+    },
+    {
+      "skill": "SCAN_MAP_FOR_BEAST",
+      "reason": "verified_beast_target_not_visible_scanning_map",
+      "confidence": 0.99,
+      "expected_result": "beast_target_resent"
+    },
+    {
+      "skill": "SCAN_MAP_FOR_BEAST",
+      "reason": "verified_beast_target_not_visible_scanning_map",
+      "confidence": 0.99,
+      "expected_result": "beast_target_resent"
+    },
+    {
+      "skill": "SCAN_MAP_FOR_BEAST",
+      "reason": "verified_beast_target_not_visible_scanning_map",
+      "confidence": 0.99,
+      "expected_result": "beast_target_resent"
+    },
+    {
+      "skill": "SCAN_MAP_FOR_BEAST",
+      "reason": "verified_beast_target_not_visible_scanning_map",
+      "confidence": 0.99,
+      "expected_result": "beast_target_resent"
+    },
+    {
+      "skill": "SAFE_STOP",
+      "reason": "verified_beast_target_not_visible",
+      "confidence": 1.0,
+      "expected_result": "refresh_or_switch_task"
+    }
+  ],
+  "role_switch_skills": [],
+  "registered_not_live_enabled": [
+    "VERIFY_GATHERING",
+    "START_RALLY",
+    "JOIN_RALLY",
+    "NAVIGATE_TO",
+    "RECOVER_HOME",
+    "READ_TIMER",
+    "READ_COUNTER",
+    "CLAIM_REWARD",
+    "SEND_MARCH",
+    "REINFORCE_TARGET",
+    "USE_ACTIVITY_ATTEMPT",
+    "SELECT_REWARD_OPTION",
+    "GATHER_RESOURCE",
+    "DAILY_HERO_RECRUIT",
+    "ALLIANCE_TECH_CONTRIBUTE",
+    "ALLIANCE_HELP"
+  ],
+  "goal_discovery_parameters": "(self, world: 'WorldState', *, observations: 'Mapping[str, Mapping[str, Any]] | None' = None) -> 'tuple[GoalState, ...]'"
+}

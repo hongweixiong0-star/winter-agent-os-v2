@@ -1,0 +1,93 @@
+{
+  "schema_version": "1.0",
+  "event_id": "EXCLUSIVE_GEAR_FORGE",
+  "role_scope": {
+    "role_id": "1063040265",
+    "role_name": "零氪纯盾流"
+  },
+  "observed_at_local": "2026-09-28T04:51:15+08:00",
+  "time_zone": "UNKNOWN_CLIENT_DISPLAY",
+  "calendar_preview": {
+    "start_raw": "2026-09-28 00:00",
+    "end_raw": "2026-10-25 24:00",
+    "evidence_refs": [
+      "dataset/raw/ui_exploration/20260928/frame_265_EVENT_CALENDAR.png",
+      "dataset/raw/ui_exploration/20260928/frame_274_CAL_GEAR_FORGE_DETAIL.png"
+    ]
+  },
+  "live_page": {
+    "display_name": "专属装备铸炼",
+    "remaining_raw": "27天19:26:20",
+    "current_level": 1,
+    "progress_to_next_level_raw": "0/5",
+    "evidence_refs": [
+      "dataset/raw/ui_exploration/20260928/frame_275_EXCLUSIVE_GEAR_FORGE_PAGE.png",
+      "dataset/raw/ui_exploration/20260928/frame_277_GEAR_FORGE_REWARD_SCROLL.png"
+    ]
+  },
+  "point_sources": [
+    {
+      "hero_display_name": "罗根",
+      "target_page": "HERO_DETAIL",
+      "evidence_ref": "dataset/raw/ui_exploration/20260928/frame_280_FORGE_GOTO_LOGAN_ARROW.png"
+    },
+    {
+      "hero_display_name": "米娅",
+      "target_page": "HERO_DETAIL_EQUIPMENT",
+      "evidence_ref": "dataset/raw/ui_exploration/20260928/frame_284_FORGE_GOTO_MIA_ARROW.png"
+    },
+    {
+      "hero_display_name": "格雷格",
+      "target_page": "HERO_DETAIL_EQUIPMENT",
+      "evidence_ref": "dataset/raw/ui_exploration/20260928/frame_286_FORGE_GOTO_GREG_ARROW.png"
+    }
+  ],
+  "points_rule": {
+    "action": "raise 3rd-generation hero exclusive-equipment level",
+    "points_per_component": 1,
+    "heroes": [
+      "罗根",
+      "米娅",
+      "格雷格"
+    ],
+    "evidence_ref": "dataset/raw/ui_exploration/20260928/frame_276_GEAR_FORGE_RULES.png"
+  },
+  "tier_thresholds": {
+    "1": 0,
+    "2": 5,
+    "3": 15,
+    "4": 30,
+    "5": 50,
+    "6": 100,
+    "7": 150,
+    "8": 200,
+    "9": 250,
+    "10": 325,
+    "11": 400,
+    "12": 500,
+    "13": 625,
+    "14": 750
+  },
+  "free_reward_track_visible": true,
+  "premium_track": {
+    "name": "百炼神兵",
+    "state": "LOCKED_PURCHASE_TRACK",
+    "one_time_during_event": true,
+    "purchased": false
+  },
+  "actions_during_observation": {
+    "component_consumed": false,
+    "premium_purchase": false,
+    "point_row_text_body_tap_effect": "NO_PAGE_CHANGE",
+    "row_arrow_effect": "opens hero named by OCR text in the same row"
+  },
+  "evidence_refs": [
+    "dataset/raw/ui_exploration/20260928/frame_276_GEAR_FORGE_RULES.png",
+    "dataset/raw/ui_exploration/20260928/frame_278_GEAR_FORGE_POINT_SOURCE.png",
+    "dataset/raw/ui_exploration/20260928/frame_279_FORGE_GOTO_LOGAN.png",
+    "dataset/raw/ui_exploration/20260928/frame_280_FORGE_GOTO_LOGAN_ARROW.png",
+    "dataset/raw/ui_exploration/20260928/frame_284_FORGE_GOTO_MIA_ARROW.png",
+    "dataset/raw/ui_exploration/20260928/frame_286_FORGE_GOTO_GREG_ARROW.png"
+  ],
+  "scheduler_note": "Calendar timezone remains unresolved. Registry keeps reliable_start/reliable_end null; use the current client page/window reader, not this raw preview as a timed wake."
+}

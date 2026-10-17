@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "_read_me": "用户描述的截图观察只作为历史日历预告证据；没有截图文件路径和截图精确采集时刻，不能写入当前预约时钟。",
+  "observations": [
+    {
+      "event_id": "CANYON_CLASH",
+      "display_name": "峡谷会战",
+      "source": "USER_PROVIDED_SCREENSHOT_DESCRIPTION",
+      "observed_at": "2026-09-25",
+      "observed_at_precision": "DATE_ONLY",
+      "evidence_ref": null,
+      "calendar_preview_start_raw": "2026-09-28 00:00",
+      "calendar_preview_end_raw": "2026-10-03 24:00",
+      "countdown_raw": "约2天13小时",
+      "time_zone": null,
+      "registration_time": null,
+      "battle_session_time": null,
+      "current_open_state": "HISTORICAL_PREVIEW_ONLY",
+      "current_validity": "NOT_CURRENT_CLOCK",
+      "participation_eligibility": "UNKNOWN",
+      "notes": "预告日期不等于报名窗口或具体战斗场次。运行时必须重新读取游戏日历及角色资格。"
+    }
+  ]
+}

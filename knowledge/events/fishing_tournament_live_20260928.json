@@ -1,0 +1,144 @@
+{
+  "schema_version": "1.0",
+  "observation_id": "FISHING_PAGE_20260928_ROLE_1063040265_01",
+  "event_id": "FISHING_TOURNAMENT",
+  "source": "LIVE_CLIENT_HOME_ENTRY_AND_EVENT_PAGE",
+  "role_id": "1063040265",
+  "role_name": "零氪纯盾流",
+  "observed_at_local": "2026-09-28T08:25:46.194678+08:00",
+  "time_zone": "UNKNOWN_CLIENT_DISPLAY",
+  "calendar_observation_ref": "knowledge/events/calendar_live_observations.json#CALENDAR_20260928_ROLE_1063040265_0414",
+  "calendar_preview_raw": {
+    "start": "2026-09-29 00:00",
+    "end": "2026-10-01 24:00",
+    "time_zone": "UNKNOWN_CLIENT_DISPLAY"
+  },
+  "home_entry": {
+    "label": "钓鱼锦标赛",
+    "visible": true,
+    "nearby_countdown_raw": "19:50:12",
+    "countdown_meaning": "UNKNOWN",
+    "opened_page_title": "钓鱼锦标赛",
+    "before_frame": "dataset/raw/ui_exploration/20260928/frame_572_HOME_EVENT_FRESH.png",
+    "after_frame": "dataset/raw/ui_exploration/20260928/frame_573_FISHING_ICON_AFTER_TAP.png"
+  },
+  "page_state": "PAGE_OPENED_WINDOW_UNKNOWN",
+  "competition_window_state": "UNKNOWN",
+  "current_season_raw": "当前赛季：冬季",
+  "current_points_raw": "235",
+  "progress_by_visible_category": {
+    "fish_collection": {
+      "raw": "86/150",
+      "reward_raw": "征服大海头像框（永久）",
+      "claim_button_state": "DISABLED"
+    },
+    "category_2_mask_icon": {
+      "raw": "3/10",
+      "reward_raw": "破冰而行（永久）; 打怪出征速度+5.0%",
+      "claim_button_state": "DISABLED"
+    },
+    "category_3_icon": {
+      "raw": "4/10",
+      "reward_raw": "征服大海铭牌（永久）; 部队防御力+2.0%",
+      "claim_button_state": "DISABLED"
+    },
+    "category_4_spear_icon": {
+      "raw": "37/60",
+      "reward_raw": "征服大海头像框（永久）; 部队防御力+2.0%",
+      "claim_button_state": "DISABLED"
+    }
+  },
+  "visible_milestone_labels": [
+    "255",
+    "280",
+    "305",
+    "330",
+    "355"
+  ],
+  "fish_filter_options": [
+    "全部",
+    "春季",
+    "夏季",
+    "秋季",
+    "冬季",
+    "未解锁"
+  ],
+  "fish_card_detail": {
+    "name": "霓虹灯鱼",
+    "stars": 1,
+    "season_text": "秋季和冬季出现",
+    "upper_badge_raw": "green check + 10",
+    "material_icons_and_counts": [
+      "10",
+      "10",
+      "10"
+    ],
+    "evidence_ref": "dataset/raw/ui_exploration/20260928/frame_583_FISH_ITEM_DETAIL.png"
+  },
+  "locked_card_detail": {
+    "name": "帕特里克的小黄鸭",
+    "stars": 1,
+    "season_text": "所有季节都会出现",
+    "material_icons_and_counts": [
+      "10",
+      "10",
+      "10"
+    ],
+    "evidence_ref": "dataset/raw/ui_exploration/20260928/frame_580_FISHING_LOCKED_ITEM_DETAIL.png"
+  },
+  "observed_interactions": [
+    {
+      "action": "open home tournament entry",
+      "result": "fishing tournament page opened",
+      "frames": [
+        "dataset/raw/ui_exploration/20260928/frame_572_HOME_EVENT_FRESH.png",
+        "dataset/raw/ui_exploration/20260928/frame_573_FISHING_ICON_AFTER_TAP.png"
+      ]
+    },
+    {
+      "action": "select each of four category icons",
+      "result": "category subview/progress changed; top title stayed fishing tournament",
+      "frames": [
+        "dataset/raw/ui_exploration/20260928/frame_574_FISHING_CATEGORY_2.png",
+        "dataset/raw/ui_exploration/20260928/frame_575_FISHING_CATEGORY_3.png",
+        "dataset/raw/ui_exploration/20260928/frame_576_FISHING_CATEGORY_4.png"
+      ]
+    },
+    {
+      "action": "tap book icon with red dot",
+      "result": "no visible page/content change in captured frame",
+      "frame": "dataset/raw/ui_exploration/20260928/frame_577_FISHING_RULES_TAB.png"
+    },
+    {
+      "action": "open season filter; select unlocked-only",
+      "result": "filter menu showed all 6 season/lock options; card grid changed to locked silhouettes",
+      "frames": [
+        "dataset/raw/ui_exploration/20260928/frame_578_FISHING_FILTER_OPEN.png",
+        "dataset/raw/ui_exploration/20260928/frame_579_FISHING_FILTER_LOCKED.png"
+      ]
+    },
+    {
+      "action": "open one visible fish card and one locked card",
+      "result": "detail cards showed names, stars, season text and three icon counts; no claim/action triggered",
+      "frames": [
+        "dataset/raw/ui_exploration/20260928/frame_580_FISHING_LOCKED_ITEM_DETAIL.png",
+        "dataset/raw/ui_exploration/20260928/frame_583_FISH_ITEM_DETAIL.png"
+      ]
+    }
+  ],
+  "production_use": "Existing event registry generic flow remains DISCOVER_EVENT_CALENDAR -> READ_EVENT_DETAIL -> READ_PROGRESS -> MATCH_REGISTERED_GENERIC_FLOW -> EXECUTE -> VERIFY. This live page observation is associated with FISHING_TOURNAMENT, but event-window eligibility remains unknown; do not schedule or claim from the page alone.",
+  "evidence_refs": [
+    "dataset/raw/ui_exploration/20260928/frame_572_HOME_EVENT_FRESH.png",
+    "dataset/raw/ui_exploration/20260928/frame_573_FISHING_ICON_AFTER_TAP.png",
+    "dataset/raw/ui_exploration/20260928/frame_574_FISHING_CATEGORY_2.png",
+    "dataset/raw/ui_exploration/20260928/frame_575_FISHING_CATEGORY_3.png",
+    "dataset/raw/ui_exploration/20260928/frame_576_FISHING_CATEGORY_4.png",
+    "dataset/raw/ui_exploration/20260928/frame_577_FISHING_RULES_TAB.png",
+    "dataset/raw/ui_exploration/20260928/frame_578_FISHING_FILTER_OPEN.png",
+    "dataset/raw/ui_exploration/20260928/frame_579_FISHING_FILTER_LOCKED.png",
+    "dataset/raw/ui_exploration/20260928/frame_580_FISHING_LOCKED_ITEM_DETAIL.png",
+    "dataset/raw/ui_exploration/20260928/frame_581_FISHING_FISH_CATEGORY.png",
+    "dataset/raw/ui_exploration/20260928/frame_582_FISHING_FISH_ALL.png",
+    "dataset/raw/ui_exploration/20260928/frame_583_FISH_ITEM_DETAIL.png"
+  ]
+}

@@ -1,0 +1,946 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-24",
+  "current_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+  "source_inventory": {
+    "unknown_page_candidate_directories": 20,
+    "deduplicated_page_clusters": 15,
+    "unknown_request_files": 8,
+    "unknown_requests_with_answers": 1,
+    "unknown_dispatch_in_flight": 0,
+    "legacy_unanswered_requests": 7,
+    "local_qwen_call_rows": 12,
+    "local_planner_step_rows": 9,
+    "current_goal_unknown_records": 1,
+    "stale_role_identity_records": 1,
+    "auto_runtime_latest": {
+      "updated_at": "2026-09-24T10:11:13.748079+00:00",
+      "agent_state": "GOAL_RUNNING",
+      "runtime_thread_alive": true,
+      "scheduler_loop_alive": true,
+      "page": "MAP",
+      "current_goal": "AVOID_STAMINA_WASTE",
+      "current_skill": "SEARCH_RESOURCE",
+      "verifier": "PASS",
+      "last_success_time": "2026-09-24T10:11:03.250242+00:00",
+      "stop_reason": null
+    },
+    "panel_continuous_intent": "RUNNING"
+  },
+  "status_counts": {
+    "RESOLVED": 1,
+    "AWAITING_LIVE": 10,
+    "BLOCKED_ENVIRONMENT": 0,
+    "NEEDS_EVIDENCE": 7,
+    "DEFERRED": 0
+  },
+  "issues": [
+    {
+      "issue_id": "UNK-HOME_CITY_TEMPERATURE",
+      "task_and_role": {
+        "tasks": [
+          "KEEP_TRAINING_PRODUCTIVE",
+          "TRAIN"
+        ],
+        "roles": [
+          "1171757165"
+        ]
+      },
+      "first_seen": "2026-09-22T22:48:48.903530+00:00",
+      "last_seen": "2026-09-22T22:54:32.402635+00:00",
+      "evidence_revision": [
+        "7da38a6d5bcd1e4fded244753b46911f13519250+5e571e5e5f3b88fa",
+        "7da38a6d5bcd1e4fded244753b46911f13519250+9ddc25dae3af2cdb"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "PAGE_RECOGNITION_UNKNOWN",
+      "symptom": "当前知识库保留 2 个 UNKNOWN 页面候选；标题样本=['-12.6℃', '-32.6℃']。原始请求=['unknown_12_6__control__cb5386d4']。",
+      "evidence": {
+        "page_candidate_ids": [
+          "unknown_12_6__ddaa0e3d74",
+          "unknown_32_6__04c1b7ee3f"
+        ],
+        "episode_ids": [
+          "20260923_064810_118970",
+          "20260923_065408_042411"
+        ],
+        "request_ids": [
+          "unknown_12_6__control__cb5386d4"
+        ],
+        "screenshots": [
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_064810_118970/20260923_064810_118970_step_002_before_20260922T224849101558.png",
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_065408_042411/20260923_065408_042411_step_001_before_20260922T225412616443.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_065408_042411\\20260923_065408_042411_step_001_before_20260922T225412616443.png"
+        ]
+      },
+      "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
+      "reusable_capabilities": [
+        "TRY_ORDINARY_CONTROL"
+      ],
+      "status": "NEEDS_EVIDENCE",
+      "next_action": "保存帧的当前模板视觉重放仍返回 UNKNOWN；需补齐该城市 HUD/温度遮罩页面的可区分语义，并在当前角色真实页面复验。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-DAILY_PROGRESS_71",
+      "task_and_role": {
+        "tasks": [
+          "AUTO_DISCOVERY"
+        ],
+        "roles": [
+          "1171757165"
+        ]
+      },
+      "first_seen": "2026-09-22T23:12:47.584285+00:00",
+      "last_seen": "2026-09-22T23:12:47.589086+00:00",
+      "evidence_revision": [
+        "7da38a6d5bcd1e4fded244753b46911f13519250+3952ce0ffdcb9935"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "PAGE_RECOGNITION_UNKNOWN",
+      "symptom": "当前知识库保留 1 个 UNKNOWN 页面候选；标题样本=['71%']。原始请求=[]。",
+      "evidence": {
+        "page_candidate_ids": [
+          "unknown_71__71e056e016"
+        ],
+        "episode_ids": [
+          "20260923_071012_137755"
+        ],
+        "request_ids": [],
+        "screenshots": [
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_071012_137755/20260923_071012_137755_step_006_after_refresh_2_20260922T231235365447.png"
+        ]
+      },
+      "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
+      "reusable_capabilities": [
+        "SELECT_DAILY_TAB"
+      ],
+      "status": "AWAITING_LIVE",
+      "next_action": "等待相同兽栏活动再次出现，再用当前截图和 Verifier 核对页面语义。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-POWER_DETAILS_MODAL",
+      "task_and_role": {
+        "tasks": [
+          "CLEAR_INTEL",
+          "EXPLORATION",
+          "KEEP_TRAINING_PRODUCTIVE"
+        ],
+        "roles": [
+          "1171757165"
+        ]
+      },
+      "first_seen": "2026-09-23T12:20:22.647233+00:00",
+      "last_seen": "2026-09-23T23:18:41.309725+00:00",
+      "evidence_revision": [
+        "63b17c31d4e1a1285985332bcf8b7fc42df3450d+25d707020bbb2643",
+        "8e8489f2ede9d6a8a2f1b44eb38f4461d21bb2ae+b28fd9ff135c3017"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "PAGE_RECOGNITION_UNKNOWN",
+      "symptom": "当前知识库保留 2 个 UNKNOWN 页面候选；标题样本=['平庸', '提升']。原始请求=['unknown__control__8cc661a7']。",
+      "evidence": {
+        "page_candidate_ids": [
+          "unknown__1715508d3f",
+          "unknown__4edc0f8cda"
+        ],
+        "episode_ids": [
+          "20260923_201923_535962",
+          "20260924_002854_888480"
+        ],
+        "request_ids": [
+          "unknown__control__8cc661a7"
+        ],
+        "screenshots": [
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_201923_535962/20260923_201923_535962_step_014_after_refresh_2_20260923T122512050579.png",
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260924_002854_888480/20260924_002854_888480_step_008_after_refresh_2_20260923T163148060332.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260924_071817_445597\\20260924_071817_445597_step_001_before_20260923T231822777542.png"
+        ]
+      },
+      "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
+      "reusable_capabilities": [
+        "ATTACK_BEAST_CARD",
+        "BACK",
+        "CLOSE_POPUP",
+        "DISPATCH_BEAST",
+        "OPEN_DAILY",
+        "OPEN_HOME",
+        "OPEN_MAP",
+        "OPEN_POWER_DETAILS",
+        "OPEN_POWER_OVERVIEW",
+        "SEARCH_RESOURCE",
+        "SELECT_RESOURCE",
+        "SUBMIT_BEAST_SEARCH",
+        "TRY_ORDINARY_CONTROL"
+      ],
+      "status": "NEEDS_EVIDENCE",
+      "next_action": "当前保存帧未完成有效重放；利用已存在的 OPEN_POWER_DETAILS/CLOSE_POPUP 能力复验页面识别和关闭后的状态。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-REGULAR_ACTIVITY_PANEL",
+      "task_and_role": {
+        "tasks": [
+          "AVOID_STAMINA_WASTE",
+          "DAILY_ACTIVITY_TARGET"
+        ],
+        "roles": [
+          "1171757165"
+        ]
+      },
+      "first_seen": "2026-09-22T16:03:16.818575+00:00",
+      "last_seen": "2026-09-22T16:05:07.929226+00:00",
+      "evidence_revision": [
+        "26cc41d8ae2932f81fed7a241a19286465b1f3a4+791d88788924fcef"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "PAGE_RECOGNITION_UNKNOWN",
+      "symptom": "当前知识库保留 1 个 UNKNOWN 页面候选；标题样本=['常规活动']。原始请求=[]。",
+      "evidence": {
+        "page_candidate_ids": [
+          "unknown__33704e467f"
+        ],
+        "episode_ids": [
+          "20260923_000222_957063"
+        ],
+        "request_ids": [],
+        "screenshots": [
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_000222_957063/20260923_000222_957063_step_003_after_refresh_2_20260922T160413693599.png"
+        ]
+      },
+      "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
+      "reusable_capabilities": [
+        "EXECUTE_INTEL_RESCUE_SURVIVORS",
+        "OPEN_HOME",
+        "OPEN_MAP"
+      ],
+      "status": "AWAITING_LIVE",
+      "next_action": "等活动面板真实出现，按其当前按钮和活动结束状态重新观测；不以历史 OCR 猜测可操作性。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-FROST_MINE_PANEL",
+      "task_and_role": {
+        "tasks": [
+          "DAILY",
+          "DAILY_ACTIVITY_TARGET"
+        ],
+        "roles": [
+          "1171757165"
+        ]
+      },
+      "first_seen": "2026-09-22T08:30:49.534344+00:00",
+      "last_seen": "2026-09-22T08:36:45.957875+00:00",
+      "evidence_revision": [
+        "253116deb206d63c93f18da3c88200cecd3b2230+c5613b6532979015"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "PAGE_RECOGNITION_UNKNOWN",
+      "symptom": "当前知识库保留 1 个 UNKNOWN 页面候选；标题样本=['燃霜矿区']。原始请求=['unknown__control__b6546e80']。",
+      "evidence": {
+        "page_candidate_ids": [
+          "unknown__36ee6fff6c"
+        ],
+        "episode_ids": [
+          "20260922_163010_905874"
+        ],
+        "request_ids": [
+          "unknown__control__b6546e80"
+        ],
+        "screenshots": [
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_163010_905874/20260922_163010_905874_step_002_before_20260922T083049654040.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260922_163010_905874\\20260922_163010_905874_step_002_before_20260922T083049654040.png"
+        ]
+      },
+      "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
+      "reusable_capabilities": [
+        "DISPATCH_MARCH",
+        "OPEN_ALLIANCE",
+        "OPEN_ALLIANCE_GIFTS",
+        "OPEN_HOME",
+        "OPEN_MAP",
+        "SEARCH_RESOURCE",
+        "SELECT_RESOURCE",
+        "START_GATHER",
+        "SUBMIT_RESOURCE_SEARCH",
+        "TRY_ORDINARY_CONTROL"
+      ],
+      "status": "AWAITING_LIVE",
+      "next_action": "页面识别待真实复验；历史普通控件已触发数值变化并通过其 Verifier，下一次活动面板出现时确认页面语义。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-TRANSITION_OR_UNNAMED",
+      "task_and_role": {
+        "tasks": [
+          "EXPLORATION",
+          "KEEP_TRAINING_PRODUCTIVE"
+        ],
+        "roles": [
+          "1171757165"
+        ]
+      },
+      "first_seen": "2026-09-22T08:10:25.998795+00:00",
+      "last_seen": "2026-09-23T23:14:27.330991+00:00",
+      "evidence_revision": [
+        "253116deb206d63c93f18da3c88200cecd3b2230+43d3cb3dfce78b59"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "PAGE_RECOGNITION_UNKNOWN",
+      "symptom": "当前知识库保留 1 个 UNKNOWN 页面候选；标题样本=['(无标题)']。原始请求=['unknown__control__23759997']。",
+      "evidence": {
+        "page_candidate_ids": [
+          "unknown__3e852c8e40"
+        ],
+        "episode_ids": [
+          "20260922_161006_248835"
+        ],
+        "request_ids": [
+          "unknown__control__23759997"
+        ],
+        "screenshots": [
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_161006_248835/20260922_161006_248835_step_002_before_20260922T081026147987.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260924_071413_036782\\20260924_071413_036782_step_001_before_20260923T231417588106.png"
+        ]
+      },
+      "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
+      "reusable_capabilities": [
+        "BACK",
+        "OPEN_HOME",
+        "TRY_ORDINARY_CONTROL"
+      ],
+      "status": "NEEDS_EVIDENCE",
+      "next_action": "保存帧需由当前完整视觉管线重放；若仍是加载/过场页，等待其自然结束，不做猜测点击。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-WELCOME_BACK_REWARD",
+      "task_and_role": {
+        "tasks": [
+          "ALLIANCE",
+          "KEEP_TRAINING_PRODUCTIVE"
+        ],
+        "roles": [
+          "1171757165"
+        ]
+      },
+      "first_seen": "2026-09-23T09:36:07.506954+00:00",
+      "last_seen": "2026-09-23T09:42:34.069384+00:00",
+      "evidence_revision": [
+        "b87f8eb112efb9d52a079c6314139f645e26f961+ad7f23627b79c451"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "PAGE_RECOGNITION_UNKNOWN",
+      "symptom": "当前知识库保留 1 个 UNKNOWN 页面候选；标题样本=['欢迎回来']。原始请求=['unknown__control__1add7d8e']。",
+      "evidence": {
+        "page_candidate_ids": [
+          "unknown__51c129b51a"
+        ],
+        "episode_ids": [
+          "20260923_173311_668537"
+        ],
+        "request_ids": [
+          "unknown__control__1add7d8e"
+        ],
+        "screenshots": [
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_173311_668537/20260923_173311_668537_step_002_after_refresh_2_20260923T093556833810.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_173311_668537\\20260923_173311_668537_step_003_before_20260923T093607740986.png"
+        ]
+      },
+      "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
+      "reusable_capabilities": [
+        "ATTACK_BEAST_CARD",
+        "BACK",
+        "DISMISS_MAIL_GENERIC_REWARD",
+        "DISMISS_REAL_MONEY_OFFER",
+        "DISPATCH_BEAST",
+        "MAIL_CLAIM_REWARDS",
+        "OPEN_DAILY",
+        "OPEN_MAIL",
+        "OPEN_MAP",
+        "SEARCH_RESOURCE",
+        "SELECT_DAILY_TAB",
+        "SUBMIT_BEAST_SEARCH",
+        "TRY_ORDINARY_CONTROL"
+      ],
+      "status": "NEEDS_EVIDENCE",
+      "next_action": "当前语义视觉重放未能确认弹窗身份；复用离线收益领取能力，在下次真实出现时验证奖励领取及弹窗消失。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-BATTLE_RESULTS",
+      "task_and_role": {
+        "tasks": [
+          "DAILY_ACTIVITY_TARGET"
+        ],
+        "roles": [
+          "1171757165"
+        ]
+      },
+      "first_seen": "2026-09-22T08:30:49.528839+00:00",
+      "last_seen": "2026-09-22T08:36:45.957875+00:00",
+      "evidence_revision": [
+        "253116deb206d63c93f18da3c88200cecd3b2230+c5613b6532979015"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "PAGE_RECOGNITION_UNKNOWN",
+      "symptom": "当前知识库保留 1 个 UNKNOWN 页面候选；标题样本=['战斗已结束']。原始请求=[]。",
+      "evidence": {
+        "page_candidate_ids": [
+          "unknown__56b42e55bc"
+        ],
+        "episode_ids": [
+          "20260922_163010_905874"
+        ],
+        "request_ids": [],
+        "screenshots": [
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_163010_905874/20260922_163010_905874_step_001_before_20260922T083014616755.png"
+        ]
+      },
+      "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
+      "reusable_capabilities": [
+        "DISPATCH_MARCH",
+        "OPEN_ALLIANCE",
+        "OPEN_ALLIANCE_GIFTS",
+        "OPEN_HOME",
+        "OPEN_MAP",
+        "SEARCH_RESOURCE",
+        "SELECT_RESOURCE",
+        "START_GATHER",
+        "SUBMIT_RESOURCE_SEARCH",
+        "TRY_ORDINARY_CONTROL"
+      ],
+      "status": "AWAITING_LIVE",
+      "next_action": "等待战斗结算页再次出现，使用明确“退出”控件并验证返回到何种页面。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-EXPLORATION_IDLE_REWARD",
+      "task_and_role": {
+        "tasks": [
+          "AUTO_DISCOVERY",
+          "KEEP_RESEARCH_PRODUCTIVE"
+        ],
+        "roles": [
+          "1171757165"
+        ]
+      },
+      "first_seen": "2026-09-22T07:21:53.487639+00:00",
+      "last_seen": "2026-09-22T07:25:22.988157+00:00",
+      "evidence_revision": [
+        "0281e5e25bea0c957d1c6c3e410e5a70ea3d297d+b99855355b470a3f"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "PAGE_RECOGNITION_UNKNOWN",
+      "symptom": "当前知识库保留 1 个 UNKNOWN 页面候选；标题样本=['挂机收益']。原始请求=[]。",
+      "evidence": {
+        "page_candidate_ids": [
+          "unknown__8ba5e65de5"
+        ],
+        "episode_ids": [
+          "20260922_152056_984583"
+        ],
+        "request_ids": [],
+        "screenshots": [
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_152056_984583/20260922_152056_984583_step_010_after_refresh_2_20260922T072507769696.png"
+        ]
+      },
+      "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
+      "reusable_capabilities": [
+        "BACK",
+        "CLOSE_POPUP",
+        "EXPLORATION_IDLE_CLAIM",
+        "LEAVE_FOREIGN_LAYER",
+        "NAVIGATE_RESEARCH_LAB",
+        "OPEN_POWER_DETAILS",
+        "OPEN_POWER_OVERVIEW",
+        "OPEN_RESEARCH"
+      ],
+      "status": "AWAITING_LIVE",
+      "next_action": "等待探险收益达到可领取状态后验证页面、领取结果和收益状态变化。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-HOME_HUB_OVERLAY",
+      "task_and_role": {
+        "tasks": [
+          "KEEP_TRAINING_PRODUCTIVE"
+        ],
+        "roles": [
+          "1171757165"
+        ]
+      },
+      "first_seen": "2026-09-22T22:48:48.893479+00:00",
+      "last_seen": "2026-09-22T22:49:02.879686+00:00",
+      "evidence_revision": [
+        "7da38a6d5bcd1e4fded244753b46911f13519250+9ddc25dae3af2cdb"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "PAGE_RECOGNITION_UNKNOWN",
+      "symptom": "当前知识库保留 1 个 UNKNOWN 页面候选；标题样本=['每个角落']。原始请求=[]。",
+      "evidence": {
+        "page_candidate_ids": [
+          "unknown__93c6c6cb73"
+        ],
+        "episode_ids": [
+          "20260923_064810_118970"
+        ],
+        "request_ids": [],
+        "screenshots": [
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_064810_118970/20260923_064810_118970_step_001_after_20260922T224834761933.png"
+        ]
+      },
+      "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
+      "reusable_capabilities": [
+        "TRY_ORDINARY_CONTROL"
+      ],
+      "status": "AWAITING_LIVE",
+      "next_action": "下次出现时区分城市 HUD、公告/活动覆盖层；先观测，只有已识别的既有控件才允许动作。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-RECALL_CONFIRMATION",
+      "task_and_role": {
+        "tasks": [
+          "AVOID_STAMINA_WASTE"
+        ],
+        "roles": [
+          "1171757165"
+        ]
+      },
+      "first_seen": "2026-09-22T22:44:07.677062+00:00",
+      "last_seen": "2026-09-22T22:47:20.545265+00:00",
+      "evidence_revision": [
+        "7da38a6d5bcd1e4fded244753b46911f13519250+cd7780f0f02a1b40"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "PAGE_RECOGNITION_UNKNOWN",
+      "symptom": "当前知识库保留 1 个 UNKNOWN 页面候选；标题样本=['确定']。原始请求=[]。",
+      "evidence": {
+        "page_candidate_ids": [
+          "unknown__adabc853d8"
+        ],
+        "episode_ids": [
+          "20260923_064238_440571"
+        ],
+        "request_ids": [],
+        "screenshots": [
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_064238_440571/20260923_064238_440571_step_005_after_refresh_2_20260922T224548255558.png"
+        ]
+      },
+      "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
+      "reusable_capabilities": [
+        "ATTACK_BEAST_CARD",
+        "CLOSE_POPUP",
+        "DISPATCH_BEAST",
+        "OPEN_HOME",
+        "SELECT_MARCH_TO_RECALL",
+        "SUBMIT_BEAST_SEARCH"
+      ],
+      "status": "AWAITING_LIVE",
+      "next_action": "仅在现有召回流程真实打开确认框时，用召回专用识别和取消/确认 Verifier 验证。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-STORY_SKIP_DIALOG",
+      "task_and_role": {
+        "tasks": [
+          "AUTO_DISCOVERY",
+          "AVOID_STAMINA_WASTE",
+          "KEEP_TRAINING_PRODUCTIVE",
+          "MAIL",
+          "MAIL_ROUTINE"
+        ],
+        "roles": [
+          "1171757165"
+        ]
+      },
+      "first_seen": "2026-09-22T22:44:07.677062+00:00",
+      "last_seen": "2026-09-22T23:12:47.589086+00:00",
+      "evidence_revision": [
+        "7da38a6d5bcd1e4fded244753b46911f13519250+3952ce0ffdcb9935",
+        "7da38a6d5bcd1e4fded244753b46911f13519250+cd7780f0f02a1b40"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "PAGE_RECOGNITION_UNKNOWN",
+      "symptom": "当前知识库保留 2 个 UNKNOWN 页面候选；标题样本=['跳过', '跳过I']。原始请求=['unknown_i__control__b860b24a']。",
+      "evidence": {
+        "page_candidate_ids": [
+          "unknown__c47c32940e",
+          "unknown_i__9ed87ef3a1"
+        ],
+        "episode_ids": [
+          "20260923_064238_440571",
+          "20260923_071012_137755"
+        ],
+        "request_ids": [
+          "unknown_i__control__b860b24a"
+        ],
+        "screenshots": [
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_064238_440571/20260923_064238_440571_step_007_after_refresh_2_20260922T224706539783.png",
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_071012_137755/20260923_071012_137755_step_001_before_20260922T231016893235.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_071012_137755\\20260923_071012_137755_step_001_before_20260922T231016893235.png"
+        ]
+      },
+      "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
+      "reusable_capabilities": [
+        "ATTACK_BEAST_CARD",
+        "CLOSE_POPUP",
+        "DISPATCH_BEAST",
+        "OPEN_HOME",
+        "SELECT_DAILY_TAB",
+        "SELECT_MARCH_TO_RECALL",
+        "SUBMIT_BEAST_SEARCH"
+      ],
+      "status": "NEEDS_EVIDENCE",
+      "next_action": "旧请求原图已丢失；另一张相似叙事帧不能替代原图。保留未知并等待新截图，再识别“跳过”控件。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-BATTLE_ACTIVE_OVERLAY",
+      "task_and_role": {
+        "tasks": [
+          "CLEAR_INTEL",
+          "INTEL"
+        ],
+        "roles": [
+          "1171757165"
+        ]
+      },
+      "first_seen": "2026-09-22T09:14:47.080998+00:00",
+      "last_seen": "2026-09-23T12:22:54.000238+00:00",
+      "evidence_revision": [
+        "2c8bd67311e521711ba178e8dfbbd5ee16b0895c+196772f1b773ef2c"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "PAGE_RECOGNITION_UNKNOWN",
+      "symptom": "当前知识库保留 1 个 UNKNOWN 页面候选；标题样本=['对战']。原始请求=['unknown__control__78694f1b']。",
+      "evidence": {
+        "page_candidate_ids": [
+          "unknown__c6cafbb9a5"
+        ],
+        "episode_ids": [
+          "20260922_171412_978367"
+        ],
+        "request_ids": [
+          "unknown__control__78694f1b"
+        ],
+        "screenshots": [
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_171412_978367/20260922_171412_978367_step_002_after_20260922T091502172123.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_162538_801064\\20260923_162538_801064_step_021_before_20260923T083000087061.png"
+        ]
+      },
+      "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
+      "reusable_capabilities": [
+        "BACK",
+        "DISMISS_INTEL_GENERIC_REWARD",
+        "INTEL_CLAIM_REWARDS",
+        "INTEL_HERO_DISPATCH",
+        "INTEL_HERO_START_MARCH",
+        "OPEN_INTEL",
+        "OPEN_INTEL_HERO_JOURNEY_TARGET",
+        "SELECT_INTEL_PIN"
+      ],
+      "status": "AWAITING_LIVE",
+      "next_action": "等待同类战斗界面再次出现，判定是自动战斗过渡还是可交互战斗页；不得把其他战斗结算样本当成等价。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-LORD_INSTRUCTIONS_PANEL",
+      "task_and_role": {
+        "tasks": [
+          "AVOID_STAMINA_WASTE",
+          "CLEAR_INTEL"
+        ],
+        "roles": [
+          "1171757165"
+        ]
+      },
+      "first_seen": "2026-09-22T07:07:56.118928+00:00",
+      "last_seen": "2026-09-22T07:20:11.931410+00:00",
+      "evidence_revision": [
+        "0281e5e25bea0c957d1c6c3e410e5a70ea3d297d+fb6941c576e9e7a1",
+        "9ea8e4ef6d81d55596de65ee26777695a2e61b7b+15eb21c64f7d3da8"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "PAGE_RECOGNITION_UNKNOWN",
+      "symptom": "当前知识库保留 2 个 UNKNOWN 页面候选；标题样本=['领主指令']。原始请求=[]。",
+      "evidence": {
+        "page_candidate_ids": [
+          "unknown__d08011c357",
+          "unknown__f7bf2c92c5"
+        ],
+        "episode_ids": [
+          "20260922_150702_726193",
+          "unknown_page_check"
+        ],
+        "request_ids": [],
+        "screenshots": [
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_150702_726193/20260922_150702_726193_step_019_after_refresh_2_20260922T071825684707.png",
+          "dataset/raw/control_panel/runtime_exploration/unknown_page_check/unknown_page_check_step_002_after_refresh_2_20260922T071820460740.png"
+        ]
+      },
+      "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
+      "reusable_capabilities": [
+        "ATTACK_BEAST_CARD",
+        "BACK",
+        "DISPATCH_BEAST",
+        "LEAVE_FOREIGN_LAYER",
+        "NAVIGATE_INFANTRY_CAMP",
+        "OPEN_ALLIANCE",
+        "OPEN_ALLIANCE_GIFTS",
+        "OPEN_EXPLORATION",
+        "OPEN_HOME",
+        "OPEN_INFANTRY_TRAINING",
+        "OPEN_INTEL",
+        "OPEN_MAP",
+        "OPEN_POWER_DETAILS",
+        "OPEN_POWER_OVERVIEW",
+        "SAFE_STOP",
+        "SEARCH_RESOURCE",
+        "SELECT_BEAST_TARGET_MAMMOTH",
+        "SELECT_TRAINING_CAMP",
+        "SUBMIT_BEAST_SEARCH"
+      ],
+      "status": "AWAITING_LIVE",
+      "next_action": "真实出现时再识别各项冷却/可用态；不同入口捕获的相同标题候选合并为一个页面簇。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-LIGHTHOUSE_REWARD_POPUP",
+      "task_and_role": {
+        "tasks": [
+          "ALLIANCE",
+          "ALLIANCE_ROUTINE",
+          "AUTO_DISCOVERY",
+          "CLEAR_INTEL"
+        ],
+        "roles": [
+          "1171757165"
+        ]
+      },
+      "first_seen": "2026-09-23T00:50:54.803058+00:00",
+      "last_seen": "2026-09-23T00:53:51.876611+00:00",
+      "evidence_revision": [
+        "06aba190b4cf78654578a603682f6803c0718572+d2af9b2ed4bc3460"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "PAGE_RECOGNITION_UNKNOWN",
+      "symptom": "当前知识库保留 2 个 UNKNOWN 页面候选；标题样本=['*探照灯升级', '探照灯升级']。原始请求=['unknown__control__b2e886bd']。",
+      "evidence": {
+        "page_candidate_ids": [
+          "unknown__daf096bbd3",
+          "unknown__e33b8ef805"
+        ],
+        "episode_ids": [
+          "20260923_085020_436509"
+        ],
+        "request_ids": [
+          "unknown__control__b2e886bd"
+        ],
+        "screenshots": [
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_085020_436509/20260923_085020_436509_step_004_after_refresh_2_20260923T005147823425.png",
+          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_085020_436509/20260923_085020_436509_step_005_before_20260923T005158809832.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_085020_436509\\20260923_085020_436509_step_005_before_20260923T005158809832.png"
+        ]
+      },
+      "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
+      "reusable_capabilities": [
+        "CLOSE_POPUP",
+        "DISMISS_INTEL_GENERIC_REWARD",
+        "DISPATCH_INTEL_BEAST",
+        "INTEL_BEAST_START_MARCH",
+        "INTEL_CLAIM_REWARDS",
+        "OPEN_INTEL_BEAST_TARGET",
+        "OPEN_MAP",
+        "SELECT_INTEL_PIN",
+        "SELECT_MARCH_TO_RECALL",
+        "TRY_ORDINARY_CONTROL"
+      ],
+      "status": "AWAITING_LIVE",
+      "next_action": "通用奖励弹窗已有现成能力，但旧实例的关闭 Verifier 失败；下一次真实奖励弹窗出现时验证“点击任意位置继续”关闭后的状态。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-FROST-REWARD-CONTROL-RECOVERY",
+      "task_and_role": {
+        "tasks": [
+          "DAILY",
+          "KEEP_TRAINING_PRODUCTIVE"
+        ],
+        "roles": [
+          "1171757165 (source episode role; current identity stale)"
+        ]
+      },
+      "first_seen": "2026-09-22T16:31:06.865220+08:00",
+      "last_seen": "2026-09-22T16:31:06.865220+08:00",
+      "evidence_revision": [
+        "see source episode repo_revision in learning/episodes.jsonl for 20260922_163010_905874"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "UNKNOWN_RECOVERY_ACTION",
+      "symptom": "在燃霜矿区 UNKNOWN 页面上，已学习普通控件“奖励”动作；原 Episode 报告 verifier_ok=true 且观测值变化。",
+      "evidence": {
+        "request_ids": [
+          "unknown__control__b6546e80"
+        ],
+        "episode_ids": [
+          "20260922_163010_905874"
+        ],
+        "source": "learning/unknown_requests/answers/unknown__control__b6546e80.json"
+      },
+      "impact": "该普通控件恢复动作已验证；不代表页面分类问题已解决。",
+      "reusable_capabilities": [
+        "TRY_ORDINARY_CONTROL",
+        "verifier-backed ordinary control"
+      ],
+      "status": "RESOLVED",
+      "next_action": "无需重做动作研究；页面簇 UNK-FROST_MINE_PANEL 仍需后续真实页面分类验证。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-CURRENT-GOAL-EXPLORATION-IDLE",
+      "task_and_role": {
+        "tasks": [
+          "CLAIM_EXPLORATION_IDLE"
+        ],
+        "roles": [
+          "1171757165 (identity stale; current role unverified)"
+        ]
+      },
+      "first_seen": "2026-09-24T09:47:36.958060+00:00",
+      "last_seen": "2026-09-24T10:00:22.260716+00:00",
+      "evidence_revision": [
+        "e3d00ad51849bc3521f5539d5daa1a8485e870e8+48919373848d8468"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "CURRENT_GOAL_STATE_UNKNOWN",
+      "symptom": "最新 Goal State 将 CLAIM_EXPLORATION_IDLE 标为 UNKNOWN、available_skills=[]；所引用的 exploration 观测只证明探索任务 AVAILABLE、显示体力消耗 10，并不证明 idle 收益可领取。",
+      "evidence": {
+        "goal_state": "learning/goal_state.json",
+        "observation_state": "learning/observation_state.json",
+        "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260924_174556_214738/20260924_174556_214738_step_006_before_20260924T094735772557.png"
+      },
+      "impact": "该 Goal 当前不能执行领取动作；缺少收益可领取的当前证据，不能推断是缺 Skill 还是收益未就绪。",
+      "reusable_capabilities": [
+        "EXPLORATION_IDLE_CLAIM"
+      ],
+      "status": "NEEDS_EVIDENCE",
+      "next_action": "在不打断 AUTO 的情况下，下一次可安全观测时重新读取探险收益页；若显示未就绪则保持 SAFE_STOP，若显示可领取则检查已有 Skill/Verifier 映射。",
+      "related_records_preserved": true
+    },
+    {
+      "issue_id": "UNK-CURRENT-ROLE-IDENTITY-STALE",
+      "task_and_role": {
+        "tasks": [
+          "role-scoped Goal/Skill discovery"
+        ],
+        "roles": [
+          "current role UNKNOWN"
+        ]
+      },
+      "first_seen": "2026-09-16T10:44:08.934554+00:00",
+      "last_seen": "2026-09-16T10:44:08.934554+00:00",
+      "evidence_revision": [
+        "not recorded in role_identity.json"
+      ],
+      "current_audit_revision": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+      "type": "ROLE_IDENTITY_STALE",
+      "symptom": "role_identity.json 的最后观测时间为 2026-09-16，confidence=0.8536，验证方式 VISION_READ_REPLAY；当前面板日志明确将 role 标为 STALE。",
+      "evidence": {
+        "role_identity": "learning/role_identity.json",
+        "latest_log": "learning/control_panel/latest.log"
+      },
+      "impact": "当前角色身份和角色绑定能力不能被视为 Production Truth；不可基于这条旧记录推断当前炉等级、队列或活动资格。",
+      "reusable_capabilities": [
+        "HybridVision.read_role_identity"
+      ],
+      "status": "NEEDS_EVIDENCE",
+      "next_action": "在安全可观测窗口重新读取客户端角色身份，并由当帧证据写回；当前设备所有权活动中，不抢占设备。",
+      "related_records_preserved": true
+    }
+  ],
+  "operational_findings": [
+    {
+      "finding_id": "OPS-WORKER-EXIT-ATTRIBUTION",
+      "status": "AWAITING_LIVE",
+      "current_snapshot": "learning/runtime_snapshot.json",
+      "evidence": {
+        "unexpected_worker_exits": 15,
+        "watchdog_restart_count": 21,
+        "last_fatal_error": null,
+        "runtime_thread_alive": true,
+        "scheduler_loop_alive": true,
+        "recent_stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED",
+        "runtime_updated_at": "2026-09-24T10:08:48.897975+00:00",
+        "agent_state": "GOAL_RUNNING",
+        "current_goal": "MAIL_ROUTINE",
+        "current_skill": "MAIL_CLAIM_REWARDS",
+        "last_success_time": "2026-09-24T10:08:41.794481+00:00",
+        "latest_step_verifier": "PASS"
+      },
+      "crash_report_files": 8,
+      "crash_report_classification": "all 8 retained reports classify ENVIRONMENT (DEVICE_AMBIGUOUS / emulator connection timeout), timestamps 2026-09-20 to 2026-09-21",
+      "recent_crash_evidence": "No crash/fatal-like Episode type; no worker crash report newer than those 8 environment reports in the inspected latest evidence.",
+      "interpretation": "Historical counter cannot be attributed to genuine crashes from retained evidence. AUTO is currently active and has a fresh verifier-passing success, but 72-hour stability remains unproven; stop_reason retains SEMANTIC_TARGET_NOT_VERIFIED alongside newer success and must be interpreted as stale/last-stop telemetry.",
+      "next_action": "After the safe runtime reload, monitor a fresh 72-hour production window and verify no new genuine WORKER_CRASH events; do not reset historical counters."
+    },
+    {
+      "finding_id": "OPS-RETIRED-WORKBUDDY-POLLING",
+      "status": "LIVE_CONFIRMED",
+      "evidence": {
+        "config_enabled": false,
+        "auto_submit_jobs": false,
+        "request_files": 8,
+        "answered": 1,
+        "legacy_unanswered": 7,
+        "in_flight": 0,
+        "panel_pid": 4264,
+        "panel_started_at": "2026-09-24T18:03:55+08:00",
+        "pump_written_at": "2026-09-24T18:11:15+08:00",
+        "unknown_ticks": 8,
+        "unknown_note": "7 个历史 UNKNOWN 留档；0 个旧作业待结算",
+        "workbuddy_channel_enabled": false,
+        "auto_escalate": false
+      },
+      "next_action": "Panel source now performs at most one disabled-channel reconciliation after historical jobs settle, then stops polling.",
+      "interpretation": "The new retired-channel behavior is visible in the live pump: one reconciliation pass settled zero in-flight jobs, the pump then stopped incrementing unknown_ticks, and the seven unanswered request files are labeled historical. No new jobs were submitted."
+    }
+  ],
+  "summary": {
+    "historical_page_unknown_clusters": 15,
+    "current_goal_unknown_records": 1,
+    "stale_role_identity_records": 1,
+    "independent_unknown_or_stale_items": 17,
+    "related_resolved_recovery_subissues": 1,
+    "ledger_record_count": 18,
+    "status_counts": {
+      "RESOLVED": 1,
+      "AWAITING_LIVE": 10,
+      "BLOCKED_ENVIRONMENT": 0,
+      "NEEDS_EVIDENCE": 7,
+      "DEFERRED": 0
+    }
+  },
+  "skill_inventory": {
+    "registered": 114,
+    "verified": 47,
+    "candidate": 65,
+    "blocked": 2,
+    "blocked_skills": [
+      {
+        "id": "RESEARCH",
+        "status": "BLOCKED",
+        "evidence": "winter_agent_v2/skills.py verifier=None recovery=(); winter_agent_v2/runtime.py has verify_research_started mapping",
+        "current_link": "KEEP_RESEARCH_PRODUCTIVE previously hit repair-budget BLOCKED; latest Goal State DISCOVERED via OPEN_POWER_OVERVIEW"
+      },
+      {
+        "id": "ALLIANCE_HELP",
+        "status": "BLOCKED",
+        "evidence": "winter_agent_v2/skills.py verifier=None recovery=(); tests/test_navigation_matrix.py notes no per-action verifier; verify_alliance_help_auto_active proves only auto-help state"
+      }
+    ],
+    "interpretation": "Known gated capabilities. No safe basis to enable without a complete operation and verification contract."
+  }
+}

@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "purpose": "Goal-scoped procedural priors for the existing local UI planner. They do not register skills, prove availability, or authorize actions.",
+  "lifecycle": "PROVISIONAL",
+  "live_verification": "NOT_CLAIMED",
+  "live_truth_rule": "Current client frame and WorldState determine availability. Use only measured executable controls; after one action, observe and let the existing verifier decide.",
+  "ui_reuse_policy": {
+    "reuse_existing_elements_and_templates": true,
+    "individual_template_live_validation_required": false,
+    "validation_scope": "workflow_level",
+    "execution_rule": "Use existing frame-grounded UI element resolution and the existing executor. Never invent an element or coordinate; validate the complete state transition through the existing verifier or a single flow-level replay."
+  },
+  "sources": [
+    {
+      "url": "https://www.whiteoutsurvival-community.com/tools/wiki/events/dailies-wsco.html",
+      "accessed": "2026-09-24",
+      "scope": "Community overview of recurring daily activity categories; prior only, not client truth."
+    },
+    {
+      "url": "https://www.whiteoutsurvival-community.com/tools/wiki/events/bear-trap-wsco.html",
+      "accessed": "2026-09-24",
+      "scope": "Community overview of Bear Hunt conditions and roles; confirm all conditions in the live client."
+    },
+    {
+      "url": "https://www.whiteoutsurvival-community.com/tools/wiki/events/rally-ops-wsco.html",
+      "accessed": "2026-09-24",
+      "scope": "Community overview of rally roles and timers; mechanics can vary by event and updates."
+    },
+    {
+      "url": "https://www.whiteoutsurvival-community.com/tools/wiki/events/arena-wsco.html",
+      "accessed": "2026-09-24",
+      "scope": "Community prior for Arena attempts and gem refreshes; current role, version, visible count, and cost must be read from the client."
+    },
+    {
+      "url": "https://wosguru.com/labyrinth",
+      "accessed": "2026-09-24",
+      "scope": "Community guide notes an April 2026 Labyrinth update; unlocks, zone names, attempts, and reset state require live confirmation."
+    },
+    {
+      "url": "https://www.whiteoutsurvival-community.com/guides/alliance-mobilization/en.html",
+      "accessed": "2026-09-24",
+      "scope": "Community event guide; eligibility, refresh costs, and mission conditions are event- and role-dependent."
+    }
+  ],
+  "workflows": {
+    "daily_rewards": {
+      "goal_aliases": ["DAILY", "DAILY_ACTIVITY_TARGET", "CLAIM_FREE_REWARDS", "CLAIM_FREE_REWARD"],
+      "steps": ["open reward page", "read claim state", "claim only if clearly free", "verify marker/result"],
+      "success_evidence": "client claim state changes or a reward result is observed",
+      "defer_if": ["cost is unclear", "only task progress is shown", "button is not a measured executable control"],
+      "planner_hint": "Open the visible daily/reward section, distinguish claimable free rewards from task progress, claim only an explicitly free item, then reobserve the same row or reward marker."
+    },
+    "mail": {
+      "goal_aliases": ["MAIL", "MAIL_ROUTINE"],
+      "steps": ["open visible mail tab", "read attachment state", "claim visible attachment", "verify mail/claim state"],
+      "success_evidence": "attachment claim control or unread state changes",
+      "defer_if": ["mail content is unreadable", "an attachment cost is shown", "no measured claim control exists"],
+      "planner_hint": "Inspect the current mail tab and attachment state; collect only visibly claimable attachments, then verify the row or claim control changed before moving on."
+    },
+    "exploration_idle": {
+      "goal_aliases": ["EXPLORATION", "CLAIM_EXPLORATION_IDLE"],
+      "steps": ["open idle-income panel", "read claim state", "claim if offered", "verify claim/reward"],
+      "success_evidence": "idle claim state changes or the client shows the resulting reward",
+      "defer_if": ["claimability is unknown", "the panel is not current", "result cannot be verified"],
+      "planner_hint": "Read the current idle-income panel first; claim only when the client visibly offers the idle claim, then verify the claim state or reward overlay."
+    },
+    "building": {
+      "goal_aliases": ["BUILDING", "KEEP_BUILDING_PRODUCTIVE"],
+      "steps": ["read building/queue", "check visible requirements", "check resource policy", "start approved upgrade", "verify queue"],
+      "success_evidence": "the live building or construction queue changes to in progress",
+      "defer_if": ["building identity is unclear", "prerequisite or affordability is unknown", "speedup or premium spend is offered"],
+      "planner_hint": "Inspect the selected building and queue state; start only a policy-approved upgrade with visible prerequisites. Never use speedups or premium currency from this fallback."
+    },
+    "research": {
+      "goal_aliases": ["RESEARCH", "KEEP_RESEARCH_PRODUCTIVE"],
+      "steps": ["read research queue", "read available options", "check policy/cost", "start approved research", "verify queue"],
+      "success_evidence": "the selected research appears as the active queue item",
+      "defer_if": ["queue state is unknown", "prerequisite or cost is unclear", "speedup or premium spend is offered"],
+      "planner_hint": "Inspect the research queue and current options; start only a policy-approved, visibly affordable item when the queue is idle. Skip speedups and paid prompts."
+    },
+    "training": {
+      "goal_aliases": ["TRAIN", "KEEP_TRAINING_PRODUCTIVE", "SHIELD_CAMP_TRAINING", "LANCER_CAMP_TRAINING", "MARKSMAN_CAMP_TRAINING"],
+      "steps": ["identify camp", "read its queue", "check training policy", "start approved training", "verify that queue"],
+      "success_evidence": "the same camp's queue changes to training",
+      "defer_if": ["camp identity is unclear", "that camp is already busy", "amount or resource cost is unknown"],
+      "planner_hint": "Identify the specific camp and its own queue; use existing training policy only when that queue is idle, then verify its state changes to training. Do not accelerate."
+    },
+    "gathering": {
+      "goal_aliases": ["GATHER_RESOURCE", "KEEP_MARCHES_PRODUCTIVE"],
+      "steps": ["open resource search", "select policy resource", "read found node", "check fresh idle march", "dispatch gather", "verify march"],
+      "success_evidence": "the observed normal march changes to gathering or marching",
+      "defer_if": ["march capacity or idle count is unknown", "no suitable node is found", "the target or march state is unverified"],
+      "planner_hint": "Use client resource search and the policy-selected resource; dispatch only with a freshly observed idle normal march slot, then verify it becomes gathering or marching."
+    },
+    "intel_and_beasts": {
+      "goal_aliases": ["INTEL", "CLEAR_INTEL", "BEAST_HUNT", "AVOID_STAMINA_WASTE"],
+      "steps": ["read mission/target", "check stamina cost", "check stamina policy", "act on verified target", "verify mission/march"],
+      "success_evidence": "mission progress, reward state, or observed march state changes",
+      "defer_if": ["mission type is unknown", "stamina cost or policy is unavailable", "target identity is not verified"],
+      "planner_hint": "Read the current mission or target and visible stamina cost; follow the active stamina policy, act only on a verified target, then confirm the mission or march state changed."
+    },
+    "alliance": {
+      "goal_aliases": ["ALLIANCE", "ALLIANCE_ROUTINE"],
+      "steps": ["read alliance section", "check free claim/help", "use approved free control", "verify row/counter"],
+      "success_evidence": "the free claim/help state or associated counter changes",
+      "defer_if": ["donation or shop cost is shown", "event timing or availability is unknown", "the control's effect is unclear"],
+      "planner_hint": "Inspect the visible alliance section; prioritize explicit free claims/help. Do not donate resources, shop, or assume event availability; verify the relevant row or counter changes."
+    },
+    "alliance_timed_events": {
+      "goal_aliases": ["ALLIANCE_TIMED_EVENTS"],
+      "steps": ["read alliance event identity", "read live timer/eligibility", "check free claim or approved Goal", "verify tier/progress"],
+      "success_evidence": "a verified claim, event progress, or live eligibility reading",
+      "defer_if": ["no live event reader exists", "event identity or timer is unknown", "action cost is outside policy"],
+      "planner_hint": "Alliance event cadence, membership eligibility and costs vary. Use only live client identity, timer and availability; never substitute dates or costs from public guides.",
+      "runtime_status": "AWAITING_LIVE",
+      "runtime_blocker": "Existing alliance UI elements can be reused; production WorldState currently lacks the event identity, eligibility, and timer fields needed to select and verify a timed-event action.",
+      "ui_reuse": "Use existing alliance/event page elements and generic timer/counter readers; validate only the event-level state transition, not each element separately."
+    },
+    "bear_and_rallies": {
+      "goal_aliases": ["PARTICIPATE_BEAR", "SCHEDULED_BEAR_HUNT", "BEAR_HUNT", "RALLY"],
+      "steps": ["read live event phase", "identify rally/role", "check observed march capacity", "use eligible action", "verify rally/march"],
+      "success_evidence": "the intended rally or a role-scoped march state changes",
+      "defer_if": ["event is closed or phase unknown", "rally identity or role is unclear", "march capacity is stale"],
+      "planner_hint": "Check the live event phase, rally identity, role and observed march capacity first. Use only a currently visible eligible rally/action and verify a real march/rally state transition."
+    },
+    "arena": {
+      "goal_aliases": ["ARENA", "USE_FREE_ARENA_ATTEMPTS"],
+      "steps": ["read Arena page", "read free attempts", "act only via supported route", "verify result/attempt"],
+      "success_evidence": "the attempt count or verified Arena result changes",
+      "defer_if": ["free-attempt count is not visible", "only paid attempts are offered", "no verified battle route applies"],
+      "planner_hint": "Check the current Arena page and visible free-attempt count; do not infer that an attempt is free or spend currency. If no existing verified battle route applies, observe or defer.",
+      "runtime_status": "AWAITING_LIVE",
+      "runtime_blocker": "Existing frame-grounded UI element resolution can navigate the page; production WorldState currently lacks Arena attempt/result fields wired to a Goal verifier.",
+      "ui_reuse": "Reuse existing page-navigation, visible-element, counter, and activity-attempt abstractions; do not add or individually live-test per-button templates. Validate one complete free-attempt flow at workflow level."
+    },
+    "labyrinth": {
+      "goal_aliases": ["LABYRINTH", "LABYRINTH_DAILY"],
+      "steps": ["read live Labyrinth state", "check visible attempt", "follow known safe route", "verify result/attempt"],
+      "success_evidence": "a verified result appears or the attempt state changes",
+      "defer_if": ["event is closed", "attempt availability is unknown", "route or outcome cannot be verified"],
+      "planner_hint": "Check that the current Labyrinth is open and an attempt is visibly available; do not spend items or infer a route from a guide. If the result cannot be verified, defer.",
+      "runtime_status": "AWAITING_LIVE",
+      "runtime_blocker": "Existing frame-grounded UI element resolution can navigate the page; production WorldState currently lacks Labyrinth attempt/result fields wired to a Goal verifier.",
+      "ui_reuse": "Reuse existing page-navigation, visible-element, counter, and activity-attempt abstractions; do not add or individually live-test per-button templates. Validate one complete entry/result flow at workflow level."
+    },
+    "timed_events": {
+      "goal_aliases": ["EVENT", "EVENT_MINIMUM_GUARANTEE", "SCHEDULED_EVENT"],
+      "steps": ["read event/timer", "read progress/free claims", "act via approved Goal policy", "verify points/tier"],
+      "success_evidence": "event points, claimed tier, or live progress changes as expected",
+      "defer_if": ["event identity or timer is unknown", "action costs scarce resources outside policy", "result cannot be measured"],
+      "planner_hint": "Read live event name, remaining time, progress and free-claim state. Prefer explicit free claims; contribute only through existing approved Goal policy and verify points or tier state."
+    },
+    "hero_growth": {
+      "goal_aliases": ["HERO", "HERO_RECRUIT", "HERO_GROWTH"],
+      "steps": ["read hero screen", "check cost/reversibility", "check resource policy", "perform approved action", "verify hero state"],
+      "success_evidence": "the intended hero level, item, or claim state changes and is reobserved",
+      "defer_if": ["cost or rarity is unclear", "action consumes scarce items", "reversibility or outcome is unknown"],
+      "planner_hint": "Observe the current hero screen and cost first. Continue only a verified free claim or existing policy-approved reversible action; defer recruitment, scarce items, or unclear costs."
+    }
+  }
+}

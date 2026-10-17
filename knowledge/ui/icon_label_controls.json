@@ -468,5 +468,37 @@
    "consequence": "a model proposal to tap it still comes back PLAN_TARGET_IS_NOT_A_CONTROL and is refused, which is the safe direction: refusing twice costs a turn, spending gems cannot be undone",
    "decided_at": "2026-10-08"
   }
- ]
+ ],
+ "labels_that_need_a_row_anchor": {
+  "_read_me": "These labels were each observed on MORE THAN ONE visually similar row during the 2026-10-10 screenshot audit, and no worker found a visual feature that says which row was tapped. This is a recorded ambiguity, NOT a click rule: a consumer must supply the row it means, and must not treat the label alone as a target.",
+  "labels": {
+   "领取": {
+    "observed_on": [
+     "mail rows",
+     "alliance gift rows",
+     "exploration reward popup"
+    ],
+    "evidence": "analysis_intel_mail_system.jsonl and analysis_alliance_activity.jsonl",
+    "row_anchor_required": true,
+    "ambiguity": "which row's 领取 was tapped is not determined by the label"
+   },
+   "前往": {
+    "observed_on": [
+     "成长任务 rows",
+     "daily task rows",
+     "profile 提升 rows"
+    ],
+    "evidence": "dataset/evidence/daily_panel_observe_20261006T105705/p1_after_entry_tap.png",
+    "row_anchor_required": true,
+    "ambiguity": "several rows carry 前往 with identical styling"
+   }
+  },
+  "already_registered_but_ambiguous": [
+   "领取",
+   "前往"
+  ],
+  "observed_but_NOT_registered": {
+   "提升": "observed on profile rows (analysis_alliance_activity.jsonl) with identical styling on several rows; NOT registered here because there is no template and no evidence that the word alone identifies a control. Visual fact only."
+  }
+ }
 }

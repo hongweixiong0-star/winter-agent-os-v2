@@ -300,7 +300,8 @@
       "name": "Officer Project",
       "aliases": [
         "Officer Project",
-        "OFFICER_PROJECT"
+        "OFFICER_PROJECT",
+        "士官计划"
       ],
       "start": null,
       "end": null,
@@ -481,7 +482,8 @@
       "event_id": "FORTRESS_CONTEST",
       "name": "堡垒争夺",
       "aliases": [
-        "堡垒争夺"
+        "堡垒争夺",
+        "堡垒争夺战"
       ],
       "start": null,
       "end": null,
@@ -525,7 +527,9 @@
       "event_id": "ARMAMENT_FACTORY_EVENT",
       "name": "兵工厂相关活动",
       "aliases": [
-        "兵工厂相关活动"
+        "兵工厂相关活动",
+        "兵工厂争夺战",
+        "兵工广争夺战"
       ],
       "start": null,
       "end": null,
@@ -1006,6 +1010,54 @@
         "state": "CALENDAR_PREVIEW_OBSERVED",
         "reward_claimed": null,
         "evidence": "dataset/raw/ui_exploration/20260928/frame_271_CAL_ICE_ICON3_DETAIL.png"
+      }
+    },
+    {
+      "event_id": "MERCENARY_GLORY",
+      "name": "佣兵荣耀",
+      "aliases": [
+        "佣兵荣耀",
+        "Mercenary Prestige",
+        "MERCENARY_GLORY"
+      ],
+      "start": null,
+      "end": null,
+      "type": "LIMITED_TIME_ACTIVITY",
+      "entry": "HOME/常规活动/佣兵荣耀",
+      "tasks": [],
+      "unwired_steps": [
+        "current window, scoring rules, safe action mapping and verifier are not observed; the activity spends chief stamina, so no action may be taken from this record"
+      ],
+      "rewards": "unknown",
+      "priority": "dynamic",
+      "gate": "DISCOVERED",
+      "applies_to_roles": {
+        "kind": "UNKNOWN",
+        "note": "must be observed on the active role"
+      },
+      "cadence": "UNKNOWN",
+      "next_open_condition": {
+        "source": "LIVE_CLIENT_REQUIRED",
+        "note": "recurring 3-day personal + alliance PvE activity. Three sources disagree on the period and none of them is the client, so no period is recorded: the official CN wiki says 2 weeks (Saturday, 1-day preview), a 17173 activity list says 3 weeks, WSCO says 4 weeks. Only the in-game timer may open it.",
+        "evidence": "knowledge/game/capability_catalog.json"
+      },
+      "participation_conditions": [
+        "require exact current client identity, timer, eligibility, progress, and cost before action",
+        "spends chief stamina: community budgets put a full clear near 625 stamina (575 with a 4-star Gina) all-solo and about 1,000 all-rally, so this record never authorises an attempt"
+      ],
+      "knowledge": [
+        "knowledge/game/capability_catalog.json",
+        "knowledge/game/workflow_priors.json"
+      ],
+      "generic_flow": "EVENT_DISCOVER -> READ_RULES -> READ_PROGRESS -> MAP_SCORE_ACTION_TO_EXISTING_SKILL -> EXECUTE -> VERIFY_POINTS -> CLAIM",
+      "prepare": [
+        "keep the candidate registered without guessed times",
+        "the localized title was measured on the 常规活动 hub tab strip; map actions to existing skills only after live rules and policy checks"
+      ],
+      "occurrence": {
+        "state": "UNKNOWN",
+        "reward_claimed": null,
+        "evidence": "learning/episodes.jsonl#regular_events_hub.tab_signature 佣兵荣耀 x454 (label drawn only; never opened)"
       }
     }
   ]

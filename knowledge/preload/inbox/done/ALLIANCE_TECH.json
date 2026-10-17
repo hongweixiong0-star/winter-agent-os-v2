@@ -1,0 +1,17 @@
+{
+ "capability": "ALLIANCE_TECH",
+ "capability_id": "CAP-S04",
+ "answers": [
+  {
+   "field": "preconditions",
+   "value": "① 已加入联盟（alliance joined）；② 在 ALLIANCE 页（required_page=ALLIANCE）且 required_state={section: TECHNOLOGY, status: AVAILABLE}；③ 推荐科技可见（recommended technology visible）——识别面 PAGE_ALLIANCE_TECH / BTN_ALLIANCE_TECH_CONTRIBUTE_MEAT / STATUS_ALLIANCE_TECH_CONTRIBUTION_RESULT；④ 普通资源捐献可用（normal-resource contribution available）：真机单次成本 10000 MEAT，故资源须足够；⑤ 当日捐献次数未满——每日有次数与额度上限，捐满即止，超出上限的部分既不给活跃度也不给贡献，属纯浪费。risk=LOW_RESOURCE_SPEND。来源：knowledge/skills/ALLIANCE_TECH_CONTRIBUTE.json（status=VERIFIED，真机 5 次 5 成功）+ knowledge/alliance/mechanism_cards.json#ALLIANCE_TECH_CONTRIBUTE（status=VERIFIED，confidence 0.99）。",
+   "source": "knowledge/skills/ALLIANCE_TECH_CONTRIBUTE.json (VERIFIED, live 5/5) ; knowledge/alliance/mechanism_cards.json#ALLIANCE_TECH_CONTRIBUTE (VERIFIED, conf 0.99)",
+   "source_type": "INTERNAL_KNOWLEDGE",
+   "source_confidence": 0.9,
+   "observed_date": "2026-10-14"
+  }
+ ],
+ "answered_by": "寒野（WorkBuddy 专家会话，2026-10-14）",
+ "question_answered": "preconditions —— 该记录唯一缺失的闸门字段，取自第 2 级（当前内部 Knowledge）；两个来源自身均标 VERIFIED 且带真机基数与真机成本",
+ "does_not_claim": "不声称本能力已真机验证：来源均为 in-repo 资产（INTERNAL_KNOWLEDGE ⇒ 该字段只记为 UNVERIFIED），预载上限仍是 READY_FOR_LIVE_VERIFY，绝不为 CONFIRMED。也不声称 navigation/recognition 等其余字段已复核——它们保持原值未动。"
+}

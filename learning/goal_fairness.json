@@ -1,0 +1,222 @@
+{
+ "schema_version": "1.0",
+ "written_at": "2026-10-16T05:40:03.344714+00:00",
+ "goals": {
+  "AVOID_STAMINA_WASTE": {
+   "goal_id": "AVOID_STAMINA_WASTE",
+   "last_selected_at": "",
+   "offered": 9,
+   "selected": 0,
+   "no_progress_streak": 7,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "CLAIM_EXPLORATION_IDLE": {
+   "goal_id": "CLAIM_EXPLORATION_IDLE",
+   "last_selected_at": "2026-10-16T05:40:02.776056+00:00",
+   "offered": 9,
+   "selected": 1,
+   "no_progress_streak": 1,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "CLEAR_INTEL": {
+   "goal_id": "CLEAR_INTEL",
+   "last_selected_at": "2026-10-16T05:37:04.395773+00:00",
+   "offered": 8238,
+   "selected": 4185,
+   "no_progress_streak": 799,
+   "last_block_reason": "this gate defers everything that is not an activity goal",
+   "retry_after": ""
+  },
+  "DAILY_ACTIVITY_TARGET": {
+   "goal_id": "DAILY_ACTIVITY_TARGET",
+   "last_selected_at": "2026-10-16T05:40:02.944805+00:00",
+   "offered": 9,
+   "selected": 2,
+   "no_progress_streak": 2,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "KEEP_BUILDING_PRODUCTIVE": {
+   "goal_id": "KEEP_BUILDING_PRODUCTIVE",
+   "last_selected_at": "2026-10-16T05:37:04.971891+00:00",
+   "offered": 4943,
+   "selected": 456,
+   "no_progress_streak": 187,
+   "last_block_reason": "this gate defers everything that is not an activity goal",
+   "retry_after": ""
+  },
+  "KEEP_RESEARCH_PRODUCTIVE": {
+   "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+   "last_selected_at": "2026-10-16T05:40:02.511093+00:00",
+   "offered": 9,
+   "selected": 2,
+   "no_progress_streak": 1,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "KEEP_TRAINING_PRODUCTIVE": {
+   "goal_id": "KEEP_TRAINING_PRODUCTIVE",
+   "last_selected_at": "2026-10-16T05:37:04.862183+00:00",
+   "offered": 9368,
+   "selected": 2143,
+   "no_progress_streak": 1171,
+   "last_block_reason": "this gate defers everything that is not an activity goal",
+   "retry_after": ""
+  },
+  "SCHEDULED_ALLIANCE_MOBILIZATION": {
+   "goal_id": "SCHEDULED_ALLIANCE_MOBILIZATION",
+   "last_selected_at": "",
+   "offered": 1,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "SCHEDULED_ARMAMENT_COMPETITION": {
+   "goal_id": "SCHEDULED_ARMAMENT_COMPETITION",
+   "last_selected_at": "",
+   "offered": 1,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "SCHEDULED_ARMAMENT_FACTORY_EVENT": {
+   "goal_id": "SCHEDULED_ARMAMENT_FACTORY_EVENT",
+   "last_selected_at": "",
+   "offered": 1,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "SCHEDULED_BEAR_HUNT": {
+   "goal_id": "SCHEDULED_BEAR_HUNT",
+   "last_selected_at": "",
+   "offered": 1,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "SCHEDULED_BROTHERS_IN_ARMS": {
+   "goal_id": "SCHEDULED_BROTHERS_IN_ARMS",
+   "last_selected_at": "",
+   "offered": 1,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "SCHEDULED_CANYON_CLASH": {
+   "goal_id": "SCHEDULED_CANYON_CLASH",
+   "last_selected_at": "",
+   "offered": 1,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "SCHEDULED_DEFEAT_NEARBY_BEASTS": {
+   "goal_id": "SCHEDULED_DEFEAT_NEARBY_BEASTS",
+   "last_selected_at": "",
+   "offered": 1,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "SCHEDULED_EXCLUSIVE_GEAR_FORGE": {
+   "goal_id": "SCHEDULED_EXCLUSIVE_GEAR_FORGE",
+   "last_selected_at": "",
+   "offered": 1,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "SCHEDULED_FISHING_TOURNAMENT": {
+   "goal_id": "SCHEDULED_FISHING_TOURNAMENT",
+   "last_selected_at": "",
+   "offered": 9,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "SCHEDULED_FORTRESS_CONTEST": {
+   "goal_id": "SCHEDULED_FORTRESS_CONTEST",
+   "last_selected_at": "",
+   "offered": 1,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "SCHEDULED_ICEBOUND_TREASURE": {
+   "goal_id": "SCHEDULED_ICEBOUND_TREASURE",
+   "last_selected_at": "",
+   "offered": 9,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "SCHEDULED_ICEBOUND_TREASURE_MYSTERY_SHOP": {
+   "goal_id": "SCHEDULED_ICEBOUND_TREASURE_MYSTERY_SHOP",
+   "last_selected_at": "",
+   "offered": 1,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "SCHEDULED_ICEBOUND_TREASURE_TRAINING": {
+   "goal_id": "SCHEDULED_ICEBOUND_TREASURE_TRAINING",
+   "last_selected_at": "",
+   "offered": 1,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "SCHEDULED_MOONLIGHT_FESTIVAL_SHOP": {
+   "goal_id": "SCHEDULED_MOONLIGHT_FESTIVAL_SHOP",
+   "last_selected_at": "",
+   "offered": 1,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "SCHEDULED_OFFICER_PROJECT": {
+   "goal_id": "SCHEDULED_OFFICER_PROJECT",
+   "last_selected_at": "",
+   "offered": 1,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "SCHEDULED_STATE_VS_STATE": {
+   "goal_id": "SCHEDULED_STATE_VS_STATE",
+   "last_selected_at": "",
+   "offered": 1,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  },
+  "SCHEDULED_UNDERGROUND_EXPLORATION": {
+   "goal_id": "SCHEDULED_UNDERGROUND_EXPLORATION",
+   "last_selected_at": "",
+   "offered": 1,
+   "selected": 0,
+   "no_progress_streak": 0,
+   "last_block_reason": "",
+   "retry_after": ""
+  }
+ }
+}

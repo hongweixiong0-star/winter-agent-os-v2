@@ -1,0 +1,17 @@
+{
+ "capability": "TROOP_SELECT",
+ "capability_id": "CAP-G09",
+ "answers": [
+  {
+   "field": "recovery_prior",
+   "value": "① 选块未生效（点击后金边未移动）——本能力唯一未证明点：不在旧帧上重试、不复用历史坐标；丢弃当帧、BACK 离开编队页再重新进入，按当帧几何重新找块（块数由玩家定义，禁止写死坐标）。② 目标预设不可用或不存在（TARGET_PRESET_ABSENT，从未观测到）：按 formation_policy_rules.json 的降级阶梯 dynamic_config_fallback —— preset missing / preset broken / hero unavailable / troop insufficient / event special restriction / user request ⇒ 降级为动态编队，或从 rally_join_preset_pool [2..7] 里换一个 AVAILABLE 槽（非固定轮转；RETURNING 的行军会翻回 AVAILABLE）。③ 页面识别失败：vision.read_troop_preset_strip 返回 None（页面不对）与 selected_index=None（页面对但无预设被选）是两个不同答案，前者先恢复页面身份再谈选择。来源：knowledge/skills/TROOP_SELECT_RESEARCH.md + knowledge/formation/formation_policy_rules.json（source=USER_LIVE_GAME_CONFIRMATION，2026-09-27）。",
+   "source": "knowledge/skills/TROOP_SELECT_RESEARCH.md ; knowledge/formation/formation_policy_rules.json (USER_LIVE_GAME_CONFIRMATION 2026-09-27)",
+   "source_type": "INTERNAL_KNOWLEDGE",
+   "source_confidence": 0.6,
+   "observed_date": "2026-10-14"
+  }
+ ],
+ "answered_by": "寒野（WorkBuddy 专家会话，2026-10-14）",
+ "question_answered": "recovery_prior —— 该记录唯一缺失的闸门字段。注意：本答案关闭的是 KnowledgeStore 充分性闸门，扫描器侧的 Recovery 仍显示 UNKNOWN（那是 _match_draft 草稿查找键的独立缺陷，扫描器不读预载记录，故不随本答案改变）。",
+ "does_not_claim": "不声称真机已验证，且明确保留两个未证明项：『点击 → 金边移动』仍是真机校准要回答的唯一问题，TARGET_PRESET_ABSENT 从未观测。本 recovery 是 formation 级降级阶梯（USER_LIVE_GAME_CONFIRMATION）与逐帧重找要求（真机归档帧实测）的组合，不是一次真机校验的结果；预载上限仍是 READY_FOR_LIVE_VERIFY，绝不为 CONFIRMED。"
+}

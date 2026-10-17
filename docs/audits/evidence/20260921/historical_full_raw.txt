@@ -1,0 +1,51 @@
+........................................................................ [  3%]
+..............F...................................................................................... [  8%]
+...............................................................F [ 11%]
+..F............................................................. [ 14%]
+.................................................F..FF.FF............... [ 17%]
+.................................F.F.................................... [ 20%]
+.................................................................. [ 23%]
+............................................ [ 26%]
+........................................................................ [ 29%]
+.................................................................F. [ 32%]
+........................................................................ [ 35%]
+.................................................................... [ 39%]
+........................................................................ [ 42%]
+........................................................................ [ 45%]
+......F................................F..F..................F.. [ 48%]
+.................................................................. [ 51%]
+........................................................s........ [ 55%]
+........................................................................ [ 58%]
+.........................................F........................... [ 61%]
+................................................................. [ 64%]
+........................................................................ [ 68%]
+...sssss...........................................................................................FF.... [ 72%]
+........................................................................ [ 76%]
+.........................s.......................... [ 78%]
+..................................................................... [ 82%]
+........................................................................ [ 85%]
+.................................................... [ 87%]
+....................................................... [ 90%]
+.................................................................................F.................................... [ 95%]
+......................................................................................                                               [100%]
+=========================== short test summary info ===========================
+FAILED tests/test_beast_card_runtime_recovery.py::TheLoopItselfRecoversTests::test_a_back_that_changed_nothing_is_not_repeated
+FAILED tests/test_camp_panel_stamina.py::CampPanelStaminaIsReadTests::test_the_camp_panel_reads_the_same_number_as_the_map
+FAILED tests/test_camp_panel_stamina.py::CampPanelStaminaIsReadTests::test_the_read_names_the_page_it_came_from
+FAILED tests/test_capability_gate.py::DeferredGoalSchedulingTests::test_a_deferred_goal_does_not_displace_work_that_is_still_selectable
+FAILED tests/test_capability_gate.py::DeferredGoalSchedulingTests::test_an_allowed_goal_is_untouched_by_the_gate
+FAILED tests/test_capability_gate.py::DeferredGoalSchedulingTests::test_the_run_still_plays_when_the_blocked_goal_is_all_there_is
+FAILED tests/test_capability_gate.py::EpisodeMeasurementTests::test_a_goal_that_moved_is_recorded_as_progress
+FAILED tests/test_capability_gate.py::EpisodeMeasurementTests::test_a_verifier_pass_without_goal_progress_is_recorded_as_such
+FAILED tests/test_control_panel.py::ControlPanelTests::test_intel_goal_never_inherits_gather_actions
+FAILED tests/test_control_panel.py::ControlPanelTests::test_mail_goal_never_inherits_gather_actions
+FAILED tests/test_evidence_integrity.py::test_every_image_literal_in_the_suite_resolves_to_a_file
+FAILED tests/test_live_runtime.py::LiveRuntimeTests::test_verified_action_repeats_then_safe_stops
+FAILED tests/test_march_formation_attribution.py::MarchFormationAttributionTests::test_a_run_that_never_selected_a_goal_keeps_the_placeholder
+FAILED tests/test_march_formation_attribution.py::MarchFormationAttributionTests::test_the_step_that_opens_the_formation_page_carries_the_goal_that_owns_it
+FAILED tests/test_march_reservation_handover.py::TheReservationRefusesTheSlotTests::test_the_stamina_goal_could_have_used_that_very_slot
+FAILED tests/test_panel_routine_discovery.py::ConsecutiveSweepsMustHopBetweenPanels::test_the_hop_happens_once_so_a_back_that_did_not_move_cannot_loop
+FAILED tests/test_route_goal_requires_home.py::UnrelatedPageStillStopsTest::test_research_on_an_unrelated_page_leaves_it_once_then_stops_named
+FAILED tests/test_route_goal_requires_home.py::UnrelatedPageStillStopsTest::test_train_on_an_unrelated_page_leaves_it_once_then_stops_named
+FAILED tests/test_winproc.py::TheGuardKeepsItFixed::test_the_tree_has_no_unhidden_background_process
+19 failed, 2106 passed, 7 skipped, 486 subtests passed in 1533.43s (0:25:33)

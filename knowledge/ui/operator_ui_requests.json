@@ -1,0 +1,123 @@
+{
+  "_read_me": "操作者在 2026-09-23 会话中提出的六项零散真机 UI 需求。这里只登记**需求与当前证据等级**，不作任何『已实现』声明。每条写清：看到了什么、现在卡在哪、下一次真机读取要拿到什么。禁止在没有真机帧的情况下把任何一条标成 READY。",
+  "source": "OPERATOR_DIRECTIVE",
+  "received_at": "2026-09-23",
+  "evidence_ladder": ["REPORTED_BY_OPERATOR", "FRAME_NEEDED", "FRAME_OBTAINED", "CONTROL_LOCATED", "WIRED", "LIVE_VERIFIED"],
+  "requests": [
+    {
+      "id": "UIREQ-01",
+      "title": "集结列表：可加入的集结改成明显底色",
+      "operator_words": "集结列表底色：让可加入的集结明显一点",
+      "kind": "VISUAL_READABILITY",
+      "problem": "列表里可加入（绿色 +）与不可加入（灰色 +）的区别只靠一个小图标，在 720x1280 下辨识距离短、容易看错行。误判的后果是把已满的集结当成可加入的，或反过来错过一支能上的车。",
+      "why_it_matters": "直接决定车身能否在 30 分钟窗口内反复上车。属于 §十六 J 流程的判据质量。",
+      "evidence_level": "REPORTED_BY_OPERATOR",
+      "known_state": "本项目已拥有 `BTN_JOIN_ROW`（绿色 + 本体，62x74）。**但那是控件模板，不是底色判据。**",
+      "blocker": "『底色』是**整行**的属性，不是某个控件的像素。用固定 ROI 读整行颜色，会在列表滚动或行高变化时读到邻居行 —— 与本项目已记录的『资源 tab 滚动导致固定 x 选错 tab』是同一种错误。必须先确定行的**上边界锚点**（`STATUS_RALLY_COUNTDOWN` 已注册）再按行高推整行。",
+      "next_live_action": [
+        "抓一张同时含『可加入行』与『已满行』的真机帧（现有 `join_list_after_detail.png` 第一行 + 为灰，接近但需确认整行为灰底色）",
+        "量两行的底色 RGB 区间与整行 bbox，判断是否可稳定二分",
+        "若底色差异不可量化，则退回『只用绿色 + 的有无』判据并如实记录底色不可用"
+      ],
+      "must_not": "不得用一张泛用的『加入』图片冒充覆盖全部集结行状态（§八）。不得仅凭绿色 + 存在就断言该行可加入 —— 容量为 0 时 + 仍可能是绿的。",
+      "related_semantics": ["BTN_JOIN_ROW", "ROW_TARGET_BEAR_COLUMN", "STATUS_RALLY_COUNTDOWN"],
+      "related_goal": "PARTICIPATE_BEAR"
+    },
+    {
+      "id": "UIREQ-02",
+      "title": "联盟新手帮助：点不掉（可能是设计如此）",
+      "operator_words": "联盟新手帮助点不掉 —— 我当时也可能是设计就是这样的",
+      "kind": "POSSIBLE_NON_BUG",
+      "problem": "操作者点『联盟帮助 / 新手帮助』没有反应，自己给出另一种解释：可能是设计如此。",
+      "why_it_matters": "若它本来点不掉，那么任何『点它 → 期待变化 → 验证失败 → 重试』的链路都会**每次必失败**，并按 §十八 反复消耗窗口。这正是本项目已知的『每轮保证失败 + 十轮无进展』反向模式（见 2026-09-23 绿勾案例）。",
+      "evidence_level": "REPORTED_BY_OPERATOR",
+      "known_state": "registry 中 `ALLIANCE_HELP` 记录为 **never succeeded (attempts=1, failure=0)** —— 只有 1 次尝试、0 次失败，说明它几乎没被真正派发过。",
+      "blocker": "需要先分清三种情况：(a) 控件不可点（装饰/已达上限）；(b) 可点但无状态变化（帮助已满）；(c) 可点且页面切走了、只是没有 UI 反馈。三者需要的 verifier 完全不同。",
+      "next_live_action": [
+        "抓『联盟』页帧，读该入口是否带可点 affordance（高亮/边框/箭头）",
+        "点一次后抓 after 帧，判断页面是否真的没变",
+        "若确认无状态变化，登记为 NOT_ACTIONABLE 并把 ALLIANCE_HELP 从可派发集合中拿掉"
+      ],
+      "must_not": "不得在没确认前就给它写 verifier —— 给一个永远不变的状态写 verifier，等于给一个永远失败的技能发通行证。",
+      "related_semantics": ["BTN_ALLIANCE_WAR"],
+      "related_goal": "ALLIANCE_ROUTINE"
+    },
+    {
+      "id": "UIREQ-03",
+      "title": "联盟战争入口的红点：不能点进去看",
+      "operator_words": "联盟战争入口红点 —— 点进去会直接进集结列表，不能为了看红点就点进去",
+      "kind": "NAVIGATION_CONSTRAINT",
+      "problem": "要判断联盟战争有没有红点，但如果为了看它而点进去，就已经离开了当前页面并进入了集结列表。也就是说『读红点』这个纯观测动作自带一次导航副作用。",
+      "why_it_matters": "这是本项目第一次出现的**观测即副作用**约束。在巨熊窗口内贸然点入会打断正在进行的车头/车身流程。",
+      "evidence_level": "REPORTED_BY_OPERATOR",
+      "known_state": "`knowledge/ui/entry_badges.json` 已建立三态（PRESENT/ABSENT/UNKNOWN）红点读数框架，且 `BTN_ALLIANCE_WAR` 模板已就位（badge 列可见于 `alliance_main_now.png`）。本项目在联盟主页帧上**已能看到该入口的角标** —— 即在**联盟页**读红点不需额外点击。",
+      "blocker": "约束的真正含义是：**红点必须在『联盟主页』读，不能在『城市/首页』试图读**。而城市首页是否也画这个红点，尚未确认。若城市首页不画，则只有已经进了联盟页才有得读 —— 这决定了它能不能作为‘该不该进联盟页’的前置信号。",
+      "next_live_action": [
+        "确认城市首页是否存在『联盟』入口且是否带红点（`entry_badges.json` 现有 3 条已绑定入口不含它）",
+        "在联盟主页帧上量 `BTN_ALLIANCE_WAR` 角标的 blob 与计数",
+        "把该入口按三态补进 `entry_badges.json`，并在面板关闭/被遮挡时记 UNKNOWN"
+      ],
+      "must_not": "不得为了读这个红点而把『进入集结列表』当成可接受的代价。红点读数必须**在任何点击之前**完成（§一 红点驱动触发的原意）。",
+      "related_semantics": ["BTN_ALLIANCE_WAR", "TAB_RALLY_LIST"],
+      "related_goal": "PARTICIPATE_BEAR"
+    },
+    {
+      "id": "UIREQ-04",
+      "title": "设置里新增：修改出征默认编队",
+      "operator_words": "设置里新增一个：修改出征默认编队",
+      "kind": "CONFIG_SURFACE",
+      "problem": "出征/集结时的默认编队目前只能靠客户端自己记住，本项目不能指定。车身与车头需要不同编队（车身首位英雄优先杰西/书允/杰赛尔，车头用主力 + 巨熊车头预设）。",
+      "why_it_matters": "决定上车时的配兵正确性。属于 §十五/§十六 流程的输入，而不是优化项。",
+      "evidence_level": "REPORTED_BY_OPERATOR",
+      "known_state": "`knowledge/game/bear.json` 已记录 `roles.rally_member.policy` 与 `join_policy.hero_fallback`；`bear_troop_setup.png` 显示了出征页的**预设条**（`打野/书咏/杰西/杰塞尔/尼莫/熊6/熊7/开车`）。`World.Deploy.json`（外部，英文）给出了 8 个编队位的 ROI 结构。",
+      "blocker": "本项目现在的做法是『出征页上选预设』，而操作者要的是一个**持久化的默认编队设置**。两者不是一件事：预设条每次进页面都要重选，且顺序会变（`bear_troop_setup.png` 与 `bear_preset6.png` 的高亮位不同）。要区分清楚这是 (a) 本项目自己的配置项（我们记住该点哪个预设），还是 (b) 游戏内的某个设置页。",
+      "next_live_action": [
+        "先确认游戏内是否存在『设置 → 出征默认编队』；若不存在，则本需求落入本项目自己的 `config/v2.json`",
+        "把 `bear_troop_setup.png` 的预设条裁成模板，使预设名可被读出而非靠序号",
+        "明确车身/车头各自的预设名写进角色配置"
+      ],
+      "must_not": "不得把预设条**按序号**绑定（第 N 个 = 某编队）—— 外部 `ducker24678` 的注释已证明该页坐标在每次进入后不可信；`yun-2000` 也把阈值分档处理。必须读预设名。",
+      "related_semantics": ["PAGE_TITLE_MARCH", "BTN_CONFIRM_MARCH"],
+      "related_goal": "PARTICIPATE_BEAR"
+    },
+    {
+      "id": "UIREQ-05",
+      "title": "邮件：一键领取",
+      "operator_words": "邮件一键领取",
+      "kind": "BULK_ACTION",
+      "problem": "邮件页逐封领取，慢且容易在半路失败。",
+      "why_it_matters": "邮件是每日例行，占用的时间与失败次数会挤占巨熊窗口前的准备时间（§二十一：快捷面板与普通日常必须给巨熊让路）。",
+      "evidence_level": "REPORTED_BY_OPERATOR",
+      "known_state": "registry 中 `OPEN_MAIL` 受 `ENTRY_GATED_SKILLS = {\"OPEN_MAIL\": \"MAIL_ROUTINE\"}` 门控；`DISMISS_MAIL_REWARD` 记录为 **never succeeded (attempts=1, failure=1)**。`knowledge/game/mail.json` 存在。",
+      "blocker": "『一键领取』是**有界收敛**问题，不是单次点击问题：点一次后可能又出现新的可领邮件。本项目已知反例是 `knowledge/failure_patterns/vision/BOUNDED_SCAN_THAT_NEVER_CONVERGES.md`。",
+      "external_reference": "`Shederator/wosbot`（AGPL-3.0，REFERENCE_ONLY）的 `MailClaimPassPolicy.java` 给出一个可借鉴的**三态有界判据**：`after.isEmpty() -> COMPLETE`；`before.isEmpty() || before.sameVisualStateAs(after) -> STOP_NO_PROGRESS`；`completedPasses >= maxPasses -> STOP_BUDGET_EXHAUSTED`；否则 `RETRY_AFTER_PROGRESS`。其中 `sameVisualStateAs` 用 4 px 位移容差比对标记点位置 —— **思路可借鉴，代码不可复制**（AGPL）。",
+      "next_live_action": [
+        "抓邮件页帧，确认是否存在游戏自带的『一键领取 / 全部领取』按钮；有则直接用它，不要自研循环",
+        "若无自带按钮，则按有界收敛实现，并在 `STOP_NO_PROGRESS` 时必须能给出 after 帧证据",
+        "注意本项目已有教训：验证器不得用『控件消失』当成功 —— 页面关掉时控件也会消失，等于用『不再看』换通过"
+      ],
+      "must_not": "不得用『点 N 次固定次数』当实现。N 是猜的，且失败时无法判定是页面变了还是没领到。",
+      "related_goal": "MAIL_ROUTINE"
+    },
+    {
+      "id": "UIREQ-06",
+      "title": "建筑升级：自动使用加速",
+      "operator_words": "建筑升级自动用加速",
+      "kind": "RESOURCE_POLICY",
+      "problem": "建筑/研究升级的等待时间在活动前会占用关键窗口，希望自动使用加速道具缩短。",
+      "why_it_matters": "与巨熊准备直接相关：升级队列若在活动前不空出，可能挡住活动前的准备动作。",
+      "evidence_level": "REPORTED_BY_OPERATOR",
+      "known_state": "`config/v2.json` 的 `risk` 段已有 `allow_speedups: true`（**允许**，但不代表**会用**）；`require_resource_ledger: true`。registry 中 `RESEARCH` 为 **never succeeded (attempts=1, failure=0)**。`BUILDING_INFANTRY_CAMP` 模板已存在（0.649 命中）。",
+      "blocker": "**这是一个消耗型不可逆操作**，必须走资源账本（`require_resource_ledger: true`）。要区分『升级剩余时间』与『加速道具数量』两个独立读数，且加速道具可能有多种（通用/建筑专用/联盟帮助）。目前没有任何一项被真机读过。",
+      "next_live_action": [
+        "抓建筑升级中的帧，确认客户端是否显示加速可用（有无加速按钮/剩余时间可读）",
+        "读 `BUILDING_*` 的剩余时间 ROI，先证明能读，再谈自动用",
+        "把『用哪种加速、用多少』定为显式策略，写入资源账本，不得默认全用"
+      ],
+      "must_not": "不得在无法读出『用了什么、用了多少』之前自动消耗道具 —— `block_real_money: true` 与 `require_resource_ledger: true` 的意义就是禁止无记录的消耗。不得把加速当成免费操作。",
+      "related_goal": "BUILDING_UPGRADE_ROUTINE"
+    }
+  ],
+  "prio_note": "这六条**都不得阻塞巨熊**（§四 末句、§二十一）。优先级低于 PARTICIPATE_BEAR 的三个断点（VERIFIED_ATOMIC 绑定 / Executor kind / verifier 签名）。本文件是先登记、后真机读取的排队单，不是已完成清单。",
+  "honesty_note": "六条的证据等级**全部是 REPORTED_BY_OPERATOR**，即只有操作者口述，没有任何一条已被真机帧证实。所有 next_live_action 都还没执行。"
+}

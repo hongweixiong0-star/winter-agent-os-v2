@@ -1,67 +1,35 @@
-# LAST CODEX REVIEW — 2026-10-02 Delta / Developer Handoff
+## 最新补充核验 — 2026-10-02T12:31:43.590247+08:00
 
-## 03:36后最新事实更新
+用户再次上传的 FINAL 与已安装全文 SHA256 完全一致，无需重复安装。当前仍由 WorkBuddy 的有效 exclusive claim 持有发布权；未把进程存在或排队标成新工单已执行。
 
-- 核验时间：2026-10-02T03:38:11+08:00。HEAD：4598da3e3d3543e1a869902e1e230da902843344；origin/main：9592b438e91cf0d5ed2972cea3e03394ff2f2495；PIN：4598da3e3d3543e1a869902e1e230da902843344。
-- fresh snapshot tick：2026-10-01T19:37:36.766550+00:00；state：IDLE；runtime_thread_alive：False；scheduler_loop_alive：False。这些证明运行快照恢复更新，不代替进程加载fingerprint或游戏Goal完成。
-- Root已提交413bd4c/e9f68da日历持久化+due/detail接线、4598da3安全Bootstrap目标入口、bbe2b69同帧语义列表滑动；队列02/03先继承做真实回归，禁止重复建设。
-- 上文03:28/03:25停机事实为历史采样。当前仍Codex sole Release Owneractive；待最终发布与接手前再刷新事实，WorkBuddy不得并发发布/输入。
+UI-Venus 已在12:04恢复，当前 health=ok、32K/vision配置保持；此前10:12不可用记录仅是历史。恢复后采样跨 7 轮、93 个真实生产步骤；单步Verifier通过不能等同Goal完成。FIRST/SECOND仍未有新模型/grounding/复用验收证据。
 
-## 已核验基线与生产状态
+日历归因补丁 aab14bb 已保存在独立worktree且未加载生产。另一个只读确认的根因是导航distance变化被误记为Goal进展；具体最小修改及回归用例已写入以下交接。WorkBuddy先核对当前实际blocker，再独占集成/生产验证；不要为工单09重复启动已经健康的模型。
 
-- main HEAD = origin/main = 9592b438e91cf0d5ed2972cea3e03394ff2f2495。
-- 生产manifest expected_commit = d7a86c47b4e8d6ff763b18b0ba73255824dabd9f，位于仓库外生产worktree；开发盘变更不会自动成为production loaded代码。
-- runtime snapshot最后tick = 2026-10-01T17:13:24.856138Z（02日01:13 CST），已陈旧。snapshot true不等于当前进程alive。
-- Root约03:25确认没有panel/worker，当前正恢复。当前实际加载版本/恢复原因须Root完成后刷新；本Review不宣称AUTO已恢复。
-- Codex仍为本会话唯一Release Owner，额度约98%，继续开发。WorkBuddy队列ARMED_WAITING_HANDOFF；<=15%或Codex明确暂停/离线时核验交接，未明确移交发布权不得push/repin/reload。
+完整现场证据：[WORKBUDDY_FINAL_RECONFIRM_20261002T123143.json](.workbuddy-ai/handoff/WORKBUDDY_FINAL_RECONFIRM_20261002T123143.json)。EXECUTION_STATE、BLOCKED_QUEUE、task01结果与已有发布授权保持不变。
 
-## 已有成果，禁止重复
+# LAST CODEX REVIEW — WorkBuddy 持续自主开发治理交付
 
-- Runtime capability Bootstrap/safe discovery window 与UNKNOWN observation ticket已在main；0d53e9d/4e796ed相关成果不是待重写的新系统。
-- 既有15个Verifier binding与calendar store/resolver开发此前已经推进；接手以最新main实际调用/测试/loaded版本为准，不根据旧报告生成另一实现。
-- c74f0bb修复HybridVision badge helper缺失；旧18 unexpected exits/24 watchdog是历史累计。控制面安全替换有树内杀进程风险，复用现有安全机制，不能重复创建第二panel。
-- 射手营799真实训练成功model0，不属于Venus学习FIRST。此前真实调用窗口未证明grounding/Candidate/SECOND，最新计数仍需从当前ledger核实。
+核验时间：2026-10-02T10:18:26+08:00；用户上传FINAL 0–72节全文已逐字节落盘，SHA256=FB1AF8B85F43A9C26FABB801CC4334618B42371B28FA2614AD5BA8807B7958D7。本次只交付正式读取入口/Commander契约；源码、执行态、设备、生产pin均未修改。
 
-## 当前真正高优先级缺口
+## 当前可追溯事实
 
-1. 生产实际运行/loaded revision需恢复并从鲜活进程+快照证明，Root正处理。
-2. 9592b43记录DISCOVER_EVENT_CALENDAR每frame再生占据AUTO。虽然代码有calendar_scan_due导入，实际成功/失败写回、role due/cooldown和候选生命周期须沿真实链核实。
-3. FIRST→Candidate→SECOND模型无参与复用未有完整因果证据；必须通过普通AUTO安全入口，不故意关闭已有能力造未知。
-4. SEMANTIC_TARGET_DIAGNOSIS_20261002历史373条解析失败含多Goal/Skill；Root当前正补recognition_error归因/修复，后续不能再凭UNKNOWN笼统标签判断。按最新帧+具体resolver原因决定最小补丁。
-5. 科研返回层级、巨兽搜索到own-rally created、建筑真实BUILD_STARTED及Arena次数观察仍需当前生产Verifier；任何后续已解决项以实证结算不重做。
+- HEAD=origin/main=77d5b4b09bbe21193cfe467d6363dc66726b3ce6；PIN=951abbdd039c4955f2cd99fd442ae2aea56ffae3；最新Episode 20261002_101338_544824 / loaded_revision=951abbdd039c4955f2cd99fd442ae2aea56ffae3+45c8432910c33dca。开发HEAD与生产PIN分开，不能称最新main已加载。
+- WorkBuddy task01结果在07:32 DONE并记录exclusive claim；后续060d75b/e49879f/77d5b4b已实见。Codex本次治理文件不回收该claim，后续heartbeat只读。当前开发是否活跃需fresh执行证据，不能由已claim直接推断。
+- AUTO控制面11356及正常run boundary此前实见；最新snapshot=2026-10-02T02:18:10.560195+00:00 / state=AUTO_RUNNING；历史unexpected exits=18、watchdog=24，不是本轮新增crash。
+- 10:12健康端口18080拒绝连接；08:19真实AVOID_STAMINA_WASTE VENUS_CALL_FAILED。根因未确认，新增同一backlog服务可用性项，WorkBuddy先检查是否已恢复。
+- FIRST/SECOND完整真实学习闭环仍未证明。先前日历A六详情PASS、model0训练成功不代表学习闭环。
 
-## 正式决策与新队列
+## 本次裁决
 
-写入8项schema3/READY Work Order，字段完整，最大主动timebox525分钟=8.75小时。第一单核验当前事实与所有权；第二单calendar starvation；再推进学习闭环、安全UNKNOWN/Arena、科研返回、巨兽Verifier、建筑启动及稳定性。12–24h只为背景AUTO观察条件窗口，不虚构有效开发工时。
+旧八单改为动态seed backlog，仅保留有效所有权前置；新增模型服务缺口，负责人每轮重选最高价值共享根因，不限定训练→科研→巨兽→建筑。保留原ID/原始捕获与所有执行结果；新根因可向同一队列追加。timebox用于局部尝试，不是总停止期限。
 
-旧WORK_QUEUE/CODEX_DIRECTIVES/LAST_CODEX_REVIEW会在同一次写入前逐字节归档，保存SHA256；EXECUTION_STATE/results/BLOCKED_QUEUE/REVIEW_REQUESTS不改。用户只需启动WorkBuddy读取文件。
+FINAL中约50%学习机会/退避/状态字段是设计意图，须基于唯一现有Scheduler/状态链实施并测量；本次落盘不表示这些runtime功能已完成。安全冷却期间有界WAIT可行，Goal到期重新可见；禁止永久UNKNOWN黑洞或忙循环。Goal覆盖L0–L5不能与Skill/Pipeline级别混淆；cq DONE不能当L5。
 
-当前scope仅Commander三文件与archive；未设备操作、未commit、未push、未repin/reload。当前dirty源代码由Root/既有开发者保留，不以清工作树为目标。
+## 接下来由WorkBuddy自主完成
 
-## 下一次Review依据
+先fresh核对服务、当前Goal board、从发现到Verifier/学习/重入的完整链；比较服务恢复、日历重复/饥饿、CapabilityBootstrap、FIRST/SECOND及Never-Tried高价值Goal。选一项、最小修复、实际生产验证，再重新选题。单项暂缺条件时继续其它合法工作。
 
-记录最新HEAD/PIN/loaded fingerprint与fresh进程、日历scan后下一Goal实际推进、enabled Goal唯一diagnostic、FIRST六项真实证据及统一trace、研究返回/巨兽/建筑Verifier、32K Dedicated/Shared/RAM/OOM采样窗口和至少两run boundary。等待活动/队列/读取条件应明确阻塞，不等于NO_SKILL或目标完成。Root完成当前恢复/发布后刷新本批base_facts。
+## 保存与限制
 
-## Root已确认恢复的真实生产证据
-
-2026-10-02 03:33:39新AUTO run；03:37:24 ROLE_B / CLEAR_INTEL / DISMISS_INTEL_GENERIC_REWARD，Verifier PASS，worker和Scheduler实际存活。HEAD/PIN4598da3。这是普通任务进展，不算Venus FIRST/SECOND；日历413bd4c+e9f68da已有实现，后续只先验普通AUTO新trace与真实剩余阻塞。全部发布权仍归当前Codex线程。
-
-## Root最终发布更新 2026-10-01T20:01:45.286355+00:00
-
-HEAD/origin=fe78e9cd93198fc9c91c7d21e57ccadfbf109d27；代码PIN=5a0aeb2458113a83e395e5c9dbe5d291a5cf179f（后续main仅测试/交接，不重复重载以追版本号）。当前snapshot=2026-10-01T20:01:41.678820+00:00 GOAL_RUNNING；每单必须再确认真实进程。最新日历链9341eee已真机入口/首滚动；发现正文timer误识别tabs，5a0aeb2已最小修复并以当前frame ROI重放正确读出日历，四swipe/run后yield。125相关测试PASS，不等于grid/detail完成。
-
-队列02只继承最新代码做真实tab/grid/detail/日历入库与不饿死验证；不要重复store、name/aliases或hub接线。FIRST/SECOND仍未完成；历史5真实模型调用不是学习成功。额度不足/离线时，Root允许WorkBuddy按任务01核对无Codex并发发布/输入并记录独占接手后执行开发队列与正常发布；这条明确条件授权不解除运行时Policy，不恢复retired通道。
-
-## 2026-10-01T20:07:39.406701+00:00 当前生产结果更新
-
-代码HEAD/PIN951abbd；普通AUTO040016已真实完成entry→strip→TAB三步Verifier PASS，识别7日期列、8活动条目。详情断点为observer OCR headings与executor colored bar选择不一致；951abbd沿真实before frame重放已纠正expected identity，须下次普通AUTO确认详情/全扫描。不要重复开发前述接线。模型窗口实际6次：3REPLAN/2拒绝/1OBSERVE，仍无grounded模型动作/候选/SECOND成功；不宣布学习闭环完成。
-
-## 2026-10-01T20:09:34.473305+00:00 真机详情闭环更新
-
-951abbd普通AUTO 20261002_040522_770261 / ROLE_A：7日期列、6真正可点击活动条目；6次OPEN_DETAIL与6次RETURN都Verifier PASS，随后进入体力/情报，未再停在日历。先前8项为OCR候选标题，含不可点击section headings，不等于8条真实可操作活动。角色B必须自己fresh读取；活动参与、预约/战斗时间及Venus学习仍不因日历读取成功而完成。WorkBuddy队列02跳过A已完成扫描，重点B/due suppression/真实剩余条件。
-
-## 2026-10-01T20:11:47.141043+00:00 明确额度交接授权（覆盖此前Codex continues字样）
-
-当前剩余约16%，Root在本turn结束后主动让出开发发布权，WorkBuddy可按任务01核对无并发源码写入/发布/设备lease并记录独占claim后执行本队列，包括小提交、正常push与安全pin/reload。无需用户逐项确认。本授权用于开发，retired runtime channel仍禁止恢复。尚未取得WorkBuddy实际开始执行证据，不能报告它已运行。Codex heartbeat后续只读核验交接，不竞争owner。
-
-当前AUTO控制面19756、worker24832实际存活，最新CLEAR_INTEL；生产代码951abbd clean，main后续仅Commander文档。保留既有dirty/untracked全部成果，当前tracked Python源码无未提交改动。
+原五个入口文件及用户源文本备份：C:/Users/xhw/.codex/backups/winter-workbuddy-continuous-20261002T101218，manifest有完整性校验。执行态/BLOCKED/task01结果仅记录SHA256且保持原样；历史Episode不改。当前文档未commit/push，留给有效WorkBuddy发布负责人按实际范围同步；无需为纯治理文档repin/reload。

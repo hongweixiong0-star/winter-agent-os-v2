@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.1",
+  "written_at": "2026-10-02T00:20:00+08:00",
+  "source": "OPERATOR_DIRECTIVE_2026-09-29 (§十二 Capability Gap / §十三 不要批量造 Skill)",
+  "purpose": "Capability 债务的**排序策略**：优先级只来自真实生产未完成任务，禁止批量造 Skill。",
+  "truth_source": "learning/workbuddy_escalations.jsonl",
+  "this_file_is": "ordering policy only",
+  "not_a_second_truth": "条目是否已提交 / 处理到哪一步 / 是否已修，一律 fold 自 escalation ledger（winter_agent_v2/escalation_queue.py，DEFAULT_LEDGER = learning/workbuddy_escalations.jsonl）。本文件只定义排序维度与公式，不承载状态真值；两份数据若冲突，以 ledger 为准并把本文件当作视图修正。",
+  "ordering_formula": [
+    "1. 每天反复失败的任务 → 优先修",
+    "2. deadline 临近 / 正在丢奖励 → 优先修",
+    "3. 高频且高任务价值 → 优先修",
+    "4. 低频未知功能 → 后修"
+  ],
+  "ranking_fields": [
+    "frequency",
+    "deadline",
+    "reward_loss",
+    "task_value",
+    "daily_impact"
+  ],
+  "entry_schema": {
+    "gap_id": "string, 稳定标识（page + goal + semantic）",
+    "role_scope": "ROLE_A / ROLE_B / SHARED",
+    "goal": "string, 对应 Goal id",
+    "page": "string, 观测到的页面",
+    "unknown_type": "见 skills/unknown-ui-asset-learning §1 八型",
+    "failure_class": "CAPABILITY_GAP（本队列只收这一类）",
+    "first_seen": "ISO8601",
+    "last_seen": "ISO8601",
+    "frequency": "int, 观测次数（来自真实 Episode，不手填）",
+    "deadline": "ISO8601 or null, 相关活动/时限",
+    "reward_loss": "string or null, 正在丢什么奖励",
+    "task_value": "HIGH / MEDIUM / LOW",
+    "daily_impact": "string, 每日影响描述",
+    "blocked_goals": [],
+    "evidence_refs": [],
+    "status": "OPEN / FIXING / FIXED / WAITING_ENVIRONMENT",
+    "note": "string"
+  },
+  "rules": [
+    "CAPABILITY_GAP 不得阻塞其他 Goal：记录后立刻换 Goal，让 AUTO 继续",
+    "ENVIRONMENT_BLOCKED 不进本队列（走 bounded recovery）",
+    "SYSTEM_FAILURE 不进本队列（才允许 DEGRADED）",
+    "修完一条必须更新 status 与 evidence_refs，并回到生产事实重新排序",
+    "禁止在本文件之外再建第二份债务排序表",
+    "禁止把本文件当状态真值：提交/处理状态一律 fold 自 escalation ledger（见 truth_source）"
+  ],
+  "entries": []
+}

@@ -1,0 +1,3 @@
+primary Page.EXPLORATION {'status': 'AVAILABLE', 'stamina_cost_displayed': 10} {} {}
+hybrid Page.EXPLORATION {'status': 'AVAILABLE', 'stamina_cost_displayed': 10} {'cost_affordable': False, 'cost_verdict_source': 'BUTTON_COST_COLOUR'} {}
+ROI_TOKENS [] PARSED None

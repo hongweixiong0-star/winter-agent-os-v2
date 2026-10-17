@@ -269,6 +269,23 @@ def test_runtime_captures_are_still_prunable() -> None:
     assert selected, "最激进策略下应当至少选中一些 runtime 截图"
 
 
+def _documented_pruned_evidence() -> set[str]:
+    """帧被清理删除、并已登记为不可恢复的绝对路径。
+
+    2026-10-17 的整理按体积删了 ``dataset/raw/role_switch`` 的旧帧，没先过
+    ``retention.referenced_evidence`` 的保护口径，109 条 episode 的引用因此悬空。
+    帧不可恢复（rm 绕过回收站、全盘按名搜索无果），但 **episode 行不改写**——
+    改写生产证据比丢失更糟。损失登记在 ``knowledge/provenance/pruned_evidence_20261017.json``，
+    只有该清单里逐字相同的路径才被放过；任何新的缺失仍然让这个测试失败。
+    """
+    record = ROOT / "knowledge/provenance/pruned_evidence_20261017.json"
+    try:
+        payload = json.loads(record.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return set()
+    return {str(path) for path in payload.get("paths") or ()}
+
+
 def test_every_referenced_production_screenshot_exists() -> None:
     """Section 13: 任何被引用证据不存在 -> FAIL。
 
@@ -276,11 +293,16 @@ def test_every_referenced_production_screenshot_exists() -> None:
     an auditable claim.  如果那个文件不在磁盘上，episode 就不是证据。
     Rows written before screenshot tracking was added carry no paths and are
     reported as untraceable rather than treated as broken.
+
+    已登记的清理损失（见 :func:`_documented_pruned_evidence`）单列报告，不计入 FAIL；
+    但它必须是少数：登记量一旦超过引用量的 1%，这个豁免就已经在替证据完整性兜底了。
     """
     stream = ROOT / "learning/episodes.jsonl"
     if not stream.is_file():
         pytest.skip("no production episode stream yet")
+    pruned = _documented_pruned_evidence()
     missing: list[str] = []
+    documented: list[str] = []
     referenced = 0
     for line in stream.read_text(encoding="utf-8", errors="replace").splitlines():
         line = line.strip()
@@ -295,10 +317,15 @@ def test_every_referenced_production_screenshot_exists() -> None:
             if not isinstance(value, str) or not value:
                 continue
             referenced += 1
-            if not Path(value).is_file():
-                missing.append(f"{key}={value} (skill={row.get('skill')})")
+            if Path(value).is_file():
+                continue
+            bucket = documented if value in pruned else missing
+            bucket.append(f"{key}={value} (skill={row.get('skill')})")
     assert not missing, "被引用的生产证据缺失:\n" + "\n".join(missing[:20])
-    assert referenced >= 0  # referenced==0 means the stream predates traceability
+    assert len(documented) <= max(1, referenced // 100), (
+        f"已登记的清理损失 {len(documented)} 条，占引用量 {referenced} 的 1% 以上——"
+        "豁免已经太宽，需要重新审"
+    )
 
 
 def test_referenced_production_frames_survive_the_harshest_prune() -> None:

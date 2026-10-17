@@ -1,0 +1,179 @@
+{
+  "role_unscoped_store": {
+    "load_keys": [
+      "stamina"
+    ],
+    "role_A_then_role_B_same_store": {
+      "current": 175
+    },
+    "record_parameters": "(domain: 'str', reading: 'Mapping[str, Any] | None', *, now: 'datetime | None' = None, path: 'Path | str | None' = None, frame: 'Path | str | None' = None) -> 'None'"
+  },
+  "reserved_slot": {
+    "GATHER_RESOURCE": {
+      "skill": "SAFE_STOP",
+      "reason": "reserved_march_for_stamina",
+      "confidence": 1.0,
+      "expected_result": "stamina_task_slot_preserved"
+    },
+    "BEAST_HUNT": {
+      "skill": "SEARCH_RESOURCE",
+      "reason": "beast_search_starts_by_opening_the_client_search",
+      "confidence": 0.99,
+      "expected_result": "resource_search_open"
+    }
+  },
+  "ready_discovered": {
+    "ranking": [
+      [
+        "KEEP_TRAINING_PRODUCTIVE",
+        "DISCOVERED",
+        180.0
+      ],
+      [
+        "CLEAR_INTEL",
+        "DISCOVERED",
+        180.0
+      ],
+      [
+        "KEEP_RESEARCH_PRODUCTIVE",
+        "DISCOVERED",
+        180.0
+      ],
+      [
+        "MAIL_ROUTINE",
+        "DISCOVERED",
+        180.0
+      ],
+      [
+        "DAILY_ACTIVITY_TARGET",
+        "DISCOVERED",
+        180.0
+      ],
+      [
+        "ALLIANCE_ROUTINE",
+        "DISCOVERED",
+        180.0
+      ],
+      [
+        "CLAIM_EXPLORATION_IDLE",
+        "DISCOVERED",
+        180.0
+      ],
+      [
+        "KEEP_MARCHES_PRODUCTIVE",
+        "READY",
+        70.0
+      ]
+    ],
+    "selected": "KEEP_TRAINING_PRODUCTIVE"
+  },
+  "quick_panel_schema": {
+    "camps": {
+      "SHIELD_CAMP": {
+        "status": "IN_PROGRESS",
+        "queue_available": false
+      },
+      "LANCER_CAMP": {
+        "status": "IDLE",
+        "queue_available": true
+      },
+      "MARKSMAN_CAMP": {
+        "status": "IDLE",
+        "queue_available": true
+      }
+    },
+    "goals": [
+      [
+        "SHIELD_CAMP_TRAINING",
+        "DISCOVERED"
+      ],
+      [
+        "LANCER_CAMP_TRAINING",
+        "DISCOVERED"
+      ],
+      [
+        "MARKSMAN_CAMP_TRAINING",
+        "DISCOVERED"
+      ]
+    ]
+  },
+  "camp_routing": {
+    "SHIELD_CAMP_TRAINING": {
+      "skill": "BACK",
+      "reason": "training_page_not_actionable_leaving_the_page",
+      "confidence": 0.99,
+      "expected_result": "home_opened"
+    },
+    "LANCER_CAMP_TRAINING": {
+      "skill": "BACK",
+      "reason": "training_page_not_actionable_leaving_the_page",
+      "confidence": 0.99,
+      "expected_result": "home_opened"
+    },
+    "MARKSMAN_CAMP_TRAINING": {
+      "skill": "BACK",
+      "reason": "training_page_not_actionable_leaving_the_page",
+      "confidence": 0.99,
+      "expected_result": "home_opened"
+    }
+  },
+  "goal_attribution": {
+    "executing_route": "BEAST_HUNT",
+    "committed": "AVOID_STAMINA_WASTE",
+    "episode_owner": "SHIELD_CAMP_TRAINING"
+  },
+  "stored_stamina_seed": {
+    "actual": {
+      "current": 175
+    },
+    "runtime_result": null
+  },
+  "validation_own_lease": {
+    "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED",
+    "steps": 1
+  },
+  "lease_wrong_job": {
+    "accepted": true,
+    "returned_job": "audit_job",
+    "reason": "already held by the same owner"
+  },
+  "rally_card": {
+    "skill": "BACK",
+    "reason": "beast_card_is_a_rally_not_a_solo_attack",
+    "confidence": 0.99,
+    "expected_result": "beast_card_dismissed"
+  },
+  "beast_dispatch_no_new_march": {
+    "ok": true,
+    "reason": "OK",
+    "evidence": {
+      "victory_assured": true,
+      "active_march": true,
+      "march_used": 1
+    }
+  },
+  "unrouted_discovered": [
+    {
+      "goal": "KEEP_BUILDING_PRODUCTIVE",
+      "route": null,
+      "skills": [
+        "BUILDING_UPGRADE"
+      ]
+    },
+    {
+      "goal": "PARTICIPATE_BEAR",
+      "route": null,
+      "skills": [
+        "START_RALLY",
+        "JOIN_RALLY"
+      ]
+    },
+    {
+      "goal": "CLAIM_FREE_TEST",
+      "route": null,
+      "skills": [
+        "CLAIM_REWARD"
+      ]
+    }
+  ]
+}

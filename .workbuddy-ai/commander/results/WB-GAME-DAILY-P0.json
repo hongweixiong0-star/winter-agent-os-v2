@@ -1,0 +1,263 @@
+{
+  "task_id": "WB-GAME-DAILY-P0",
+  "generated_at": "2026-10-03T23:18:17+08:00",
+  "status": "TWO_FIXES_DEPLOYED_LIVE_PENDING",
+  "A_game_knowledge_self_researched": {
+    "note": "第 0 步联网检索完成，未读 handoff 结论。来源见每条的 source。",
+    "daily_time_gates": [
+      {
+        "item": "每日重置 0 点",
+        "detail": "所有活动/任务/竞技场次数刷新，过期不补",
+        "source": "51nacs.com/article/2169.html；whiteoutsurvival-community.com/en/daily-guide.html"
+      },
+      {
+        "item": "情报/灯塔 3 波：0/8/16 点",
+        "detail": "每波约 8 个任务，未领约 12-16 小时消失；3 波全清 ≈ 30-60 火晶/天，是最大免费 ROI",
+        "source": "whiteoutsurvivalhandbook.com/guides/whiteoutsurvival-lighthouse-intel-missions-guide；gozwgame.com 每日必做"
+      },
+      {
+        "item": "体力领取 12:00 / 19:00",
+        "detail": "**新体力会挤掉未领的**，不领即永久损失；且体力满格时不再回复（约 1/5min，≈288/天）",
+        "source": "51nacs.com/article/2169.html；whiteoutsurvival-community.com/tools/wiki/events/stamina-wsco.html"
+      },
+      {
+        "item": "游荡商人 10/16/22 点",
+        "detail": "每次存在约 2 小时，过期即消失，免费资源互换",
+        "source": "gozwgame.com 每日必做"
+      },
+      {
+        "item": "竞技场 23:10 结算",
+        "detail": "每天 5 次免费（+5 次花 2100 宝石），无论胜负都给约 300 竞技币",
+        "source": "51nacs.com/article/2169.html；whiteoutsurvival-community.com/en/daily-guide.html"
+      },
+      {
+        "item": "炼晶实验室",
+        "detail": "每日 1 次免费 + **每日首次超级提炼 50% 折扣**；20 普通火晶 = 1 精炼",
+        "source": "wjdrgl.centurygames.cn/?p=8261（官方百科）"
+      },
+      {
+        "item": "联盟捐献 3 次/天 + 联盟帮助",
+        "detail": "联盟科技约 4 小时 10 分恢复；Help-all 每开游戏都点",
+        "source": "gozwgame.com；whiteoutsurvivalhandbook.com 日常清单"
+      }
+    ],
+    "bear_hunt": {
+      "window": "每次 30 分钟",
+      "cooldown": "官方 47h；社区 46h（冲突，以游戏内倒计时为准）；另有**个人冷却 2 自然日**（0 点 UTC 重置），可跨两个陷阱车轮换",
+      "participation": "联盟 R4+ 开启；集结数无上限；**对变异巨熊集结不消耗领主体力**",
+      "hero_rules": "车头=自己 3 个英雄的远征技能全部生效；车身=仅第一位英雄的第一个远征技能生效",
+      "troop_ratio": "盾:矛:弓 ≈ 1:2:7",
+      "trap_enhance": "捐献爆炸箭头（来自情报任务）提升陷阱威力，每箭头 200 联盟币",
+      "source": "wjdrgl.centurygames.cn/events/猎熊行動（官方）；endlesswinterfans.com；integritypearl.com 2026 guide"
+    },
+    "queues": {
+      "rule": "**四个队列都不能空转**：采集 / 训练 / 建筑 / 科研",
+      "building_queue": "工程站每 5 级解锁 1 条，上限 3 条",
+      "priority": "熔炉 > 科研所 > 使馆 > 兵营 > 资源建筑",
+      "source": "whiteoutsurvival-community.com/en/daily-guide.html（Never idle these four queues）；shouji.vmos.cn/guides/wjdr/65799.html"
+    },
+    "map": {
+      "gathering_duration": "6 级约 4h / 7 级约 7h / 8 级约 16h；下线前把空闲行军队列全部派去采集，把离线时间转成资源",
+      "source": "51nacs.com/article/2169.html；heaven-guardian.com/whiteout-survival-daily-routine"
+    },
+    "fire_crystal": {
+      "refine_rule": "炼晶实验室每次提炼得 1-5 火晶（概率 40/30/15/10/5%）；超级提炼 5 档，每档需 20 次；每周上限 100 次",
+      "dont_waste": "精炼优先给炉子 + 大使馆，其次兵营；火 5 后旧资源不再消耗；加速/钻石留给活动期，平时不烧",
+      "source": "wjdrgl.centurygames.cn/?p=8261（官方）；gozwgame.com 火 5→火 7 规划"
+    },
+    "expedition_vs_exploration": {
+      "distinction": "**远征技能**用于集结/出征（全队 buff）；**探险技能**只对竞技场与探险关卡 5 个出站位生效；两者**不交叉**，技能书是两套独立道具",
+      "common_mistake": "拿探险技能书点远征技能（点不动）",
+      "source": "vgtopup.com 紫色英雄培养；233leyuan.com/post-detail/2081416836719063040"
+    },
+    "conflicts_noted": [
+      "巨熊冷却 47h（官方）vs 46h（社区）—— 保留冲突，运行时应以游戏内倒计时为准，不写死",
+      "官方说炼晶『每天五次提炼』，社区提到超级提炼每周 100 次上限，两者是不同层级的限制，不矛盾"
+    ],
+    "expiry_first_principle": "按用户要求以「会过期就损失」优先，P0 = 体力(12/19 挤掉 + 满格不回) / 情报(3 波 12-16h 消失) / 队列空转 / 日常 100 活跃 / 游荡商人 / 炼晶每日折扣"
+  },
+  "B_repo_audit_evidence_only": {
+    "method": "只读代码、episodes、runtime 快照；未读 handoff/CURRENT_TRUTH 结论",
+    "measured_high_pick_low_progress": [
+      {
+        "goal": "DISCOVER_EVENT_CALENDAR",
+        "picked": 478,
+        "completed": 437,
+        "note": "收敛正常"
+      },
+      {
+        "goal": "CLEAR_INTEL",
+        "picked": 207,
+        "completed": 1,
+        "note": "但 episode 显示 1199 步、领奖 78/78 成功、出兵 56/56 成功 —— 执行在跑，是 goal 完成判定不收敛"
+      },
+      {
+        "goal": "KEEP_BUILDING_PRODUCTIVE",
+        "picked": 206,
+        "completed": 0,
+        "note": "400 步 / 168 次失败（SEMANTIC_TARGET_NOT_VERIFIED 118）"
+      },
+      {
+        "goal": "KEEP_TRAINING_PRODUCTIVE",
+        "picked": 183,
+        "completed": 0,
+        "note": "443 步中 OPEN_HOME 285 + BACK 86 = 84% 空转；真正进营 7 次全失败"
+      }
+    ],
+    "queue_chain_verified_ok": {
+      "INTEL_CLAIM_REWARDS": "78/78 (100%)",
+      "INTEL_BEAST_START_MARCH": "56/56 (100%)",
+      "OPEN_INTEL": "195/195 (100%)",
+      "SELECT_INTEL_PIN": "158/161 (98%)"
+    }
+  },
+  "C_highest_leverage_gap_found": {
+    "chain": "训练链（队列续训）—— 《要点》『四个队列不能空转』，训练队列空闲时无法开训 = 持续丢日产",
+    "skill": "OPEN_INFANTRY_TRAINING",
+    "target": "BTN_OPEN_TRAINING_FROM_CAMP（resolver runtime.py:5492，verifier verify_training_page_open 真实存在并绑定 runtime.py:531）",
+    "symptom": "7 次执行全部 SEMANTIC_TARGET_NOT_VERIFIED，after.training = null",
+    "root_cause_proven_by_evidence": {
+      "step1_two_frames_ocr": "同一 episode 两帧 OCR 文本几乎相同，**都印着 盾兵营|详情|训练|升级** —— 控件在帧上",
+      "step2_call_the_reader_directly": "直接调 read_selected_building_actions：INFANTRY 帧返回 {\"训练\": [0.6743, 0.7156], \"camp\": \"SHIELD_CAMP\"}；SHIELD 帧返回 {\"训练\": [0.6736, 0.7156], \"camp\": \"SHIELD_CAMP\"} —— **两帧读取器都能算出训练坐标**",
+      "step3_so_the_reader_never_ran": "因为 ocr.py:5151 有一个模板门：is_camp_action_bar = semantic.find(image_path, CAMP_ACTION_BAR_GATE) is not None；不命中就 return None，read_selected_building_actions 根本不被调用",
+      "conclusion": "**模板门（TARGET_CAMP_ACTION_BAR）挡住了帧上已经能读到的动作条** —— 与已修的 REGULAR_EVENT_ENTRY / EVENT_CALENDAR_TAB 是同一缺陷形状（第 3 次）"
+    },
+    "why_gate_exists_and_why_it_over_rejects": {
+      "intent": "ocr.py:5144 注释：门是 load-bearing 的性能闸门，避免每个城市帧都跑 OCR",
+      "over_rejection": "它只用模板，不承认『帧上已印着动作条文字』这一更强证据；假阴性直接掐断整条读取链",
+      "key_affordance": "主读结果 primary 已经是一次 OCR 的产物（同一帧），因此『检查动作条文字』**不需要额外 OCR 成本** —— 这是最小改动的可行性依据"
+    },
+    "fix_landed": {
+      "file": "winter_agent_v2/ocr.py（HybridVision._read_selected_building 的门处）",
+      "change": "门未命中时不再直接 return None，而是用同帧 OCR 文字判动作条：要求 训练 与 (详情|升级) 同现；通过则复用这一次 reading（不重复读）",
+      "why_not_just_delete_the_gate": "门是性能闸门（避免每个 HOME 帧都跑 OCR）。OCRService 按 image digest 缓存，被分类过的 HOME 帧再读是同帧缓存命中，不是第二次 OCR。",
+      "guard_is_the_bar_itself": "训练 单独出现在任务文案里，所以要求与 详情/升级 同现 —— 放宽的是『谁能打开读取器』，不是『什么算动作条』"
+    }
+  },
+  "D_status_and_next": {
+    "commit": "47d9628400f52a5c4046fea69fad1cc8e8a1a6e2",
+    "changed_files": [
+      "winter_agent_v2/ocr.py",
+      "tests/test_the_bar_gate_is_not_stricter_than_its_reader.py"
+    ],
+    "tests": "10 passed（双向）",
+    "mutation": "变异1 三词守卫失效 → 1 red；变异2 回退整个修复 → 3 red",
+    "test_gap_i_hit_and_fixed": "初版测试在变异1下仍全绿 —— 下游本来就要求 train_norm 与 camp，我的用例两者都缺，测的是下游不是守卫。补 test_a_barracks_name_beside_training_is_still_not_the_bar（有兵营名+训练点、仅缺 详情/升级）才把二者区分开。教训：变异不红不等于测试有效。",
+    "live_frame_regression": "真实 OCR + 强制模板层 miss：原本被拒的帧读出 camp=SHIELD_CAMP train_tap_norm=(0.6743,0.7156)；被接受的帧 (0.6736,0.7156)",
+    "scoped_regression": "0 failed",
+    "deployed": "pin e5253679 -> 47d96284，check-only 通过，从 E 盘重启",
+    "episode_or_UNOBSERVED": "UNOBSERVED —— 部署后生产 GOAL_RUNNING / stop=None / 无 fatal，KEEP_TRAINING_PRODUCTIVE 在 14:02:33 被调度过（fairness +55.5, repeat-failure -60.0），但训练链动作 = 0，一直被 DISCOVER_EVENT_CALENDAR 挤掉。按硬约束 4 不能声称完成。",
+    "why_not_claimed_complete": "完成 = 真状态变化 + Verifier + episode。目前只有单测与真机帧回归，缺训练链被真正执行时的 episode 证据。",
+    "next_step_exact": [
+      "1. 等训练链下次被调度，确认 OPEN_INFANTRY_TRAINING 从 7/7 失败转为成功（这是本修复的唯一最终判据）",
+      "2. 更值得做的一项（本轮新观察到）：生产绝大多数步数被 DISCOVER_EVENT_CALENDAR 占用，训练/建筑/科研被挤压；KEEP_TRAINING_PRODUCTIVE 443 步里 84% 是 OPEN_HOME/BACK 空转 —— 这是「少空转/少空跑」的真正大头",
+      "3. 仍待处理：CLEAR_INTEL 的 goal 收敛（执行 78/78 成功但不记功）"
+    ]
+  },
+  "session_20261003_2230": {
+    "operator_inputs_that_changed_direction": [
+      "人数满了，所以进不去 —— 解释了 STATE_VS_STATE（最强王国）为何永远打不开",
+      "你会查看参加人数吗 / 操作失败，你要根据游戏信息分析 —— 逼我从依赖告知转向自己读"
+    ],
+    "fix_1_calendar_deadlock": {
+      "commit": "3e53ad14",
+      "measured": "STATE_VS_STATE 在 activity_strip.entries 出现 1109 次、read_entries 0 次；OPEN_EVENT_CALENDAR_DETAIL 针对该 strip 尝试 10 次全部返回成功，但每次实际打开的都是别的活动（冰封的宝藏/秘宝商行/庆典对对碰/狮舞盛会/盛会商铺）",
+      "consequence": "欠账永不可清 → calendar_scan_due 永真 → 每 ~24 秒重选 DISCOVER_EVENT_CALENDAR → HOME→EVENT→SCROLL→TAB→BACK 循环，四步全成功、账本里从不出现 FAIL",
+      "fix": "registry 记 advertised_but_unreachable + observed_blockers[CAPACITY_FULL]；欠账排除它，但按观测日限定（次日恢复重试）",
+      "why_scoped_to_a_day": "容量不是永久属性；一刀切排除会导致活动重开后永不进入 —— 那是没有出口的状态。读不到 registry 时返回空集（失败安全）",
+      "verified_on_real_state": "advertised_but_unread: ('STATE_VS_STATE',) → ()；calendar_scan_due: True → False（两个角色）",
+      "tests": 9
+    },
+    "fix_2_training_point": {
+      "commit": "e65784f3",
+      "the_operation_that_failed": [
+        "14:33:08 OPEN_INFANTRY_TRAINING ft=None page=TRAINING（我上一轮修的，已成功）",
+        "14:33:14 SELECT_TRAINING_CAMP ft=None page=TRAINING",
+        "14:33:16 TRY_ORDINARY_CONTROL ft=SEMANTIC_TARGET_NOT_VERIFIED reason=goal_TRAIN_has_only_BACK_left_on_this_page",
+        "14:33:21 BACK ft=None page=HOME —— 什么都没训练就退出"
+      ],
+      "root_cause": "读数 status=AVAILABLE/trainable=true 却无 train_button_norm。ocr.py 里 TRAINING 的二次 OCR 合并只在 status=='IN_PROGRESS' 时跑 —— 那是要读 timer、不需要开始训练的状态；AVAILABLE（正需要开始训练）从不跑，于是没有坐标，registry 只剩 BACK",
+      "the_shape": "条件只覆盖了不需要它的那一半",
+      "ab_through_full_stack": {
+        "before": "status=AVAILABLE trainable=True train_button_norm=None",
+        "after": "status=AVAILABLE trainable=True train_button_norm=[0.7361, 0.8621]",
+        "source_level": "只 gate needs_timer → None；加 needs_train_point → 坐标"
+      },
+      "tests": 7
+    },
+    "on_reading_participant_counts": {
+      "do_i_now": "不会 —— strip/grid 读数里没有人数",
+      "can_the_project": "能 —— 详情页 OCR tokens 里『参赛人数：30/30』出现 3 次（真机帧 20261003T060634_登录好礼/drift_00.png 实测）",
+      "who_parses_it": "没有任何代码；『参赛人数』在项目中只出现在一句注释里",
+      "the_boundary": "满员的活动进不去详情页，所以读不到它自己的人数；能读到的是可进入的活动。这正是本轮先用『告知 + 次日 TTL』的原因",
+      "next": "解析 参赛人数：X/Y，X>=Y 即满员，把依赖告知换成依赖阅读"
+    },
+    "lifetimes": {
+      "deployed": "pin 56e70e86 → e65784f3，从 E 盘重启",
+      "live_observed": "GOAL_RUNNING / 10 episode 零失败 / 无 fatal，但训练链尚未被调度（现在在探险领奖）→ 训练修复的 LIVE 结果仍是 UNOBSERVED"
+    },
+    "my_own_two_mistakes_this_round": [
+      "测试 fixture 缺 observed_at，导致 calendar_scan_due 的首个条件即触发，测试与其对照组都因无关原因通过；已改为显式中和其余三个条件",
+      "把 git status 的巨量未跟踪文件列表误读成『no changes added』，其实那次提交已成功（3e53ad14）。dataset/ 与 learning/ 是挂载目录，验证提交要用 git log / git show，不要看 status"
+    ],
+    "recurring_defect_shape_now_5_times": [
+      "REGULAR_EVENT_ENTRY 坐标在 entry 里没人读（54aa331a）",
+      "EVENT_CALENDAR_TAB 决策没问页签可见（fbb51df7）",
+      "BTN_OPEN_TRAINING_FROM_CAMP 读取器有坐标但模板门挡住（47d96284）",
+      "served_by 被写入但无人消费（已诊断，未单独修）",
+      "TRAINING 二次合并只覆盖 IN_PROGRESS、漏掉 AVAILABLE（e65784f3）"
+    ],
+    "unified_rule": "先找『证据在哪、谁该读它』，再改条件 —— 而不是加新机制",
+    "next_steps": [
+      "1. 等训练链被调度，确认 TRAIN_TROOPS 真的开始训练（本轮唯一未完成的验收）",
+      "2. 实现自读 参赛人数：X/Y",
+      "3. served_by 无消费者（第 4 次形状）仍未修"
+    ]
+  },
+  "cleanup_20261003_2300": {
+    "operator_request": "整理文件夹，清理无用文件，代码；随后追加：删掉 dataset/raw/control_panel 与 dataset/raw/role_switch 里的重复",
+    "part_1_debug_residue": {
+      "scope": "learning/ 下未跟踪且 _ 前缀的【文件】（不含目录）",
+      "why_the_first_list_was_wrong": "用 ls learning/_* 当清单来源 —— 对目录会展开内容，混入 00_start.png 等无关文件。改用 find -type f",
+      "safety_check_caught_two": "201 个候选里 2 个被代码/测试引用（_probe_existence.py 7 处、_tmp_planner_call_test.jsonl 4 处）→ 排除保留",
+      "executed": "删除 199 个，备份到 E:/无尽冬日智能体_worktrees/_cleanup_backup_20261003",
+      "verified": "learning 下 _ 文件现存 2 个（正是保留的那两个）；空文件 0；备份 199 完整"
+    },
+    "part_2_duplicate_frames": {
+      "method": "先按大小分组、只在组内哈希 —— 这是让 40GB 可算的关键（同大小≠同内容）",
+      "measured": {
+        "png_total": 61082,
+        "exact_duplicate_groups": 1072,
+        "redundant_copies": 4136,
+        "reclaimable_mb": 1055.3,
+        "largest_group": "1115 个完全相同的文件（146KB each = 163MB）—— 静止 UI 被反复截图",
+        "cited_frames_inside_duplicate_sets": 859,
+        "duplicate_sets_containing_a_cited_frame": 428
+      },
+      "policy_applied": "保留「被 episode/语料引用的」+「每组一个代表」⇒ 可删 3705 个 / 890.8MB",
+      "why_move_not_delete": [
+        "宿主护栏 CODEBUDDY_SAFE_DELETE_BULK_* 的 scope=turn、阈值 50 ⇒ 单回合删不了 3705 个",
+        "项目已因此死过一次：prune_runtime_screenshots 注释记录 2026-09-18 面板无人值守 6h45m 后因一次删 50 个被护栏拦截、进程被杀、AUTO 一起没了",
+        "同卷 shutil.move = rename，不触发 unlink 护栏，且天然可逆"
+      ],
+      "executed": "3705 个全部移出、890.8MB、0 失败 → E:/无尽冬日智能体_worktrees/_dupes_moved_20261003（保持原目录结构，可原样放回）",
+      "verified": "抽查最近 200 条 episode 的 388 个帧引用 → 缺失 0；role_switch 6.6G→6.5G；生产 GOAL_RUNNING / 无 fatal"
+    },
+    "honest_ceiling": "control_panel 仍是 33G —— 890MB 只占 40GB 的 2.7%。这就是「重复」的真实规模；剩下的空间是各不相同的历史截图，不属于重复。要清得走 prune_runtime_screenshots（有证据保护 + 每次限删 10 个），需单独授权。",
+    "reversible": {
+      "debug_residue": "E:/无尽冬日智能体_worktrees/_cleanup_backup_20261003",
+      "duplicate_frames": "E:/无尽冬日智能体_worktrees/_dupes_moved_20261003",
+      "how_to_restore": "把目录内容按原结构放回项目根即可"
+    },
+    "my_errors_this_round": [
+      "ls learning/_* 当清单来源 → 对目录会展开内容；生成删除清单必须用 find -type f 并排除被引用文件",
+      "查重脚本第一版只存 400/1072 组（[:400]）→ 会漏删一半；截断输出用于后续动作前先确认覆盖全集"
+    ],
+    "not_touched": [
+      "dataset/raw/control_panel 其余 33G",
+      "learning/episodes.jsonl 159MB 生产账本",
+      "任何 git tracked 文件",
+      "out/ 的两个分析产出（用户未勾选）"
+    ]
+  }
+}

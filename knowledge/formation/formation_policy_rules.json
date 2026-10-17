@@ -1,0 +1,298 @@
+{
+  "knowledge_id": "FORMATION_POLICY_RULES_20260927",
+  "domain": "formation",
+  "source": "USER_LIVE_GAME_CONFIRMATION",
+  "confirmed_at": "2026-09-27T22:30:00+08:00",
+  "core_principle": "V2 never re-configures heroes/troops per march by default. Pick the preset slot for the task, verify it loaded, dispatch.",
+  "formation_slots": {
+    "FORMATION_1": {
+      "semantic": "STAMINA_EFFICIENT",
+      "default_label": "打野",
+      "use_for": [
+        "NORMAL_BEAST",
+        "ICEFIELD_BEAST(stamina-type)",
+        "STAMINA_ACTIVITY_MONSTER",
+        "stamina-costing field targets"
+      ],
+      "excluded_from": [
+        "BEAR ordinary JOIN_RALLY"
+      ]
+    },
+    "FORMATION_2": {
+      "semantic": "RALLY_JOIN_SUPPORT_1",
+      "default_label": "书咏",
+      "use_for": [
+        "JOIN_RALLY(any supported target)"
+      ]
+    },
+    "FORMATION_3": {
+      "semantic": "RALLY_JOIN_SUPPORT_2",
+      "default_label": "杰西",
+      "use_for": [
+        "JOIN_RALLY"
+      ]
+    },
+    "FORMATION_4": {
+      "semantic": "RALLY_JOIN_SUPPORT_3",
+      "default_label": "杰塞尔",
+      "use_for": [
+        "JOIN_RALLY"
+      ]
+    },
+    "FORMATION_5": {
+      "semantic": "RALLY_JOIN_SUPPORT_4",
+      "default_label": "尼莫",
+      "use_for": [
+        "JOIN_RALLY"
+      ]
+    },
+    "FORMATION_6": {
+      "semantic": "RALLY_JOIN_SUPPORT_5",
+      "default_label": "熊6",
+      "use_for": [
+        "JOIN_RALLY"
+      ]
+    },
+    "FORMATION_7": {
+      "semantic": "RALLY_JOIN_SUPPORT_6",
+      "default_label": "熊7",
+      "use_for": [
+        "JOIN_RALLY"
+      ]
+    },
+    "FORMATION_8": {
+      "semantic": "STRONGEST_ATTACK",
+      "default_label": "开车",
+      "use_for": [
+        "START_RALLY(BEAR)",
+        "FOUNDRY_ATTACK_CITY",
+        "high-risk active attacks needing max power"
+      ]
+    }
+  },
+  "rally_join_preset_pool": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "slot_states": [
+    "AVAILABLE",
+    "IN_USE",
+    "MARCHING",
+    "RALLYING",
+    "RETURNING",
+    "UNKNOWN"
+  ],
+  "slot_selection_rule": "JOIN picks any AVAILABLE slot from pool [2..7]; not fixed rotation. Returning marches flip back to AVAILABLE.",
+  "parallel_model": {
+    "own_rally": "FORMATION_8, max 1 (MAX_OWN_BEAR_RALLY=1)",
+    "joined_rallies": "FORMATION_2..7 continuously, unlimited join count but per-march availability checked",
+    "note": "unlimited JOIN_RALLY ≠ unlimited troops; hero/troop/formation occupancy still observed"
+  },
+  "dynamic_config_fallback": [
+    "preset missing",
+    "preset broken",
+    "hero unavailable",
+    "troop insufficient",
+    "event special restriction",
+    "user request"
+  ],
+  "identity_rule": "slot index + fingerprint + role_id; OCR custom labels (打野/杰西/熊6…) are auxiliary evidence only and may change",
+  "per_role_isolation": "ROLE_A and ROLE_B each learn their own 8 fingerprints; mechanism shared, fingerprints/occupancy not shared; role-specific overrides saved if slots differ from defaults",
+  "page_formation_knowledge": {
+    "page": "PAGE_FORMATION (出征 dialog)",
+    "elements": {
+      "FORMATION_PRESET_BAR": "top row: 8 preset slots + save icon; 640-space y~103, x centres ~[55,121,187,253,319,385,451,517], save ~575",
+      "HERO_SLOTS": "3 hero cards mid-page",
+      "TROOP_ROWS": "盾兵/矛兵/射手 rows with counts and sliders",
+      "BTN_DISPATCH": "bottom-right 出征",
+      "bottom_tools": "全部撤回 / 平均配置 / 比例分配 / 士兵比例 44%/21%/35%"
+    },
+    "reference_frame": "dataset/evidence/bear_join_once_20260927T212351/05_dialog_0.png"
+  },
+  "select_verifier": "FORMATION_SELECTED(slot) requires >=1 signal: selected-state UI on preset bar / hero combo change / hero fingerprint change / troop fingerprint change; only then DISPATCH allowed",
+  "generic_skill": {
+    "name": "SELECT_FORMATION_SLOT",
+    "params": [
+      "slot (1..8)"
+    ],
+    "forbidden": "no BEAR_FORMATION_n / per-event copies; one parameterized pipeline for all activities"
+  },
+  "fast_loop_change": "JOIN -> PAGE_FORMATION -> select AVAILABLE preset -> verify -> DISPATCH; no per-rally HERO/TROOP dynamic analysis",
+  "risk_boundary": "FormationPolicy only decides WHICH slot; attack/风险 decisions stay with existing activity/risk strategy (e.g. FOUNDRY_ATTACK_CITY remains high-risk gated)",
+  "fingerprints_20260927": {
+    "ROLE_B_xhw_1061663148": {
+      "slot1": {
+        "cap": 118110,
+        "ratio": "30/30/40"
+      },
+      "slot2_4": {
+        "cap": 116928,
+        "ratio": "33/33/33",
+        "troops_identical": true,
+        "distinguish_by": "hero crop"
+      },
+      "slot5_7": {
+        "cap": 90258,
+        "ratio": "33/33/33"
+      },
+      "slot8": {
+        "cap": 118110,
+        "troop_caps": [
+          180015,
+          158755,
+          215362
+        ]
+      },
+      "note": "fingerprint scan verified slot taps change loadout; matches user semantics"
+    },
+    "ROLE_A_零氪纯盾流_1063040265": {
+      "slot1": {
+        "cap": 110890,
+        "troops": [
+          44356,
+          680,
+          55445
+        ],
+        "warning": "矛兵仅680"
+      },
+      "slot2_4": {
+        "cap": 110890,
+        "troops": [
+          43247,
+          28831,
+          38812
+        ]
+      },
+      "slot5_7": {
+        "cap": 84430,
+        "troops": [
+          29550,
+          25329,
+          29551
+        ]
+      },
+      "slot8": {
+        "cap": 61209,
+        "troops": [
+          61209,
+          4452,
+          45629
+        ]
+      }
+    },
+    "role_specific_override": {
+      "ROLE_A_slot8": "cap 61,209 < ROLE_A slot2_4 (110,890) — 当前A的8号不是最强配置，START_RALLY用8号前需用户确认或重配",
+      "rule": "per knowledge 十二: role-specific override saved, do not assume A==B"
+    }
+  },
+  "preset_bar_ocr_note": "预设栏标签（打野/熊6/开车…）OCR不可读（图标压字）；SELECT_FORMATION_SLOT 靠 slot index 几何 + 兵力指纹 verifier，名字仅辅助",
+  "device_validation": "tools/formation_fingerprint_scan.py 两角色 8/8 槽扫描成功，逐槽指纹变化证明几何正确；几何来自 bear_join_once_20260927T212351/05_dialog_0.png",
+  "start_rally_slot_by_target": {
+    "rule": "编队由 TARGET 决定，不由动作决定（操作者规则 2026-09-28）",
+    "ICEFIELD_BEAST_GIANT_BEAST": "消耗体力的巨兽集结 -> FORMATION_1 STAMINA_EFFICIENT（省体力打野/巨兽队）",
+    "BEAR": "巨熊集结(不耗体力/看输出) -> FORMATION_8 STRONGEST_ATTACK",
+    "NORMAL_BEAST_solo": "打野单人 -> FORMATION_1"
+  },
+  "rally_duration_rule": {
+    "preference": "始终选最短时长 3分钟（RALLY_DURATION_PREFERENCE）",
+    "options": [
+      "3分钟",
+      "5分钟",
+      "10分钟",
+      "15分钟"
+    ],
+    "reason": "更快开打、窗口更短；窗口内加入的成员仍会被计入"
+  },
+  "corrections_20260928": {
+    "what_was_wrong": "00:02 的 START_RALLY 实测用了 slot8 + 5分钟",
+    "why_wrong": [
+      "剑齿虎=消耗体力的巨兽，应用 1号省体力编队而非8号最强",
+      "时长应选最短3分钟"
+    ],
+    "code_fix": "FormationPolicy.select: START_RALLY 先按 target 判定（ICEFIELD_BEAST/GIANT_BEAST->1, BEAR->8）；新增 RALLY_DURATION_PREFERENCE=3分钟",
+    "tool": "tools/rally_start_once.py（强制最短时长 + 按目标选槽）",
+    "note": "00:02 那次集结已发出无法更改；下次及以后一律按新规则"
+  },
+  "stamina_rules": {
+    "principle": "出征按钮里的「罐头+数字」只在本次出征消耗体力时出现；它是体力消耗的唯一视觉证据",
+    "consumes_stamina": {
+      "打野(普通野兽/雪豹/大角鹿)": "有罐头",
+      "巨兽类/雪怪(剑齿虎/冰霜古猿/失控的雪怪) 发起集结": "有罐头",
+      "采集(资源点/养殖场/生肉等)": "无罐头",
+      "加入别人的集结(JOIN_RALLY)": "无罐头",
+      "巨熊行动": "无罐头（不耗体力）"
+    },
+    "policy_effect": "罐头出现 => 强制 FORMATION_1 STAMINA_EFFICIENT；罐头不存在时不得按体力任务处理",
+    "detector": "winter_agent_v2.formation_policy.stamina_cost_visible(frame) -> None=无罐头 / 数字=消耗量",
+    "template": "dataset/candidate/formation/stamina_cost_can__page_formation__20260928__0.png",
+    "observation_20260928": "剑齿虎发起帧=罐头25(有)；熊车加入帧=None；B角色打野帧=有",
+    "gather_entry": {
+      "entry": "点资源点底部的「采集」按钮 -> 直接进入部队界面(PAGE_FORMATION)（操作者确认 2026-09-28）",
+      "can_badge": "采集出征 无罐头（不耗体力）",
+      "pitfall": "不要点「采集部队／采集速度」这类标签文字；要点底部真正的「采集」按钮。资源点已被占用时面板先显示占用部队列表",
+      "search_panel_20260928": "放大镜面板只有三个目标标签：冰原巨兽 / 大型养殖场 / 生肉（无「木材」）；下方「联盟安全采集点 + 剩余存在时间」是状态卡片，点击不动作",
+      "alliance_buildings_are_not_gather": "联盟资源建筑（如 [ioi]联盟煤矿厂 @(622,465)）点开是产能信息卡（3600/小时），不是采集入口",
+      "wood_finding": "木材/伐木场不在当前视野；需要平移地图或由操作者指引位置",
+      "occupied_vs_free": "资源点被占用 -> 点采集显示占用部队列表；空闲 -> 点采集进入 PAGE_FORMATION（无罐头）"
+    }
+  },
+  "preset_labels_observed_20260928": {
+    "slots": [
+      "打野",
+      "媛杰西",
+      "杰塞尔",
+      "书永",
+      "牟4",
+      "牟6",
+      "牟7",
+      "开车"
+    ],
+    "note": "玩家可改名；身份仍以 slot index + fingerprint 为准"
+  },
+  "gather_rules": {
+    "mechanism": "每种资源有对应的采集英雄；采集出征只带采集英雄，不指定预设编队（操作者确认 2026-09-28）",
+    "no_hero_fallback": "如果对应采集英雄已被占用/不可用 -> 不带英雄出征",
+    "entry": "从搜索面板进入（放大镜 -> 资源标签 -> 搜索 -> 定位资源点 -> 采集 -> 部队界面）",
+    "alliance_mines": "联盟矿厂/联盟资源建筑玩家无法采集（只能看产能信息卡）",
+    "formation_slot": "GATHER 不占预设槽位：FormationPolicy 返回 formation_slot=None, formation_mode=GATHER_HERO",
+    "stamina": "采集不耗体力 -> 出征按钮无罐头",
+    "verified_flow_20260928": {
+      "status": "LIVE_VERIFIED (ROLE_A, 木材)",
+      "path": "城屏左下放大镜(54,875) -> 搜索面板 -> 资源标签条(可横向滚动) -> 点「木材」标签(约312,879) -> 「搜索」(361,1215) 【客户端自动飞达目标】 -> 资源点弹窗 -> 「采集」(约359,628) -> PAGE_FORMATION(标题=木材) -> 用红⊖移除多余英雄(英雄卡右上, 约233/420/608 @y316) -> 「出征」(约552,1213)",
+      "verification": "城屏 行军 1/6 + 『采集中 04:16:42』",
+      "can_badge": "None（无罐头=不耗体力）",
+      "hero_rule_observed": "采集编队页默认带 3 个英雄（沿用上次配置），需移除多余英雄；本次移除2个后仅剩1个英雄，容量 110,890 -> 84,430",
+      "tab_strip": "标签条会横向滚动且顺序会变：本轮看到 养殖场|生肉|木材|煤矿|铁矿（铁矿曾被选中）；标签文字OCR读不出，需按视觉位置点",
+      "search_auto_fly": "点「搜索」后客户端自动飞到目标资源点并在屏幕上弹出资源点卡片（不需要手动平移地图）",
+      "node_types": "木材点示例 等级7废弃木材厂(储量6,000,000)；铁矿点示例 等级7废弃炼铁场",
+      "six_queues": "2026-09-28 01:04-01:20 实作：行军 3/6 -> 6/6（每队：木材节点 等级7废弃木材厂；gather_slot 逐帧判定 1/3/3）"
+    },
+    "hero_badge_rule": {
+      "question": "采集英雄怎么分？",
+      "answer": "英雄卡左上角蓝色职能徽章：铲子=采集英雄；盾牌/交叉兵器=战斗英雄",
+      "templates": "dataset/candidate/formation_badges/badge_shovel_20260928.png / badge_shield_*.png / badge_axes_*.png",
+      "module": "winter_agent_v2/hero_badge.py: detect_badges / classify_badge / gather_slot / badge_slot / remove_other_heroes",
+      "slot_not_fixed": "实测同一角色不同次采集，采集英雄出现在槽1/槽3 —— 必须逐帧识别，禁止按位置假设",
+      "no_gather_hero": "若整页无铲子徽章 -> 移除全部英雄后出征（操作者规则）",
+      "flow": "采集 -> 部队界面 -> gather_slot(frame) -> 移除其余英雄(红⊖ x233/420/608 @y316) -> 出征"
+    }
+  },
+  "ocr_roi_lesson_20260928": {
+    "question": "为什么 OCR 读不出资源标签？",
+    "measurement": {
+      "frame": "dataset/evidence/gather_wood4_20260928_0035/02_wood_tab.png (720x1280)",
+      "whole_frame_ocr": "木材/煤矿/铁矿 全部漏检",
+      "roi_crop_720x75": "殖场(22px) 生肉(24px) 木材(22px) 煤矿(23px) 铁矿(24px) —— 全部命中",
+      "upscale_3x_4x": "稳定命中（非必需，但更稳）"
+    },
+    "reason": "标签仅约 22-24px 高；全屏检测阶段在 720x1280 大图里把小字当噪声漏掉，裁剪后引擎对候选区域重新归一化尺寸，识别恢复正常",
+    "fix": "ROI-first OCR：先裁到标签带(y≈860-1000)再识别，坐标加回全屏偏移",
+    "helper": "winter_agent_v2/ocr_roi.py: ocr_region / find_resource_tab / find_resource_tabs（返回 centre + tap_point）",
+    "verified": "离线两帧均稳定输出 养殖场(31,943) 生肉(160) 木材(317) 煤矿(475) 铁矿(633)",
+    "generalizes_to": "其他小字 UI（预设栏标签、tab 条、行内数值）同样适用"
+  }
+}

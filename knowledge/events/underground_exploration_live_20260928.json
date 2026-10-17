@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "event_id": "UNDERGROUND_EXPLORATION",
+  "display_name": "地心探险",
+  "observation_date": "2026-09-28",
+  "role_scope": {
+    "kind": "BOUND_ROLE",
+    "role_id": "1063040265",
+    "role_name": "零氪纯盾流"
+  },
+  "evidence_frames": [
+    "dataset/raw/ui_exploration/20260928/frame_150_HERO_LAND_OPEN.png",
+    "dataset/raw/ui_exploration/20260928/frame_151_HERO_LAND_RULES.png",
+    "dataset/raw/ui_exploration/20260928/frame_152_HERO_LAND_RULES_SCROLL.png",
+    "dataset/raw/ui_exploration/20260928/frame_153_HERO_LAND_RULES_SCROLL2.png",
+    "dataset/raw/ui_exploration/20260928/frame_154_HERO_LAND_RULES_SCROLL3.png",
+    "dataset/raw/ui_exploration/20260928/frame_681_UNDERGROUND_AFTER_OPEN.png",
+    "dataset/raw/ui_exploration/20260928/frame_687_RULES_SCROLL_AFTER.png"
+  ],
+  "overview_observation": {
+    "state": "WAITING_WINDOW",
+    "printed_countdown": "1天21:04:29",
+    "countdown_source": "LIVE_CLIENT_OVERVIEW",
+    "countdown_note": "Point-in-time UI text only; do not convert into a fixed wall-clock start or reuse after it expires.",
+    "map_currency_label": "13,580",
+    "map_currency_name": "UNKNOWN"
+  },
+  "regions": {
+    "HERO_LAND": {
+      "display_name": "英雄之地",
+      "open_weekdays": [
+        "MONDAY",
+        "TUESDAY"
+      ],
+      "active_attribute_families": [
+        "heroes",
+        "hero_equipment",
+        "exclusive_hero_equipment"
+      ]
+    },
+    "BEAST_CAVE": {
+      "display_name": "群兽洞窟",
+      "open_weekdays": [
+        "WEDNESDAY",
+        "THURSDAY"
+      ],
+      "active_attribute_families": [
+        "pet_attributes"
+      ],
+      "pet_passive_skills_default_effective": true,
+      "active_pet_skill_stacking": "NOT_EFFECTIVE"
+    },
+    "GEM_CAVE": {
+      "display_name": "宝石矿洞",
+      "open_weekdays": [
+        "WEDNESDAY",
+        "THURSDAY"
+      ],
+      "active_attribute_families": [
+        "lord_gems"
+      ]
+    },
+    "UNDERGROUND_RESEARCH": {
+      "display_name": "地下科研所",
+      "open_weekdays": [
+        "FRIDAY",
+        "SATURDAY"
+      ],
+      "active_attribute_families": [
+        "research_institute_technology",
+        "war_academy_technology"
+      ]
+    },
+    "EARTH_HEART": {
+      "display_name": "大地之心",
+      "open_weekdays": [
+        "SUNDAY"
+      ],
+      "active_attribute_families": [
+        "heroes",
+        "hero_equipment",
+        "exclusive_hero_equipment",
+        "pet_passive_skills",
+        "lord_gems",
+        "technology",
+        "fire_crystal_technology",
+        "lord_gear",
+        "outfits",
+        "dawn_island",
+        "commander_level",
+        "buildings",
+        "snow_country_album",
+        "fantasy_gallery",
+        "expert_supplied_attributes"
+      ]
+    }
+  },
+  "shared_rules": {
+    "daily_regions_vary": true,
+    "challenge_limit": "Each exploration region has a daily challenge limit; after 5 single failures, the region cannot be challenged again that day.",
+    "daily_reset": "00:00 as printed in the in-game rules; timezone UNKNOWN.",
+    "first_clear_reward": "First completion of a chapter challenge yields the first-victory reward.",
+    "repeat_clear_reward": "Repeating a completed chapter yields a sweep reward.",
+    "fog_reset": "When surface fog covers the underground world, cleared chapter progress resets; rankings are unaffected.",
+    "sweep_unlock": "Clear chapters 1-10 in a region to unlock sweep for that region; at its next opening, previously cleared chapters may be swept before continuing.",
+    "troops": "Hero Land, Beast Cave, Gem Cave, Underground Research and Equipment Forge supply level-10 troops; higher troop tech in Underground Research can raise troop level.",
+    "earth_heart": "Uses the role's own troops without changing outdoor marches and troops are not injured; if troop level is too low, the expedition supplies troops to the minimum capacity."
+  },
+  "production_state": {
+    "gate": "DISCOVERED",
+    "flow_status": "AWAITING_REGION_WINDOW",
+    "missing": "No live-open region page or region-specific action/Verifier has been observed. Do not challenge or invent a schedule time.",
+    "shared_goal_system": "existing Scheduler / event registry only"
+  },
+  "schedule_conflicts": [
+    {
+      "region": "BEAST_CAVE",
+      "prior_cached_weekdays": [
+        "TUESDAY",
+        "THURSDAY"
+      ],
+      "current_live_rule_weekdays": [
+        "WEDNESDAY",
+        "THURSDAY"
+      ],
+      "decision": "CURRENT_LIVE_CLIENT_RULE_WINS",
+      "prior_source": "pre-existing V2 knowledge record; original evidence not preserved in this record",
+      "current_evidence": "dataset/raw/ui_exploration/20260928/frame_687_RULES_SCROLL_AFTER.png",
+      "observed_at_utc": "2026-09-28T04:36:59.957113+00:00",
+      "visible_text": "群兽洞窟将在周三、周四开放。"
+    }
+  ],
+  "latest_observation": {
+    "role_id": "1063040265",
+    "role_name": "零氪纯盾流",
+    "frame": "dataset/raw/ui_exploration/20260928/frame_681_UNDERGROUND_AFTER_OPEN.png",
+    "state": "WAITING_WINDOW",
+    "printed_countdown": "1天12:54:25",
+    "source": "LIVE_CLIENT_OVERVIEW",
+    "observed_at_utc": "2026-09-28T04:36:59.957113+00:00",
+    "note": "Point-in-time countdown only; no fixed start time inferred."
+  }
+}

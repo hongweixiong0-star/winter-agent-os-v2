@@ -1,0 +1,206 @@
+{
+  "schema_version": "1.1",
+  "written_at": "2026-10-02T00:20:00+08:00",
+  "source": "OPERATOR_DIRECTIVE_2026-09-29 (§十一 生产任务覆盖 / §十五 Verifier)",
+  "truth_source": "winter_agent_v2/verifier.py（真实 verifier 入口）+ learning/task_completion_matrix.json（完成级别真值）",
+  "this_file_is": "mapping draft only",
+  "not_a_second_truth": "判据的代码真值在 winter_agent_v2/verifier.py；完成级别的真值在 learning/task_completion_matrix.json。本文件只是任务→判据→函数名的人工初判映射，冲突时以代码与 matrix 为准。",
+  "code_scan": {
+    "file": "winter_agent_v2/verifier.py",
+    "scanned_at": "2026-09-29T23:05:00+08:00",
+    "verify_function_count": 132,
+    "completion_matrix": "learning/task_completion_matrix.json"
+  },
+  "mapping_status": "DRAFT_UNVERIFIED",
+  "mapping_note": "verifier_functions 由代码中的真实函数名按名称相关性人工初判，接入前必须打开实现核对；未列出的任务至今没有对应 verifier，这是真实阻塞，不得凭本表臆造判据或函数名。",
+  "hard_rule": "任何动作都不能用 \"MAA click succeeded\" 当作 Goal 成功。必须读到游戏侧真实结果。",
+  "tasks": [
+    {
+      "task": "TRAINING",
+      "required_real_result": "训练队列 IN_PROGRESS",
+      "verifier_functions": [
+        "verify_training_page_open",
+        "verify_completed_training_camp_inspected",
+        "verify_focused_training_camp_action_bar_opened",
+        "verify_infantry_camp_selected",
+        "verify_infantry_camp_highlighted"
+      ]
+    },
+    {
+      "task": "RESEARCH",
+      "required_real_result": "research running",
+      "verifier_functions": [
+        "verify_research_page_open",
+        "verify_research_lab_focused"
+      ]
+    },
+    {
+      "task": "BUILDING",
+      "required_real_result": "building running",
+      "verifier_functions": [
+        "verify_building_upgrade",
+        "verify_selected_building_upgrade_panel_opened"
+      ]
+    },
+    {
+      "task": "GATHER",
+      "required_real_result": "march / gathering 增加",
+      "verifier_functions": [
+        "verify_dispatch",
+        "verify_gathering",
+        "verify_returning",
+        "verify_return_complete",
+        "verify_gather_cycle",
+        "verify_resource_found",
+        "verify_resource_selected",
+        "verify_wood_dispatch_from_march",
+        "verify_gather_specialist_assigned"
+      ]
+    },
+    {
+      "task": "REWARD",
+      "required_real_result": "claimable 消失",
+      "verifier_functions": [
+        "verify_login_gift_claimed",
+        "verify_offline_rewards_claimed",
+        "verify_ally_gift_claim_feedback",
+        "verify_daily_claim_feedback",
+        "verify_daily_reward_advanced",
+        "verify_panel_row_done_collected"
+      ]
+    },
+    {
+      "task": "MAIL",
+      "required_real_result": "claimable 消失 / 邮件状态变化",
+      "verifier_functions": []
+    },
+    {
+      "task": "STAMINA",
+      "required_real_result": "体力数值增加",
+      "verifier_functions": [
+        "verify_stamina_sources_open",
+        "verify_free_stamina_claimed"
+      ]
+    },
+    {
+      "task": "INTEL",
+      "required_real_result": "任务状态变化 / march 或 rescue 状态变化",
+      "verifier_functions": [
+        "verify_intel_list_read",
+        "verify_intel_pin_opened",
+        "verify_intel_mission_selected",
+        "verify_intel_target_open",
+        "verify_intel_beast_dispatch",
+        "verify_intel_beast_march_open",
+        "verify_intel_rescue_started",
+        "verify_intel_rescue_target_open",
+        "verify_intel_hero_dispatched",
+        "verify_intel_hero_march_open"
+      ]
+    },
+    {
+      "task": "BEAST",
+      "required_real_result": "march state 变化 / 野兽行军发出",
+      "verifier_functions": [
+        "verify_beast_scan_observed",
+        "verify_beast_target_selected",
+        "verify_beast_mammoth_target_selected",
+        "verify_beast_card_opened",
+        "verify_beast_card_march_open",
+        "verify_beast_march_open",
+        "verify_beast_dispatch",
+        "verify_beast_search_tab_selected",
+        "verify_beast_search_submitted"
+      ]
+    },
+    {
+      "task": "DAILY",
+      "required_real_result": "任务状态前进 / 领取反馈",
+      "verifier_functions": [
+        "verify_open_daily",
+        "verify_daily_tab_selected",
+        "verify_daily_task_followed"
+      ]
+    },
+    {
+      "task": "ALLIANCE / ALLIANCE_DONATION",
+      "required_real_result": "捐献/帮助状态变化",
+      "verifier_functions": [
+        "verify_open_alliance_gifts"
+      ]
+    },
+    {
+      "task": "MARSHAL / MARCH_STATE",
+      "required_real_result": "march state 变化",
+      "verifier_functions": [
+        "verify_march_count_readable",
+        "verify_march_recalled",
+        "verify_march_recall_dialog_open",
+        "verify_march_page_open"
+      ]
+    },
+    {
+      "task": "EVENT",
+      "required_real_result": "progress 增加 / 活动日历读数",
+      "verifier_functions": [
+        "verify_event_points_increased",
+        "verify_event_calendar_open",
+        "verify_event_calendar_tab_open",
+        "verify_event_calendar_read"
+      ]
+    },
+    {
+      "task": "ARENA",
+      "required_real_result": "排名/积分变化",
+      "verifier_functions": []
+    },
+    {
+      "task": "ALLIANCE_MOBILIZATION",
+      "required_real_result": "progress 增加",
+      "verifier_functions": []
+    },
+    {
+      "task": "ICEFIELD_BEAST",
+      "required_real_result": "march state 变化",
+      "verifier_functions": []
+    },
+    {
+      "task": "BEAR",
+      "required_real_result": "joined / started / march state 变化",
+      "verifier_functions": [],
+      "note": "巨熊链见 skills/bear-hunt-operation 与 knowledge/combat/bear_ui_checklist.json"
+    },
+    {
+      "task": "FISHING_TOURNAMENT",
+      "required_real_result": "bait 减少 且 points / tokens / catch 变化",
+      "verifier_functions": [],
+      "note": "实时控制见 skills/visual-servo-control；页面读数见 knowledge/events/fishing_tournament_live_20260928.json"
+    },
+    {
+      "task": "RALLY",
+      "required_real_result": "joined / started / march state 变化",
+      "verifier_functions": []
+    }
+  ],
+  "empty_verifier_meaning": "verifier_functions 为空 = 该任务尚无已核对的 Verifier（真实阻塞），接线前必须先实现或找到判据，禁止用点击成功冒充。",
+  "shared_goal_credit": {
+    "rule": "一次真实动作可同时推进 Daily / Training / Mobilization / Event / Growth，由统一 ActionOutcome 记 credit，只执行一次。",
+    "forbidden": "为了多完成几个任务而重复做同一个动作。"
+  },
+  "scheduling": {
+    "rule": "用 next_action_at，不用固定长 sleep。",
+    "covers": [
+      "Intel 刷新",
+      "Stamina 领取",
+      "Arena deadline",
+      "Training finish",
+      "Research finish",
+      "Building finish",
+      "Gather return",
+      "Bear",
+      "其他限时活动",
+      "Fishing bait recovery"
+    ],
+    "state_file": "learning/global_scheduler_state.json"
+  }
+}

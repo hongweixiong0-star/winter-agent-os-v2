@@ -1,0 +1,20 @@
+{
+  "kind": "RUNTIME_RELOAD_REQUIRED",
+  "job_id": "",
+  "reason": "CONTROL_PLANE_RELOAD_REQUIRED：本进程加载的 9ffaf237e539 已被 93076d69450c 取代，涉及控制面 tools/control_panel.py、winter_agent_v2/escalation_queue.py",
+  "requested_at": "2026-10-17T01:37:21.683911+00:00",
+  "evidence": [
+    ".gitignore",
+    ".workbuddy-ai/handoff/01_CURRENT_TRUTH.md",
+    ".workbuddy-ai/handoff/02_CURRENT_PROGRESS.md",
+    ".workbuddy-ai/handoff/03_NEXT_ACTION.md",
+    ".workbuddy-ai/handoff/04_OPEN_ISSUES.md",
+    ".workbuddy-ai/handoff/05_RECENT_CHANGES.md",
+    ".workbuddy-ai/handoff/08_LIVE_METRICS.json",
+    ".workbuddy-ai/handoff/09_RUNTIME_STATE.json",
+    ".workbuddy-ai/handoff/10_LAST_HANDOFF.md",
+    ".workbuddy-ai/handoff/UNTRACKED_AND_PENDING_INVENTORY_20261016.md",
+    ".workbuddy-ai/memory/MEMORY.md",
+    ".workbuddy-ai/rules/PRINCIPLES.md"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+ "owner": "DEVELOPMENT_VALIDATION",
+ "trace_id": "OPEN_TRAINING_PAGE|NO_GOAL_PROGRESS|BACK",
+ "job_id": "280d1659",
+ "capability_id": "OPEN_TRAINING_PAGE",
+ "reason": "examine the version job 280d1659 produced for OPEN_TRAINING_PAGE",
+ "acquired_at": "2026-09-21T13:47:16.880819+00:00",
+ "expires_at": "2026-09-21T14:02:16.880819+00:00",
+ "released_at": "2026-09-21T13:47:43.252675+00:00",
+ "result": "EXIT_3",
+ "process": 19872
+}

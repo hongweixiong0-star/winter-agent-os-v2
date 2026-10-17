@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0",
+  "entity_class": "BEAR_UI_CHECKLIST",
+  "purpose": "巨熊活动 UI 元素覆盖清单。逐项标记真实状态，用于活动开放前的缺口盘点。不得把『已下载』写成『已真机成功』。",
+  "canonical_mechanism": "knowledge/game/bear.json",
+  "live_instance": "knowledge/events/bear_hunt_live_2026-09-09.json",
+  "live_frames_root": "dataset/raw/bear_live_20260909",
+  "status_values": [
+    "已有并接入",
+    "已下载并接入",
+    "已有候选但缺当前客户端截图",
+    "已有历史真机成功证据",
+    "尚无可用素材或识别能力"
+  ],
+  "last_reviewed": "2026-09-24",
+  "groups": {
+    "A_ENTRY": {
+      "label": "活动入口",
+      "items": [
+        {"id": "ALLIANCE_HOME", "name": "联盟主页面", "status": "已有历史真机成功证据", "evidence": "bear_live_20260909 导航链起点", "note": "导航经过，未做元素级模板"},
+        {"id": "ALLIANCE_EVENT_PAGE", "name": "联盟活动页面", "status": "尚无可用素材或识别能力", "evidence": null, "note": "入口路线为 联盟/联盟领地/特殊建筑/狩猎陷阱，未确认是否存在独立活动页"},
+        {"id": "BEAR_TRAP_BUILDING", "name": "狩猎陷阱", "status": "已有历史真机成功证据", "evidence": "dataset/raw/bear_live_20260909/special_buildings.png", "note": "特殊建筑列表内"},
+        {"id": "BEAR_TRAP_DETAIL", "name": "狩猎陷阱详情/前往", "status": "已有历史真机成功证据", "evidence": "dataset/raw/bear_live_20260909/bear_trap_detail.png"},
+        {"id": "BEAR_RESERVATION", "name": "巨熊预约", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "EVENT_COUNTDOWN", "name": "活动倒计时", "status": "尚无可用素材或识别能力", "evidence": null, "note": "仅由 cooldown 文本读取推断，非 UI 元素级识别"},
+        {"id": "EVENT_NOT_OPEN", "name": "活动尚未开放", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "EVENT_OPEN", "name": "活动正在开放", "status": "尚无可用素材或识别能力", "evidence": null, "note": "当前实例记录为 ENDED_AND_COOLDOWN，未捕获开放态帧"},
+        {"id": "EVENT_ENDED", "name": "活动已经结束", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "BEAR_LOCATION", "name": "巨熊所在位置", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "ALLIANCE_WAR", "name": "联盟战争", "status": "尚无可用素材或识别能力", "evidence": null, "note": "未验证，保留为候选路线，不得假定必然存在"},
+        {"id": "ALLIANCE_RALLY_LIST", "name": "联盟集结列表", "status": "已有历史真机成功证据", "evidence": "dataset/raw/bear_live_20260909/joined_bear_2.png", "note": "活动目标在此列表显示为等级1变异巨熊"}
+      ]
+    },
+    "B_RALLY_LIST": {
+      "label": "集结列表",
+      "items": [
+        {"id": "BEAR_TARGET", "name": "巨熊目标", "status": "已有历史真机成功证据", "evidence": "bear.json.live_identity", "note": "客户端显示为等级1变异巨熊；不得过滤为普通异兽"},
+        {"id": "RALLY_INITIATOR", "name": "集结发起者", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "RALLY_REMAIN_TIME", "name": "集结剩余时间", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "RALLY_CURRENT_COUNT", "name": "当前人数", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "RALLY_CAPACITY", "name": "集结容量", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "JOIN_AVAILABLE", "name": "可加入状态（绿色加号）", "status": "已有历史真机成功证据", "evidence": "bear.json.join_policy.eligible"},
+        {"id": "RALLY_FULL", "name": "满员状态（灰色加号）", "status": "已有历史真机成功证据", "evidence": "bear.json.join_policy.skip"},
+        {"id": "RALLY_DEPARTED", "name": "已经出发状态", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "BTN_JOIN", "name": "加入按钮", "status": "已有历史真机成功证据", "evidence": "dataset/raw/bear_live_20260909/joined_bear_2.png", "note": "元素级模板尚未入库 icons/manifest.json"},
+        {"id": "RALLY_DETAIL", "name": "集结详情", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "LIST_REFRESH", "name": "列表刷新", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "LIST_SCROLL", "name": "列表滚动", "status": "尚无可用素材或识别能力", "evidence": null, "note": "滚动必须识别容器后执行，禁止固定屏幕位置滑动"}
+      ]
+    },
+    "C_FORMATION": {
+      "label": "编队",
+      "items": [
+        {"id": "HERO_SELECT", "name": "英雄选择", "status": "尚无可用素材或识别能力", "evidence": null, "note": "英雄策略已验证（杰西/书允/杰赛尔/NO_HERO），UI 元素未验证"},
+        {"id": "TROOP_SELECT", "name": "士兵选择", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "PRESET_FORMATION", "name": "预设编队", "status": "尚无可用素材或识别能力", "evidence": null, "note": "车头预设=完整主力；车身预设待确认"},
+        {"id": "PRESET_IDENTITY", "name": "当前预设身份", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "HERO_OCCUPIED", "name": "英雄占用", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "TROOP_AVAILABLE", "name": "可用士兵数量", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "MARCH_CAPACITY", "name": "出征容量", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "QUEUE_STATE", "name": "队列状态", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "BTN_DISPATCH_CONFIRM", "name": "出征确认", "status": "尚无可用素材或识别能力", "evidence": null}
+      ]
+    },
+    "D_RESULT": {
+      "label": "参与结果",
+      "items": [
+        {"id": "JOIN_SUCCESS", "name": "成功加入", "status": "已有历史真机成功证据", "evidence": "dataset/raw/bear_live_20260909/joined_bear_2.png"},
+        {"id": "START_SUCCESS", "name": "成功发起", "status": "已有历史真机成功证据", "evidence": "dataset/raw/bear_live_20260909/bear_dispatched.png"},
+        {"id": "RALLY_WAITING", "name": "集结等待中", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "RALLY_DEPART", "name": "集结出发", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "MARCHING", "name": "行军中", "status": "已有历史真机成功证据", "evidence": "dataset/raw/bear_live_20260909/bear_dispatched.png"},
+        {"id": "ACTUAL_ATTACK", "name": "实际攻击", "status": "尚无可用素材或识别能力", "evidence": null, "note": "PENDING_BATTLE_REPORT —— 六大已验证项中唯一未闭环"},
+        {"id": "BATTLE_RESULT", "name": "战斗结果", "status": "尚无可用素材或识别能力", "evidence": null, "note": "PENDING_BATTLE_REPORT"},
+        {"id": "TROOP_RETURN", "name": "部队返回", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "REWARD_STATE", "name": "奖励状态", "status": "尚无可用素材或识别能力", "evidence": null}
+      ]
+    },
+    "E_EXCEPTION": {
+      "label": "异常",
+      "items": [
+        {"id": "NO_JOINABLE_RALLY", "name": "没有可加入集结", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "RALLY_SUDDEN_FULL", "name": "集结突然满员", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "CANNOT_START_RALLY", "name": "无法发起集结", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "QUEUE_INSUFFICIENT", "name": "队列不足", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "HERO_OCCUPIED_EXC", "name": "英雄占用", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "TROOP_INSUFFICIENT", "name": "兵力不足", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "EVENT_NOT_OPEN_EXC", "name": "活动未开放", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "EVENT_ENDED_EXC", "name": "活动已经结束", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "WRONG_ROLE", "name": "错误角色", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "DEVICE_DISCONNECT", "name": "设备断连", "status": "已有并接入", "evidence": "winter_agent_v2/device_lease.py", "note": "恢复机制已存在"},
+        {"id": "POPUP_BLOCK", "name": "普通弹窗遮挡", "status": "尚无可用素材或识别能力", "evidence": null},
+        {"id": "PAGE_LOAD_FAIL", "name": "页面加载失败", "status": "尚无可用素材或识别能力", "evidence": null}
+      ]
+    }
+  },
+  "summary": {
+    "total_items": 55,
+    "已有并接入": 1,
+    "已有历史真机成功证据": 11,
+    "尚无可用素材或识别能力": 43,
+    "top_gap": "战斗结果/实际攻击（PENDING_BATTLE_REPORT）与集结列表元素级模板（发起者/时间/人数/容量/滚动）"
+  },
+  "never_invent": [
+    "不得为上述『尚无可用素材』项编造模板或坐标",
+    "不得把导航经过的页面当作已做元素级识别",
+    "不得把 bear.json 的策略文本当作 UI 元素已验证"
+  ],
+  "source": "KNOWLEDGE_DERIVED",
+  "confidence": 0.9
+}

@@ -1,0 +1,141 @@
+{
+  "schema_version": "1.0",
+  "topic": "BEAR_HUNT_RULES_FROM_OFFICIAL_SOURCES",
+  "written_at": "2026-10-05T22:50:00+08:00",
+  "written_by": "session 2026-10-05 (bear work), under the operator's hard gate: no implementation without a search artifact",
+  "why_this_file": "The operator's rule for external knowledge is explicit: it is a PRIOR, not production truth; it must be written down with its source and a trust level, and then verified on this client before anything acts on it. This file is that record. Nothing here is read by the runtime; knowledge/events/event_registry.json still holds what production consumes, and the corrections proposed below are FLAGGED rather than applied.",
+  "trust_ladder": "PRIOR < UNVERIFIED < OBSERVED < CONFIRMED",
+  "search_queries": [
+    "无尽冬日 巨熊行动 开启时间 每周",
+    "无尽冬日 巨熊行动 开启 联盟 4阶 冷却 46小时 预约",
+    "无尽冬日 狩猎陷阱 预约开启 变异巨熊 倒计时 在哪里看"
+  ],
+  "facts": [
+    {
+      "field": "opening_conditions",
+      "value": "服务器开服满 3 天，且联盟达到 5 级；陷阱由联盟建造后才有",
+      "source": "https://wjdrgl.centurygames.cn/events/獵熊行動/ (官方 wiki 事件专页) ；https://wjdrgl.centurygames.cn/faq/faq (官方 FAQ)",
+      "source_type": "OFFICIAL_WIKI",
+      "confidence": "PRIOR",
+      "note": "opening is gated on the alliance, not on the account"
+    },
+    {
+      "field": "who_opens_it",
+      "value": "只有盟主和 4 阶以上成员可以【手动开启】或【预约开启】狩猎陷阱；联盟可以投票决定活动时间",
+      "source": "https://wjdrgl.centurygames.cn/events/獵熊行動/ 原文第 1 条；https://www.taptap.cn/moment/545923363936141382 (社区攻略：选择预约或手动开启，联盟可以投票决定活动时间)",
+      "source_type": "OFFICIAL_WIKI + COMMUNITY",
+      "confidence": "PRIOR",
+      "note": "THIS is what the client's 预约自动开启 shows: a human R4+ scheduled it. The start time is officer-set, so it cannot be computed -- only read or polled for."
+    },
+    {
+      "field": "window_length",
+      "value": "陷阱开启后持续 30 分钟",
+      "source": "https://wjdrgl.centurygames.cn/events/獵熊行動/ (陷阱可持续30分钟)；18183 转载 (每次持续30分钟)",
+      "source_type": "OFFICIAL_WIKI",
+      "confidence": "PRIOR"
+    },
+    {
+      "field": "stamina_cost",
+      "value": "对【变异巨熊】发起的集结不消耗领主的体力",
+      "source": "https://wjdrgl.centurygames.cn/events/獵熊行動/ 原文第 3 条",
+      "source_type": "OFFICIAL_WIKI",
+      "confidence": "PRIOR",
+      "contradicts_project_record": "knowledge/events/event_registry.json events[BEAR_HUNT].participation_conditions 说 'a march slot that is not reserved for stamina (that reservation outranks this event; measured 2026-09-21)'。若集结不耗体力，则体力预约本不该拦住这个活动 —— 但可能仍需要一个空闲行军位，这一点本条来源说不清。需要在真机上确认后再动注册表。"
+    },
+    {
+      "field": "cooldown_rule -- CHANGED BY THE DEVELOPER",
+      "value": "参与活动的冷却时间由固定 46 小时调整为按自然日计算：领主当日参与活动后，将于后天 00:00（北京时间）清除冷却时间，可继续参与下一次巨熊行动。",
+      "source": "https://apps.apple.com/cn/app/无尽冬日/id6478492012 (App Store 页面转载的官方更新日志：'巨熊行动优化:参与活动的冷却时间由固定46小时调整为按自然日计算...')",
+      "source_type": "OFFICIAL_PATCH_NOTES",
+      "confidence": "PRIOR",
+      "why_this_matters": "cadence 变成【自然日】规则而不是滚动时钟：当天参与后次日被挡，后天 00:00（北京）起可再参与。轮询器应当预期『隔日可用』，不应再建模 46/47 小时计时器。",
+      "stale_conflicting_figures": {
+        "official_faq": "46 小时（'巨熊行动冷却期为46小时'）",
+        "official_wiki_event_page": "47h（'冷却时间:47h'）",
+        "community": "≥46 小时 / 每两天一次",
+        "this_project_own_live_read": "2026-09-09 客户端印的冷却 1天22:57:12 = 46 小时 57 分（与 47h 吻合）",
+        "reading": "三个数字是【改规则之前】的计时器、彼此只差取整；更新日志说计时器已被自然日规则取代。本客户端实际跑哪一套【未测】。"
+      }
+    },
+    {
+      "field": "how_to_find_the_open_window_on_screen",
+      "value": "活动开启后，点击右侧雷达缩图即可查看当前所有集结队伍",
+      "source": "https://m.700g.com/zixun03/223150.html (社区攻略)",
+      "source_type": "COMMUNITY",
+      "confidence": "PRIOR",
+      "note": "这是本次会话一直在手搓的那个入口的外部先验；它与项目已在做且 13/13 成功的 OPEN_BEAR_RALLY_LIST 一致，属于印证而非替代。"
+    }
+  ],
+  "operator_supplied_client_reading": {
+    "what": "操作者在 2026-10-05 23:25（GMT+8）给了这张客户端截图，并指出『巨熊活动不在日历里』。",
+    "evidence_frame": "dataset/raw/probe_bear_window_20261005/10_bear_tab_by_operator.png",
+    "frame_size": [663, 1179],
+    "geometry_warning": "这张图是 663x1179，【不是】客户端的 720x1280（截图窗口尺寸不同）。文字读数可用；【坐标不可当点击点用】。",
+    "ocr_verified_strings": {
+      "预约自动开启：": 0.993,
+      "2026-10-07 21:00": 0.991,
+      "等级5": 0.998,
+      "陷阱可持续30分钟，盟友协力造成的总伤害越高，": 0.992,
+      "巨熊行动": 0.994,
+      "联盟开启陷阱捕获": 0.98,
+      "伤害奖励": 0.989,
+      "开启": 1.0,
+      "陷阱强化": 0.992,
+      "狩猎成就": 0.983
+    },
+    "tab_strip_on_that_page": "烈焰与獠牙 | 小游戏 | 【巨熊图标】(当前选中) | 决战…（巨熊是第 3 格）",
+    "page": "常规活动 -> 巨熊行动（该格自己的页）",
+    "controls_drawn": ["伤害奖励", "开启", "陷阱强化"],
+    "next_window_printed_by_the_client": "2026-10-07 21:00 (+08:00)",
+    "why_this_matters": [
+      "它坐实了 §project_measurements 的那一条：巨熊【不在日历里】。日历是给『按表开的』活动用的，所以把 SCHEDULED_BEAR_HUNT 派去读日历（40 行 40 失败、其中 32 行就是这个目标）是【派错了页面】，不是识别坏了。",
+      "它给出了 event_schedule.RoleSchedule.reserved_start 应当承载的那个值 —— 该字段的 docstring 说它是『唯一能产生唤醒的字段』，且『直到客户端自己的倒计时/冷却真的被读过才有值』。这个 2026-10-07 21:00 就是那个读数。",
+      "它同时印证了冷却规则：10-05 参与/预约 → 下一次在 10-07，即【隔日】（与官方更新日志的『按自然日计算』一致）。"
+    ],
+    "trust_level": "OBSERVED（操作者提供的客户端读数，非运行时 confirm_from_live() 采集 ⇒ 不是 CONFIRMED；用于写 reserved_start 前应在循环里复读一次该页）",
+    "not_done_and_why": "【没有按『开启』】。该按钮是联盟 R4+ 的手动开启动作，会影响整个联盟；本账号是否有该权限未知。本轮只记录，不执行。"
+  },
+  "client_page_geometry_720x1280": {
+    "what": "巨熊行动那一页在真机 720x1280 上的几何。这不是猜测：帧是 2026-10-05 23:45:56 由本会话自己取的（设备在安全时序下独占），元素坐标全部来自该帧的 OCR 框。",
+    "frame": "dataset/raw/probe_bear_window_20261005/70_bear_page.png",
+    "reached_by": [
+      "点右边缘竖栏按钮 常规活动 (669,173) 打开活动页 —— 实测有效（70_hub_open.png 里读到页头 常规活动）",
+      "在页签条上【单向向左】滑一次 (520,110)->(150,110)：条上随即出现 巨熊行动 | 决战王城 | 心愿小筑",
+      "点 OCR 读到的 巨熊行动 标签中心 (114,171)",
+      "该帧的 OCR 标签中心 (114,171)，conf 0.998"
+    ],
+    "elements_norm": {
+      "预约自动开启_label": {"box_px": [273, 1083, 429, 1109], "centre_norm": [0.4875, 0.8562], "conf": 0.989},
+      "datetime_value": {"box_px": [258, 1113, 464, 1139], "centre_norm": [0.5014, 0.8797], "conf": 0.99,
+                         "text_at_read": "2026-10-07 21:00"},
+      "alliance_level": {"box_px": [578, 1112, 642, 1140], "text_at_read": "等级5", "conf": 0.998},
+      "open_button": {"box_px": [322, 1159, 397, 1203], "centre_norm": [0.4993, 0.9227], "conf": 1.0},
+      "damage_reward": {"box_px": [65, 1220, 158, 1251], "text_at_read": "伤害奖励"},
+      "trap_upgrade": {"box_px": [562, 1222, 654, 1250], "text_at_read": "陷阱强化"},
+      "page_title": {"box_px": [284, 799, 441, 842], "text_at_read": "巨熊行动", "conf": 0.995}
+    },
+    "the_two_things_a_reader_needs": [
+      "标签行 与 日期行 是【上下两行】，中心 y 0.8562 vs 0.8797 —— 读取必须把两者连起来，不能只找一行。",
+      "标签的印字是 预约自动开启（冒号可能被 OCR 吞掉），日期形如 YYYY-MM-DD HH:MM。"
+    ],
+    "read_back_confirmed": {
+      "at": "2026-10-05T15:45:56Z (23:45:56 +08)",
+      "reserve_word_present": true,
+      "datetime": "2026-10-07 21:00",
+      "open_button_present": true,
+      "note": "与操作者 23:25 提供的截图逐字一致 ⇒ 客户端在 21 分钟内没有改变这次预约。"
+    },
+    "trust_level": "OBSERVED (runtime read of the live client's own pixels; not confirm_from_live())"
+  },
+  "project_measurements_kept_alongside": {
+    "rally_row_is_the_correct_reading": "2026-10-05 21:28 真机抓帧后 rally.read_rally_list 返回 target_text=等级1变异巨熊 / type=BEAR / state=JOINABLE / joinable=True / remaining=255 / join_norm=(0.1583,0.8906)，与同帧 OCR 的『集结中：00:04:15』一致。证据帧：dataset/raw/probe_bear_20261005/now.png",
+    "event_calendar_is_the_wrong_page": "READ_EVENT_CALENDAR：40 行 40 失败，其中 32 行属于目标 SCHEDULED_BEAR_HUNT；37/40 在本次运行更早步骤已跑过 OPEN_EVENT_CALENDAR 与 SCROLL_REGULAR_EVENT_TABS 各两次。日历是给『按表开的』活动用的。",
+    "client_schedule_page_read_once": "knowledge/events/bear_hunt_time_20260928.json —— source_type CLIENT_DIRECT_SCHEDULE / CONFIRMED，页面『常规活动 -> 巨熊行动』，读到『预约自动开启 2026-09-28 20:00』；bear_hunt_time_20260927_newaccount.json 把该页记为『巨熊行动 (tab strip 横向滑动第2屏)』。"
+  },
+  "registry_corrections_proposed_NOT_APPLIED": [
+    "event_registry.json events[BEAR_HUNT].next_open_condition 描述的是『冷却推算出的起点』；更新日志说冷却已改为自然日 —— 先在本客户端重测，再改。",
+    "event_registry.json events[BEAR_HUNT].participation_conditions 里的体力预约条款与官方『不消耗体力』冲突。需要真机确认到底是什么在挡加入。",
+    "以上两条【故意不落地】：外部事实是先验。只有在真机上读过狩猎陷阱页/集结列表之后才允许改。"
+  ],
+  "next_measurement_before_any_code": "在一个开着的窗口里，同一次运行同时读【集结列表】（已可用）与【狩猎陷阱页印的计时】，与自然日规则对照。那一次运行就决定本客户端实际跑哪一套规则；只有那之后，写『排期贡献』才有意义。"
+}

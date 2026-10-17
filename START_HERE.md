@@ -1,5 +1,12 @@
 # START HERE — Winter Agent OS V2
 
+## 当前最高开发指令（2026-10-02）
+
+先完整阅读 [.workbuddy-ai/commander/WORKBUDDY_AUTONOMOUS_DEVELOPMENT_FINAL.md](.workbuddy-ai/commander/WORKBUDDY_AUTONOMOUS_DEVELOPMENT_FINAL.md) 与 [当前执行契约](.workbuddy-ai/commander/CODEX_DIRECTIVES.md)。用户已指定WorkBuddy持续自主开发；八单只是可动态重排的backlog。独占claim已有真实结果，仍须每次核对有效所有权，不能把旧“Codex active”字样当成当前阻塞。
+
+本用户FINAL覆盖旧00_MASTER_RULES §10b/§10c的runtime WorkBuddy gateway与§23固定工单/Codex专属写队列规则。runtime通道保持退役；唯一架构、安全、资源策略与真实Verifier约束继续适用。Codex本次仅治理交付，未回收WorkBuddy源码/设备/发布权。
+
+
 **你是接管这个项目的新账号。你没有前一个账号的聊天上下文，这是设计如此。**
 
 项目目录本身就是事实源。按下面 5 步走，不要跳步。
@@ -89,29 +96,15 @@ latest log / evidence integrity / commercial parity，并重写：
 
 ---
 
-## 第 3.5 步：检查 Codex Commander Queue（**接管后必做**）
+## 第 3.5 步：读持续开发契约与同一Commander backlog
 
-Codex 用机器可读队列给 WorkBuddy 派活，**不要手工复制指令**：
+先读用户FINAL全文、CODEX_DIRECTIVES与WORK_QUEUE.autonomous_development。现有 `.venv/Scripts/python.exe tools/cq.py plan` 给出依赖已满足的可选集和静态建议；它不是所有权检查或强制执行顺序。
 
-```bash
-"C:/Users/xhw/.workbuddy/binaries/python/versions/3.13.12/python.exe" tools/cq.py init
-"C:/Users/xhw/.workbuddy/binaries/python/versions/3.13.12/python.exe" tools/cq.py plan
-```
+WorkBuddy每轮用fresh Git/PIN/进程/Episode/Goal board比较最高价值根因，做Architecture Review，最小开发→针对性测试→由独占owner安全发布→AUTO/Verifier/学习→重新选题。八单耗尽不应停止。有效claim后可向同一WORK_QUEUE追加唯一ID的新根因单；保留原单、状态和结果，不建立第二队列。
 
-- `WORK_QUEUE.json`（Codex 写）→ `cq.py plan` 解析出 **READY 且依赖已满足** 的可执行集，
-  按 `priority` → 声明顺序排好；`QUEUED` / `WAITING_FOR_NATURAL_STATE` **不要碰**。
-- 每个 Work Order 走固定十步：
-  `READ EVIDENCE → TOOL CHECK → IMPLEMENT → TARGETED TEST → REPLAY → LIVE → VERIFY → BEFORE/AFTER → REPORT → NEXT`
-- 结果写 `.workbuddy-ai/commander/results/<task_id>.json`，状态由 `cq.py` 统一维护：
-  `cq.py start <id>` → `cq.py finish <id> --result <file> [--require-live]`。
-- **timebox 内做不到就承认**：`cq.py block <id> --result <file>`（含 `root_cause_found` /
-  `attempts` / `changes_made` / `evidence` / `blocker` / `recommended_codex_review`），
-  **然后立刻做下一项 READY 任务**，不要死磕、不要停下来问。
-- 需要高级代码分析（改冻结架构、证据与代码无法裁决、同一任务到 timebox 仍无法分类）→
-  追加到 `.workbuddy-ai/commander/REVIEW_REQUESTS.md`，等 Codex 下一次可用。
+用现有cq.py维护start/finish/block/results；DONE与BLOCKED是记账终态，DONE不代表Goal L5。每次写代码/发布/设备操作仍核对实际claim、文件归属、租约及安全边界。timebox耗尽或缺条件保存明确retry/next_action_at后转其它工作；不要因一个UNKNOWN停AUTO或永远过滤Goal。
 
-**队列是任务来源，不是免死金牌**：本文件其余所有铁律（架构冻结、真机证据、付费红线、
-不伪造完成）在队列任务内**同样生效**。
+能自主裁决的实现建议冲突按FINAL第0节处理并记录；只对真正产品选择、真钱/不可逆风险和用户固定策略求决策。结果与真实游戏成熟度分开，不能用测试/点击冒充完成。
 
 ---
 
@@ -171,19 +164,9 @@ python tools/truth_audit.py    # 重算 episode / registry / 证据完整性
 详见 `knowledge/failure_patterns/tooling/TOOLING_INTERPRETER_DRIFT.md` 与
 `01_CURRENT_TRUTH.md` **§J 后端轴**。
 
-### WorkBuddy 升级通道（2026-09-17 增补，可选）
+### WorkBuddy runtime升级通道已退役
 
-```bash
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/workbuddy_bridge.py --check
-```
-
-撞墙时可以把**一条** capability 交给本机 WorkBuddy 后台 agent，而不是耗完 timebox
-然后停下。**只有五种情况允许升级**（`CAPABILITY_MISSING` / `UNKNOWN_UI` /
-`UNKNOWN_GAME_MECHANIC` / `REPEATED_LIVE_FAILURE` / `STUCK_15_MIN`），
-**普通游戏 Tick 禁止调用**。凭据只走环境变量 `CODEBUDDY_GATEWAY_PASSWORD`，不进仓库。
-gateway 不可达 ≠ 停机理由。规则见 `00_MASTER_RULES.md` **§10b**，
-操作见 `docs/WORKBUDDY_BRIDGE.md`，实测契约见
-`knowledge/failure_patterns/integration/WORKBUDDY_GATEWAY_CONTRACT.md`。
+不要启动tools/workbuddy_bridge.py或gateway向WorkBuddy派发游戏UNKNOWN；相关历史文档仅供故障记录参考。WorkBuddy/Codex是开发工具；游戏Runtime只使用现有唯一UI-Venus（32K）处理真正UNKNOWN。Known/L1/Semantic Retry与实时环模型0。服务不可用时当前UNKNOWN有界退避，Known AUTO继续；服务恢复由当前有效开发/发布owner处理。
 
 ### 冲突裁决（不可颠倒）
 

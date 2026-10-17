@@ -1,96 +1,254 @@
 {
   "source": "learning\\episodes.jsonl",
-  "episodes_total": 732,
+  "episodes_total": 10000,
   "results": {
-    "SUCCESS": 486,
-    "BLOCKED": 4,
-    "IN_PROGRESS": 1,
-    "FAILURE": 241
+    "FAILURE": 1063,
+    "SUCCESS": 8937
   },
-  "failures_total": 241,
+  "failures_total": 1063,
   "top_failures": [
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+      "count": 370,
+      "resolved": false
+    },
+    {
+      "failure_type": "SAFE_BACK_NOT_PROVEN",
       "count": 104,
       "resolved": false
     },
     {
-      "failure_type": "MARCH_PAGE_NOT_OPEN",
-      "count": 59,
+      "failure_type": "POPUP_CLOSE_NOT_PROVEN",
+      "count": 88,
+      "resolved": true
+    },
+    {
+      "failure_type": "BEAST_DISPATCH_NOT_PROVEN",
+      "count": 86,
       "resolved": false
     },
     {
-      "failure_type": "DISPATCH_NOT_PROVEN",
-      "count": 28,
+      "failure_type": "ORDINARY_CONTROL_ALREADY_USED_THIS_RUN",
+      "count": 62,
       "resolved": false
     },
     {
-      "failure_type": "MAIL_CLAIM_FEEDBACK_NOT_PROVEN",
+      "failure_type": "NO_EXECUTION",
+      "count": 49,
+      "resolved": false
+    },
+    {
+      "failure_type": "POWER_DETAILS_NOT_PROVEN",
+      "count": 41,
+      "resolved": false
+    },
+    {
+      "failure_type": "QUICK_PANEL_SCROLL_NOT_PROVEN",
+      "count": 41,
+      "resolved": false
+    },
+    {
+      "failure_type": "RESEARCH_NODE_DETAIL_NOT_PROVEN",
+      "count": 35,
+      "resolved": false
+    },
+    {
+      "failure_type": "FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN",
+      "count": 26,
+      "resolved": false
+    },
+    {
+      "failure_type": "FOREIGN_LAYER_NOT_LEFT",
+      "count": 13,
+      "resolved": false
+    },
+    {
+      "failure_type": "OPEN_INTEL_NOT_PROVEN",
+      "count": 12,
+      "resolved": false
+    },
+    {
+      "failure_type": "RECALL_DIALOG_NOT_OPEN",
+      "count": 11,
+      "resolved": false
+    },
+    {
+      "failure_type": "INTEL_BEAST_TARGET_NOT_PROVEN",
       "count": 10,
       "resolved": false
     },
     {
-      "failure_type": "RESOURCE_NOT_FOUND",
-      "count": 8,
-      "resolved": true
-    },
-    {
-      "failure_type": "POPUP_CLOSE_NOT_PROVEN",
-      "count": 5,
-      "resolved": true
-    },
-    {
-      "failure_type": "EXPLORATION_REWARD_FEEDBACK_NOT_PROVEN",
-      "count": 3,
-      "resolved": false
-    },
-    {
-      "failure_type": "INTEL_MISSION_SELECTION_NOT_PROVEN",
-      "count": 2,
-      "resolved": false
-    },
-    {
-      "failure_type": "MAIL_TAB_SELECTION_NOT_PROVEN",
-      "count": 2,
+      "failure_type": "EXPLORATION_IDLE_DIALOG_NOT_PROVEN",
+      "count": 10,
       "resolved": false
     },
     {
       "failure_type": "OPEN_HOME_NOT_PROVEN",
-      "count": 2,
+      "count": 9,
       "resolved": false
     },
     {
-      "failure_type": "INFANTRY_CAMP_HIGHLIGHT_NOT_PROVEN",
-      "count": 2,
+      "failure_type": "MARCH_COUNT_NOT_READ",
+      "count": 8,
       "resolved": false
     },
     {
-      "failure_type": "OPEN_MAIL_NOT_PROVEN",
-      "count": 2,
+      "failure_type": "PANEL_ROW_TASK_BAR_NOT_PROVEN",
+      "count": 8,
       "resolved": false
     },
     {
-      "failure_type": "RESET_DURING_ACTION",
-      "count": 1,
+      "failure_type": "TRAINING_PAGE_NOT_PROVEN",
+      "count": 7,
       "resolved": false
     },
     {
-      "failure_type": "VISION_VARIANCE",
-      "count": 1,
+      "failure_type": "INTEL_PIN_CARD_NOT_OPENED",
+      "count": 7,
+      "resolved": false
+    },
+    {
+      "failure_type": "OPEN_MAP_NOT_PROVEN",
+      "count": 5,
+      "resolved": false
+    },
+    {
+      "failure_type": "PANEL_ROW_RESEARCH_BAR_NOT_PROVEN",
+      "count": 5,
       "resolved": false
     },
     {
       "failure_type": "BEAST_TARGET_SELECTION_NOT_PROVEN",
+      "count": 5,
+      "resolved": false
+    },
+    {
+      "failure_type": "INTEL_REWARD_DISMISS_NOT_PROVEN",
+      "count": 4,
+      "resolved": false
+    },
+    {
+      "failure_type": "DAILY_REWARD_ADVANCE_NOT_PROVEN",
+      "count": 4,
+      "resolved": false
+    },
+    {
+      "failure_type": "TRAINING_CAMP_SWITCH_NOT_PROVEN",
+      "count": 3,
+      "resolved": false
+    },
+    {
+      "failure_type": "RESOURCE_SEARCH_NOT_OPEN",
+      "count": 3,
+      "resolved": false
+    },
+    {
+      "failure_type": "PANEL_BUILDING_QUEUE_NOT_PROVEN",
+      "count": 3,
+      "resolved": false
+    },
+    {
+      "failure_type": "COMPLETED_CAMP_INSPECTION_NOT_PROVEN",
+      "count": 3,
+      "resolved": false
+    },
+    {
+      "failure_type": "BEAST_MARCH_NOT_PROVEN",
+      "count": 3,
+      "resolved": false
+    },
+    {
+      "failure_type": "OPEN_EXPLORATION_NOT_PROVEN",
+      "count": 2,
+      "resolved": false
+    },
+    {
+      "failure_type": "DAILY_TAB_NOT_SELECTED",
+      "count": 2,
+      "resolved": false
+    },
+    {
+      "failure_type": "ORDINARY_CONTROL_NOT_FOR_THIS_GOAL",
+      "count": 2,
+      "resolved": false
+    },
+    {
+      "failure_type": "ORDINARY_CONTROL_ALREADY_OPEN",
+      "count": 2,
+      "resolved": false
+    },
+    {
+      "failure_type": "RESEARCH_START_NOT_PROVEN",
+      "count": 2,
+      "resolved": false
+    },
+    {
+      "failure_type": "EVENT_CALENDAR_DETAIL_NOT_PROVEN",
+      "count": 2,
+      "resolved": false
+    },
+    {
+      "failure_type": "BEAST_SCAN_NOT_PROVEN",
       "count": 1,
       "resolved": false
     },
     {
-      "failure_type": "BEAST_DISPATCH_NOT_PROVEN",
+      "failure_type": "BEAST_SEARCH_NOT_SUBMITTED",
       "count": 1,
       "resolved": false
     },
     {
-      "failure_type": "INTEL_CLAIM_FEEDBACK_NOT_PROVEN",
+      "failure_type": "ALLIANCE_REWARD_DISMISS_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "INFANTRY_CAMP_HIGHLIGHT_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "RESEARCH_LAB_HIGHLIGHT_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "OPEN_ALLIANCE_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "INTEL_RESCUE_START_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "INFANTRY_CAMP_MENU_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "EVENT_CALENDAR_NOT_OPEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "EVENT_CALENDAR_TAB_NOT_OPEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "EVENT_CALENDAR_RETURN_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "BUILDING_UPGRADE_PANEL_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "MAIL_TAB_SELECTION_NOT_PROVEN",
       "count": 1,
       "resolved": false
     },
@@ -100,81 +258,155 @@
       "resolved": false
     },
     {
-      "failure_type": "INTEL_REWARD_DISMISS_NOT_PROVEN",
+      "failure_type": "OPEN_DAILY_NOT_PROVEN",
       "count": 1,
       "resolved": false
     },
     {
-      "failure_type": "EXPLORATION_IDLE_DIALOG_NOT_PROVEN",
-      "count": 1,
-      "resolved": false
-    },
-    {
-      "failure_type": "ALLY_GIFT_REWARD_FEEDBACK_NOT_PROVEN",
-      "count": 1,
-      "resolved": false
-    },
-    {
-      "failure_type": "DAILY_REWARD_ADVANCE_NOT_PROVEN",
-      "count": 1,
-      "resolved": false
-    },
-    {
-      "failure_type": "RESOURCE_SEARCH_NOT_OPEN",
-      "count": 1,
-      "resolved": false
-    },
-    {
-      "failure_type": "SAFE_BACK_NOT_PROVEN",
-      "count": 1,
-      "resolved": false
-    },
-    {
-      "failure_type": "RESOURCE_SELECTION_NOT_PROVEN",
-      "count": 1,
-      "resolved": false
-    },
-    {
-      "failure_type": "OPEN_MAP_NOT_PROVEN",
+      "failure_type": "STAMINA_SOURCES_NOT_OPEN",
       "count": 1,
       "resolved": false
     }
   ],
   "top_failing_skills": [
     {
-      "skill": "START_GATHER",
-      "count": 59
+      "skill": "TRY_ORDINARY_CONTROL",
+      "count": 165
     },
     {
-      "skill": "SELECT_RESOURCE",
+      "skill": "CLOSE_POPUP",
+      "count": 105
+    },
+    {
+      "skill": "BACK",
+      "count": 104
+    },
+    {
+      "skill": "DISPATCH_BEAST",
+      "count": 86
+    },
+    {
+      "skill": "EXPLORATION_IDLE_CLAIM",
+      "count": 66
+    },
+    {
+      "skill": "OPEN_POWER_DETAILS",
+      "count": 55
+    },
+    {
+      "skill": "SAFE_STOP",
+      "count": 49
+    },
+    {
+      "skill": "SCROLL_QUICK_PANEL_TASKS",
       "count": 41
     },
     {
+      "skill": "OPEN_INTEL",
+      "count": 37
+    },
+    {
+      "skill": "SELECT_RESEARCH_NODE",
+      "count": 35
+    },
+    {
+      "skill": "OPEN_HOME",
+      "count": 32
+    },
+    {
+      "skill": "LEAVE_FOREIGN_LAYER",
+      "count": 29
+    },
+    {
       "skill": "SEARCH_RESOURCE",
-      "count": 34
+      "count": 23
     },
     {
-      "skill": "DISPATCH_MARCH",
-      "count": 28
+      "skill": "SELECT_MAIL_REPORT_TAB",
+      "count": 20
     },
     {
-      "skill": "OPEN_MAIL",
-      "count": 15
+      "skill": "OPEN_BUILDING_UPGRADE",
+      "count": 17
     },
     {
-      "skill": "MAIL_CLAIM_REWARDS",
+      "skill": "SELECT_BEAST_TARGET_MAMMOTH",
+      "count": 14
+    },
+    {
+      "skill": "OPEN_EVENT_CALENDAR_FROM_HOME",
+      "count": 12
+    },
+    {
+      "skill": "SELECT_MARCH_TO_RECALL",
+      "count": 11
+    },
+    {
+      "skill": "OPEN_INTEL_BEAST_TARGET",
       "count": 10
     },
     {
-      "skill": "SUBMIT_RESOURCE_SEARCH",
+      "skill": "TAP_FOCUSED_TRAINING_CAMP_SHIELD",
+      "count": 10
+    },
+    {
+      "skill": "CHECK_MARCH",
       "count": 8
     },
     {
-      "skill": "DISMISS_INTEL_REWARD",
+      "skill": "SELECT_RESOURCE",
+      "count": 8
+    },
+    {
+      "skill": "TAP_FOCUSED_TRAINING_CAMP_MARKSMAN",
+      "count": 8
+    },
+    {
+      "skill": "TAP_FOCUSED_TRAINING_CAMP_LANCER",
+      "count": 8
+    },
+    {
+      "skill": "OPEN_INFANTRY_TRAINING",
+      "count": 7
+    },
+    {
+      "skill": "OPEN_TASK_FROM_QUICK_PANEL_SHIELD",
+      "count": 7
+    },
+    {
+      "skill": "SELECT_INTEL_PIN",
+      "count": 7
+    },
+    {
+      "skill": "OPEN_TASK_FROM_QUICK_PANEL_LANCER",
+      "count": 6
+    },
+    {
+      "skill": "OPEN_RESEARCH",
+      "count": 6
+    },
+    {
+      "skill": "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT",
+      "count": 6
+    },
+    {
+      "skill": "OPEN_MAP",
       "count": 5
     },
     {
-      "skill": "SELECT_MAIL_ALLIANCE_TAB",
+      "skill": "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH",
+      "count": 5
+    },
+    {
+      "skill": "RESEARCH",
+      "count": 5
+    },
+    {
+      "skill": "SELECT_BEAST_TARGET_LABELLED",
+      "count": 5
+    },
+    {
+      "skill": "DISMISS_INTEL_GENERIC_REWARD",
       "count": 4
     },
     {
@@ -182,51 +414,99 @@
       "count": 4
     },
     {
-      "skill": "OPEN_INTEL",
+      "skill": "OPEN_TASK_FROM_QUICK_PANEL_BUILDING",
+      "count": 4
+    },
+    {
+      "skill": "DISMISS_DAILY_GENERIC_REWARD",
+      "count": 4
+    },
+    {
+      "skill": "SELECT_TRAINING_CAMP",
       "count": 3
     },
     {
-      "skill": "OPEN_HOME",
+      "skill": "ATTACK_BEAST_CARD",
       "count": 3
     },
     {
-      "skill": "EXPLORATION_IDLE_CLAIM",
+      "skill": "OPEN_EVENT_CALENDAR_FROM_MAP",
       "count": 3
     },
     {
-      "skill": "SELECT_INTEL_BEAST_MISSION",
+      "skill": "OPEN_EXPLORATION",
       "count": 2
     },
     {
-      "skill": "CONFIRM_EXPLORATION_IDLE_CLAIM",
+      "skill": "SELECT_DAILY_TAB",
       "count": 2
     },
     {
-      "skill": "OPEN_POWER_OVERVIEW",
+      "skill": "OPEN_EVENT_CALENDAR_DETAIL",
       "count": 2
+    },
+    {
+      "skill": "SCAN_MAP_FOR_BEAST",
+      "count": 1
+    },
+    {
+      "skill": "SUBMIT_BEAST_SEARCH",
+      "count": 1
+    },
+    {
+      "skill": "DISMISS_ALLIANCE_GENERIC_REWARD",
+      "count": 1
     },
     {
       "skill": "NAVIGATE_INFANTRY_CAMP",
-      "count": 2
-    },
-    {
-      "skill": "ALLIANCE_GIFTS",
       "count": 1
     },
     {
-      "skill": "SELECT_BEAST_TARGET",
+      "skill": "NAVIGATE_RESEARCH_LAB",
       "count": 1
     },
     {
-      "skill": "DISPATCH_BEAST",
+      "skill": "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN",
       "count": 1
     },
     {
-      "skill": "CLOSE_POPUP",
+      "skill": "TRAIN_TROOPS",
       "count": 1
     },
     {
-      "skill": "INTEL_CLAIM_REWARDS",
+      "skill": "OPEN_ALLIANCE",
+      "count": 1
+    },
+    {
+      "skill": "EXECUTE_INTEL_RESCUE_SURVIVORS",
+      "count": 1
+    },
+    {
+      "skill": "SELECT_INFANTRY_CAMP",
+      "count": 1
+    },
+    {
+      "skill": "OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN",
+      "count": 1
+    },
+    {
+      "skill": "OPEN_EVENT_CALENDAR_TAB",
+      "count": 1
+    },
+    {
+      "skill": "RETURN_EVENT_CALENDAR",
+      "count": 1
+    },
+    {
+      "skill": "DISMISS_SHARED_REWARD",
+      "count": 1
+    },
+    {
+      "skill": "OPEN_COMPLETED_TRAINING_CAMP_SHIELD",
+      "count": 1
+    },
+    {
+      "skill": "FOLLOW_DAILY_TASK",
       "count": 1
     },
     {
@@ -234,118 +514,108 @@
       "count": 1
     },
     {
-      "skill": "OPEN_EXPLORATION",
-      "count": 1
-    },
-    {
-      "skill": "DISMISS_MAIL_REWARD",
-      "count": 1
-    },
-    {
-      "skill": "ALLIANCE_ALLY_GIFT_CLAIM",
-      "count": 1
-    },
-    {
       "skill": "OPEN_DAILY",
       "count": 1
     },
     {
-      "skill": "DISMISS_DAILY_REWARD",
+      "skill": "OPEN_COMPLETED_TRAINING_CAMP_LANCER",
       "count": 1
     },
     {
-      "skill": "SELECT_MAIL_SYSTEM_TAB",
-      "count": 1
-    },
-    {
-      "skill": "DISMISS_MAIL_GENERIC_REWARD",
-      "count": 1
-    },
-    {
-      "skill": "BACK",
-      "count": 1
-    },
-    {
-      "skill": "OPEN_MAP",
-      "count": 1
-    },
-    {
-      "skill": "RECONNECT_SESSION",
+      "skill": "OPEN_STAMINA_SOURCES",
       "count": 1
     }
   ],
   "blocker_by_goal": [
     {
-      "goal": "GATHER_RESOURCE",
-      "total": 174,
-      "failures": {
-        "SEMANTIC_TARGET_NOT_VERIFIED": 73,
-        "MARCH_PAGE_NOT_OPEN": 59,
-        "DISPATCH_NOT_PROVEN": 28,
-        "RESOURCE_NOT_FOUND": 8,
-        "OPEN_HOME_NOT_PROVEN": 2,
-        "VISION_VARIANCE": 1,
-        "RESOURCE_SEARCH_NOT_OPEN": 1,
-        "RESOURCE_SELECTION_NOT_PROVEN": 1,
-        "OPEN_MAP_NOT_PROVEN": 1
-      }
-    },
-    {
       "goal": "UNATTRIBUTED",
-      "total": 44,
+      "total": 860,
       "failures": {
-        "SEMANTIC_TARGET_NOT_VERIFIED": 13,
-        "MAIL_CLAIM_FEEDBACK_NOT_PROVEN": 10,
-        "POPUP_CLOSE_NOT_PROVEN": 5,
-        "EXPLORATION_REWARD_FEEDBACK_NOT_PROVEN": 3,
-        "INTEL_MISSION_SELECTION_NOT_PROVEN": 2,
-        "MAIL_TAB_SELECTION_NOT_PROVEN": 2,
-        "INFANTRY_CAMP_HIGHLIGHT_NOT_PROVEN": 2,
-        "RESET_DURING_ACTION": 1,
-        "INTEL_CLAIM_FEEDBACK_NOT_PROVEN": 1,
-        "INTEL_REWARD_DISMISS_NOT_PROVEN": 1,
-        "EXPLORATION_IDLE_DIALOG_NOT_PROVEN": 1,
-        "ALLY_GIFT_REWARD_FEEDBACK_NOT_PROVEN": 1,
-        "DAILY_REWARD_ADVANCE_NOT_PROVEN": 1,
-        "SAFE_BACK_NOT_PROVEN": 1
-      }
-    },
-    {
-      "goal": "MAIL",
-      "total": 15,
-      "failures": {
-        "SEMANTIC_TARGET_NOT_VERIFIED": 13,
-        "OPEN_MAIL_NOT_PROVEN": 2
-      }
-    },
-    {
-      "goal": "INTEL",
-      "total": 4,
-      "failures": {
-        "SEMANTIC_TARGET_NOT_VERIFIED": 3,
-        "INTEL_BEAST_DISPATCH_NOT_PROVEN": 1
+        "SEMANTIC_TARGET_NOT_VERIFIED": 295,
+        "SAFE_BACK_NOT_PROVEN": 104,
+        "POPUP_CLOSE_NOT_PROVEN": 88,
+        "ORDINARY_CONTROL_ALREADY_USED_THIS_RUN": 62,
+        "NO_EXECUTION": 49,
+        "POWER_DETAILS_NOT_PROVEN": 41,
+        "QUICK_PANEL_SCROLL_NOT_PROVEN": 41,
+        "RESEARCH_NODE_DETAIL_NOT_PROVEN": 35,
+        "FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN": 26,
+        "FOREIGN_LAYER_NOT_LEFT": 13,
+        "RECALL_DIALOG_NOT_OPEN": 11,
+        "INTEL_BEAST_TARGET_NOT_PROVEN": 10,
+        "EXPLORATION_IDLE_DIALOG_NOT_PROVEN": 10,
+        "PANEL_ROW_TASK_BAR_NOT_PROVEN": 8,
+        "TRAINING_PAGE_NOT_PROVEN": 7,
+        "INTEL_PIN_CARD_NOT_OPENED": 7,
+        "PANEL_ROW_RESEARCH_BAR_NOT_PROVEN": 5,
+        "BEAST_TARGET_SELECTION_NOT_PROVEN": 5,
+        "INTEL_REWARD_DISMISS_NOT_PROVEN": 4,
+        "DAILY_REWARD_ADVANCE_NOT_PROVEN": 4,
+        "TRAINING_CAMP_SWITCH_NOT_PROVEN": 3,
+        "PANEL_BUILDING_QUEUE_NOT_PROVEN": 3,
+        "COMPLETED_CAMP_INSPECTION_NOT_PROVEN": 3,
+        "BEAST_MARCH_NOT_PROVEN": 3,
+        "DAILY_TAB_NOT_SELECTED": 2,
+        "ORDINARY_CONTROL_NOT_FOR_THIS_GOAL": 2,
+        "RESEARCH_START_NOT_PROVEN": 2,
+        "EVENT_CALENDAR_DETAIL_NOT_PROVEN": 2,
+        "BEAST_SCAN_NOT_PROVEN": 1,
+        "BEAST_SEARCH_NOT_SUBMITTED": 1,
+        "ALLIANCE_REWARD_DISMISS_NOT_PROVEN": 1,
+        "INFANTRY_CAMP_HIGHLIGHT_NOT_PROVEN": 1,
+        "RESEARCH_LAB_HIGHLIGHT_NOT_PROVEN": 1,
+        "OPEN_ALLIANCE_NOT_PROVEN": 1,
+        "INTEL_RESCUE_START_NOT_PROVEN": 1,
+        "ORDINARY_CONTROL_ALREADY_OPEN": 1,
+        "INFANTRY_CAMP_MENU_NOT_PROVEN": 1,
+        "EVENT_CALENDAR_NOT_OPEN": 1,
+        "EVENT_CALENDAR_TAB_NOT_OPEN": 1,
+        "EVENT_CALENDAR_RETURN_NOT_PROVEN": 1,
+        "BUILDING_UPGRADE_PANEL_NOT_PROVEN": 1,
+        "MAIL_TAB_SELECTION_NOT_PROVEN": 1,
+        "STAMINA_SOURCES_NOT_OPEN": 1
       }
     },
     {
       "goal": "BEAST_HUNT",
-      "total": 2,
+      "total": 86,
       "failures": {
-        "BEAST_TARGET_SELECTION_NOT_PROVEN": 1,
-        "BEAST_DISPATCH_NOT_PROVEN": 1
+        "BEAST_DISPATCH_NOT_PROVEN": 86
+      }
+    },
+    {
+      "goal": "GATHER_RESOURCE",
+      "total": 76,
+      "failures": {
+        "SEMANTIC_TARGET_NOT_VERIFIED": 51,
+        "OPEN_HOME_NOT_PROVEN": 9,
+        "MARCH_COUNT_NOT_READ": 8,
+        "OPEN_MAP_NOT_PROVEN": 5,
+        "RESOURCE_SEARCH_NOT_OPEN": 3
+      }
+    },
+    {
+      "goal": "INTEL",
+      "total": 38,
+      "failures": {
+        "SEMANTIC_TARGET_NOT_VERIFIED": 24,
+        "OPEN_INTEL_NOT_PROVEN": 12,
+        "ORDINARY_CONTROL_ALREADY_OPEN": 1,
+        "INTEL_BEAST_DISPATCH_NOT_PROVEN": 1
       }
     },
     {
       "goal": "EXPLORATION",
-      "total": 1,
+      "total": 2,
       "failures": {
-        "SEMANTIC_TARGET_NOT_VERIFIED": 1
+        "OPEN_EXPLORATION_NOT_PROVEN": 2
       }
     },
     {
       "goal": "DAILY_TASKS",
       "total": 1,
       "failures": {
-        "SEMANTIC_TARGET_NOT_VERIFIED": 1
+        "OPEN_DAILY_NOT_PROVEN": 1
       }
     }
   ],
@@ -363,12 +633,7 @@
     }
   },
   "data_quality": {
-    "mixed_case_results": [
-      "blocked",
-      "failure",
-      "in_progress",
-      "success"
-    ],
+    "mixed_case_results": [],
     "note": "result 字段历史上同时存在大写与小写变体，统计前已归一化。"
   }
 }

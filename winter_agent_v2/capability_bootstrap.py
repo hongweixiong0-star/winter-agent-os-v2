@@ -1693,7 +1693,11 @@ class BootstrapScanner:
             for path in directory.rglob("*"):
                 if path.is_file():
                     asset_names.append(path.name)
-        asset_names.append("legacy:" + str(base.parent / "dongri-mumu-bot"))
+        # The retired ``E:\dongri-mumu-bot`` tree used to be appended here as a fake asset name
+        # ("legacy:<path>") so a bootstrap that still mentioned it matched softly instead of
+        # erroring.  The directory has been gone since the 2026-09-20 migration to
+        # ``E:\WinterAgent``; keeping the token only taught the matcher a name nothing can
+        # resolve, so it is retired with the path.
 
         ledger_index: dict[str, tuple[str, str]] = {}
         try:

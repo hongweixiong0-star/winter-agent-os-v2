@@ -667,6 +667,19 @@ class PipelineAutoGen:
                 "DEMOTED_SEMANTIC_KEEPS_ITS_RETIREMENT:"
                 f"{node.evidence.get('pipeline_node_path')}"
             )
+        # A skill that declares LEGACY recognition may not carry a node.  Measured 2026-10-16:
+        # the runtime re-wired ``REGULAR_EVENT_ENTRY`` into ``OPEN_EVENT_CALENDAR_FROM_HOME``
+        # (``preferred: ADB``, ``recognition_backend: LEGACY``) and the entry ended up carrying
+        # both -- the node silently outranks the declaration, and
+        # ``tests/test_recognition_backend_declaration.py`` rejects the pair outright.  A LEGACY
+        # skill recognises through the V2 semantic vision, so a MAA node beside it is either a
+        # stale declaration or an unverified node; both are curator decisions, not autogen's.
+        # Checked after the demotion refusal so the specific reason wins.
+        if str(entry.get("recognition_backend", "")).strip().upper() == "LEGACY":
+            return False, (
+                "LEGACY_DECLARATION_TAKES_NO_NODE:"
+                f"{node.evidence.get('pipeline_node_path')}"
+            )
         if existed and not conflict:
             return True, "UNCHANGED"
         evidence = dict(entry.get("evidence", {}) or {})

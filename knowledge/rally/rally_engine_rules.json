@@ -1,0 +1,189 @@
+{
+  "knowledge_id": "RALLY_ENGINE_RULES_20260927",
+  "domain": "rally",
+  "source": "USER_LIVE_GAME_CONFIRMATION",
+  "confirmed_at": "2026-09-27T21:40:00+08:00",
+  "core_principle": "learn HOW to rally, not HOW each event clicks. Target only changes what is being rallied.",
+  "architecture": {
+    "target_layer": [
+      "BEAR",
+      "ICEFIELD_BEAST",
+      "OTHER_RALLY_TARGET"
+    ],
+    "engine": [
+      "START_RALLY",
+      "JOIN_RALLY",
+      "SELECT_HERO",
+      "SELECT_TROOP",
+      "DISPATCH",
+      "RALLY_STATE",
+      "RESULT"
+    ],
+    "optional_capability": {
+      "AUTO_JOIN": "only when target supports it (ICEFIELD_BEAST yes, BEAR no)"
+    }
+  },
+  "unification_rules": {
+    "no_flow_duplication": "FORBIDDEN to create BEAR_JOIN_RALLY / ICEFIELD_BEAST_JOIN_RALLY as separate skills; single JOIN_RALLY(target) / START_RALLY(target)",
+    "shared_pipeline": "JOIN button / rally row / formation page / hero slots / troop / dispatch UI are identical across targets -> one pipeline, target passed as context parameter",
+    "target_specific_selectors": "only for genuinely different entry points / target icons / target text"
+  },
+  "rally_row_schema": {
+    "fields": [
+      "row_id",
+      "target_type",
+      "target_name",
+      "leader",
+      "members",
+      "capacity",
+      "full",
+      "join_available",
+      "timer",
+      "row_bbox",
+      "join_button_bbox",
+      "source_frame"
+    ],
+    "implementation": "winter_agent_v2/rally.py read_rally_list_image + select_join_candidates"
+  },
+  "start_rally_contract": {
+    "params": [
+      "target_type",
+      "target_id_or_semantic",
+      "role",
+      "formation_policy"
+    ],
+    "flow": "SELECT_TARGET(target) -> START_RALLY -> HERO -> TROOP -> DISPATCH -> STARTED_RALLY verifier",
+    "limit": "max 1 own active started rally; does NOT block JOIN_RALLY"
+  },
+  "join_rally_contract": {
+    "params": [
+      "target_type",
+      "rally_row",
+      "leader",
+      "timer",
+      "capacity",
+      "join_button_bbox",
+      "frame_id"
+    ],
+    "join_affordance": "green + button; locator = HSV green pixel clustering (band y380-520, x400-700) — template matching collides with orange flag at score 1.0 (2026-09-27 lesson)",
+    "confirm_dialog": "JOIN_RALLY_CONFIRM = NOT_REQUIRED_FOR_THIS_FLOW (join -> formation dialog -> 出征 button directly)"
+  },
+  "join_verifier_contract": {
+    "inputs": [
+      "expected_target",
+      "expected_leader_if_available",
+      "expected_rally_id_or_row_context"
+    ],
+    "outputs": [
+      "JOINED",
+      "FAILED",
+      "FULL",
+      "ROW_GONE",
+      "TARGET_CHANGED",
+      "UNKNOWN"
+    ],
+    "shared_by": [
+      "BEAR",
+      "ICEFIELD_BEAST",
+      "future rally activities"
+    ],
+    "success_signals_ranked": [
+      "operator role/name visible in rally member list (strongest)",
+      "『您的部队已抵达集结地点』banner",
+      "rally capacity delta == own troop power",
+      "city screen march queue count increase (行军 X/6)"
+    ]
+  },
+  "dataset_convention": {
+    "naming": "flow=JOIN_RALLY target_type=BEAR (not bear_manual_join); ICEFIELD_BEAST frames later use same flow tag",
+    "purpose": "validate JOIN_RALLY generalizes across targets via offline replay"
+  },
+  "tonight_2030_failure_attribution": "generic capabilities, not BEAR-specific: rally row parse returned UNKNOWN, JOIN locator hit orange flag, orphan device lease blocked retry — all engine-level fixes benefit every rally target",
+  "supersedes": "any BEAR-only vs ICEFIELD-only rally flow distinction",
+  "live_test_20260927_2200_icefield_beast": {
+    "source": "LIVE_DEVICE_TEST",
+    "findings": {
+      "city_entry_card": "城屏左侧出现临时「冰原巨兽 N级 + 搜索 + 自动加入」入口卡；自动加入=AUTO_JOIN(ICEFIELD_BEAST) 专属开关，与 knowledge 一致；卡片为瞬态，数分钟内消失",
+      "ordinary_beasts_not_rallyable": "普通野兽（雪豹等）对话框只有 出征，无 集结 —— 不可发起集结，属游戏规则",
+      "beast_rally_row_example": "[DIW]人间月 等级7霜鳞避役 9/15 集结中00:00:42 —— 野兽目标可被集结",
+      "beast_name_filter": "JOIN 目标词须覆盖具体兽名（避役/雪豹/猛犸/犀牛/棕熊/麋鹿/霜鳞…），仅 巨兽/野兽 会漏读 OCR 变体（冰原巨兽→冰原巨鲁）",
+      "navigation_law": "世界地图上按 BACK 只会弹「确认退出游戏吗」；回城必须点底部导航 城镇 按钮",
+      "popup_guard": "通用 JOIN 循环必须带弹窗防护：退出确认(取消)、充值礼包(￥/购买——只点 取消/关闭，禁点其他)、离线收益"
+    },
+    "start_rally_status": "BLOCKED_BY_CONTEXT: 测试窗口内无可集结目标（无活跃巨兽入口卡、情报野兽未验证可集结）",
+    "join_rally_status": "BLOCKED_BY_CONTEXT: 发现真实野兽车队但 42s 计时过期；后续 17+ 轮询无新车"
+  },
+  "city_rally_badge": {
+    "name": "RALLY_JOIN_BADGE",
+    "source": "USER_LIVE_GAME_CONFIRMATION (2026-09-27 23:10, 高清截图)",
+    "appearance": "城屏右侧红色圆形图标：交叉箭头 + 白旗 + 右上红色数字角标(N) + 底部倒计时 HH:MM:SS",
+    "badge_number": "当前可由我加入的、别人发起的集结数量",
+    "countdown": "最近一场集结的剩余计时",
+    "scope": "所有类型集结的统一加入入口 —— 巨熊(BEAR)、冰原巨兽(ICEFIELD_BEAST)、以及其他任意类型的集结，不限活动、不限目标",
+    "flow": "点 Badge -> 集结详情/列表 -> 绿+ -> PAGE_FORMATION -> SELECT_FORMATION_SLOT(2..7 可用槽) -> 出征 -> 下一场",
+    "relation_to_other_entries": {
+      "city_banner_集结中": "城屏左上横幅（OCR可读『集结中』），单场集结倒计时时的另一入口",
+      "war_page_rally_tab": "联盟战争->集结，列表态入口（多行选择）"
+    },
+    "why_this_matters": "JOIN_RALLY 的入口是 target-agnostic 的：V2 不需要为巨熊/冰原巨兽分别找入口，只需要读 badge -> 进去后按目标词筛选行",
+    "verified_live": {
+      "date": "2026-09-27T23:41",
+      "detector": "HSV red ring (H 0-10 / 170-180, S>110, V>110) in right-middle band (x 0.64-0.99W, y 0.20-0.50H) + circular aspect 0.6-1.7 + area>=500",
+      "observed": [
+        "ROLE_A 城屏 badge @(664,544) area 3948 -> 一点直达集结详情",
+        "详情目标=等级1失控的雪怪（[ioi]夜天子）→ 证实入口 target-agnostic"
+      ],
+      "join_result": "绿+ -> PAGE_FORMATION -> slot2(FormationPolicy) -> 出征 -> 『您的部队已抵达集结地点』; 容量+110,890; 1/15->3/15"
+    }
+  },
+  "corrections": {
+    "2026-09-27T22:36_probe_wrong": {
+      "wrong_conclusion": "该红色倒计时图标被误判为『明月的盛典』活动入口（tools probe 点 (560,430) 后 OCR 出现 明月的盛典 00:00:23 即下结论）",
+      "correct": "该图标是 RALLY_JOIN_BADGE —— 别人发起的集结的统一加入入口（本次实测未点中它，事件图标与其重叠导致误读）",
+      "lesson": "红色倒计时/角标类图标不可凭一次 OCR 结果定性；应以图标形状特征（交叉箭头+旗帜+数字角标）为准，并交叉验证进入后的页面内容"
+    }
+  },
+  "observed_target_types": {
+    "BEAR": [
+      "变异巨熊"
+    ],
+    "BEAST_VARIANT": [
+      "等级7霜鳞避役",
+      "等级1失控的雪怪",
+      "等级27雪豹(不可集结,普通野兽)"
+    ]
+  },
+  "auto_join_ui_note": "集结详情页在角色 AUTO_JOIN 开启时显示『自动加入中…』；手动 JOIN 先于自动加入完成时该文案仍在",
+  "start_rally_verified_live": {
+    "date": "2026-09-28T00:02",
+    "entry": "城屏放大镜 -> 搜索面板「冰原巨兽」标签 -> 搜索 -> 目标面板「集结」-> 发起集结弹窗 -> 发起集结 -> PAGE_FORMATION -> slot8 -> 出征",
+    "geometry_720x1280": {
+      "giant_tab": [
+        241,
+        947
+      ],
+      "search_submit": [
+        360,
+        1214
+      ],
+      "dialog_start_button": [
+        360,
+        839
+      ]
+    },
+    "duration_options": [
+      "3分钟",
+      "5分钟",
+      "10分钟",
+      "15分钟"
+    ],
+    "auto_join_official_text": "符合条件的联盟成员会在集结倒计时开启1分钟后自动加入集结",
+    "target_class_rule": {
+      "野兽_tab": "普通野兽(雪豹/大角鹿) = 面板只有攻击，不可集结",
+      "冰原巨兽_tab": "巨兽(剑齿虎/冰霜古猿/失控的雪怪) = 面板有集结，可发起/可加入"
+    },
+    "verified_result": "城屏 集结中 00:04:53 + 集结队伍：剑齿虎 + 行军 1/6",
+    "duration_preference": "3分钟（最短）；00:02 首次实测误用5分钟，已更正",
+    "formation_rule": "编队按目标：消耗体力的巨兽(剑齿虎/巨兽) -> 1号省体力；巨熊 -> 8号最强"
+  }
+}

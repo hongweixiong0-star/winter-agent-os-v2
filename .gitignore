@@ -582,3 +582,28 @@ knowledge/offline/
 
 # live_ops 逐次运行的输出（该目录下部分文件已跟踪，故只忽略这一种）
 /dataset/truth_audit/live_ops/**/live.json
+
+# --- 2026-10-17 统一整理：运行时产物不再进脏集 ------------------------------------
+# 感知目录里的抓帧与候选裁图是机器本地的运行时产物（本轮实测 pages 99 张 PNG=57MB、
+# candidates 329 张裁图=13MB），每轮识别都会新增；每个子目录都是
+# 「page.png + metadata.yaml」的抓帧配对，同样是自动生成的。INDEX.json 已跟踪，
+# 忽略规则不影响已跟踪文件，所以知识入口仍留在历史里。
+knowledge/perception/pages/
+knowledge/perception/candidates/
+# 升级队列落盘：每遇到一个未知页面就新增一条，属于运行时数据而非源码。
+learning/unknown_requests/
+learning/tests_batched/
+learning/recon_mail/
+learning/fishing_performance_v2_replay/
+# 测试与探针临时目录（pytest 隔离 / 一次性探针）
+learning/pytest_tmp_*/
+learning/probe_*/
+
+# 截图审计与探索抓帧：机器本地证据，体积大（本轮实测 121MB / 150MB），不进仓库。
+knowledge/ui/screenshot_audit/
+dataset/exploration/
+# 运行循环自己改写、且 checkout 会顺着 junction 写穿到生产的两份状态（见
+# tests/test_runtime_state_manifest.py）：设备租约与 AUTO/MANUAL 模式。它们必须留在磁盘上，
+# 但绝不进历史——2026-09-29 的教训是 checkout 把 11 天前的状态写回了生产。
+learning/DEVICE_LEASE.json
+learning/MODE_STATE.json

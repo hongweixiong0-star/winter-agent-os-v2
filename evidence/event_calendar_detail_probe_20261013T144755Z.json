@@ -1,0 +1,31 @@
+{
+  "generated_at": "2026-10-13T14:47:56+00:00",
+  "stamp": "20261013T144755Z",
+  "steps": [
+    {
+      "tag": "00_start",
+      "text": "联盟战争 集结 单人 活动 当前暂无战事 开启后自动加入冰原巨兽集结 自动加入"
+    },
+    {
+      "tag": "01_event_page",
+      "text": "常规活动 军备竞演 黎明的愿景 兵工厂争夺战 评级：优秀 规则 商店 战绩 1111 投票结束倒计时 01:11:56 联盟实力排行榜前20名的联盟才能参加。 您已投票 投票"
+    },
+    {
+      "tag": "02_calendar_read",
+      "recognized": false,
+      "entries": 0,
+      "next_detail_event_id": null,
+      "visible_dates": null
+    },
+    {
+      "tag": "STOP_no_uninspected_entry",
+      "entries": 0
+    }
+  ],
+  "conditions": {},
+  "calendar": {
+    "recognized": false,
+    "source": "LIVE_CLIENT_OCR"
+  },
+  "chosen_entry": null
+}

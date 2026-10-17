@@ -256,17 +256,17 @@
       "recognition_backend": "LEGACY",
       "migration_priority": "P3",
       "evidence": {
-        "generated_at": "2026-10-08T21:50:44.564053+00:00",
+        "generated_at": "2026-10-16T16:08:59.358384+00:00",
         "source": "winter_agent_v2.pipeline_autogen V2_NATIVE fallback (generator unavailable)",
-        "frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_054936_645410\\autogen\\20261008_215042_REGULAR_EVENT_ENTRY.png",
+        "frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_000743_810037\\autogen\\20261016_160856_REGULAR_EVENT_ENTRY.png",
         "observed_text": "常规活动",
         "observed_box": [
           633,
           179,
-          67,
+          68,
           23
         ],
-        "ocr_score": 0.9984,
+        "ocr_score": 0.9986,
         "expand": 20,
         "validation": "GENERATED_ONLY",
         "harvest_page": "home",

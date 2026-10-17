@@ -1,0 +1,40 @@
+{
+  "knowledge_id": "BEAR_RALLY_RULES_20260927",
+  "domain": "events",
+  "event": "BEAR_HUNT",
+  "source": "USER_LIVE_GAME_CONFIRMATION",
+  "confirmed_at": "2026-09-27T20:56:00+08:00",
+  "rules": {
+    "manual_join_required": true,
+    "auto_join_supported": false,
+    "max_own_started_rallies": 1,
+    "join_rally_limit": "unlimited",
+    "own_rally_does_not_block_join": true
+  },
+  "supersedes": {
+    "strategy": "BEAR_AUTO_JOIN as bear participation main path",
+    "note": "AUTO_JOIN 文案「开启后自动加入冰原巨兽集结」属于 ICEFIELD_BEAST 机制，不适用于巨熊行动集结"
+  },
+  "generalized_by": {
+    "knowledge_id": "RALLY_ENGINE_RULES_20260927",
+    "path": "knowledge/rally/rally_engine_rules.json",
+    "note": "BEAR flow 已统一进通用 Rally Engine：flow=JOIN_RALLY / START_RALLY，target_type=BEAR 仅作参数"
+  },
+  "semantics": {
+    "BEAR_HUNT": {"manual_join_required": true, "auto_join_supported": false},
+    "ICEFIELD_BEAST": {"auto_join_supported": true}
+  },
+  "join_flow": {
+    "page": "alliance war -> rally list/detail",
+    "join_affordance": "green + button on rally row/detail (BTN_JOIN_ROW)",
+    "verified_template": "dataset/candidate/bear_rally/btn_join_row__rally_detail__20260927_2044__0.png",
+    "old_template_misses_20260927_layout": "btn_join_row__bear_rally_panel__ba0c11fc__0.png score 0.397, fresh template score 1.0",
+    "success_verifier": "role name visible in rally member list (JOINED_STATE)",
+    "after_success": "continue scanning rally list for next legal row; do not stop after first join"
+  },
+  "scheduler_rules": {
+    "own_rally_active": "forbid second START_RALLY, JOIN_RALLY continues normally",
+    "no_artificial_join_limits": ["max_join_count", "join_once", "march reservation blocking"],
+    "goal_shape": "BEAR_SESSION covers event window; each successful join = one BEAR_JOIN_OCCURRENCE"
+  }
+}

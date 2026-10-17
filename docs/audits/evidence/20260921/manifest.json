@@ -1,0 +1,36 @@
+{
+  "created_at": "2026-09-21T13:48:32.961398+00:00",
+  "test_snapshot_base": "e2afaa3",
+  "head_at_export": "d56875dbce7105f6b7ed9615a77fe629d57997e6",
+  "cached_remote": "d7d9a40d12db1e08b55ff8168f6c94e46b815f1e",
+  "status_at_export": " M .workbuddy-ai/commander/CODEX_DIRECTIVES.md\n M .workbuddy-ai/commander/EXECUTION_STATE.json\n M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md\n M .workbuddy-ai/commander/WORK_QUEUE.json\n M .workbuddy/memory/2026-09-21.md\n M config/control_panel_state.json\n M config/policy_state.json\n M evidence/INDEX.json\n M knowledge/game/capability_catalog.json\n M knowledge/goals/goal_capability_map.json\n M knowledge/preload/INDEX.json\n M knowledge/preload/TROOP_SELECT.json\n M learning/candidate_attempt_pool.json\n M learning/control_panel/latest.log\n M learning/control_panel/panel.log\n M learning/control_panel/panel.pid\n M learning/control_panel/pump.json\n M learning/current_truth.json\n M learning/episodes.jsonl\n M learning/executor_backend.jsonl\n M learning/goal_state.json\n M learning/knowledge_bootstrap/STATE.json\n M learning/resource_rotation.json\n M learning/runtime_snapshot.json\n M learning/stamina_supply.json\n M learning/workbuddy_escalations.jsonl\n M learning/workbuddy_model_stats.jsonl\n M tools/run_live.py\n M winter_agent_v2/version_identity.py\n",
+  "production_cutoff": "2026-09-21T13:37:39.825287+00:00",
+  "window_count": 448,
+  "snapshot_dir": "C:\\Users\\xhw\\AppData\\Local\\Temp\\winter_readonly_audit_f22fum81",
+  "source_sha256": {
+    "winter_agent_v2/runtime.py": "b9567c03d126fbce3efa04b8041fdd12ad312b55aa7684a588ba15c8ef13f4c7",
+    "winter_agent_v2/goal_library.py": "86e8fda27ce1737834255e4a8022563a012bfcbb78ab33a0c7e2c4f0db6167b5",
+    "winter_agent_v2/brain.py": "7e972b2bfa45b5d4f26acd855e3ca20e9539d6e033cd95fb299b4f06705899c8",
+    "winter_agent_v2/ocr.py": "b2200c3078c2624abf1489c40c4f30b2466ac04e4b2d91e38a3fce74a8c18328",
+    "winter_agent_v2/scheduler.py": "33525bca37a53cf2561bd3a3373de401c9fc07cb8476fd29bef4286cf0608306",
+    "winter_agent_v2/device_lease.py": "abe4955d892eaf1a82417239356b5ebd2e2d865066937ea35231f6e6d897a467",
+    "winter_agent_v2/observation_store.py": "1c88aff220a8036f8042a9457bf346fcc32f20fd13559fb5054aacb38a60b622",
+    "winter_agent_v2/verifier.py": "44cb074de6698858275617a80f319f47104fcf9ad974a7d6b44ed1e6c1816ff7",
+    "winter_agent_v2/capability_gate.py": "556828f45449cebad26f8c831fc53a63917eea381d3b22eeca138d225a2bd9a8",
+    "tools/control_panel.py": "a141b7c2230c74e68069c09073778c4d688e730687b6c99918abb83950ee3d7a",
+    "tools/run_live.py": "1bba4e8dd316f45ad9a4696b79aa32d4011f21602a728bbe491a2cb8bd99b918"
+  },
+  "live_source_matches_snapshot": {
+    "winter_agent_v2/runtime.py": true,
+    "winter_agent_v2/goal_library.py": true,
+    "winter_agent_v2/brain.py": true,
+    "winter_agent_v2/ocr.py": true,
+    "winter_agent_v2/scheduler.py": true,
+    "winter_agent_v2/device_lease.py": true,
+    "winter_agent_v2/observation_store.py": true,
+    "winter_agent_v2/verifier.py": true,
+    "winter_agent_v2/capability_gate.py": true,
+    "tools/control_panel.py": true,
+    "tools/run_live.py": false
+  }
+}

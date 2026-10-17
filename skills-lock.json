@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "skills": {
+    "maa-pipeline-generate": {
+      "source": "KhazixW2/Everything-Maa",
+      "sourceType": "github",
+      "skillPath": "skills/maa-pipeline-generate/SKILL.md",
+      "computedHash": "8bd4068b0c8b661eaaad4cd2b20fd92a60a8c716b06dbc8f3a7a962ec9e6f59e"
+    },
+    "mumu-control": {
+      "source": "skills.mumu.163.com",
+      "sourceUrl": "https://skills.mumu.163.com/mumu-control",
+      "sourceType": "well-known",
+      "computedHash": "cf7ab7a65277ae33a108efcb9ada0a4f81184c96a6d7d6020ba70118f532dc4d",
+      "wellKnownDigest": "sha256:a114074b45c51d2b7d97731b1d2d0e4a6266ee8009e6764c0107a3331172c6b1"
+    }
+  }
+}

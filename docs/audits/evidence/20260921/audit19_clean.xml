@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="18" skipped="0" tests="19" time="22.275" timestamp="2026-09-21T21:38:52.729093+08:00" hostname="XHW6515"><testcase classname="tests.test_beast_card_runtime_recovery.TheLoopItselfRecoversTests" name="test_a_back_that_changed_nothing_is_not_repeated" time="0.033"><failure message="AssertionError: 'beast_not_actionable' != 'SAFE_BACK_NOT_PROVEN'&#10;- beast_not_actionable&#10;+ SAFE_BACK_NOT_PROVEN">tests\test_beast_card_runtime_recovery.py:164: in test_a_back_that_changed_nothing_is_not_repeated
+    self.assertEqual(run.stop_reason, "SAFE_BACK_NOT_PROVEN")
+E   AssertionError: 'beast_not_actionable' != 'SAFE_BACK_NOT_PROVEN'
+E   - beast_not_actionable
+E   + SAFE_BACK_NOT_PROVEN</failure></testcase><testcase classname="tests.test_camp_panel_stamina.CampPanelStaminaIsReadTests" name="test_the_camp_panel_reads_the_same_number_as_the_map" time="17.973"><failure message="AssertionError: None != 9">tests\test_camp_panel_stamina.py:101: in test_the_camp_panel_reads_the_same_number_as_the_map
+    self.assertEqual(camp.stamina.get("current"), 9)
+E   AssertionError: None != 9</failure></testcase><testcase classname="tests.test_camp_panel_stamina.CampPanelStaminaIsReadTests" name="test_the_read_names_the_page_it_came_from" time="1.608"><failure message="AssertionError: None != 'CAMP_PANEL_HUD'">tests\test_camp_panel_stamina.py:108: in test_the_read_names_the_page_it_came_from
+    self.assertEqual(camp.stamina.get("source"), "CAMP_PANEL_HUD")
+E   AssertionError: None != 'CAMP_PANEL_HUD'</failure></testcase><testcase classname="tests.test_capability_gate.DeferredGoalSchedulingTests" name="test_a_deferred_goal_does_not_displace_work_that_is_still_selectable" time="0.012"><failure message="StopIteration">tests\test_capability_gate.py:648: in test_a_deferred_goal_does_not_displace_work_that_is_still_selectable
+    _device, run, _rows = self._run(states, self._gate())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_capability_gate.py:594: in _run
+    ).run(max_actions=1, allowed_skills=GATHER_ROUTE)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+winter_agent_v2\runtime.py:1635: in run
+    after = self.vision.observe(refresh_path)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_capability_gate.py:496: in observe
+    return next(self.states)
+           ^^^^^^^^^^^^^^^^^
+E   StopIteration</failure></testcase><testcase classname="tests.test_capability_gate.DeferredGoalSchedulingTests" name="test_an_allowed_goal_is_untouched_by_the_gate" time="0.008"><failure message="AssertionError: 'SEARCH_RESOURCE' != 'SCAN_MAP_FOR_BEAST'&#10;- SEARCH_RESOURCE&#10;+ SCAN_MAP_FOR_BEAST">tests\test_capability_gate.py:674: in test_an_allowed_goal_is_untouched_by_the_gate
+    self.assertEqual(run.steps[0].decision.skill, "SCAN_MAP_FOR_BEAST")
+E   AssertionError: 'SEARCH_RESOURCE' != 'SCAN_MAP_FOR_BEAST'
+E   - SEARCH_RESOURCE
+E   + SCAN_MAP_FOR_BEAST</failure></testcase><testcase classname="tests.test_capability_gate.DeferredGoalSchedulingTests" name="test_the_run_still_plays_when_the_blocked_goal_is_all_there_is" time="0.012"><failure message="StopIteration">tests\test_capability_gate.py:661: in test_the_run_still_plays_when_the_blocked_goal_is_all_there_is
+    _device, run, _rows = self._run(states, self._gate())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_capability_gate.py:594: in _run
+    ).run(max_actions=1, allowed_skills=GATHER_ROUTE)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+winter_agent_v2\runtime.py:1635: in run
+    after = self.vision.observe(refresh_path)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_capability_gate.py:496: in observe
+    return next(self.states)
+           ^^^^^^^^^^^^^^^^^
+E   StopIteration</failure></testcase><testcase classname="tests.test_capability_gate.EpisodeMeasurementTests" name="test_a_goal_that_moved_is_recorded_as_progress" time="0.008"><failure message="FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\xhw\\AppData\\Local\\Temp\\tmptz7hxb6c\\episodes.jsonl'">tests\test_capability_gate.py:796: in test_a_goal_that_moved_is_recorded_as_progress
+    row = json.loads(path.read_text(encoding="utf-8").splitlines()[0])
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\Programs\Python\Python312\Lib\pathlib.py:1027: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\Programs\Python\Python312\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\xhw\\AppData\\Local\\Temp\\tmptz7hxb6c\\episodes.jsonl'</failure></testcase><testcase classname="tests.test_capability_gate.EpisodeMeasurementTests" name="test_a_verifier_pass_without_goal_progress_is_recorded_as_such" time="0.008"><failure message="FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\xhw\\AppData\\Local\\Temp\\tmprxt75_12\\episodes.jsonl'">tests\test_capability_gate.py:774: in test_a_verifier_pass_without_goal_progress_is_recorded_as_such
+    row = json.loads(path.read_text(encoding="utf-8").splitlines()[0])
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\Programs\Python\Python312\Lib\pathlib.py:1027: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\Programs\Python\Python312\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\xhw\\AppData\\Local\\Temp\\tmprxt75_12\\episodes.jsonl'</failure></testcase><testcase classname="tests.test_control_panel.ControlPanelTests" name="test_intel_goal_never_inherits_gather_actions" time="0.002"><failure message="AssertionError: 'LEAVE_FOREIGN_LAYER' != 'SAFE_STOP'&#10;- LEAVE_FOREIGN_LAYER&#10;+ SAFE_STOP">tests\test_control_panel.py:286: in test_intel_goal_never_inherits_gather_actions
+    self.assertEqual(brain.decide(resource, v2_registry()).skill, "SAFE_STOP")
+E   AssertionError: 'LEAVE_FOREIGN_LAYER' != 'SAFE_STOP'
+E   - LEAVE_FOREIGN_LAYER
+E   + SAFE_STOP</failure></testcase><testcase classname="tests.test_control_panel.ControlPanelTests" name="test_mail_goal_never_inherits_gather_actions" time="0.002"><failure message="AssertionError: 'LEAVE_FOREIGN_LAYER' != 'SAFE_STOP'&#10;- LEAVE_FOREIGN_LAYER&#10;+ SAFE_STOP">tests\test_control_panel.py:261: in test_mail_goal_never_inherits_gather_actions
+    self.assertEqual(brain.decide(march, v2_registry()).skill, "SAFE_STOP")
+E   AssertionError: 'LEAVE_FOREIGN_LAYER' != 'SAFE_STOP'
+E   - LEAVE_FOREIGN_LAYER
+E   + SAFE_STOP</failure></testcase><testcase classname="tests.test_evidence_integrity" name="test_every_image_literal_in_the_suite_resolves_to_a_file" time="0.444"><failure message="AssertionError: 测试引用的证据文件缺失:&#10;  stamina_verify2/stamina_verify2_step_003_after_20260919T144435621168.png  (被 test_beast_label_recognition.py 引用)&#10;  stamina_verify2/stamina_verify2_step_001_before_20260919T144336706139.png  (被 test_beast_label_recognition.py, test_beast_label_recognition.py 引用)&#10;  stamina_verify2/stamina_verify2_step_002_after_20260919T144413221517.png  (被 test_beast_label_recognition.py 引用)&#10;  stamina_verify/stamina_verify_step_005_after_20260919T143517420153.png  (被 test_beast_label_recognition.py 引用)&#10;  dataset/raw/a.png  (被 test_no_live_verified_shortcut.py, test_validation_driver.py, test_validation_settlement.py 引用)&#10;  dataset/raw/b.png  (被 test_no_live_verified_shortcut.py, test_validation_driver.py, test_validation_settlement.py 引用)&#10;  dataset/raw/shot.png  (被 test_startup_version_fence.py, test_version_fingerprint_content.py 引用)&#10;  dataset/raw/x.png  (被 test_version_active.py, test_version_fingerprint_content.py 引用)&#10;  dataset/raw/y.png  (被 test_version_active.py 引用)&#10;assert not ['stamina_verify2/stamina_verify2_step_003_after_20260919T144435621168.png  (被 test_beast_label_recognition.py 引用)', '...et/raw/b.png  (被 test_no_live_verified_shortcut.py, test_validation_driver.py, test_validation_settlement.py 引用)', ...]">tests\test_evidence_integrity.py:66: in test_every_image_literal_in_the_suite_resolves_to_a_file
+    assert not missing, "测试引用的证据文件缺失:\n" + "\n".join(missing)
+E   AssertionError: 测试引用的证据文件缺失:
+E     stamina_verify2/stamina_verify2_step_003_after_20260919T144435621168.png  (被 test_beast_label_recognition.py 引用)
+E     stamina_verify2/stamina_verify2_step_001_before_20260919T144336706139.png  (被 test_beast_label_recognition.py, test_beast_label_recognition.py 引用)
+E     stamina_verify2/stamina_verify2_step_002_after_20260919T144413221517.png  (被 test_beast_label_recognition.py 引用)
+E     stamina_verify/stamina_verify_step_005_after_20260919T143517420153.png  (被 test_beast_label_recognition.py 引用)
+E     dataset/raw/a.png  (被 test_no_live_verified_shortcut.py, test_validation_driver.py, test_validation_settlement.py 引用)
+E     dataset/raw/b.png  (被 test_no_live_verified_shortcut.py, test_validation_driver.py, test_validation_settlement.py 引用)
+E     dataset/raw/shot.png  (被 test_startup_version_fence.py, test_version_fingerprint_content.py 引用)
+E     dataset/raw/x.png  (被 test_version_active.py, test_version_fingerprint_content.py 引用)
+E     dataset/raw/y.png  (被 test_version_active.py 引用)
+E   assert not ['stamina_verify2/stamina_verify2_step_003_after_20260919T144435621168.png  (被 test_beast_label_recognition.py 引用)', '...et/raw/b.png  (被 test_no_live_verified_shortcut.py, test_validation_driver.py, test_validation_settlement.py 引用)', ...]</failure></testcase><testcase classname="tests.test_live_runtime.LiveRuntimeTests" name="test_verified_action_repeats_then_safe_stops" time="0.024"><failure message="StopIteration">tests\test_live_runtime.py:195: in test_verified_action_repeats_then_safe_stops
+    ).run(max_actions=5)
+      ^^^^^^^^^^^^^^^^^^
+winter_agent_v2\runtime.py:1183: in run
+    before = self.vision.observe(before_path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_live_runtime.py:41: in observe
+    return next(self.states)
+           ^^^^^^^^^^^^^^^^^
+E   StopIteration</failure></testcase><testcase classname="tests.test_march_formation_attribution.MarchFormationAttributionTests" name="test_a_run_that_never_selected_a_goal_keeps_the_placeholder" time="0.009"><failure message="FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\xhw\\AppData\\Local\\Temp\\tmp7ro9yj5s\\episodes.jsonl'">tests\test_march_formation_attribution.py:184: in test_a_run_that_never_selected_a_goal_keeps_the_placeholder
+    rows = episodes_at(episode_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_march_formation_attribution.py:107: in episodes_at
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\Programs\Python\Python312\Lib\pathlib.py:1027: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\Programs\Python\Python312\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\xhw\\AppData\\Local\\Temp\\tmp7ro9yj5s\\episodes.jsonl'</failure></testcase><testcase classname="tests.test_march_formation_attribution.MarchFormationAttributionTests" name="test_the_step_that_opens_the_formation_page_carries_the_goal_that_owns_it" time="0.012"><failure message="FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\xhw\\AppData\\Local\\Temp\\tmppfwfnclw\\episodes.jsonl'">tests\test_march_formation_attribution.py:133: in test_the_step_that_opens_the_formation_page_carries_the_goal_that_owns_it
+    rows = episodes_at(episode_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_march_formation_attribution.py:107: in episodes_at
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\Programs\Python\Python312\Lib\pathlib.py:1027: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\Programs\Python\Python312\Lib\pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\xhw\\AppData\\Local\\Temp\\tmppfwfnclw\\episodes.jsonl'</failure></testcase><testcase classname="tests.test_march_reservation_handover.TheReservationRefusesTheSlotTests" name="test_the_stamina_goal_could_have_used_that_very_slot" time="0.002" /><testcase classname="tests.test_panel_routine_discovery.ConsecutiveSweepsMustHopBetweenPanels" name="test_the_hop_happens_once_so_a_back_that_did_not_move_cannot_loop" time="0.002"><failure message="AssertionError: 'LEAVE_FOREIGN_LAYER' != 'SAFE_STOP'&#10;- LEAVE_FOREIGN_LAYER&#10;+ SAFE_STOP&#10; : DAILY must not Back twice">tests\test_panel_routine_discovery.py:185: in test_the_hop_happens_once_so_a_back_that_did_not_move_cannot_loop
+    self.assertEqual(second.skill, "SAFE_STOP", f"{goal} must not Back twice")
+E   AssertionError: 'LEAVE_FOREIGN_LAYER' != 'SAFE_STOP'
+E   - LEAVE_FOREIGN_LAYER
+E   + SAFE_STOP
+E    : DAILY must not Back twice</failure></testcase><testcase classname="tests.test_route_goal_requires_home.UnrelatedPageStillStopsTest" name="test_research_on_an_unrelated_page_leaves_it_once_then_stops_named" time="0.002"><failure message="AssertionError: 'LEAVE_FOREIGN_LAYER' != 'SAFE_STOP'&#10;- LEAVE_FOREIGN_LAYER&#10;+ SAFE_STOP&#10; : Page.MAIL">tests\test_route_goal_requires_home.py:102: in test_research_on_an_unrelated_page_leaves_it_once_then_stops_named
+    self.assertEqual(second.skill, "SAFE_STOP", page)
+E   AssertionError: 'LEAVE_FOREIGN_LAYER' != 'SAFE_STOP'
+E   - LEAVE_FOREIGN_LAYER
+E   + SAFE_STOP
+E    : Page.MAIL</failure></testcase><testcase classname="tests.test_route_goal_requires_home.UnrelatedPageStillStopsTest" name="test_train_on_an_unrelated_page_leaves_it_once_then_stops_named" time="0.002"><failure message="AssertionError: 'LEAVE_FOREIGN_LAYER' != 'SAFE_STOP'&#10;- LEAVE_FOREIGN_LAYER&#10;+ SAFE_STOP&#10; : Page.MAIL">tests\test_route_goal_requires_home.py:92: in test_train_on_an_unrelated_page_leaves_it_once_then_stops_named
+    self.assertEqual(second.skill, "SAFE_STOP", page)
+E   AssertionError: 'LEAVE_FOREIGN_LAYER' != 'SAFE_STOP'
+E   - LEAVE_FOREIGN_LAYER
+E   + SAFE_STOP
+E    : Page.MAIL</failure></testcase><testcase classname="tests.test_winproc.TheGuardKeepsItFixed" name="test_the_tree_has_no_unhidden_background_process" time="1.121"><failure message="AssertionError: Lists differ: [('unhidden-process:tools/_launch_panel_de[179 chars]()')] != []&#10;&#10;First list contains 2 additional elements.&#10;First extra element 0:&#10;('unhidden-process:tools/_launch_panel_detached.py:42', 'subprocess.run without creationflags/hidden_kwargs()')&#10;&#10;+ []&#10;- [('unhidden-process:tools/_launch_panel_detached.py:42',&#10;-   'subprocess.run without creationflags/hidden_kwargs()'),&#10;-  ('unhidden-process:tools/_trace_panel_startup.py:42',&#10;-   'subprocess.Popen without creationflags/hidden_kwargs()')]">tests\test_winproc.py:83: in test_the_tree_has_no_unhidden_background_process
+    self.assertEqual(check_wiring.unhidden_process_calls(), [])
+E   AssertionError: Lists differ: [('unhidden-process:tools/_launch_panel_de[179 chars]()')] != []
+E   
+E   First list contains 2 additional elements.
+E   First extra element 0:
+E   ('unhidden-process:tools/_launch_panel_detached.py:42', 'subprocess.run without creationflags/hidden_kwargs()')
+E   
+E   + []
+E   - [('unhidden-process:tools/_launch_panel_detached.py:42',
+E   -   'subprocess.run without creationflags/hidden_kwargs()'),
+E   -  ('unhidden-process:tools/_trace_panel_startup.py:42',
+E   -   'subprocess.Popen without creationflags/hidden_kwargs()')]</failure></testcase></testsuite></testsuites>

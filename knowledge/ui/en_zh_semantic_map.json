@@ -1,0 +1,269 @@
+{
+  "_read_me": "中英文语义映射（宪法 B §25.4「文字控件补充中英文语义映射」）。国内版《无尽冬日》与国际版 Whiteout Survival 的**非文字 UI 元素优先共用**，文字控件靠这张表互相翻译。这张表只解决『同一个控件在两种语言里叫什么』，**不含任何坐标**——坐标必须由当前帧识别产生（宪法 A）。",
+  "schema_version": "1.0",
+  "created_at": "2026-09-24",
+  "purpose": [
+    "让国际版资料/外部脚本的英文控件名能被映射到国服客户端实际绘制的文字，从而走现有 OCR 词表定位；",
+    "让国服实测到的中文标签能被记录成英文别名，供国际版资料交叉验证；",
+    "宪法 A §一.7/§八：外部脚本的固定坐标不得移植；本表只搬运**语义**，不搬运坐标。"
+  ],
+  "provenance_policy": "每条都必须写明 source。EXTERNAL_* = 只读到外部文件里的控件定义（PRIOR，未经本机真机确认）；LIVE_CLIENT = 我在本项目真机帧上亲眼读到该中文标签。**没有两者之一的条目不允许出现在本表。**",
+  "provenance": {
+    "EXTERNAL_ROI_KNOWLEDGE": "读自本地克隆的外部仓库文件，原文可核查；只提供『存在这个控件、它叫什么』，**不提供坐标可用性**。",
+    "LIVE_CLIENT": "本机 720x1280 国服真机帧，路径见 evidence。"
+  },
+  "verified_external_files": [
+    {
+      "path": "dataset/external/repositories/whiteout-survival-bot/references/TextArea/Home.Alliance.War.json",
+      "repo": "AminulIslamSifat/whiteout-survival-bot",
+      "license": "README 称 MIT 但仓库内无 LICENSE 文件 ⇒ REFERENCE_ONLY",
+      "what_it_gives": "联盟战争页的 6 个控件名 + 各自的 ROI 百分比（国际版英文）"
+    },
+    {
+      "path": "dataset/external/repositories/whiteout-survival-bot/references/TextArea/Home.Alliance.War.AutoJoin.json",
+      "repo": "AminulIslamSifat/whiteout-survival-bot",
+      "license": "同上，REFERENCE_ONLY",
+      "what_it_gives": "**官方自动加入弹窗的 8 个控件**名 + ROI —— 这是巨熊车身流程最缺的那一页"
+    },
+    {
+      "path": "dataset/external/repositories/whiteout-survival-bot/references/TextArea/World.Deploy.json",
+      "repo": "AminulIslamSifat/whiteout-survival-bot",
+      "license": "同上，REFERENCE_ONLY",
+      "what_it_gives": "出征页 8 个编队位 + 兵力/三兵种/行军时间/出征/撤回/平均/比例 的控件与 ROI"
+    },
+    {
+      "path": "dataset/external/repositories/whiteout-survival-bot/references/TextArea/World.json",
+      "repo": "AminulIslamSifat/whiteout-survival-bot",
+      "license": "同上，REFERENCE_ONLY",
+      "what_it_gives": "World.MarchQueue（n/6）与五条行军剩余时间的 ROI 定义"
+    },
+    {
+      "path": "dataset/raw/bear_live_20260909/",
+      "repo": "(本项目真机采集)",
+      "license": "本项目自有",
+      "what_it_gives": "国服中文标签的实测来源（33 帧）"
+    }
+  ],
+  "controls": [
+    {
+      "group": "联盟战争页（入口与页签）",
+      "entries": [
+        {"en": "Alliance War", "cn": "联盟战争", "aliases_en": ["War"], "type": "NAVIGATION",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/alliance_main_now.png（联盟战争 tile，badge 21）; 外部 Home.Alliance.War.json 'War' box [12.31,6.02,23.33,8.46]",
+         "note": "国际版是 'War' 页签，国服是首页 tile『联盟战争』——页面结构同源，入口形态不同。**这正说明外部坐标不可直接复用。**"},
+        {"en": "Rally", "cn": "集结", "aliases_en": ["Rally List", "Rallies"], "type": "TAB",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/join_list_now.png（集结 tab）; 外部 Home.Alliance.War.json 'Rally' box",
+         "note": "巨熊集结列表只在这个 tab 下存在。已注册模板 TAB_RALLY_LIST。"},
+        {"en": "Solo", "cn": "单人攻击", "aliases_en": ["Solo Attack"], "type": "TAB",
+         "source": "EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "外部 Home.Alliance.War.json 'Solo' box",
+         "note": "国服未实测到该页签。**标 PRIOR，不得当已确认事实。**"},
+        {"en": "Events", "cn": "活动", "aliases_en": ["Event"], "type": "TAB",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/alliance_war_activity.png（当前暂无战事）; 外部 Home.Alliance.War.json 'Events' box"},
+        {"en": "Auto-join", "cn": "自动加入", "aliases_en": ["Auto-Join", "Auto-joining"], "type": "BUTTON",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/bear_rally_panel.png（底部『自动加入』）; 外部 Home.Alliance.War.json 同时存在 'Auto-join' 与 'Auto-joining' 两个状态文案",
+         "note": "外部文件把**可点态**与**运行中态**分成两条（Auto-join / Auto-joining），国服实测只见『自动加入』一种绘制。**这是真实差异，已登记为局部适配点。**"}
+      ]
+    },
+    {
+      "group": "官方自动加入弹窗（车身最缺的一页）",
+      "entries": [
+        {"en": "Auto-Join (title)", "cn": "自动加入", "type": "DIALOG",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/auto_join_final.png（弹窗）; 外部 Home.Alliance.War.AutoJoin.json 'Home.Alliance.War.AutoJoin.Title'"},
+        {"en": "Use the Formation", "cn": "使用编队", "type": "BUTTON",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/auto_join_final.png（『使用编队』已勾选，toast『编队保存成功』）; 外部 ...AutoJoin.UseFormation box [18.06,39.07,46.76,40.98]",
+         "note": "直接对应操作者需求 UIREQ-04『修改出征默认编队』——这个勾选框就是官方提供的**持久化编队**入口。"},
+        {"en": "IncreaseQueueLimit", "cn": "加入队列最大数量 +", "type": "BUTTON",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/auto_join_final.png（加入队列最大数量 6）; 外部 ...AutoJoin.IncreaseQueueLimit 文本为 '+'"},
+        {"en": "QueueLimit", "cn": "加入队列最大数量", "aliases_en": ["Max Queue"], "type": "COUNTER",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/auto_join_final.png 读数为 6; 外部 ...AutoJoin.QueueLimit 文本为 '6'"},
+        {"en": "Only Auto-Join After Exiting Game", "cn": "仅在退出游戏后自动加入", "type": "BUTTON",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/auto_join_final.png; 外部 ...AutoJoin.AutoJoinAftreExit（原文拼写如此）",
+         "note": "外部键名 'AutoJoinAftreExit' 有拼写错误（After→Aftre）。**记录原始拼写，不修正**——将来按名检索时要能搜到。"},
+        {"en": "Stop", "cn": "停止", "type": "BUTTON",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/auto_join_final.png; 外部 ...AutoJoin.Stop"},
+        {"en": "Restart / Enable", "cn": "重新开启", "type": "BUTTON",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/auto_join_final.png（『重新开启』）; 外部同时有 Restart 与 Enable 两条（box 几乎重合：Restart[61.57,78.74,78.43,81.34] vs Enable[61.85,78.7,77.78,81.26]）",
+         "note": "外部把同一个按钮在两个状态下记了两条（Restart/Enable）。国服实测该槽位按状态换字。**同一控件不同状态的有效变体应分别保留**，这正是分开两条的理由。"},
+        {"en": "Join Troops", "cn": "加入兵力", "type": "STATUS",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/auto_join_final.png"},
+        {"en": "All Troops (auto-assign heroes)", "cn": "全兵加入（自动上阵英雄）", "type": "STATUS",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/auto_join_final.png"},
+        {"en": "Icefield Beast", "cn": "冰原巨兽", "aliases_en": ["Bear Trap", "Bear"], "type": "STATUS",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/auto_join_final.png（加入类型：冰原巨兽 队员奖励已领取次数: 50/50）",
+         "note": "**关键语义**：国服叫『冰原巨兽』，国际版叫 'Bear Trap'。巨熊活动的加入类型勾选就挂在这个词上。"},
+        {"en": "Gina's Revenge", "cn": "吉娜的反击", "type": "STATUS",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/auto_join_final.png（加入类型第二项，2/50）"},
+        {"en": "Member reward claimed count", "cn": "队员奖励已领取次数", "type": "COUNTER",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/auto_join_final.png（50/50）"}
+      ]
+    },
+    {
+      "group": "巨熊目标与入口",
+      "entries": [
+        {"en": "Bear Trap", "cn": "狩猎陷阱", "aliases_en": ["Bear Hunt", "Bear Trap Building"], "type": "NAVIGATION",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/special_buildings.png（联盟领地→特殊建筑→狩猎陷阱 行 + 剩余时间 00:15:39）",
+         "note": "**『狩猎陷阱』是建筑名，『变异巨熊』是目标名** —— 两者不可混为一谈。已注册 BTN_BEAR_GO / STATUS_BEAR_WINDOW。"},
+        {"en": "Mutated Bear Lv.1", "cn": "等级1变异巨熊", "aliases_en": ["Bear", "Mutated Bear"], "type": "STATUS",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/bear_trap_detail.png（标题行）+ join_list_now.png（目标列）",
+         "note": "已注册 TARGET_BEAR_TRAP / ROW_TARGET_BEAR_COLUMN。**必须与普通巨兽区分** —— 用标题文字而非物种插画，理由见 11_GITHUB_BEAR_SEARCH.md 第四节。"},
+        {"en": "Go", "cn": "前往", "type": "BUTTON",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/special_buildings.png; 已注册 BTN_BEAR_GO",
+         "note": "词太通用，**不得只凭『前往』二字点击** —— 必须绑定到狩猎陷阱那一行（宪法 B §25.2 元素关系）。"},
+        {"en": "Remaining time", "cn": "剩余时间", "type": "TIMER",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/special_buildings.png（00:15:39）、bear_trap_detail.png（00:13:54）",
+         "note": "同一页出现两个『剩余时间』（建筑窗 vs 目标窗）。**必须按所属容器区分**（宪法 B §25.2）。"},
+        {"en": "Start Rally", "cn": "发起集结", "aliases_en": ["Start a Rally"], "type": "BUTTON",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/bear_trap_detail.png（橙色集结按钮）+ bear_rally_next.png（弹窗标题与确认）",
+         "note": "已注册 BTN_START_RALLY / POPUP_TITLE_START_RALLY / BTN_CONFIRM_START_RALLY。**车头入口**。"},
+        {"en": "Rallying", "cn": "集结中", "type": "STATUS",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/join_list_now.png（行头『集结中』+ 各自 MM:SS）",
+         "note": "已注册 STATUS_RALLY_COUNTDOWN。**倒计时必须绑定到它所属的那一行**，不能读全局。已在同一帧实测到 00:00:45 / 00:01:01 / 00:01:50 三个不同值。"},
+        {"en": "Join", "cn": "加入", "aliases_en": ["Join Rally"], "type": "BUTTON",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/bear_rally_panel.png（绿色 + 在 x 600-662, y 356-430）",
+         "note": "已注册 BTN_JOIN_ROW。**绿色 + = 可加入，灰色 + = 不可加入**（外部 ducker24678 有『加入队伍绿色.png』/『加入队伍灰色.png』两张模板印证这个二分）。"},
+        {"en": "Damage Reward", "cn": "伤害奖励", "type": "STATUS",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/bear_trap_detail.png（四格）"},
+        {"en": "Damage Ranking", "cn": "伤害排行", "type": "BUTTON",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/bear_trap_detail.png（集结按钮左侧）"}
+      ]
+    },
+    {
+      "group": "出征页与编队（UIREQ-04 相关）",
+      "entries": [
+        {"en": "Deploy / March", "cn": "出征", "aliases_en": ["Dispatch"], "type": "BUTTON",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/bear_troop_setup.png（底部『出征』）; 外部 World.Deploy.json 'World.Deploy.Deploy' box [68.15,94.39,84.63,97.76]",
+         "note": "已注册 PAGE_TITLE_MARCH / BTN_CONFIRM_MARCH。词典已有 ocr=['出征','派遣','Deploy','Dispatch','March']。"},
+        {"en": "Troop Capacity", "cn": "兵力", "type": "COUNTER",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/bear_troop_setup.png（117,670/117,670）; 外部 World.Deploy.TroopCapacity box [11.3,15.69,35.74,17.68]"},
+        {"en": "Infantry", "cn": "王牌盾兵", "aliases_en": ["Shield", "Shieldman", "Infantry"], "type": "COUNTER",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/bear_troop_setup.png（王牌盾兵 51,774/82,951）; 外部 World.Deploy.InfantryAmount box [60.28,43.94,71.57,46.18]",
+         "note": "外部是泛称 'Infantry'，国服画『王牌盾兵』（兵种等级前缀随时代变：王牌/精英/…）。**匹配时必须用后缀『盾兵』而非全串**，否则客户端升代就失配。"},
+        {"en": "Lancer", "cn": "王牌矛兵", "aliases_en": ["Spearman", "Lancer"], "type": "COUNTER",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/bear_troop_setup.png（王牌矛兵 24,711/77,224）; 外部 World.Deploy.LancerAmount",
+         "note": "同上：用后缀『矛兵』。"},
+        {"en": "Marksman", "cn": "王牌射手", "aliases_en": ["Archer", "Marksman"], "type": "COUNTER",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/bear_troop_setup.png（王牌射手 41,185/86,193）; 外部 World.Deploy.MarksmanAmount",
+         "note": "同上：用后缀『射手』。"},
+        {"en": "Troop Ratio", "cn": "士兵比例", "type": "COUNTER",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/bear_troop_setup.png（44%/21%/35%）、bear_preset6.png（33/33/33）"},
+        {"en": "Withdraw All", "cn": "全部撤回", "type": "BUTTON",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/bear_troop_setup.png; 外部 World.Deploy.WithdrawAll box [0.56,97.4,18.7,98.82]"},
+        {"en": "Equalize", "cn": "平均配置", "type": "BUTTON",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/bear_troop_setup.png; 外部 World.Deploy.Equalize box [20.65,97.28,34.54,99.23]"},
+        {"en": "Balance", "cn": "比例分配", "type": "BUTTON",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/bear_troop_setup.png; 外部 World.Deploy.Balance box [39.07,97.32,52.31,98.98]",
+         "note": "点开后是比例输入弹窗（外部 World.Deploy.Balance.Title/InfantryRatio/LancerRatio/MarksmanRatio/Confirm 五条）。**国服该弹窗尚未实测。**"},
+        {"en": "March Time", "cn": "行军时间", "type": "TIMER",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/bear_troop_setup.png（00:00:22）; 外部 World.Deploy.MarchTime box [70.0,91.34,83.06,93.21]"},
+        {"en": "Formation slot", "cn": "编队预设（打野/书咏/杰西/杰塞尔/尼莫/熊6/熊7/开车）", "type": "TAB",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/bear_troop_setup.png（预设条 8 个）、bear_preset6.png（『熊6』高亮）; 外部 World.Deploy.Formation1-8（ATK/BR1/BR2/BR3/BR4/GIN/DF1/DF）",
+         "note": "**预设名必须读出，不能按序号点** —— bear_troop_setup.png 与 bear_preset6.png 的高亮位不同，外部 ducker24678 的注释也明确『本轮页面位置下坐标已不可信』。另：外部记的是 8 个固定英文缩写，国服是**玩家自定义中文名**（熊6/开车），说明**预设条内容本身是玩家数据，不可跨账号复用**。"}
+      ]
+    },
+    {
+      "group": "行军队列（何时该开下一车）",
+      "entries": [
+        {"en": "March Queue", "cn": "行军 n/6", "aliases_en": ["March Queue Count"], "type": "COUNTER",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "dataset/raw/bear_live_20260909/bear_dispatched.png（左侧 HUD『行军 1/6』）; 外部 World.json 'World.MarchQueue' 文本 '4/6' box [27.22,17.11,33.7,18.82]",
+         "note": "**这是『何时该开下一车』的判据**：外部 yun-2000/wos-bluestacks-bot 的 hold_rally.yaml 用 loop_until_text:\"1/6\" 于 region_pct [0.0,0.13,0.40,0.20] 门控，与本项目实测的左侧行军条位置吻合。已注册 march_count_1_of_6/2_of_6 模板。"},
+        {"en": "Special / Rally march", "cn": "特殊 → 集结中", "type": "STATUS",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/bear_dispatched.png（左侧『特殊』分组下『集结中 00:04:58』）",
+         "note": "**上车成功的证据面**：与普通行军分开分组，所以『集结占的是特殊槽』这个机制在 UI 上有直接证据（主规则 §14）。"},
+        {"en": "Marching", "cn": "行军中", "type": "STATUS",
+         "source": "LIVE_CLIENT",
+         "evidence": "本项目已注册 status_marching__* 模板; 词典 ocr=['行军中','Marching']"},
+        {"en": "Gathering", "cn": "采集中", "type": "STATUS",
+         "source": "LIVE_CLIENT",
+         "evidence": "dataset/raw/bear_live_20260909/bear_dispatched.png（采集中 06:02:47）; 词典 ocr=['采集中','Gathering']"},
+        {"en": "Returning", "cn": "返回中", "type": "STATUS",
+         "source": "LIVE_CLIENT",
+         "evidence": "词典 ocr=['返回中','Returning']; 本项目已注册 status_returning__* 模板"},
+        {"en": "City", "cn": "城镇", "type": "NAVIGATION",
+         "source": "LIVE_CLIENT + EXTERNAL_ROI_KNOWLEDGE",
+         "evidence": "外部 World.json 'World.City' box [86.39,97.48,93.98,99.72]; 词典映射 城镇→City"}
+      ]
+    }
+  ],
+  "known_real_differences": [
+    {
+      "what": "巨熊加入的入口形态",
+      "international": "联盟 → War 页签 → Rally 页签 → 列表内『+』",
+      "cn": "联盟 → 联盟战争 tile → 集结 tab → 列表内『+』（同一结构）",
+      "verdict": "结构同源，**文字不同**。非文字元素（绿色 + / 橙色集结）可共用。",
+      "action": "已按国服实测注册模板；外部只提供结构知识。"
+    },
+    {
+      "what": "自动加入按钮的两个状态",
+      "international": "分成 'Auto-join' 与 'Auto-joining' 两条记录",
+      "cn": "实测只见『自动加入』一种绘制",
+      "verdict": "CONFLICT（不是错误）",
+      "action": "登记为局部适配点：国服按单一文案处理，若真机出现运行中态再补变体。"
+    },
+    {
+      "what": "编队预设条内容",
+      "international": "ATK/BR1/BR2/BR3/BR4/GIN/DF1/DF（作者自定）",
+      "cn": "打野/书咏/杰西/杰塞尔/尼莫/熊6/熊7/开车（本账号自定）",
+      "verdict": "**玩家数据，跨账号不可复用**",
+      "action": "只复用『存在预设条且应按名读取』这一知识，不复用任何具体名字或序号。"
+    },
+    {
+      "what": "兵种显示名",
+      "international": "Infantry / Lancer / Marksman（泛称）",
+      "cn": "王牌盾兵 / 王牌矛兵 / 王牌射手（带等级前缀）",
+      "verdict": "前缀随时代变化（王牌→精英→…）",
+      "action": "匹配用后缀（盾兵/矛兵/射手），**不可匹配全串**。"
+    },
+    {
+      "what": "坦克类建筑的英文键名",
+      "international": "Home.Alliance.War.AutoJoin.AutoJoinAftreExit（After 拼成 Aftre）",
+      "cn": "仅在退出游戏后自动加入",
+      "verdict": "外部文件里的拼写错误",
+      "action": "**原样记录不修正**，否则将来按名检索会搜不到。"
+    }
+  ],
+  "not_established": [
+    "国际版 'Solo' 页签在国服是否存在 —— 未实测，标 PRIOR。",
+    "国际版比例分配弹窗（Balance.Title/三比例/Confirm）在国服的实际绘制 —— 未实测。",
+    "『冰原巨兽』在国际版的确切字样 —— 推断为 'Bear Trap'，未在国际版客户端确认。",
+    "任何一条英文 ROI 在国服的绝对可用性 —— **全部不可直接复用**（宪法 A §一.7）。"
+  ]
+}

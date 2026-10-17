@@ -1,7 +1,7 @@
 {
  "schema_version": "1.0",
  "generated_by": "winter_agent_v2.knowledge_preload.KnowledgeStore.write_index",
- "generated_at": "2026-10-13T16:43:18.804636+00:00",
+ "generated_at": "2026-10-17T01:26:48.911121+00:00",
  "note": "derived from knowledge/preload/*.json -- not a skill registry and not a lifecycle authority; delete any row and it returns from the files",
  "acquired_vs_external": "the point of this index is that acquisition_rung should drift toward 1-5 over time: external priors are a starting cost, not a permanent one",
  "summary": {
@@ -10,27 +10,14 @@
    "UNVERIFIED": 3
   },
   "by_acquisition_rung": {
-   "4": 1,
-   "1": 2
+   "1": 2,
+   "4": 1
   },
-  "sufficient": 1,
+  "sufficient": 2,
   "with_conflicts": 0,
   "awaiting_calibration": 0
  },
  "records": [
-  {
-   "capability": "ECONOMY_RESEARCH",
-   "capability_id": "CAP-E07",
-   "status": "UNVERIFIED",
-   "weakest_field": "UNVERIFIED",
-   "source_type": "LEGACY_VERIFIED_ASSET",
-   "acquisition_rung": 4,
-   "sufficient": true,
-   "missing_fields": [],
-   "conflicts": [],
-   "live_calibration_status": "PENDING_RESEARCH",
-   "updated_at": "2026-10-13T16:43:18.804636+00:00"
-  },
   {
    "capability": "TROOP_SELECT",
    "capability_id": "CAP-G09",
@@ -44,7 +31,7 @@
    ],
    "conflicts": [],
    "live_calibration_status": "",
-   "updated_at": "2026-10-13T16:35:09.752463+00:00"
+   "updated_at": "2026-10-17T01:26:48.911121+00:00"
   },
   {
    "capability": "ALLIANCE_TECH",
@@ -53,13 +40,24 @@
    "weakest_field": "UNVERIFIED",
    "source_type": "LIVE_VERIFIED_ASSET",
    "acquisition_rung": 1,
-   "sufficient": false,
-   "missing_fields": [
-    "preconditions"
-   ],
+   "sufficient": true,
+   "missing_fields": [],
    "conflicts": [],
    "live_calibration_status": "",
-   "updated_at": "2026-10-10T02:43:07.754323+00:00"
+   "updated_at": "2026-10-13T16:50:56.960698+00:00"
+  },
+  {
+   "capability": "ECONOMY_RESEARCH",
+   "capability_id": "CAP-E07",
+   "status": "UNVERIFIED",
+   "weakest_field": "UNVERIFIED",
+   "source_type": "LEGACY_VERIFIED_ASSET",
+   "acquisition_rung": 4,
+   "sufficient": true,
+   "missing_fields": [],
+   "conflicts": [],
+   "live_calibration_status": "PENDING_RESEARCH",
+   "updated_at": "2026-10-13T16:43:18.804636+00:00"
   }
  ]
 }

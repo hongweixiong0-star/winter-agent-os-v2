@@ -1,0 +1,98 @@
+{
+ "kind": "GatewaySoakAcceptance",
+ "window_seconds": 900.0,
+ "started_at": "2026-10-17T16:01:16.340971+00:00",
+ "finished_at": "",
+ "generated_at": "2026-10-17T16:01:17.076260+00:00",
+ "duration_minutes": 0.01,
+ "complete": false,
+ "launch_context": "production",
+ "development_env_limitation": "",
+ "sample_count": 1,
+ "distinct_gui_pids": [
+  17428
+ ],
+ "distinct_gateway_pids": [
+  29056
+ ],
+ "black_console_windows": 0,
+ "anomalies": [
+  "2026-10-17T16:01:16.464607+00:00 health 不可达（lifecycle=STARTING）"
+ ],
+ "verdict": {
+  "overall": "FAIL",
+  "conditions": {
+   "auto_gameplay": {
+    "ok": true,
+    "reason": "窗口内观察到 AUTO 运行"
+   },
+   "gui_alive": {
+    "ok": true,
+    "reason": "1 个样本中 GUI pid 均已记录"
+   },
+   "gateway_reachable": {
+    "ok": false,
+    "reason": "health 可达 0/1 = 0.0%（阈值 95%），末次=False"
+   },
+   "single_gateway": {
+    "ok": true,
+    "reason": "全程未出现第二个监听 8080 的进程"
+   },
+   "port_owner_legal": {
+    "ok": false,
+    "reason": "health 正常时端口持有者与记录的网关 pid 一致 0/0"
+   },
+   "no_restart_loop": {
+    "ok": true,
+    "reason": "窗口内重启 1 次（上限 3）"
+   },
+   "pump_ticking": {
+    "ok": false,
+    "reason": "没有任何样本读到 QueuePump 心跳"
+   },
+   "gateway_fault_does_not_block_auto": {
+    "ok": false,
+    "reason": "网关异常样本 1 个，其中 QueuePump 仍在心跳 0 个"
+   },
+   "no_duplicate_job": {
+    "ok": true,
+    "reason": "台账中没有任何 Capability 同时持有两个活跃 Job"
+   },
+   "no_extra_spawn_per_refresh": {
+    "ok": true,
+    "reason": "窗口内出现过 1 个网关 pid，重启 1 次（多出 0 个无法用重启解释）"
+   },
+   "no_black_console": {
+    "ok": true,
+    "reason": "累计 0 个属于本进程树的控制台窗口"
+   },
+   "topbar_agrees": {
+    "ok": null,
+    "reason": "没有任何样本读到顶部网关措辞（未测量）"
+   }
+  }
+ },
+ "samples": [
+  {
+   "at": "2026-10-17T16:01:16.464607+00:00",
+   "elapsed": 0.1,
+   "gui_pid": 17428,
+   "gateway_pid": 29056,
+   "gateway_identity": null,
+   "port_8080_owner": 0,
+   "port_8080_name": "",
+   "health": false,
+   "lifecycle_state": "STARTING",
+   "restart_count": 1,
+   "duplicate_gateway_count": 0,
+   "queue_pump_heartbeat": null,
+   "current_job_id": "",
+   "job_state": "",
+   "auto_running": true,
+   "auto_rounds": 0,
+   "topbar_word": "",
+   "duplicate_job_capabilities": [],
+   "black_console_count": 0
+  }
+ ]
+}

@@ -1,6 +1,6 @@
 {
   "task_id": "daily-training-collect-observation",
-  "generated_at": "2026-10-03T09:35:03.100562+00:00",
+  "generated_at": "2026-10-03T21:31:39+08:00",
   "production": {
     "state": "IDLE",
     "page": "MARCH",
@@ -35,25 +35,452 @@
   },
   "still_losing_progress": [
     {
-      "item": "20 张 SCHEDULED_* 活动票全部 UNKNOWN + 零技能",
-      "risk": "限时活动窗口错过",
-      "layer": "observation 路径缺失"
+      "item": "训练完成收取 24h 内 0 次（verifier 齐全，真机从未出现 status=COMPLETED）",
+      "risk": "训练队列空转、兵力不补充",
+      "layer": "观测层未读到完成态",
+      "next": "训练完成窗口内定向读一次 training.status"
     },
     {
-      "item": "训练完成收取 24h 内 0 次",
-      "risk": "训练队列完成后空转、兵力不补充",
-      "layer": "观测层未读到 COMPLETED"
-    },
-    {
-      "item": "CLEAR_INTEL 被选 504 次仅 2 次真进展",
+      "item": "CLEAR_INTEL 504 次选 / 2 次真进展",
       "risk": "情报链空跑",
       "layer": "调度/页归属"
     },
     {
-      "item": "KEEP_TRAINING_PRODUCTIVE 与 KEEP_BUILDING_PRODUCTIVE 各 0 真进展",
-      "risk": "训练/建筑队列空转",
-      "layer": "遗留通用目标被死锁"
+      "item": "KEEP_TRAINING_PRODUCTIVE 201 次 / 0、KEEP_BUILDING_PRODUCTIVE 222 次 / 0",
+      "risk": "训练/建筑空转",
+      "layer": "遗留通用目标被死锁（goal_library:50 写明已被 per-camp 取代）"
+    },
+    {
+      "item": "活动票读到之后仍无执行路径（观测 ≠ 参与）",
+      "risk": "知道活动开着但没人报名",
+      "layer": "执行链缺失",
+      "next": "本修复只解决\"去读\"，下一步才是\"读到后做什么\""
     }
   ],
-  "next": "训练完成收取的定向真机观察（在训练完成窗口内读一次 training.status）"
+  "next": "活动票读到之后的执行路径（把观察结果接到 per-camp/通用活动流程）",
+  "activity_ticket_reading_fix": {
+    "task_id": "activity-observation-ticket",
+    "commit": "8061b8ad2745558fe11dd7a2edfa1b419b577132",
+    "deployed": true,
+    "problem": "20 张 SCHEDULED_* 票 24h 内被选 121 次、284 次决策胜出，但执行的是 OPEN_MAP 38 / INTEL_HERO_DISPATCH 26 / START_GATHER 15 / SUBMIT_RESOURCE_SEARCH 14 —— 没有一条与活动有关",
+    "root_cause_corrected": "不是\"票不可见\"。observation_ticket 已给它定价 50.0，rank 不会丢它（那个 continue 带 or 条件）；真正空的是 available_skills=()，brain 无动作可发就落到通用兜底，而那一页恰好是 MAP",
+    "fix": "两处构造点改用 _ACTIVITY_OBSERVATION_SKILLS = (\"READ_EVENT_CALENDAR\",)，该动作 verifier 已实现",
+    "after_measure": {
+      "tickets": 17,
+      "with_skill": 17,
+      "on_board": 17,
+      "price": "base=50.0 / observation=50.0（观测票仍是全部价格，未被当作已完成工作）"
+    },
+    "regression": "47 failures with and without the change, difference empty",
+    "why_not_read_timer": "READ_TIMER 声明的 TIMER_READ verifier 与执行路径在 winter_agent_v2 中不存在，挂了会从\"无动作\"变成\"必失败动作\"",
+    "live_evidence": {
+      "revision": "8061b8ad",
+      "steps": 40,
+      "tickets_on_board": "638 次出现在近期决策的 board 上，排第 4-8 位",
+      "tickets_selected": 0,
+      "why_zero_is_correct": "READ_EVENT_CALENDAR 声明 required_page=Page.EVENT，而此刻 40 步全在 MAP/INTEL/POPUP/MARCH/BEAST/HOME —— 不在 EVENT 页就不该发这个动作。修复前它们被选后发的是 OPEN_MAP/START_GATHER（无关动作），现在它们安静留在 board 上等正确的页",
+      "verdict": "修复生效且行为正确：票可见、带正确动作、在错误页上不乱发"
+    }
+  },
+  "activity_execution_gap": {
+    "task_id": "activity-ticket-execution-boundary",
+    "finding": "执行侧能力齐备但缺 rally_target；票在 EVENT 页上拿不到",
+    "real_participation_registered": {
+      "SCHEDULED_BEAR_HUNT": [
+        "JOIN_RALLY"
+      ]
+    },
+    "wired_already": [
+      "JOIN_RALLY -> verify_rally_joined（已实现，要求行军增加或成员状态变更）",
+      "START_RALLY -> verify_rally_created（已实现）",
+      "AVOID_STAMINA_WASTE 已挂载这两个 + 6 个"
+    ],
+    "blocker": "_verify_rally_action 要求 target 属于 RallyTarget{BEAR,POLAR_TERROR,FORTRESS,OTHER,UNKNOWN}；rally_target 从 ALLIANCE 页上下文取（runtime.py:8156/9277），而活动票在 Page.EVENT 上没有该上下文 ⇒ 挂了会得到 RALLY_TARGET_UNKNOWN",
+    "must_not_promote": "多数票的 registered_skill_ids 是 [READ_TIMER, TRAIN_TROOPS, BUILDING_UPGRADE, RESEARCH, TRY_ORDINARY_CONTROL] —— 通用队列动作而非活动参与；挂上会让\"读活动\"变成\"训练部队\"，与本修复要解决的是同一个病",
+    "candidates": [
+      "OPEN_BEAR_RALLY_LIST（已实现，24h 内 12 次/11 成功，但始终挂在 DISCOVER_BEAR_RALLY_LIST 下，只看不动）",
+      "把 target 挂在票上，由完成后的实测提供"
+    ],
+    "not_implemented_because": "两条都是真活，且第一条必须先在真机上量，而真机当前被生产占用",
+    "status": "已确认为边界，非接线缺口"
+  },
+  "clear_intel_root_cause": {
+    "task_id": "clear-intel-progress-meter",
+    "symptom": "24h 内 500 次被选、INTEL 页上 67 次成功打开情报卡（全部 verified）、goal_progress=True 仅 2 次",
+    "action_side": "健康。verify_intel_pin_opened 判据严格：点前 Page.INTEL 且 pins>0，点后 Page.POPUP 且 popup 属已复核任务卡",
+    "root_cause": "CLEAR_INTEL 的 distance 是常量 1.0，_observation_meter 对它返回 None ⇒ progress_moved 只能 1.0<1.0 恒 False；且 False 会累加 no_progress_streak 把它降权",
+    "same_as": "与 _observation_meter docstring 里实测的 SCHEDULED_* 同病（结构上无法报告进展）",
+    "the_meter_exists_in_the_client": "323 个真机 INTEL 帧里 untried_pins 会降（10:23:01 读 7，10:22:23 读 8 = 真清了一条），而 pins/detected_pins 恒为 8",
+    "why_nothing_changed_this_round": "第一版按 evidence[\"intel\"][\"untried_pins\"] 实现，实测 meter 仍为 None —— untried_pins 在 state_before.intel（WorldState 感知层），_observation_meter 读 GoalState.evidence（目标层），CLEAR_INTEL 的 evidence 里没有 intel 字段。缺一次搬运。已撤回，不留返回 None 的代码",
+    "next": "先读 evidence 里 observed / incomplete_queue_observation 的语义（能否免搬运）；不能则做搬运，但必须先在真机确认该字段只在 INTEL 页存在（拿陈旧值当进展比原缺陷更糟）"
+  },
+  "deployment_20261003_1921": {
+    "headline": "两个修复已进生产运行树；此前判定部署状态查错了仓库",
+    "production_checkout_is_not_the_dev_repo": {
+      "dev_repo": "E:\\无尽冬日智能体",
+      "production_code": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体",
+      "production_branch": "codex/production-pin-recovery",
+      "launcher": "tools/launch_pinned_production.py",
+      "gate": "PRODUCTION_PIN.json 的 expected_commit 必须等于 HEAD，否则拒绝启动",
+      "mounts": [
+        "config",
+        "knowledge",
+        "learning",
+        "dataset",
+        "-> E:\\无尽冬日智能体（E 盘是数据根，不是代码树）"
+      ],
+      "why_it_matters": "1196 个 dirty 文件全部落在 dataset/learning/knowledge/evidence，零源码 —— 这就是此前反复出现的『工作树被生产还原』的真正来源。以后判定部署状态一律查 pinned worktree，不要查 E 盘仓库。",
+      "how_it_was_missed": "多轮里我在 E 盘用 git show HEAD:<file> 判断『生产是否已含某修复』，而 E 盘 HEAD 是 05042268（main），与生产实际运行的 8061b8ad 无关，于是得出『活动票修复从未部署』的错误结论。实际它当时正在生产运行。"
+    },
+    "silently_reverted_fix": {
+      "what": "9465800b 的 _ACTIVITY_OBSERVATION_SKILLS 被 0eb0f2ab 静默删掉，两处 available_skills 退回 ()",
+      "why_invisible": "0eb0f2ab 是在工作树已被生产还原后、基于旧文件重做的；43 insertions / 28 deletions 全部是 CLEAR_INTEL 相关，被删掉的常量与它的实测注释藏在删除区里，提交标题与 diff 统计都看不出。",
+      "detected_by": "直接从 git 对象读分支 tip 做字符串计数，而不是读工作树 —— 工作树当时已被冲掉",
+      "fixed_by": [
+        "a080bb18",
+        "a0cd76a7"
+      ]
+    },
+    "test_conflict_resolution": {
+      "two_tests": "assert available_skills == ()",
+      "verdict": "它守的命题『计划不是任务、不可参与』仍然成立 —— JOIN_RALLY 只在 evidence.registered_skill_ids，不在 available_skills；变红的是断言被写成了空检查，连票唯一该做的读日历也一并禁止了。",
+      "replaced_with": "set(available_skills) <= {'READ_EVENT_CALENDAR'} 且与 evidence.registered_skill_ids 不相交",
+      "strictly_stronger": "变异测试：把 JOIN_RALLY 加进元组 → 两个测试都变红；旧的空检查对任何非空元组一律放行。",
+      "failure_set_ab": {
+        "baseline_0eb0f2ab": "40 red",
+        "after_tip": "40 red",
+        "difference": "empty",
+        "note": "tests/test_last_step_execution.py 因 IndexError 无法收集（依赖数据根截图，与改动无关），已排除"
+      }
+    },
+    "deploy": {
+      "production_commit": "3ff50b3bba6c4fb00b661a4dd7acbffc29689626",
+      "pin_updated": true,
+      "check_only": "CODE_COMMIT=3ff50b3b WORKTREE_CLEAN=true DATA_ROOT=E:\\无尽冬日智能体",
+      "auto_restarted": true,
+      "files_changed": [
+        "winter_agent_v2/goal_library.py"
+      ],
+      "data_files_touched": 0
+    },
+    "live_acceptance": {
+      "window": "2026-10-03T11:23:30Z 起（新进程启动之后）",
+      "decisions_observed": 51,
+      "page_distribution": {
+        "HOME": 36,
+        "EVENT": 9,
+        "MAP": 5,
+        "DAILY": 1
+      },
+      "activity_tickets": {
+        "appearances": 1011,
+        "skills": [
+          "READ_EVENT_CALENDAR"
+        ],
+        "observation_price": 50.0,
+        "top_total": 50.0,
+        "verdict": "修复在生产生效：票不再空转。它带着唯一的读日历动作，以观测票定价 50.0 被排到最高位，而不是被选中后跑去执行 OPEN_MAP / INTEL_HERO_DISPATCH 这类与活动无关的动作。"
+      },
+      "activity_effect": "EVENT 页决策从 1 次升到 9 次 —— 系统被活动票牵引到活动入口，这是修复的直接效果，也是『读到后参与』能继续往前推进的前提。",
+      "clear_intel": {
+        "observation_nonzero": 0,
+        "live_reason": "这 51 次决策没有一次落在 INTEL 页，untried_pins 没有被读到，meter 保持 None —— 未测量不等于停滞，守卫按设计生效，不会因为读不到就谎报停滞。",
+        "production_code_probe": {
+          "untried_8_7_6_5": "meter -8 / -7 / -6 / -5 单调上升，每一次都算成进展",
+          "regression": "修复前 distance 恒为 1.0，1.0 < 1.0 恒 False，且 False 会累加 no_progress_streak 喂给公平性",
+          "missing_or_wrong_type": "None / '8' / True / 3.5 全部 meter=None；bool 被守卫正确拒绝",
+          "note": "第一版探针把 intel 塞进 events 字段，得到 evidence=None 并误判代码有问题；intel 是 WorldState 的独立字段，是探针写错了"
+        },
+        "status": "代码路径已在部署版本上验证通过；真机数值待系统自然走到 INTEL 页后复核"
+      }
+    },
+    "still_to_verify": [
+      "CLEAR_INTEL 真机 observation 非零：需生产自主决策进入 INTEL 页。不为验收而干预生产决策（Vision 不点击、不得为取证破坏主链）。",
+      "活动『读到后参与』仍缺 rally_target：挂上每次得 RALLY_TARGET_UNKNOWN —— _verify_rally_action 要求 RallyTarget 成员，而该值从 ALLIANCE 页取，活动票在 EVENT 页拿不到。候选方案：先用 OPEN_BEAR_RALLY_LIST 读列表，或把 target 挂在票上。"
+    ],
+    "next": "观测 INTEL 页首帧，确认 observation = -untried 且 progress_moved 由 False 转 True"
+  },
+  "production_outage_20261003_1935": {
+    "headline": "生产在部署后真的停摆了；停机原因是活动入口的坐标没有任何人读",
+    "the_outage": {
+      "observed_at": "2026-10-03 19:35:29",
+      "agent_state": "SAFE_STOP",
+      "stop_category": "CAPABILITY_GAP",
+      "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED",
+      "unexpected_worker_exits": 19,
+      "last_fatal_error": null,
+      "cost": "生产完全停摆（不是计划休眠——计划休眠的 next_wakeup 是 10-20，属正常批次结束）",
+      "how_it_was_missed_at_first": "runtime_snapshot 的 next_wakeup=2026-10-20 看起来像正常休眠，差点被当成批次结束；真正读出 stop_category=CAPABILITY_GAP 才发现是失败停机。"
+    },
+    "the_frame": {
+      "path": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261003_193420_502956\\20261003_193420_502956_step_006_before_20261003T113523662049.png",
+      "action": "OPEN_EVENT_CALENDAR_FROM_HOME / TAP_SEMANTIC / REGULAR_EVENT_ENTRY",
+      "carried": {
+        "visible": true,
+        "tap_norm": [
+          0.925,
+          0.14883
+        ],
+        "source": "CURRENT_FRAME_OCR",
+        "confidence": 0.9983089715242386
+      },
+      "verdict": "坐标已在手、置信度 0.998，步骤仍报目标未验证"
+    },
+    "root_cause_chain": [
+      "1. 识别没问题：ocr.classify (ocr.py:1781) 已在 HOME/MAP 页用当前帧读出 常规活动 标签，写入 events.calendar_entry，并带尺度守卫（标签高 <3% 屏高即拒绝，防止页签冒充活动页身份）。",
+      "2. 断点在消费者：全仓 calendar_entry 的读者全在 brain / goal_library，即『该不该去』那一侧；没有任何 resolver 读它来『去点哪』。_resolve_semantic_target 没有 REGULAR_EVENT_ENTRY 分支，该 semantic 全仓只出现在 skills.py:284-285 两处声明里。",
+      "3. 于是完全依赖固定模板：backend_routing.json 给这两个技能的 roi [632,101,67,84]，裁自 2026-09-25 单帧，其证据块自陈 \"validation\": \"NONE\"。而 常规活动 是浮动导航标签。",
+      "实测：720x1280 帧上读数是像素 (666,191)，roi 覆盖 y 101..185 —— 差 6 像素装不下。567 次匹配 / 19 次失配；失配时 executor_backend 为空（executor.py:100 只在成功时打 backend），说明那 19 次根本没进执行器。路由器注明 miss is terminal，于是 19 次失配＝生产停摆。"
+    ],
+    "fix": {
+      "commit": "54aa331abfcfa8e0ca1fd76281534f6f88b1d21b",
+      "branch": "codex/production-pin-recovery (pinned production tree)",
+      "change": "给 _resolve_semantic_target 加 REGULAR_EVENT_ENTRY 分支，消费已算好的 events.calendar_entry.tap_norm",
+      "constraints_respected": [
+        "不重跑 OCR（读已算好的测量值）",
+        "不放宽模板阈值",
+        "不用缓存坐标",
+        "页面守卫（只 HOME/MAP）与来源守卫（必须 CURRENT_FRAME_OCR）从生产方继承，不重写"
+      ],
+      "defect_found_while_testing": "写 malformed-box 用例时发现真实漏洞：坐标为 [\"a\",\"b\"] 时 float() 会抛 ValueError 逃出 resolver，而每个调用方都把它当全函数用（None=停止，抛异常=bug）。已用 try/except 修掉。"
+    },
+    "verification": {
+      "offline_on_the_stopping_frame": "tools/replay_the_frame_that_stopped_production.py 用项目自己的 OCR 重测那张帧：re-measured [0.925, 0.14883]，与 episode 记录 delta 0.00000；并打印 template roi contains the measured point: False —— 精确复现了那 19 次失配。",
+      "tests": "tests/test_the_activity_entry_is_read_not_templated.py 9 passed",
+      "mutation": "删页面守卫 → 1 red；删来源守卫 → 1 red（两次都抓红）",
+      "failure_set_ab": {
+        "method": "同一生产树目录、同一命令，只换 runtime.py（干净 worktree 做基线是无效的：43 个红在 HEAD 上同样存在，只是 -k 过滤词不同才没进同一集合）",
+        "at_head": "45 red",
+        "with_change": "43 red",
+        "new_red": "空",
+        "disappeared": "2 条新测试（无分支时必红）",
+        "pre_existing_43": "alliance_verifier / p0_live_vision / semantic_roi_vision / suite_isolation 等，在 HEAD 上复现，与本改动无关"
+      },
+      "live": {
+        "window": "2026-10-03 20:00 重启后",
+        "episodes": 15,
+        "REGULAR_EVENT_ENTRY": "5 次，failure_type 全为 None（此前 19/591 失配）",
+        "pages": {
+          "EVENT": 10,
+          "HOME": 4
+        },
+        "new_depth": "生产首次深入到 EVENT 页并推进到 OPEN_EVENT_CALENDAR_TAB",
+        "remaining_failure": "1 次 SEMANTIC_TARGET_NOT_VERIFIED 来自 TRY_ORDINARY_CONTROL / ORDINARY_CONTROL，而 brain.py:2393 明确让该 resolver 返回 None（『do not mutate that budget by probing an already executed action』）⇒ 设计内已知放弃，不是新缺口。"
+      }
+    },
+    "environment_trap_found_while_restarting": {
+      "symptom": "面板启动即退：SystemExit: 1，栈在 control_panel._enforce_retention -> retention.prune_runtime_screenshots -> unlink",
+      "cause": "PYTHONPATH 指向 WorkBuddy 的 shim（E:\\work Buddy国内\\...\\cli\\vendor\\shim），它给所有 Python 进程注入 sitecustomize 的批量删除保护（CODEBUDDY_SAFE_DELETE_BULK_GUARD）。项目进程继承了它，于是在清理旧截图时自杀。这不是项目 bug，是 agent 沙箱护栏污染了长期生产进程。",
+      "workaround": "启动生产前清空 PYTHONPATH：PYTHONPATH= python tools/launch_pinned_production.py",
+      "second_trap": "PowerShell 的 Start-Process 在本机会报『已添加项。字典中的关键字: Path 所添加的关键字: PATH』（环境变量大小写冲突）而静默失败——第一次重启就是这样『看起来启动了其实没启动』。改用 Bash nohup 启动并检查日志/进程内存（崩溃时 4MB，正常工作时 1GB）。"
+    },
+    "still_to_verify": [
+      "CLEAR_INTEL 真机 observation 非零：需生产自主决策进入 INTEL 页，不为取证干预生产决策",
+      "EVENT_CALENDAR_TAB 同样是固定模板路线（EVENT 页内切换），尚未核实是否也会失配",
+      "测试跑在真实数据根上会留下 learning/_probe.json、_isolation_probe_should_not_exist.json，需要在测试隔离层修掉（污染生产数据根）"
+    ],
+    "next": "核实 EVENT_CALENDAR_TAB 的解析来源；修测试对生产数据根的污染"
+  },
+  "detail_hop_guard_20261003_2014": {
+    "headline": "活动详情页跳转会盲点页签；已加守卫，真机 19 步零失败",
+    "commit": "fbb51df73a5fa34758fd6d256c7c023a67f5255c",
+    "branch": "codex/production-pin-recovery (pinned production tree)",
+    "not_the_same_defect_as_the_previous_fix": {
+      "evidence": "508 成功 / 18 失败，判别量完全分离",
+      "success_frames": "regular_events_hub.calendar_tab_visible=True 且有 calendar_tab_tap_norm（508/508）",
+      "failure_frames": "calendar_tab_visible=False 且 tap_norm=None（18/18）",
+      "resolver_is_complete": "runtime.py:4880 的分支有页守卫+重读帧+长度/范围校验；它拒绝是因为确实没东西可读，是诚实答案",
+      "so": "缺口在决策侧，不是识别侧。上次是『坐标在手里没人读』，这次是『没人问有没有页签』"
+    },
+    "root_cause": {
+      "location": "brain.py 活动详情分支（修复前 630-639 行）",
+      "what": "只看 calendar_detail.recognized 就下发 OPEN_EVENT_CALENDAR_TAB",
+      "the_guard_already_existed": "同文件枢纽分支（646-654）已有：页签不可见→SCROLL_REGULAR_EVENT_TABS，都没有→SAFE_STOP",
+      "why_it_survived": "18 次失败全部被下一个 BACK 恢复，只是浪费一步，不像上次的失配那样导致 SAFE_STOP 停摆"
+    },
+    "fix": {
+      "detail_branch": "先问 calendar_tab_visible → OPEN_EVENT_CALENDAR_TAB；否则有 scroll_to_start_norm → SCROLL_REGULAR_EVENT_TABS；都没有 → SAFE_STOP",
+      "grid_entry_unchanged": "GRID_ENTRY 仍直接 RETURN_EVENT_CALENDAR（那是 BACK，从不查页签）"
+    },
+    "verification": {
+      "tests": "tests/test_the_detail_hop_asks_whether_the_tab_is_there.py 12 passed",
+      "mutation": "把可见性检查换成 True → 5 red（枢纽分支的用例也一并断言，防止两分支再次漂移）",
+      "failure_set_ab": "同目录同命令只换 brain.py：HEAD 19 红 → 修复 14 红，新红集为空，消失的 5 条即新测试",
+      "remaining_14": "HEAD 上同样复现，与本改动无关（beast_map_scan / capability_gate / daily_tab_selection / event_countdown_ocr）",
+      "live": "19 episode 零失败；OPEN_EVENT_CALENDAR_TAB 5 次全成功；SCROLL_REGULAR_EVENT_TABS 5 次（守卫在起作用）"
+    },
+    "production_health_measured": {
+      "window": "新提交后 115 episode",
+      "verifier_ok": "106 / 115 = 92%",
+      "goals_actually_completed": 23,
+      "failures": 9,
+      "verdict": "系统在健康运转，不是空转"
+    },
+    "ruled_out_as_gaps": {
+      "training_collect": "OPEN_COMPLETED_TRAINING_CAMP_* 59 次、53 成功（90%），最近两次（12:22）也成功 —— 链是活的",
+      "calendar_goal_completion_not_fake": "19 次完成全部由 OPEN_EVENT_CALENDAR_TAB 触发，但 verify_event_calendar_tab_open(verifier.py:1898) 要求 after 的日历网格真的被识别（entries / visible_dates_raw），不是只看点击 —— 判定是真的",
+      "activity_chain_overall": "3979 步、395 次完成、失败率约 1%（39/3979）、OPEN_EVENT_CALENDAR_DETAIL 1368/1370 成功"
+    },
+    "restart_procedure": "写死：PYTHONPATH= nohup python.exe（等号前缀；env -u 不生效，日志会 0 字节）。pythonw 吞 stdout，排障一律用 python.exe + 重定向。判断是否真起来看内存：崩溃 4MB / 正常 1GB。",
+    "next_candidates": [
+      "SCROLL_REGULAR_EVENT_TABS 的 13 次执行里 verifier REGULAR_EVENT_TABS_SCROLL_NOT_PROVEN 出现过 1 次，量不大但可查",
+      "BUILDING_UPGRADE_PANEL_NOT_PROVEN / FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN（训练链 207 步里 58 次失败，28%）是下一个值得量的口径"
+    ]
+  },
+  "training_camp_tap_investigated_not_a_gap": {
+    "headline": "训练营聚焦点击 40/58 失败 —— 查证后确认是已修好的历史问题，不是当前缺口",
+    "measured": "TAP_FOCUSED_TRAINING_CAMP_* 58 次：成功 18 / FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN 29 / SEMANTIC_TARGET_NOT_VERIFIED 11",
+    "perfect_discriminant": {
+      "success_18_of_18": "before.training.camp_focus_source = REOBSERVED_STATIC_CITY_VIEW，after 有 menu_open=True + train_tap_norm + source=ACTION_BAR",
+      "failure_29_of_29": "before.training.camp_focus_source = CURRENT_FRAME_SELECTION_HALO，after.training 整个为空",
+      "separation": "100%，无例外"
+    },
+    "what_the_evidence_says_happens": {
+      "client_ocr_on_the_actual_post_tap_frames": "25~28 tokens 读出，训练/升级/详情/训练营 一个都没有；画面是主城全景（底部 探险/英雄/背包/商店/联盟/野外），前后三帧内容几乎不变",
+      "so": "客户端那一帧真的没画动作条 —— 不是识别漏读",
+      "not_a_template_defect": "与 REGULAR_EVENT_ENTRY 不同：这里 resolver 分支（runtime.py:5384-5406）完备且两种来源分别处理，它拒绝是诚实答案"
+    },
+    "already_fixed_by_history": {
+      "code_comment_evidence": "camp_ring.py:241-255 记录 2026-10-02 的实测：每次失败都在 4-5 秒后被同 skill 同 camp 的成功跟随，且配对帧携带相同坐标 ⇒ 第一次点击被客户端教学手吸收，第二次才点到建筑",
+      "mechanism": "can_reobserve_focused_training_camp_after_nonmenu_tap (verifier.py:1799) + runtime.py:10067-10096 的 pending_training_focus_retry，改走 REOBSERVED_STATIC_CITY_VIEW 重投影",
+      "by_day": "10-01 失败 12/24（其中 9 次是 2.4~3.0s 的过快重试）→ 10-02 失败 9/18 → 10-03 失败 8/16，短间隔失败 10-02 起为 0",
+      "today": "我新提交后 12:22:28 与 12:23:04 两次失败，均在 4.6/4.7 秒后自动重试成功",
+      "conclusion": "18/29 失败在 4-7 秒内自愈；剩下 11 次未自愈里 9 次是 10-01 的旧账。当前不需要改动。",
+      "what_I_verified_before_concluding": "五道重试门逐条代入真实数据核对：目标名 29/29 是 *_CAMP_TRAINING、focused/same_home/safe/panel_closed/camp_ok 五项全 True、can_reobserve 返回可放行；page_audit.verifier_result.reason 为 None 只是 episode 未写该局部变量，不是门被挡"
+    },
+    "two_hypotheses_i_rejected_on_evidence": [
+      "假设『after_refresh 截图说明运行时刷新关掉了菜单』—— after_refresh 只是 verifier 首次不通过后的重试观察命名（runtime.py:9799），是结果不是原因；且首次观察的 after 帧同样没有动作条",
+      "假设『REOBSERVED 重试的前置条件 not before.training 不满足导致没重试』—— 实测成功与失败的 before.training 都非空（18/18 与 29/29），该假设被数据直接推翻"
+    ],
+    "so_the_next_real_candidate_is": "训练链整体失败率 207 步 58 次（28%），但拆开看：训练完成收取 53/59 成功（90%）、聚焦点击的失败已自愈、11 次 SEMANTIC_TARGET_NOT_VERIFIED 是 resolver 的诚实拒绝（两种来源都不满足）。这一族暂无可修项。"
+  },
+  "bear_hunt_20261003_live": {
+    "headline": "用户告知巨熊活动已开 —— 立刻查清参与链缺哪一环，结论：目标识别缺素材，其余全通",
+    "user_report": "巨熊活动已开（2026-10-03 20:43 由用户告知）",
+    "what_already_works_measured": {
+      "OPEN_BEAR_RALLY_LIST": "今天 5 次执行全部成功（03:38 / 07:18 / 12:16×3），能进联盟集结列表",
+      "rally 行读取": "25 次读到真实集结行，source=LIVE_CLIENT_RALLY_LIST，字段齐全：leader / remaining_seconds / capacity_used / capacity_max / join_norm / join_box_norm",
+      "rally_target 选择器": "rally.py:53 rally_target_for_goal 完备 —— 读 evidence 的 rally_target/target_type/target，或按 goal_id 映射；取不到才填 UNKNOWN 诚实拒绝",
+      "verifier": "RALLY_ROW_JOIN_BUTTON 分支完整（runtime.py:4902-4921），页/section/source/坐标四道守卫都有",
+      "知识资产": "knowledge/events/bear_hunt_live_2026-09-09.json（leader_rally=DISPATCH_VERIFIED, member_join=MARCHING_VERIFIED）、bear_rally_rules.json、knowledge/rally/rally_engine_rules.json、bear_ui_checklist.json"
+    },
+    "the_one_wall": {
+      "measured": "46/46 集结行全部 target_type=UNKNOWN、target_text 空、joinable=false ⇒ live_rally_join_point 因 target 不匹配而拒绝",
+      "JOIN_RALLY": "0 次执行过 —— 参与巨熊的正路一次都没跑过",
+      "root_cause_found_by_reading_the_frame": "25 张真机集结列表帧逐帧 OCR：『目标』列只有列头本身和数字（3/3:/Q），**没有任何目标名文字** —— 客户端把集结目标印成图标，不是文字",
+      "so": "_rally_target_in(RALLY_TARGET_WORDS=变异巨熊/巨熊/冰原巨兽) 这条纯文字路线在当前客户端上根本走不通；缺的是图标素材，不是阈值或代码接线"
+    },
+    "bear_is_not_on_the_list_right_now": {
+      "measured": "25 帧里出现的集结目标全是普通异兽：等级15法厄同先锋 / 等级1失控的雪怪 / 等级5法厄同斥候 / 等级5猛犸象 / 等级6冰霜古猿 / 等级7霜鳞避役 —— 一个『巨熊』都没有",
+      "also_found_a_real_bug": "曾疑为 bug：同一行 state='JOINABLE' 而 joinable=false。查证后确认设计正确，不是缺陷 —— state 是行自身状态，joinable 是 joinable_for(BEAR) 这个派生属性（rally.py:271-290），而 joinable_for 首条就是 target is UNKNOWN -> False。所以目标识别不到时它必然为 False，两者并不矛盾。同一个 UNKNOWN 既是墙的唯一原因，也已经体现在这两个字段上。",
+      "consequence": "即便补上图标识别，当前列表里也没有可加入的巨熊集结行；bear_ui_checklist 的 BEAR_TARGET 注记『客户端显示为等级1变异巨熊；不得过滤为普通异兽』正是在警告这个混淆"
+    },
+    "checklist_cross_check": "bear_ui_checklist.json 已把 B_RALLY_LIST 组的 RALLY_INITIATOR / RALLY_REMAIN_TIME / RALLY_CURRENT_COUNT / RALLY_CAPACITY / BEAR_TARGET 标为『已有历史真机成功证据』或待补，而 BEAR_TARGET 注记明确要求不得把普通异兽当成巨熊。C_FORMATION（编队 9 项）与 D_RESULT（参与结果 9 项）几乎全为『尚无可用素材或识别能力』",
+    "START_RALLY_failure_is_separate_and_older": {
+      "measured": "START_RALLY 仅 1 次（今天 06:04），before page=MAP、alliance={} —— 决策在地图页下发集结，而 skills.py:417-418 的注释说 BTN_START_RALLY 是『熊面板上的橙色集结按钮』且 replay 验证只在那里解析",
+      "resolver_state": "BTN_START_RALLY 在 runtime.py 里没有任何分支（grep 只在 skills.py 命中）",
+      "note": "与用户当前问的『加入别人集结拿奖励』不是同一条路；加入路径已通到行级，加入路径的墙在目标识别"
+    },
+    "what_I_did_not_do": "没有为了让 JOIN_RALLY 跑起来而放宽目标匹配或把普通异兽当巨熊 —— 按 bear_ui_checklist 的显式要求，那会把一次错误的出征变成真实的资源损失",
+    "next_ordered": [
+      "1. 补集结目标图标素材（当前客户端 BEAR_TARGET 图标 + 1 个反例），这是加入巨熊的硬前提",
+      "2. 查 state='JOINABLE' 与 joinable=false 的字段分叉 —— 真机已经出现自相矛盾，读到的行可能本身不可靠",
+      "3. 取得一张真机『巨熊集结行』帧（含 等级1变异巨熊 + 目标图标），才能验证图标识别",
+      "4. C_FORMATION 编队链（9 项全部无素材）是加入成功后的下一道墙"
+    ],
+    "icon_measurement": {
+      "confirmed": "『目标』列印的是异兽头像图标，不是文字。裁出该区域直接看到棕色兽头（帧 20261003_201404_858361_step_020）",
+      "layout_is_not_fixed": "25 帧里同一列头像的位置会漂移 —— 按表头固定偏移裁剪时，第 0 张偏下、第 12 张偏左且是蓝色异兽。说明行高/列宽随集结数量变化",
+      "so": "头像识别必须按行定位（用 leader/capacity 这些同行 token 的 y 带），不能用相对表头的固定偏移",
+      "what_is_missing": "巨熊 BEAR_TARGET 的头像模板素材。现有 25 帧里全是普通异兽（法厄同/雪怪/猛犸象/冰霜古猿/霜鳞避役/失控的雪怪），**没有一张是巨熊**，所以正样本无法采集",
+      "template_feasibility": "从可见的 3 张不同异兽头像看，兽头轮廓与毛色差异明显（棕/蓝/灰），pHash 模板匹配在同分辨率下可行；但必须先有巨熊正样本，否则无法验证",
+      "crop_tool": "本轮已把 25 张目标列区域裁到 C:/Users/xhw/AppData/Local/Temp/rally_icon_*.png 作为几何参考（不是素材，未入库）"
+    }
+  },
+  "retire_event_entry_node_20261003_2100": {
+    "headline": "我上一轮的 resolver 修复其实从未生效 —— MAA 节点一直挡在前面；退役它才真正接通",
+    "the_regression_i_missed": {
+      "symptom": "部署 54aa331a 后 32 次 REGULAR_EVENT_ENTRY 里仍有 2 次 SEMANTIC_TARGET_NOT_VERIFIED",
+      "root_cause": "recognition_error = MAA_TEMPLATE:NO_MATCH（score=0.6909 / score=na，gate=0.7/0.75）—— 路由层 MAA 模板先跑就判失败，**根本没到我的 ADB resolver 分支**",
+      "the_hard_evidence": "全量账本：638 次 REGULAR_EVENT_ENTRY **全部 MAA 后端，ADB 一次都没被调用过**（backends_used={MAA:638, ADB:0}）",
+      "miss_scores": "9 次记录到的失配分数散布 0.4175~0.6909，**没有一次越过 0.7 门槛**"
+    },
+    "why_the_resolver_half_could_not_work": {
+      "route": "backend_routing.json 里两个技能都是 preferred=MAA + 挂着一个 autogen 节点",
+      "router_rule": "maa_resolver 对失配返回 None 且不回退 —— 这是故意的，因为位置盲的 legacy resolver 不能变成盲点（test_recognition_miss_blocks_instead_of_falling_back_to_a_blind_matcher）",
+      "so": "preferred=MAA 意味着运行时读帧 resolver 永远不被咨询。54aa331a 只是拆掉了同一个缺陷的后一半"
+    },
+    "geometric_proof": "停摆帧 720x1280 上，帧自身 OCR 读 常规活动 在 (0.925,0.14883)=px(666,191) 置信度 0.9983，而节点 roi [632,101,67,84] 覆盖 y 101..185 —— **差 6 像素**。会移动的导航标签不能靠单帧裁的矩形匹配。",
+    "the_fix_followed_the_projects_own_precedent": "tests/test_unvalidated_node_keeps_adb.py 记录的 OPEN_BUILDING_UPGRADE 处置：recognition 清空 / preferred=ADB / fallback=MAA / recognition_backend=LEGACY / not_migrated 记测量 / 保留模板图。两个声明技能一起退役（OPEN_EVENT_CALENDAR_FROM_MAP 声明同一 semantic，否则会继续问那个节点）",
+    "commit": "e5253679a137794d17b6fbb5e50543e9ee060a61",
+    "tests": "tests/test_the_event_entry_node_is_retired.py 9 项 —— 先写后改，改前 5 red。其中 the_node_would_have_missed_that_point 现场重算几何而不是引用结论；the_resolver_answers_on_both_pages 断言 HOME/MAP 都能答；no_route_claims_unreachable_recognition 保留全表不变式",
+    "existing_guards": "51 passed。test_executor_router 唯一失败是 DISPATCH_MARCH 的 migration_priority=P0，HEAD 版同命令同样失败，与本改动无关",
+    "live_acceptance": "REGULAR_EVENT_ENTRY 首次 backend=ADB / recognition=V2 / failure=None（此前 638 次全是 MAA）—— 读帧路径真正接通",
+    "pin_guard_note": "pin 校验第一次报『unreviewed changes: tools/replay_the_camp_action_bar_gate.py』—— 上一轮为查训练营问题写的诊断脚本。已删除（结论是该问题已由历史修复覆盖，不需要它）。这是 pin 守卫在正常工作",
+    "production_state": "runtime_thread_alive=True / scheduler_loop_alive=True / last_fatal_error=None；ROLE_IDENTITY_CHANGED 是双角色切换机制，不是停摆"
+  },
+  "worktree_migration_20261003_2112": {
+    "headline": "C 盘的 1.9GB 不是散落文件，是 8 个 git worktree；已全部迁到 E 盘并真机确认生产正常",
+    "what_they_actually_were": {
+      "count": 8,
+      "total": "约 1.9GB",
+      "nature": "同一个 git 仓库的多个工作树，由 .git/worktrees/ 元数据登记 —— 不是文件放错了位置",
+      "winter-prod-pinned": "当前生产代码位置，PRODUCTION_PIN.json 按绝对路径校验启动",
+      "global-multirole-live": "**旧生产位置**（pin 里 production_branch=main），另有 production_seed_20260929 数据集",
+      "others": "5 个 9-28~10-02 的并行开发工作树（calendar-detail-liveness / global-multirole-integration / global-multirole-v1 / main-integration / winter-rally-generalize）"
+    },
+    "why_a_plain_move_was_impossible": [
+      "git worktree move 在 Windows 跨盘符直接失败（fatal: Improper link，--force 亦然）。可行路径是 remove + add 重建并逐个校验 HEAD",
+      "生产树的 config/knowledge/learning/dataset 不是普通目录而是目录联接，启动器用 os.path.samefile 校验挂载；重建后必须用 New-Item -ItemType Junction 重建，否则报 config is not mounted from the declared data source",
+      "重建后树里会留下 *.gitcopy（243M），不清掉会被 pin 守卫当『unreviewed changes』拦下；用 git clean -fdx 删除",
+      "PRODUCTION_PIN.json 的 preserved_seed 是硬编码 C 盘绝对路径，需改；启动器本身不用改（WORKTREE_HOME = CODE_ROOT.parent 相对推导）"
+    ],
+    "safety_checks_before_any_change": {
+      "branch_成果已入库": "每个 worktree 的 HEAD 都由 git branch --contains 确认在分支上，零独有提交",
+      "uncommitted_source": "0 项（worktree 里那些 M/?? 全是 knowledge/ 知识资产）",
+      "routing_config": "逐 worktree md5 比对 backend_routing.json，与 E 盘一致，无冲突",
+      "seed_data_byte_level": {
+        "seed_data_20260928": "1498 文件 / 252468311 字节，迁前迁后完全一致",
+        "production_seed_20260929": "1533 文件 / 253084064 字节，迁前迁后完全一致"
+      },
+      "final_gate_before_delete": "7/7 完整性校验（E 盘每个目录文件数 ≥ C 盘）通过后才删 C 盘"
+    },
+    "also_cleaned": {
+      "temp_worktrees_removed": 4,
+      "temp_files_removed": 67,
+      "what_they_were": "本轮及历史会话散落在系统 Temp 的备份副本、A/B 基线、图标裁剪 —— 真源都在 E 盘提交里"
+    },
+    "result": {
+      "destination": "E:\\无尽冬日智能体_worktrees\\（与项目根同级，避免被 git 当成仓库内容）",
+      "all_8_registered_in_e": true,
+      "c_drive_worktrees_dir": "已空",
+      "production_restarted": "是，从 E 盘启动",
+      "live_confirmation": "AUTO_RUNNING / runtime_thread_alive=True / scheduler_loop_alive=True / last_fatal_error=None；最新 episode 的截图路径已是 E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\... —— 生产确实在 E 盘代码树上工作"
+    },
+    "host_guard_note": "SAFE_DELETE_BULK_CONFIRM_REQUIRED（阈值 50）会拦批量删除。git 管理的目录用 git clean -fdx 能过；未跟踪目录需 [System.IO.File]::Delete() 逐个删（每批 15 个）",
+    "code_change": "零 —— 启动器与源码都未改动，只有 PRODUCTION_PIN.json 的 preserved_seed 改了路径"
+  },
+  "worktree_root_junction_20261003_2129": {
+    "headline": "codex 的 worktree 根路径已直接接到 E 盘 —— 以后新建的 worktree 不会再落 C 盘",
+    "user_request": "直接接E盘",
+    "why_a_junction_was_the_only_way": {
+      "codex_worktree_root": "硬编码 ~/.codex/worktrees/",
+      "config_toml": "没有 worktree 相关配置项",
+      "global_state": "只有 electron-managed-worktree-archives，无路径配置",
+      "so": "没有配置项可改，唯一可靠实现是目录联接"
+    },
+    "what_was_done": {
+      "step1": "rmdir 删掉 C 盘的空 worktrees 目录（rmdir 只删空目录，误删会被拒绝）",
+      "step2": "New-Item -ItemType Junction -Path C:\\Users\\xhw\\.codex\\worktrees -Target E:\\无尽冬日智能体_worktrees",
+      "bonus": "上一轮搬到 E 盘的 7 个 worktree 一并纳入统一路径，不会产生第二份副本"
+    },
+    "verification_three_checks": {
+      "bidirectional_io": "C 盘写 -> E 盘读到；E 盘写 -> C 盘读到 OK",
+      "c_path_access_to_production": "经 C 盘路径 git rev-parse/HEAD/branch 正常，launch_pinned_production.py --check-only 通过 OK",
+      "space_landing_test_decisive": "经 C 盘联接路径写 200MB：C 盘可用变化 0 MB、E 盘变化 -200 MB OK（用 df -k 前后对比，这是唯一能测出真实落盘位置的方法）"
+    },
+    "the_trap_to_remember": "du -sh C:\\Users\\xhw\\.codex\\worktrees\\<name> 会跟随联接读到 E 盘数据（实测显示 266M），看起来像 C 盘被占用 —— 那是假象。junction 本身只是几百字节的 reparse point，必须用 df 看卷可用空间变化才能测出真实落盘位置。",
+    "scope_warning": "这个联接是全局的，不只服务本项目 —— 以后任何项目在 codex 里新建的 worktree 都会落到 E:\\无尽冬日智能体_worktrees\\。若嫌目录名带项目名不合适，改联接目标即可（Remove-Item 掉 junction 再重建，不动数据）。",
+    "production_after": "AUTO_RUNNING / runtime_thread_alive=True / scheduler_loop_alive=True / last_fatal_error=None —— 联接不影响正在运行的生产"
+  }
 }

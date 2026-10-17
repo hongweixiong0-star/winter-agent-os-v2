@@ -43,9 +43,26 @@ from winter_agent_v2.skills import Page, v2_registry  # noqa: E402
 OBSERVATION_SKILLS = gl._ACTIVITY_OBSERVATION_SKILLS
 
 
+def _snapshot() -> dict:
+    """The role's live calendar reading, or a skip when this machine has none.
+
+    ``learning/timed_event_schedule.json`` is machine-local runtime state (untracked on
+    purpose -- see ``test_runtime_state_manifest.py``).  It was lost in the 2026-10-17
+    cleanup and is restored by the next live calendar read.  Without it ``discover()``
+    emits the ``SCHEDULED_*`` family from the static schedule only, so the tickets carry
+    no activity name to pair with a reading skill -- a failure here would blame the
+    pairing code for missing state.
+    """
+    snapshot = es.latest_calendar_snapshot("1063040265")
+    if not snapshot:
+        pytest.skip("no calendar snapshot on disk: machine-local runtime state is absent")
+    return snapshot
+
+
 def _tickets() -> list:
-    snapshot = es.latest_calendar_snapshot("1063040265") or {}
-    return gl.GoalLibrary().discover(WorldState(page=Page.EVENT, events={"calendar": snapshot}))
+    return gl.GoalLibrary().discover(
+        WorldState(page=Page.EVENT, events={"calendar": _snapshot()})
+    )
 
 
 def test_every_waiting_activity_ticket_carries_a_reading_action():

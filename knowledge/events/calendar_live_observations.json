@@ -1,0 +1,200 @@
+{
+  "schema_version": "1.0",
+  "observations": [
+    {
+      "observation_id": "CALENDAR_20260928_ROLE_1063040265_0414",
+      "source": "LIVE_CLIENT_REGULAR_ACTIVITY_CALENDAR",
+      "role_id": "1063040265",
+      "role_name": "零氪纯盾流",
+      "observed_at_local": "2026-09-28T04:14:56+08:00",
+      "time_zone": "UNKNOWN_CLIENT_DISPLAY",
+      "calendar_header_raw": "2026-09-28 04:14:56",
+      "separate_game_hud_clock_raw": "14:24 (frame 262; not assumed same clock)",
+      "selected_date": "2026-09-28",
+      "visible_dates": [
+        "2026-09-26",
+        "2026-09-27",
+        "2026-09-28",
+        "2026-09-29",
+        "2026-09-30",
+        "2026-10-01",
+        "2026-10-02"
+      ],
+      "current_calendar_items": [
+        {
+          "event_id": "FISHING_TOURNAMENT",
+          "display_name": "钓鱼锦标赛",
+          "calendar_preview_start_raw": "2026-09-29 00:00",
+          "calendar_preview_end_raw": "2026-10-01 24:00",
+          "countdown_raw": "19:45:04",
+          "description": "凿开冰面，享受垂钓的乐趣吧！",
+          "evidence_refs": [
+            "dataset/raw/ui_exploration/20260928/frame_265_EVENT_CALENDAR.png",
+            "dataset/raw/ui_exploration/20260928/frame_266_CAL_FISHING_DETAIL.png"
+          ]
+        },
+        {
+          "event_id": "ICEBOUND_TREASURE",
+          "display_name": "冰封的宝藏",
+          "calendar_preview_start_raw": "2026-10-02 00:00",
+          "calendar_preview_end_raw": "2026-10-08 24:00",
+          "countdown_raw": "3天19:44:39",
+          "description": "冰川下满载王国宝藏的运输车",
+          "evidence_refs": [
+            "dataset/raw/ui_exploration/20260928/frame_265_EVENT_CALENDAR.png",
+            "dataset/raw/ui_exploration/20260928/frame_267_CAL_ICE_TREASURE_DETAIL.png"
+          ]
+        },
+        {
+          "event_id": "MOONLIGHT_FESTIVAL_SHOP",
+          "display_name": "明月的盛典 / 望月商铺",
+          "note": "calendar bar visible through selected date 2026-09-28; detail did not open on tested tap",
+          "start": null,
+          "end": null,
+          "evidence_refs": [
+            "dataset/raw/ui_exploration/20260928/frame_265_EVENT_CALENDAR.png",
+            "dataset/raw/ui_exploration/20260928/frame_269_CAL_MOON_SHOP_DETAIL.png"
+          ]
+        },
+        {
+          "event_id": "EXCLUSIVE_GEAR_FORGE",
+          "display_name": "专属装备铸炼",
+          "note": "bar visible from selected date to 2026-10-02; exact date/time not opened",
+          "start": null,
+          "end": null,
+          "evidence_refs": [
+            "dataset/raw/ui_exploration/20260928/frame_265_EVENT_CALENDAR.png"
+          ]
+        },
+        {
+          "event_id": "ICEBOUND_TREASURE_SUBROWS",
+          "display_name": "冰封的宝藏 calendar subrows",
+          "note": "three icons visible; only one has been semantically identified.",
+          "start": null,
+          "end": null,
+          "evidence_refs": [
+            "dataset/raw/ui_exploration/20260928/frame_265_EVENT_CALENDAR.png"
+          ]
+        }
+      ],
+      "canyon_vote": {
+        "event_id": "CANYON_CLASH",
+        "vote_deadline_countdown_raw": "1天19:49:17",
+        "eligible_session_options_raw": [
+          "2026-10-03 12:30:00",
+          "2026-10-03 16:00:00",
+          "2026-10-03 19:00:00",
+          "2026-10-03 20:30:00",
+          "2026-10-03 22:00:00"
+        ],
+        "participation_count": "35/95",
+        "vote_state": "NO_OPTION_SELECTED_NO_VOTE_SUBMITTED",
+        "evidence_refs": [
+          "dataset/raw/ui_exploration/20260928/frame_263_REGULAR_EVENTS.png",
+          "dataset/raw/ui_exploration/20260928/frame_264_CANYON_VOTE_DIALOG.png"
+        ]
+      },
+      "time_use_policy": "Calendar preview only; do not write directly into timed_event_schedule until client display timezone and role-specific scheduling contract are established.",
+      "confidence": "LIVE_SCREEN_OBSERVED; timezone unresolved"
+    },
+    {
+      "observation_id": "GEAR_FORGE_20260928_ROLE_1063040265_LIVE_01",
+      "source": "LIVE_CLIENT_EVENT_CALENDAR_AND_DETAIL",
+      "role_id": "1063040265",
+      "role_name": "零氪纯盾流",
+      "observed_at_local": "2026-09-28T04:51:15+08:00",
+      "time_zone": "UNKNOWN_CLIENT_DISPLAY",
+      "client_calendar_header_raw": "2026-09-28 04:10:59 (frame 265; earlier in this live exploration session)",
+      "current_calendar_items": [
+        {
+          "event_id": "ICEBOUND_TREASURE_TRAINING",
+          "display_name": "寻宝特训",
+          "calendar_preview_start_raw": "2026-10-02 00:00",
+          "calendar_preview_end_raw": "2026-10-08 24:00",
+          "countdown_raw": "3天19:27:42",
+          "description": "接受特训，准备好踏上寻宝之旅吧。",
+          "evidence_refs": [
+            "dataset/raw/ui_exploration/20260928/frame_265_EVENT_CALENDAR.png",
+            "dataset/raw/ui_exploration/20260928/frame_272_CAL_ICE_ICON2_DETAIL.png"
+          ]
+        },
+        {
+          "event_id": "ICEBOUND_TREASURE_MYSTERY_SHOP",
+          "display_name": "秘宝商行",
+          "calendar_preview_start_raw": "2026-10-02 00:00",
+          "calendar_preview_end_raw": "2026-10-09 24:00",
+          "countdown_raw": "3天19:28:10",
+          "description": "探寻秘宝，兑换精美奖品",
+          "reward_preview": "visible; individual contents not semantically read",
+          "evidence_refs": [
+            "dataset/raw/ui_exploration/20260928/frame_265_EVENT_CALENDAR.png",
+            "dataset/raw/ui_exploration/20260928/frame_271_CAL_ICE_ICON3_DETAIL.png"
+          ]
+        },
+        {
+          "event_id": "EXCLUSIVE_GEAR_FORGE",
+          "display_name": "专属装备铸炼",
+          "calendar_preview_start_raw": "2026-09-28 00:00",
+          "calendar_preview_end_raw": "2026-10-25 24:00",
+          "detail_remaining_raw": "27天19:26:20 (frame 275)",
+          "current_event_page_progress_raw": "0/5",
+          "evidence_refs": [
+            "dataset/raw/ui_exploration/20260928/frame_265_EVENT_CALENDAR.png",
+            "dataset/raw/ui_exploration/20260928/frame_274_CAL_GEAR_FORGE_DETAIL.png",
+            "dataset/raw/ui_exploration/20260928/frame_275_EXCLUSIVE_GEAR_FORGE_PAGE.png"
+          ]
+        }
+      ],
+      "gear_forge": {
+        "rules_evidence": [
+          "dataset/raw/ui_exploration/20260928/frame_276_GEAR_FORGE_RULES.png"
+        ],
+        "point_source_evidence": [
+          "dataset/raw/ui_exploration/20260928/frame_278_GEAR_FORGE_POINT_SOURCE.png"
+        ],
+        "point_sources": [
+          {
+            "hero_display_name": "罗根",
+            "navigation_evidence": "dataset/raw/ui_exploration/20260928/frame_280_FORGE_GOTO_LOGAN_ARROW.png"
+          },
+          {
+            "hero_display_name": "米娅",
+            "navigation_evidence": "dataset/raw/ui_exploration/20260928/frame_284_FORGE_GOTO_MIA_ARROW.png"
+          },
+          {
+            "hero_display_name": "格雷格",
+            "navigation_evidence": "dataset/raw/ui_exploration/20260928/frame_286_FORGE_GOTO_GREG_ARROW.png"
+          }
+        ],
+        "row_text_body_tap": "No page change observed in frame_279; the right-side same-row arrow is the working target.",
+        "point_rule": "During the event, raise a 3rd-generation hero exclusive-equipment level; each used component gives 1 event point.",
+        "thresholds": {
+          "1": 0,
+          "2": 5,
+          "3": 15,
+          "4": 30,
+          "5": 50,
+          "6": 100,
+          "7": 150,
+          "8": 200,
+          "9": 250,
+          "10": 325,
+          "11": 400,
+          "12": 500,
+          "13": 625,
+          "14": 750
+        },
+        "free_track": "Visible; current progress bar reads 0/5 at level 1.",
+        "extra_track": {
+          "name": "百炼神兵",
+          "state": "locked purchase track",
+          "purchase_frequency": "one-time during event per displayed rules",
+          "purchased": false
+        },
+        "consumables_used_during_inspection": false
+      },
+      "time_use_policy": "Raw calendar preview and client countdown are role-scoped observations. Client timezone/scheduler contract is unresolved; do not translate into timed_event_schedule. Re-read the active role and live event before dispatch.",
+      "confidence": "LIVE_SCREEN_OBSERVED; exact pages and displayed labels read; client timezone unresolved"
+    }
+  ]
+}

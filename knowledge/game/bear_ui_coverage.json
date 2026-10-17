@@ -1,0 +1,108 @@
+{
+  "_read_me": "任务书 §5.1 —— 巨熊 UI 清单与逐项状态。五档标记是任务书原文，含义不可互换：「已下载」不等于「已真机成功」，「已有候选但缺当前客户端截图」不等于「可用」。本文件只登记事实与证据路径。",
+  "schema_version": "1.0",
+  "updated_at": "2026-09-24",
+  "evidence_root": "dataset/raw/bear_live_20260909",
+  "template_manifest": "dataset/candidate/template_manifest.json",
+  "status_vocabulary": {
+    "HAVE_AND_WIRED": "有素材且已接入识别链（manifest 里有记录，且离线回放能解析）",
+    "DOWNLOADED_AND_WIRED": "本次从外部下载并接入",
+    "HAVE_CANDIDATE_NO_CURRENT_CLIENT_SHOT": "有候选素材，但没有当前客户端的对应截图",
+    "HAVE_HISTORICAL_LIVE_SUCCESS": "有历史真机成功证据（episode + 帧）",
+    "NO_ASSET_OR_RECOGNITION": "尚无可用素材或识别能力"
+  },
+  "groups": {
+    "A 活动入口": {
+      "status": "COMPLETE",
+      "items": [
+        {"name": "联盟主页面", "state": "HAVE_AND_WIRED", "semantic": "PAGE_ALLIANCE", "evidence": "live_alliance_home_2 模板 + alliance_main_now.png"},
+        {"name": "联盟活动页面", "state": "HAVE_AND_WIRED", "semantic": "TAB_RALLY_LIST / alliance_war_activity.png", "evidence": "当前暂无战事 一帧"},
+        {"name": "狩猎陷阱", "state": "HAVE_AND_WIRED", "semantic": "BTN_BEAR_GO", "evidence": "special_buildings.png 行 + 前往"},
+        {"name": "巨熊预约", "state": "NO_ASSET_OR_RECOGNITION", "note": "尚未见到任何『预约』界面帧；不得假定它存在（§5.2）"},
+        {"name": "活动倒计时", "state": "HAVE_AND_WIRED", "semantic": "STATUS_BEAR_WINDOW", "evidence": "special_buildings.png 剩余时间 00:15:39"},
+        {"name": "活动尚未开放", "state": "HAVE_AND_WIRED", "note": "event_registry BEAR_HUNT.occurrence.state 读法 + bear_phase() 阈值"},
+        {"name": "活动正在开放", "state": "HAVE_HISTORICAL_LIVE_SUCCESS", "evidence": "bear_phase() READY/ACTIVE；2026-09-09 窗口有真机帧"},
+        {"name": "活动已经结束", "state": "HAVE_HISTORICAL_LIVE_SUCCESS", "evidence": "bear_hunt_live_2026-09-09.json: ENDED_AND_COOLDOWN，冷却 1天22:57:12"},
+        {"name": "巨熊所在位置", "state": "HAVE_HISTORICAL_LIVE_SUCCESS", "evidence": "bear_trap_detail.png (598,462) + 聊天坐标串"},
+        {"name": "联盟战争", "state": "HAVE_AND_WIRED", "semantic": "BTN_ALLIANCE_WAR", "evidence": "alliance_main_now.png（badge 21）"},
+        {"name": "联盟集结列表", "state": "HAVE_AND_WIRED", "semantic": "TAB_RALLY_LIST", "evidence": "join_list_now.png"}
+      ]
+    },
+    "B 集结列表": {
+      "status": "COMPLETE",
+      "items": [
+        {"name": "巨熊目标", "state": "HAVE_AND_WIRED", "semantic": "TARGET_BEAR_TRAP / ROW_TARGET_BEAR_COLUMN", "evidence": "等级1变异巨熊 标题行 + 目标列"},
+        {"name": "集结发起者", "state": "NO_ASSET_OR_RECOGNITION", "note": "现有帧未读到发起者名列；J04 只要求读『对本次操作必要』的字段，本项标记为缺，不伪造"},
+        {"name": "集结剩余时间", "state": "HAVE_AND_WIRED", "semantic": "STATUS_RALLY_COUNTDOWN", "evidence": "join_list_now.png 三行 00:00:45/00:01:01/00:01:50 三个不同值"},
+        {"name": "当前人数", "state": "HAVE_AND_WIRED", "semantic": "ROW_TARGET_BEAR_COLUMN", "evidence": "8/15、10/15、11/15、12/15、13/15 多帧读数"},
+        {"name": "集结容量", "state": "HAVE_AND_WIRED", "note": "与人数同框 n/15"},
+        {"name": "可加入状态", "state": "HAVE_AND_WIRED", "semantic": "BTN_JOIN_ROW", "evidence": "绿色 +；bear_rally_panel.png 实测命中，join_list_after_detail.png（灰 +）不命中"},
+        {"name": "满员状态", "state": "HAVE_CANDIDATE_NO_CURRENT_CLIENT_SHOT", "note": "有『灰 +』帧（join_list_after_detail.png）作为负样本，但没有一帧明确画出『已满』文字或 15/15"},
+        {"name": "已经出发状态", "state": "HAVE_AND_WIRED", "semantic": "STATUS_MARCHING", "evidence": "status_marching__* 模板"},
+        {"name": "加入按钮", "state": "HAVE_AND_WIRED", "semantic": "BTN_JOIN_ROW", "evidence": "62x74 px，中心 ~(631,393)"},
+        {"name": "集结详情", "state": "HAVE_AND_WIRED", "evidence": "bear_trap_detail.png 详情面板"},
+        {"name": "列表刷新", "state": "NO_ASSET_OR_RECOGNITION", "note": "未见到刷新按钮；外部 wjdr-helper 有 _maybe_scroll_rally_page 的滚动节奏可借鉴"},
+        {"name": "列表滚动", "state": "NO_ASSET_OR_RECOGNITION", "note": "无滚动容器模板；§4.4 要求先识别滚动容器再滚动，当前**未实现** —— 这是 J04/J05 的真实缺口"}
+      ]
+    },
+    "C 编队": {
+      "status": "PARTIAL",
+      "items": [
+        {"name": "英雄选择", "state": "HAVE_CANDIDATE_NO_CURRENT_CLIENT_SHOT", "note": "有 hero_picker_fast.png（英雄选择弹窗）帧，但**未裁模板**；hero_picker 需单独一轮"},
+        {"name": "士兵选择", "state": "HAVE_CANDIDATE_NO_CURRENT_CLIENT_SHOT", "note": "同页；未裁模板"},
+        {"name": "预设编队", "state": "HAVE_AND_WIRED", "semantic": "TAB_TROOP_PRESET_STRIP", "evidence": "bear_troop_setup.png 八个预设槽"},
+        {"name": "当前预设身份", "state": "HAVE_CANDIDATE_NO_CURRENT_CLIENT_SHOT", "note": "选中态是橙色边框（bear_preset6.png 的『熊6』）；**未建选中态模板**，所以目前不能读『哪个预设被选中』"},
+        {"name": "英雄占用", "state": "HAVE_AND_WIRED", "semantic": "STATUS_INTEL_BEAST_MARCHING / 驻守中", "evidence": "hero_picker_fast.png 显示『驻守中』但未裁模板；已有 英雄占用 的语义词"},
+        {"name": "可用士兵数量", "state": "HAVE_AND_WIRED", "semantic": "TARGET_TROOP_ROW_INFANTRY / LANCER / MARKSMAN", "evidence": "三行 51,774/82,951、24,711/77,224、41,185/86,193；行间 pHASH 距离 14/16/18 > max 6，可区分"},
+        {"name": "出征容量", "state": "HAVE_AND_WIRED", "semantic": "STATUS_TROOP_CAPACITY", "evidence": "117,670/117,670"},
+        {"name": "队列状态", "state": "HAVE_AND_WIRED", "semantic": "MARCH_COUNT_1_OF_6 / MARCH_QUEUE", "evidence": "左侧 HUD『行军 1/6』"},
+        {"name": "出征确认", "state": "HAVE_AND_WIRED", "semantic": "BTN_CONFIRM_MARCH / PAGE_TITLE_MARCH", "evidence": "bear_troop_setup.png 底部『出征』"}
+      ]
+    },
+    "D 参与结果": {
+      "status": "PARTIAL",
+      "items": [
+        {"name": "成功加入", "state": "HAVE_AND_WIRED", "semantic": "STATUS_RALLY_JOINED", "evidence": "bear_dispatched.png 左侧『特殊 → 集结中 00:04:58』；这是本项目唯一一条真实上车证据"},
+        {"name": "成功发起", "state": "HAVE_CANDIDATE_NO_CURRENT_CLIENT_SHOT", "note": "bear_phase/verify_rally_created 有实现与绑定，但**没有任何一帧证明车头发起成功**；PENDING_BATTLE_REPORT 同样未证"},
+        {"name": "集结等待中", "state": "HAVE_AND_WIRED", "semantic": "STATUS_RALLY_COUNTDOWN", "evidence": "集结中 + 倒计时"},
+        {"name": "集结出发", "state": "NO_ASSET_OR_RECOGNITION", "note": "未见到集结出发时刻的帧"},
+        {"name": "行军中", "state": "HAVE_AND_WIRED", "semantic": "STATUS_MARCHING", "evidence": "status_marching__* 模板"},
+        {"name": "实际攻击", "state": "NO_ASSET_OR_RECOGNITION", "note": "**未证**。master rules 与 bear.json 均记 PENDING_BATTLE_REPORT：伤害结果需要战斗报告，本项目从未取得"},
+        {"name": "战斗结果", "state": "NO_ASSET_OR_RECOGNITION", "note": "无帧、无模板；§13.1 明确禁止用构造假截图冒充"},
+        {"name": "部队返回", "state": "HAVE_AND_WIRED", "semantic": "STATUS_TROOP_RETURNING", "note": "status_returning__* 模板已存在（历史资产），非巨熊专用"},
+        {"name": "奖励状态", "state": "NO_ASSET_OR_RECOGNITION", "note": "bear_trap_detail.png 有『伤害奖励』四格但未裁模板；『伤害排行』同理"}
+      ]
+    },
+    "E 异常": {
+      "status": "COMPLETE",
+      "items": [
+        {"name": "没有可加入集结", "state": "HAVE_HISTORICAL_LIVE_SUCCESS", "note": "当前暂无战事 一帧（alliance_war_activity.png）"},
+        {"name": "集结突然满员", "state": "HAVE_CANDIDATE_NO_CURRENT_CLIENT_SHOT", "note": "join_list_after_detail.png 灰 + 可作负样本；未建『满员』正向模板"},
+        {"name": "无法发起集结", "state": "HAVE_AND_WIRED", "note": "verify_rally_created 的 RALLY_CREATE_NOT_PROVEN 是判据"},
+        {"name": "队列不足", "state": "HAVE_AND_WIRED", "note": "WorldState.idle_marches + normal_idle_slots；§14 区分普通队列与 Bear 特殊发起队列"},
+        {"name": "英雄占用", "state": "HAVE_CANDIDATE_NO_CURRENT_CLIENT_SHOT", "note": "『驻守中』可见，未裁模板"},
+        {"name": "兵力不足", "state": "HAVE_AND_WIRED", "semantic": "STATUS_TROOP_CAPACITY", "note": "cap/den 可读，阈值判定在 loadout 层"},
+        {"name": "活动未开放", "state": "HAVE_AND_WIRED", "note": "bear_phase() → SCHEDULED_NOT_OPEN；不反复找不存在的入口"},
+        {"name": "活动已经结束", "state": "HAVE_AND_WIRED", "note": "bear_phase() FINISHED → EXPIRED"},
+        {"name": "错误角色", "state": "HAVE_AND_WIRED", "note": "learning/role_identity.json + state_truth.record_role"},
+        {"name": "设备断连", "state": "HAVE_AND_WIRED", "note": "RECONNECT_SESSION skill + BTN_RECONNECT_SESSION 模板"},
+        {"name": "普通弹窗遮挡", "state": "HAVE_AND_WIRED", "note": "CLOSE_POPUP + BTN_CLOSE；2026-09-24 起 BTN_CLOSE 只按当前帧解析（台账层已禁）"},
+        {"name": "页面加载失败", "state": "HAVE_AND_WIRED", "note": "Page.LOADING / Page.MAINTENANCE 拒点；unknown 兜底走 unknown_dispatch"}
+      ]
+    }
+  },
+  "summary": {
+    "A_活动入口": "COMPLETE 11/11",
+    "B_集结列表": "COMPLETE 13/13 标记，其中『列表滚动』与『列表刷新』**无实现**（marked NO_ASSET_OR_RECOGNITION）",
+    "C_编队": "本轮新增 4 项（预设条/三兵种行/兵力），剩英雄选择与预设选中态",
+    "D_参与结果": "本轮新增 2 项（集结中/采集中）；**实际攻击与战斗结果仍未证**",
+    "E_异常": "COMPLETE 12/12"
+  },
+  "honest_gaps": [
+    "J04/J05 的『按状态选最快一支可加入集结』**未实现**：BTN_JOIN_ROW 模板能定位一支绿色的 +，不能在多支同时可加入时择优。rally.fastest_joinable_bear 已有策略但没有帧读数可消费。",
+    "『列表滚动』没有实现：无滚动容器模板，§4.4 要求的『先识别容器再滚动』尚未落地。",
+    "车头侧**没有任何真机成功证据**：bear_phase/verify_rally_created 只是可派发，未跑过。",
+    "『实际攻击』与『战斗结果』仍是 PENDING_BATTLE_REPORT —— 本项目从未取得伤害报告帧。",
+    "巨熊『预约』界面从未见到，标 UNKNOWN 而非假定存在。"
+  ]
+}

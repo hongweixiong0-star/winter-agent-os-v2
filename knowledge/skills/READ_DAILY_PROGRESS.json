@@ -1,0 +1,130 @@
+{
+  "skill_id": "READ_DAILY_PROGRESS",
+  "name": "读取每日任务面板的活跃度与任务行",
+  "goal": "DAILY_ACTIVITY_TARGET",
+  "preconditions": [
+    "PAGE_HOME_CONFIRMED_CURRENT_FRAME",
+    "entry element BTN_OPEN_DAILY present in the current frame (template lookup, never a remembered coordinate)",
+    "action-specific verifier exists before real try  -- verify_open_daily / verify_daily_tab_selected"
+  ],
+  "required_page": "DAILY",
+  "required_state": {
+    "status": "AVAILABLE or CLAIMABLE",
+    "tab": "TASKS"
+  },
+  "required_vision": [
+    "DAILY_ACTIVITY_COUNTER",
+    "DAILY_REWARD_TIER"
+  ],
+  "required_actions": [
+    "SCREENSHOT",
+    "OCR_PROGRESS",
+    "CLASSIFY_TIERS"
+  ],
+  "verification": {
+    "open_daily": "verify_open_daily(before=HOME frame, after=panel frame) -> opened 2026-10-05: OK, evidence {before_home: true, after_task_board: true}",
+    "daily_tab_selected": "verify_daily_tab_selected -> NOT APPLICABLE on a HOME->DAILY pair (its before-half requires a task-board page drawn on another tab). Its after-half was true: after_tab == \"TASKS\". It is only meaningful when a tab SWITCH was actually performed."
+  },
+  "success_conditions": [
+    "activity_and_tiers_known"
+  ],
+  "success_condition_status": {
+    "activity_known": "YES -- measured live 2026-10-05: activity=70, read off the frame, cross-checked against the drawn badge",
+    "tiers_known": "NO -- the 7 chest thresholds are drawn on the panel and were located with pixel positions, but the production reading (WorldState.daily) does NOT emit them. The reading has no reward-tier field at all.",
+    "honest_verdict": "PARTIAL. This is a Step, not a complete Skill: the counter is read, the tier strip is measured but not wired."
+  },
+  "risk": "LOW_READ_ONLY",
+  "spend": "none -- reading the panel costs nothing and this record performs no claim. Claiming (DAILY_CLAIM_REWARDS / 一键领取) is a separate capability with its own verifier.",
+  "confidence": 0.8,
+  "source": "LIVE_OBSERVED_2026-10-05T07:26Z",
+  "status": "LIVE_TRIED",
+  "lifecycle": "LIVE_TRIED",
+  "stable": false,
+  "blocker": "DAILY_REWARD_TIER is not emitted by the reading: the 7 chest numbers are measured on the frame (positions below) but no field carries them, so activity_and_tiers_known is only half satisfied",
+  "live_attempts": 1,
+  "live_successes": 1,
+  "verified_variant": "3 visible task rows, 1 of them COMPLETED, status=CLAIMABLE, activity=70, opened directly on the 每日任务 tab",
+  "branches": {
+    "opened_directly_on_daily_tab": "measured 2026-10-05 -- the entry landed with 每日任务 as both the top heading AND the selected bottom tab, so NO tab switch was needed. The stored note that OPEN_DAILY lands on the panel's first tab (章节任务) therefore describes another client state, not a constant.",
+    "opened_on_another_tab": "not observed this run. If it happens: tap BTN_DAILY_TAB_TASKS once, then verify with verify_daily_tab_selected and re-observe -- never repeat a navigation tap from a stale frame.",
+    "task_completed": "a completed row draws 领取 BELOW the title (measured (597,579) for the title at y=507), not 前往 at the same row's right edge",
+    "task_incomplete": "an incomplete row draws 前往 at x=597, at title_y+72 (measured y=746 and y=911 for titles at y=674 and y=840)",
+    "nothing_claimable": "not observed; status would read AVAILABLE with the 一键领取 control absent"
+  },
+  "operator_policy": {
+    "spend": "zero -- the operator's zero-spend principle reserves diamonds for 统帅经验; nothing on this panel costs anything",
+    "claiming": "free rewards only, and claiming is a different capability; this record only reads",
+    "inverted_confidence_rule": "the drawn tab state and the drawn activity badge outrank any template layer's constant -- see failure_patterns[0]"
+  },
+  "measured_ui_path": {
+    "entry": "HOME. Template BTN_OPEN_DAILY. The stored bbox_norm x=0.0111 y=0.8 w=0.0917 h=0.0539 resolves to a (8,1024)-(74,1093) box whose midpoint is (41,1058); the live template lookup on this frame returned centre (46,1049), i.e. drift (-5,-9) from the box midpoint. Both are the same element; the template result is what was tapped.",
+    "frame": "720x1280",
+    "panel_header": "每日任务 at (359,125); the close X at (688,125)",
+    "self_refresh_banner": "下次刷新：16:33:15 at (146,192) and (220,192) -- y_norm ~0.15. This page carries its own reset timer rather than a refresh control, so no refresh step exists for this panel either.",
+    "reward_tier_strip": "SEVEN chest thresholds drawn in a ZIGZAG, not a row. Upper band y~307-308: 40 (x176), 120 (x308), 215 (x462), 325 (x642). Lower band y~392-394: 80 (x240), 160 (x373), 270 (x552). x increases monotonically left to right across both bands, alternating high/low. Thresholds: 40 / 80 / 120 / 160 / 215 / 270 / 325, max 325.",
+    "activity_badge": "the current activity counter is the LEFTMOST element of the zigzag, on the lower band: read 70 at (81,394). It is the one number on the strip that is NOT a chest threshold, which is how it is told apart from them.",
+    "task_rows": "titles start at x~100 and are drawn at y=507 (训练10个射手 10/10, COMPLETED), y=674 (完成联盟捐献5次 0/5), y=840 (完成1次英雄招募 0/1). Row pitch ~166 px. Three rows are visible without scrolling.",
+    "row_controls": "前往 at x=597, at title_y+72: measured (597,746) and (597,911). A completed row instead draws 领取 at (597,579), i.e. below its own title.",
+    "claim_all": "一键领取 at (361,1030)",
+    "bottom_tabs": "成长任务 at (244,1135) and 每日任务 at (477,1135), both below y_norm 0.88"
+  },
+  "live_evidence": {
+    "observed_at": "2026-10-05T07:26Z",
+    "evidence_dir": "dataset/evidence/daily_panel_observe_20261005T072608",
+    "frames": {
+      "home_before": "h0_look.png -- home_score 6/6",
+      "after_entry_tap": "p1_after_entry_tap.png -- home_score 0/6, so the tap really left the city",
+      "home_after": "b0_back.png -- home_score 6/6"
+    },
+    "tap": "(46,1049), ad.click returned (True, '')",
+    "device_handover": "AUTO yielded after 9 s (stop_reason device_leased_for_development, owner DEVELOPMENT_VALIDATION)",
+    "production_reading": {
+      "page": "DAILY",
+      "confidence": 0.99,
+      "activity": 70,
+      "status": "CLAIMABLE",
+      "tab": "TASKS",
+      "visible_task_count": 3,
+      "rows": [
+        {"task_id": "DAILY_TRAIN_MARKSMAN", "state": "COMPLETED", "progress": {"current": 10, "target": 10}, "label": "训练10个射手", "button": null},
+        {"task_id": "DAILY_ALLIANCE_CONTRIBUTE", "state": "AVAILABLE", "progress": {"current": 0, "target": 5}, "label": "完成联盟捐献5次", "button": "BTN_DAILY_TASK_GO"},
+        {"task_id": "DAILY_HERO_RECRUIT", "state": "AVAILABLE", "progress": {"current": 0, "target": 1}, "label": "完成1次英雄招募", "button": "BTN_DAILY_TASK_GO"}
+      ]
+    },
+    "reproduce": [
+      "python tools/observe_daily_panel.py   (live, read-only, leases the device)",
+      "python tools/probe_daily_panel.py --frame <panel>.png   (frame replay, three producers side by side)",
+      "python tools/verify_daily_observation.py --before <home>.png --after <panel>.png   (the Verifier's verdict)"
+    ]
+  },
+  "failure_patterns": [
+    {
+      "id": "TEMPLATE_LAYER_PUBLISHES_CONSTANTS_AS_READINGS",
+      "what": "vision.py:2338-2345 returns literal dicts with hardcoded numbers at confidence 0.99 -- {activity: 70} from DAILY_ACTIVITY_70_CURRENT, and {task_id: HERO_RECRUIT_1, progress: 0, target: 1, activity: 270} from BTN_DAILY_GO_HERO_RECRUIT. Those are the values of whichever single frame each template was cut from, published as if measured.",
+      "measured": "on dataset/raw/live_daily_after_beast.png the template layer said activity=70 while the frame really shows 270 (labelled in tests/replay/labels.json: claimed_milestones [40,80,120,160,215,270], next_milestone 325, element DAILY_ACTIVITY_270). The OCR layer read 270 and the merge (ocr.py:6032) let 270 win.",
+      "why_it_has_not_bitten_yet": "HybridVision merges OCR over the template on a per-key basis, and the OCR branch reads the real number -- so on a normal daily frame the constant is overwritten. It is only exposed when the two layers disagree about the PAGE, because then the merge is skipped entirely (ocr.py:6032 requires secondary.page is primary.page).",
+      "honest_status": "recorded, NOT fixed. Touching the legacy recogniser's branches has a wide blast radius and the mask above means this needs its own measurement round first.",
+      "guard": "tests/test_daily_panel_reading.py pins that the production reading's activity comes from the OCR layer, not from the template constant, on a real frame where the two disagree."
+    },
+    {
+      "id": "PAGE_DAILY_DOES_NOT_MEAN_THE_DAILY_TAB_IS_SHOWING",
+      "what": "the page classifier names the page from the literal 每日任务, which the client draws on the tab BAR even while another tab is selected -- documented at vision.py:2316-2321, where the cost is recorded: on 2026-09-16 the account stood at activity 285 with its three chests (80/160/215/270) already passed and the run could not see any of it.",
+      "consequence": "any reader must confirm the TAB, not just the page, before trusting a row list"
+    },
+    {
+      "id": "ENTRY_DOES_NOT_ALWAYS_LAND_ON_THE_FIRST_TAB",
+      "what": "the project's note says OPEN_DAILY lands on the panel's first tab (章节任务), which is why a tab-switch step exists at all. Measured 2026-10-05: the entry landed with 每日任务 as both the top heading and the selected bottom tab, so the switch was unnecessary.",
+      "consequence": "the tab switch must stay CONDITIONAL (read the drawn tab first), never unconditional -- an unconditional switch on a panel already showing 每日任务 is a tap with no legal target"
+    },
+    {
+      "id": "FIRST_FRAME_AFTER_A_ROW_TAP_IS_STILL_DAILY",
+      "what": "recorded in semantic_dictionary.json:1740 for BTN_DAILY_TASK_GO: the first frame after tapping 前往 remained DAILY, and the page changed only later.",
+      "consequence": "never assume a synchronous page change; re-observe. This record does not tap 前往 at all, so it is a warning for the next capability (following a daily task), not for this one."
+    },
+    {
+      "id": "EXTERNAL_TABLES_DISAGREE_WITH_THIS_CLIENT",
+      "what": "community sources give per-task activity points and a '100 activity is the daily target' rule (gozwgame), while this client draws a 7-tier strip whose maximum is 325 and whose thresholds are 40/80/120/160/215/270/325 (measured on a real frame and corroborated independently by AppGamer's 'up to 325 points').",
+      "consequence": "external tables are recorded as hypotheses only, per the standing order 真机观察 > Episode > CONFIRMED > OBSERVED > 官方 > 社区 > 视频 > 模型推测. Nothing from them was written into this record as fact."
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "kind": "RUNTIME_RELOAD_REQUIRED",
+  "job_id": "",
+  "reason": "CONTROL_PLANE_RELOAD_REQUIRED：本进程加载的 5868d1e7f7ce 已被 d56875dbce71 取代，涉及控制面 winter_agent_v2/version_identity.py",
+  "requested_at": "2026-09-21T13:48:32.593323+00:00",
+  "evidence": [
+    ".workbuddy-ai/commander/CODEX_DIRECTIVES.md",
+    ".workbuddy-ai/commander/EXECUTION_STATE.json",
+    ".workbuddy-ai/commander/LAST_CODEX_REVIEW.md",
+    ".workbuddy-ai/commander/WORK_QUEUE.json",
+    ".workbuddy/memory/2026-09-21.md",
+    "config/control_panel_state.json",
+    "config/policy_state.json",
+    "dataset/truth_audit/quick_panel_20260921/01_panel_open_all_camps_idle.png",
+    "dataset/truth_audit/quick_panel_20260921/02_city_panel_closed.png",
+    "dataset/truth_audit/quick_panel_20260921/03_intel_panel_closed.png",
+    "dataset/truth_audit/quick_panel_20260921/04_city_panel_closed_second.png",
+    "dataset/truth_audit/quick_panel_20260921/05_panel_open_live_second_reading.png"
+  ]
+}

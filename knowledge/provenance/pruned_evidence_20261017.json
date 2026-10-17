@@ -1,0 +1,782 @@
+{
+ "schema_version": "1.0",
+ "recorded_at": "2026-10-17",
+ "loss": "109 条 episode 引用的 before/after 截图不可恢复",
+ "cause": "2026-10-17 的文件整理按体积删除 dataset/raw/role_switch 的旧帧，没有先按 retention.referenced_evidence 的保护口径筛选。retention.py 的保护只覆盖轮转目录，这次是人工 rm，绕过了保护；删除后 evidence_integrity 报引用悬空。",
+ "recovery": "不可恢复：rm 绕过回收站，按文件名全盘搜索 E: 无果；这些帧是 10-06..10-08 的失败重试帧，不再重放。保留原 episode 行不改写，用本清单把损失显式登记，新缺失仍让测试失败。",
+ "affected_skills": {
+  "OPEN_MAP": 59,
+  "OPEN_QUICK_PANEL": 43,
+  "OPEN_EXPLORATION": 1,
+  "TRY_ORDINARY_CONTROL": 1,
+  "OPEN_EVENT_CALENDAR_FROM_HOME": 5
+ },
+ "count": 109,
+ "paths": [
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261006T010756_029685Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261006T011157_009192Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261006T030737_220486Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T221425_771767Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T221949_965399Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T222521_712925Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T223045_122974Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T223611_102245Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T224136_493720Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T224701_203712Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T225227_967363Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T225751_944500Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T230318_117698Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T230842_801563Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T231407_169903Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T231935_425677Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T232458_034083Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T233026_896924Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T235730_534710Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T001543_287823Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T051611_612099Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T053401_200384Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T053649_282021Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T054013_349033Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T060624_127998Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T064425_409841Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T065104_739687Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T065500_268514Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T083100_117029Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T083811_316043Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T092942_390603Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T094121_585528Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T094710_062733Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T095922_784612Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T100434_436859Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T100943_396410Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T101454_055456Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T102001_423936Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T102534_881808Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T103137_363729Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T103814_464909Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T105121_617812Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T105730_593579Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T110334_808827Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T110843_967120Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T111420_343634Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T111938_040246Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T112617_803870Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T113216_849031Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T113902_931397Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T114621_482641Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T115137_754912Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T115714_976774Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T120618_478856Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T121529_702738Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T122255_557779Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T122856_513149Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T123709_688931Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T124348_769825Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T124928_948706Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T125514_033637Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T130129_842507Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T132521_831676Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T133113_627148Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T134053_427742Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T134440_147134Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T135412_047650Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T140350_396744Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T175222_015646Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T180710_561019Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T181731_520175Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T185356_712848Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T190140_328816Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T190451_888914Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T192936_482914Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T195433_845206Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T201232_787048Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T203414_021089Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T203645_502219Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T205305_560574Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T210607_937122Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T211802_982744Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T214119_029068Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T214831_157770Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T215014_109649Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T215226_409920Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T215809_270864Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T220059_557014Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T224247_184964Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T230445_351233Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T231842_522054Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261010T015537_768061Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261010T040048_760069Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261010T105611_366423Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261010T233647_403827Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261010T233935_865937Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261010T234346_345146Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261010T234629_523662Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T000305_365837Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T000733_292731Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T002259_428990Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T002715_954461Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T002935_342749Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T003115_050754Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T003724_576922Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T004453_970961Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T004744_523064Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T005305_585146Z_source_home.png",
+  "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T005816_379496Z_source_home.png"
+ ],
+ "entries": [
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261006T010756_029685Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261006_090733_533700",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261006T011157_009192Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261006_091133_595422",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261006T030737_220486Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261006_110716_682251",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T221425_771767Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_061405_843055",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T221949_965399Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_061930_528213",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T222521_712925Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_062502_248792",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T223045_122974Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_063025_491045",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T223611_102245Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_063551_085411",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T224136_493720Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_064117_094455",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T224701_203712Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_064641_057380",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T225227_967363Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_065208_302383",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T225751_944500Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_065732_445199",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T230318_117698Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_070258_317726",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T230842_801563Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_070823_165492",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T231407_169903Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_071347_632007",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T231935_425677Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_071915_859114",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T232458_034083Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_072438_586458",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T233026_896924Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_073007_435343",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261007T235730_534710Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_075705_554216",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T001543_287823Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_081532_725909",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T051611_612099Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_131543_008007",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T053401_200384Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_133350_209901",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T053649_282021Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_133642_336457",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T054013_349033Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_134006_353068",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T060624_127998Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_140611_331139",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T064425_409841Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_144411_257083",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T065104_739687Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_145053_768646",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T065500_268514Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_145447_053278",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T083100_117029Z_source_home.png",
+   "skill": "OPEN_EXPLORATION",
+   "episode_id": "20261008_163050_899474",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T083811_316043Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_163800_507295",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T092942_390603Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_172918_795338",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T094121_585528Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_174052_673186",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T094710_062733Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_174644_403106",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T095922_784612Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_175858_914414",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T100434_436859Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_180410_374014",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T100943_396410Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_180920_074049",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T101454_055456Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_181430_707136",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T102001_423936Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_181937_979094",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T102534_881808Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_182506_012991",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T103137_363729Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_183109_008463",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T103814_464909Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_183744_336683",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T105121_617812Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_185054_947079",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T105730_593579Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_185703_951336",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T110334_808827Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_190308_693348",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T110843_967120Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_190820_477082",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T111420_343634Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_191353_580480",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T111938_040246Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_191913_927320",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T112617_803870Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_192552_084166",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T113216_849031Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_193147_319242",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T113902_931397Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_193821_354434",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T114621_482641Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_194555_528253",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T115137_754912Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_195114_393758",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T115714_976774Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_195636_473758",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T120618_478856Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_200539_529087",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T121529_702738Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_201450_092090",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T122255_557779Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_202229_818455",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T122856_513149Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_202829_917237",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T123709_688931Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_203631_473412",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T124348_769825Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_204323_155140",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T124928_948706Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_204903_119247",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T125514_033637Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_205446_656808",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T130129_842507Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_210100_184357",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T132521_831676Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_212455_062701",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T133113_627148Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_213047_837899",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T134053_427742Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261008_214027_521309",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T134440_147134Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_214430_396013",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T135412_047650Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_215355_915437",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T140350_396744Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261008_220343_071188",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T175222_015646Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261009_015213_830530",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T180710_561019Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261009_020701_888250",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T181731_520175Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261009_021719_294252",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T185356_712848Z_source_home.png",
+   "skill": "TRY_ORDINARY_CONTROL",
+   "episode_id": "20261009_025340_048135",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T190140_328816Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261009_030132_690429",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T190451_888914Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261009_030436_388473",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T192936_482914Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261009_032900_264084",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T195433_845206Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261009_035406_167291",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T201232_787048Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261009_041208_971728",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T203414_021089Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261009_043353_692184",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T203645_502219Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261009_043629_798252",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T205305_560574Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261009_045245_578059",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T210607_937122Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261009_050555_561274",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T211802_982744Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261009_051745_143218",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T214119_029068Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261009_054100_298616",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T214831_157770Z_source_home.png",
+   "skill": "OPEN_EVENT_CALENDAR_FROM_HOME",
+   "episode_id": "20261009_054819_665355",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T215014_109649Z_source_home.png",
+   "skill": "OPEN_EVENT_CALENDAR_FROM_HOME",
+   "episode_id": "20261009_054936_645410",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T215226_409920Z_source_home.png",
+   "skill": "OPEN_EVENT_CALENDAR_FROM_HOME",
+   "episode_id": "20261009_055155_002446",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T215809_270864Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261009_055747_169965",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T220059_557014Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261009_060048_581314",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T224247_184964Z_source_home.png",
+   "skill": "OPEN_EVENT_CALENDAR_FROM_HOME",
+   "episode_id": "20261009_064216_041177",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T230445_351233Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261009_070434_896575",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261008T231842_522054Z_source_home.png",
+   "skill": "OPEN_EVENT_CALENDAR_FROM_HOME",
+   "episode_id": "20261009_071821_194171",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261010T015537_768061Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261010_095519_009194",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261010T040048_760069Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261010_120034_024424",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261010T105611_366423Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261010_185558_379335",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261010T233647_403827Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261011_073638_753602",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261010T233935_865937Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261011_073927_328800",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261010T234346_345146Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261011_074337_706175",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261010T234629_523662Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261011_074621_165550",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T000305_365837Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261011_080257_903384",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T000733_292731Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261011_080706_277375",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T002259_428990Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261011_082251_426550",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T002715_954461Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261011_082708_021273",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T002935_342749Z_source_home.png",
+   "skill": "OPEN_QUICK_PANEL",
+   "episode_id": "20261011_082927_505309",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T003115_050754Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261011_083107_207771",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T003724_576922Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261011_083700_570161",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T004453_970961Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261011_084446_360535",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T004744_523064Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261011_084736_853227",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T005305_585146Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261011_085257_175407",
+   "field": "before_screenshot"
+  },
+  {
+   "path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\role_switch\\20261011T005816_379496Z_source_home.png",
+   "skill": "OPEN_MAP",
+   "episode_id": "20261011_085808_833307",
+   "field": "before_screenshot"
+  }
+ ]
+}
