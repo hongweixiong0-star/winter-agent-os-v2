@@ -312,7 +312,7 @@ whichever it read last"*）—— 符合操作者"**显示的状态必须能说�
 
 - Bash 工具无 coreutils：`ls/cat/head/tail/sleep/wc/date` 全部 `command not found`。
 - PowerShell 工具 stdout 不回传（返回 exit code 0 但无输出）。
-- 托管 Python 3.13 无 `PIL`；必须用 `E:\dongri-mumu-bot\.venv\Scripts\python.exe`。
+- 托管 Python 3.13 无 `PIL`；必须用 `E:\WinterAgent\.venv\Scripts\python.exe`。
 - 项目自带 `tests` 全量约 7 分钟（含 OCR 初始化），不要频繁全量跑。
 
 ### 2026-09-16 新增（本轮）
@@ -424,7 +424,7 @@ whichever it read last"*）—— 符合操作者"**显示的状态必须能说�
 
 | 60 | **客户端卡在联盟页、`BACK` 推不动 —— 当前首要阻塞** | 🔴 **已定位（含 reason）** | 修订 `1be0748b+f272d5e0`：步1 `BACK`（`tap=None`，正确：BACK 无落点）`page ALLIANCE→ALLIANCE`、reason=`mail_goal_leaves_a_panel_it_does_not_own`，`stop_reason=SAFE_BACK_NOT_PROVEN` ⇒ 上一轮把客户端留在联盟页，本轮发一次 BACK 但**客户端没动**。**与昨晚 INTEL 同形**（一轮留页、下一轮出不去），但这次**连 BACK 都推不动** ⇒ 该页退出方式**不是系统返回键**（或被该页吞掉）。**为何首要**：客户端回不到 MAP ⇒ 读不到体力表 ⇒ 体力目标无法被发现（#56）⇒ **P0 整链被挡在最前**。**下一步**：看该轮 after 帧，量清联盟页真实退出方式（独立关闭控件 / 需按两次），**不得**放宽 `verify_safe_back` 让失败通过。 |
 
-| 61 | **V2 已解除对旧目录 `E:\dongri-mumu-bot` 的依赖** | ✅ **已验证（真机）** | 新环境 `E:\无尽冬日智能体\.venv`（**复制**自旧 venv：959MB/61 包，MaaFw/MaaAgentBinary/opencv/onnxruntime 齐全；基底解释器在旧目录之外，副本自立；新 venv 内部无旧路径）。四处生产引用 + 20 个开发工具 + 4 份文档 + 工具注册表已改指；`START_HERE.md` 保留一条「旧目录已退役」的警告（`verify_handoff` 的陷阱令牌需要）。**真机验证**：`resolve()` → `missing=()`；preflight **PASS**；面板日志 `运行环境预检通过` → `自动运行已启动`；**活 worker 命令行已是 `E:\无尽冬日智能体\.venv\Scripts\python.exe`**；**MAA 原生执行** `capture_backend=MAA_MUMU_EXTRAS`、`capture()` 11.6 ms；网关 OK。**同时修掉挡住 AUTO 启动的真 bug**：面板按 OEM 解码 `preflight --json` 的裸 UTF-8 ⇒ 中文根路径乱码吃掉闭引号 ⇒ `Invalid \escape` ⇒ 拒绝启动 AUTO；已改为 ASCII 转义 JSON。**仅剩两处非运行时引用**：① `knowledge/provenance/research_research_sources.json` 指向旧目录里一个源文件（`LOCAL_REFERENCE_ONLY` 的溯源记录，删后该指针悬空）；② `capability_bootstrap.py:1086` 的 `legacy:` 资产**名**（只做名字匹配，不读该目录）。**未删除旧目录任何内容。** |
+| 61 | **V2 已解除对旧目录 `E:\dongri-mumu-bot` 的依赖** | ✅ **已验证（真机）** | 新环境 `E:\WinterAgent\.venv`（**复制**自旧 venv：959MB/61 包，MaaFw/MaaAgentBinary/opencv/onnxruntime 齐全；基底解释器在旧目录之外，副本自立；新 venv 内部无旧路径）。四处生产引用 + 20 个开发工具 + 4 份文档 + 工具注册表已改指；`START_HERE.md` 保留一条「旧目录已退役」的警告（`verify_handoff` 的陷阱令牌需要）。**真机验证**：`resolve()` → `missing=()`；preflight **PASS**；面板日志 `运行环境预检通过` → `自动运行已启动`；**活 worker 命令行已是 `E:\WinterAgent\.venv\Scripts\python.exe`**；**MAA 原生执行** `capture_backend=MAA_MUMU_EXTRAS`、`capture()` 11.6 ms；网关 OK。**同时修掉挡住 AUTO 启动的真 bug**：面板按 OEM 解码 `preflight --json` 的裸 UTF-8 ⇒ 中文根路径乱码吃掉闭引号 ⇒ `Invalid \escape` ⇒ 拒绝启动 AUTO；已改为 ASCII 转义 JSON。**仅剩两处非运行时引用**：① `knowledge/provenance/research_research_sources.json` 指向旧目录里一个源文件（`LOCAL_REFERENCE_ONLY` 的溯源记录，删后该指针悬空）；② `capability_bootstrap.py:1086` 的 `legacy:` 资产**名**（只做名字匹配，不读该目录）。**未删除旧目录任何内容。** |
 
 | 62 | **Soak「启动失败」＝窗口来自开发解释器（机制正确）；另修两个真缺陷** | ✅ **已定性 + 已修** | `_drive_soak` 是**进程内**构造 `GatewaySoak`，`gateway_soak.py` **不创建任何子进程** ⇒ **Soak 不选解释器**；截图那句来自 `launch_context()`（`control_panel.py:1390`），打印的是**窗口自己的** `sys.executable`。三向实测：venv 启动→`production`（Soak 启动）；带 `WINTER_AGENT_LAUNCH_PATH=desktop`→`production`；其它解释器→**截图那句** ⇒ 拒绝正确，**隔离检查必须保留**。今天 `panel.log` 有 4 次 `验收 Soak 已启动`（09:54–09:59，venv 窗口）。**真缺陷 A**：`escalation_queue._wiring_problems()` 用 `sys.executable` 派生 `check_wiring`，而它由面板泵驱动 ⇒ 开发解释器会判断产品接线；**已改走 `runtime_env`**（解析不到返 `None`）。**诚实**：本次**未改变结论**（该工具不依赖第三方包）⇒ 修的是隐患，不是症状。**真缺陷 B**：`control_panel.py:4023` `view` 未绑定（两个兄弟刷新都有 `view = escalation_view()`，此处丢了），NameError 被宽 `except` 吞掉 ⇒ **一致性卡片每次刷新都失败且沉默**；无 traceback，靠**静态分析**定位，**已补**，并加 `tests/test_panel_names_are_bound.py`（移除该行即 2 条变红）。**观察（未定性）**：`CONTROL_PLANE_RELOAD_REQUIRED.json` **只写不删**（对照 `runtime_reload` 有 `clear()`），重载判定虽为 git 派生，陈旧标记是否复触发**未证明**。 |
 
@@ -1140,7 +1140,7 @@ reached production unnoticed ... without maa/cv2"）。
 按正式方式重启：`preflight` **PASS**（正确解释器 + MuMu `127.0.0.1:7555` 在线、`com.gof.china` 前台），
 先 `taskkill /T /F /PID 11152`，再用 **venv pythonw** 启动 —— 新面板起来并写了日志：
 
-    12:33:10  运行环境预检通过：E:\无尽冬日智能体\.venv\Scripts\python.exe
+    12:33:10  运行环境预检通过：E:\WinterAgent\.venv\Scripts\python.exe
     12:33:10  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定
 
 **但它随后被回收了**：约 2 分钟后进程列表里已无该 PID，`panel.log` 停在 `12:33:10` 且**无退出记录**

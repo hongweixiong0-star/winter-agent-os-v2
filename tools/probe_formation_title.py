@@ -20,7 +20,7 @@ identity must be removed from this page and carried forward instead.
 
 Usage::
 
-    "E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/probe_formation_title.py
+    "E:/WinterAgent/.venv/Scripts/python.exe" tools/probe_formation_title.py
     ... tools/probe_formation_title.py --corpus dataset/raw/stamina_emergency
 """
 

@@ -22,7 +22,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_075609_006189\\20261017_075609_006189_step_008_before_20261016T235738888141.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_075609_006189\\20261017_075609_006189_step_008_before_20261016T235738888141.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -126,7 +126,7 @@
     0.43046875
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_075609_006189\\20261017_075609_006189_step_007_after_20261016T235735518321.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_075609_006189\\20261017_075609_006189_step_007_after_20261016T235735518321.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -254,7 +254,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_075609_006189\\20261017_075609_006189_step_003_after_refresh_2_20261016T235654499597.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_075609_006189\\20261017_075609_006189_step_003_after_refresh_2_20261016T235654499597.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -356,7 +356,7 @@
     0.14921875
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_075609_006189\\20261017_075609_006189_step_001_after_settle_retry_20261016T235627999026.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_075609_006189\\20261017_075609_006189_step_001_after_settle_retry_20261016T235627999026.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -458,7 +458,7 @@
     0.95390625
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_075121_799065\\20261017_075121_799065_step_007_after_refresh_1_20261016T235250466489.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_075121_799065\\20261017_075121_799065_step_007_after_refresh_1_20261016T235250466489.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -585,7 +585,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_075121_799065\\20261017_075121_799065_step_004_before_20261016T235209568707.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_075121_799065\\20261017_075121_799065_step_004_before_20261016T235209568707.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -688,7 +688,7 @@
     0.95703125
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_074624_201960\\20261017_074624_201960_step_006_after_refresh_1_20261016T234753078832.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_074624_201960\\20261017_074624_201960_step_006_after_refresh_1_20261016T234753078832.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -793,7 +793,7 @@
     0.725
    ],
    "screen": "POPUP|EXPLORATION_IDLE_DIALOG",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_074141_628090\\20261017_074141_628090_step_009_after_refresh_1_20261016T234333953097.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_074141_628090\\20261017_074141_628090_step_009_after_refresh_1_20261016T234333953097.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -897,7 +897,7 @@
     0.6765625
    ],
    "screen": "EXPLORATION",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_074141_628090\\20261017_074141_628090_step_008_after_20261016T234316806121.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_074141_628090\\20261017_074141_628090_step_008_after_20261016T234316806121.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -997,7 +997,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_074141_628090\\20261017_074141_628090_step_006_after_20261016T234258763143.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_074141_628090\\20261017_074141_628090_step_006_after_20261016T234258763143.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -1099,7 +1099,7 @@
     0.93515625
    ],
    "screen": "POPUP|GENERIC_REWARD",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_073706_771064\\20261017_073706_771064_step_009_after_settle_retry_20261016T233851168559.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_073706_771064\\20261017_073706_771064_step_009_after_settle_retry_20261016T233851168559.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -1214,7 +1214,7 @@
     0.96953125
    ],
    "screen": "MAIL",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_073706_771064\\20261017_073706_771064_step_008_after_refresh_1_20261016T233847167939.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_073706_771064\\20261017_073706_771064_step_008_after_refresh_1_20261016T233847167939.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -1317,7 +1317,7 @@
     0.8203125
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_073706_771064\\20261017_073706_771064_step_007_after_20261016T233838102119.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_073706_771064\\20261017_073706_771064_step_007_after_20261016T233838102119.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -1418,7 +1418,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_073148_267227\\20261017_073148_267227_step_002_before_20261016T233232193899.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_073148_267227\\20261017_073148_267227_step_002_before_20261016T233232193899.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -1518,7 +1518,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_022536_899309\\20261017_022536_899309_step_008_before_20261016T182658189953.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_022536_899309\\20261017_022536_899309_step_008_before_20261016T182658189953.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -1590,7 +1590,7 @@
     0.82421875
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_013006_922197\\20261017_013006_922197_step_010_after_settle_retry_20261016T173205238131.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_013006_922197\\20261017_013006_922197_step_010_after_settle_retry_20261016T173205238131.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -1697,7 +1697,7 @@
     0.0859375
    ],
    "screen": "MAP",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_012523_158076\\20261017_012523_158076_step_006_after_settle_retry_20261016T172704705041.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_012523_158076\\20261017_012523_158076_step_006_after_settle_retry_20261016T172704705041.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -1805,7 +1805,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_010320_967020\\20261017_010320_967020_step_008_session_observe_after_20261016T170623076904.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_010320_967020\\20261017_010320_967020_step_008_session_observe_after_20261016T170623076904.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -1904,7 +1904,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_010320_967020\\20261017_010320_967020_step_008_session_observe_after_20261016T170618070685.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_010320_967020\\20261017_010320_967020_step_008_session_observe_after_20261016T170618070685.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -2003,7 +2003,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_010320_967020\\20261017_010320_967020_step_008_session_observe_after_20261016T170606524647.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_010320_967020\\20261017_010320_967020_step_008_session_observe_after_20261016T170606524647.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -2105,7 +2105,7 @@
     0.953125
    ],
    "screen": "MAP",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_010320_967020\\20261017_010320_967020_step_008_session_observe_after_20261016T170552642364.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_010320_967020\\20261017_010320_967020_step_008_session_observe_after_20261016T170552642364.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -2231,7 +2231,7 @@
     0.73984375
    ],
    "screen": "MAP",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_010320_967020\\20261017_010320_967020_step_008_session_observe_after_20261016T170536259088.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_010320_967020\\20261017_010320_967020_step_008_session_observe_after_20261016T170536259088.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -2339,7 +2339,7 @@
     0.690625
    ],
    "screen": "MAP",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_010320_967020\\20261017_010320_967020_step_008_session_observe_after_20261016T170519693412.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_010320_967020\\20261017_010320_967020_step_008_session_observe_after_20261016T170519693412.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -2378,7 +2378,7 @@
     0.20390625
    ],
    "screen": "INTEL",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_172738_866458\\20261011_172738_866458_step_003_after_settle_retry_20261011T092851378932.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_172738_866458\\20261011_172738_866458_step_003_after_settle_retry_20261011T092851378932.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -2482,7 +2482,7 @@
     0.67421875
    ],
    "screen": "MAP",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_172738_866458\\20261011_172738_866458_step_002_after_settle_retry_20261011T092836325518.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_172738_866458\\20261011_172738_866458_step_002_after_settle_retry_20261011T092836325518.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -2599,7 +2599,7 @@
     0.5859375
    ],
    "screen": "MAP",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_172232_722458\\20261011_172232_722458_step_004_after_refresh_2_20261011T092439142469.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_172232_722458\\20261011_172232_722458_step_004_after_refresh_2_20261011T092439142469.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -2707,7 +2707,7 @@
     0.88046875
    ],
    "screen": "INTEL",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_164352_053970\\20261011_164352_053970_step_024_after_refresh_1_20261011T084835554372.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_164352_053970\\20261011_164352_053970_step_024_after_refresh_1_20261011T084835554372.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -2810,7 +2810,7 @@
     0.93828125
    ],
    "screen": "MARCH",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_164352_053970\\20261011_164352_053970_step_021_after_refresh_1_20261011T084759358496.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_164352_053970\\20261011_164352_053970_step_021_after_refresh_1_20261011T084759358496.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -2915,7 +2915,7 @@
     0.49453125
    ],
    "screen": "EXPLORATION",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_164352_053970\\20261011_164352_053970_step_020_after_settle_retry_20261011T084745708015.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_164352_053970\\20261011_164352_053970_step_020_after_settle_retry_20261011T084745708015.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -3024,7 +3024,7 @@
     0.7296875
    ],
    "screen": "POPUP|INTEL_HERO_JOURNEY",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_164352_053970\\20261011_164352_053970_step_019_after_refresh_1_20261011T084741324998.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_164352_053970\\20261011_164352_053970_step_019_after_refresh_1_20261011T084741324998.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -3128,7 +3128,7 @@
     0.94921875
    ],
    "screen": "MARCH",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_164352_053970\\20261011_164352_053970_step_008_after_refresh_1_20261011T084539673373.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_164352_053970\\20261011_164352_053970_step_008_after_refresh_1_20261011T084539673373.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -3232,7 +3232,7 @@
     0.7296875
    ],
    "screen": "POPUP|INTEL_BEAST_MISSION",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_164352_053970\\20261011_164352_053970_step_006_after_settle_retry_20261011T084529681550.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_164352_053970\\20261011_164352_053970_step_006_after_settle_retry_20261011T084529681550.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -3338,7 +3338,7 @@
     0.490625
    ],
    "screen": "MAP|INTEL_RESCUE_SURVIVORS_TARGET",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_163749_545624\\20261011_163749_545624_step_010_after_refresh_1_20261011T084120122141.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_163749_545624\\20261011_163749_545624_step_010_after_refresh_1_20261011T084120122141.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -3452,7 +3452,7 @@
     0.6890625
    ],
    "screen": "POPUP|INTEL_RESCUE_SURVIVORS_MISSION",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_163749_545624\\20261011_163749_545624_step_009_after_20261011T084105996350.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_163749_545624\\20261011_163749_545624_step_009_after_20261011T084105996350.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -3556,7 +3556,7 @@
     0.71171875
    ],
    "screen": "DAILY",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_162502_305521\\20261011_162502_305521_step_018_after_settle_retry_20261011T083121289619.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_162502_305521\\20261011_162502_305521_step_018_after_settle_retry_20261011T083121289619.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -3659,7 +3659,7 @@
     0.8046875
    ],
    "screen": "DAILY",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_162502_305521\\20261011_162502_305521_step_016_after_refresh_1_20261011T083112774181.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_162502_305521\\20261011_162502_305521_step_016_after_refresh_1_20261011T083112774181.png",
    "entry_path": [
     "HOME",
     "DAILY_TASKS"
@@ -3784,7 +3784,7 @@
     0.625
    ],
    "screen": "POPUP|SESSION_DISCONNECTED",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_162502_305521\\20261011_162502_305521_step_010_after_refresh_1_20261011T082831418955.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_162502_305521\\20261011_162502_305521_step_010_after_refresh_1_20261011T082831418955.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -3834,7 +3834,7 @@
     0.71953125
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_161649_270956\\20261011_161649_270956_step_010_after_20261011T082016915916.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_161649_270956\\20261011_161649_270956_step_010_after_20261011T082016915916.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -3936,7 +3936,7 @@
     0.2859375
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_161649_270956\\20261011_161649_270956_step_009_after_refresh_1_20261011T082010143890.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_161649_270956\\20261011_161649_270956_step_009_after_refresh_1_20261011T082010143890.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -4038,7 +4038,7 @@
     0.73046875
    ],
    "screen": "MAP",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_161649_270956\\20261011_161649_270956_step_005_before_20261011T081904680385.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_161649_270956\\20261011_161649_270956_step_005_before_20261011T081904680385.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -4146,7 +4146,7 @@
     0.56953125
    ],
    "screen": "INTEL",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_160121_922086\\20261011_160121_922086_step_006_after_settle_retry_20261011T080356298204.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_160121_922086\\20261011_160121_922086_step_006_after_settle_retry_20261011T080356298204.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -4211,7 +4211,7 @@
     0.684375
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_130721_487387\\20261011_130721_487387_step_012_after_settle_retry_20261011T051101872147.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_130721_487387\\20261011_130721_487387_step_012_after_settle_retry_20261011T051101872147.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -4322,7 +4322,7 @@
     0.46875
    ],
    "screen": "BEAST",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_130721_487387\\20261011_130721_487387_step_010_after_refresh_2_20261011T051044336209.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_130721_487387\\20261011_130721_487387_step_010_after_refresh_2_20261011T051044336209.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -4426,7 +4426,7 @@
     0.6703125
    ],
    "screen": "MAP",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_130721_487387\\20261011_130721_487387_step_006_after_settle_retry_20261011T050930942906.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_130721_487387\\20261011_130721_487387_step_006_after_settle_retry_20261011T050930942906.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -4534,7 +4534,7 @@
     0.946875
    ],
    "screen": "MARCH",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_130721_487387\\20261011_130721_487387_step_005_after_refresh_1_20261011T050916244398.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_130721_487387\\20261011_130721_487387_step_005_after_refresh_1_20261011T050916244398.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -4644,7 +4644,7 @@
     0.29921875
    ],
    "screen": "POPUP|GET_MORE_STAMINA",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_121006_456569\\20261011_121006_456569_step_003_after_settle_retry_20261011T041055751723.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_121006_456569\\20261011_121006_456569_step_003_after_settle_retry_20261011T041055751723.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -4734,7 +4734,7 @@
     0.85546875
    ],
    "screen": "EVENT",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_100631_454782\\20261011_100631_454782_step_011_after_20261011T020813196681.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_100631_454782\\20261011_100631_454782_step_011_after_20261011T020813196681.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -4836,7 +4836,7 @@
     0.13359375
    ],
    "screen": "EVENT",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_100631_454782\\20261011_100631_454782_step_002_after_refresh_1_20261011T020712637200.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_100631_454782\\20261011_100631_454782_step_002_after_refresh_1_20261011T020712637200.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -4938,7 +4938,7 @@
     0.88828125
    ],
    "screen": "TRAINING|training.camp_open_label=射手营",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_095250_879345\\20261011_095250_879345_step_004_after_refresh_1_20261011T015340477631.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_095250_879345\\20261011_095250_879345_step_004_after_refresh_1_20261011T015340477631.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -5023,7 +5023,7 @@
     0.54453125
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_095250_879345\\20261011_095250_879345_step_002_after_20261011T015321631591.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_095250_879345\\20261011_095250_879345_step_002_after_20261011T015321631591.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -5112,7 +5112,7 @@
     0.88828125
    ],
    "screen": "TRAINING|training.camp_open_label=盾兵营",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_094802_846370\\20261011_094802_846370_step_011_after_refresh_2_20261011T015020178299.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_094802_846370\\20261011_094802_846370_step_011_after_refresh_2_20261011T015020178299.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -5194,7 +5194,7 @@
     0.43046875
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_094802_846370\\20261011_094802_846370_step_009_after_20261011T014955953237.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_094802_846370\\20261011_094802_846370_step_009_after_20261011T014955953237.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -5271,7 +5271,7 @@
     0.45546875
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_094341_045128\\20261011_094341_045128_step_020_after_settle_retry_20261011T014707515867.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_094341_045128\\20261011_094341_045128_step_020_after_settle_retry_20261011T014707515867.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -5375,7 +5375,7 @@
     0.540625
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_094341_045128\\20261011_094341_045128_step_018_after_refresh_1_20261011T014644937003.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_094341_045128\\20261011_094341_045128_step_018_after_refresh_1_20261011T014644937003.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -5477,7 +5477,7 @@
     0.4265625
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_094341_045128\\20261011_094341_045128_step_011_after_refresh_1_20261011T014542144555.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_094341_045128\\20261011_094341_045128_step_011_after_refresh_1_20261011T014542144555.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -5579,7 +5579,7 @@
     0.871875
    ],
    "screen": "TRAINING|training.camp_open_label=矛兵营",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_094341_045128\\20261011_094341_045128_step_008_after_refresh_2_20261011T014511654865.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_094341_045128\\20261011_094341_045128_step_008_after_refresh_2_20261011T014511654865.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -5664,7 +5664,7 @@
     0.48359375
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_094341_045128\\20261011_094341_045128_step_004_after_refresh_1_20261011T014435925024.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_094341_045128\\20261011_094341_045128_step_004_after_refresh_1_20261011T014435925024.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -5766,7 +5766,7 @@
     0.96171875
    ],
    "screen": "POPUP|HERO_RECRUIT_REWARD",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_093250_899092\\20261011_093250_899092_step_010_after_20261011T013510742135.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_093250_899092\\20261011_093250_899092_step_010_after_20261011T013510742135.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -5838,7 +5838,7 @@
     0.6734375
    ],
    "screen": "HERO",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_093250_899092\\20261011_093250_899092_step_009_after_refresh_1_20261011T013506493558.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_093250_899092\\20261011_093250_899092_step_009_after_refresh_1_20261011T013506493558.png",
    "entry_path": [
     "HOME",
     "HERO",
@@ -5921,7 +5921,7 @@
     0.953125
    ],
    "screen": "HERO",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_093250_899092\\20261011_093250_899092_step_007_after_refresh_1_20261011T013444435178.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_093250_899092\\20261011_093250_899092_step_007_after_refresh_1_20261011T013444435178.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -5964,7 +5964,7 @@
     0.42734375
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_093250_899092\\20261011_093250_899092_step_006_after_settle_retry_20261011T013432723878.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_093250_899092\\20261011_093250_899092_step_006_after_settle_retry_20261011T013432723878.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -6063,7 +6063,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_083700_570161\\20261011_083700_570161_step_008_before_20261011T003829813601.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_083700_570161\\20261011_083700_570161_step_008_before_20261011T003829813601.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -6101,7 +6101,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_074621_165550\\20261011_074621_165550_step_009_after_settle_retry_20261010T234850716781.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_074621_165550\\20261011_074621_165550_step_009_after_settle_retry_20261010T234850716781.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -6209,7 +6209,7 @@
     0.09609375
    ],
    "screen": "MAIL",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_070206_070294\\20261011_070206_070294_step_015_after_20261010T230539441782.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_070206_070294\\20261011_070206_070294_step_015_after_20261010T230539441782.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -6273,7 +6273,7 @@
     0.09609375
    ],
    "screen": "MAIL",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_070206_070294\\20261011_070206_070294_step_012_after_20261010T230521785829.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_070206_070294\\20261011_070206_070294_step_012_after_20261010T230521785829.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -6370,7 +6370,7 @@
     0.4234375
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_004021_198721\\20261011_004021_198721_step_021_after_settle_retry_20261010T164721448981.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_004021_198721\\20261011_004021_198721_step_021_after_settle_retry_20261010T164721448981.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -6472,7 +6472,7 @@
     0.984375
    ],
    "screen": "TRAINING|training.camp_open_label=盾兵营",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_001007_471350\\20261011_001007_471350_step_015_after_20261010T161224203630.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_001007_471350\\20261011_001007_471350_step_015_after_20261010T161224203630.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -6529,7 +6529,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_000252_774358\\20261011_000252_774358_step_015_before_20261010T160710864599.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_000252_774358\\20261011_000252_774358_step_015_before_20261010T160710864599.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -6572,7 +6572,7 @@
     0.73046875
    ],
    "screen": "MAP",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261011_000252_774358\\20261011_000252_774358_step_011_after_settle_retry_20261010T160553911242.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261011_000252_774358\\20261011_000252_774358_step_011_after_settle_retry_20261010T160553911242.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -6695,7 +6695,7 @@
     0.11875
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261010_202907_090537\\20261010_202907_090537_step_001_after_settle_retry_20261010T122922579133.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261010_202907_090537\\20261010_202907_090537_step_001_after_settle_retry_20261010T122922579133.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -6752,7 +6752,7 @@
     0.09609375
    ],
    "screen": "MAIL",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261010_180848_481313\\20261010_180848_481313_step_014_after_20261010T101058515197.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261010_180848_481313\\20261010_180848_481313_step_014_after_20261010T101058515197.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -6846,7 +6846,7 @@
     0.9765625
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261010_160957_615407\\20261010_160957_615407_step_003_after_settle_retry_20261010T081044280212.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261010_160957_615407\\20261010_160957_615407_step_003_after_settle_retry_20261010T081044280212.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -6951,7 +6951,7 @@
     0.95390625
    ],
    "screen": "MAP|INTEL_RESCUE_SURVIVORS_TARGET",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261010_130055_559496\\20261010_130055_559496_step_019_after_refresh_1_20261010T050458331693.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261010_130055_559496\\20261010_130055_559496_step_019_after_refresh_1_20261010T050458331693.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7003,7 +7003,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261010_130055_559496\\20261010_130055_559496_step_018_before_20261010T050448410215.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261010_130055_559496\\20261010_130055_559496_step_018_before_20261010T050448410215.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7042,7 +7042,7 @@
     0.52265625
    ],
    "screen": "ALLIANCE|alliance.section=HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261010_125156_605182\\20261010_125156_605182_step_015_after_20261010T045529979038.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261010_125156_605182\\20261010_125156_605182_step_015_after_20261010T045529979038.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7143,7 +7143,7 @@
     0.0296875
    ],
    "screen": "ALLIANCE|alliance.section=RALLY_LIST",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261010_125156_605182\\20261010_125156_605182_step_014_after_refresh_2_20261010T045526093101.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261010_125156_605182\\20261010_125156_605182_step_014_after_refresh_2_20261010T045526093101.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7188,7 +7188,7 @@
     0.14921875
    ],
    "screen": "MAP",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261010_095113_679340\\20261010_095113_679340_step_001_after_settle_retry_20261010T015130690913.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261010_095113_679340\\20261010_095113_679340_step_001_after_settle_retry_20261010T015130690913.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7296,7 +7296,7 @@
     0.49765625
    ],
    "screen": "ALLIANCE|alliance.section=GIFTS",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_071821_194171\\20261009_071821_194171_step_004_after_refresh_2_20261008T231922819490.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_071821_194171\\20261009_071821_194171_step_004_after_refresh_2_20261008T231922819490.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7335,7 +7335,7 @@
     0.35625
    ],
    "screen": "POPUP|EXIT_CONFIRM",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_064002_744608\\20261009_064002_744608_step_006_after_settle_retry_20261008T224137746281.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_064002_744608\\20261009_064002_744608_step_006_after_settle_retry_20261008T224137746281.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7408,7 +7408,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_063315_505495\\20261009_063315_505495_step_003_before_20261008T223354904881.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_063315_505495\\20261009_063315_505495_step_003_before_20261008T223354904881.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7449,7 +7449,7 @@
     0.0296875
    ],
    "screen": "ALLIANCE|alliance.section=GIFTS",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_060048_581314\\20261009_060048_581314_step_004_after_refresh_1_20261008T220131532541.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_060048_581314\\20261009_060048_581314_step_004_after_refresh_1_20261008T220131532541.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7488,7 +7488,7 @@
     0.28125
    ],
    "screen": "EVENT",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_054936_645410\\20261009_054936_645410_step_004_after_20261008T215055609988.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_054936_645410\\20261009_054936_645410_step_004_after_20261008T215055609988.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7523,7 +7523,7 @@
      "w_norm": 0.0931,
      "h_norm": 0.0312
     },
-    "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_054936_645410\\20261009_054936_645410_step_004_before_20261008T215052301795.png",
+    "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_054936_645410\\20261009_054936_645410_step_004_before_20261008T215052301795.png",
     "recorded_at": "2026-10-08T21:51:00.140226+00:00"
    },
    "basis": "PRINTED_WORD",
@@ -7549,7 +7549,7 @@
     0.83515625
    ],
    "screen": "ALLIANCE|alliance.section=TECHNOLOGY",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_053500_379058\\20261009_053500_379058_step_002_after_refresh_2_20261008T213525104164.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_053500_379058\\20261009_053500_379058_step_002_after_refresh_2_20261008T213525104164.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7592,7 +7592,7 @@
     0.11484375
    ],
    "screen": "UNKNOWN",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_052001_446358\\20261009_052001_446358_step_001_after_settle_retry_20261008T212030546972.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_052001_446358\\20261009_052001_446358_step_001_after_settle_retry_20261008T212030546972.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7624,7 +7624,7 @@
      "w_norm": 0.0764,
      "h_norm": 0.05
     },
-    "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_052001_446358\\20261009_052001_446358_step_000_model_reground_20261008T212023152091.png",
+    "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_052001_446358\\20261009_052001_446358_step_000_model_reground_20261008T212023152091.png",
     "recorded_at": "2026-10-08T21:20:34.245979+00:00"
    },
    "basis": "AI_ADVICE/ANCHORED_TO_TEXT",
@@ -7648,7 +7648,7 @@
     0.71875
    ],
    "screen": "UNKNOWN",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_051745_143218\\20261009_051745_143218_step_003_after_settle_retry_20261008T211834354460.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_051745_143218\\20261009_051745_143218_step_003_after_settle_retry_20261008T211834354460.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7680,7 +7680,7 @@
      "w_norm": 0.0764,
      "h_norm": 0.0273
     },
-    "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_051745_143218\\20261009_051745_143218_step_003_before_20261008T211830046984.png",
+    "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_051745_143218\\20261009_051745_143218_step_003_before_20261008T211830046984.png",
     "recorded_at": "2026-10-08T21:18:37.736090+00:00"
    },
    "basis": "LEARNED_VERIFIED_STEP",
@@ -7705,7 +7705,7 @@
     0.64375
    ],
    "screen": "UNKNOWN",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_042016_222182\\20261009_042016_222182_step_007_after_20261008T202127925847.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_042016_222182\\20261009_042016_222182_step_007_after_20261008T202127925847.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7742,7 +7742,7 @@
      "w_norm": 0.0944,
      "h_norm": 0.032
     },
-    "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_042016_222182\\20261009_042016_222182_step_007_before_20261008T202124126240.png",
+    "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_042016_222182\\20261009_042016_222182_step_007_before_20261008T202124126240.png",
     "recorded_at": "2026-10-08T20:21:31.387125+00:00"
    },
    "basis": "PRINTED_WORD",
@@ -7767,7 +7767,7 @@
     0.0296875
    ],
    "screen": "ALLIANCE|alliance.section=HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_041540_413276\\20261009_041540_413276_step_003_after_20261008T201604420786.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_041540_413276\\20261009_041540_413276_step_003_after_20261008T201604420786.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7840,7 +7840,7 @@
     0.953125
    ],
    "screen": "UNKNOWN",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_020857_140302\\20261009_020857_140302_step_010_after_settle_retry_20261008T181037522800.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_020857_140302\\20261009_020857_140302_step_010_after_settle_retry_20261008T181037522800.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7872,7 +7872,7 @@
      "w_norm": 0.0889,
      "h_norm": 0.0281
     },
-    "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_020857_140302\\20261009_020857_140302_step_000_model_reground_20261008T181031747250.png",
+    "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_020857_140302\\20261009_020857_140302_step_000_model_reground_20261008T181031747250.png",
     "recorded_at": "2026-10-08T18:10:41.600226+00:00"
    },
    "basis": "AI_ADVICE/ANCHORED_TO_TEXT",
@@ -7896,7 +7896,7 @@
     0.37421875
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_020857_140302\\20261009_020857_140302_step_007_after_settle_retry_20261008T180947671114.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_020857_140302\\20261009_020857_140302_step_007_after_settle_retry_20261008T180947671114.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -7938,7 +7938,7 @@
     0.9484375
    ],
    "screen": "MARCH",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261008_171351_559122\\20261008_171351_559122_step_020_after_settle_retry_20261008T091719122432.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261008_171351_559122\\20261008_171351_559122_step_020_after_settle_retry_20261008T091719122432.png",
    "entry_path": [
     "MAP",
     "SEARCH_WOOD",
@@ -8027,7 +8027,7 @@
     0.253125
    ],
    "screen": "MARCH",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261008_171351_559122\\20261008_171351_559122_step_019_after_20261008T091714929152.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261008_171351_559122\\20261008_171351_559122_step_019_after_20261008T091714929152.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -8107,7 +8107,7 @@
     0.49375
    ],
    "screen": "RESOURCE_DETAIL",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261008_171351_559122\\20261008_171351_559122_step_017_after_settle_retry_20261008T091708948607.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261008_171351_559122\\20261008_171351_559122_step_017_after_settle_retry_20261008T091708948607.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -8221,7 +8221,7 @@
     0.71171875
    ],
    "screen": "UNKNOWN",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261006_062158_817584\\20261006_062158_817584_step_004_after_settle_retry_20261005T222238510803.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261006_062158_817584\\20261006_062158_817584_step_004_after_settle_retry_20261005T222238510803.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -8267,7 +8267,7 @@
      "w_norm": 0.0917,
      "h_norm": 0.032
     },
-    "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261006_053509_205694\\20261006_053509_205694_step_013_before_20261005T213623641592.png",
+    "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261006_053509_205694\\20261006_053509_205694_step_013_before_20261005T213623641592.png",
     "recorded_at": "2026-10-05T21:36:30.609476+00:00"
    },
    "basis": "PRINTED_WORD",
@@ -8344,7 +8344,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261006_032815_509619\\20261006_032815_509619_step_024_after_refresh_2_20261005T193157181202.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261006_032815_509619\\20261006_032815_509619_step_024_after_refresh_2_20261005T193157181202.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -8383,7 +8383,7 @@
     0.2125
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261005_181440_330696\\20261005_181440_330696_step_009_after_refresh_2_20261005T101605064566.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261005_181440_330696\\20261005_181440_330696_step_009_after_refresh_2_20261005T101605064566.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -8422,7 +8422,7 @@
     0.3921875
    ],
    "screen": "INTEL",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261005_152143_432588\\20261005_152143_432588_step_006_after_refresh_2_20261005T072301436699.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261005_152143_432588\\20261005_152143_432588_step_006_after_refresh_2_20261005T072301436699.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -8462,7 +8462,7 @@
     0.55546875
    ],
    "screen": "EVENT",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261004_232756_520045\\20261004_232756_520045_step_010_after_settle_retry_20261004T152944838102.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261004_232756_520045\\20261004_232756_520045_step_010_after_settle_retry_20261004T152944838102.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -8502,7 +8502,7 @@
      "w_norm": 0.0861,
      "h_norm": 0.0281
     },
-    "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261004_165746_310718\\20261004_165746_310718_step_019_before_20261004T085955329757.png",
+    "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261004_165746_310718\\20261004_165746_310718_step_019_before_20261004T085955329757.png",
     "recorded_at": "2026-10-04T09:00:01.403168+00:00"
    },
    "basis": "PRINTED_WORD",
@@ -8575,7 +8575,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261004_232756_520045\\20261004_232756_520045_step_009_after_refresh_2_20261004T152935384566.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261004_232756_520045\\20261004_232756_520045_step_009_after_refresh_2_20261004T152935384566.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -8651,7 +8651,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261003_223009_533887\\20261003_223009_533887_step_015_before_20261003T143314860184.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261003_223009_533887\\20261003_223009_533887_step_015_before_20261003T143314860184.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -8699,7 +8699,7 @@
     0.4875
    ],
    "screen": "HOME",
-   "read_from_frame": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261003_202133_286734\\20261003_202133_286734_step_023_after_refresh_1_20261003T122404023031.png",
+   "read_from_frame": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\raw\\control_panel\\runtime_auto\\20261003_202133_286734\\20261003_202133_286734_step_023_after_refresh_1_20261003T122404023031.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -8789,7 +8789,7 @@
     0.3921875
    ],
    "screen": "INTEL",
-   "read_from_frame": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261003_181831_503781\\20261003_181831_503781_step_013_after_settle_retry_20261003T102132792991.png",
+   "read_from_frame": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\raw\\control_panel\\runtime_auto\\20261003_181831_503781\\20261003_181831_503781_step_013_after_settle_retry_20261003T102132792991.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -8828,7 +8828,7 @@
     0.984375
    ],
    "screen": "TRAINING|training.camp_open_label=矛兵营",
-   "read_from_frame": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_235150_848730\\20261002_235150_848730_step_016_after_20261002T155407274381.png",
+   "read_from_frame": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\raw\\control_panel\\runtime_auto\\20261002_235150_848730\\20261002_235150_848730_step_016_after_20261002T155407274381.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -8878,7 +8878,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_234159_398409\\20261002_234159_398409_step_023_session_observe_before_20261002T154833393109.png",
+   "read_from_frame": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\raw\\control_panel\\runtime_auto\\20261002_234159_398409\\20261002_234159_398409_step_023_session_observe_before_20261002T154833393109.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -8972,7 +8972,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_223025_576279\\20261002_223025_576279_step_009_before_20261002T143144603944.png",
+   "read_from_frame": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\raw\\control_panel\\runtime_auto\\20261002_223025_576279\\20261002_223025_576279_step_009_before_20261002T143144603944.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -9008,7 +9008,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_145914_489152\\20261002_145914_489152_step_005_session_observe_after_20261002T070106966731.png",
+   "read_from_frame": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\raw\\control_panel\\runtime_auto\\20261002_145914_489152\\20261002_145914_489152_step_005_session_observe_after_20261002T070106966731.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -9047,7 +9047,7 @@
     0.51953125
    ],
    "screen": "UNKNOWN",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_073411_885155\\20261002_073411_885155_step_003_after_20261001T233455239811.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261002_073411_885155\\20261002_073411_885155_step_003_after_20261001T233455239811.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -9080,7 +9080,7 @@
      "w_norm": 0.1472,
      "h_norm": 0.0258
     },
-    "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261002_073411_885155\\20261002_073411_885155_step_003_before_20261001T233450247958.png",
+    "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261002_073411_885155\\20261002_073411_885155_step_003_before_20261001T233450247958.png",
     "recorded_at": "2026-10-01T23:34:59.543869+00:00"
    },
    "basis": "OCR_BOX",
@@ -9101,7 +9101,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261001_235215_713849\\20261001_235215_713849_step_017_session_observe_before_20261001T155505399126.png",
+   "read_from_frame": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\raw\\control_panel\\runtime_auto\\20261001_235215_713849\\20261001_235215_713849_step_017_session_observe_before_20261001T155505399126.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -9140,7 +9140,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261001_221506_608812\\20261001_221506_608812_step_019_session_observe_before_20261001T141845744886.png",
+   "read_from_frame": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\raw\\control_panel\\runtime_auto\\20261001_221506_608812\\20261001_221506_608812_step_019_session_observe_before_20261001T141845744886.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -9180,7 +9180,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261001_205704_386454\\20261001_205704_386454_step_024_after_refresh_2_20261001T130114500132.png",
+   "read_from_frame": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\raw\\control_panel\\runtime_auto\\20261001_205704_386454\\20261001_205704_386454_step_024_after_refresh_2_20261001T130114500132.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -9219,7 +9219,7 @@
     0.41328125
    ],
    "screen": "RESEARCH",
-   "read_from_frame": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261001_114304_499416\\20261001_114304_499416_step_015_after_settle_retry_20261001T034455786666.png",
+   "read_from_frame": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\raw\\control_panel\\runtime_auto\\20261001_114304_499416\\20261001_114304_499416_step_015_after_settle_retry_20261001T034455786666.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -9319,7 +9319,7 @@
     0.7359375
    ],
    "screen": "HOME",
-   "read_from_frame": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261001_114304_499416\\20261001_114304_499416_step_014_after_settle_retry_20261001T034453151549.png",
+   "read_from_frame": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\raw\\control_panel\\runtime_auto\\20261001_114304_499416\\20261001_114304_499416_step_014_after_settle_retry_20261001T034453151549.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -9417,7 +9417,7 @@
     0.6328125
    ],
    "screen": "HOME",
-   "read_from_frame": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261001_114304_499416\\20261001_114304_499416_step_013_after_settle_retry_20261001T034448910295.png",
+   "read_from_frame": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\raw\\control_panel\\runtime_auto\\20261001_114304_499416\\20261001_114304_499416_step_013_after_settle_retry_20261001T034448910295.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -9525,7 +9525,7 @@
     0.8046875
    ],
    "screen": "POPUP|WELCOME_BACK_OFFLINE",
-   "read_from_frame": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261001_074138_606960\\20261001_074138_606960_step_002_after_settle_retry_20260930T234201011743.png",
+   "read_from_frame": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\raw\\control_panel\\runtime_auto\\20261001_074138_606960\\20261001_074138_606960_step_002_after_settle_retry_20260930T234201011743.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -9564,7 +9564,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261001_031112_253730\\20261001_031112_253730_step_024_after_refresh_2_20260930T191414187963.png",
+   "read_from_frame": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\raw\\control_panel\\runtime_auto\\20261001_031112_253730\\20261001_031112_253730_step_024_after_refresh_2_20260930T191414187963.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -9603,7 +9603,7 @@
     0.87578125
    ],
    "screen": "UNKNOWN",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\closure_training_current\\closure_training_current_step_001_after_20260930T063433755042.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\closure_training_current\\closure_training_current_step_001_after_20260930T063433755042.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -9638,7 +9638,7 @@
      "w_norm": 0.1069,
      "h_norm": 0.0375
     },
-    "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\closure_training_current\\closure_training_current_step_001_before_20260930T063428254835.png",
+    "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\closure_training_current\\closure_training_current_step_001_before_20260930T063428254835.png",
     "recorded_at": "2026-09-30T06:34:37.458523+00:00"
    },
    "basis": "PRINTED_WORD",
@@ -9662,7 +9662,7 @@
     0.7328125
    ],
    "screen": "ALLIANCE|alliance.section=HOME",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260928_185437_803552\\20260928_185437_803552_step_024_after_20260928T110236231551.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260928_185437_803552\\20260928_185437_803552_step_024_after_20260928T110236231551.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -9764,7 +9764,7 @@
     0.0296875
    ],
    "screen": "ALLIANCE|alliance.section=TECHNOLOGY",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260928_184532_645333\\20260928_184532_645333_step_002_after_refresh_2_20260928T104659903206.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260928_184532_645333\\20260928_184532_645333_step_002_after_refresh_2_20260928T104659903206.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -9822,7 +9822,7 @@
     0.80390625
    ],
    "screen": "ALLIANCE|alliance.section=TECHNOLOGY",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260928_183540_170699\\20260928_183540_170699_step_024_after_20260928T104415247707.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260928_183540_170699\\20260928_183540_170699_step_024_after_20260928T104415247707.png",
    "entry_path": [
     "ALLIANCE",
     "TECHNOLOGY",
@@ -10153,7 +10153,7 @@
    "visual": "calendar child-event icon/card",
    "position_norm": null,
    "screen": "EVENT",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\ui_exploration\\20260928\\frame_265_EVENT_CALENDAR.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\ui_exploration\\20260928\\frame_265_EVENT_CALENDAR.png",
    "entry_path": [
     "HOME",
     "REGULAR_ACTIVITY",
@@ -10193,7 +10193,7 @@
    "visual": "calendar child-event icon/card",
    "position_norm": null,
    "screen": "EVENT",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\ui_exploration\\20260928\\frame_265_EVENT_CALENDAR.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\ui_exploration\\20260928\\frame_265_EVENT_CALENDAR.png",
    "entry_path": [
     "HOME",
     "REGULAR_ACTIVITY",
@@ -10233,7 +10233,7 @@
    "visual": "calendar event bar icon and label",
    "position_norm": null,
    "screen": "EVENT",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\ui_exploration\\20260928\\frame_265_EVENT_CALENDAR.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\ui_exploration\\20260928\\frame_265_EVENT_CALENDAR.png",
    "entry_path": [
     "HOME",
     "REGULAR_ACTIVITY",
@@ -10276,7 +10276,7 @@
     0.18125
    ],
    "screen": "EVENT",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\ui_exploration\\20260928\\frame_275_EXCLUSIVE_GEAR_FORGE_PAGE.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\ui_exploration\\20260928\\frame_275_EXCLUSIVE_GEAR_FORGE_PAGE.png",
    "entry_path": [
     "HOME",
     "REGULAR_ACTIVITY",
@@ -10320,7 +10320,7 @@
     0.4484375
    ],
    "screen": "EVENT",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\ui_exploration\\20260928\\frame_277_GEAR_FORGE_REWARD_SCROLL.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\ui_exploration\\20260928\\frame_277_GEAR_FORGE_REWARD_SCROLL.png",
    "entry_path": [
     "HOME",
     "REGULAR_ACTIVITY",
@@ -10361,7 +10361,7 @@
    "visual": "OCR identity in row + right-arrow relation",
    "position_norm": null,
    "screen": "EVENT",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\ui_exploration\\20260928\\frame_278_GEAR_FORGE_POINT_SOURCE.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\ui_exploration\\20260928\\frame_278_GEAR_FORGE_POINT_SOURCE.png",
    "entry_path": [
     "EVENT",
     "EXCLUSIVE_GEAR_FORGE",
@@ -10924,7 +10924,7 @@
     0.2234375
    ],
    "screen": "MAP",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260928_011405_901027\\20260928_011405_901027_step_001_after_refresh_2_20260927T171455603535.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260928_011405_901027\\20260928_011405_901027_step_001_after_refresh_2_20260927T171455603535.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -10976,7 +10976,7 @@
     0.759375
    ],
    "screen": "RESEARCH",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260927_121556_142583\\20260927_121556_142583_step_017_after_refresh_2_20260927T042855466902.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260927_121556_142583\\20260927_121556_142583_step_017_after_refresh_2_20260927T042855466902.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -11026,7 +11026,7 @@
     0.984375
    ],
    "screen": "TRAINING|training.camp_open_label=射手营",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260927_073906_112036\\20260927_073906_112036_step_022_after_20260926T234837625060.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260927_073906_112036\\20260927_073906_112036_step_022_after_20260926T234837625060.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -11075,7 +11075,7 @@
     0.6859375
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_235052_309286\\20260926_235052_309286_step_012_before_20260926T155521172147.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_235052_309286\\20260926_235052_309286_step_012_before_20260926T155521172147.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -11185,7 +11185,7 @@
     0.9421875
    ],
    "screen": "UNKNOWN",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_225839_963609\\20260926_225839_963609_step_016_after_20260926T150420093160.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_225839_963609\\20260926_225839_963609_step_016_after_20260926T150420093160.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -11218,7 +11218,7 @@
      "w_norm": 0.1958,
      "h_norm": 0.0359
     },
-    "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_225839_963609\\20260926_225839_963609_step_016_before_20260926T150407015313.png",
+    "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_225839_963609\\20260926_225839_963609_step_016_before_20260926T150407015313.png",
     "recorded_at": "2026-09-26T15:04:29.663011+00:00"
    },
    "basis": "OCR_BOX",
@@ -11242,7 +11242,7 @@
     0.978125
    ],
    "screen": "UNKNOWN",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_225839_963609\\20260926_225839_963609_step_015_after_20260926T150354151910.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_225839_963609\\20260926_225839_963609_step_015_after_20260926T150354151910.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -11275,7 +11275,7 @@
      "w_norm": 0.0778,
      "h_norm": 0.025
     },
-    "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_225839_963609\\20260926_225839_963609_step_015_before_20260926T150340474459.png",
+    "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_225839_963609\\20260926_225839_963609_step_015_before_20260926T150340474459.png",
     "recorded_at": "2026-09-26T15:04:05.997746+00:00"
    },
    "basis": "OCR_BOX",
@@ -11299,7 +11299,7 @@
     0.1484375
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_022_after_20260925T232755520753.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_022_after_20260925T232755520753.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -11332,7 +11332,7 @@
      "w_norm": 0.0958,
      "h_norm": 0.0203
     },
-    "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_022_before_20260925T232643581436_planner_fresh.png",
+    "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_022_before_20260925T232643581436_planner_fresh.png",
     "element_id": "E7",
     "element_semantic": "INTERACTIVE[常规活动]",
     "container": "HOME",
@@ -11359,7 +11359,7 @@
     0.64765625
    ],
    "screen": "EVENT",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_010010_469521\\20260926_010010_469521_step_004_after_20260925T170110943526.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_010010_469521\\20260926_010010_469521_step_004_after_20260925T170110943526.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -11398,7 +11398,7 @@
     0.34296875
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260925T143333873898.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260925T143333873898.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -11431,7 +11431,7 @@
      "w_norm": 0.0778,
      "h_norm": 0.043
     },
-    "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260925T144724825763_planner_fresh.png",
+    "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260925T144724825763_planner_fresh.png",
     "element_id": "E1",
     "element_semantic": "CONTROL[登录好礼]",
     "container": "HOME",
@@ -11458,7 +11458,7 @@
     0.325
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_after_20260925T124628398240.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\live_runtime\\live_runtime_step_001_after_20260925T124628398240.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -11536,7 +11536,7 @@
     0.44765625
    ],
    "screen": "POPUP|POWER_DETAILS",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260925_124100_830062\\20260925_124100_830062_step_018_after_20260925T044501959274.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260925_124100_830062\\20260925_124100_830062_step_018_after_20260925T044501959274.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -11605,7 +11605,7 @@
     0.56875
    ],
    "screen": "POPUP|POWER_OVERVIEW",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260925_124100_830062\\20260925_124100_830062_step_017_after_20260925T044442962358.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260925_124100_830062\\20260925_124100_830062_step_017_after_20260925T044442962358.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -11691,7 +11691,7 @@
     0.05625
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260925_124100_830062\\20260925_124100_830062_step_013_after_20260925T044437931990.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260925_124100_830062\\20260925_124100_830062_step_013_after_20260925T044437931990.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -11784,7 +11784,7 @@
     0.68984375
    ],
    "screen": "POPUP|POWER_DETAILS",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260925_124100_830062\\20260925_124100_830062_step_005_after_20260925T044211499151.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260925_124100_830062\\20260925_124100_830062_step_005_after_20260925T044211499151.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -11835,7 +11835,7 @@
     0.16484375
    ],
    "screen": "POPUP|POWER_DETAILS",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260925_124100_830062\\20260925_124100_830062_step_003_after_refresh_2_20260925T044148945580.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260925_124100_830062\\20260925_124100_830062_step_003_after_refresh_2_20260925T044148945580.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -11871,7 +11871,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260925_073931_244111\\20260925_073931_244111_step_024_after_refresh_2_20260924T234526955409.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260925_073931_244111\\20260925_073931_244111_step_024_after_refresh_2_20260924T234526955409.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -11957,7 +11957,7 @@
     0.434375
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260925_035700_445529\\20260925_035700_445529_step_003_after_20260924T195821147398.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260925_035700_445529\\20260925_035700_445529_step_003_after_20260924T195821147398.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -11994,7 +11994,7 @@
     0.490625
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260925_034818_898793\\20260925_034818_898793_step_003_after_refresh_2_20260924T195007590266.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260925_034818_898793\\20260925_034818_898793_step_003_after_refresh_2_20260924T195007590266.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12031,7 +12031,7 @@
     0.5484375
    ],
    "screen": "HOME",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260925_033833_994491\\20260925_033833_994491_step_015_after_refresh_2_20260924T194459649247.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260925_033833_994491\\20260925_033833_994491_step_015_after_refresh_2_20260924T194459649247.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12068,7 +12068,7 @@
     0.13046875
    ],
    "screen": "POPUP|POWER_OVERVIEW",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260925_003829_467215\\20260925_003829_467215_step_008_after_20260924T164134017080.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260925_003829_467215\\20260925_003829_467215_step_008_after_20260924T164134017080.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12107,7 +12107,7 @@
     0.5296875
    ],
    "screen": "ALLIANCE|alliance.section=HOME",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_205447_839789\\20260923_205447_839789_step_004_after_20260923T125624851687.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_205447_839789\\20260923_205447_839789_step_004_after_20260923T125624851687.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12145,7 +12145,7 @@
     0.884375
    ],
    "screen": "DAILY",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_201923_535962\\20260923_201923_535962_step_009_after_20260923T122307122166.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_201923_535962\\20260923_201923_535962_step_009_after_20260923T122307122166.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12188,7 +12188,7 @@
     0.96875
    ],
    "screen": "POPUP|NEW_TROOP_UNLOCK",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_152250_655201\\20260923_152250_655201_step_022_after_20260923T072938301210.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_152250_655201\\20260923_152250_655201_step_022_after_20260923T072938301210.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12225,7 +12225,7 @@
     0.35625
    ],
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_135129_589183\\20260923_135129_589183_step_001_after_refresh_2_20260923T055142476469.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_135129_589183\\20260923_135129_589183_step_001_after_refresh_2_20260923T055142476469.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12270,7 +12270,7 @@
     0.515625
    ],
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_134750_580677\\20260923_134750_580677_step_001_after_refresh_2_20260923T054802913867.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_134750_580677\\20260923_134750_580677_step_001_after_refresh_2_20260923T054802913867.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12313,7 +12313,7 @@
     0.7296875
    ],
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_115901_576349\\20260923_115901_576349_step_007_after_20260923T040032253805.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_115901_576349\\20260923_115901_576349_step_007_after_20260923T040032253805.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12352,7 +12352,7 @@
     0.93515625
    ],
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_115901_576349\\20260923_115901_576349_step_005_after_20260923T040006544245.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_115901_576349\\20260923_115901_576349_step_005_after_20260923T040006544245.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12395,7 +12395,7 @@
     0.490625
    ],
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_112227_871244\\20260923_112227_871244_step_010_after_20260923T032419936890.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_112227_871244\\20260923_112227_871244_step_010_after_20260923T032419936890.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12441,7 +12441,7 @@
     0.725
    ],
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_111620_103026\\20260923_111620_103026_step_008_after_20260923T031839543728.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_111620_103026\\20260923_111620_103026_step_008_after_20260923T031839543728.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12478,7 +12478,7 @@
     0.5296875
    ],
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_081816_987572\\20260923_081816_987572_step_018_after_20260923T002253870716.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_081816_987572\\20260923_081816_987572_step_018_after_20260923T002253870716.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12520,7 +12520,7 @@
     0.0765625
    ],
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_064810_118970\\20260923_064810_118970_step_001_after_20260922T224834761933.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_064810_118970\\20260923_064810_118970_step_001_after_20260922T224834761933.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12553,7 +12553,7 @@
      "w_norm": 0.1319,
      "h_norm": 0.0266
     },
-    "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_064810_118970\\20260923_064810_118970_step_001_before_20260922T224815476246.png",
+    "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_064810_118970\\20260923_064810_118970_step_001_before_20260922T224815476246.png",
     "recorded_at": "2026-09-22T22:48:48.674385+00:00"
    },
    "basis": "OCR_BOX",
@@ -12575,7 +12575,7 @@
     0.984375
    ],
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_060723_868796\\20260923_060723_868796_step_016_after_20260922T221431747141.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_060723_868796\\20260923_060723_868796_step_016_after_20260922T221431747141.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12619,7 +12619,7 @@
     0.51015625
    ],
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_060723_868796\\20260923_060723_868796_step_013_after_20260922T221321192932.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_060723_868796\\20260923_060723_868796_step_013_after_20260922T221321192932.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12660,7 +12660,7 @@
     0.86171875
    ],
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_044052_931907\\20260923_044052_931907_step_014_after_20260922T204607164792.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_044052_931907\\20260923_044052_931907_step_014_after_20260922T204607164792.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12700,7 +12700,7 @@
     0.753125
    ],
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_021547_551270\\20260923_021547_551270_step_021_after_20260922T182050822067.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_021547_551270\\20260923_021547_551270_step_021_after_20260922T182050822067.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12736,7 +12736,7 @@
    "visual": "",
    "position_norm": null,
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_021547_551270\\20260923_021547_551270_step_012_after_20260922T181846386053.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_021547_551270\\20260923_021547_551270_step_012_after_20260922T181846386053.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,
@@ -12775,7 +12775,7 @@
     0.29921875
    ],
    "screen": "",
-   "read_from_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260922_192231_632514\\20260922_192231_632514_step_019_after_20260922T112735102387.png",
+   "read_from_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260922_192231_632514\\20260922_192231_632514_step_019_after_20260922T112735102387.png",
    "entry_path": [],
    "possible_actions": [],
    "clickable": null,

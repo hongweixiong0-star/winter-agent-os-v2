@@ -28,7 +28,7 @@ verified is marked as such; nothing here is copied from a README.
 |---|---|
 | Python binding | `MaaFw==5.12.3` (module `maa`) |
 | Agent binaries | `MaaAgentBinary==1.0.1` |
-| Location | `E:\无尽冬日智能体\.venv\Lib\site-packages\maa` |
+| Location | `E:\WinterAgent\.venv\Lib\site-packages\maa` |
 | Import | `import maa` → OK |
 | Adapter | `winter_agent_v2/maa_executor.py` (`MaaExecutorAdapter`) |
 | Router | `winter_agent_v2/executor_router.py` (`ExecutorRouter`) |
@@ -123,7 +123,7 @@ MuMu is **not** started by default:
 | `pillow` | 12.3.0 | frame I/O, crops, annotated evidence |
 | `onnxruntime` | 1.19.2 | RapidOCR |
 
-Python: **use the project venv** `E:\无尽冬日智能体\.venv\Scripts\python.exe`
+Python: **use the project venv** `E:\WinterAgent\.venv\Scripts\python.exe`
 (has PIL + RapidOCR). The managed Python 3.13 has **no PIL**.
 
 ---
@@ -132,8 +132,8 @@ Python: **use the project venv** `E:\无尽冬日智能体\.venv\Scripts\python.
 
 | tool | status |
 |---|---|
-| git | repo at `E:\无尽冬日智能体`, HEAD recorded in `10_LAST_HANDOFF.md` |
-| pytest | project venv; full suite needs `--basetemp="E:/无尽冬日智能体/tools/_pt_tmp"` (default temp cleanup trips the bulk-delete guard and kills the run) |
+| git | repo at `E:\WinterAgent`, HEAD recorded in `10_LAST_HANDOFF.md` |
+| pytest | project venv; full suite needs `--basetemp="E:/WinterAgent/tools/_pt_tmp"` (default temp cleanup trips the bulk-delete guard and kills the run) |
 | wiring check | `tools/check_wiring.py` — execution-level, must print `problems: 0` |
 | MAA measurement | `tools/maa_migrate.py nodes` (corpus precision/recall), `tools/maa_live_case.py state\|capture-ab\|action-ab\|battle` |
 | Executor audit | `tools/executor_audit.py` → `docs/EXECUTOR_REALITY_AUDIT.md` |

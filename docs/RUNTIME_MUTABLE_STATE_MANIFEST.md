@@ -1,6 +1,6 @@
 # RUNTIME_MUTABLE_STATE_MANIFEST
 
-Which Git-tracked files under the shared DATA_ROOT (`E:\无尽冬日智能体`) belong to Git,
+Which Git-tracked files under the shared DATA_ROOT (`E:\WinterAgent`) belong to Git,
 and which belong to the running loop.
 
 Why it matters: `config`/`knowledge`/`learning`/`dataset` in the pinned production worktree

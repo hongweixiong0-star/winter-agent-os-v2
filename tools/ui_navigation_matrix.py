@@ -14,7 +14,7 @@ Hand-writing it would create a second source of truth for facts those files own 
 the semantics ledger avoided.  Every field the project has not measured stays UNKNOWN.
 
 Usage:
-    "E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/ui_navigation_matrix.py [--json path]
+    "E:/WinterAgent/.venv/Scripts/python.exe" tools/ui_navigation_matrix.py [--json path]
 """
 
 from __future__ import annotations

@@ -43,7 +43,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-ROOT = Path(r"E:\无尽冬日智能体")
+ROOT = Path(r"E:\WinterAgent")
 sys.path.insert(0, str(ROOT))
 
 RAW = ROOT / "dataset/raw/bear_live_20260909"

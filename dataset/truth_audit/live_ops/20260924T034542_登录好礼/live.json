@@ -2,7 +2,7 @@
  "op_id": "20260924T034542_登录好礼",
  "label": "登录好礼",
  "goal": "DAILY_ROUTINE",
- "template": "E:\\无尽冬日智能体\\knowledge\\ui\\icon_templates\\登录好礼.png",
+ "template": "E:\\WinterAgent\\knowledge\\ui\\icon_templates\\登录好礼.png",
  "started": {
   "utc": "2026-09-24T03:45:42.293934+00:00",
   "ms_since_start": 0.0

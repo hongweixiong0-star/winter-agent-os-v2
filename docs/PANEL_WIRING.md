@@ -116,5 +116,5 @@
 ## 八、跑一次
 
 ```bash
-E:/无尽冬日智能体/.venv/Scripts/python.exe tools/verify_panel_wiring.py
+E:/WinterAgent/.venv/Scripts/python.exe tools/verify_panel_wiring.py
 ```

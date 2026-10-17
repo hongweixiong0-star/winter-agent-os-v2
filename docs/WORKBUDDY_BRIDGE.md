@@ -42,7 +42,7 @@ python tools/workbuddy_bridge.py --check
 ```
 base url      : http://127.0.0.1:8080
 credential    : set via CODEBUDDY_GATEWAY_PASSWORD
-cwd (fixed)   : E:\无尽冬日智能体
+cwd (fixed)   : E:\WinterAgent
 permission    : bypassPermissions
 bg isolation  : none
 

@@ -8,8 +8,8 @@
       "template_id": "btn_close__step_001_before__0",
       "semantic": "BTN_CLOSE",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__0.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime/step_001_before.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__step_001_before__0.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/control_panel/runtime/step_001_before.png",
       "parent_sha256": "7f74480b86a1e5386cb7acd5be1ce13ed50b7147cae7cfdbad741afc3f679cc8",
       "roi_norm": {
         "x_norm": 0.805,

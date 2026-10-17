@@ -607,3 +607,6 @@ dataset/exploration/
 # 但绝不进历史——2026-09-29 的教训是 checkout 把 11 天前的状态写回了生产。
 learning/DEVICE_LEASE.json
 learning/MODE_STATE.json
+
+# 生产钉住工作树（2026-10-17 起放在根目录内，单一根目录）
+.worktrees/

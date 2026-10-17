@@ -11,7 +11,7 @@ Corpus: dataset/truth_audit/ui_semantics_corpus -- frames whose page production 
 labelled (learning/episodes.jsonl).
 
 Usage:
-    "E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/ui_semantic_evidence.py [--limit N]
+    "E:/WinterAgent/.venv/Scripts/python.exe" -u tools/ui_semantic_evidence.py [--limit N]
 """
 from __future__ import annotations
 

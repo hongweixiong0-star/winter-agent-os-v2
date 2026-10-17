@@ -9,7 +9,7 @@ import json
 import pathlib
 from datetime import datetime, timezone
 
-ROOT = pathlib.Path(r"E:\无尽冬日智能体")
+ROOT = pathlib.Path(r"E:\WinterAgent")
 OUT = ROOT / "dataset/truth_audit/autonomous_loop_20260918/STAGE1_DEFERRAL_TO_JOB.json"
 KEY = "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST"
 

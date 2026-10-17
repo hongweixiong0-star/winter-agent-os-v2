@@ -26,7 +26,7 @@ Anything none of those can answer stays UNKNOWN -- notably "which object does th
 element belong to", which is a per-frame question and not a property of the element.
 
 Usage:
-    "E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/ui_semantic_ledger.py
+    "E:/WinterAgent/.venv/Scripts/python.exe" -u tools/ui_semantic_ledger.py
 """
 from __future__ import annotations
 

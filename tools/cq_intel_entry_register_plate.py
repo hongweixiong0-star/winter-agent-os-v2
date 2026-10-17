@@ -25,7 +25,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-ROOT = Path(r"E:\无尽冬日智能体")
+ROOT = Path(r"E:\WinterAgent")
 sys.path.insert(0, str(ROOT))
 
 from PIL import Image  # noqa: E402

@@ -5,7 +5,7 @@ episode stream says are the problem, and against frames where it must refuse.  A
 answers everywhere would be worse than none, so the refusals are half the test.
 
 Usage:
-    "E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/probe_printed_resolver.py
+    "E:/WinterAgent/.venv/Scripts/python.exe" tools/probe_printed_resolver.py
 """
 from __future__ import annotations
 

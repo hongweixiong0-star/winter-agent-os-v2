@@ -19,7 +19,7 @@ real clock.
 import sys
 from datetime import datetime, timedelta, timezone
 
-sys.path.insert(0, r"E:\无尽冬日智能体_worktrees\winter-prod-pinned\无尽冬日智能体")
+sys.path.insert(0, r"E:\WinterAgent")
 from winter_agent_v2 import event_schedule as es  # noqa: E402
 from winter_agent_v2.goal_library import route_for  # noqa: E402
 

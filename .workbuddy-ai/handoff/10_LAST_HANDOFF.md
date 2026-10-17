@@ -121,7 +121,7 @@ WHAT NOT VERIFIED: 70 skills never executed, 7 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
 STOPPED AT: agent_state=IDLE stop_reason=ROLE_SWITCH_FAILED:1061663148:TARGET_ROLE_HOME_NOT_OBSERVED
-LAST PRODUCTION EPISODE: {"skill": "TRY_ORDINARY_CONTROL", "result": "FAILURE", "recorded_at": "2026-10-16T16:13:44.038238+00:00", "episode_id": "20261017_001233_193195", "before_screenshot": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_001233_193195\\20261017_001233_193195_step_003_before_20261016T161321931049.png", "after_screenshot": ""}
+LAST PRODUCTION EPISODE: {"skill": "TRY_ORDINARY_CONTROL", "result": "FAILURE", "recorded_at": "2026-10-16T16:13:44.038238+00:00", "episode_id": "20261017_001233_193195", "before_screenshot": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_001233_193195\\20261017_001233_193195_step_003_before_20261016T161321931049.png", "after_screenshot": ""}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 295, "recent": 3, "last_seen": "2026-10-16T16:13:44.038238+00:00", "dates": {"2026-10-05": 29, "2026-10-06": 4, "2026-10-07": 3, "2026-10-08": 179, "2026-10-10": 63, "2026-10-11": 14, "2026-10-16": 3}, "undated": 0, "top_skills": [["TRY_ORDINARY_CONTROL", 161], ["OPEN_HOME", 36], ["OPEN_EVENT_CALENDAR_DETAIL", 23]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
 DIRTY FILES: 1177
@@ -157,7 +157,7 @@ DO NOT REPEAT:
 
 ### ⏱ 2026-10-11 00:58 交接 —— 7 个源码改动曾躺在生产树里未提交（**07:28 已提交，见下节 ✅**）
 
-**pin 状态**：工作树 `E:\无尽冬日智能体_worktrees\winter-prod-pinned\无尽冬日智能体`，
+**pin 状态**：工作树 `E:\WinterAgent`，
 分支 `codex/production-pin-recovery`，HEAD **`abe67449`**；`tools/check_mainline.py` → **`MAINLINE_OK`**。
 
 ⚠ **本文件机器块里的 `commit=25810c7f` 是数据根（main 镜像）的 HEAD，不是生产 pin 的。**

@@ -68,7 +68,7 @@ step("toolkit", _toolkit)
 
 # ---- 3. AdbController + connect + screencap
 MUMU_ADB = r"D:\Program Files\Netease\MuMu Player 12\nx_main\adb.exe"
-SHOT_PATH = r"E:\无尽冬日智能体\dataset\evidence\maa_probe_shot.png"
+SHOT_PATH = r"E:\WinterAgent\dataset\evidence\maa_probe_shot.png"
 
 
 def _controller():

@@ -30,10 +30,10 @@ import sys
 sp = [p for p in sys.path if "site-packages" in p]
 R["site_packages"] = sp
 R["model_hunt"] = hunt(sp + [
-    r"E:\无尽冬日智能体\.venv\Lib\site-packages\maa",
-    r"E:\无尽冬日智能体\.venv\Lib\site-packages\MaaAgentBinary",
-    r"E:\无尽冬日智能体\.venv\Lib\site-packages\rapidocr_onnxruntime",
-    r"E:\无尽冬日智能体\.venv\Lib\site-packages\onnxruntime",
+    r"E:\WinterAgent\.venv\Lib\site-packages\maa",
+    r"E:\WinterAgent\.venv\Lib\site-packages\MaaAgentBinary",
+    r"E:\WinterAgent\.venv\Lib\site-packages\rapidocr_onnxruntime",
+    r"E:\WinterAgent\.venv\Lib\site-packages\onnxruntime",
 ])
 
 try:
@@ -60,11 +60,11 @@ try:
     from PIL import Image
     # The corrected template: name WITHOUT .png, and the frame is the real squad page.
     tpl = np.array(Image.open(
-        r"E:\无尽冬日智能体\dataset\candidate\hero_camp\btn_hero_fight__live_squad.png"
+        r"E:\WinterAgent\dataset\candidate\hero_camp\btn_hero_fight__live_squad.png"
     ).convert("RGB"))
     res.override_image("BTN_HERO_FIGHT", tpl)
     frame = np.array(Image.open(
-        r"E:\无尽冬日智能体\dataset\truth_audit\hero_fight_final_20260914\00_before.png"
+        r"E:\WinterAgent\dataset\truth_audit\hero_fight_final_20260914\00_before.png"
     ).convert("RGB"))
     R["frame_shape"] = list(frame.shape)
 

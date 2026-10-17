@@ -1,7 +1,7 @@
 import sys,os,json,pathlib
 ROOT=pathlib.Path(__file__).parent
 os.chdir(ROOT);sys.path.insert(0,str(ROOT));sys.dont_write_bytecode=True
-production=pathlib.Path(r"E:\无尽冬日智能体")
+production=pathlib.Path(r"E:\WinterAgent")
 def guard(event,args):
  if event=="open" and isinstance(args[0],(str,bytes,os.PathLike)):
   mode=args[1]; flags=args[2]

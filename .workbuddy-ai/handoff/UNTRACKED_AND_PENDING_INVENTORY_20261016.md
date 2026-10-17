@@ -43,7 +43,7 @@
 
 ## C2. 跨树同步（pin 树）——**新发现（2026-10-16），不宜盲操作**
 
-- **pin 树**（`C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体`）：
+- **pin 树**（`C:\Users\xhw\.codex\worktrees\prod\repo`）：
   - 代码侧落后数据根（HEAD `9ffaf237`，其近期提交全是 codex 的 `memory:` 工作）。
   - **`memory/` 为双向差异**（已实测 `diff -rq`：9-13 起多文件两侧不同）——数据根写、
     **pin 树由 codex 活跃维护**——**盲目 `cp` 覆盖会冲掉另一条维护线**。

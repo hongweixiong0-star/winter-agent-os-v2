@@ -15,7 +15,7 @@
 复算命令（不需要真机、不需要设备租约）：
 
 ```
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/replay_red_dot_priority.py --frames 6 --negatives 6
+"E:/WinterAgent/.venv/Scripts/python.exe" -u tools/replay_red_dot_priority.py --frames 6 --negatives 6
 ```
 
 选帧口径：`learning/episodes.jsonl` 里**自己记录 `page=HOME`** 的 before 帧，按记录里的红点

@@ -1,6 +1,6 @@
 # WorkBuddy / Codex Skill Inventory
 
-Last checked: 2026-09-26 (Windows user `xhw`, project `E:\无尽冬日智能体`).
+Last checked: 2026-09-26 (Windows user `xhw`, project `E:\WinterAgent`).
 
 This inventory separates an Agent Skill (instructions for an assistant) from a
 standalone executable and from a capability called by the V2 game runtime.

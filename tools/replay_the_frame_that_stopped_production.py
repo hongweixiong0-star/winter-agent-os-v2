@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 FRAME = Path(
-    r"C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\dataset\raw"
+    r"E:\WinterAgent\.worktrees\prod\repo\dataset\raw"
     r"\control_panel\runtime_auto\20261003_193420_502956"
     r"\20261003_193420_502956_step_006_before_20261003T113523662049.png"
 )

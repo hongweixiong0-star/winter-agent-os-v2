@@ -69,7 +69,7 @@ run 20260923_000639_research  3 步
 ## 复算
 
 ```
-E:\无尽冬日智能体\.venv\Scripts\python.exe -u tools/replay_run_decisions.py --limit 18
+E:\WinterAgent\.venv\Scripts\python.exe -u tools/replay_run_decisions.py --limit 18
 ```
 
 （约 4 分钟：每帧一次生产 OCR。帧本体不入 git，见 `.gitignore`；这里放的是指标与命令。）

@@ -13,7 +13,7 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(r"E:\无尽冬日智能体")
+ROOT = Path(r"E:\WinterAgent")
 sys.path.insert(0, str(ROOT))
 
 MANIFEST = ROOT / "dataset/candidate/template_manifest.json"

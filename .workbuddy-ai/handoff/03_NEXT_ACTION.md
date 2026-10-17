@@ -678,8 +678,8 @@ episode 均可追溯：`episode_id=live_runtime` + `step_id` + `verifier_ok=true
 ### 0. 阶段的第一件事：跑这两条
 
 ```
-"E:\dongri-mumu-bot\.venv\Scripts\python.exe" -u tools/build_capability_catalog.py --rank
-"E:\dongri-mumu-bot\.venv\Scripts\python.exe" -u tools/capability_landing_queue.py
+"E:\WinterAgent\.venv\Scripts\python.exe" -u tools/build_capability_catalog.py --rank
+"E:\WinterAgent\.venv\Scripts\python.exe" -u tools/capability_landing_queue.py
 ```
 
 第一条建/刷新 `knowledge/game/capability_catalog.json`（操作者 §4 的 522 条能力，
@@ -734,7 +734,7 @@ SEARCH_RESOURCE=23 OPEN_HOME=23 OPEN_MAP=23 START_GATHER=20 DISPATCH_MARCH=20`�
 
 ### 4. 门禁提醒（本轮踩到）
 
-- 项目脚本/测试**必须**用项目 venv `E:\dongri-mumu-bot\.venv\Scripts\python.exe`；
+- 项目脚本/测试**必须**用项目 venv `E:\WinterAgent\.venv\Scripts\python.exe`；
   受托管的 3.13 **没有 PIL**，用错会得到 `ModuleNotFoundError: No module named 'PIL'`。
 - PowerShell 里 `python -c "...%d..."` 会被安全策略拦（`%VAR%` 被当成 cmd 变量）⇒ 用 `str.format`。
 
@@ -753,7 +753,7 @@ JOIN/START_RALLY → BEAR → 其他已解锁。**Intel 已有大量成功证据
 ### 0. 先跑这一条，它把整阶段的队列算出来
 
 ```
-"E:\dongri-mumu-bot\.venv\Scripts\python.exe" -u tools/capability_landing_queue.py
+"E:\WinterAgent\.venv\Scripts\python.exe" -u tools/capability_landing_queue.py
 ```
 
 按操作者的顺序逐项打印 `reg / judge / tried / state / episodes`，并分出三类：
@@ -1502,7 +1502,7 @@ WHY: 3 goal(s) BLOCKED, 9 PARTIAL, mean implementation coverage 0.7708. The bloc
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 3 in the last 2 day(s), 295 all-time, last seen 2026-10-16T16:13:44.038238+00:00
 LAST GOOD COMMIT: e4fd245
 CURRENT DIRTY FILES: 1177
-LAST PRODUCTION EPISODE: {"skill": "TRY_ORDINARY_CONTROL", "result": "FAILURE", "recorded_at": "2026-10-16T16:13:44.038238+00:00", "episode_id": "20261017_001233_193195", "before_screenshot": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_001233_193195\\20261017_001233_193195_step_003_before_20261016T161321931049.png", "after_screenshot": ""}
+LAST PRODUCTION EPISODE: {"skill": "TRY_ORDINARY_CONTROL", "result": "FAILURE", "recorded_at": "2026-10-16T16:13:44.038238+00:00", "episode_id": "20261017_001233_193195", "before_screenshot": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_001233_193195\\20261017_001233_193195_step_003_before_20261016T161321931049.png", "after_screenshot": ""}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 295, "recent": 3, "last_seen": "2026-10-16T16:13:44.038238+00:00", "dates": {"2026-10-05": 29, "2026-10-06": 4, "2026-10-07": 3, "2026-10-08": 179, "2026-10-10": 63, "2026-10-11": 14, "2026-10-16": 3}, "undated": 0, "top_skills": [["TRY_ORDINARY_CONTROL", 161], ["OPEN_HOME", 36], ["OPEN_EVENT_CALENDAR_DETAIL", 23]]}
 TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-10-14T16:13:44.038238+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
@@ -1864,7 +1864,7 @@ After   {"status": "AVAILABLE",     "available_count": 5, "pins": 5, "list_read"
 
 **⚠ P0 复发：自动化接口 `list` 返回空。** handoff 三次声称的 id `7c1c18c1-…` 查不到
 （磁盘上 `memory.md` 还在，看目录会误判为存在）⇒ 当时**没有任何无人值守在跑**。
-已重建 **`e3485d0c-1b51-48a4-880c-c01fe0fdec19`**（ACTIVE，每小时，cwds=`E:\无尽冬日智能体`），
+已重建 **`e3485d0c-1b51-48a4-880c-c01fe0fdec19`**（ACTIVE，每小时，cwds=`E:\WinterAgent`），
 payload 换成真机有效的 `tools/run_intel_pins.py`，并**用 `list` 复核存在**。
 
 **下一轮按此顺序（按失败影响 × 频率 × 可修性排序）**
@@ -2035,7 +2035,7 @@ payload 换成真机有效的 `tools/run_intel_pins.py`，并**用 `list` 复核
    `resolve` 分支、`tests/test_ocr.py` 的辅助类都曾被无声还原。**症状极具迷惑性**：
    `grep` 能找到某处出现，但运行时报 `TypeError`/`NameError`，或某个分支干脆不生效。
    对策（必须照做）：
-   - 改完代码立刻跑 `"E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/check_wiring.py`
+   - 改完代码立刻跑 `"E:/WinterAgent/.venv/Scripts/python.exe" tools/check_wiring.py`
      —— 它做的是**执行级**校验（导入对象、对真实 WorldState 真的调用 `RuleBrain.decide`），
      而不是字符串匹配。`problems: 0` 才算通过。
    - 校验通过后**立刻 `git commit`**，用 git 作为可恢复基线。
@@ -2053,7 +2053,7 @@ payload 换成真机有效的 `tools/run_intel_pins.py`，并**用 `list` 复核
 3. **跑全量测试要加 `--basetemp`**：默认临时目录在 `%TEMP%\pytest-of-*`，
    跑完清理时会被工作区的**批量删除安全钩子**拦下（69 个文件 > 阈值 50），
    进程被中断、拿不到汇总行（测试其实已经跑完）。用：
-   `"E:/dongri-mumu-bot/.venv/Scripts/python.exe" -m pytest tests -q --basetemp="E:/无尽冬日智能体/tools/_pt_tmp"`
+   `"E:/WinterAgent/.venv/Scripts/python.exe"-m pytest tests -q`
 
 4. **不要写死坐标。** 资源页签带会滚动，客户端会把当前选中页签重新居中。
    已经实测到多种滚动偏移（0、+400px，以及 MEAT 落在 0.4993 的第三种）。
@@ -2066,7 +2066,7 @@ payload 换成真机有效的 `tools/run_intel_pins.py`，并**用 `list` 复核
    但删除前仍必须逐项确认。
 8. Bash 工具在本机**没有 coreutils**（`ls/cat/head/sleep/wc/date` 都不可用），
    PowerShell 工具**stdout 不回传**。所有命令都用
-   `"E:/dongri-mumu-bot/.venv/Scripts/python.exe" -c "..."` 配合重定向 + Read 读取。
+   `"E:/WinterAgent/.venv/Scripts/python.exe" -c "..."` 配合重定向 + Read 读取。
 9. **等级筛选器范围是 1..8，不是 1..27。** 真机实测 1→4→8 后停在 8。
    `RESOURCE_NOT_FOUND` 不是等级问题，是「该资源当前范围内没有可采节点」。
    正确补救是**换资源**（`ResourceRotationStore.unavailable()`），不是降等级。
@@ -2086,7 +2086,7 @@ payload 换成真机有效的 `tools/run_intel_pins.py`，并**用 `list` 复核
   `"D:/Program Files/Netease/MuMu Player 12/nx_main/MuMuManager.exe" control -v 0 launch -pkg com.gof.china`
   然后 `adb connect 127.0.0.1:7555`。
 - 真机可用时：720×1280，前台包 `com.gof.china`。
-- 跑项目脚本必须用项目 venv：`E:\dongri-mumu-bot\.venv\Scripts\python.exe`（含 PIL / rapidocr）。
+- 跑项目脚本必须用项目 venv：`E:\WinterAgent\.venv\Scripts\python.exe`（含 PIL / rapidocr）。
   托管 Python 3.13 **没有 PIL**。
 - 脚本里**不要用 `date`/`head`/`tail`** 之类外部命令（不存在）。
 - 验收扫描：`tools/run_gather_acceptance.py --runs N`，每轮约 1–2 分钟。

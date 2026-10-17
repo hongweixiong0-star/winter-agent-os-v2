@@ -2,7 +2,7 @@ candidate_id: alliance__eca25dc9a7
 semantic_id: ''
 page: ALLIANCE
 goal: ALLIANCE
-source_frame: E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_205447_839789/20260923_205447_839789_step_004_after_20260923T125624851687.png
+source_frame: E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_205447_839789/20260923_205447_839789_step_004_after_20260923T125624851687.png
 source_episode: '20260923_205447_839789'
 image_path: knowledge/perception/candidates/alliance__eca25dc9a7/element.png
 context_image_path: knowledge/perception/candidates/alliance__eca25dc9a7/context.png

@@ -14,7 +14,7 @@ one of them ``BACK`` from ALLIANCE to ALLIANCE -- plus 7 ``SEMANTIC_TARGET_NOT_V
 would always work is aimed at a control this page does not have.
 
 Usage:
-    "E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/register_back_arrow.py [--check]
+    "E:/WinterAgent/.venv/Scripts/python.exe" tools/register_back_arrow.py [--check]
 """
 from __future__ import annotations
 

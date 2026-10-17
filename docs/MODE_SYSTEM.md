@@ -400,7 +400,7 @@ Manual 模式：机器归 WorkBuddy，自由探索、搜索、验证、开发。
 
 ```bash
 # 1) committed
-cd E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体
+cd E:/WinterAgent
 git add <显式路径> && git commit -m "..."
 
 # 2) repinned       期望 RESULT: CLEAN_OUTSIDE_DATA

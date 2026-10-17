@@ -106,8 +106,8 @@
 复现命令：
 
 ```bash
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" .probe_popup_landing.py
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" .probe_target_vs_recognition.py
+"E:/WinterAgent/.venv/Scripts/python.exe" .probe_popup_landing.py
+"E:/WinterAgent/.venv/Scripts/python.exe" .probe_target_vs_recognition.py
 ```
 
 ## 五、`readings/`：验收要的两个读数（按 #64 第 5 条的口径）
@@ -142,7 +142,7 @@
 复现：
 
 ```bash
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" .probe_announcement_dialogs.py 5
+"E:/WinterAgent/.venv/Scripts/python.exe" .probe_announcement_dialogs.py 5
 ```
 
 ## 七、#68：情报板 pin 计数的颜色覆盖（同一次会话，真机语料）
@@ -188,9 +188,9 @@
 复现：
 
 ```bash
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" .probe_pin_colour_classes.py <frame>
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" .probe_pin_mask_candidates.py
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" .probe_pin_new_corpus.py
+"E:/WinterAgent/.venv/Scripts/python.exe" .probe_pin_colour_classes.py <frame>
+"E:/WinterAgent/.venv/Scripts/python.exe" .probe_pin_mask_candidates.py
+"E:/WinterAgent/.venv/Scripts/python.exe" .probe_pin_new_corpus.py
 ```
 
 ⚠ **`intel_board_corpus/` 那 435 帧只在本机**（未白名单发布；本目录合计 388 MB，其中语料占绝大部分）。

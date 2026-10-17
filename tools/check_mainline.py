@@ -49,10 +49,12 @@ from winter_agent_v2 import winproc  # noqa: E402
 MAINLINE_BRANCH = "codex/production-pin-recovery"
 #: The development repo's branch, kept as a mirror that is only ever fast-forwarded.
 MIRROR_BRANCH = "main"
-#: ``E:\无尽冬日智能体_worktrees`` -- derived, never a drive literal, per §26.3.
-WORKTREE_ROOT = paths.MAIN_REPO.parent / f"{paths.MAIN_REPO.name}_worktrees"
-PIN_HOME = WORKTREE_ROOT / "winter-prod-pinned"
-PIN_WORKTREE = PIN_HOME / paths.MAIN_REPO.name
+#: ``E:\WinterAgent\.worktrees\prod`` -- derived, never a drive literal, per §26.3.  The pin
+#: lives inside the project root since the 2026-10-17 consolidation; ``repo`` is the checkout
+#: and ``PRODUCTION_PIN.json`` sits beside it so a repin's ``reset --mixed`` cannot touch it.
+WORKTREE_ROOT = paths.MAIN_REPO / ".worktrees"
+PIN_HOME = WORKTREE_ROOT / "prod"
+PIN_WORKTREE = PIN_HOME / "repo"
 MANIFEST_NAME = "PRODUCTION_PIN.json"
 MIRROR_WORKTREE = paths.MAIN_REPO
 
@@ -146,7 +148,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true", help="print the facts as JSON")
     args = parser.parse_args(argv)
 
-    pin_worktree = args.pin_home / paths.MAIN_REPO.name
+    pin_worktree = args.pin_home / "repo"
     facts = gather(pin_worktree, args.pin_home / MANIFEST_NAME, args.mirror)
     rows = verdicts(**facts)
 

@@ -76,6 +76,6 @@ test_a_stamina_refusal_is_never_recorded_as_a_started_fight`），尚未做修�
 复现：
 
 ```
-cd "E:/无尽冬日智能体" && "E:/dongri-mumu-bot/.venv/Scripts/python.exe" -u \
+cd "E:/WinterAgent" && "E:/dongri-mumu-bot/.venv/Scripts/python.exe" -u \
   tools/run_live.py --goal INTEL --max-actions 4
 ```

@@ -111,6 +111,6 @@ goal→route 映射里**（`runtime.py:880` 的 8 条映射没有它），所以
 ## 七、复现
 
 ```bash
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" -m pytest tests/test_march_reservation_handover.py -q
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/check_wiring.py | grep -i reservation
+"E:/WinterAgent/.venv/Scripts/python.exe" -m pytest tests/test_march_reservation_handover.py -q
+"E:/WinterAgent/.venv/Scripts/python.exe" tools/check_wiring.py | grep -i reservation
 ```

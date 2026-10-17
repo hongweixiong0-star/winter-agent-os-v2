@@ -8,8 +8,8 @@
       "template_id": "target_intel_beast_mission_blue__step_004_before__0",
       "semantic": "TARGET_INTEL_BEAST_MISSION_BLUE",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_mission_v2_remaining/target_intel_beast_mission_blue__step_004_before__0.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_beast10_automatic_return_claim_round2/step_004_before.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/intel_mission_v2_remaining/target_intel_beast_mission_blue__step_004_before__0.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/live_intel_beast10_automatic_return_claim_round2/step_004_before.png",
       "parent_sha256": "a94b4046d9a259376f1fdb8259d6e150b040b87bd13b8f9c3be20b3f2a919af7",
       "roi_norm": {
         "x_norm": 0.22,
@@ -26,8 +26,8 @@
       "template_id": "target_intel_beast_mission_blue__step_004_before__1",
       "semantic": "TARGET_INTEL_BEAST_MISSION_BLUE",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_mission_v2_remaining/target_intel_beast_mission_blue__step_004_before__1.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_beast10_automatic_return_claim_round2/step_004_before.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/intel_mission_v2_remaining/target_intel_beast_mission_blue__step_004_before__1.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/live_intel_beast10_automatic_return_claim_round2/step_004_before.png",
       "parent_sha256": "a94b4046d9a259376f1fdb8259d6e150b040b87bd13b8f9c3be20b3f2a919af7",
       "roi_norm": {
         "x_norm": 0.8,

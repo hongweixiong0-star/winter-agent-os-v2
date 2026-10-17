@@ -70,7 +70,7 @@ verdict           : GitHub mirrors the local tree
 - success / failure: 9492 / 949
 - success rate over decided: **0.9091**
 - mixed-case `result` rows (normalise on read, never rewrite): 0
-- last episode: `{"skill": "TRY_ORDINARY_CONTROL", "result": "FAILURE", "recorded_at": "2026-10-16T16:13:44.038238+00:00", "episode_id": "20261017_001233_193195", "before_screenshot": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_001233_193195\\20261017_001233_193195_step_003_before_20261016T161321931049.png", "after_screenshot": ""}`
+- last episode: `{"skill": "TRY_ORDINARY_CONTROL", "result": "FAILURE", "recorded_at": "2026-10-16T16:13:44.038238+00:00", "episode_id": "20261017_001233_193195", "before_screenshot": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_001233_193195\\20261017_001233_193195_step_003_before_20261016T161321931049.png", "after_screenshot": ""}`
 
 ## D. Registry and lifecycle
 
@@ -300,8 +300,8 @@ TRAVEL_SUPPLY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | CLAIM_FREE_
 
 ## I. Latest runtime log
 
-- {"path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log", "modified_at": "2026-10-16T16:14:46+00:00", "size_bytes": 35035, "last_stop_reason": null}
-- recent crash reports: ['E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261015_080009_621854_auto_subprocess.json', 'E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261015_180840_190109_auto_subprocess.json', 'E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261015_182349_369335_auto_subprocess.json', 'E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261015_185827_507369_auto_subprocess.json', 'E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261017_001227_841313_auto_subprocess.json']
+- {"path": "E:\\WinterAgent\\learning\\control_panel\\latest.log", "modified_at": "2026-10-16T16:14:46+00:00", "size_bytes": 35035, "last_stop_reason": null}
+- recent crash reports: ['E:\\WinterAgent\\learning\\control_panel\\crashes\\20261015_080009_621854_auto_subprocess.json', 'E:\\WinterAgent\\learning\\control_panel\\crashes\\20261015_180840_190109_auto_subprocess.json', 'E:\\WinterAgent\\learning\\control_panel\\crashes\\20261015_182349_369335_auto_subprocess.json', 'E:\\WinterAgent\\learning\\control_panel\\crashes\\20261015_185827_507369_auto_subprocess.json', 'E:\\WinterAgent\\learning\\control_panel\\crashes\\20261017_001227_841313_auto_subprocess.json']
 
 ## J. Backend axis (MAA vs ADB)
 

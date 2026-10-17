@@ -28,7 +28,7 @@ increasing cost:
 
 Run with the project venv:
 
-    E:/无尽冬日智能体/.venv/Scripts/python.exe -u tools/maa_live_case.py state
+    E:/WinterAgent/.venv/Scripts/python.exe -u tools/maa_live_case.py state
 """
 
 from __future__ import annotations

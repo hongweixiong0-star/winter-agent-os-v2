@@ -12,8 +12,8 @@
 复算命令（不需要真机）：
 
 ```
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/probe_ordinary_control_failures.py   # 帧上有什么
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/probe_ordinary_control_resolution.py  # 解析器怎么答
+"E:/WinterAgent/.venv/Scripts/python.exe" -u tools/probe_ordinary_control_failures.py   # 帧上有什么
+"E:/WinterAgent/.venv/Scripts/python.exe" -u tools/probe_ordinary_control_resolution.py  # 解析器怎么答
 ```
 
 ## 数字

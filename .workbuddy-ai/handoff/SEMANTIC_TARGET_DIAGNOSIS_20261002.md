@@ -7,7 +7,7 @@
 
 | 项 | 实测 |
 |---|---|
-| 生产工作树 | `C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体` |
+| 生产工作树 | `C:\Users\xhw\.codex\worktrees\prod\repo` |
 | 生产分支 / HEAD | `codex/production-pin-recovery` / `d7a86c4` |
 | 开发工作树 | `E:\无尽冬日智能体`（`main`），与生产 HEAD 一致 |
 | repin 工具 | `tools/repin_production.py --to <commit>`，安全语义 `RESULT: CLEAN_OUTSIDE_DATA` |

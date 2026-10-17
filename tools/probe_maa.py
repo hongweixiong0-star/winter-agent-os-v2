@@ -59,8 +59,8 @@ CANDIDATE_ROOTS = [
     os.path.expanduser(r"~\MaaAssistantArknights"),
     os.path.expanduser(r"~\AppData\Local\MaaAssistantArknights"),
     os.path.expanduser(r"~\AppData\Roaming\MaaAssistantArknights"),
-    r"E:\无尽冬日智能体\.maa",
-    r"E:\无尽冬日智能体\tools\maa",
+    r"E:\WinterAgent\.maa",
+    r"E:\WinterAgent\tools\maa",
 ]
 found_roots = {}
 for root in CANDIDATE_ROOTS:
@@ -121,7 +121,7 @@ def pip_list(py):
 
 
 REPORT["pip_current"] = pip_list(sys.executable)
-PROJECT_VENV = r"E:\无尽冬日智能体\.venv\Scripts\python.exe"
+PROJECT_VENV = r"E:\WinterAgent\.venv\Scripts\python.exe"
 if os.path.exists(PROJECT_VENV):
     REPORT["pip_project_venv"] = pip_list(PROJECT_VENV)
 else:
@@ -142,7 +142,7 @@ def npm_global():
 REPORT["npm_global"] = _safe(npm_global, "npm_global")
 
 # ---------------------------------------------------------------- 7. project-side existing executors
-proj = Path(r"E:\无尽冬日智能体")
+proj = Path(r"E:\WinterAgent")
 REPORT["project_executor_files"] = sorted(
     str(p.relative_to(proj))
     for p in proj.glob("winter_agent_v2/*.py")

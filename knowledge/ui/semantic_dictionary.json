@@ -5915,7 +5915,7 @@
       "expected_transition": "the donation detail dialog closes and the Technology tree is visible",
       "verification": "alliance section remains TECHNOLOGY and the current-frame dialog anchor is gone",
       "evidence_refs": [
-        "E:/无尽冬日智能体/dataset/raw/ui_exploration/20260928/daily_alliance_donation_live_closure/daily_alliance_donation_live_closure_step_002_after_20260928T071151777098.png"
+        "E:/WinterAgent/dataset/raw/ui_exploration/20260928/daily_alliance_donation_live_closure/daily_alliance_donation_live_closure_step_002_after_20260928T071151777098.png"
       ]
     }
   ],

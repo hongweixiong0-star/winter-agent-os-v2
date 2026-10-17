@@ -84,7 +84,7 @@ from typing import Any, Iterable, Mapping, Sequence
 # credential can ever be read out of a tracked file.  Importing the shared roots module
 # would smuggle that token straight back in, so the literal stays here and any future
 # relocation has to edit this line by hand.
-PROJECT_ROOT = Path(r"E:\无尽冬日智能体")
+PROJECT_ROOT = Path(r"E:\WinterAgent")
 
 ENV_BASE_URL = "WORKBUDDY_GATEWAY_URL"
 ENV_PASSWORD = "CODEBUDDY_GATEWAY_PASSWORD"
@@ -435,7 +435,7 @@ def build_prompt(context: EscalationContext) -> str:
         f"# Winter Agent OS V2 escalation: {ctx.capability}",
         "",
         "You are a background agent working inside the Whiteout Survival "
-        "automation project at `E:\\无尽冬日智能体`. V2 (the runtime that usually "
+        "automation project at `E:\\WinterAgent`. V2 (the runtime that usually "
         "drives the device) hit a wall it cannot get past and has handed you one "
         "capability. Work only on this capability.",
         "",

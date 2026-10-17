@@ -536,7 +536,7 @@
     },
     "the_correct_start_and_its_readings": {
       "command": "经计划任务启动（该入口由宿主提供的独立执行通道发出，不经过本会话的进程树）",
-      "desktop_startup_log_new_line": "[2026-10-10T08:13:04] CODE_COMMIT=3580bf27c61ef5d80d308f1663e4cf91fc912a06 WORKTREE_CLEAN=true DATA_ROOT=E:/无尽冬日智能体",
+      "desktop_startup_log_new_line": "[2026-10-10T08:13:04] CODE_COMMIT=3580bf27c61ef5d80d308f1663e4cf91fc912a06 WORKTREE_CLEAN=true DATA_ROOT=E:/WinterAgent",
       "launcher": "…/winter-prod-pinned/…/tools/launch_pinned_production.py —— 指向 pin 树",
       "panel_pid": "27308，alive=True",
       "pump_json_mtime": "2026-10-10 08:13:12（新鲜）",
@@ -695,7 +695,7 @@
       "3. 下一个真实窗口里跑 tools/bear_two_role_readiness.py --verify-frames 3，确认 WINDOW OPEN NOW + bear_rows_marked_joinable",
       "4. 确认每个角色一次真实 JOIN，以 JOINED_STATE（集结成员列表里出现角色名）为准"
     ],
-    "command": "E:\\无尽冬日智能体\\.venv\\Scripts\\python.exe tools\\bear_two_role_readiness.py --verify-frames 3"
+    "command": "E:\\WinterAgent\\.venv\\Scripts\\python.exe tools\\bear_two_role_readiness.py --verify-frames 3"
   },
   "sources": [
     "learning/episodes.jsonl（10371 条，本次全部重放）",

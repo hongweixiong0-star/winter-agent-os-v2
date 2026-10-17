@@ -15,7 +15,7 @@
    "page_map_candidates": [
     {
      "template_id": "page_map__legacy_home__0",
-     "parent": "E:/无尽冬日智能体/dataset/raw/legacy_home.png",
+     "parent": "E:/WinterAgent/dataset/raw/legacy_home.png",
      "roi_norm": {
       "h_norm": 0.09,
       "w_norm": 0.145,
@@ -37,7 +37,7 @@
     },
     {
      "template_id": "page_map__live_back_safe_home__0",
-     "parent": "E:/无尽冬日智能体/dataset/raw/live_back_safe_home.png",
+     "parent": "E:/WinterAgent/dataset/raw/live_back_safe_home.png",
      "roi_norm": {
       "h_norm": 0.088,
       "w_norm": 0.148,
@@ -91,7 +91,7 @@
    "page_map_candidates": [
     {
      "template_id": "page_map__legacy_home__0",
-     "parent": "E:/无尽冬日智能体/dataset/raw/legacy_home.png",
+     "parent": "E:/WinterAgent/dataset/raw/legacy_home.png",
      "roi_norm": {
       "h_norm": 0.09,
       "w_norm": 0.145,
@@ -113,7 +113,7 @@
     },
     {
      "template_id": "page_map__live_back_safe_home__0",
-     "parent": "E:/无尽冬日智能体/dataset/raw/live_back_safe_home.png",
+     "parent": "E:/WinterAgent/dataset/raw/live_back_safe_home.png",
      "roi_norm": {
       "h_norm": 0.088,
       "w_norm": 0.148,

@@ -7,7 +7,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-ROOT = pathlib.Path(r"E:\无尽冬日智能体")
+ROOT = pathlib.Path(r"E:\WinterAgent")
 EPISODES = ROOT / "learning/episodes.jsonl"
 SNAPSHOT = ROOT / "learning/runtime_snapshot.json"
 LOG = ROOT / "learning/control_panel/latest.log"

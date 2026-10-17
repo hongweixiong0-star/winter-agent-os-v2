@@ -9,7 +9,7 @@
     "tree_state": "HEAD + the in-flight escalation job's uncommitted edits to winter_agent_v2/escalation_queue.py, tools/check_wiring.py, tools/build_capability_catalog.py, tests/test_escalation_queue.py (proven to be the job's by its own transcript, 20 Edit calls)",
     "all_three_processes_read_this_tree": true,
     "evidence": {
-      "panel": "E:\\dongri-mumu-bot\\.venv\\Scripts\\pythonw.exe tools/control_panel.py  (pid 28056, cwd E:\\无尽冬日智能体)",
+      "panel": "E:\\dongri-mumu-bot\\.venv\\Scripts\\pythonw.exe tools/control_panel.py  (pid 28056, cwd E:\\WinterAgent)",
       "worker": "E:\\dongri-mumu-bot\\.venv\\Scripts\\python.exe tools\\run_live.py --max-actions 24 --capture-dir ...\\runtime_auto\\20260917_233554_547893 --serial 127.0.0.1:7555  (pid 14756 -> 29736)",
       "note": "The two-process shape (venv stub -> base interpreter) is the Windows venv redirector, not interpreter drift; sys.prefix stays the venv, which is why maa/cv2/rapidocr import."
     }
@@ -39,7 +39,7 @@
       "capture_backend": "MAA_MUMU_EXTRAS",
       "executor_backend": "ADB",
       "recorded_at": "2026-09-17T15:34:21.924089+00:00",
-      "evidence_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_233356_830706\\20260917_233356_830706_step_001_before_20260917T153358637188.png"
+      "evidence_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260917_233356_830706\\20260917_233356_830706_step_001_before_20260917T153358637188.png"
     },
     "why_executor_still_says_ADB": "SCAN_MAP_FOR_BEAST is absent from knowledge/execution/backend_routing.json, so its executor keeps the historical ADB path (default_preferred=ADB). MAA is the observation/device layer: run_live.py swaps observation_device to the MAA adapter, so the frames come through MuMu's extras channel (12.1 ms vs 246.2 ms measured 2026-09-14). Both values are correct; the shared name 'capture_backend' is the known ambiguity already filed in .workbuddy-ai/commander/REVIEW_REQUESTS.md."
   },

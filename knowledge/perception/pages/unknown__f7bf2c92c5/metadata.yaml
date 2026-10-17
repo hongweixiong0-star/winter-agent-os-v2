@@ -22,7 +22,7 @@ entry_trigger: OPEN_INTEL::intel_goal_from_world_map
 goal: CLEAR_INTEL
 world_state:
   page: UNKNOWN
-source_frame: E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_150702_726193/20260922_150702_726193_step_019_after_refresh_2_20260922T071825684707.png
+source_frame: E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260922_150702_726193/20260922_150702_726193_step_019_after_refresh_2_20260922T071825684707.png
 source_episode: '20260922_150702_726193'
 page_image_path: knowledge/perception/pages/unknown__f7bf2c92c5/page.png
 recognition_method: OCR_TITLE

@@ -471,7 +471,7 @@ WorkBuddy 后台 agent**，而不是耗完 timebox 然后停下。
 - 凭据**只存环境变量** `CODEBUDDY_GATEWAY_PASSWORD`。**禁止进入仓库**，
   禁止写进 `config/v2.json`（`workbuddy_bridge.py` 根本不读该文件）。
   注意：**面板进程也要能看到这个变量**，否则 AUTO 只能建单（记为 `QUEUED`）而发不出。
-- 工作目录固定 `E:\无尽冬日智能体`；`bgIsolation=none`（否则 agent 的提交落在
+- 工作目录固定 `E:\WinterAgent`；`bgIsolation=none`（否则 agent 的提交落在
   临时 worktree，V2 永远看不到，而升级会"报告成功"）。
 - 升级 **不是** 停机理由：gateway 不可达 → 记 `GATEWAY_UNREACHABLE` → 继续本地开发。
 - 收到结果后仍须由 **V2 的 verifier + 真机 episode** 判定，升级方自述不算证据。
@@ -681,7 +681,7 @@ AUTO 连续运行 ≥72h，且：
 Codex 是低频的「指挥官」：它不在线时，WorkBuddy 必须能自己把队列跑下去。
 接口是机器可读的，**不允许要求操作者手工复制指令**。
 
-`E:\无尽冬日智能体\.workbuddy-ai\commander\`
+`E:\WinterAgent\.workbuddy-ai\commander\`
 | 文件 | 谁写 | 作用 |
 |---|---|---|
 | `WORK_QUEUE.json` | **Codex 写** | 正式任务接口，含 `priority` / `dependencies` / `files_scope` / `do_not_touch` / `acceptance` / `timebox_minutes` / `status` |
@@ -857,27 +857,33 @@ Episode 可以保存实际点击位置用于**审计和故障复现**；
 ### 26.1 规则原文
 
 > 项目所有 worktree 和数据都在 E 盘。Codex worktree 默认目录 = `E:\worktrees\`
-> 数据根目录 = `E:\无尽冬日智能体\` C 盘不允许出现任何 worktree 或运行时数据。
+> 数据根目录 = `E:\WinterAgent\` C 盘不允许出现任何 worktree 或运行时数据。
 > 任何 C 盘写入视为违规，立即报告。
 
 ### 26.2 执行时核实的事实（规则以此为准，照原文写会写出假话）
 
-迁移前审计（快照见 `E:\无尽冬日智能体_migration_backup\20261004\MIGRATION_SNAPSHOT.md`）证明：
+迁移前审计（快照见 `E:\WinterAgent_migration_backup\20261004\MIGRATION_SNAPSHOT.md`）证明：
 
-- **C 盘从来没有实体 worktree。** `C:\Users\xhw\.codex\worktrees` 是 **NTFS 装入点
-  （Junction）**，`fsutil` 重解析标记 `0xa0000003`、替换名 = `\??\E:\无尽冬日智能体_worktrees`；
-  其名下 7 个"子项"经属性核验 `IsReparsePoint=False`，只是经 junction 透视到的 E 盘实体。
-  `C:\无尽冬日智能体_worktrees` 不存在。
-- **实体 worktree 位置 = `E:\无尽冬日智能体_worktrees\`**（7 个，合计 2089 MB），**不是**
-  `E:\worktrees\`。操作者已裁定"视为已达标，只做规范化"，故**正式 worktree 根就是这里**。
+- **C 盘从来没有实体 worktree。** 迁移前 `C:\Users\xhw\.codex\worktrees` 是 **NTFS 装入点
+  （Junction）**，指向 E 盘的 worktree 根；其名下"子项"经属性核验 `IsReparsePoint=False`，
+  只是经 junction 透视到的 E 盘实体。⇒ 指令里"物理移动 worktree""删 C 盘旧 worktree 释放空间"
+  **没有实体可搬，释放 ≈ 0**。
+- **实体 worktree 位置 = `E:\WinterAgent\.worktrees\`**，**不是** `E:\worktrees\`。
   ⇒ 本文件不写 `E:\worktrees\`，写了就是事实错误。
+- **2026-10-17 拓扑变更（本文件此前的数字已作废）：** 项目根从 `E:\无尽冬日智能体` 改名为
+  **`E:\WinterAgent`**，6 个过期 worktree 与 `E:\无尽冬日智能体_worktrees` 一并删除。当前只有
+  **1 个** worktree：`E:\WinterAgent\.worktrees\prod\repo`（分支 `codex/production-pin-recovery`），
+  清单 `E:\WinterAgent\.worktrees\prod\PRODUCTION_PIN.json`。`.worktrees` 本身现在是**实体目录**
+  （不再是装入点），而 `C:\Users\xhw\.codex\worktrees` 这个 junction 仍在，已重指向
+  `E:\WinterAgent\.worktrees`（"指针不是数据"）。四个数据目录在 pin worktree 里仍是 junction →
+  主根：`config` / `knowledge` / `learning` / `dataset`。
 
 **因此本项目的硬规则是：**
 
-1. **worktree 根** = `E:\无尽冬日智能体_worktrees\`（新 worktree 一律落此）。
-2. **数据根** = `E:\无尽冬日智能体\`（`dataset/`、`learning/`、`knowledge/`、`config/`）。
+1. **worktree 根** = `E:\WinterAgent\.worktrees\`（新 worktree 一律落此）。
+2. **数据根** = `E:\WinterAgent\`（`dataset/`、`learning/`、`knowledge/`、`config/`）。
 3. **C 盘不得出现任何 worktree 实体、数据目录实体或生产运行时输出。**
-   `C:\Users\xhw\.codex\worktrees` 这个 junction **必须保留**（Codex 靠它定位 worktree），
+   `E:\WinterAgent\.worktrees` 这个 junction **必须保留**（Codex 靠它定位 worktree），
    它是**指针不是数据**，不计入违规。
 4. **C 盘写入 = 违规，立即报告。** 唯一豁免是 WorkBuddy / Codex 宿主自身的文件
    （`~/.workbuddy/`、`~/.codex/`、`~/.codebuddy/`）——那不是本项目生产运行时。
@@ -895,29 +901,30 @@ Episode 可以保存实际点击位置用于**审计和故障复现**；
 ### 26.4 可复现的机器判据（不要靠自觉）
 
 ```bash
-# 1) C 盘无实体 worktree
-Test-Path 'C:\无尽冬日智能体_worktrees'          # 必须 False
-(Get-Item 'C:\Users\xhw\.codex\worktrees').Target # 必须 E:\无尽冬日智能体_worktrees
-(Get-ChildItem 'C:\Users\xhw\.codex\worktrees' -Force |
-   ? { $_.Attributes -band [IO.FileAttributes]::ReparsePoint })  # 必须为空
+# 1) worktree 根只有这一个实体，且 C 盘只有指针
+Test-Path 'E:\无尽冬日智能体_worktrees'          # 必须 False（旧根已删）
+(Get-Item 'E:\WinterAgent\.worktrees').Attributes                      # 只有 Directory，不含 ReparsePoint
+(Get-Item 'C:\Users\xhw\.codex\worktrees').Target                      # 必须 E:\WinterAgent\.worktrees
+(Get-ChildItem 'E:\WinterAgent\.worktrees' -Force | Select-Object Name) # 只有 prod
 
 # 2) 生产 pin 通过（含数据挂载全部指向 E 盘）
-cd <worktree>\无尽冬日智能体 && python tools/launch_pinned_production.py --check-only
-# 期望：CODE_COMMIT=<40位> WORKTREE_CLEAN=true DATA_ROOT=E:\无尽冬日智能体
+cd E:\WinterAgent\.worktrees\prod\repo; python tools\launch_pinned_production.py --check-only
+# 期望：CODE_COMMIT=<40位> WORKTREE_CLEAN=true DATA_ROOT=E:\WinterAgent
 
 # 3) 生产代码路径面零硬编码
-grep -rnF "E:\无尽冬日智能体" winter_agent_v2/   # 只允许 workbuddy_bridge.py 那 1 处
+grep -rnF "E:\WinterAgent" winter_agent_v2/   # 只允许 workbuddy_bridge.py 那 1 处
 ```
 
-### 26.5 已知偏差（2026-10-04 实测，记录以免被当成正常）
+### 26.5 偏差与已修项（2026-10-04 实测；2026-10-17 复核更新）
 
-- 生产计划任务 `WinterAgentV2Panel` 的 action 用 **C 盘 junction 路径**拼写
-  （`C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\tools\launch_pinned_production.py`）。
-  物理仍落在 E 盘，属"指针不是数据"；若要让拼写也去 C 化，可把该 action 改成
-  `E:\无尽冬日智能体_worktrees\...`（行为等价，因 `resolve()` 结果相同）。
-- `tools/` 下仍有 78 处盘符字面量，分布在 64 个开发脚本里。**生产代码一个都不 import 它们**
-  （已用精确 import 判定验证），故不阻塞生产；迁移它们属独立批次，需用
-  `MAIN_REPO`（不是 `parents[1]`）以保持审计脚本读的仍是主仓数据。
+- ~~生产计划任务 `WinterAgentV2Panel` 的 action 用 C 盘 junction 路径拼写~~ **已修**：
+  2026-10-17 该 action 两个字段都是旧路径（`E:\无尽冬日智能体\.venv\Scripts\pythonw.exe` +
+  旧 pin 布局 `C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\...`），
+  已用 `Set-ScheduledTask` 改为 `E:\WinterAgent\.venv\Scripts\pythonw.exe` +
+  `E:\WinterAgent\.worktrees\prod\repo\tools\launch_pinned_production.py`（工作目录同后者）。
+- `tools/` 下仍有 **24 处**盘符字面量，分布在 **20 个开发脚本**里（2026-10-17 统计；旧数字
+  78/64 已作废）。**生产代码一个都不 import 它们**（已用精确 import 判定验证），故不阻塞生产；
+  迁移它们属独立批次，需用 `MAIN_REPO`（不是 `parents[1]`）以保持审计脚本读的仍是主仓数据。
 
 ## 27. 分支与主线硬规则（2026-10-04 操作者指令：自主处理主仓与生产分支的关系）
 
@@ -925,9 +932,9 @@ grep -rnF "E:\无尽冬日智能体" winter_agent_v2/   # 只允许 workbuddy_br
 
 | 项 | 值 |
 |---|---|
-| 主仓 `E:\无尽冬日智能体` 的分支 | `main` |
+| 主仓 `E:\WinterAgent` 的分支 | `main` |
 | 主仓 HEAD | `ff19040c`（`perf(panel): stop the 1.5 s tick re-reading the 150 MB episode log`） |
-| 生产 pin worktree | `E:\无尽冬日智能体_worktrees\winter-prod-pinned\无尽冬日智能体` |
+| 生产 pin worktree | `E:\WinterAgent` |
 | 生产分支 / HEAD | `codex/production-pin-recovery` / `23360c0a` |
 | 是否同一个 commit | **不是** |
 | merge-base | `05042268` |
@@ -978,7 +985,7 @@ git commit  ->  ca336ddb   (父提交 = 23360c0a + ff19040c)
 python tools/check_mainline.py            # 期望 RESULT: MAINLINE_OK，退出码 0
 
 # 1) 开发：在主线 worktree 里提交（不在主仓 main 上提交）
-cd E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体
+cd E:/WinterAgent
 git add <paths> && git commit -m "..."
 
 # 2) 部署：显式 SHA，改清单
@@ -992,12 +999,12 @@ schtasks /Run /TN "WinterAgentV2Panel"                          # 必须经 Powe
 grep CODE_COMMIT learning/desktop_startup.log | tail -1
 
 # 5) 把只读镜像 main 快进到主线（路径限定，活数据目录永不 checkout）
-git -C E:/无尽冬日智能体 reset --mixed <主线sha>
-git -C E:/无尽冬日智能体 checkout <主线sha> -- <只属于代码的路径...>
+git -C E:/WinterAgent reset --mixed <主线sha>
+git -C E:/WinterAgent checkout <主线sha> -- <只属于代码的路径...>
 ```
 
 第 5 步的脚本化版本存档在
-`E:\无尽冬日智能体_backups\20261004_mainline\reconcile_devtree_to_mainline.sh`
+`E:\WinterAgent_backups\20261004_mainline\reconcile_devtree_to_mainline.sh`
 （它做的正是：分类 47 条差异路径 → `reset --mixed` → 路径限定 `checkout` → 校验；
 **任何只在本地存在的内容先落盘留档再决定动不动它**）。
 

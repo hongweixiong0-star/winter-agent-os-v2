@@ -40,7 +40,7 @@ entry_trigger: EXPLORATION_IDLE_CLAIM::idle_income_claimable
 goal: AUTO_DISCOVERY
 world_state:
   page: UNKNOWN
-source_frame: E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_152056_984583/20260922_152056_984583_step_010_after_refresh_2_20260922T072507769696.png
+source_frame: E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260922_152056_984583/20260922_152056_984583_step_010_after_refresh_2_20260922T072507769696.png
 source_episode: '20260922_152056_984583'
 page_image_path: knowledge/perception/pages/unknown__8ba5e65de5/page.png
 recognition_method: OCR_TITLE

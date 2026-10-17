@@ -9,7 +9,7 @@
 复算命令（不需要真机）：
 
 ```
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/probe_open_home_fallback.py --frames 1
+"E:/WinterAgent/.venv/Scripts/python.exe" -u tools/probe_open_home_fallback.py --frames 1
 ```
 
 ## 生产里发生了什么（`learning/episodes.jsonl`）

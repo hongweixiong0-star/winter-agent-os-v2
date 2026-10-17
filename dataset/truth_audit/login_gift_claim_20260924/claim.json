@@ -567,7 +567,7 @@
   }
  ],
  "free_tab": {
-  "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_ops\\20260924_claim_live\\free_tab.png",
+  "frame": "E:\\WinterAgent\\dataset\\truth_audit\\live_ops\\20260924_claim_live\\free_tab.png",
   "texts": [
    "超值活动",
    "充",
@@ -690,7 +690,7 @@
   }
  ],
  "claim_final": {
-  "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_ops\\20260924_claim_live\\claim_final.png",
+  "frame": "E:\\WinterAgent\\dataset\\truth_audit\\live_ops\\20260924_claim_live\\claim_final.png",
   "page": "EVENT",
   "events": {
    "hub": "SUPER_ACTIVITY",

@@ -8,8 +8,8 @@
       "template_id": "popup_battlefield_revival__step_001_after_refresh_2__df53c4e4__0",
       "semantic": "POPUP_BATTLEFIELD_REVIVAL",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/battlefield_revival/popup_battlefield_revival__step_001_after_refresh_2__df53c4e4__0.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_offer_carousel_recovery_20260913/step_001_after_refresh_2.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/battlefield_revival/popup_battlefield_revival__step_001_after_refresh_2__df53c4e4__0.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/live_offer_carousel_recovery_20260913/step_001_after_refresh_2.png",
       "parent_sha256": "df53c4e47465cbf1bcc6f5ad2f212bcca1d3677122c0fe5a6309b00a7aef0480",
       "roi_norm": {
         "x_norm": 0.0,

@@ -1,13 +1,13 @@
 {
  "generated_at": "2026-09-23T12:09:33.780674+00:00",
- "answer_root": "E:\\无尽冬日智能体\\learning\\unknown_requests\\answers",
+ "answer_root": "E:\\WinterAgent\\learning\\unknown_requests\\answers",
  "cases": [
   {
    "request_id": "unknown__control__b6546e80",
    "asked_on": "2026-09-22T08:31:06.865220+00:00",
    "page_key": "UNKNOWN::燃霜矿区",
    "goal_at_ask_time": "DAILY",
-   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260922_163010_905874\\20260922_163010_905874_step_002_before_20260922T083049654040.png",
+   "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260922_163010_905874\\20260922_163010_905874_step_002_before_20260922T083049654040.png",
    "frame_exists": true,
    "page_now": "UNKNOWN",
    "title_now": "燃霜矿区",

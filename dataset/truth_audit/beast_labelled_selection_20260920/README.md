@@ -88,7 +88,7 @@ ROI 读出的 token 框是**相对于裁剪区**的，所以要映射回整帧�
 复现：
 
 ```bash
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" -c "
+"E:/WinterAgent/.venv/Scripts/python.exe" -c "
 import sys; sys.path.insert(0,'.')
 from pathlib import Path
 from winter_agent_v2.ocr import OCRService, RapidOCRBackend, HybridVision

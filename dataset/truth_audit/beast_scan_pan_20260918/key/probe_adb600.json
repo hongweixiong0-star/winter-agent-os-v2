@@ -14,8 +14,8 @@
  "executor_backend": "ADB",
  "page_before": "MAP",
  "page_after": "MAP",
- "before_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\probe\\beast_scan_pan_20260918_005037_adb600_before.png",
- "after_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\probe\\beast_scan_pan_20260918_005037_adb600_after.png",
+ "before_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\probe\\beast_scan_pan_20260918_005037_adb600_before.png",
+ "after_frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\probe\\beast_scan_pan_20260918_005037_adb600_after.png",
  "best_shift": {
   "residual": 20.378,
   "dy_px": 212,

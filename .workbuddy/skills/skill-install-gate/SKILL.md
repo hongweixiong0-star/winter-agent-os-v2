@@ -16,7 +16,7 @@ version: 1.0.0
 ## 2. 防重复检查
 
 对照下方「已登记技能清单」与 `~/.workbuddy/skills/`、
-`E:\无尽冬日智能体\.workbuddy\skills\` 的磁盘清单：
+`E:\WinterAgent\.workbuddy\skills\` 的磁盘清单：
 
 - 同一能力已有成熟实现 → **不安装**，复用现有项。
 - 疑似重复 → 只保留最成熟的一个；另一个保留文件但标注「关闭不启用」。

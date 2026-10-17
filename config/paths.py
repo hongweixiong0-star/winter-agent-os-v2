@@ -8,20 +8,21 @@ The same three facts used to be re-typed by hand in dozens of files:
 * where that checkout's mutable data lives (``dataset/``, ``learning/``, ...),
 * which interpreter runs it (``.venv``).
 
-By 2026-10-04 that had produced 81 literal ``E:\\无尽冬日智能体`` strings across 67
+By 2026-10-04 that had produced 81 literal ``E:\\WinterAgent`` strings across 67
 files -- 2 of them in production code, 79 in ``tools/`` scripts.  A path spelled out
 80 times is 80 places to forget during a migration, so the literal now appears exactly
-once, here, and everything else derives from this module.
+once, here, and everything else derives from this module.  The root was renamed to
+``E:\\WinterAgent`` on 2026-10-17; that is the one literal that had to change.
 
 The one subtlety that makes this work
 -------------------------------------
 ``config/`` is a directory **junction** into the main repository for the pinned
-production worktree (``...\\winter-prod-pinned\\无尽冬日智能体\\config`` ->
-``E:\\无尽冬日智能体\\config``).  :func:`Path.resolve` follows that junction, so
+production worktree (``...\\.worktrees\\prod\\repo\\config`` ->
+``E:\\WinterAgent\\config``).  :func:`Path.resolve` follows that junction, so
 ``__file__`` here reports the *main repository* when production imports this module,
 and the calling worktree when a plain branch imports it.  That is why
 :data:`MAIN_REPO` needs no hardcoded answer for the production case, and why
-:data:`DATA_ROOT` still points at the shared 27 GB corpus from inside a worktree.
+:data:`DATA_ROOT` still points at the shared corpus from inside a worktree.
 
 ``MAIN_REPO`` versus ``WINTER_AGENT_DATA_ROOT`` -- do not confuse them
 ---------------------------------------------------------------------
@@ -64,7 +65,7 @@ ENV_DATA_HOME = "WINTER_AGENT_DATA_ROOT"
 
 #: The canonical checkout.  Spelled once, on purpose -- see the module docstring.
 #: Overridable via :data:`ENV_MAIN_REPO` so no future migration has to edit code again.
-_DEFAULT_MAIN_REPO = Path("E:/无尽冬日智能体")
+_DEFAULT_MAIN_REPO = Path("E:/WinterAgent")
 
 
 def _looks_like_checkout(candidate: Path) -> bool:

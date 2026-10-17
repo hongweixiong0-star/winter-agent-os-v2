@@ -8,8 +8,8 @@
       "template_id": "btn_open_resource_search__episode_search_button__0",
       "semantic": "BTN_OPEN_RESOURCE_SEARCH",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_open_resource_search__episode_search_button__0.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/episode_validation/episode_search_button.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_open_resource_search__episode_search_button__0.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/episode_validation/episode_search_button.png",
       "parent_sha256": "990551429511efa93364a6916039b87ac021556ef83d1fdd7ba108902daaf853",
       "roi_norm": {
         "x_norm": 0.012,

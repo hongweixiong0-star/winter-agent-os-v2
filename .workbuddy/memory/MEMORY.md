@@ -5,7 +5,7 @@
 
 长期项目知识（架构决定、环境铁律、操作者偏好、蒸馏后的教训）的唯一事实源：
 
-    E://无尽冬日智能体//.workbuddy-ai//memory//MEMORY.md
+    E:/WinterAgent//.workbuddy-ai//memory//MEMORY.md
 
 规则全文见 .workbuddy-ai/handoff/00_MASTER_RULES.md 的「记忆写入路由」。
 

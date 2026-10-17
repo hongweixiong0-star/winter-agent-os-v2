@@ -441,7 +441,7 @@ class SubmitContractTest(unittest.TestCase):
     def test_the_working_directory_is_fixed_to_this_project(self):
         transport, submission, _ = self._submit()
         self.assertEqual(submission.cwd, str(bridge.PROJECT_ROOT))
-        self.assertEqual(str(bridge.PROJECT_ROOT), r"E:\无尽冬日智能体")
+        self.assertEqual(str(bridge.PROJECT_ROOT), r"E:\WinterAgent")
 
     def test_the_job_id_is_returned_for_polling(self):
         _, submission, _ = self._submit()

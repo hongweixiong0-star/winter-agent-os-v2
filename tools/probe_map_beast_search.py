@@ -25,8 +25,8 @@ Bounded and honest
 
 Usage
 -----
-    "E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/probe_map_beast_search.py
-    "E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/probe_map_beast_search.py --tap 44,900 --tag magnifier
+    "E:/WinterAgent/.venv/Scripts/python.exe" -u tools/probe_map_beast_search.py
+    "E:/WinterAgent/.venv/Scripts/python.exe" -u tools/probe_map_beast_search.py --tap 44,900 --tag magnifier
 """
 
 from __future__ import annotations

@@ -16,7 +16,7 @@
 > | 运行时状态 / 页面 / 当前目标 | `learning/runtime_snapshot.json` | 运行时自己写 |
 > | Goal 板 / 阻塞点 | `learning/goal_state.json` | 运行时自己写 |
 > | 全部「重算型」统计（episode 数、成功率、Top failures、技能台账、覆盖度） | **`docs/CURRENT_TRUTH.md`**（机器版 `learning/current_truth.json`） | `python tools/truth_audit.py` |
-> | 当前生产提交 | `E:\无尽冬日智能体_worktrees\winter-prod-pinned\PRODUCTION_PIN.json` | — |
+> | 当前生产提交 | `E:\WinterAgent\.worktrees\winter-prod-pinned\PRODUCTION_PIN.json` | — |
 >
 > `docs/CURRENT_TRUTH.md` 开头写着：「Everything below is recomputed by `python tools/truth_audit.py`.
 > **Do not trust numbers in older Markdown files.**」
@@ -358,7 +358,7 @@ cat learning/runtime_snapshot.json
 cat learning/goal_state.json
 
 # 3. 生产提交
-cat "E:\无尽冬日智能体_worktrees\winter-prod-pinned\PRODUCTION_PIN.json"
+cat "E:\WinterAgent\.worktrees\winter-prod-pinned\PRODUCTION_PIN.json"
 
 # 4. 主线近期提交
 git log --oneline -15 codex/production-pin-recovery

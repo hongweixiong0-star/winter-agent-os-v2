@@ -15,7 +15,7 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(r"E:\无尽冬日智能体")
+ROOT = Path(r"E:\WinterAgent")
 sys.path.insert(0, str(ROOT))
 
 from winter_agent_v2.ocr import (

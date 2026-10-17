@@ -4,8 +4,8 @@
   "last_checked": "2026-09-14",
   "machine": {
     "os": "Windows",
-    "project": "E:\\无尽冬日智能体",
-    "venv": "E:\\无尽冬日智能体\\.venv\\Scripts\\python.exe",
+    "project": "E:\\WinterAgent",
+    "venv": "E:\\WinterAgent\\.venv\\Scripts\\python.exe",
     "device": "MuMu Player 12 @ 127.0.0.1:7555, 720x1280, com.gof.china"
   },
   "env_traps": [
@@ -21,7 +21,7 @@
       "name": "MaaFramework",
       "version": "5.12.3",
       "status": "VERIFIED / HIGH PRIORITY",
-      "location": "E:\\无尽冬日智能体\\.venv\\Lib\\site-packages\\maa",
+      "location": "E:\\WinterAgent\\.venv\\Lib\\site-packages\\maa",
       "import_name": "maa",
       "capabilities": [
         "screencap (EmulatorExtras)",
@@ -75,7 +75,7 @@
       "name": "MaaAgentBinary",
       "version": "1.0.1",
       "status": "VERIFIED",
-      "location": "E:\\无尽冬日智能体\\.venv\\Lib\\site-packages\\MaaAgentBinary",
+      "location": "E:\\WinterAgent\\.venv\\Lib\\site-packages\\MaaAgentBinary",
       "capabilities": [
         "maatouch",
         "minicap",
@@ -366,7 +366,7 @@
         "regression before live test"
       ],
       "limitations": [
-        "full suite needs --basetemp=\"E:/无尽冬日智能体/tools/_pt_tmp\" (default temp cleanup trips the bulk-delete guard)",
+        "full suite needs --basetemp=\"E:/WinterAgent/tools/_pt_tmp\" (default temp cleanup trips the bulk-delete guard)",
         "pytest PASS is NOT completion - live verification still required"
       ],
       "fallback": null,
@@ -380,7 +380,7 @@
       "location": "D:\\Program Files\\Netease\\MuMu Player 12\\nx_main\\mumu-cli.exe",
       "skill_paths": {
         "workbuddy_user_level": "C:\\Users\\xhw\\.workbuddy\\skills\\mumu-control",
-        "codebuddy_install_mirror": "E:\\无尽冬日智能体\\.codebuddy\\skills\\mumu-control"
+        "codebuddy_install_mirror": "E:\\WinterAgent\\.codebuddy\\skills\\mumu-control"
       },
       "source": {
         "origin": "vendor official - https://skills.mumu.163.com/mumu-control",

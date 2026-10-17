@@ -14,8 +14,8 @@
         "condition": "UNKNOWN_UI",
         "goal": "AUTO_DISCOVERY",
         "evidence": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_072807_540935\\20260918_072807_540935_step_001_before_20260917T232809509626.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_072807_540935"
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260918_072807_540935\\20260918_072807_540935_step_001_before_20260917T232809509626.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260918_072807_540935"
         ],
         "dispatch": "CONCURRENCY_WAIT",
         "dispatch_reason": "max_concurrent_jobs=1 is already used by a7ce58f0; two agents must not edit this repository at once",
@@ -31,9 +31,9 @@
         "condition": "UNKNOWN_UI",
         "goal": "AUTO_DISCOVERY",
         "evidence": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_072033_690419\\20260918_072033_690419_step_001_before_20260917T232035678448.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_072033_690419\\20260918_072033_690419_step_001_after_20260917T232048790561.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_072033_690419"
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260918_072033_690419\\20260918_072033_690419_step_001_before_20260917T232035678448.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260918_072033_690419\\20260918_072033_690419_step_001_after_20260917T232048790561.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260918_072033_690419"
         ],
         "dispatch": "CONCURRENCY_WAIT",
         "dispatch_reason": "max_concurrent_jobs=1 is already used by a7ce58f0; two agents must not edit this repository at once",

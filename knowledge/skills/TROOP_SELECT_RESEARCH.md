@@ -17,9 +17,9 @@ Status: `CANDIDATE`（知识完整 + 识别已实现并有定向测试；**未�
 复现命令与产物：
 
 ```bash
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/probe_troop_preset_rule.py   # 全语料闸门
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/probe_troop_preset_rows.py   # 逐行颜色
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/probe_troop_preset_diff.py   # 两帧差异
+"E:/WinterAgent/.venv/Scripts/python.exe" -u tools/probe_troop_preset_rule.py   # 全语料闸门
+"E:/WinterAgent/.venv/Scripts/python.exe" -u tools/probe_troop_preset_rows.py   # 逐行颜色
+"E:/WinterAgent/.venv/Scripts/python.exe" -u tools/probe_troop_preset_diff.py   # 两帧差异
 ```
 
 | 事实 | 读数 |

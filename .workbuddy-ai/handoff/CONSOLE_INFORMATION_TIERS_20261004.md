@@ -1521,7 +1521,7 @@ spawn 出来的子进程会在这次调用结束时被整棵回收。实测就�
 ```
 Start-ScheduledTask -TaskName 'WinterAgentV2Panel'
   -> action: E:\无尽冬日智能体\.venv\Scripts\pythonw.exe
-             "C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\tools\launch_pinned_production.py"
+             "C:\Users\xhw\.codex\worktrees\prod\repo\tools\launch_pinned_production.py"
      （该 C: 路径与 E:\无尽冬日智能体_worktrees\... 是同一棵树，用 st_ino / realpath 判过）
   -> desktop_startup.log 尾行 launcher= 指向 pin 树，CODE_COMMIT=dc346334
 ```
@@ -1875,7 +1875,7 @@ spawn 出来的子进程会在这次调用结束时被整棵回收。实测就�
 ```
 Start-ScheduledTask -TaskName 'WinterAgentV2Panel'
   -> action: E:\无尽冬日智能体\.venv\Scripts\pythonw.exe
-             "C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\tools\launch_pinned_production.py"
+             "C:\Users\xhw\.codex\worktrees\prod\repo\tools\launch_pinned_production.py"
      （该 C: 路径与 E:\无尽冬日智能体_worktrees\... 是同一棵树，用 st_ino / realpath 判过）
   -> desktop_startup.log 尾行 launcher= 指向 pin 树，CODE_COMMIT=dc346334
 ```

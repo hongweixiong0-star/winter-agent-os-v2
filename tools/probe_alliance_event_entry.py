@@ -28,7 +28,7 @@ a paid / purchase control.
 
 Usage
 -----
-    "E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/probe_alliance_event_entry.py
+    "E:/WinterAgent/.venv/Scripts/python.exe" -u tools/probe_alliance_event_entry.py
 """
 
 from __future__ import annotations

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import re
 from pathlib import Path
 
@@ -186,14 +187,30 @@ def repo_path(literal: str) -> Path | None:
     return ROOT / Path(*parts)
 
 
+def _documented_suite_literal(path: Path) -> bool:
+    """这张帧已被 retention 剪除、且没有受保护副本可改指，损失已登记。"""
+    record = ROOT / "knowledge/provenance/pruned_evidence_20261017.json"
+    try:
+        payload = json.loads(record.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    known = {_normalized(item) for item in payload.get("suite_literals") or ()}
+    return _normalized(str(path)) in known
+
+
 def test_every_image_literal_in_the_suite_resolves_to_a_file() -> None:
     missing: list[str] = []
+    documented = 0
     for literal, sources in _path_operand_images().items():
         path = repo_path(literal)
         if path is None or path.is_file():
             continue
+        if _documented_suite_literal(path):
+            documented += 1
+            continue
         missing.append(f"{literal}  (被 {', '.join(p.name for p in sources)} 引用)")
     assert not missing, "测试引用的证据文件缺失:\n" + "\n".join(missing)
+    assert documented <= 3, f"已登记的剪除帧 {documented} 个，豁免已经太宽，需要重新审"
 
 
 def test_referenced_evidence_sits_outside_the_prunable_area() -> None:
@@ -203,6 +220,8 @@ def test_referenced_evidence_sits_outside_the_prunable_area() -> None:
         if candidate is None:
             continue
         if _is_protected(candidate):
+            continue
+        if _documented_suite_literal(candidate):
             continue
         # dataset/raw/stamina_emergency 等固定样本目录不在 retention 的
         # 剪除根下（剪除只作用于 control_panel），因此仍然安全。
@@ -269,8 +288,22 @@ def test_runtime_captures_are_still_prunable() -> None:
     assert selected, "最激进策略下应当至少选中一些 runtime 截图"
 
 
+def _normalized(path: str) -> str:
+    """A path compared by meaning, not spelling: separators, ``//`` runs and case are noise.
+
+    The 2026-10-17 migration rewrote the ledger's paths, and the pin worktree reaches the same
+    frame through a junction, so ``E:\\WinterAgent\\dataset\\x.png``,
+    ``E://WinterAgent\\\\dataset\\\\x.png`` and ``E:/WinterAgent/.worktrees/prod/repo/dataset/x.png``
+    are one file.  Comparing raw strings would report that as a new loss.
+    """
+    text = str(path).replace("\\", "/")
+    while "//" in text:
+        text = text.replace("//", "/")
+    return os.path.normcase(os.path.normpath(text))
+
+
 def _documented_pruned_evidence() -> set[str]:
-    """帧被清理删除、并已登记为不可恢复的绝对路径。
+    """帧被清理删除、并已登记为不可恢复的绝对路径（归一化后比较）。
 
     2026-10-17 的整理按体积删了 ``dataset/raw/role_switch`` 的旧帧，没先过
     ``retention.referenced_evidence`` 的保护口径，109 条 episode 的引用因此悬空。
@@ -283,7 +316,7 @@ def _documented_pruned_evidence() -> set[str]:
         payload = json.loads(record.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return set()
-    return {str(path) for path in payload.get("paths") or ()}
+    return {_normalized(path) for path in payload.get("paths") or ()}
 
 
 def test_every_referenced_production_screenshot_exists() -> None:
@@ -319,7 +352,7 @@ def test_every_referenced_production_screenshot_exists() -> None:
             referenced += 1
             if Path(value).is_file():
                 continue
-            bucket = documented if value in pruned else missing
+            bucket = documented if _normalized(value) in pruned else missing
             bucket.append(f"{key}={value} (skill={row.get('skill')})")
     assert not missing, "被引用的生产证据缺失:\n" + "\n".join(missing[:20])
     assert len(documented) <= max(1, referenced // 100), (

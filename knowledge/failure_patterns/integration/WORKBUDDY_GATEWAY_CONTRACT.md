@@ -74,7 +74,7 @@ $ curl -s -H "Authorization: Bearer <pw>" http://127.0.0.1:8080/api/v1/health
 ```
 
 `GET /api/v1/info` additionally reports the server's own `cwd` — measured
-`E:\无尽冬日智能体`, i.e. the gateway inherits the launcher's directory.
+`E:\WinterAgent`, i.e. the gateway inherits the launcher's directory.
 
 There is no reachable OpenAPI document (`/openapi.json`, `/docs`, `/swagger.json`
 all 404), so the spec has to be read out of `dist/codebuddy.js`. The envelope is
@@ -99,7 +99,7 @@ that is the interactive Gateway-Protocol path. `/api/v1/jobs` is what
 ```jsonc
 {
   "prompt":         "…",              // required
-  "cwd":            "E:\\无尽冬日智能体",
+  "cwd":            "E:\\WinterAgent",
   "name":           "…",
   "permissionMode": "default|acceptEdits|plan|auto|dontAsk|bypassPermissions",
   "bgIsolation":    "none|worktree",  // "首次写文件时是否自动进入隔离 worktree"

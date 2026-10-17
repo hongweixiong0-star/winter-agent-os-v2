@@ -44,8 +44,8 @@ try:
     R["corner_channel_means_flipped"] = [round(float(corner[:, 2 - i].mean()), 2) for i in range(3)]
     # save both variants for visual check
     from PIL import Image
-    Image.fromarray(img).save(r"E:\无尽冬日智能体\dataset\evidence\maa_probe_asgiven.png")
-    Image.fromarray(img[:, :, ::-1]).save(r"E:\无尽冬日智能体\dataset\evidence\maa_probe_flipped.png")
+    Image.fromarray(img).save(r"E:\WinterAgent\dataset\evidence\maa_probe_asgiven.png")
+    Image.fromarray(img[:, :, ::-1]).save(r"E:\WinterAgent\dataset\evidence\maa_probe_flipped.png")
 
     # ---- Resource/Tasker bind + recognition on a real frame
     res = Resource()
@@ -55,7 +55,7 @@ try:
     R["inited_0"] = tasker.inited
 
     # recognize with JTemplateMatch on a template we already own
-    tpl_path = r"E:\无尽冬日智能体\dataset\candidate\hero_camp\btn_hero_fight__live_squad.png"
+    tpl_path = r"E:\WinterAgent\dataset\candidate\hero_camp\btn_hero_fight__live_squad.png"
     tpl = np.array(Image.open(tpl_path).convert("RGB"))
     R["tpl_shape"] = list(tpl.shape)
     ok_img = res.override_image("BTN_HERO_FIGHT", tpl)

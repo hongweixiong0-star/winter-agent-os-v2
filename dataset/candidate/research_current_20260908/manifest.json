@@ -8,8 +8,8 @@
       "template_id": "btn_open_research__live_20260908_research_navigation_current__0",
       "semantic": "BTN_OPEN_RESEARCH",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/research_current_20260908/btn_open_research__live_20260908_research_navigation_current__0.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_research_navigation_current.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/research_current_20260908/btn_open_research__live_20260908_research_navigation_current__0.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/live_20260908_research_navigation_current.png",
       "parent_sha256": "cd83009890f36dbf877b2ae875aea7b2a6f9c049aae3c84aacd6c8d4cce6fa13",
       "roi_norm": {
         "x_norm": 0.68,

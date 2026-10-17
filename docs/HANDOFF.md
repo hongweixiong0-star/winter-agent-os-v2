@@ -43,8 +43,8 @@ fa015b4a  fix(building): the upgrade may not be authorized by `upgradeable` alon
 | `tools/gui_wiring_verify.py` | `wired and matching 19/19`，`mismatched 0` |
 | pin 工作树非数据脏项 | 无（只有 `?? evidence/gui_workbuddy_loop/`，长期存在、已被自检白名单） |
 
-**两棵树的关系**：`E:\无尽冬日智能体` 是仓库的 `main` worktree（数据根，210 ahead of origin），
-pin 是 `E:\无尽冬日智能体_worktrees\winter-prod-pinned\无尽冬日智能体`（分支 `codex/production-pin-recovery`）。
+**两棵树的关系**：`E:\WinterAgent` 是仓库的 `main` worktree（数据根，210 ahead of origin），
+pin 是 `E:\WinterAgent`（分支 `codex/production-pin-recovery`）。
 `config/ knowledge/ learning/ dataset/` 在 pin 里是**指向数据根的 junction**，所以 pin 的
 `git status` 会列出上千条数据脏项 —— **那是数据根的常态，pin 的自检把它们排除在外**（`CLEAN_OUTSIDE_DATA` 就是这个意思）。
 `docs/` 在 pin 里是**独立真实目录**（不是 junction），因此本文进的是 pin 分支。
@@ -87,7 +87,7 @@ pin 是 `E:\无尽冬日智能体_worktrees\winter-prod-pinned\无尽冬日智�
 
 **代码侧：没有。** pin 工作树内本次会话的全部改动都已提交并 repin（§1、§2）。
 
-**未提交但有意保留的**（都在**数据根** `E:\无尽冬日智能体\`，与约 180 个同类研究脚本并列；
+**未提交但有意保留的**（都在**数据根** `E:\WinterAgent\`，与约 180 个同类研究脚本并列；
 这是本项目的既有做法，`_*.py` 是研究用探针、`tools/` 才是长期工具）：
 
 | 文件 | 它是什么 |

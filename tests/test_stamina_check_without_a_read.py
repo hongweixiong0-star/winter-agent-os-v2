@@ -23,9 +23,12 @@ template, not by the gauge, so "should we look" does not depend on the number.
 from __future__ import annotations
 
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest import mock
 
+from winter_agent_v2 import event_schedule
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.models import Page, WorldState
 from winter_agent_v2.runtime import LiveRuntime
@@ -141,21 +144,68 @@ class TheEmptyGaugeDoesNotSkipTheCheckTests(unittest.TestCase):
 
 
 class TheGaugeIsTappableWithoutANumberTests(unittest.TestCase):
-    """The runtime half: the decision must also be executable."""
+    """The runtime half: the decision must also be executable.
+
+    The runtime ranks a goal board before the brain decides (``run()`` ->
+    ``goal_library.rank`` -> ``_sync_brain_goal``), so what the brain is asked here is
+    whatever the board put first.  On a MAP frame with no *calendar* entry drawn, that board
+    can offer one thing this test does not mean to exercise: ``DISCOVER_EVENT_CALENDAR``
+    priced at 300+450+250, reachable through ``OPEN_HOME`` -- but only while
+    ``event_schedule.calendar_scan_due()`` answers True.  That predicate is a **clock over
+    stored observations**, so on a machine whose ``learning/timed_event_schedule.json`` has
+    no read for this scope it answers True and the maintenance hop outranks the gauge
+    (measured 2026-10-17 after a clean checkout: ``[utility] chose DISCOVER_EVENT_CALENDAR
+    (1000; catalogue price only)`` and the first step came back ``OPEN_HOME``).
+
+    That is the scheduler behaving correctly on a state this test never stated, so the state
+    is stated here instead of inherited: the run starts from "today's calendar read is
+    already done", which is what the claim "the gauge is the next thing to do" presupposes.
+    The board then has no calendar hop to offer and the step under test is the one measured.
+    """
+
+    def _finished_calendar_read(self, path: Path) -> None:
+        """One grid row, drawn and opened, observed a minute ago -- so the read is not due.
+
+        All four halves of ``calendar_scan_due`` have to answer False for that, and this row
+        is the smallest honest shape that does: ``observed_at`` inside the 24 h interval, a
+        ``tap_norm`` that is already ``details_observed`` (so nothing is pending), and no
+        ``ACTIVITY_STRIP`` record at all (a missing strip is explicitly *not* staleness --
+        see ``strip_read_stale_against_grid``), which leaves nothing advertised-but-unread.
+        """
+        event_schedule.record_calendar_snapshot(
+            role_id="",
+            path=path,
+            observed_at=datetime.now(timezone.utc) - timedelta(minutes=1),
+            observation={
+                "recognized": True,
+                "kind": "CALENDAR_GRID",
+                "source": "LIVE_CLIENT_OCR",
+                "entries": [{
+                    "event_id": "ICEBOUND_TREASURE",
+                    "display_name": "ICEBOUND_TREASURE",
+                    "tap_norm": [0.5, 0.4],
+                    "details_observed": True,
+                    "occurrence_key": "ICEBOUND_TREASURE|10/02|10/06",
+                }],
+            },
+        )
 
     def _run(self, states, **kwargs):
         device = FakeDevice()
         with TemporaryDirectory() as temp:
-            run = LiveRuntime(
-                device=device,
-                vision=FakeVision(list(states)),
-                semantic_vision=FakeSemantic(),
-                capture_dir=Path(temp),
-                brain=RuleBrain(current_goal="INTEL", claim_free_stamina=True),
-                sleeper=lambda _seconds: None,
-                observation_retries=0,
-                **kwargs,
-            ).run(max_actions=1, allowed_skills={"OPEN_STAMINA_SOURCES"})
+            schedule_path = Path(temp) / "timed_event_schedule.json"
+            self._finished_calendar_read(schedule_path)
+            with mock.patch.object(event_schedule, "STATE_PATH", schedule_path):
+                run = LiveRuntime(
+                    device=device,
+                    vision=FakeVision(list(states)),
+                    semantic_vision=FakeSemantic(),
+                    capture_dir=Path(temp),
+                    brain=RuleBrain(current_goal="INTEL", claim_free_stamina=True),
+                    sleeper=lambda _seconds: None,
+                    observation_retries=0,
+                    **kwargs,
+                ).run(max_actions=1, allowed_skills={"OPEN_STAMINA_SOURCES"})
         return run, device
 
     def test_the_gauge_is_tapped_when_the_number_was_not_read(self):

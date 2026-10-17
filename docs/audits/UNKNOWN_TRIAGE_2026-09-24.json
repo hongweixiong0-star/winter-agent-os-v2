@@ -68,9 +68,9 @@
           "unknown_12_6__control__cb5386d4"
         ],
         "screenshots": [
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_064810_118970/20260923_064810_118970_step_002_before_20260922T224849101558.png",
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_065408_042411/20260923_065408_042411_step_001_before_20260922T225412616443.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_065408_042411\\20260923_065408_042411_step_001_before_20260922T225412616443.png"
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_064810_118970/20260923_064810_118970_step_002_before_20260922T224849101558.png",
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_065408_042411/20260923_065408_042411_step_001_before_20260922T225412616443.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_065408_042411\\20260923_065408_042411_step_001_before_20260922T225412616443.png"
         ]
       },
       "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
@@ -108,7 +108,7 @@
         ],
         "request_ids": [],
         "screenshots": [
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_071012_137755/20260923_071012_137755_step_006_after_refresh_2_20260922T231235365447.png"
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_071012_137755/20260923_071012_137755_step_006_after_refresh_2_20260922T231235365447.png"
         ]
       },
       "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
@@ -153,9 +153,9 @@
           "unknown__control__8cc661a7"
         ],
         "screenshots": [
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_201923_535962/20260923_201923_535962_step_014_after_refresh_2_20260923T122512050579.png",
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260924_002854_888480/20260924_002854_888480_step_008_after_refresh_2_20260923T163148060332.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260924_071817_445597\\20260924_071817_445597_step_001_before_20260923T231822777542.png"
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_201923_535962/20260923_201923_535962_step_014_after_refresh_2_20260923T122512050579.png",
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260924_002854_888480/20260924_002854_888480_step_008_after_refresh_2_20260923T163148060332.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260924_071817_445597\\20260924_071817_445597_step_001_before_20260923T231822777542.png"
         ]
       },
       "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
@@ -206,7 +206,7 @@
         ],
         "request_ids": [],
         "screenshots": [
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_000222_957063/20260923_000222_957063_step_003_after_refresh_2_20260922T160413693599.png"
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_000222_957063/20260923_000222_957063_step_003_after_refresh_2_20260922T160413693599.png"
         ]
       },
       "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
@@ -249,8 +249,8 @@
           "unknown__control__b6546e80"
         ],
         "screenshots": [
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_163010_905874/20260922_163010_905874_step_002_before_20260922T083049654040.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260922_163010_905874\\20260922_163010_905874_step_002_before_20260922T083049654040.png"
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260922_163010_905874/20260922_163010_905874_step_002_before_20260922T083049654040.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260922_163010_905874\\20260922_163010_905874_step_002_before_20260922T083049654040.png"
         ]
       },
       "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
@@ -300,8 +300,8 @@
           "unknown__control__23759997"
         ],
         "screenshots": [
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_161006_248835/20260922_161006_248835_step_002_before_20260922T081026147987.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260924_071413_036782\\20260924_071413_036782_step_001_before_20260923T231417588106.png"
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260922_161006_248835/20260922_161006_248835_step_002_before_20260922T081026147987.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260924_071413_036782\\20260924_071413_036782_step_001_before_20260923T231417588106.png"
         ]
       },
       "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
@@ -344,8 +344,8 @@
           "unknown__control__1add7d8e"
         ],
         "screenshots": [
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_173311_668537/20260923_173311_668537_step_002_after_refresh_2_20260923T093556833810.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_173311_668537\\20260923_173311_668537_step_003_before_20260923T093607740986.png"
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_173311_668537/20260923_173311_668537_step_002_after_refresh_2_20260923T093556833810.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_173311_668537\\20260923_173311_668537_step_003_before_20260923T093607740986.png"
         ]
       },
       "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
@@ -395,7 +395,7 @@
         ],
         "request_ids": [],
         "screenshots": [
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_163010_905874/20260922_163010_905874_step_001_before_20260922T083014616755.png"
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260922_163010_905874/20260922_163010_905874_step_001_before_20260922T083014616755.png"
         ]
       },
       "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
@@ -443,7 +443,7 @@
         ],
         "request_ids": [],
         "screenshots": [
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_152056_984583/20260922_152056_984583_step_010_after_refresh_2_20260922T072507769696.png"
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260922_152056_984583/20260922_152056_984583_step_010_after_refresh_2_20260922T072507769696.png"
         ]
       },
       "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
@@ -488,7 +488,7 @@
         ],
         "request_ids": [],
         "screenshots": [
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_064810_118970/20260923_064810_118970_step_001_after_20260922T224834761933.png"
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_064810_118970/20260923_064810_118970_step_001_after_20260922T224834761933.png"
         ]
       },
       "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
@@ -526,7 +526,7 @@
         ],
         "request_ids": [],
         "screenshots": [
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_064238_440571/20260923_064238_440571_step_005_after_refresh_2_20260922T224548255558.png"
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_064238_440571/20260923_064238_440571_step_005_after_refresh_2_20260922T224548255558.png"
         ]
       },
       "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
@@ -578,9 +578,9 @@
           "unknown_i__control__b860b24a"
         ],
         "screenshots": [
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_064238_440571/20260923_064238_440571_step_007_after_refresh_2_20260922T224706539783.png",
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_071012_137755/20260923_071012_137755_step_001_before_20260922T231016893235.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_071012_137755\\20260923_071012_137755_step_001_before_20260922T231016893235.png"
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_064238_440571/20260923_064238_440571_step_007_after_refresh_2_20260922T224706539783.png",
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_071012_137755/20260923_071012_137755_step_001_before_20260922T231016893235.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_071012_137755\\20260923_071012_137755_step_001_before_20260922T231016893235.png"
         ]
       },
       "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
@@ -627,8 +627,8 @@
           "unknown__control__78694f1b"
         ],
         "screenshots": [
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_171412_978367/20260922_171412_978367_step_002_after_20260922T091502172123.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_162538_801064\\20260923_162538_801064_step_021_before_20260923T083000087061.png"
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260922_171412_978367/20260922_171412_978367_step_002_after_20260922T091502172123.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_162538_801064\\20260923_162538_801064_step_021_before_20260923T083000087061.png"
         ]
       },
       "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
@@ -677,7 +677,7 @@
         ],
         "request_ids": [],
         "screenshots": [
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_150702_726193/20260922_150702_726193_step_019_after_refresh_2_20260922T071825684707.png",
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260922_150702_726193/20260922_150702_726193_step_019_after_refresh_2_20260922T071825684707.png",
           "dataset/raw/control_panel/runtime_exploration/unknown_page_check/unknown_page_check_step_002_after_refresh_2_20260922T071820460740.png"
         ]
       },
@@ -740,9 +740,9 @@
           "unknown__control__b2e886bd"
         ],
         "screenshots": [
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_085020_436509/20260923_085020_436509_step_004_after_refresh_2_20260923T005147823425.png",
-          "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_085020_436509/20260923_085020_436509_step_005_before_20260923T005158809832.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_085020_436509\\20260923_085020_436509_step_005_before_20260923T005158809832.png"
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_085020_436509/20260923_085020_436509_step_004_after_refresh_2_20260923T005147823425.png",
+          "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_085020_436509/20260923_085020_436509_step_005_before_20260923T005158809832.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_085020_436509\\20260923_085020_436509_step_005_before_20260923T005158809832.png"
         ]
       },
       "impact": "可能导致当前子任务暂停/恢复分支无法确认；没有证据证明它仍阻止 AUTO 全局推进。",
@@ -820,7 +820,7 @@
       "evidence": {
         "goal_state": "learning/goal_state.json",
         "observation_state": "learning/observation_state.json",
-        "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260924_174556_214738/20260924_174556_214738_step_006_before_20260924T094735772557.png"
+        "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260924_174556_214738/20260924_174556_214738_step_006_before_20260924T094735772557.png"
       },
       "impact": "该 Goal 当前不能执行领取动作；缺少收益可领取的当前证据，不能推断是缺 Skill 还是收益未就绪。",
       "reusable_capabilities": [

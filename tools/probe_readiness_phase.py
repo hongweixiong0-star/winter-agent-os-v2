@@ -4,7 +4,7 @@ Written as a probe rather than a test because it found the loosest-first orderin
 first run, and a table is the clearest way to keep that from coming back.
 """
 import sys
-sys.path.insert(0, r"E:\无尽冬日智能体")
+sys.path.insert(0, r"E:\WinterAgent")
 from winter_agent_v2 import event_schedule as es
 
 EXPECTED = [

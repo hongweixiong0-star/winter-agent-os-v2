@@ -103,10 +103,15 @@ def test_read_manifest_returns_empty_on_rubbish(tmp_path: Path):
 
 
 def test_the_pin_home_is_derived_from_the_data_root_and_not_a_drive_literal():
-    """§26.3: no new drive literals.  ``MAIN_REPO.parent`` is where the worktrees live."""
-    assert cm.PIN_HOME == cm.WORKTREE_ROOT / "winter-prod-pinned"
-    assert cm.WORKTREE_ROOT.parent == cm.MIRROR_WORKTREE.parent
-    assert cm.PIN_WORKTREE.name == cm.MIRROR_WORKTREE.name
+    """§26.3: no new drive literals.  The pin lives *inside* the project root since 2026-10-17.
+
+    It used to be a sibling directory (``<root>_worktrees/winter-prod-pinned``); the 2026-10-17
+    consolidation moved it under ``<root>/.worktrees/prod`` so the project is one directory and a
+    directory audit does not read the pin as a second copy of the repository.
+    """
+    assert cm.PIN_HOME == cm.WORKTREE_ROOT / "prod"
+    assert cm.WORKTREE_ROOT.parent == cm.MIRROR_WORKTREE
+    assert cm.PIN_WORKTREE.parent == cm.PIN_HOME
 
 
 # ------------------------------------------------- where "the pin" is, said once and not twice

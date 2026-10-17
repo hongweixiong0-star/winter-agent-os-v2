@@ -26,9 +26,9 @@ Read the result as:
 
 Usage
 -----
-    "E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/probe_beast_scan_pan.py
-    "E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/probe_beast_scan_pan.py --backend maa
-    "E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/probe_beast_scan_pan.py --duration 1500
+    "E:/WinterAgent/.venv/Scripts/python.exe" tools/probe_beast_scan_pan.py
+    "E:/WinterAgent/.venv/Scripts/python.exe" tools/probe_beast_scan_pan.py --backend maa
+    "E:/WinterAgent/.venv/Scripts/python.exe" tools/probe_beast_scan_pan.py --duration 1500
 
 ``--backend`` exists because the first live measurement (2026-09-18) showed the
 ADB gesture reports success and moves nothing, while MaaFramework drives MuMu's

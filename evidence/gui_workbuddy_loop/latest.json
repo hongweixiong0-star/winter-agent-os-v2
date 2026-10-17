@@ -1,23 +1,23 @@
 {
  "kind": "GatewaySoakAcceptance",
  "window_seconds": 900.0,
- "started_at": "2026-10-17T16:01:16.340971+00:00",
+ "started_at": "2026-10-17T16:27:18.657078+00:00",
  "finished_at": "",
- "generated_at": "2026-10-17T16:01:17.076260+00:00",
+ "generated_at": "2026-10-17T16:27:19.388743+00:00",
  "duration_minutes": 0.01,
  "complete": false,
  "launch_context": "production",
  "development_env_limitation": "",
  "sample_count": 1,
  "distinct_gui_pids": [
-  17428
+  33368
  ],
  "distinct_gateway_pids": [
-  29056
+  23360
  ],
  "black_console_windows": 0,
  "anomalies": [
-  "2026-10-17T16:01:16.464607+00:00 health 不可达（lifecycle=STARTING）"
+  "2026-10-17T16:27:18.770679+00:00 health 不可达（lifecycle=STARTING）"
  ],
  "verdict": {
   "overall": "FAIL",
@@ -74,10 +74,10 @@
  },
  "samples": [
   {
-   "at": "2026-10-17T16:01:16.464607+00:00",
+   "at": "2026-10-17T16:27:18.770679+00:00",
    "elapsed": 0.1,
-   "gui_pid": 17428,
-   "gateway_pid": 29056,
+   "gui_pid": 33368,
+   "gateway_pid": 23360,
    "gateway_identity": null,
    "port_8080_owner": 0,
    "port_8080_name": "",

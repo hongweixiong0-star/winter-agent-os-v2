@@ -11,7 +11,7 @@
 |---|---|
 | `CODE_COMMIT`（生产） | `a988f07`（= 当时 `main` 的 HEAD，pin 与 HEAD 已对齐；`desktop_startup.log` 可查） |
 | `PRODUCTION_PIN.expected_commit` | `a988f07f0f87ca8af1f361dd89dc346e89abe532` |
-| 生产工作树 | `C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体` |
+| 生产工作树 | `C:\Users\xhw\.codex\worktrees\prod\repo` |
 | `WORKTREE_CLEAN` | `true`（数据目录外 0 处改动；两次 safe repin 均为 `RESULT: CLEAN_OUTSIDE_DATA`） |
 | `DATA_ROOT` | `E:\无尽冬日智能体` |
 | 设备 | MuMu `127.0.0.1:7555`，`720x1280`，前台 `com.gof.china` |

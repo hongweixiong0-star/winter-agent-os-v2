@@ -3,7 +3,7 @@
 Why this exists
 ---------------
 ``config``/``knowledge``/``learning``/``dataset`` are junctions into the shared
-DATA_ROOT (``E:\\无尽冬日智能体``) that the pinned production worktree mounts.  A
+DATA_ROOT (``E:\\WinterAgent``) that the pinned production worktree mounts.  A
 ``git checkout`` or ``git rebase`` in that worktree therefore writes *through*
 those junctions, and on 2026-09-29 that silently rolled the live production state
 back to a committed copy 11 days old -- the wrong account, a 10k-row episode
@@ -260,7 +260,7 @@ def _markdown(payload: dict) -> str:
     lines = [
         "# RUNTIME_MUTABLE_STATE_MANIFEST",
         "",
-        "Which Git-tracked files under the shared DATA_ROOT (`E:\\无尽冬日智能体`) belong to Git,",
+        "Which Git-tracked files under the shared DATA_ROOT (`E:\\WinterAgent`) belong to Git,",
         "and which belong to the running loop.",
         "",
         "Why it matters: `config`/`knowledge`/`learning`/`dataset` in the pinned production worktree",
@@ -337,7 +337,7 @@ def main(argv: list[str] | None = None) -> int:
     payload = {
         "schema_version": "1.0",
         "generated_by": "tools/build_runtime_state_manifest.py",
-        "data_root": r"E:\无尽冬日智能体",
+        "data_root": r"E:\WinterAgent",
         "scanned_dirs": list(SCAN_DIRS),
         "summary": {
             "tracked_total": len(files),

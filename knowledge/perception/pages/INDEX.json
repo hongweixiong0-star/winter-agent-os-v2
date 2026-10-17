@@ -36,7 +36,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_150702_726193/20260922_150702_726193_step_019_after_refresh_2_20260922T071825684707.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260922_150702_726193/20260922_150702_726193_step_019_after_refresh_2_20260922T071825684707.png",
    "source_episode": "20260922_150702_726193",
    "page_image_path": "knowledge/perception/pages/unknown__f7bf2c92c5/page.png",
    "recognition_method": "OCR_TITLE",
@@ -103,7 +103,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_152056_984583/20260922_152056_984583_step_010_after_refresh_2_20260922T072507769696.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260922_152056_984583/20260922_152056_984583_step_010_after_refresh_2_20260922T072507769696.png",
    "source_episode": "20260922_152056_984583",
    "page_image_path": "knowledge/perception/pages/unknown__8ba5e65de5/page.png",
    "recognition_method": "ACTION_RESULT",
@@ -132,7 +132,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_161006_248835/20260922_161006_248835_step_002_before_20260922T081026147987.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260922_161006_248835/20260922_161006_248835_step_002_before_20260922T081026147987.png",
    "source_episode": "20260922_161006_248835",
    "page_image_path": "knowledge/perception/pages/unknown__3e852c8e40/page.png",
    "recognition_method": "OCR_TITLE",
@@ -184,7 +184,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_163010_905874/20260922_163010_905874_step_001_before_20260922T083014616755.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260922_163010_905874/20260922_163010_905874_step_001_before_20260922T083014616755.png",
    "source_episode": "20260922_163010_905874",
    "page_image_path": "knowledge/perception/pages/unknown__56b42e55bc/page.png",
    "recognition_method": "ACTION_RESULT",
@@ -234,7 +234,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_163010_905874/20260922_163010_905874_step_002_before_20260922T083049654040.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260922_163010_905874/20260922_163010_905874_step_002_before_20260922T083049654040.png",
    "source_episode": "20260922_163010_905874",
    "page_image_path": "knowledge/perception/pages/unknown__36ee6fff6c/page.png",
    "recognition_method": "OCR_TITLE",
@@ -271,7 +271,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_171412_978367/20260922_171412_978367_step_002_after_20260922T091502172123.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260922_171412_978367/20260922_171412_978367_step_002_after_20260922T091502172123.png",
    "source_episode": "20260922_171412_978367",
    "page_image_path": "knowledge/perception/pages/unknown__c6cafbb9a5/page.png",
    "recognition_method": "OCR_TITLE",
@@ -320,7 +320,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_000206_train/20260923_000206_train_step_006_after_refresh_2_20260922T160408088331.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_000206_train/20260923_000206_train_step_006_after_refresh_2_20260922T160408088331.png",
    "source_episode": "20260923_000206_train",
    "page_image_path": "knowledge/perception/pages/unknown__33704e467f/page.png",
    "recognition_method": "OCR_TITLE",
@@ -358,7 +358,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_064238_440571/20260923_064238_440571_step_005_after_refresh_2_20260922T224548255558.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_064238_440571/20260923_064238_440571_step_005_after_refresh_2_20260922T224548255558.png",
    "source_episode": "20260923_064238_440571",
    "page_image_path": "knowledge/perception/pages/unknown__adabc853d8/page.png",
    "recognition_method": "OCR_TITLE",
@@ -392,7 +392,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_064238_440571/20260923_064238_440571_step_007_after_refresh_2_20260922T224706539783.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_064238_440571/20260923_064238_440571_step_007_after_refresh_2_20260922T224706539783.png",
    "source_episode": "20260923_064238_440571",
    "page_image_path": "knowledge/perception/pages/unknown__c47c32940e/page.png",
    "recognition_method": "ACTION_RESULT",
@@ -450,7 +450,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_064810_118970/20260923_064810_118970_step_001_after_20260922T224834761933.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_064810_118970/20260923_064810_118970_step_001_after_20260922T224834761933.png",
    "source_episode": "20260923_064810_118970",
    "page_image_path": "knowledge/perception/pages/unknown__93c6c6cb73/page.png",
    "recognition_method": "OCR_TITLE",
@@ -508,7 +508,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_064810_118970/20260923_064810_118970_step_002_before_20260922T224849101558.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_064810_118970/20260923_064810_118970_step_002_before_20260922T224849101558.png",
    "source_episode": "20260923_064810_118970",
    "page_image_path": "knowledge/perception/pages/unknown_32_6__04c1b7ee3f/page.png",
    "recognition_method": "OCR_TITLE",
@@ -565,7 +565,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_065408_042411/20260923_065408_042411_step_001_before_20260922T225412616443.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_065408_042411/20260923_065408_042411_step_001_before_20260922T225412616443.png",
    "source_episode": "20260923_065408_042411",
    "page_image_path": "knowledge/perception/pages/unknown_12_6__ddaa0e3d74/page.png",
    "recognition_method": "OCR_TITLE",
@@ -606,7 +606,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_071012_137755/20260923_071012_137755_step_001_before_20260922T231016893235.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_071012_137755/20260923_071012_137755_step_001_before_20260922T231016893235.png",
    "source_episode": "20260923_071012_137755",
    "page_image_path": "knowledge/perception/pages/unknown_i__9ed87ef3a1/page.png",
    "recognition_method": "OCR_TITLE",
@@ -641,7 +641,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_071012_137755/20260923_071012_137755_step_006_after_refresh_2_20260922T231235365447.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_071012_137755/20260923_071012_137755_step_006_after_refresh_2_20260922T231235365447.png",
    "source_episode": "20260923_071012_137755",
    "page_image_path": "knowledge/perception/pages/unknown_71__71e056e016/page.png",
    "recognition_method": "OCR_TITLE",
@@ -680,7 +680,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_085020_436509/20260923_085020_436509_step_004_after_refresh_2_20260923T005147823425.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_085020_436509/20260923_085020_436509_step_004_after_refresh_2_20260923T005147823425.png",
    "source_episode": "20260923_085020_436509",
    "page_image_path": "knowledge/perception/pages/unknown__daf096bbd3/page.png",
    "recognition_method": "OCR_TITLE",
@@ -720,7 +720,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_085020_436509/20260923_085020_436509_step_005_before_20260923T005158809832.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_085020_436509/20260923_085020_436509_step_005_before_20260923T005158809832.png",
    "source_episode": "20260923_085020_436509",
    "page_image_path": "knowledge/perception/pages/unknown__e33b8ef805/page.png",
    "recognition_method": "OCR_TITLE",
@@ -776,7 +776,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_173311_668537/20260923_173311_668537_step_002_after_refresh_2_20260923T093556833810.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_173311_668537/20260923_173311_668537_step_002_after_refresh_2_20260923T093556833810.png",
    "source_episode": "20260923_173311_668537",
    "page_image_path": "knowledge/perception/pages/unknown__51c129b51a/page.png",
    "recognition_method": "OCR_TITLE",
@@ -838,7 +838,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_201923_535962/20260923_201923_535962_step_014_after_refresh_2_20260923T122512050579.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260923_201923_535962/20260923_201923_535962_step_014_after_refresh_2_20260923T122512050579.png",
    "source_episode": "20260923_201923_535962",
    "page_image_path": "knowledge/perception/pages/unknown__4edc0f8cda/page.png",
    "recognition_method": "OCR_TITLE",
@@ -900,7 +900,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260924_002854_888480/20260924_002854_888480_step_008_after_refresh_2_20260923T163148060332.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260924_002854_888480/20260924_002854_888480_step_008_after_refresh_2_20260923T163148060332.png",
    "source_episode": "20260924_002854_888480",
    "page_image_path": "knowledge/perception/pages/unknown__1715508d3f/page.png",
    "recognition_method": "OCR_TITLE",
@@ -955,7 +955,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260925_012637_363986/20260925_012637_363986_step_006_after_refresh_2_20260924T172852043940.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260925_012637_363986/20260925_012637_363986_step_006_after_refresh_2_20260924T172852043940.png",
    "source_episode": "20260925_012637_363986",
    "page_image_path": "knowledge/perception/pages/unknown__6da78ea230/page.png",
    "recognition_method": "OCR_TITLE",
@@ -1021,7 +1021,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260925_041205_184877/20260925_041205_184877_step_005_after_refresh_2_20260924T201342579179.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260925_041205_184877/20260925_041205_184877_step_005_after_refresh_2_20260924T201342579179.png",
    "source_episode": "20260925_041205_184877",
    "page_image_path": "knowledge/perception/pages/unknown_1__d1bfb64ae8/page.png",
    "recognition_method": "OCR_TITLE",
@@ -1096,7 +1096,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260925_080135_800570/20260925_080135_800570_step_006_after_refresh_2_20260925T000302584835.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260925_080135_800570/20260925_080135_800570_step_006_after_refresh_2_20260925T000302584835.png",
    "source_episode": "20260925_080135_800570",
    "page_image_path": "knowledge/perception/pages/unknown_iv__00362744e5/page.png",
    "recognition_method": "ACTION_RESULT",
@@ -1279,7 +1279,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/live_runtime/live_runtime_step_001_after_20260925T130224655961.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/live_runtime/live_runtime_step_001_after_20260925T130224655961.png",
    "source_episode": "live_runtime",
    "page_image_path": "knowledge/perception/pages/unknown__f09e5d7bc9/page.png",
    "recognition_method": "OCR_TITLE",
@@ -1318,7 +1318,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260926_114907_868969/20260926_114907_868969_step_021_after_refresh_2_20260926T035436928514.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260926_114907_868969/20260926_114907_868969_step_021_after_refresh_2_20260926T035436928514.png",
    "source_episode": "20260926_114907_868969",
    "page_image_path": "knowledge/perception/pages/unknown_8__557e718a46/page.png",
    "recognition_method": "OCR_TITLE",
@@ -1366,7 +1366,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260926_211352_300068/20260926_211352_300068_step_001_before_20260926T131359030959.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260926_211352_300068/20260926_211352_300068_step_001_before_20260926T131359030959.png",
    "source_episode": "20260926_211352_300068",
    "page_image_path": "knowledge/perception/pages/unknown__647f3da7ee/page.png",
    "recognition_method": "OCR_TITLE",
@@ -1421,7 +1421,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260926_225839_963609/20260926_225839_963609_step_015_after_20260926T150354151910.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260926_225839_963609/20260926_225839_963609_step_015_after_20260926T150354151910.png",
    "source_episode": "20260926_225839_963609",
    "page_image_path": "knowledge/perception/pages/unknown__6f20005784/page.png",
    "recognition_method": "ACTION_RESULT",
@@ -1469,7 +1469,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260926_225839_963609/20260926_225839_963609_step_015_before_20260926T150340474459.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260926_225839_963609/20260926_225839_963609_step_015_before_20260926T150340474459.png",
    "source_episode": "20260926_225839_963609",
    "page_image_path": "knowledge/perception/pages/unknown__f44861f4b5/page.png",
    "recognition_method": "ACTION_RESULT",
@@ -1535,7 +1535,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260927_023122_254658/20260927_023122_254658_step_009_after_refresh_2_20260926T183501592855.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260927_023122_254658/20260927_023122_254658_step_009_after_refresh_2_20260926T183501592855.png",
    "source_episode": "20260927_023122_254658",
    "page_image_path": "knowledge/perception/pages/unknown__19c65decf7/page.png",
    "recognition_method": "OCR_TITLE",
@@ -1569,7 +1569,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260927_163500_598801/20260927_163500_598801_step_019_after_20260927T084112437241.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260927_163500_598801/20260927_163500_598801_step_019_after_20260927T084112437241.png",
    "source_episode": "20260927_163500_598801",
    "page_image_path": "knowledge/perception/pages/unknown_4__df4db68889/page.png",
    "recognition_method": "OCR_TITLE",
@@ -1633,7 +1633,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260927_180410_828884/20260927_180410_828884_step_001_before_20260927T100418654092.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260927_180410_828884/20260927_180410_828884_step_001_before_20260927T100418654092.png",
    "source_episode": "20260927_180410_828884",
    "page_image_path": "knowledge/perception/pages/unknown__ab1b42fc7b/page.png",
    "recognition_method": "OCR_TITLE",
@@ -1667,7 +1667,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260927_200218_718100/20260927_200218_718100_step_019_after_20260927T120813909550.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260927_200218_718100/20260927_200218_718100_step_019_after_20260927T120813909550.png",
    "source_episode": "20260927_200218_718100",
    "page_image_path": "knowledge/perception/pages/unknown_1__f5aa1454b3/page.png",
    "recognition_method": "OCR_TITLE",
@@ -1710,7 +1710,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260927_201854_046639/20260927_201854_046639_step_020_after_refresh_2_20260927T122657717817.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260927_201854_046639/20260927_201854_046639_step_020_after_refresh_2_20260927T122657717817.png",
    "source_episode": "20260927_201854_046639",
    "page_image_path": "knowledge/perception/pages/unknown__ea22c1c3c7/page.png",
    "recognition_method": "OCR_TITLE",
@@ -1761,7 +1761,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260927_203440_940009/20260927_203440_940009_step_001_before_20260927T123448459799.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260927_203440_940009/20260927_203440_940009_step_001_before_20260927T123448459799.png",
    "source_episode": "20260927_203440_940009",
    "page_image_path": "knowledge/perception/pages/unknown__8afede275c/page.png",
    "recognition_method": "OCR_TITLE",
@@ -1799,7 +1799,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260927_223856_801689/20260927_223856_801689_step_001_before_20260927T143905197833.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260927_223856_801689/20260927_223856_801689_step_001_before_20260927T143905197833.png",
    "source_episode": "20260927_223856_801689",
    "page_image_path": "knowledge/perception/pages/unknown__2421520c13/page.png",
    "recognition_method": "OCR_TITLE",
@@ -1864,7 +1864,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260927_230735_862503/20260927_230735_862503_step_001_before_20260927T150744231610.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260927_230735_862503/20260927_230735_862503_step_001_before_20260927T150744231610.png",
    "source_episode": "20260927_230735_862503",
    "page_image_path": "knowledge/perception/pages/unknown__abe09e7438/page.png",
    "recognition_method": "OCR_TITLE",
@@ -1956,7 +1956,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260928_170234_334751/20260928_170234_334751_step_020_before_20260928T090922681131.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260928_170234_334751/20260928_170234_334751_step_020_before_20260928T090922681131.png",
    "source_episode": "20260928_170234_334751",
    "page_image_path": "knowledge/perception/pages/unknown_7_9c__4cfe5abc14/page.png",
    "recognition_method": "OCR_TITLE",
@@ -2010,7 +2010,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260928_203952_960311/20260928_203952_960311_step_006_before_20260928T124216098965.png",
+   "source_frame": "E:/WinterAgent/.worktrees/prod/repo/dataset/raw/control_panel/runtime_auto/20260928_203952_960311/20260928_203952_960311_step_006_before_20260928T124216098965.png",
    "source_episode": "20260928_203952_960311",
    "page_image_path": "knowledge/perception/pages/unknown__37781dd4b6/page.png",
    "recognition_method": "OCR_TITLE",
@@ -2057,7 +2057,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260928_231544_411957/20260928_231544_411957_step_001_before_20260928T151552622539.png",
+   "source_frame": "E:/WinterAgent/.worktrees/prod/repo/dataset/raw/control_panel/runtime_auto/20260928_231544_411957/20260928_231544_411957_step_001_before_20260928T151552622539.png",
    "source_episode": "20260928_231544_411957",
    "page_image_path": "knowledge/perception/pages/unknown_143_000__dd231ba4ab/page.png",
    "recognition_method": "OCR_TITLE",
@@ -2108,7 +2108,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260929_011053_421131/20260929_011053_421131_step_001_before_20260928T171101657875.png",
+   "source_frame": "E:/WinterAgent/.worktrees/prod/repo/dataset/raw/control_panel/runtime_auto/20260929_011053_421131/20260929_011053_421131_step_001_before_20260928T171101657875.png",
    "source_episode": "20260929_011053_421131",
    "page_image_path": "knowledge/perception/pages/unknown__3642bb5096/page.png",
    "recognition_method": "OCR_TITLE",
@@ -2215,7 +2215,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260930_001445_601667/20260930_001445_601667_step_001_before_20260929T161456156391.png",
+   "source_frame": "E:/WinterAgent/.worktrees/prod/repo/dataset/raw/control_panel/runtime_auto/20260930_001445_601667/20260930_001445_601667_step_001_before_20260929T161456156391.png",
    "source_episode": "20260930_001445_601667",
    "page_image_path": "knowledge/perception/pages/unknown__0c0f8336a5/page.png",
    "recognition_method": "OCR_TITLE",
@@ -2266,7 +2266,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/closure_training_current/closure_training_current_step_001_before_20260930T063428254835.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/closure_training_current/closure_training_current_step_001_before_20260930T063428254835.png",
    "source_episode": "closure_training_current",
    "page_image_path": "knowledge/perception/pages/unknown__9021c349a4/page.png",
    "recognition_method": "ACTION_RESULT",
@@ -2303,7 +2303,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260930_181931_583780/20260930_181931_583780_step_024_after_settle_retry_20260930T102301476965.png",
+   "source_frame": "E:/WinterAgent/.worktrees/prod/repo/dataset/raw/control_panel/runtime_auto/20260930_181931_583780/20260930_181931_583780_step_024_after_settle_retry_20260930T102301476965.png",
    "source_episode": "20260930_181931_583780",
    "page_image_path": "knowledge/perception/pages/unknown_95_7__9cfd4dfa31/page.png",
    "recognition_method": "OCR_TITLE",
@@ -2344,7 +2344,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/stamina_polar_rally/run_20260930T200838/run_20260930T200838_step_005_before_20260930T121031205691.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/stamina_polar_rally/run_20260930T200838/run_20260930T200838_step_005_before_20260930T121031205691.png",
    "source_episode": "run_20260930T200838",
    "page_image_path": "knowledge/perception/pages/unknown__0123556203/page.png",
    "recognition_method": "ACTION_RESULT",
@@ -2385,7 +2385,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261001_012036_596175/20261001_012036_596175_step_017_before_20260930T172432401605.png",
+   "source_frame": "E:/WinterAgent/.worktrees/prod/repo/dataset/raw/control_panel/runtime_auto/20261001_012036_596175/20261001_012036_596175_step_017_before_20260930T172432401605.png",
    "source_episode": "20261001_012036_596175",
    "page_image_path": "knowledge/perception/pages/unknown__83fedef8a7/page.png",
    "recognition_method": "OCR_TITLE",
@@ -2425,7 +2425,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261001_045835_819524/20261001_045835_819524_step_017_after_refresh_2_20260930T210058859891.png",
+   "source_frame": "E:/WinterAgent/.worktrees/prod/repo/dataset/raw/control_panel/runtime_auto/20261001_045835_819524/20261001_045835_819524_step_017_after_refresh_2_20260930T210058859891.png",
    "source_episode": "20261001_045835_819524",
    "page_image_path": "knowledge/perception/pages/unknown_1_16_11_8__f3bbf77f01/page.png",
    "recognition_method": "OCR_TITLE",
@@ -2471,7 +2471,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261001_230320_609778/20261001_230320_609778_step_002_before_20261001T150403845164.png",
+   "source_frame": "E:/WinterAgent/.worktrees/prod/repo/dataset/raw/control_panel/runtime_auto/20261001_230320_609778/20261001_230320_609778_step_002_before_20261001T150403845164.png",
    "source_episode": "20261001_230320_609778",
    "page_image_path": "knowledge/perception/pages/unknown__657b702d90/page.png",
    "recognition_method": "OCR_TITLE",
@@ -2532,7 +2532,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261002_073411_885155/20261002_073411_885155_step_002_after_20261001T233445197693.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261002_073411_885155/20261002_073411_885155_step_002_after_20261001T233445197693.png",
    "source_episode": "20261002_073411_885155",
    "page_image_path": "knowledge/perception/pages/unknown_3944__64261ee73e/page.png",
    "recognition_method": "ACTION_RESULT",
@@ -2565,7 +2565,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261002_073411_885155/20261002_073411_885155_step_003_after_20261001T233455239811.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261002_073411_885155/20261002_073411_885155_step_003_after_20261001T233455239811.png",
    "source_episode": "20261002_073411_885155",
    "page_image_path": "knowledge/perception/pages/unknown__a19ddd08e1/page.png",
    "recognition_method": "OCR_TITLE",
@@ -2597,7 +2597,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261002_124512_553726/20261002_124512_553726_step_004_before_20261002T044558865118.png",
+   "source_frame": "E:/WinterAgent/.worktrees/prod/repo/dataset/raw/control_panel/runtime_auto/20261002_124512_553726/20261002_124512_553726_step_004_before_20261002T044558865118.png",
    "source_episode": "20261002_124512_553726",
    "page_image_path": "knowledge/perception/pages/unknown__dc3b3c75d1/page.png",
    "recognition_method": "OCR_TITLE",
@@ -2629,7 +2629,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261002_131108_907784/20261002_131108_907784_step_007_after_settle_retry_20261002T051213724140.png",
+   "source_frame": "E:/WinterAgent/.worktrees/prod/repo/dataset/raw/control_panel/runtime_auto/20261002_131108_907784/20261002_131108_907784_step_007_after_settle_retry_20261002T051213724140.png",
    "source_episode": "20261002_131108_907784",
    "page_image_path": "knowledge/perception/pages/unknown_2__8bc6bc9afb/page.png",
    "recognition_method": "OCR_TITLE",
@@ -2685,7 +2685,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261002_195134_020809/20261002_195134_020809_step_013_session_observe_after_20261002T115349792833.png",
+   "source_frame": "E:/WinterAgent/.worktrees/prod/repo/dataset/raw/control_panel/runtime_auto/20261002_195134_020809/20261002_195134_020809_step_013_session_observe_after_20261002T115349792833.png",
    "source_episode": "20261002_195134_020809",
    "page_image_path": "knowledge/perception/pages/unknown_7_9__782a96e4b1/page.png",
    "recognition_method": "OCR_TITLE",
@@ -2747,7 +2747,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261002_195638_573005/20261002_195638_573005_step_003_after_refresh_2_20261002T115719796040.png",
+   "source_frame": "E:/WinterAgent/.worktrees/prod/repo/dataset/raw/control_panel/runtime_auto/20261002_195638_573005/20261002_195638_573005_step_003_after_refresh_2_20261002T115719796040.png",
    "source_episode": "20261002_195638_573005",
    "page_image_path": "knowledge/perception/pages/unknown__7baf572ae5/page.png",
    "recognition_method": "ACTION_RESULT",
@@ -2804,7 +2804,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261002_212259_052068/20261002_212259_052068_step_008_session_observe_after_20261002T132424759416.png",
+   "source_frame": "E:/WinterAgent/.worktrees/prod/repo/dataset/raw/control_panel/runtime_auto/20261002_212259_052068/20261002_212259_052068_step_008_session_observe_after_20261002T132424759416.png",
    "source_episode": "20261002_212259_052068",
    "page_image_path": "knowledge/perception/pages/unknown__6e7ba9ae1a/page.png",
    "recognition_method": "OCR_TITLE",
@@ -2856,7 +2856,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261003_204808_515802/20261003_204808_515802_step_006_before_20261003T124926289798.png",
+   "source_frame": "E:/WinterAgent/.worktrees/prod/repo/dataset/raw/control_panel/runtime_auto/20261003_204808_515802/20261003_204808_515802_step_006_before_20261003T124926289798.png",
    "source_episode": "20261003_204808_515802",
    "page_image_path": "knowledge/perception/pages/unknown__0b9c69adea/page.png",
    "recognition_method": "OCR_TITLE",
@@ -2910,7 +2910,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261003_221702_879974/20261003_221702_879974_step_001_after_refresh_2_20261003T141814313673.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261003_221702_879974/20261003_221702_879974_step_001_after_refresh_2_20261003T141814313673.png",
    "source_episode": "20261003_221702_879974",
    "page_image_path": "knowledge/perception/pages/unknown__fc2f8c47ac/page.png",
    "recognition_method": "OCR_TITLE",
@@ -2973,7 +2973,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261003_222109_764406/20261003_222109_764406_step_004_before_20261003T142200117011.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261003_222109_764406/20261003_222109_764406_step_004_before_20261003T142200117011.png",
    "source_episode": "20261003_222109_764406",
    "page_image_path": "knowledge/perception/pages/unknown__dc3b26f676/page.png",
    "recognition_method": "ACTION_RESULT",
@@ -3016,7 +3016,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261004_200811_032710/20261004_200811_032710_step_011_before_20261004T121002936869.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261004_200811_032710/20261004_200811_032710_step_011_before_20261004T121002936869.png",
    "source_episode": "20261004_200811_032710",
    "page_image_path": "knowledge/perception/pages/unknown__0a01e6a38e/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3067,7 +3067,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261005_021853_853591/20261005_021853_853591_step_001_after_20261004T181935025681.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261005_021853_853591/20261005_021853_853591_step_001_after_20261004T181935025681.png",
    "source_episode": "20261005_021853_853591",
    "page_image_path": "knowledge/perception/pages/unknown_25__26acd63699/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3116,7 +3116,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261005_131126_763343/20261005_131126_763343_step_023_after_refresh_2_20261005T051505787414.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261005_131126_763343/20261005_131126_763343_step_023_after_refresh_2_20261005T051505787414.png",
    "source_episode": "20261005_131126_763343",
    "page_image_path": "knowledge/perception/pages/unknown_10__c76634c77d/page.png",
    "recognition_method": "ACTION_RESULT",
@@ -3171,7 +3171,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261005_222437_143985/20261005_222437_143985_step_001_session_observe_session_bear_20261005T142456248502.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261005_222437_143985/20261005_222437_143985_step_001_session_observe_session_bear_20261005T142456248502.png",
    "source_episode": "20261005_222437_143985",
    "page_image_path": "knowledge/perception/pages/unknown_27_9__6031f46f86/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3203,7 +3203,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261005_222437_143985/20261005_222437_143985_step_004_after_refresh_2_20261005T142536470884.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261005_222437_143985/20261005_222437_143985_step_004_after_refresh_2_20261005T142536470884.png",
    "source_episode": "20261005_222437_143985",
    "page_image_path": "knowledge/perception/pages/unknown__77d1557836/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3241,7 +3241,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261006_091133_595422/20261006_091133_595422_step_006_after_settle_retry_20261006T011247370861.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261006_091133_595422/20261006_091133_595422_step_006_after_settle_retry_20261006T011247370861.png",
    "source_episode": "20261006_091133_595422",
    "page_image_path": "knowledge/perception/pages/unknown_610_7__daab56492e/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3284,7 +3284,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261006_204014_584566/20261006_204014_584566_step_010_before_20261006T124121380191.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261006_204014_584566/20261006_204014_584566_step_010_before_20261006T124121380191.png",
    "source_episode": "20261006_204014_584566",
    "page_image_path": "knowledge/perception/pages/unknown__4a75d57d69/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3332,7 +3332,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261008_112917_779019/20261008_112917_779019_step_007_before_20261008T033042567078.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261008_112917_779019/20261008_112917_779019_step_007_before_20261008T033042567078.png",
    "source_episode": "20261008_112917_779019",
    "page_image_path": "knowledge/perception/pages/unknown__8b7996f3d3/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3384,7 +3384,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_020857_140302/20261009_020857_140302_step_009_after_refresh_2_20261008T181013937078.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_020857_140302/20261009_020857_140302_step_009_after_refresh_2_20261008T181013937078.png",
    "source_episode": "20261009_020857_140302",
    "page_image_path": "knowledge/perception/pages/unknown__60f4610e1a/page.png",
    "recognition_method": "ACTION_RESULT",
@@ -3426,7 +3426,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_020857_140302/20261009_020857_140302_step_011_before_20261008T181041657287.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_020857_140302/20261009_020857_140302_step_011_before_20261008T181041657287.png",
    "source_episode": "20261009_020857_140302",
    "page_image_path": "knowledge/perception/pages/unknown__73ed217ef3/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3469,7 +3469,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_024023_951840/20261009_024023_951840_step_001_after_refresh_2_20261008T184046643245.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_024023_951840/20261009_024023_951840_step_001_after_refresh_2_20261008T184046643245.png",
    "source_episode": "20261009_024023_951840",
    "page_image_path": "knowledge/perception/pages/unknown__d60dc8d662/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3512,7 +3512,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_024023_951840/20261009_024023_951840_step_002_before_20261008T184050158792.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_024023_951840/20261009_024023_951840_step_002_before_20261008T184050158792.png",
    "source_episode": "20261009_024023_951840",
    "page_image_path": "knowledge/perception/pages/unknown_16__34bcbbefc3/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3557,7 +3557,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_024547_945370/20261009_024547_945370_step_002_before_20261008T184606895701.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_024547_945370/20261009_024547_945370_step_002_before_20261008T184606895701.png",
    "source_episode": "20261009_024547_945370",
    "page_image_path": "knowledge/perception/pages/unknown__d63c3bdc34/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3605,7 +3605,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_024743_578342/20261009_024743_578342_step_002_after_20261008T184810136174.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_024743_578342/20261009_024743_578342_step_002_after_20261008T184810136174.png",
    "source_episode": "20261009_024743_578342",
    "page_image_path": "knowledge/perception/pages/unknown__0a0082005d/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3663,7 +3663,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_025340_048135/20261009_025340_048135_step_002_before_20261008T185402661295.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_025340_048135/20261009_025340_048135_step_002_before_20261008T185402661295.png",
    "source_episode": "20261009_025340_048135",
    "page_image_path": "knowledge/perception/pages/unknown_7_9__45d2f53c42/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3714,7 +3714,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_030436_388473/20261009_030436_388473_step_008_before_20261008T190548431135.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_030436_388473/20261009_030436_388473_step_008_before_20261008T190548431135.png",
    "source_episode": "20261009_030436_388473",
    "page_image_path": "knowledge/perception/pages/unknown_3_05__432bbe906f/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3772,7 +3772,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_031602_486965/20261009_031602_486965_step_001_before_20261008T191608005676.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_031602_486965/20261009_031602_486965_step_001_before_20261008T191608005676.png",
    "source_episode": "20261009_031602_486965",
    "page_image_path": "knowledge/perception/pages/unknown_34__e734516b1b/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3824,7 +3824,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_032412_810437/20261009_032412_810437_step_003_before_20261008T192439324279.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_032412_810437/20261009_032412_810437_step_003_before_20261008T192439324279.png",
    "source_episode": "20261009_032412_810437",
    "page_image_path": "knowledge/perception/pages/unknown_3_24__60959c2ac6/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3878,7 +3878,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_033919_921445/20261009_033919_921445_step_001_before_20261008T193925493257.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_033919_921445/20261009_033919_921445_step_001_before_20261008T193925493257.png",
    "source_episode": "20261009_033919_921445",
    "page_image_path": "knowledge/perception/pages/unknown_7_9__7b0635f0e4/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3926,7 +3926,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_034730_929450/20261009_034730_929450_step_005_before_20261008T194809858722.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_034730_929450/20261009_034730_929450_step_005_before_20261008T194809858722.png",
    "source_episode": "20261009_034730_929450",
    "page_image_path": "knowledge/perception/pages/unknown_40__fdebc7f23a/page.png",
    "recognition_method": "OCR_TITLE",
@@ -3984,7 +3984,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_040145_206927/20261009_040145_206927_step_001_before_20261008T200150608005.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_040145_206927/20261009_040145_206927_step_001_before_20261008T200150608005.png",
    "source_episode": "20261009_040145_206927",
    "page_image_path": "knowledge/perception/pages/unknown_27_9c__0cf78236a3/page.png",
    "recognition_method": "OCR_TITLE",
@@ -4044,7 +4044,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_042016_222182/20261009_042016_222182_step_007_before_20261008T202124126240.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_042016_222182/20261009_042016_222182_step_007_before_20261008T202124126240.png",
    "source_episode": "20261009_042016_222182",
    "page_image_path": "knowledge/perception/pages/unknown__a224048dac/page.png",
    "recognition_method": "ACTION_RESULT",
@@ -4085,7 +4085,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_043235_518164/20261009_043235_518164_step_003_before_20261008T203319749282.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_043235_518164/20261009_043235_518164_step_003_before_20261008T203319749282.png",
    "source_episode": "20261009_043235_518164",
    "page_image_path": "knowledge/perception/pages/unknown__ff42737154/page.png",
    "recognition_method": "OCR_TITLE",
@@ -4128,7 +4128,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_043747_436469/20261009_043747_436469_step_002_after_refresh_2_20261008T203824210780.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_043747_436469/20261009_043747_436469_step_002_after_refresh_2_20261008T203824210780.png",
    "source_episode": "20261009_043747_436469",
    "page_image_path": "knowledge/perception/pages/unknown_1_16_11_9__47041529f2/page.png",
    "recognition_method": "OCR_TITLE",
@@ -4175,7 +4175,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_044306_664136/20261009_044306_664136_step_004_before_20261008T204546174391.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_044306_664136/20261009_044306_664136_step_004_before_20261008T204546174391.png",
    "source_episode": "20261009_044306_664136",
    "page_image_path": "knowledge/perception/pages/unknown_20__03a6e1a014/page.png",
    "recognition_method": "OCR_TITLE",
@@ -4221,7 +4221,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_045509_091787/20261009_045509_091787_step_004_after_refresh_2_20261008T205553956489.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_045509_091787/20261009_045509_091787_step_004_after_refresh_2_20261008T205553956489.png",
    "source_episode": "20261009_045509_091787",
    "page_image_path": "knowledge/perception/pages/unknown__0376fd6024/page.png",
    "recognition_method": "OCR_TITLE",
@@ -4279,7 +4279,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_050555_561274/20261009_050555_561274_step_007_before_20261008T210640351236.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_050555_561274/20261009_050555_561274_step_007_before_20261008T210640351236.png",
    "source_episode": "20261009_050555_561274",
    "page_image_path": "knowledge/perception/pages/unknown_8__c224c4b239/page.png",
    "recognition_method": "OCR_TITLE",
@@ -4330,7 +4330,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_051423_118436/20261009_051423_118436_step_002_after_refresh_2_20261008T211451320654.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_051423_118436/20261009_051423_118436_step_002_after_refresh_2_20261008T211451320654.png",
    "source_episode": "20261009_051423_118436",
    "page_image_path": "knowledge/perception/pages/unknown_5__6a34d8c55d/page.png",
    "recognition_method": "OCR_TITLE",
@@ -4389,7 +4389,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_051745_143218/20261009_051745_143218_step_004_after_refresh_2_20261008T211847074016.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_051745_143218/20261009_051745_143218_step_004_after_refresh_2_20261008T211847074016.png",
    "source_episode": "20261009_051745_143218",
    "page_image_path": "knowledge/perception/pages/unknown_2_3__f3adc27c72/page.png",
    "recognition_method": "ACTION_RESULT",
@@ -4440,7 +4440,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_055155_002446/20261009_055155_002446_step_007_after_refresh_2_20261008T215350253695.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_055155_002446/20261009_055155_002446_step_007_after_refresh_2_20261008T215350253695.png",
    "source_episode": "20261009_055155_002446",
    "page_image_path": "knowledge/perception/pages/unknown_5_53__83596b6104/page.png",
    "recognition_method": "OCR_TITLE",
@@ -4488,7 +4488,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_060048_581314/20261009_060048_581314_step_006_after_20261008T220148300725.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_060048_581314/20261009_060048_581314_step_006_after_20261008T220148300725.png",
    "source_episode": "20261009_060048_581314",
    "page_image_path": "knowledge/perception/pages/unknown_75__0a13e7c3d8/page.png",
    "recognition_method": "OCR_TITLE",
@@ -4546,7 +4546,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_061359_716489/20261009_061359_716489_step_007_before_20261008T221536622420.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_061359_716489/20261009_061359_716489_step_007_before_20261008T221536622420.png",
    "source_episode": "20261009_061359_716489",
    "page_image_path": "knowledge/perception/pages/unknown__03355b30ae/page.png",
    "recognition_method": "OCR_TITLE",
@@ -4604,7 +4604,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_063647_736382/20261009_063647_736382_step_004_before_20261008T223730698263.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_063647_736382/20261009_063647_736382_step_004_before_20261008T223730698263.png",
    "source_episode": "20261009_063647_736382",
    "page_image_path": "knowledge/perception/pages/unknown__b8c588c46e/page.png",
    "recognition_method": "OCR_TITLE",
@@ -4666,7 +4666,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_064216_041177/20261009_064216_041177_step_004_after_refresh_2_20261008T224330130356.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_064216_041177/20261009_064216_041177_step_004_after_refresh_2_20261008T224330130356.png",
    "source_episode": "20261009_064216_041177",
    "page_image_path": "knowledge/perception/pages/unknown_24__2a37633f1e/page.png",
    "recognition_method": "OCR_TITLE",
@@ -4716,7 +4716,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261009_071821_194171/20261009_071821_194171_step_007_before_20261008T231938794493.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261009_071821_194171/20261009_071821_194171_step_007_before_20261008T231938794493.png",
    "source_episode": "20261009_071821_194171",
    "page_image_path": "knowledge/perception/pages/unknown_7_19__74b2745b34/page.png",
    "recognition_method": "OCR_TITLE",
@@ -4752,7 +4752,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261010_122927_588648/20261010_122927_588648_step_003_before_20261010T043023304161.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261010_122927_588648/20261010_122927_588648_step_003_before_20261010T043023304161.png",
    "source_episode": "20261010_122927_588648",
    "page_image_path": "knowledge/perception/pages/unknown__8251fa035e/page.png",
    "recognition_method": "OCR_TITLE",
@@ -4785,7 +4785,7 @@
    "world_state": {
     "page": "UNKNOWN"
    },
-   "source_frame": "E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20261010_232857_034703/20261010_232857_034703_step_020_after_20261010T153331676764.png",
+   "source_frame": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20261010_232857_034703/20261010_232857_034703_step_020_after_20261010T153331676764.png",
    "source_episode": "20261010_232857_034703",
    "page_image_path": "knowledge/perception/pages/unknown_285_598__cf342f0b6a/page.png",
    "recognition_method": "OCR_TITLE",

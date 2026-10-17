@@ -14,7 +14,7 @@ and the frames where the word is ABSENT are included on purpose: a reader that f
 that is not there would be worse than no reader.
 
 Usage:
-    "E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/probe_printed_words.py
+    "E:/WinterAgent/.venv/Scripts/python.exe" tools/probe_printed_words.py
 """
 from __future__ import annotations
 

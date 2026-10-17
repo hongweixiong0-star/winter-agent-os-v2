@@ -1,7 +1,7 @@
 import json, collections
 from pathlib import Path
 
-ROOT = Path(r"E:\无尽冬日智能体")
+ROOT = Path(r"E:\WinterAgent")
 EXEC = ROOT / "learning/executor_backend.jsonl"
 
 rows = []

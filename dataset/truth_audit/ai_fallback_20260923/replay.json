@@ -1,13 +1,13 @@
 {
  "generated_at": "2026-09-23T12:22:44.767259+00:00",
- "answer_root": "E:\\无尽冬日智能体\\learning\\unknown_requests\\answers",
+ "answer_root": "E:\\WinterAgent\\learning\\unknown_requests\\answers",
  "cases": [
   {
    "request_id": "unknown__control__78694f1b",
    "asked_on": "2026-09-23T08:30:10.687010+00:00",
    "page_key": "UNKNOWN::对战",
    "goal_at_ask_time": "INTEL",
-   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_162538_801064\\20260923_162538_801064_step_021_before_20260923T083000087061.png",
+   "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_162538_801064\\20260923_162538_801064_step_021_before_20260923T083000087061.png",
    "frame_exists": true,
    "page_now": "UNKNOWN",
    "title_now": "对战",

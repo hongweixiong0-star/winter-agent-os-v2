@@ -8,8 +8,8 @@
       "template_id": "status_intel_beast_marching__step_003_after__0",
       "semantic": "STATUS_INTEL_BEAST_MARCHING",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_marching_v2/status_intel_beast_marching__step_003_after__0.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_beast10_automatic_round4_resume/step_003_after.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/intel_marching_v2/status_intel_beast_marching__step_003_after__0.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/live_intel_beast10_automatic_round4_resume/step_003_after.png",
       "parent_sha256": "407d6255e4b66c4fb5d70764941a64409341041bed8e5bc2fd790abd01526bfb",
       "roi_norm": {
         "x_norm": 0.018,

@@ -16,7 +16,7 @@ from pathlib import Path
 
 from PIL import Image
 
-ROOT = Path(r"E:\无尽冬日智能体")
+ROOT = Path(r"E:\WinterAgent")
 sys.path.insert(0, str(ROOT))
 
 from winter_agent_v2.device import ADBDevice

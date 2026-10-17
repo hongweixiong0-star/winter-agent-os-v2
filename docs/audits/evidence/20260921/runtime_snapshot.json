@@ -22,7 +22,7 @@
   "mode": "AUTO",
   "qwen": "ON_DEMAND",
   "vision": "READY",
-  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260921_214752_122443\\20260921_214752_122443_step_001_after_20260921T134811610025.png",
+  "screenshot_path": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260921_214752_122443\\20260921_214752_122443_step_001_after_20260921T134811610025.png",
   "march_used": null,
   "march_max": null,
   "queues": {

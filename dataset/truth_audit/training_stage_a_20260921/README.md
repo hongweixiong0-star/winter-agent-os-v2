@@ -93,8 +93,8 @@
 复现：
 
 ```bash
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" .probe_training_stage_a.py <frame>
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" .probe_ring_and_icon.py
+"E:/WinterAgent/.venv/Scripts/python.exe" .probe_training_stage_a.py <frame>
+"E:/WinterAgent/.venv/Scripts/python.exe" .probe_ring_and_icon.py
 ```
 
 ## 七、三次真机失败的独立印证（补，2026-09-21 01:20）

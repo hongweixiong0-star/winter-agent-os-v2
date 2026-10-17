@@ -118,7 +118,7 @@ page=TRAINING  training={"troop_type":"INFANTRY","status":"IN_PROGRESS",
 ## 七、复现
 
 ```bash
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" -m pytest tests/test_training_page_by_ocr.py -q
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" -m pytest tests/test_worker_wait_is_bounded.py -q
-"E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/check_wiring.py | grep -iE "training:|panel:"
+"E:/WinterAgent/.venv/Scripts/python.exe" -m pytest tests/test_training_page_by_ocr.py -q
+"E:/WinterAgent/.venv/Scripts/python.exe" -m pytest tests/test_worker_wait_is_bounded.py -q
+"E:/WinterAgent/.venv/Scripts/python.exe" tools/check_wiring.py | grep -iE "training:|panel:"
 ```

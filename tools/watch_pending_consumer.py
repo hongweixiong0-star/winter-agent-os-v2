@@ -11,7 +11,7 @@ import sys
 import time
 from datetime import datetime
 
-ROOT = pathlib.Path(r"E:\无尽冬日智能体")
+ROOT = pathlib.Path(r"E:\WinterAgent")
 LEDGER = ROOT / "learning/workbuddy_escalations.jsonl"
 LOG = ROOT / "learning/control_panel/latest.log"
 

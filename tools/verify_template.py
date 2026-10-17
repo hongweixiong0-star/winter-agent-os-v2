@@ -10,8 +10,8 @@ vision model) can look at, and (c) negative-control frames.
 
 Usage (project venv):
 
-    E:/无尽冬日智能体/.venv/Scripts/python.exe tools/verify_template.py SEMANTIC frame1.png [frame2.png ...]
-    E:/无尽冬日智能体/.venv/Scripts/python.exe tools/verify_template.py --manifest dataset/candidate/beast_search_v2_manifest.json SEMANTIC frame1.png
+    E:/WinterAgent/.venv/Scripts/python.exe tools/verify_template.py SEMANTIC frame1.png [frame2.png ...]
+    E:/WinterAgent/.venv/Scripts/python.exe tools/verify_template.py --manifest dataset/candidate/beast_search_v2_manifest.json SEMANTIC frame1.png
 
 Writes an annotated copy next to each frame as <stem>_verify.png and prints
 the match distance plus the overlay coordinates.

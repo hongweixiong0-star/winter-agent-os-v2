@@ -20,7 +20,7 @@ import collections
 from pathlib import Path
 from typing import Any
 
-ROOT = Path("E:/无尽冬日智能体")
+ROOT = Path("E:/WinterAgent")
 STORE = ROOT / "learning/episodes.jsonl"
 OUT = ROOT / "dataset/truth_audit/loop_detector_20260930/still_pending_runs.json"
 

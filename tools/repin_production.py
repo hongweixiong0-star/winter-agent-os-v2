@@ -1,7 +1,7 @@
 """Repin the pinned production worktree to a target commit WITHOUT touching the shared data root.
 
 Reusable version of the _repin_prod*.py one-offs.  The pinned worktree mounts
-config/knowledge/learning/dataset as junctions into E:\\无尽冬日智能体 (the shared DATA_ROOT), so a
+config/knowledge/learning/dataset as junctions into E:\\WinterAgent (the shared DATA_ROOT), so a
 plain ``git checkout <new>`` writes tracked files *through* those junctions and rolls live
 runtime state back -- measured 2026-09-29, when that truncated a 10k-row episode ledger to 2.1k.
 So this moves HEAD + index only (``reset --mixed`` never touches the working tree) and then syncs
@@ -28,13 +28,19 @@ from config import paths  # noqa: E402
 #: ``tools/check_mainline.py`` uses -- so the tool that moves the pin and the check that
 #: audits it cannot disagree about where "the pin" is.  They were two definitions until
 #: 2026-10-04 and only agreed by accident: this file still named
-#: ``C:\Users\xhw\.codex\worktrees\...``, which resolves today solely because the 2026-10-03
+#: ``E:\WinterAgent\.worktrees\...``, which resolves today solely because the 2026-10-03
 #: move to E: left a compatibility junction behind.  A literal that works by accident is a
 #: literal that stops working the day the junction goes -- and the failure would be this tool
 #: repinning one directory while production runs from another.
-WORKTREE_ROOT = paths.MAIN_REPO.parent / f"{paths.MAIN_REPO.name}_worktrees"
-WORKTREE_HOME = WORKTREE_ROOT / "winter-prod-pinned"
-WT = WORKTREE_HOME / paths.MAIN_REPO.name
+#:
+#: 2026-10-17: the root became ``E:\WinterAgent`` and the pin moved *inside* it, so the whole
+#: project is one directory again (``E:\WinterAgent_worktrees`` used to be a sibling that a
+#: directory audit would read as a duplicate copy of the repository).  The manifest stays
+#: outside the checkout -- a repin resets the worktree, and a file inside it would be a
+#: casualty of that reset.
+WORKTREE_ROOT = paths.MAIN_REPO / ".worktrees"
+WORKTREE_HOME = WORKTREE_ROOT / "prod"
+WT = WORKTREE_HOME / "repo"
 MANIFEST = WORKTREE_HOME / "PRODUCTION_PIN.json"
 DATA = ("config", "knowledge", "learning", "dataset")
 # Untracked evidence dirs are pre-existing and not part of the code sync.

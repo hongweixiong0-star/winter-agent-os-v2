@@ -158,7 +158,7 @@ X，三者是同一个位置。
 ## 复算
 
 ```bash
-VENV=E:/无尽冬日智能体/.venv/Scripts/python.exe
+VENV=E:/WinterAgent/.venv/Scripts/python.exe
 $VENV tools/probe_close_popup_target.py --survey        # 四个注册各属哪一屏 + band 分离度 → survey.json
 $VENV tools/probe_close_popup_target.py --limit 10 --band-search   # 逐帧：赢家/距离/落点 → probe.json
 $VENV tools/register_close_popup_band.py --dry-run      # 重算分离度并给出判词（不写盘）

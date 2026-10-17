@@ -1,4 +1,4 @@
-corpus=E:\无尽冬日智能体\dataset\raw frames=2907 formation-page frames=104
+corpus=E:\WinterAgent\dataset\raw frames=2907 formation-page frames=104
 
 dataset\raw\bear_live_20260909\auto_join_formation.png
     anchors  : {'PAGE_BEAST_MARCH': 0}

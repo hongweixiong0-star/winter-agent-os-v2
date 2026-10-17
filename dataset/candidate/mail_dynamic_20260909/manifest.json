@@ -8,8 +8,8 @@
       "template_id": "page_mail__step_001_before__0",
       "semantic": "PAGE_MAIL",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/mail_dynamic_20260909/templates/page_mail__step_001_before__0.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_mail_dynamic_badge_fix_20260909/step_001_before.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/mail_dynamic_20260909/templates/page_mail__step_001_before__0.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/live_mail_dynamic_badge_fix_20260909/step_001_before.png",
       "parent_sha256": "3ee97ff68ea751df90c6a17af5e5a899554d0b2133b4f82604235eefe773d468",
       "roi_norm": {
         "x_norm": 0.105,
@@ -26,8 +26,8 @@
       "template_id": "btn_mail_claim_all__step_001_before__1",
       "semantic": "BTN_MAIL_CLAIM_ALL",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/mail_dynamic_20260909/templates/btn_mail_claim_all__step_001_before__1.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_mail_dynamic_badge_fix_20260909/step_001_before.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/mail_dynamic_20260909/templates/btn_mail_claim_all__step_001_before__1.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/live_mail_dynamic_badge_fix_20260909/step_001_before.png",
       "parent_sha256": "3ee97ff68ea751df90c6a17af5e5a899554d0b2133b4f82604235eefe773d468",
       "roi_norm": {
         "x_norm": 0.58,

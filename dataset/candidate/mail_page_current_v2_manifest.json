@@ -8,8 +8,8 @@
       "template_id": "page_mail__live_mail_all_clear_20260907__0",
       "semantic": "PAGE_MAIL",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/mail_page_current_v2/page_mail__live_mail_all_clear_20260907__0.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_mail_all_clear_20260907.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/mail_page_current_v2/page_mail__live_mail_all_clear_20260907__0.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/live_mail_all_clear_20260907.png",
       "parent_sha256": "7278dab5b2fc22571546557324498830ea799e4e1571435bc8dfe62a58145538",
       "roi_norm": {
         "x_norm": 0.11,

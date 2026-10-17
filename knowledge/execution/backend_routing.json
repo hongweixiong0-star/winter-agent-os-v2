@@ -258,7 +258,7 @@
       "evidence": {
         "generated_at": "2026-10-16T16:08:59.358384+00:00",
         "source": "winter_agent_v2.pipeline_autogen V2_NATIVE fallback (generator unavailable)",
-        "frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_000743_810037\\autogen\\20261016_160856_REGULAR_EVENT_ENTRY.png",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_000743_810037\\autogen\\20261016_160856_REGULAR_EVENT_ENTRY.png",
         "observed_text": "常规活动",
         "observed_box": [
           633,
@@ -272,12 +272,12 @@
         "harvest_page": "home",
         "harvest_score": 0.9984,
         "positive_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_home.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_heroes.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_bag.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_shop.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_alliance.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_map.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_home.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_heroes.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_bag.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_shop.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_alliance.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_map.png"
         ],
         "negative_frames": [],
         "negative_rule": "frames whose OCR does not show the label text",
@@ -334,7 +334,7 @@
         "active_node_source": "V2_NATIVE_FALLBACK",
         "generator_tool": "",
         "trigger": "runtime unresolved after 1 attempt(s): SEMANTIC_TARGET_NOT_VERIFIED",
-        "pipeline_node_path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\autogen\\pipeline_nodes\\regular_event_entry__ca65aa1c38.json",
+        "pipeline_node_path": "E:\\WinterAgent\\dataset\\raw\\autogen\\pipeline_nodes\\regular_event_entry__ca65aa1c38.json",
         "pipeline_node_sha1": "ca65aa1c38",
         "autogen_owned_recognition": {
           "REGULAR_EVENT_ENTRY": {
@@ -344,7 +344,7 @@
               0.7,
               0.75
             ],
-            "source_template": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\candidate\\autogen\\regular_event_entry__autogen_04f2f219.png",
+            "source_template": "E:\\WinterAgent\\dataset\\candidate\\autogen\\regular_event_entry__autogen_04f2f219.png",
             "roi": [
               565,
               111,
@@ -366,7 +366,7 @@
       "evidence": {
         "generated_at": "2026-10-08T22:34:59.104890+00:00",
         "source": "winter_agent_v2.pipeline_autogen V2_NATIVE fallback (generator unavailable)",
-        "frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261009_063412_777788\\autogen\\20261008_223457_REGULAR_EVENT_ENTRY.png",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261009_063412_777788\\autogen\\20261008_223457_REGULAR_EVENT_ENTRY.png",
         "observed_text": "常规活动",
         "observed_box": [
           625,
@@ -380,12 +380,12 @@
         "harvest_page": "home",
         "harvest_score": 0.9984,
         "positive_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_home.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_heroes.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_bag.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_shop.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_alliance.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_map.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_home.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_heroes.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_bag.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_shop.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_alliance.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_map.png"
         ],
         "negative_frames": [],
         "negative_rule": "frames whose OCR does not show the label text",
@@ -442,7 +442,7 @@
         "active_node_source": "V2_NATIVE_FALLBACK",
         "generator_tool": "",
         "trigger": "runtime unresolved after 1 attempt(s): SEMANTIC_TARGET_NOT_VERIFIED",
-        "pipeline_node_path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\autogen\\pipeline_nodes\\regular_event_entry__429fc2bec6.json",
+        "pipeline_node_path": "E:\\WinterAgent\\dataset\\raw\\autogen\\pipeline_nodes\\regular_event_entry__429fc2bec6.json",
         "pipeline_node_sha1": "429fc2bec6",
         "autogen_owned_recognition": {
           "REGULAR_EVENT_ENTRY": {
@@ -452,7 +452,7 @@
               0.7,
               0.75
             ],
-            "source_template": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\candidate\\autogen\\regular_event_entry__autogen_96727d9f.png",
+            "source_template": "E:\\WinterAgent\\dataset\\candidate\\autogen\\regular_event_entry__autogen_96727d9f.png",
             "roi": [
               557,
               109,
@@ -491,7 +491,7 @@
       "evidence": {
         "generated_at": "2026-09-25T18:27:49.665112+00:00",
         "source": "winter_agent_v2.pipeline_autogen (TOOL_SHAPED OCR node + V2_NATIVE template)",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_home.png",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_home.png",
         "observed_text": "联盟",
         "observed_box": [
           511,
@@ -505,12 +505,12 @@
         "harvest_page": "home",
         "harvest_score": 0.9996,
         "positive_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_home.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_heroes.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_bag.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_shop.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_alliance.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182708_map.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_home.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_heroes.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_bag.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_shop.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_alliance.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182708_map.png"
         ],
         "negative_frames": [],
         "negative_rule": "frames whose OCR does not show the label text",
@@ -555,7 +555,7 @@
       "evidence": {
         "generated_at": "2026-09-25T18:35:41.732317+00:00",
         "source": "winter_agent_v2.pipeline_autogen (TOOL_SHAPED OCR node + V2_NATIVE template)",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_183501_explore.png",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_183501_explore.png",
         "observed_text": "领取",
         "observed_box": [
           585,
@@ -569,14 +569,14 @@
         "harvest_page": "explore",
         "harvest_score": 0.9972,
         "positive_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_183501_explore.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_183501_explore.png"
         ],
         "negative_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_183501_home.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_183501_heroes.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_183501_bag.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_183501_shop.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_183501_map.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_183501_home.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_183501_heroes.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_183501_bag.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_183501_shop.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_183501_map.png"
         ],
         "negative_rule": "frames whose OCR does not show the label text",
         "validation_report": {
@@ -603,7 +603,7 @@
       "evidence": {
         "generated_at": "2026-09-28T10:34:16.074456+00:00",
         "source": "installed maa-pipeline-generate CLI + V2 runtime wiring",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260928_182629_601335\\autogen\\20260928_103413_repair_QUICK_PANEL_ROW_HERO_RECRUIT.png",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260928_182629_601335\\autogen\\20260928_103413_repair_QUICK_PANEL_ROW_HERO_RECRUIT.png",
         "observed_text": "酱英雄招募",
         "observed_box": [
           14,
@@ -617,14 +617,14 @@
         "harvest_page": "heroes",
         "harvest_score": 0.9994,
         "positive_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_183501_heroes.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_183501_heroes.png"
         ],
         "negative_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_183501_home.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_183501_bag.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_183501_shop.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_183501_explore.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_183501_map.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_183501_home.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_183501_bag.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_183501_shop.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_183501_explore.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_183501_map.png"
         ],
         "negative_rule": "frames whose OCR does not show the label text",
         "validation_report": {
@@ -656,7 +656,7 @@
           "timeout": 2000
         },
         "active_node_source": "V2_NATIVE_TEMPLATE",
-        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "generator_tool": "E:\\WinterAgent\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
         "repair": "runtime repair after 1 attempt(s): SEMANTIC_TARGET_NOT_VERIFIED",
         "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/quick_panel_row_hero_recruit__d2d6c02978.json",
         "pipeline_node_sha1": "d2d6c02978",
@@ -742,8 +742,8 @@
           "timeout": 2000
         },
         "active_node_source": "V2_NATIVE_TEMPLATE",
-        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_220855.png",
+        "generator_tool": "E:\\WinterAgent\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_220855.png",
         "observed_text": "联盟科技",
         "observed_box": [
           527,
@@ -939,8 +939,8 @@
           "timeout": 2000
         },
         "active_node_source": "V2_NATIVE_TEMPLATE",
-        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260928_185437_803552\\autogen\\20260928_110101_repair_BTN_EXPLORATION_IDLE_CLAIM.png",
+        "generator_tool": "E:\\WinterAgent\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260928_185437_803552\\autogen\\20260928_110101_repair_BTN_EXPLORATION_IDLE_CLAIM.png",
         "observed_text": "领取",
         "observed_box": [
           584,
@@ -954,10 +954,10 @@
         "harvest_page": "exploration",
         "harvest_score": 0.9973,
         "positive_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260926_002414_exploration.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260926_002414_exploration.png"
         ],
         "negative_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260926_002414_alliance.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260926_002414_alliance.png"
         ],
         "negative_rule": "frames whose OCR does not show the label text",
         "validation_report": {
@@ -1023,8 +1023,8 @@
           "timeout": 2000
         },
         "active_node_source": "V2_NATIVE_TEMPLATE",
-        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260926_002731_daily.png",
+        "generator_tool": "E:\\WinterAgent\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\autogen\\20260926_002731_daily.png",
         "observed_text": "一键领取",
         "observed_box": [
           303,
@@ -1038,10 +1038,10 @@
         "harvest_page": "daily",
         "harvest_score": 0.9981,
         "positive_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260926_002731_daily.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260926_002731_daily.png"
         ],
         "negative_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260926_002731_underground.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260926_002731_underground.png"
         ],
         "negative_rule": "frames whose OCR does not show the label text",
         "validation_report": {
@@ -1105,8 +1105,8 @@
           "timeout": 2000
         },
         "active_node_source": "V2_NATIVE_TEMPLATE",
-        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png",
+        "generator_tool": "E:\\WinterAgent\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png",
         "observed_text": "搜索",
         "observed_box": [
           323,
@@ -1120,18 +1120,18 @@
         "harvest_page": "MAP",
         "harvest_score": 0.9993,
         "positive_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png"
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png"
         ],
         "negative_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_015_before_20260926T031135370721.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_021_before_20260926T032321084094.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_092329_143762\\20260926_092329_143762_step_024_before_20260926T013147370018.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_016_before_20260926T022026979915.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_003_before_20260926T024518560097.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_009_before_20260926T021755541401.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_023_before_20260925T232806741418.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260925T130038234454.png"
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_015_before_20260926T031135370721.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_021_before_20260926T032321084094.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_092329_143762\\20260926_092329_143762_step_024_before_20260926T013147370018.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_016_before_20260926T022026979915.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_003_before_20260926T024518560097.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_009_before_20260926T021755541401.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_023_before_20260925T232806741418.png",
+          "E:\\WinterAgent\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260925T130038234454.png"
         ],
         "negative_rule": "frames whose OCR does not show the label text",
         "validation_report": {
@@ -1195,8 +1195,8 @@
           "timeout": 2000
         },
         "active_node_source": "V2_NATIVE_TEMPLATE",
-        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png",
+        "generator_tool": "E:\\WinterAgent\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png",
         "observed_text": "搜索",
         "observed_box": [
           323,
@@ -1210,18 +1210,18 @@
         "harvest_page": "MAP",
         "harvest_score": 0.9993,
         "positive_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png"
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png"
         ],
         "negative_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_015_before_20260926T031135370721.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_021_before_20260926T032321084094.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_092329_143762\\20260926_092329_143762_step_024_before_20260926T013147370018.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_016_before_20260926T022026979915.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_003_before_20260926T024518560097.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_009_before_20260926T021755541401.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_023_before_20260925T232806741418.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260925T130038234454.png"
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_015_before_20260926T031135370721.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_021_before_20260926T032321084094.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_092329_143762\\20260926_092329_143762_step_024_before_20260926T013147370018.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_016_before_20260926T022026979915.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_003_before_20260926T024518560097.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_009_before_20260926T021755541401.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_023_before_20260925T232806741418.png",
+          "E:\\WinterAgent\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260925T130038234454.png"
         ],
         "negative_rule": "frames whose OCR does not show the label text",
         "validation_report": {
@@ -1285,8 +1285,8 @@
           "timeout": 2000
         },
         "active_node_source": "V2_NATIVE_TEMPLATE",
-        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png",
+        "generator_tool": "E:\\WinterAgent\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png",
         "observed_text": "一键已读&领取",
         "observed_box": [
           488,
@@ -1300,18 +1300,18 @@
         "harvest_page": "MAIL",
         "harvest_score": 0.9889,
         "positive_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png"
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png"
         ],
         "negative_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_015_before_20260926T031135370721.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_021_before_20260926T032321084094.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_092329_143762\\20260926_092329_143762_step_024_before_20260926T013147370018.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_016_before_20260926T022026979915.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_003_before_20260926T024518560097.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_009_before_20260926T021755541401.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_023_before_20260925T232806741418.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260925T130038234454.png"
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_015_before_20260926T031135370721.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_021_before_20260926T032321084094.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_092329_143762\\20260926_092329_143762_step_024_before_20260926T013147370018.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_016_before_20260926T022026979915.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_003_before_20260926T024518560097.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_009_before_20260926T021755541401.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_023_before_20260925T232806741418.png",
+          "E:\\WinterAgent\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260925T130038234454.png"
         ],
         "negative_rule": "frames whose OCR does not show the label text",
         "validation_report": {
@@ -1375,8 +1375,8 @@
           "timeout": 2000
         },
         "active_node_source": "V2_NATIVE_TEMPLATE",
-        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_172519_179740\\autogen\\20260926_092630_repair_BTN_MAIL_TAB_REPORT.png",
+        "generator_tool": "E:\\WinterAgent\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_172519_179740\\autogen\\20260926_092630_repair_BTN_MAIL_TAB_REPORT.png",
         "observed_text": "报告",
         "observed_box": [
           465,
@@ -1390,18 +1390,18 @@
         "harvest_page": "MAIL",
         "harvest_score": 0.9999,
         "positive_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png"
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png"
         ],
         "negative_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_015_before_20260926T031135370721.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_021_before_20260926T032321084094.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_092329_143762\\20260926_092329_143762_step_024_before_20260926T013147370018.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_016_before_20260926T022026979915.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_003_before_20260926T024518560097.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_009_before_20260926T021755541401.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_023_before_20260925T232806741418.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260925T130038234454.png"
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_015_before_20260926T031135370721.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_021_before_20260926T032321084094.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_092329_143762\\20260926_092329_143762_step_024_before_20260926T013147370018.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_016_before_20260926T022026979915.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_003_before_20260926T024518560097.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_009_before_20260926T021755541401.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_023_before_20260925T232806741418.png",
+          "E:\\WinterAgent\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260925T130038234454.png"
         ],
         "negative_rule": "frames whose OCR does not show the label text",
         "validation_report": {
@@ -1467,8 +1467,8 @@
           "timeout": 2000
         },
         "active_node_source": "V2_NATIVE_TEMPLATE",
-        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png",
+        "generator_tool": "E:\\WinterAgent\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png",
         "observed_text": "系统",
         "observed_box": [
           331,
@@ -1482,25 +1482,25 @@
         "harvest_page": "MAIL",
         "harvest_score": 0.998,
         "positive_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png"
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png"
         ],
         "negative_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_013_before_20260926T033132118533.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260925_101454_299811\\20260925_101454_299811_step_021_before_20260925T021937501401.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_012_before_20260926T033112659243.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_002_before_20260926T031502766350.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_022_before_20260926T031320955902.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_008_before_20260926T032915451126.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_015_before_20260926T031135370721.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_021_before_20260926T032321084094.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_092329_143762\\20260926_092329_143762_step_024_before_20260926T013147370018.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_016_before_20260926T022026979915.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_003_before_20260926T024518560097.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_009_before_20260926T021755541401.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_023_before_20260925T232806741418.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_094354_532072\\20260926_094354_532072_step_009_before_20260926T014710149242.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260925T130038234454.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260925_222116_370434\\20260925_222116_370434_step_001_before_20260925T142123726292.png"
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_013_before_20260926T033132118533.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260925_101454_299811\\20260925_101454_299811_step_021_before_20260925T021937501401.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_012_before_20260926T033112659243.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_002_before_20260926T031502766350.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_022_before_20260926T031320955902.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_008_before_20260926T032915451126.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_015_before_20260926T031135370721.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_021_before_20260926T032321084094.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_092329_143762\\20260926_092329_143762_step_024_before_20260926T013147370018.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_016_before_20260926T022026979915.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_003_before_20260926T024518560097.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_009_before_20260926T021755541401.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_023_before_20260925T232806741418.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_094354_532072\\20260926_094354_532072_step_009_before_20260926T014710149242.png",
+          "E:\\WinterAgent\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260925T130038234454.png",
+          "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260925_222116_370434\\20260925_222116_370434_step_001_before_20260925T142123726292.png"
         ],
         "negative_rule": "frames whose OCR does not show the label text",
         "validation_report": {
@@ -1638,8 +1638,8 @@
           "timeout": 2000
         },
         "active_node_source": "V2_NATIVE_TEMPLATE",
-        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png",
+        "generator_tool": "E:\\WinterAgent\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png",
         "observed_text": "联盟",
         "observed_box": [
           193,
@@ -1754,8 +1754,8 @@
           "timeout": 2000
         },
         "active_node_source": "V2_NATIVE_TEMPLATE",
-        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_alliance.png",
+        "generator_tool": "E:\\WinterAgent\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\autogen\\r2_alliance.png",
         "observed_text": "联盟战争",
         "observed_box": [
           189,
@@ -1769,11 +1769,11 @@
         "harvest_page": "ALLIANCE",
         "harvest_score": 0.9968,
         "positive_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_alliance.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\r2_alliance.png"
         ],
         "negative_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_home.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_event_hub.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\r2_home.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\r2_event_hub.png"
         ],
         "negative_rule": "frames whose OCR does not show the label text",
         "validation_report": {
@@ -1840,8 +1840,8 @@
           "timeout": 2000
         },
         "active_node_source": "V2_NATIVE_TEMPLATE",
-        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_alliance.png",
+        "generator_tool": "E:\\WinterAgent\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\autogen\\r2_alliance.png",
         "observed_text": "联盟宝箱",
         "observed_box": [
           527,
@@ -1855,11 +1855,11 @@
         "harvest_page": "ALLIANCE",
         "harvest_score": 0.9991,
         "positive_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_alliance.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\r2_alliance.png"
         ],
         "negative_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_home.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_event_hub.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\r2_home.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\r2_event_hub.png"
         ],
         "negative_rule": "frames whose OCR does not show the label text",
         "validation_report": {
@@ -1912,7 +1912,7 @@
           110,
           1275
         ],
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_home.png",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\autogen\\r2_home.png",
         "validation": "PENDING_RECORD",
         "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_open_exploration__4445c71d03.json",
         "pipeline_node_sha1": "4445c71d03",
@@ -1951,7 +1951,7 @@
           700,
           995
         ],
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_home.png",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\autogen\\r2_home.png",
         "validation": "PENDING_RECORD",
         "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_open_power_overview_icon__ceed6a4eb4.json",
         "pipeline_node_sha1": "ceed6a4eb4",
@@ -1973,7 +1973,7 @@
           435,
           384
         ],
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_home.png",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\autogen\\r2_home.png",
         "validation": "PENDING_RECORD",
         "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_selected_building_upgrade__5963d61279.json",
         "pipeline_node_sha1": "5963d61279",
@@ -2045,8 +2045,8 @@
           "timeout": 2000
         },
         "active_node_source": "V2_NATIVE_TEMPLATE",
-        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r14_war.png",
+        "generator_tool": "E:\\WinterAgent\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\autogen\\r14_war.png",
         "observed_text": "自动加入",
         "observed_box": [
           292,
@@ -2060,14 +2060,14 @@
         "harvest_page": "ALLIANCE_WAR",
         "harvest_score": 0.9992,
         "positive_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r14_war.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\r14_war.png"
         ],
         "negative_frames": [
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_home.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182419_map.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182419_shop.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182419_bag.png",
-          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_event_hub.png"
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\r2_home.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182419_map.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182419_shop.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\20260925_182419_bag.png",
+          "E:\\WinterAgent\\dataset\\raw\\autogen\\r2_event_hub.png"
         ],
         "negative_rule": "frames whose OCR does not show the label text",
         "validation_report": {
@@ -2454,8 +2454,8 @@
           "timeout": 2000
         },
         "active_node_source": "V2_NATIVE_TEMPLATE",
-        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\ui_exploration\\20260928\\frame_566_HERO_RECRUIT_FRESH.png",
+        "generator_tool": "E:\\WinterAgent\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\ui_exploration\\20260928\\frame_566_HERO_RECRUIT_FRESH.png",
         "observed_text": "免费",
         "observed_box": [
           160,
@@ -2483,7 +2483,7 @@
             0.7,
             0.75
           ],
-          "source_template": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\candidate\\autogen\\btn_daily_task_go__autogen_58201015.png",
+          "source_template": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\candidate\\autogen\\btn_daily_task_go__autogen_58201015.png",
           "roi": [
             496,
             823,
@@ -2503,7 +2503,7 @@
         "tool_generated_node": null,
         "active_node_source": "V2_NATIVE_FALLBACK",
         "generator_tool": "",
-        "frame": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260928_225048_456304\\autogen\\20260928_145110_BTN_DAILY_TASK_GO.png",
+        "frame": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\raw\\control_panel\\runtime_auto\\20260928_225048_456304\\autogen\\20260928_145110_BTN_DAILY_TASK_GO.png",
         "observed_text": "前往",
         "observed_box": [
           564,
@@ -2515,7 +2515,7 @@
         "expand": 20,
         "validation": "GENERATED_ONLY",
         "trigger": "runtime unresolved after 1 attempt(s): SEMANTIC_TARGET_NOT_VERIFIED",
-        "pipeline_node_path": "C:\\Users\\xhw\\.codex\\worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\autogen\\pipeline_nodes\\btn_daily_task_go__7123d9b45d.json",
+        "pipeline_node_path": "E:\\WinterAgent\\.worktrees\\prod\\repo\\dataset\\raw\\autogen\\pipeline_nodes\\btn_daily_task_go__7123d9b45d.json",
         "pipeline_node_sha1": "7123d9b45d",
         "autogen_node_count": 1,
         "autogen_note": "runtime-derived from an unresolved control"
@@ -2533,7 +2533,7 @@
         "tool_generated_node": null,
         "active_node_source": "V2_NATIVE_FALLBACK",
         "generator_tool": "",
-        "frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261010_124510_282986\\autogen\\20261010_044627_QUICK_PANEL_ROW_BUILDING.png",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261010_124510_282986\\autogen\\20261010_044627_QUICK_PANEL_ROW_BUILDING.png",
         "observed_text": "队列1",
         "observed_box": [
           198,
@@ -2545,7 +2545,7 @@
         "expand": 20,
         "validation": "GENERATED_ONLY",
         "trigger": "runtime unresolved after 1 attempt(s): SEMANTIC_TARGET_NOT_VERIFIED",
-        "pipeline_node_path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\autogen\\pipeline_nodes\\quick_panel_row_building__c5799a7b99.json",
+        "pipeline_node_path": "E:\\WinterAgent\\dataset\\raw\\autogen\\pipeline_nodes\\quick_panel_row_building__c5799a7b99.json",
         "pipeline_node_sha1": "c5799a7b99",
         "autogen_owned_recognition": {
           "QUICK_PANEL_ROW_BUILDING": {
@@ -2555,7 +2555,7 @@
               0.7,
               0.75
             ],
-            "source_template": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\candidate\\autogen\\quick_panel_row_building__autogen_055cdeb6.png",
+            "source_template": "E:\\WinterAgent\\dataset\\candidate\\autogen\\quick_panel_row_building__autogen_055cdeb6.png",
             "roi": [
               130,
               279,
@@ -2613,7 +2613,7 @@
             0.7,
             0.75
           ],
-          "source_template": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\candidate\\autogen\\quick_panel_row_lancer_camp_entry__autogen_a034077d.png",
+          "source_template": "E:\\WinterAgent\\dataset\\candidate\\autogen\\quick_panel_row_lancer_camp_entry__autogen_a034077d.png",
           "roi": [
             132,
             537,
@@ -2633,7 +2633,7 @@
         "tool_generated_node": null,
         "active_node_source": "V2_NATIVE_FALLBACK",
         "generator_tool": "",
-        "frame": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261004_024820_495219\\autogen\\20261003_184955_QUICK_PANEL_ROW_LANCER_CAMP_ENTRY.png",
+        "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261004_024820_495219\\autogen\\20261003_184955_QUICK_PANEL_ROW_LANCER_CAMP_ENTRY.png",
         "observed_text": "矛兵",
         "observed_box": [
           200,
@@ -2645,7 +2645,7 @@
         "expand": 20,
         "validation": "GENERATED_ONLY",
         "trigger": "runtime unresolved after 1 attempt(s): SEMANTIC_TARGET_NOT_VERIFIED",
-        "pipeline_node_path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\autogen\\pipeline_nodes\\quick_panel_row_lancer_camp_entry__266d7e8d63.json",
+        "pipeline_node_path": "E:\\WinterAgent\\dataset\\raw\\autogen\\pipeline_nodes\\quick_panel_row_lancer_camp_entry__266d7e8d63.json",
         "pipeline_node_sha1": "266d7e8d63",
         "autogen_owned_recognition": {
           "QUICK_PANEL_ROW_LANCER_CAMP_ENTRY": {
@@ -2655,7 +2655,7 @@
               0.7,
               0.75
             ],
-            "source_template": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\candidate\\autogen\\quick_panel_row_lancer_camp_entry__autogen_a034077d.png",
+            "source_template": "E:\\WinterAgent\\dataset\\candidate\\autogen\\quick_panel_row_lancer_camp_entry__autogen_a034077d.png",
             "roi": [
               132,
               537,

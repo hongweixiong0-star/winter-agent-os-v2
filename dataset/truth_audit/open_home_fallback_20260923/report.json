@@ -1,7 +1,7 @@
 {
  "frames": [
   {
-   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_052732_081600\\20260923_052732_081600_step_001_before_20260922T212736070510.png",
+   "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_052732_081600\\20260923_052732_081600_step_001_before_20260922T212736070510.png",
    "recorded_at": "2026-09-22T21:27:57.160719+00:00",
    "goal_recorded": "AUTO_DISCOVERY",
    "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",

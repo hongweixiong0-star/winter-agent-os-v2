@@ -14,7 +14,7 @@
    "recorded_at": "2026-09-22T21:47:42.619776+00:00",
    "result": "FAILURE",
    "goal": "MAIL_ROUTINE",
-   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_054442_624423\\20260923_054442_624423_step_007_before_20260922T214728784787.png",
+   "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_054442_624423\\20260923_054442_624423_step_007_before_20260922T214728784787.png",
    "panel_open_at_record": false,
    "page_at_record": "HOME",
    "handle_found_now": true,

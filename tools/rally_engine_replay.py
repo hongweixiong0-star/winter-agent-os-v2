@@ -16,7 +16,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-ROOT = Path("E:/无尽冬日智能体")
+ROOT = Path("E:/WinterAgent")
 sys.path.insert(0, str(ROOT))
 
 OUT_INDEX = ROOT / "dataset/raw/rally_join/RALLY_DATASET_INDEX.jsonl"

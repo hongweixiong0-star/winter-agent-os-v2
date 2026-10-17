@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "generated_by": "tools/build_runtime_state_manifest.py",
-  "data_root": "E:\\无尽冬日智能体",
+  "data_root": "E:\\WinterAgent",
   "scanned_dirs": [
     "config",
     "knowledge",

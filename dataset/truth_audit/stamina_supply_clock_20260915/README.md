@@ -133,7 +133,7 @@ stop=MAX_ACTIONS_REACHED  exit=0  （4/4 verifier OK）
 复现：
 
 ```
-cd "E:/无尽冬日智能体" && "E:/dongri-mumu-bot/.venv/Scripts/python.exe" -u \
+cd "E:/WinterAgent" && "E:/dongri-mumu-bot/.venv/Scripts/python.exe" -u \
   tools/run_live.py --goal INTEL --max-actions 3
 ```
 

@@ -29,7 +29,7 @@
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "UNKNOWN",
-    "screenshot_path": "E:\\无尽冬日智能体_worktrees\\winter-prod-pinned\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20261017_001233_193195\\20261017_001233_193195_step_006_before_20261016T161356439264.png",
+    "screenshot_path": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_001233_193195\\20261017_001233_193195_step_006_before_20261016T161356439264.png",
     "march_used": null,
     "march_max": null,
     "queues": {
@@ -341,30 +341,30 @@
     "updated_at": "2026-10-16T16:14:42.373079+00:00"
   },
   "latest_log": {
-    "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",
+    "path": "E:\\WinterAgent\\learning\\control_panel\\latest.log",
     "modified_at": "2026-10-16T16:14:46+00:00",
     "size_bytes": 35035,
     "last_stop_reason": null
   },
   "recent_crash_reports": [
     {
-      "path": "E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261015_080009_621854_auto_subprocess.json",
+      "path": "E:\\WinterAgent\\learning\\control_panel\\crashes\\20261015_080009_621854_auto_subprocess.json",
       "modified_at": "2026-10-15T00:00:09+00:00"
     },
     {
-      "path": "E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261015_180840_190109_auto_subprocess.json",
+      "path": "E:\\WinterAgent\\learning\\control_panel\\crashes\\20261015_180840_190109_auto_subprocess.json",
       "modified_at": "2026-10-15T10:08:40+00:00"
     },
     {
-      "path": "E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261015_182349_369335_auto_subprocess.json",
+      "path": "E:\\WinterAgent\\learning\\control_panel\\crashes\\20261015_182349_369335_auto_subprocess.json",
       "modified_at": "2026-10-15T10:23:49+00:00"
     },
     {
-      "path": "E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261015_185827_507369_auto_subprocess.json",
+      "path": "E:\\WinterAgent\\learning\\control_panel\\crashes\\20261015_185827_507369_auto_subprocess.json",
       "modified_at": "2026-10-15T10:58:27+00:00"
     },
     {
-      "path": "E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20261017_001227_841313_auto_subprocess.json",
+      "path": "E:\\WinterAgent\\learning\\control_panel\\crashes\\20261017_001227_841313_auto_subprocess.json",
       "modified_at": "2026-10-16T16:12:27+00:00"
     }
   ],

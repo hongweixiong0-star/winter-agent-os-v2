@@ -8,8 +8,8 @@
       "template_id": "popup_session_disconnected__live_resource_rotation_current_20260913__f6bc866e__0",
       "semantic": "POPUP_SESSION_DISCONNECTED",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/session_disconnected/popup_session_disconnected__live_resource_rotation_current_20260913__f6bc866e__0.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_current_20260913.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/session_disconnected/popup_session_disconnected__live_resource_rotation_current_20260913__f6bc866e__0.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/live_resource_rotation_current_20260913.png",
       "parent_sha256": "f6bc866e175243fda378d8de2856fd95e816bb535ac031aa7e8f950f20688cfb",
       "roi_norm": {
         "x_norm": 0.025,
@@ -26,8 +26,8 @@
       "template_id": "btn_reconnect_session__live_resource_rotation_current_20260913__f6bc866e__1",
       "semantic": "BTN_RECONNECT_SESSION",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/session_disconnected/btn_reconnect_session__live_resource_rotation_current_20260913__f6bc866e__1.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_current_20260913.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/session_disconnected/btn_reconnect_session__live_resource_rotation_current_20260913__f6bc866e__1.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/live_resource_rotation_current_20260913.png",
       "parent_sha256": "f6bc866e175243fda378d8de2856fd95e816bb535ac031aa7e8f950f20688cfb",
       "roi_norm": {
         "x_norm": 0.51,

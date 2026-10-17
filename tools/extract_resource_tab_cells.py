@@ -15,7 +15,7 @@ from pathlib import Path
 
 from PIL import Image
 
-ROOT = Path(r"E:\无尽冬日智能体")
+ROOT = Path(r"E:\WinterAgent")
 CLEAN = ROOT / "dataset/truth_audit/resource_cells_20260914_120027"
 OUT = ROOT / "dataset/candidate/resource_tabs"
 OUT.mkdir(parents=True, exist_ok=True)

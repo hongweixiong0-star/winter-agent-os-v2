@@ -7,7 +7,7 @@ This is a delta audit of the current workspace and the clean pinned production r
 ## Current evidence
 
 - The DEV root is on `main` at `7caf38c`, 16 commits behind `origin/main`, with extensive pre-existing modified and untracked files. It is not a safe production launch tree.
-- The running production snapshot records a worker loaded from `C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体`; its latest snapshot at audit time is still single-role (`CLEAR_INTEL` / `DISPATCH_INTEL_BEAST`). No production restart or device input was performed for this audit.
+- The running production snapshot records a worker loaded from `E:\WinterAgent\.worktrees\prod\repo`; its latest snapshot at audit time is still single-role (`CLEAR_INTEL` / `DISPATCH_INTEL_BEAST`). No production restart or device input was performed for this audit.
 - `Scheduler.select_next()` is the production call from `LiveRuntime.run()`. Its normal path receives the current frame's single `WorldState`. `select_global()` and `RoleObservation` exist in the dirty DEV source and have focused unit tests, but no runtime caller constructs a multi-role observation set.
 - `tools/run_live.py` reads one current-role artifact through `TruthAudit` at process startup and passes that `role_id` into one `LiveRuntime`. The production worker does not enumerate configured roles or switch between them.
 - `GoalStateStore` now writes a role-keyed `roles` map while retaining the legacy current-role board. This preserves observed goal boards; it does not create fresh inactive-role observations or authorize an action from cached state.

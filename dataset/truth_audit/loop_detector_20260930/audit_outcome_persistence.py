@@ -36,7 +36,7 @@ import collections
 from pathlib import Path
 from typing import Any
 
-ROOT = Path("E:/无尽冬日智能体")
+ROOT = Path("E:/WinterAgent")
 STORE = ROOT / "learning/episodes.jsonl"
 RUNTIME = ROOT / "winter_agent_v2/runtime.py"
 LEARNING = ROOT / "winter_agent_v2/learning.py"

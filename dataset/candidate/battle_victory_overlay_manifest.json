@@ -8,8 +8,8 @@
       "template_id": "popup_battle_victory_banner__step_001_before__be9b5de2__0",
       "semantic": "POPUP_BATTLE_VICTORY_BANNER",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/battle_victory_overlay/popup_battle_victory_banner__step_001_before__be9b5de2__0.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260912_230906_574238/step_001_before.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/battle_victory_overlay/popup_battle_victory_banner__step_001_before__be9b5de2__0.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260912_230906_574238/step_001_before.png",
       "parent_sha256": "be9b5de2902793e05d53cd739c2f19521e7673b6535e2f3ed0fbe81a08686b6b",
       "roi_norm": {
         "x_norm": 0.245,
@@ -26,8 +26,8 @@
       "template_id": "btn_close_battle_victory__step_001_before__be9b5de2__1",
       "semantic": "BTN_CLOSE_BATTLE_VICTORY",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/battle_victory_overlay/btn_close_battle_victory__step_001_before__be9b5de2__1.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260912_230906_574238/step_001_before.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/battle_victory_overlay/btn_close_battle_victory__step_001_before__be9b5de2__1.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260912_230906_574238/step_001_before.png",
       "parent_sha256": "be9b5de2902793e05d53cd739c2f19521e7673b6535e2f3ed0fbe81a08686b6b",
       "roi_norm": {
         "x_norm": 0.885,
@@ -44,8 +44,8 @@
       "template_id": "popup_battle_victory_banner__step_001_before__8f7a8189__0",
       "semantic": "POPUP_BATTLE_VICTORY_BANNER",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/battle_victory_overlay/popup_battle_victory_banner__step_001_before__8f7a8189__0.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260912_231335_767785/step_001_before.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/battle_victory_overlay/popup_battle_victory_banner__step_001_before__8f7a8189__0.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/control_panel/runtime_auto/20260912_231335_767785/step_001_before.png",
       "parent_sha256": "8f7a8189e7f44afb43e29bd857fac0b4d0e341363f41439879ad6f9184dc6342",
       "roi_norm": {
         "x_norm": 0.245,

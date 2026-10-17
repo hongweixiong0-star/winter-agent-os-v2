@@ -3,7 +3,7 @@
   "generated_by": "Codex Commander / sole Release Owner",
   "review_type": "DELTA_HANDOFF_CALENDAR_STARVATION_AND_CAPABILITY_BOOTSTRAP",
   "supersedes": "替换旧2026-09-24正式队列；原三文件按字节+SHA256归档。旧WorkBuddy execution/results/blocked/review不改，由WorkBuddy在任务01核验。",
-  "project_root": "E:/无尽冬日智能体",
+  "project_root": "E:/WinterAgent",
   "runtime_channel": {
     "workbuddy_enabled": false,
     "auto_submit_jobs": false,

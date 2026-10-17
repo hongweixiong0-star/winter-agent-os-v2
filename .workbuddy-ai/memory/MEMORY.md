@@ -2167,8 +2167,8 @@ AMBIGUOUS 不盲点、未授权零点击、目标缺失零点击、每次尝试�
 ## 环境铁律（2026-09-30 增补）：共享数据根 + 生产固定版本 + 面板保活
 
 1. **`learning/` 是跨工作树共享的数据根**（`47a2823 fix(ops): keep soak evidence in shared data root`）。
-   实测 `E:\无尽冬日智能体\learning\DEVICE_LEASE.json` 与
-   `C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\learning\DEVICE_LEASE.json`
+   实测 `E:\WinterAgent\learning\DEVICE_LEASE.json` 与
+   `C:\Users\xhw\.codex\worktrees\prod\repo\learning\DEVICE_LEASE.json`
    **同 inode**。⇒ 任何工作树里的 `git checkout` / `rebase` 都会改写这份共享状态；
    `learning/` 里**被跟踪**的文件会被静默回退到提交版本。2026-09-29 的 rebase 就这样把共享数据根
    回退了 11 天（episodes 10059→2147、角色回退成已不在设备上的旧账号），真值只留在未回放的
@@ -2178,8 +2178,8 @@ AMBIGUOUS 不盲点、未授权零点击、目标缺失零点击、每次尝试�
    本次结论是 HEAD 的代码严格更新（拥有 `vision_policy.py` / `task_completion.py` 等），
    **只回放数据/状态文件，绝不回放代码**。
 3. **生产面板的官方入口是计划任务 `WinterAgentV2Panel`**（`schtasks /Run /TN "WinterAgentV2Panel"`），
-   动作 = `pythonw <venv>\pythonw.exe ...\winter-prod-pinned\tools\launch_pinned_production.py`，
-   `DATA_ROOT=E:\无尽冬日智能体`，**生产跑的是固定版本**（现为 `ef97137`，落后 main 40 个 commit，**按设计如此**，
+   动作 = `pythonw <venv>\pythonw.exe ...\prod\repo\tools\launch_pinned_production.py`，
+   `DATA_ROOT=E:\WinterAgent`，**生产跑的是固定版本**（现为 `ef97137`，落后 main 40 个 commit，**按设计如此**，
    soak 需要冻结版本；`--check-only` 可验证 `CODE_COMMIT/WORKTREE_CLEAN/DATA_ROOT`）。
    **从开发工具直接 `start` 面板会被宿主回收**（实测面板 24936/25408），必须走计划任务。
 4. **AUTO「没在跑」先查 `config/control_panel_state.json` 的 `operator_intent`**
@@ -2270,7 +2270,7 @@ A 的饵数绝不能被 B 借到）；§15 端局在无法确证结束时刻时�
 （`winter_agent_v2/runtime.py`、`tools/control_panel.py`）。铁律：
 **`git add` 只用显式路径，绝不用 `-A`**；动手前先 `git fetch` 再看 `git log fd2be9b..origin/main`。
 这次是它替我把 `fd2be9b` 推上去的，并在其上加了 `6310195`（只动 3 个无关测试/工具文件）。
-另：`E:\无尽冬日智能体` 本身就是 `main` 的 worktree ⇒ `git status` 里的 `knowledge/`、
+另：`E:\WinterAgent` 本身就是 `main` 的 worktree ⇒ `git status` 里的 `knowledge/`、
 `.workbuddy-ai/`、`learning/` 变更是**运行时自写**，不是谁的在飞工作，不要拿去提交或清理。
 
 ---
@@ -2541,7 +2541,7 @@ shell 状态不跨调用保持）：
 ```bash
 unset PYTHONPATH CODEBUDDY_TOOL_CALL_ID CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR \
       CODEBUDDY_SAFE_DELETE_BULK_GUARD CODEBUDDY_NODE_BIN GENIE_TRASH_DIR
-E:/无尽冬日智能体/.venv/Scripts/python.exe tools/launch_pinned_production.py   # 后台任务里长期驻留
+E:/WinterAgent/.venv/Scripts/python.exe tools/launch_pinned_production.py   # 后台任务里长期驻留
 ```
 **验收判据**：`python -c "import sys;print('sitecustomize' in sys.modules)"` 必须是 `False`，
 且 `pathlib.Path.unlink.__module__ == 'pathlib'`。
@@ -2732,7 +2732,7 @@ adb 前台变成 `com.gof.china/DDUnityLaunchActivity`（自愈执行了 `LAUNCH
 **先记机制，因为它反直觉**：`cmd.exe` 不嗅探编码、不支持 BOM，逐字节按**系统 OEM 代码页**
 （本机 936）读整份批处理文件。中文 UTF-8 是 3 字节一组，按 CP936 两两配对后**总余一个字节**，
 它会**吃掉后面的 ASCII 字节**。于是在同一份文件上同时出现三种症状：
-① `cd /d "E:\无尽冬日智能体"` 的收尾引号被吞 → 报**「文件名、目录名或卷标语法不正确」**
+① `cd /d "E:\WinterAgent"` 的收尾引号被吞 → 报**「文件名、目录名或卷标语法不正确」**
 （不是"找不到路径"，所以看起来不像路径问题）；② `set "X=E:\…\.venv\…"` 里 `体` 与 `\` 配对 →
 **反斜杠被吞** → `if not exist` 判定"找不到生产解释器"；③ `echo …：%VAR%` 里全角冒号吃掉 `%` →
 变量不展开 → 打印出**字面量变量名**。
@@ -2922,8 +2922,8 @@ one Scheduler" —— 但 `eligible()` 要求 `skill.state is SkillState.CANDIDA
 ## 环境铁律：pin 树的 junction、以及"工作区不可信"（2026-10-02 实测，WB-1002-22）
 
 **① pin 工作树把四个数据目录以 junction 挂到 dev。**
-`C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\{config,knowledge,learning,dataset}`
-**解析回 `E:\无尽冬日智能体\...`，同一 inode**（`os.path.samefile` 为 True；`winter_agent_v2/tests/tools` 则不是）。
+`C:\Users\xhw\.codex\worktrees\prod\repo\{config,knowledge,learning,dataset}`
+**解析回 `E:\WinterAgent\...`，同一 inode**（`os.path.samefile` 为 True；`winter_agent_v2/tests/tools` 则不是）。
 ⇒ **生产进程写 `knowledge/` 就是写 dev 工作树**。这解释了长期困惑：AUTO 的 autogen 写入会作为未提交改动
 出现在 dev 树里（本轮实例：`OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN`）。
 ⇒ 推论：**dev 树里 `knowledge/` 下的改动会立刻被生产看到**（无需 repin）；反之生产也会覆盖你正在写的东西。
@@ -5039,10 +5039,10 @@ completed_goal_ids 命中 16 次（该目标历史上从未有过）
 ## 通则：证据路径会随文件搬迁失效——账本记的是"当时的路径"（2026-10-04）
 
 `learning/episodes.jsonl` 里 19884 条截图引用，全部指向 **C 盘 worktree 老路径**
-（`C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\dataset\raw\control_panel\...`）。
+（`C:\Users\xhw\.codex\worktrees\prod\repo\dataset\raw\control_panel\...`）。
 40GB 搬到 E 盘后，**第一版采样器 `is_file()` 只剩 18 张能解析，只采到 18 帧**
 （目标 100）。修法：按 `control_panel` 之后的后缀重映射到
-`E:/无尽冬日智能体/dataset/raw/` ⇒ 立刻拿到 19884 张可解析。
+`E:/WinterAgent/dataset/raw/` ⇒ 立刻拿到 19884 张可解析。
 
 ⇒ **"路径解析失败"极易被误读成"文件被删了"**，实际是文件搬了家、引用没搬。
 ⇒ 反过来说：**只要账本里存的是绝对路径，任何搬迁都会静默让历史证据"消失"**，
@@ -5099,11 +5099,11 @@ completed_goal_ids 命中 16 次（该目标历史上从未有过）
 **但 E 盘工作区这份不是正在运行的那份。** 实测进程：
 
 ```
-pythonw.exe  840 MB  C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\tools\launch_pinned_production.py
+pythonw.exe  840 MB  C:\Users\xhw\.codex\worktrees\prod\repo\tools\launch_pinned_production.py
 ```
 
 即生产跑在 **pinned worktree**（分支 `codex/production-pin-recovery`），
-E 盘 `E:\无尽冬日智能体` 是另一个 checkout。两边 `tools/control_panel.py` 的 HEAD **不同**
+E 盘 `E:\WinterAgent` 是另一个 checkout。两边 `tools/control_panel.py` 的 HEAD **不同**
 （worktree 多一处截图保留策略修复 `screenshot_ttl_days=3`），且 worktree 工作区还有未提交改动。
 
 ⇒ **三步走，跳过任何一步都会白做或毁掉生产改动**：
@@ -5130,17 +5130,17 @@ AUTO 每几秒就往 `learning/episodes.jsonl` 追加一行 ⇒ mtime 每次都�
 
 ## 存储与路径硬规则（2026-10-04 操作者迁移指令，全文见 00_MASTER_RULES.md §26）
 
-**规则**：worktree 根 = `E:\无尽冬日智能体_worktrees\`；数据根 = `E:\无尽冬日智能体\`；
+**规则**：worktree 根 = `E:\WinterAgent\.worktrees\`；数据根 = `E:\WinterAgent\`；
 C 盘不得有 worktree/数据/生产运行时输出实体；任何 C 盘写入视为违规并立即报告。
 
 **四条经核实的事实（照指令原文写会说错话）**
 
 1. **C 盘从来没有实体 worktree。** `C:\Users\xhw\.codex\worktrees` 是 NTFS **装入点**
-   （`fsutil` tag `0xa0000003`，替换名 `\??\E:\无尽冬日智能体_worktrees`）；
+   （`fsutil` tag `0xa0000003`，替换名 `\??\E:\WinterAgent\.worktrees`）；
    子项 `IsReparsePoint=False` ⇒ 只是透视。`C:\无尽冬日智能体_worktrees` 不存在。
    ⇒ 指令里"物理移动 worktree""删 C 盘旧 worktree 释放空间"**没有实体可搬，释放 ≈ 0**；
    该 junction **必须保留**（Codex 靠它定位），它是指针不是数据，不算违规。
-2. **指令写的 `E:\worktrees\` 与实际的 `E:\无尽冬日智能体_worktrees\` 不一致**；操作者裁定
+2. **指令写的 `E:\worktrees\` 与实际的 `E:\WinterAgent\.worktrees\` 不一致**；操作者裁定
    "视为已达标，只做规范化" ⇒ 正式根 = 后者。**写文档时不得把 `E:\worktrees\` 当事实。**
 3. 7 个 worktree 里**只有生产 `winter-prod-pinned` 的数据目录是 Junction**（→ 主仓），
    其余 6 个是**物理副本**。
@@ -5149,9 +5149,17 @@ C 盘不得有 worktree/数据/生产运行时输出实体；任何 C 盘写入�
    **哈希全等** ⇒ **235 个 ` M` 是 stat 缓存假阳性**（autocrlf CRLF 归一 + 生产反复重写改 mtime）。
    **未提交改动量必须用 `git diff HEAD` 口径。**
 
+> **2026-10-17 现况（上面 1–4 是 2026-10-04 的实测，拓扑已变，按这条执行）**：项目根从
+> `E:\无尽冬日智能体` 改名为 **`E:\WinterAgent`**；6 个过期 worktree 与
+> `E:\无尽冬日智能体_worktrees` 已删，现在**只有 1 个** worktree = `E:\WinterAgent\.worktrees\prod\repo`
+> （分支 `codex/production-pin-recovery`，清单 `.worktrees\prod\PRODUCTION_PIN.json`）。
+> `.worktrees` 本身已是**实体目录**；`C:\Users\xhw\.codex\worktrees` 这个 junction 仍在，已重指向
+> `E:\WinterAgent\.worktrees`。pin worktree 的四个数据目录仍是 junction → 主根。
+> 计划任务 `WinterAgentV2Panel` 的两个旧路径字段已在同一天修正。
+
 **唯一事实源 = `config/paths.py`**（2026-10-04 新建）。机制：生产的 `config/` 是 junction 指回主仓，
 `Path.resolve()` 跟随它 ⇒ `paths.py` 在主仓与生产 worktree 两侧**解析结果完全一致**
-（实测均得 `E:\无尽冬日智能体`）。判别主仓 vs worktree 用"`.git` 是目录还是文件"，无需硬编码。
+（实测均得 `E:\WinterAgent`）。判别主仓 vs worktree 用"`.git` 是目录还是文件"，无需硬编码。
 
 **一处刻意的例外（不要"修"）**：`winter_agent_v2/workbuddy_bridge.py` 的 `PROJECT_ROOT` 保留字面量。
 `tests/test_workbuddy_bridge.py::CredentialHygieneTest` 断言该模块可执行代码**不得出现 "config" 子串**
@@ -5230,7 +5238,7 @@ GUI 主循环 57.4%、后台 truth 线程 42.4%（两者是不同线程，不可
 
 ## §28 选 repin / 合入目标前，先验谱系；不要用提交标题判断"是否重复"（2026-10-04）
 
-**背景**：面板三处修复要落到生产。第一版判断是「落到主仓 `E:\无尽冬日智能体`，操作者提交后
+**背景**：面板三处修复要落到生产。第一版判断是「落到主仓 `E:\WinterAgent`，操作者提交后
 `repin_production --to <新SHA>`」。**这个判断是错的，而且错得会伤生产**：两条线已严重分叉，
 **主仓是落后的那一条**。若照原计划 repin，等于回滚 **38 个提交 / 3421 行**。
 
@@ -5287,10 +5295,10 @@ pytest 会话收尾时 `shutil.rmtree(TEST_RUNTIME_ROOT)` 一次删 **89** 个�
 ### 顺带确认的拓扑事实（判据比 `cmd dir /AL` 可靠）
 
 生产工作树的 `config` / `knowledge` / `learning` / `dataset` 是**装入点（junction）**
-指向 `E:\无尽冬日智能体\…`；用 Python 判：`os.lstat(p).st_reparse_tag == 0xA0000003`，
+指向 `E:\WinterAgent\…`；用 Python 判：`os.lstat(p).st_reparse_tag == 0xA0000003`，
 或比 `os.stat(p).st_ino`（两侧相同）。`os.path.realpath()` 会把 junction 解析掉。
-⇒ **代码根是嵌套目录** `…\winter-prod-pinned\无尽冬日智能体`，
-**数据根就是主仓** `E:\无尽冬日智能体`（与 `PRODUCTION_PIN.json` 的 `data_root` 一致）。
+⇒ **代码根是嵌套目录** `…\prod\repo`，
+**数据根就是主仓** `E:\WinterAgent`（与 `PRODUCTION_PIN.json` 的 `data_root` 一致）。
 所以：**改主仓的数据 = 改生产的数据；改主仓的代码 ≠ 改生产的代码。**
 `tools/control_panel.py` 的 `ROOT = Path(__file__).resolve().parents[1]` 因此指向**生产代码根**，
 面板监视的是生产树而不是主仓。
@@ -5329,7 +5337,7 @@ schtasks /Run /TN "WinterAgentV2Panel"   rem 唯一正确入口
 
 1. `learning/control_panel/desktop_startup.log` 新增一行
    `CODE_COMMIT=<新SHA> WORKTREE_CLEAN=true DATA_ROOT=…`，且 `launcher=` 指向 pin 树
-2. worker 命令行指向 pin 树：`…\winter-prod-pinned\无尽冬日智能体\tools\run_live.py`
+2. worker 命令行指向 pin 树：`…\prod\repo\tools\run_live.py`
 3. `panel.pid` 进程 alive=True，`pump.json` 心跳新鲜；`panel.log` 出现
    `运行环境预检通过` + `自动运行已启动`
 
@@ -5484,14 +5492,14 @@ classify_production_write(text):
     relative = Path(text).resolve().relative_to(ROOT)   # ← 这里
 ```
 
-pin 树的 `config/knowledge/learning/dataset` 是 **junction 指向实时数据根**（`E:\无尽冬日智能体`）,
+pin 树的 `config/knowledge/learning/dataset` 是 **junction 指向实时数据根**（`E:\WinterAgent`）,
 于是 `Path(text).resolve()` **逃出 ROOT** ⇒ `relative_to` 抛 `ValueError` ⇒ 被
 `except (OSError, ValueError): return None` 吃掉 ⇒ **守卫永远不拒绝**。
 即：**守卫的前提是"ROOT 树里没有指向外部的 junction"，pin 树恰好相反。**
 
 **决定性判据（一条就够，可复现）**：同一个 `tests/test_suite_isolation.py`
 
-- 开发树（`E:\无尽冬日智能体`，ROOT=实时根、守卫生效）：**18 passed**
+- 开发树（`E:\WinterAgent`，ROOT=实时根、守卫生效）：**18 passed**
 - pin 树：**4 failed**
 
 同解释器、同文件、差异只有树 ⇒ 失败归因于树，不归因于代码。
@@ -5507,7 +5515,7 @@ session 级 autouse fixture 把模块常量重指到 `TEST_RUNTIME_ROOT`，并�
 所以**只有刻意不被重定向覆盖的路径**（守卫测试自己的探针）会写进实时树。本轮实测只有 2 个 2 字节文件：
 `learning/_probe.json`、`learning/_isolation_probe_should_not_exist.json`
 （分别由 `test_suite_isolation.py:222` 与 `:215` 写入），已移到
-`E:\无尽冬日智能体_panelperf_scratch\recycled\`（用 **移动**而不是删除，保留可回放）。
+`E:\WinterAgent_panelperf_scratch\recycled\`（用 **移动**而不是删除，保留可回放）。
 
 **正确口径**：
 
@@ -6020,7 +6028,7 @@ Windows 的 Python 读不到 → `on_disk` 为空 → `needs_reload` 对空版�
 —— 那是 **dev 树的脏**，与生产 pin 树无关，是**假警报**，差一点让我去"清理"一棵本来合规的树。
 
 正解：`cd <要守护的那棵树> && python <那棵树的>tools/launch_pinned_production.py --check-only`
-→ `CODE_COMMIT=90a9990… WORKTREE_CLEAN=true DATA_ROOT=E:\无尽冬日智能体`。
+→ `CODE_COMMIT=90a9990… WORKTREE_CLEAN=true DATA_ROOT=E:\WinterAgent`。
 
 **判据**：任何自检脚本报红之前，先确认**它正在检查哪个对象**（读它的 `CODE_ROOT`/`ROOT`/
 `MARKER_ROOT`/`DEFAULT_ROOT` 是怎么算出来的）。一个相对 `__file__` 解析的根，
@@ -6160,9 +6168,9 @@ would train them to ignore the notice"。
 ## §52 两个"同一个地方"的判定：resolve 后比，不比字符串；repin 的判据是脏文件数归零（2026-10-04）
 
 **一、磁盘上"是不是同一个目录"，必须 `Path.resolve()` 后比，不能比字符串。**
-本机 `C:\Users\xhw\.codex\worktrees` 是一个 **junction → `E:\无尽冬日智能体_worktrees`**，
-所以 `C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体` 和
-`E:\无尽冬日智能体_worktrees\winter-prod-pinned\无尽冬日智能体` **是同一个工作树**
+本机 `C:\Users\xhw\.codex\worktrees` 是一个 **junction → `E:\WinterAgent\.worktrees`**，
+所以 `C:\Users\xhw\.codex\worktrees\prod\repo` 和
+`E:\WinterAgent\.worktrees\prod\repo` **是同一个工作树**
 （两个路径 `git rev-parse --absolute-git-dir` 都返回同一个 `.git/worktrees/无尽冬日智能体`）。
 后果：
 - 一个用**盘符字面量**（`tools/repin_production.py`）指生产树、另一个用**派生**
@@ -6272,7 +6280,7 @@ TypeError: ControlPanel._run_rule() takes 1 positional argument but 2 were given
 
 ## §56 一个"所有机器都能跑"的模块，可能根本不在版本控制里（2026-10-04）
 
-`config/paths.py` 是路径合并的产物：2026-10-04 把 81 处硬编码 `E:\无尽冬日智能体`
+`config/paths.py` 是路径合并的产物：2026-10-04 把 81 处硬编码 `E:\WinterAgent`
 收敛成一个模块。合并**本身落地了** —— 已提交的 `tools/check_mainline.py`、
 `tools/repin_production.py`、`tools/replay_loop_main_path.py` 从 `c6cadfb6` 起就在
 `from config import paths`。但这个模块**从未进过任何分支**（`git log --all -- config/paths.py`
@@ -6383,7 +6391,7 @@ unexpected_worker_exits = 22
 ### 二、路径拓扑会撒谎，用文件本身当判据
 
 面板命令行显示 `C:\Users\xhw\.codex\worktrees\winter-prod-pinned\…`，
-而 repin 的目标是 `E:\无尽冬日智能体_worktrees\winter-prod-pinned\…` ——
+而 repin 的目标是 `E:\WinterAgent\.worktrees\winter-prod-pinned\…` ——
 **两个不同路径**，`Get-Item` 的 `LinkType` 还是空的、`Attributes` 也不含 `ReparsePoint`，
 看起来就是"面板跑在另一棵树上，我的 repin 根本没作用到它"。
 
@@ -6499,9 +6507,9 @@ source_freshness 的 SOURCES 表 21600                                        = 
 **判据：不要看 pid 文件，去看 worker 的命令行** —— 它指哪棵树，生产就在哪棵树：
 
 ```
-部署前（batch 4 的窗口）  ...\winter-prod-pinned\无尽冬日智能体\tools\run_live.py
-我误启的那次               E:\无尽冬日智能体\tools\run_live.py          <- 开发树，错
-部署后（计划任务）         ...\winter-prod-pinned\无尽冬日智能体\tools\run_live.py
+部署前（batch 4 的窗口）  ...\prod\repo\tools\run_live.py
+我误启的那次               E:\WinterAgent\tools\run_live.py          <- 开发树，错
+部署后（计划任务）         ...\prod\repo\tools\run_live.py
 ```
 
 **正确动作**：确认没有面板在跑（进程表 + pid 文件），然后 `Start-ScheduledTask -TaskName
@@ -6509,7 +6517,7 @@ source_freshness 的 SOURCES 表 21600                                        = 
 —— `launcher=` 会直接写出是哪棵树的 `launch_pinned_production.py`，那才是"这次是在生产上跑的"。
 
 顺带一条：计划任务里的路径写的是 `C:\Users\xhw\.codex\worktrees\winter-prod-pinned\...`，
-和 `E:\无尽冬日智能体_worktrees\winter-prod-pinned\...` 是**同一棵树**（见 skill
+和 `E:\WinterAgent\.worktrees\winter-prod-pinned\...` 是**同一棵树**（见 skill
 `winter-repin-target-lineage` 里 `st_ino`/`realpath` 那条判据），不要按"看着像另一棵树"去判。
 
 ## 63. `screen grab failed` 不是"面板坏了"的判据（2026-10-04）
@@ -8662,8 +8670,8 @@ BUILDING 路由问 `decide` → **`BUILDING_UPGRADE / building_prerequisites_sat
 ### 126. 【危险】在 pin 树里 `git checkout` 会写到数据根（`knowledge/` 是 junction 且被跟踪）
 
 **机制（2026-10-05 实测）**：
-- pin 工作树 `E:\无尽冬日智能体_worktrees\winter-prod-pinned\无尽冬日智能体` 的 `knowledge/`
-  **解析到 `E:\无尽冬日智能体\knowledge`**（junction；`os.path.islink` 为 False，但 `realpath` 落到数据根）。
+- pin 工作树 `E:\WinterAgent\.worktrees\prod\repo` 的 `knowledge/`
+  **解析到 `E:\WinterAgent\knowledge`**（junction；`os.path.islink` 为 False，但 `realpath` 落到数据根）。
 - 而 pin 的 git **跟踪 `knowledge/` 下 229 个文件**（`git ls-files knowledge/` = 229；未被 ignore）。
 ⇒ **在 pin 树里执行 `git checkout <rev>` / `git checkout -- <path>`，会直接改写数据根里的同名文件。**
 
@@ -8772,8 +8780,8 @@ T2（体力/普通资源/训练/研究/建筑/普通道具）**自动执行**，
 
 **2026-10-06 自己犯的一次流程错。**
 
-`E:\无尽冬日智能体` 是 **main 的镜像**（`OPERATIONAL §27` 明确"禁止在 main 上产生任何新提交"）；
-开发要落在 `E:\无尽冬日智能体_worktrees\winter-prod-pinned\无尽冬日智能体`
+`E:\WinterAgent` 是 **main 的镜像**（`OPERATIONAL §27` 明确"禁止在 main 上产生任何新提交"）；
+开发要落在 `E:\WinterAgent\.worktrees\prod\repo`
 （分支 `codex/production-pin-recovery`，即**唯一主线**）。
 本轮我先在数据根改了 `tools/check_coordinate_hardcoding.py` 与它的测试，**改完才发现跑在 main 上**，
 只好把文件复制进 pin 再在主线重做提交。
@@ -8789,7 +8797,7 @@ T2（体力/普通资源/训练/研究/建筑/普通道具）**自动执行**，
 **开工前固定动作**（顺序不能颠倒）：
 ```
 python tools/check_mainline.py                      # 期望 RESULT: MAINLINE_OK
-cd E:/无尽冬日智能体_worktrees/winter-prod-pinned/无尽冬日智能体   # 在这里动手
+cd E:/WinterAgent/.worktrees/prod/repo   # 在这里动手
 git add <显式路径> && git commit -m "..."
 python tools/repin_production.py --to $(git rev-parse HEAD)      # 期望 CLEAN_OUTSIDE_DATA
 python tools/check_mainline.py                      # 再确认一次
@@ -10368,7 +10376,7 @@ netstat         → 5037 在听，**16384/7555/5555 根本没在听**（桥没�
 
 ## 判据：提交放错线时，**内容正确不会让任何判据变绿** —— 判据量的是拓扑，不是内容（2026-10-10，`25810c7f`）
 
-我在数据根 `E:\无尽冬日智能体`（分支 `main`）上落了 4 条知识提交（`bedd251a`/`fe020cd6`/
+我在数据根 `E:\WinterAgent`（分支 `main`）上落了 4 条知识提交（`bedd251a`/`fe020cd6`/
 `cc97315b`/`782823b4`），内容全部正确、哈希与主线一致，`check_mainline.py` 判据 3 仍然立刻
 `MAINLINE_BROKEN=1`：它问的不是"内容对不对"，而是 `is_ancestor(mirror_head, mainline_tip)`
 —— 两线在 `297af0d1` 分叉，镜像的 tip 不在主线上。
@@ -10384,7 +10392,7 @@ netstat         → 5037 在听，**16384/7555/5555 根本没在听**（桥没�
 > ③ `repin_production.py --to HEAD` → `check_mainline.py` 三条全 OK。
 > **绝不用 `--hard` / `clean -fd` / `checkout .`**；`config/ knowledge/ learning/ dataset/`
 > 是活数据根（pin 树以 junction 挂载），**任何情况下都不做 checkout**。
-> 过程与硬约束的可复跑参考：`E:\无尽冬日智能体_backups\20261004_mainline\reconcile_devtree_to_mainline.sh`。
+> 过程与硬约束的可复跑参考：`E:\WinterAgent_backups\20261004_mainline\reconcile_devtree_to_mainline.sh`。
 > 动手前先把 HEAD / status / 待补的 SHA 冻结到 `_backups\<日期>_mainline\`。
 
 ## 判据：手写 `knowledge/*.json` 时，布尔值是 `true` 不是 `True`（2026-10-10，`e31f2eb3`）
@@ -10891,7 +10899,7 @@ assert event_schedule.row_covering_the_details_window(_card(), rows) is None
 
 ### 附：跨进程写出的路径可能用另一种分隔符 —— **join 要用内容哈希，不要用路径字符串**
 
-批次子代理写回的路径是 `E:/无尽冬日智能体/...`（正斜杠），库存是 `E:\\无尽冬日智能体\\...`（反斜杠）。
+批次子代理写回的路径是 `E:/WinterAgent/...`（正斜杠），库存是 `E:\WinterAgent\\...`（反斜杠）。
 按路径 join 时 64 条记录只匹配上 44 条，差 19 条**全是同一个文件**。
 改成按 `sha256` join 后 62 条全部匹配。
 

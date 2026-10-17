@@ -42,8 +42,8 @@
         "GATHERING",
         "MARCHING"
       ],
-      "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_123747_run01\\accept_20260914_123747_run01_step_005_before_20260914T043933657406.png",
-      "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_123747_run01\\accept_20260914_123747_run01_step_005_after_20260914T043939349200.png"
+      "before_screenshot": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_123747_run01\\accept_20260914_123747_run01_step_005_before_20260914T043933657406.png",
+      "after_screenshot": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_123747_run01\\accept_20260914_123747_run01_step_005_after_20260914T043939349200.png"
     },
     {
       "resource": "WOOD",
@@ -55,8 +55,8 @@
         "GATHERING",
         "MARCHING"
       ],
-      "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run01\\accept_20260914_125232_run01_step_004_before_20260914T045408548061.png",
-      "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run01\\accept_20260914_125232_run01_step_004_after_20260914T045413598390.png"
+      "before_screenshot": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run01\\accept_20260914_125232_run01_step_004_before_20260914T045408548061.png",
+      "after_screenshot": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run01\\accept_20260914_125232_run01_step_004_after_20260914T045413598390.png"
     },
     {
       "resource": "MEAT",
@@ -68,8 +68,8 @@
         "GATHERING",
         "MARCHING"
       ],
-      "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run02\\accept_20260914_125232_run02_step_005_before_20260914T045638057176.png",
-      "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run02\\accept_20260914_125232_run02_step_005_after_20260914T045643090367.png"
+      "before_screenshot": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run02\\accept_20260914_125232_run02_step_005_before_20260914T045638057176.png",
+      "after_screenshot": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run02\\accept_20260914_125232_run02_step_005_after_20260914T045643090367.png"
     },
     {
       "resource": "WOOD",
@@ -81,8 +81,8 @@
         "GATHERING",
         "MARCHING"
       ],
-      "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run03\\accept_20260914_125232_run03_step_006_before_20260914T045955757128.png",
-      "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run03\\accept_20260914_125232_run03_step_006_after_20260914T050000610623.png"
+      "before_screenshot": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run03\\accept_20260914_125232_run03_step_006_before_20260914T045955757128.png",
+      "after_screenshot": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run03\\accept_20260914_125232_run03_step_006_after_20260914T050000610623.png"
     }
   ]
 }

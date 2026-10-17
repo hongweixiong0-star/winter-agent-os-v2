@@ -10,8 +10,8 @@
    "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
    "goal": "CLAIM_EXPLORATION_IDLE",
    "popup": "POWER_OVERVIEW",
-   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140049_372605\\20260923_140049_372605_step_001_before_20260923T060054737025.png",
-   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\close_popup_20260923\\review_00_060057.png",
+   "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140049_372605\\20260923_140049_372605_step_001_before_20260923T060054737025.png",
+   "review_crop": "E:\\WinterAgent\\dataset\\truth_audit\\close_popup_20260923\\review_00_060057.png",
    "winner_index": 0,
    "winner_template_id": "btn_close__purchase_popup_current__0",
    "winner_phash_distance": 28,
@@ -27,7 +27,7 @@
    "per_record": [
     {
      "template_id": "btn_close__purchase_popup_current__0",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__0.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__step_001_before__0.png",
      "roi_norm": [
       0.805,
       0.07,
@@ -44,7 +44,7 @@
     },
     {
      "template_id": "btn_close__live_current__0",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__live_current__0.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__live_current__0.png",
      "roi_norm": [
       0.807,
       0.079,
@@ -61,7 +61,7 @@
     },
     {
      "template_id": "btn_close__step_001_before__1",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__1.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__step_001_before__1.png",
      "roi_norm": [
       0.835,
       0.326,
@@ -78,7 +78,7 @@
     },
     {
      "template_id": "btn_close__alliance_chest_layer__0",
-     "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
+     "template_path": "E:\\WinterAgent\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
      "roi_norm": [
       0.9167,
       0.0141,
@@ -199,8 +199,8 @@
    "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
    "goal": "AUTO_DISCOVERY",
    "popup": "POWER_OVERVIEW",
-   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140049_372605\\20260923_140049_372605_step_002_before_20260923T060057921808.png",
-   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\close_popup_20260923\\review_01_060058.png",
+   "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140049_372605\\20260923_140049_372605_step_002_before_20260923T060057921808.png",
+   "review_crop": "E:\\WinterAgent\\dataset\\truth_audit\\close_popup_20260923\\review_01_060058.png",
    "winner_index": 0,
    "winner_template_id": "btn_close__purchase_popup_current__0",
    "winner_phash_distance": 28,
@@ -216,7 +216,7 @@
    "per_record": [
     {
      "template_id": "btn_close__purchase_popup_current__0",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__0.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__step_001_before__0.png",
      "roi_norm": [
       0.805,
       0.07,
@@ -233,7 +233,7 @@
     },
     {
      "template_id": "btn_close__live_current__0",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__live_current__0.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__live_current__0.png",
      "roi_norm": [
       0.807,
       0.079,
@@ -250,7 +250,7 @@
     },
     {
      "template_id": "btn_close__step_001_before__1",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__1.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__step_001_before__1.png",
      "roi_norm": [
       0.835,
       0.326,
@@ -267,7 +267,7 @@
     },
     {
      "template_id": "btn_close__alliance_chest_layer__0",
-     "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
+     "template_path": "E:\\WinterAgent\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
      "roi_norm": [
       0.9167,
       0.0141,
@@ -388,8 +388,8 @@
    "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
    "goal": "AUTO_DISCOVERY",
    "popup": "POWER_OVERVIEW",
-   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140124_402983\\20260923_140124_402983_step_001_before_20260923T060128703278.png",
-   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\close_popup_20260923\\review_02_060131.png",
+   "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140124_402983\\20260923_140124_402983_step_001_before_20260923T060128703278.png",
+   "review_crop": "E:\\WinterAgent\\dataset\\truth_audit\\close_popup_20260923\\review_02_060131.png",
    "winner_index": 0,
    "winner_template_id": "btn_close__purchase_popup_current__0",
    "winner_phash_distance": 28,
@@ -405,7 +405,7 @@
    "per_record": [
     {
      "template_id": "btn_close__purchase_popup_current__0",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__0.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__step_001_before__0.png",
      "roi_norm": [
       0.805,
       0.07,
@@ -422,7 +422,7 @@
     },
     {
      "template_id": "btn_close__live_current__0",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__live_current__0.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__live_current__0.png",
      "roi_norm": [
       0.807,
       0.079,
@@ -439,7 +439,7 @@
     },
     {
      "template_id": "btn_close__step_001_before__1",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__1.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__step_001_before__1.png",
      "roi_norm": [
       0.835,
       0.326,
@@ -456,7 +456,7 @@
     },
     {
      "template_id": "btn_close__alliance_chest_layer__0",
-     "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
+     "template_path": "E:\\WinterAgent\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
      "roi_norm": [
       0.9167,
       0.0141,
@@ -577,8 +577,8 @@
    "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
    "goal": "AUTO_DISCOVERY",
    "popup": "POWER_OVERVIEW",
-   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140204_170642\\20260923_140204_170642_step_001_before_20260923T060208869595.png",
-   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\close_popup_20260923\\review_03_060211.png",
+   "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140204_170642\\20260923_140204_170642_step_001_before_20260923T060208869595.png",
+   "review_crop": "E:\\WinterAgent\\dataset\\truth_audit\\close_popup_20260923\\review_03_060211.png",
    "winner_index": 0,
    "winner_template_id": "btn_close__purchase_popup_current__0",
    "winner_phash_distance": 28,
@@ -594,7 +594,7 @@
    "per_record": [
     {
      "template_id": "btn_close__purchase_popup_current__0",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__0.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__step_001_before__0.png",
      "roi_norm": [
       0.805,
       0.07,
@@ -611,7 +611,7 @@
     },
     {
      "template_id": "btn_close__live_current__0",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__live_current__0.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__live_current__0.png",
      "roi_norm": [
       0.807,
       0.079,
@@ -628,7 +628,7 @@
     },
     {
      "template_id": "btn_close__step_001_before__1",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__1.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__step_001_before__1.png",
      "roi_norm": [
       0.835,
       0.326,
@@ -645,7 +645,7 @@
     },
     {
      "template_id": "btn_close__alliance_chest_layer__0",
-     "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
+     "template_path": "E:\\WinterAgent\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
      "roi_norm": [
       0.9167,
       0.0141,
@@ -766,8 +766,8 @@
    "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
    "goal": "AUTO_DISCOVERY",
    "popup": "POWER_OVERVIEW",
-   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140244_393602\\20260923_140244_393602_step_001_before_20260923T060249182887.png",
-   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\close_popup_20260923\\review_04_060252.png",
+   "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140244_393602\\20260923_140244_393602_step_001_before_20260923T060249182887.png",
+   "review_crop": "E:\\WinterAgent\\dataset\\truth_audit\\close_popup_20260923\\review_04_060252.png",
    "winner_index": 0,
    "winner_template_id": "btn_close__purchase_popup_current__0",
    "winner_phash_distance": 28,
@@ -783,7 +783,7 @@
    "per_record": [
     {
      "template_id": "btn_close__purchase_popup_current__0",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__0.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__step_001_before__0.png",
      "roi_norm": [
       0.805,
       0.07,
@@ -800,7 +800,7 @@
     },
     {
      "template_id": "btn_close__live_current__0",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__live_current__0.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__live_current__0.png",
      "roi_norm": [
       0.807,
       0.079,
@@ -817,7 +817,7 @@
     },
     {
      "template_id": "btn_close__step_001_before__1",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__1.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__step_001_before__1.png",
      "roi_norm": [
       0.835,
       0.326,
@@ -834,7 +834,7 @@
     },
     {
      "template_id": "btn_close__alliance_chest_layer__0",
-     "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
+     "template_path": "E:\\WinterAgent\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
      "roi_norm": [
       0.9167,
       0.0141,
@@ -955,8 +955,8 @@
    "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
    "goal": "AUTO_DISCOVERY",
    "popup": "POWER_OVERVIEW",
-   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140321_207975\\20260923_140321_207975_step_001_before_20260923T060325459727.png",
-   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\close_popup_20260923\\review_05_060328.png",
+   "frame": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140321_207975\\20260923_140321_207975_step_001_before_20260923T060325459727.png",
+   "review_crop": "E:\\WinterAgent\\dataset\\truth_audit\\close_popup_20260923\\review_05_060328.png",
    "winner_index": 0,
    "winner_template_id": "btn_close__purchase_popup_current__0",
    "winner_phash_distance": 28,
@@ -972,7 +972,7 @@
    "per_record": [
     {
      "template_id": "btn_close__purchase_popup_current__0",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__0.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__step_001_before__0.png",
      "roi_norm": [
       0.805,
       0.07,
@@ -989,7 +989,7 @@
     },
     {
      "template_id": "btn_close__live_current__0",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__live_current__0.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__live_current__0.png",
      "roi_norm": [
       0.807,
       0.079,
@@ -1006,7 +1006,7 @@
     },
     {
      "template_id": "btn_close__step_001_before__1",
-     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__1.png",
+     "template_path": "E:/WinterAgent/dataset/candidate/templates/btn_close__step_001_before__1.png",
      "roi_norm": [
       0.835,
       0.326,
@@ -1023,7 +1023,7 @@
     },
     {
      "template_id": "btn_close__alliance_chest_layer__0",
-     "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
+     "template_path": "E:\\WinterAgent\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
      "roi_norm": [
       0.9167,
       0.0141,

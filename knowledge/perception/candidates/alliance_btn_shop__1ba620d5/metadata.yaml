@@ -2,7 +2,7 @@ candidate_id: alliance_btn_shop__1ba620d5
 semantic_id: ""
 page: ALLIANCE
 goal: ALLIANCE_SHOP_DISCOVERY
-source_frame: E:/无尽冬日智能体/dataset/raw/maa_pipeline_generate/home_20260926_011737.png
+source_frame: E:/WinterAgent/dataset/raw/maa_pipeline_generate/home_20260926_011737.png
 source_episode: manual_maa_pipeline_generate
 image_path: knowledge/perception/candidates/alliance_btn_shop__1ba620d5/element.png
 context_image_path: knowledge/perception/candidates/alliance_btn_shop__1ba620d5/context.png

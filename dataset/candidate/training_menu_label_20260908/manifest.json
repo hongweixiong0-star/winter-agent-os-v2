@@ -8,8 +8,8 @@
       "template_id": "btn_training_menu_label__step_003_after_refresh_2__0",
       "semantic": "BTN_TRAINING_MENU_LABEL",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/training_menu_label_20260908/btn_training_menu_label__step_003_after_refresh_2__0.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_training_navigation_auto_v3/step_003_after_refresh_2.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/training_menu_label_20260908/btn_training_menu_label__step_003_after_refresh_2__0.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/live_20260908_training_navigation_auto_v3/step_003_after_refresh_2.png",
       "parent_sha256": "1949fafb37ee773143b59ba9a719adf34a01e39c50c39c45c097b27c29fcda49",
       "roi_norm": {
         "x_norm": 0.665,

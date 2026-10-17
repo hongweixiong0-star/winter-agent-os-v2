@@ -8,8 +8,8 @@
       "template_id": "btn_dismiss_intel_reward__step_002_before__0",
       "semantic": "BTN_DISMISS_INTEL_REWARD",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_reward_dismiss_v2/btn_dismiss_intel_reward__step_002_before__0.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_runtime_v2/step_002_before.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/intel_reward_dismiss_v2/btn_dismiss_intel_reward__step_002_before__0.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/live_intel_runtime_v2/step_002_before.png",
       "parent_sha256": "20cec88855cbb1cbaccac8efb5fa49863ba82769bd5b4eb5bdb574a7acf0fe4f",
       "roi_norm": {
         "x_norm": 0.36,

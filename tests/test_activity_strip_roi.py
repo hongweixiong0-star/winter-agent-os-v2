@@ -219,7 +219,7 @@ def test_real_frame_recovers_both_activities_when_ocr_is_available():
     recall, not the code's opinion of itself.
     """
     frame = Path(
-        r"C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体\dataset\raw"
+        r"E:\WinterAgent\.worktrees\prod\repo\dataset\raw"
         r"\control_panel\runtime_auto\20261002_135741_630328"
         r"\20261002_135741_630328_step_005_after_20261002T055825254675.png"
     )

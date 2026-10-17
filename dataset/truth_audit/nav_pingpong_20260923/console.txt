@@ -142,4 +142,4 @@
         (the refused decision was OPEN_MAP / first_ready_p0_skill)
 
 summary: {"runs_replayed": 18, "steps_replayed": 36, "steps_agreeing_with_the_stream": 28, "steps_disagreeing": 8, "steps_before_the_guard": 36, "steps_with_the_guard": 27, "runs_that_end_earlier": 7}
-wrote E:\无尽冬日智能体\dataset\truth_audit\nav_pingpong_20260923\replay.json
+wrote E:\WinterAgent\dataset\truth_audit\nav_pingpong_20260923\replay.json

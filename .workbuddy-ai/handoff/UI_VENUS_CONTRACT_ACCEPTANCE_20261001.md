@@ -14,7 +14,7 @@
 |---|---|
 | `CODE_COMMIT`（开发树 HEAD） | `783a219` |
 | `PRODUCTION_PIN.expected_commit` | `783a2195b82a09f9a8dcaeaf203c219c66f85e52` |
-| 生产工作树 | `C:\Users\xhw\.codex\worktrees\winter-prod-pinned\无尽冬日智能体` |
+| 生产工作树 | `C:\Users\xhw\.codex\worktrees\prod\repo` |
 | `WORKTREE_CLEAN` | `true`（数据目录外 0 处改动；`RESULT: CLEAN_OUTSIDE_DATA`） |
 | `DATA_ROOT` | `E:\无尽冬日智能体`（`learning/` / `config/` / `knowledge/` / `dataset/` 四个 mount 指回此处） |
 | 模型服务 | `http://127.0.0.1:18080`，活体 `/props` 可达，`vision = true` |
@@ -193,7 +193,7 @@ REGISTRY_OWNS_THIS …），不写成 0
 
 ```bash
 # 从 pin 树跑（正确观察点；learning/ 是指向 DATA_ROOT 的符号链接，读的是同一批账本）
-cd "C:/Users/xhw/.codex/worktrees/winter-prod-pinned/无尽冬日智能体"
+cd "C:/Users/xhw/.codex/worktrees/prod/repo"
 E:/无尽冬日智能体/.venv/Scripts/python.exe tools/ui_venus_contract_acceptance.py
 E:/无尽冬日智能体/.venv/Scripts/python.exe tools/ui_venus_contract_acceptance.py --json
 E:/无尽冬日智能体/.venv/Scripts/python.exe tools/ui_venus_contract_acceptance.py --window-days 7

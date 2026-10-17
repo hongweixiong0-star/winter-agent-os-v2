@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from winter_agent_v2 import winproc  # noqa: E402
 from winter_agent_v2.gateway_service import GatewayService  # noqa: E402
 
-ROOT = Path(r"E:\无尽冬日智能体")
+ROOT = Path(r"E:\WinterAgent")
 # The harness's own record, so the run never rewrites the window's production truth.  Reset
 # by *writing* an empty record rather than deleting a file: a delete here tripped the
 # repository's safe-delete guard (a bulk-delete confirmation the harness has no business

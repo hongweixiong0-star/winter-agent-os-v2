@@ -86,7 +86,7 @@ id 就变、答案即被孤立。这也是"通知/入口/动作"三层必须分�
 ## 复算
 
 ```
-E:\无尽冬日智能体\.venv\Scripts\python.exe -u tools/probe_advice_replay.py
+E:\WinterAgent\.venv\Scripts\python.exe -u tools/probe_advice_replay.py
 ```
 
 （约 1 分钟：一帧的生产 OCR。帧与答案本体在 `learning/unknown_requests/` 与 `dataset/raw/`。）

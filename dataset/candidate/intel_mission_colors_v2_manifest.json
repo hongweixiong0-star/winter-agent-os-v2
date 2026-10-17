@@ -8,8 +8,8 @@
       "template_id": "target_intel_beast_mission__live_intel_remaining_current__0",
       "semantic": "TARGET_INTEL_BEAST_MISSION",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_mission_colors_v2/target_intel_beast_mission__live_intel_remaining_current__0.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_remaining_current.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/intel_mission_colors_v2/target_intel_beast_mission__live_intel_remaining_current__0.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/live_intel_remaining_current.png",
       "parent_sha256": "9d868fc913962cd2a89019e19d7761f5909aebd373468216a924219b94b59b7b",
       "roi_norm": {
         "x_norm": 0.215,
@@ -26,8 +26,8 @@
       "template_id": "target_intel_beast_mission__live_intel_remaining_current__1",
       "semantic": "TARGET_INTEL_BEAST_MISSION",
       "status": "CANDIDATE",
-      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_mission_colors_v2/target_intel_beast_mission__live_intel_remaining_current__1.png",
-      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_remaining_current.png",
+      "template_path": "E:/WinterAgent/dataset/candidate/intel_mission_colors_v2/target_intel_beast_mission__live_intel_remaining_current__1.png",
+      "parent_screenshot": "E:/WinterAgent/dataset/raw/live_intel_remaining_current.png",
       "parent_sha256": "9d868fc913962cd2a89019e19d7761f5909aebd373468216a924219b94b59b7b",
       "roi_norm": {
         "x_norm": 0.445,
