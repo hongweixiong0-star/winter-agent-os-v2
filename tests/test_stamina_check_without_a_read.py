@@ -28,7 +28,12 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import mock
 
-from winter_agent_v2 import event_schedule
+from winter_agent_v2 import (
+    control_experience,
+    event_schedule,
+    goal_utility,
+    observation_store,
+)
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.models import Page, WorldState
 from winter_agent_v2.runtime import LiveRuntime
@@ -148,19 +153,30 @@ class TheGaugeIsTappableWithoutANumberTests(unittest.TestCase):
 
     The runtime ranks a goal board before the brain decides (``run()`` ->
     ``goal_library.rank`` -> ``_sync_brain_goal``), so what the brain is asked here is
-    whatever the board put first.  On a MAP frame with no *calendar* entry drawn, that board
-    can offer one thing this test does not mean to exercise: ``DISCOVER_EVENT_CALENDAR``
-    priced at 300+450+250, reachable through ``OPEN_HOME`` -- but only while
-    ``event_schedule.calendar_scan_due()`` answers True.  That predicate is a **clock over
-    stored observations**, so on a machine whose ``learning/timed_event_schedule.json`` has
-    no read for this scope it answers True and the maintenance hop outranks the gauge
-    (measured 2026-10-17 after a clean checkout: ``[utility] chose DISCOVER_EVENT_CALENDAR
-    (1000; catalogue price only)`` and the first step came back ``OPEN_HOME``).
+    whatever the board put first.  That makes the step under test depend on **stored state**
+    this class never states, and three separate facts were measured doing it:
 
-    That is the scheduler behaving correctly on a state this test never stated, so the state
-    is stated here instead of inherited: the run starts from "today's calendar read is
-    already done", which is what the claim "the gauge is the next thing to do" presupposes.
-    The board then has no calendar hop to offer and the step under test is the one measured.
+    * ``DISCOVER_EVENT_CALENDAR`` priced at 300+450+250 reaches the city HUD through
+      ``OPEN_HOME`` while ``event_schedule.calendar_scan_due()`` answers True -- and that
+      predicate is a clock over stored observations, so on a machine whose
+      ``learning/timed_event_schedule.json`` has no read for this scope it is True
+      (measured 2026-10-17 on a clean checkout: ``[utility] chose DISCOVER_EVENT_CALENDAR
+      (1000; catalogue price only)``, first step ``OPEN_HOME``).
+    * ``AVOID_STAMINA_WASTE`` is emitted from the **last still-fresh stored stamina
+      reading** when the frame itself carries no ``current`` (``goal_library``: "the last
+      still-fresh reading is used instead ... labelled ``reused``").  With a seeded
+      ``observation_state.json`` the board therefore spends stamina on a frame that never
+      read any, and ``_stamina_route`` sends the brain to ``START_RALLY`` -- measured
+      2026-10-17 in the full suite: ``[utility] chose AVOID_STAMINA_WASTE (810;
+      repeat-failure -60.0, page-residency +40.0 (already standing on its page))``.
+    * the fairness ledger adds ``repeat-failure``/``page-residency`` terms, so which goal
+      wins also depended on what **other tests in the same session** had recorded.
+
+    None of those are the fact this class is about.  Its claim is "this run has no reading
+    and nothing else is owed, so the first thing to do is tap the gauge" -- so the three
+    inherited stores are stated instead: today's calendar read is done, no stored stamina
+    reading exists, and the fairness ledger is empty.  The board is then a pure function of
+    the frame and the goal catalogue, which is what makes the assertion mean something.
     """
 
     def _finished_calendar_read(self, path: Path) -> None:
@@ -195,7 +211,13 @@ class TheGaugeIsTappableWithoutANumberTests(unittest.TestCase):
         with TemporaryDirectory() as temp:
             schedule_path = Path(temp) / "timed_event_schedule.json"
             self._finished_calendar_read(schedule_path)
-            with mock.patch.object(event_schedule, "STATE_PATH", schedule_path):
+            with mock.patch.object(event_schedule, "STATE_PATH", schedule_path), \
+                    mock.patch.object(observation_store, "STATE_PATH",
+                                      Path(temp) / "observation_state.json"), \
+                    mock.patch.object(goal_utility, "STATE_PATH",
+                                      Path(temp) / "goal_fairness.json"), \
+                    mock.patch.object(control_experience, "STATE_PATH",
+                                      Path(temp) / "control_experience.json"):
                 run = LiveRuntime(
                     device=device,
                     vision=FakeVision(list(states)),
