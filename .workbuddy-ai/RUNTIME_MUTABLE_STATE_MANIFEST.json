@@ -11,11 +11,11 @@
     ".workbuddy-ai"
   ],
   "summary": {
-    "tracked_total": 1667,
+    "tracked_total": 1587,
     "RUNTIME_MUTABLE": 0,
-    "VERSIONED_KNOWLEDGE": 219,
-    "VERSIONED_EVIDENCE": 1381,
-    "GENERATED_ARTIFACT": 67,
+    "VERSIONED_KNOWLEDGE": 260,
+    "VERSIONED_EVIDENCE": 1117,
+    "GENERATED_ARTIFACT": 210,
     "UNCLASSIFIED": 0
   },
   "rules": {
@@ -76,16 +76,23 @@
     "config/policy_state.json",
     "config/v2.json.bak_20260913_223856",
     "learning/DEVICE_LEASE.json",
-    "learning/_tmp_planner_call_test.jsonl",
     "learning/action_latency.jsonl",
     "learning/auto_uptime.jsonl",
     "learning/autogen_repair_events.jsonl",
-    "learning/bear_role.json",
     "learning/candidate_attempt_pool.json",
     "learning/capability_bootstrap/CANDIDATES.json",
     "learning/capability_bootstrap/CANDIDATES.md",
     "learning/capability_bootstrap/briefs/ECONOMY_RESEARCH.json",
     "learning/capability_bootstrap/briefs/TROOP_SELECT.json",
+    "learning/capability_bootstrap/runtime_discovery.json",
+    "learning/control_panel/_panel_shot_b4.png",
+    "learning/control_panel/_panel_topbar.png",
+    "learning/control_panel/_panel_window.png",
+    "learning/control_panel/_panel_window_20261004T2003_dc346334.png",
+    "learning/control_panel/_panel_window_20261004T2110_34cd2332.png",
+    "learning/control_panel/_panel_window_20261004T2117_98f008c7.png",
+    "learning/control_panel/_panel_window_20261004T2314_e1e17267.png",
+    "learning/control_panel/_panel_window_view.png",
     "learning/control_panel/autotest_isolation_sentinel.json",
     "learning/control_panel/crashes/20260921_071708_578653_unified_worker.json",
     "learning/control_panel/crashes/20260921_074802_431364_unified_worker.json",
@@ -97,10 +104,62 @@
     "learning/control_panel/crashes/20260921_094236_608796_unified_worker.json",
     "learning/control_panel/crashes/20260930_144623_899653_auto_subprocess.json",
     "learning/control_panel/crashes/20260930_144831_908327_auto_subprocess.json",
+    "learning/control_panel/crashes/20261001_230253_798994_auto_subprocess.json",
+    "learning/control_panel/crashes/20261003_123236_156034_auto_subprocess.json",
+    "learning/control_panel/crashes/20261003_210407_475651_auto_subprocess.json",
+    "learning/control_panel/crashes/20261003_223617_933684_auto_subprocess.json",
+    "learning/control_panel/crashes/20261003_232614_754946_auto_subprocess.json",
+    "learning/control_panel/crashes/20261005_051336_618340_auto_subprocess.json",
+    "learning/control_panel/crashes/20261005_122402_945782_auto_subprocess.json",
+    "learning/control_panel/crashes/20261005_192436_986297_auto_subprocess.json",
+    "learning/control_panel/crashes/20261005_205741_922733_auto_subprocess.json",
+    "learning/control_panel/crashes/20261005_213846_234204_auto_subprocess.json",
+    "learning/control_panel/crashes/20261006_013304_061363_auto_subprocess.json",
+    "learning/control_panel/crashes/20261006_101322_401745_auto_subprocess.json",
+    "learning/control_panel/crashes/20261006_101341_900357_auto_subprocess.json",
+    "learning/control_panel/crashes/20261006_101418_815719_auto_subprocess.json",
+    "learning/control_panel/crashes/20261006_110711_393464_auto_subprocess.json",
+    "learning/control_panel/crashes/20261006_110751_518804_auto_subprocess.json",
+    "learning/control_panel/crashes/20261006_110816_289587_auto_subprocess.json",
+    "learning/control_panel/crashes/20261006_110851_630866_auto_subprocess.json",
+    "learning/control_panel/crashes/20261006_122151_266335_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_115804_954033_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_134034_177485_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_134056_231089_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_134136_153023_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_134211_808353_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_142420_077963_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_160139_652810_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_160210_436196_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_160243_441677_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_160327_356353_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_163646_708133_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_163706_219089_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_163740_213852_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_170455_340341_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_212449_774363_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_215503_785083_auto_subprocess.json",
+    "learning/control_panel/crashes/20261008_215513_009554_auto_subprocess.json",
+    "learning/control_panel/crashes/20261010_113609_576310_auto_subprocess.json",
+    "learning/control_panel/crashes/20261010_113921_385181_auto_subprocess.json",
+    "learning/control_panel/crashes/20261010_184425_589697_auto_subprocess.json",
+    "learning/control_panel/crashes/20261010_184434_406371_auto_subprocess.json",
+    "learning/control_panel/crashes/20261011_020049_242237_auto_subprocess.json",
+    "learning/control_panel/crashes/20261011_053851_840529_auto_subprocess.json",
+    "learning/control_panel/crashes/20261015_072039_819773_auto_subprocess.json",
+    "learning/control_panel/crashes/20261015_080009_621854_auto_subprocess.json",
+    "learning/control_panel/crashes/20261015_180840_190109_auto_subprocess.json",
+    "learning/control_panel/crashes/20261015_182349_369335_auto_subprocess.json",
+    "learning/control_panel/crashes/20261015_185827_507369_auto_subprocess.json",
+    "learning/control_panel/crashes/20261017_001227_841313_auto_subprocess.json",
+    "learning/control_panel/crashes/20261017_013845_485252_auto_subprocess.json",
+    "learning/control_panel/desktop_focus.log",
     "learning/control_panel/desktop_startup.log",
     "learning/control_panel/gateway.json",
     "learning/control_panel/gateway.log",
     "learning/control_panel/gateway_service.json",
+    "learning/control_panel/gui_model_launcher.log",
+    "learning/control_panel/gui_model_service.json",
     "learning/control_panel/latest.log",
     "learning/control_panel/launch_record.json",
     "learning/control_panel/live_gateway_proof.json",
@@ -114,46 +173,35 @@
     "learning/control_panel/pump.json",
     "learning/control_panel/startup_trace.log",
     "learning/control_panel/validation.log",
+    "learning/control_panel/worker_recovery.jsonl",
     "learning/decisions.jsonl",
     "learning/device_leases.jsonl",
     "learning/episodes.jsonl",
     "learning/event_goal_state.json",
     "learning/executor_backend.jsonl",
-    "learning/fishing_runs.jsonl",
-    "learning/gather_attempts.jsonl",
-    "learning/gather_occurrences.jsonl",
+    "learning/exploration_log.jsonl",
     "learning/global_scheduler_state.json",
-    "learning/goal_l5_evidence.jsonl",
     "learning/goal_state.json",
     "learning/knowledge_bootstrap/STATE.json",
     "learning/knowledge_bootstrap/acceptance_seed_chain.json",
-    "learning/l1_experiences.jsonl",
     "learning/local_gui_model_calls.jsonl",
     "learning/local_planner_steps.jsonl",
-    "learning/local_qwen_calls.jsonl",
-    "learning/phase_e_episodes.jsonl",
-    "learning/phase_e_v3_episodes.jsonl",
-    "learning/phase_e_wood_episodes.jsonl",
-    "learning/rally_join_occurrences.jsonl",
-    "learning/rally_start_occurrences.jsonl",
-    "learning/resource_ledger.jsonl",
-    "learning/resource_rotation.json",
+    "learning/loop_watch.jsonl",
     "learning/role_identity.json",
     "learning/roles/1061663148/goal_fairness.json",
     "learning/roles/1061663148/observation_state.json",
+    "learning/roles/1061663148/resource_rotation.json",
     "learning/roles/1061663148/stamina_supply.json",
     "learning/roles/1063040265/goal_fairness.json",
     "learning/roles/1063040265/observation_state.json",
+    "learning/roles/1063040265/resource_rotation.json",
     "learning/roles/1063040265/stamina_supply.json",
     "learning/runtime_snapshot.json",
-    "learning/semantic_click_metrics.jsonl",
     "learning/semantic_click_retry.jsonl",
     "learning/stamina_priority_state.json",
-    "learning/stamina_supply.json",
-    "learning/timed_event_schedule.json",
-    "learning/unknown_dispatch.jsonl",
-    "learning/workbuddy_escalations.jsonl",
-    "learning/workbuddy_model_stats.jsonl"
+    "learning/ui_venus_offline.jsonl",
+    "learning/ui_venus_online.jsonl",
+    "learning/workbuddy_escalations.jsonl"
   ],
   "classifications": [
     {
@@ -162,6 +210,86 @@
     },
     {
       "path": ".workbuddy-ai/artifacts/overview.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/cov_20261002.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/entry_20260735.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/entry_err_233523.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/entry_err_233710.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/entry_ok_233850.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/entry_ok_233959.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/entry_wide_clear.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/entry_wide_snow.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/maa_template_disk.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/new_template_preview.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/newroi_live_0005.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/newroi_on_snow_233523.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/newroi_on_snow_233710.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/newroi_on_snow_234211.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/newroi_on_snow_235945.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/route_roi_asis.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/route_roi_icon.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/route_roi_icon_preview.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/route_roi_preview.png",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/audit/tpl_roi.png",
       "category": "GENERATED_ARTIFACT"
     },
     {
@@ -186,6 +314,14 @@
     },
     {
       "path": ".workbuddy-ai/commander/REVIEW_REQUESTS.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/WORKBUDDY_AUTONOMOUS_DEVELOPMENT_FINAL.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/WORKBUDDY_AUTONOMOUS_DEVELOPMENT_FINAL.meta.json",
       "category": "GENERATED_ARTIFACT"
     },
     {
@@ -225,7 +361,75 @@
       "category": "GENERATED_ARTIFACT"
     },
     {
+      "path": ".workbuddy-ai/commander/results/WB-1002-01-HANDOFF-FACTS.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/results/WB-1002-02-CALENDAR-STARVATION.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/results/WB-1002-03-BOOTSTRAP-FIRST-SECOND.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/results/WB-1002-04-UNKNOWN-COVERAGE-ARENA.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/results/WB-1002-07-BUILD-STARTED.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/results/WB-1002-08-STABILITY-RESOURCES.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/results/WB-1002-10-BEAST-TAB-BRACKET-LOCK.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/results/WB-1002-11-FAILURE-ATTRIBUTION.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/results/WB-1002-12-CAMP-FIRST-TAP.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/results/WB-1002-13-LOCATOR-ATTRIBUTION.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/results/WB-1002-14-CITY-HUD-ENTRY-GUARD.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/results/WB-1002-15-MAA-NODE-ATTRIBUTION.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/results/WB-1002-16-GATHER-FORMATION-ROLE-SCOPE.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/results/WB-1002-20-RESOURCE-TAB-LABEL-FALLBACK.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/results/WB-1002-22-BUILDING-UPGRADE-ROUTE.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/results/WB-1002-24-SCHEDULED-ROWS-ARE-ROUTABLE.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
       "path": ".workbuddy-ai/commander/results/WB-EXECUTOR-EVIDENCE-AUDIT.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/commander/results/WB-GAME-DAILY-P0.json",
       "category": "GENERATED_ARTIFACT"
     },
     {
@@ -321,6 +525,370 @@
       "category": "GENERATED_ARTIFACT"
     },
     {
+      "path": ".workbuddy-ai/handoff/ACTIVITY_TICKET_ASKS_THE_WRONG_PAGE_20261005.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/ALLIANCE_MOBILIZATION_HAS_NO_SAFE_FLOW_20261003.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/ASK_THE_FRAME_BEFORE_ACTING_20261005.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/AUTO_IS_DOWN_THE_BEAR_PROVIDER_IS_INERT_AND_A_BUDGET_TEST_PINS_A_FICTION_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/AUTO_IS_RUNNING_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/A_BLIND_NODE_SHADOWED_THE_FRAME_20261005.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/BEAR_HUNT_TIME_AND_THE_LADDER_20261005.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/BEAR_READINESS_WHAT_IS_BLOCKING_AND_WHY_I_DID_NOT_PATCH_IT_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/BEAST_TARGET_IS_THE_PRINTED_LABEL_20261005.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/BUILDING_SHEET_HEADER_LAYOUT_20261005.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/BUILDING_UPGRADE_SEARCH_20261006.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/CALENDAR_DIAGNOSIS_CORRECTION_20261003.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/CALENDAR_SELF_ERASURE_FIX_20261003.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/CALENDAR_STRIP_NEVER_TAPPED_20261003.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/CLEAR_INTEL_CANNOT_REPORT_PROGRESS_20261003.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/CODEX_ASSISTANCE_20261002_1204.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/CONSOLE_INFORMATION_TIERS_20261004.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/CONSOLE_SHOWS_ONLY_MEASURED_NUMBERS_20261004.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/DESKTOP_LAUNCHER_ENCODING_20261001.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/DESKTOP_STARTUP_DEADLOCK_20261001.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/DETAIL_PREDICATE_NEEDS_PAGE_IDENTITY_20261003.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/GOAL_CHAIN_FACT_AUDIT_20261002.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/LEGACY_TRAINING_GOAL_DEADLOCK_20261003.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/LOCAL_MODEL_HAS_NO_OWNER_20261004.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/LOOP_DETECTOR_INPUT_IS_NOT_THE_FACT_20261004.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/LOOP_DETECTOR_REACHES_THE_MAIN_PATH_20261004.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/MAINLINE_RECONCILED_20261004.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/MISSING_FIXTURE_IS_A_SKIP_20261015.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/MODEL_MIGRATION_UI_VENUS_20260930.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/MODE_SYSTEM_SEARCH_20261006.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/OPERATOR_DECISION_PACKAGE_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/PAGE_RESIDENCY_FIX_20261003.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/PANEL_CONTENTION_SEARCH_20261006.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/PANEL_SECOND_LAUNCH_20261001.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/PILE_2_BEHAVIOURAL_FAILURES_20261015.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/PRODUCTION_BRANCH_WAS_RESET_20261005.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/READ_ENTRIES_HAS_NO_WRITER_20261003.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/REPO_TOPOLOGY_8_WORKTREES_20261003.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/RETIRING_A_STALE_RECORD_NEEDS_THE_OPERATORS_WORD_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/SELF_LEARNING_CLOSURE_20261001.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/SEMANTIC_TARGET_DIAGNOSIS_20261002.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/SESSION_HANDOFF_20261003_1210.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/STAMINA_RALLY_CLOSURE_20260930.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/STRIP_ALREADY_OPEN_20261003.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_72H_ACCEPTANCE_CANNOT_BE_MET_BY_CONSTRUCTION_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_BEAR_ASSETS_EXIST_AND_NOBODY_READS_THEM_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_BEAR_CHAIN_IS_BUILT_AND_HAS_NEVER_RUN_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_BEAR_IN_WINDOW_READER_ALREADY_WORKS_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_BEAR_IN_WINDOW_SIGNAL_IS_ON_THE_FRAMES_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_CALENDAR_DETAIL_LOOP_ASKS_A_QUESTION_ALREADY_ANSWERED_20261010.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_DAILY_WORK_LOGS_WERE_LARGELY_UNTRACKED_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_DATA_ROOT_HOLDS_UNCOMMITTED_LONG_TERM_MEMORY_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_DATA_ROOT_IS_NOT_A_CHECKOUT_OF_ITS_OWN_HEAD_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_DOMINANT_CRASH_MODE_SURVIVED_ITS_FIX_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_FOUR_DATA_DIRS_ARE_JUNCTIONS_NOT_TWO_COPIES_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_FULL_SUITE_IS_RED_AND_WHY_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_GUARD_CANNOT_SEE_THROUGH_THE_JUNCTION_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_LEARNING_BUDGET_CLAUSE_IS_UNREACHABLE_IN_PRODUCTION_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_LEARNING_FUNNEL_PRODUCES_NOTHING_20261006.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_LEASE_IS_NOT_A_LOCK_20261005.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_LOOP_DID_LEARN_ONE_STEP_20261006.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_NINETY_BLOCKED_CANDIDATES_REPRODUCE_AND_TWO_FREEZE_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_PAGE_VOCABULARIES_DIVERGE_BY_FIFTEEN_NAMES_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_PANEL_COVERS_THE_BARRACKS_BAR_20261005.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_PANEL_TAB_SWITCH_20261005.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_PHASE_TARGET_ITSELF_IS_SUSPENDED_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_POLAR_SESSION_IS_TRUTHFUL_AND_NOW_RUNS_SIX_TIMES_MORE_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_PRELOAD_ROUTE_IS_STRUCTURALLY_STUCK_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_QUEUE_HOLDS_SIX_STALE_PREMISES_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_SPEND_NEEDED_AN_IDENTITY_20261005.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_STRIP_DEBT_HAS_NO_TAB_TAP_20261010.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_SWEEP_LEFT_THE_PANEL_SCROLLED_20261005.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_TWO_TOP_FAILURES_ARE_ONE_SESSION_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_UPGRADE_SHEET_PROOF_MISSED_THE_KNOWN_PATH_20261006.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THE_WRITE_GUARD_CANNOT_REDIRECT_A_CLASS_ATTRIBUTE_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/THREE_CHEAP_CANDIDATES_ONE_DUPLICATE_TWO_INDISTINGUISHABLE_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/TRAINING_CHAIN_NEXT_GAP_20261003.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/TRAINING_CHAIN_ZERO_PROGRESS_20261003.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/TRAINING_DISCOVERY_DEADLOCK_20261003.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/TRAINING_TURN_HANDED_OFF_20261003.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/TRAINING_VERIFY_TOO_EARLY_20261003.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/UI_VENUS_CONTRACT_ACCEPTANCE_20261001.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/UNTRACKED_AND_PENDING_INVENTORY_20261016.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/VENUS_NIGHT_CLOSURE_20261001.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/VENUS_TAKEOVER_20261001.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/WHY_FIVE_PENDING_SKILLS_NEVER_RUN_20261014.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/WHY_THE_BUILDING_SPEND_IS_STILL_ZERO_20261006.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/WHY_THE_SPEND_WAS_NEVER_ATTEMPTED_20261006.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/WHY_TRAINING_IS_NEVER_OPENED_WHILE_THE_PANEL_IS_OPEN_20261006.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/WIRING_CLOSURE_20260930.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/handoff/WORKBUDDY_FINAL_RECONFIRM_20261002T123143.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
       "path": ".workbuddy-ai/memory/2026-09-13.md",
       "category": "GENERATED_ARTIFACT"
     },
@@ -365,7 +933,39 @@
       "category": "GENERATED_ARTIFACT"
     },
     {
+      "path": ".workbuddy-ai/memory/2026-09-26.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/memory/2026-09-28.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/memory/2026-09-29.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
       "path": ".workbuddy-ai/memory/2026-09-30.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/memory/2026-10-01.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/memory/2026-10-02.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/memory/2026-10-03.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/memory/2026-10-04.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/memory/2026-10-05.md",
       "category": "GENERATED_ARTIFACT"
     },
     {
@@ -379,6 +979,30 @@
     {
       "path": ".workbuddy-ai/memory/automations/e3485d0c-1b51-48a4-880c-c01fe0fdec19/memory.md",
       "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/rules/FINAL_FULL.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/rules/OPERATIONAL.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/rules/PERSISTENT_DEVELOPMENT.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/rules/PRINCIPLES.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": ".workbuddy-ai/rules/README.md",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": "config/paths.py",
+      "category": "VERSIONED_KNOWLEDGE"
     },
     {
       "path": "config/v2.json",
@@ -406,194 +1030,6 @@
     },
     {
       "path": "dataset/candidate/audit_manifest.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/auto_collected/btn_alliance_tech_details_close__20260928.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_alliance_tech__autogen_c0164b15.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_alliance_war__autogen_1409b53e.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_ally_gift_claim__autogen_9520ce41.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_ally_gift_claim__autogen_a2c94c42.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_bear_auto_join__autogen_1b783d1a.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_claim_training_batch__autogen_27aa6214.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_daily_claim_all__autogen_082605de.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_dispatch__autogen_3813f402.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_exploration_idle_claim__autogen_20834b54.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_exploration_idle_claim__autogen_3bba58d2.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_mail_claim_all__autogen_120df124.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_mail_tab_alliance__autogen_2699668c.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_mail_tab_alliance__autogen_27655f3f.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_mail_tab_alliance__autogen_e899e727.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_mail_tab_report__autogen_6800ebf2.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_mail_tab_report__autogen_b0b7f109.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_mail_tab_system__autogen_225d13b1.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_mail_tab_system__autogen_48eaca7c.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_open_alliance__autogen_c5270b26.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_open_alliance__autogen_daa56eb4.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_open_alliance_gifts__autogen_11c92358.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_open_exploration__rect_5b7dd675.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_open_power_overview_icon__rect_40623d4b.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_resource_search_submit__autogen_32a4ed2a.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/btn_selected_building_upgrade__rect_300f6cc7.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/popup_exploration_reward__autogen_691b0502.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/popup_mail_reward__autogen_6e19c053.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_building__autogen_7a15e9ff.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_building__autogen_b3521c5b.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_hero_recruit__autogen_433ed44a.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_lancer_camp__autogen_39eae27e.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_lancer_camp__autogen_8928a0d4.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_lancer_camp_entry__autogen_2aafb25c.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_lancer_camp_entry__autogen_90581e7e.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_marksman_camp__autogen_81240686.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_marksman_camp__autogen_c6f1b9bc.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_marksman_camp_entry__autogen_9e6b15d6.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_marksman_camp_entry__autogen_f4bca89c.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_research__autogen_09ce450e.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_research__autogen_0f4d5a2b.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_shield_camp__autogen_5dfed1c9.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_shield_camp__autogen_84a2d169.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_shield_camp_entry__autogen_21c535f5.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/quick_panel_row_shield_camp_entry__autogen_8b1ed833.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/regular_event_entry__autogen_5d2c9a0f.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/autogen/regular_event_entry__autogen_edd6ebb3.png",
       "category": "VERSIONED_EVIDENCE"
     },
     {
@@ -630,14 +1066,6 @@
     },
     {
       "path": "dataset/candidate/battlefield_revival_manifest.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/bear_rally/btn_join_row__bear_rally_panel__ba0c11fc__0.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/bear_rally/btn_start_rally__bear_trap_detail__9db2cb89__0.png",
       "category": "VERSIONED_EVIDENCE"
     },
     {
@@ -1674,18 +2102,6 @@
     },
     {
       "path": "dataset/candidate/stamina_sources/popup_title_get_more_stamina__live_stamina_panel.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/template_manifest.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/template_manifest.json.bak_maintenance",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/candidate/template_manifest.json.bak_tabcal",
       "category": "VERSIONED_EVIDENCE"
     },
     {
@@ -2825,10 +3241,6 @@
       "category": "VERSIONED_EVIDENCE"
     },
     {
-      "path": "dataset/candidate/templates_manifest.json.bak_tabcal",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
       "path": "dataset/candidate/training_active_menu_20260908/btn_open_training_from_camp__step_003_after_refresh_2__0.png",
       "category": "VERSIONED_EVIDENCE"
     },
@@ -2889,50 +3301,6 @@
       "category": "VERSIONED_EVIDENCE"
     },
     {
-      "path": "dataset/evidence/device_l4_session/dispatch_01_start.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/evidence/device_l4_session/dispatch_03_search_panel_0.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/evidence/device_l4_session/dispatch_04_after_submit.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/evidence/device_l4_session/dispatch_05_formation_before.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/evidence/device_l4_session/dispatch_06_after_dispatch.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/evidence/research_l5_20260927/research_queue_busy_after.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/evidence/research_l5_20260927/research_sheet_before_start.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/evidence/research_tree_20260927/research_tree_step001_after.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/evidence/research_tree_20260927/research_tree_step015_after.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/evidence/research_tree_20260927/research_tree_step021_after.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/external/.gitkeep",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
       "path": "dataset/normalized/.gitkeep",
       "category": "VERSIONED_EVIDENCE"
     },
@@ -2953,35 +3321,11 @@
       "category": "VERSIONED_EVIDENCE"
     },
     {
-      "path": "dataset/raw/autogen/pipeline_nodes/btn_alliance_tech__3d78427ed2.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/raw/autogen/pipeline_nodes/btn_alliance_tech__tool_ocr__cda50ad3ac.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/raw/autogen/pipeline_nodes/btn_daily_claim_all__8295381571.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/raw/autogen/pipeline_nodes/btn_exploration_idle_claim__f53db44c55.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/raw/autogen/pipeline_nodes/btn_join_row__3b8e37aafa.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/raw/autogen/pipeline_nodes/btn_start_rally__4e9d13a6d6.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
       "path": "dataset/raw/beast_search_exploration/labels.json",
       "category": "VERSIONED_EVIDENCE"
     },
     {
-      "path": "dataset/raw/control_panel/runtime/purchase_popup_close_labels.json",
+      "path": "dataset/raw/calib_mammoth_r196/README.md",
       "category": "VERSIONED_EVIDENCE"
     },
     {
@@ -3198,54 +3542,6 @@
     },
     {
       "path": "dataset/truth_audit/ai_fallback_20260923/replay.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/daily_alliance_donation_live_closure_step_002_after_20260928T071151777098.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_551_ALLIANCE_TECH_FINAL_NODE.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_552_ALLIANCE_TECH_MEAT_DONATED.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_635_DAILY_HERO_RECRUIT_GO_BEFORE.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_636_DAILY_HERO_RECRUIT_GO_RESULT.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_637_DAILY_ALLIANCE_GO_BEFORE.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_825_BEFORE_TASK_BOARD.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_826_AFTER_TASK_BOARD.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_827_AFTER_DAILY_TAB_RESELECT.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_828_LIVE_DAILY_RECHECK.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/live_alliance_tech_page.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/alliance_daily_closure_20260928/frames/live_cycle2_alliance_tech.png",
       "category": "VERSIONED_EVIDENCE"
     },
     {
@@ -3537,30 +3833,6 @@
       "category": "VERSIONED_EVIDENCE"
     },
     {
-      "path": "dataset/truth_audit/camp_action_bar_20260922/camp_gold_ring_render__shield_camp__live_20260921T1307.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/camp_action_bar_20260922/camp_selected_action_bar__lancer_camp__idle__live_20260922T1709.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/camp_action_bar_20260922/camp_selected_action_bar__shield_camp__busy_queue__live_20260922T1642.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/camp_action_bar_20260922/camp_selected_action_bar__shield_camp__live_20260922T0747.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/camp_action_bar_20260922/gate_also_matches__research_lab_selected__live_20260919T1012.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/camp_action_bar_20260922/training_page__three_camp_tabs_and_queue__live_20260921T0953.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
       "path": "dataset/truth_audit/camp_panel_stamina_gate_20260915/01_camp_panel_stamina_read_live.png",
       "category": "VERSIONED_EVIDENCE"
     },
@@ -3601,47 +3873,7 @@
       "category": "VERSIONED_EVIDENCE"
     },
     {
-      "path": "dataset/truth_audit/close_popup_20260923/live_success_after_20260923T060602.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/close_popup_20260923/live_success_before_20260923T060602.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
       "path": "dataset/truth_audit/close_popup_20260923/probe.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/close_popup_20260923/review_00_053047.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/close_popup_20260923/review_00_060057.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/close_popup_20260923/review_01_054648.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/close_popup_20260923/review_01_060058.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/close_popup_20260923/review_02_060131.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/close_popup_20260923/review_03_060211.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/close_popup_20260923/review_04_060252.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/close_popup_20260923/review_05_060328.png",
       "category": "VERSIONED_EVIDENCE"
     },
     {
@@ -3702,6 +3934,14 @@
     },
     {
       "path": "dataset/truth_audit/daily_tasks_tab_20260916/probe_20260916_134609.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/daily_tasks_tab_20261006/01_before_unselected.png",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/daily_tasks_tab_20261006/02_after_selected.png",
       "category": "VERSIONED_EVIDENCE"
     },
     {
@@ -3786,6 +4026,66 @@
     },
     {
       "path": "dataset/truth_audit/gather_live_20260914_115120/report.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/ACCEPTANCE_32K_20261001.md",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/device_impact.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/device_impact.log",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/device_impact_tiebreak.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/device_impact_tiebreak.log",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/ladder_32k.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/ladder_32k.log",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/profile.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/profile_32k.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/sweep_cliff.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/sweep_cliff.log",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/sweep_edge.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/sweep_edge.log",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/sweep_full_offload.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/gui_model_context_profile/sweep_full_offload.log",
       "category": "VERSIONED_EVIDENCE"
     },
     {
@@ -3878,34 +4178,6 @@
     },
     {
       "path": "dataset/truth_audit/live_ops/20260924T034542_登录好礼/live.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/live_panel_arrow_20260923/20260922_200202_00_recover0.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/live_panel_arrow_20260923/20260922_200202_02_after_row.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/live_panel_arrow_20260923/20260922_200343_00_start.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/live_panel_arrow_20260923/20260922_200343_01_after_handle.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/live_panel_arrow_20260923/20260922_200343_02_after_row.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/live_panel_arrow_20260923/20260922_200805_00_start.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/live_panel_arrow_20260923/20260922_202556_00_start.png",
       "category": "VERSIONED_EVIDENCE"
     },
     {
@@ -4253,174 +4525,6 @@
       "category": "VERSIONED_EVIDENCE"
     },
     {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_failure_00.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_failure_01.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_failure_02.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_failure_03.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_failure_04.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_failure_05.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_failure_06.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_failure_07.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_failure_08.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_failure_09.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_failure_10.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_failure_11.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_failure_12.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_failure_13.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_00.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_01.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_02.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_03.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_04.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_05.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_06.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_07.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_08.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_09.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_10.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_11.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_12.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_13.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_14.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_15.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_16.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_17.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_18.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_19.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_20.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_21.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_22.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_23.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_24.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_25.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_26.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/power_details_entry_20260923/read_negative_27.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
       "path": "dataset/truth_audit/power_route_20260917/README.md",
       "category": "VERSIONED_EVIDENCE"
     },
@@ -4605,50 +4709,6 @@
       "category": "VERSIONED_EVIDENCE"
     },
     {
-      "path": "dataset/truth_audit/printed_controls_20260922/alliance_page__no_popup_close_control__live_20260921T0700.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/printed_controls_20260922/home_nav_bar__alliance_cell_printed__live_20260921T0151.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/printed_controls_20260922/map_nav_bar__city_cell_printed__live_20260922T0222.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/printed_controls_20260922/map_nav_bar_covered__search_panel_open__live_20260921T1338.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/printed_controls_20260922/reward_popup__tap_anywhere_to_exit__live_20260919T0916.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/printed_controls_20260922/reward_popup_intel__tap_anywhere_to_exit__live_20260922T0225.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/quick_panel_20260921/01_panel_open_all_camps_idle.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/quick_panel_20260921/02_city_panel_closed.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/quick_panel_20260921/03_intel_panel_closed.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/quick_panel_20260921/04_city_panel_closed_second.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "dataset/truth_audit/quick_panel_20260921/05_panel_open_live_second_reading.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
       "path": "dataset/truth_audit/quick_panel_priority_20260923/README.md",
       "category": "VERSIONED_EVIDENCE"
     },
@@ -4657,15 +4717,19 @@
       "category": "VERSIONED_EVIDENCE"
     },
     {
-      "path": "dataset/truth_audit/quick_panel_row_20260923/panel_rows_arrows_and_badges__live_20260922T1931.png",
+      "path": "dataset/truth_audit/quick_panel_slide_20261011/key/01_settled_open.png",
       "category": "VERSIONED_EVIDENCE"
     },
     {
-      "path": "dataset/truth_audit/quick_panel_row_20260923/panel_rows_one_done__live_20260922T1944.png",
+      "path": "dataset/truth_audit/quick_panel_slide_20261011/key/02_mid_slide_wide_a.png",
       "category": "VERSIONED_EVIDENCE"
     },
     {
-      "path": "dataset/truth_audit/quick_panel_row_20260923/panel_scrolled_sections_with_the_city_event_rail__live_20260922T2202.png",
+      "path": "dataset/truth_audit/quick_panel_slide_20261011/key/03_mid_slide_faint.png",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/quick_panel_slide_20261011/key/04_mid_slide_wide_b.png",
       "category": "VERSIONED_EVIDENCE"
     },
     {
@@ -4933,6 +4997,14 @@
       "category": "VERSIONED_EVIDENCE"
     },
     {
+      "path": "dataset/truth_audit/unknown_page_refixture_20261016/key/01_idle_income_popup_20260928.png",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "dataset/truth_audit/unknown_page_refixture_20261016/key/02_gear_forge_rules_20260928.png",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
       "path": "dataset/truth_audit/vip_entry_20260917/01_before_20260916_172230.png",
       "category": "VERSIONED_EVIDENCE"
     },
@@ -4997,6 +5069,10 @@
       "category": "VERSIONED_EVIDENCE"
     },
     {
+      "path": "evidence/alliance_event_entry_discovery_20261013_141222.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
       "path": "evidence/alliance_gifts_production.json",
       "category": "VERSIONED_EVIDENCE"
     },
@@ -5018,6 +5094,18 @@
     },
     {
       "path": "evidence/corpus_btn_beast_dispatch_20260915.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "evidence/event_calendar_detail_probe_20261013T144755Z.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "evidence/event_calendar_detail_probe_20261013T145212Z.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "evidence/event_calendar_detail_probe_20261013T145934Z.json",
       "category": "VERSIONED_EVIDENCE"
     },
     {
@@ -5094,6 +5182,14 @@
     },
     {
       "path": "evidence/gather_tally.log",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "evidence/gui_workbuddy_loop/archive/production_soak_20260928T191905.json",
+      "category": "VERSIONED_EVIDENCE"
+    },
+    {
+      "path": "evidence/gui_workbuddy_loop/latest.json",
       "category": "VERSIONED_EVIDENCE"
     },
     {
@@ -5349,12 +5445,20 @@
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
+      "path": "knowledge/analysis/current_failures.json",
+      "category": "GENERATED_ARTIFACT"
+    },
+    {
       "path": "knowledge/analysis/semantic_target_failures.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
       "path": "knowledge/analysis/top_failures.json",
       "category": "GENERATED_ARTIFACT"
+    },
+    {
+      "path": "knowledge/combat/bear_ui_checklist.json",
+      "category": "VERSIONED_KNOWLEDGE"
     },
     {
       "path": "knowledge/combat/mechanism_cards.json",
@@ -5389,6 +5493,10 @@
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
+      "path": "knowledge/events/bear_hunt_rules_20261005.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
       "path": "knowledge/events/bear_hunt_time_20260926.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
@@ -5401,7 +5509,35 @@
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
+      "path": "knowledge/events/bear_hunt_time_20261010.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/events/bear_participation_chain_status.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/events/bear_rally_rules.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/events/calendar_live_observations.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/events/calendar_user_provided_observations.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
       "path": "knowledge/events/event_registry.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/events/exclusive_gear_forge_live_20260928.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/events/fishing_tournament_live_20260928.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
@@ -5421,11 +5557,11 @@
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
-      "path": "knowledge/execution/backend_routing.json",
+      "path": "knowledge/events/underground_exploration_live_20260928.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
-      "path": "knowledge/execution/backend_routing.json.bak_20260915_maab",
+      "path": "knowledge/execution/backend_routing.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
@@ -5489,6 +5625,10 @@
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
+      "path": "knowledge/formation/formation_policy_rules.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
       "path": "knowledge/game/_index.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
@@ -5498,6 +5638,10 @@
     },
     {
       "path": "knowledge/game/bear.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/game/bear_ui_coverage.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
@@ -5578,6 +5722,10 @@
     },
     {
       "path": "knowledge/game/vip.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/game/workflow_priors.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
@@ -5801,6 +5949,10 @@
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
+      "path": "knowledge/preload/ALLIANCE_TECH.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
       "path": "knowledge/preload/ECONOMY_RESEARCH.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
@@ -5813,7 +5965,19 @@
       "category": "GENERATED_ARTIFACT"
     },
     {
+      "path": "knowledge/preload/inbox/done/ALLIANCE_TECH.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/preload/inbox/done/ECONOMY_RESEARCH.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
       "path": "knowledge/preload/inbox/done/TROOP_SELECT.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/preload/inbox/done/TROOP_SELECT_1.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
@@ -5853,6 +6017,10 @@
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
+      "path": "knowledge/provenance/pruned_evidence_20261017.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
       "path": "knowledge/provenance/research_research_sources.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
@@ -5866,6 +6034,14 @@
     },
     {
       "path": "knowledge/provenance/train_research_sources.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/rally/rally_engine_rules.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/research/RESEARCH_CHARTER.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
@@ -5913,6 +6089,10 @@
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
+      "path": "knowledge/skills/CLAIM_MAIL.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
       "path": "knowledge/skills/DAILY_CLAIM_REWARDS.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
@@ -5953,6 +6133,14 @@
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
+      "path": "knowledge/skills/READ_DAILY_PROGRESS.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/skills/READ_INTEL_LIST.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
       "path": "knowledge/skills/RESEARCH.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
@@ -5985,6 +6173,18 @@
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
+      "path": "knowledge/skills/VISIT_ALLIANCE_SHOP.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/skills/VISIT_MYSTERY_SHOP.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/skills/VISIT_WANDERING_MERCHANT.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
       "path": "knowledge/skills/candidate/CHECK_ALLIANCE_EVENT.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
@@ -5998,6 +6198,10 @@
     },
     {
       "path": "knowledge/skills/candidate/CLAIM_VIP_FREE.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/skills/candidate/EVENT_READERS_SPEC.md",
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
@@ -6109,6 +6313,10 @@
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
+      "path": "knowledge/skills/candidate/VALIDATION_PLANS.md",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
       "path": "knowledge/skills/candidate/VERIFY_ARENA_RESULT.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
@@ -6126,6 +6334,10 @@
     },
     {
       "path": "knowledge/strategy/building_priority.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/strategy/capability_debt_queue.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
@@ -6161,6 +6373,10 @@
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
+      "path": "knowledge/strategy/task_verifier_criteria.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
       "path": "knowledge/strategy/training_priority.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
@@ -6174,6 +6390,10 @@
     },
     {
       "path": "knowledge/ui/element_types.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/ui/en_zh_semantic_map.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
@@ -6193,7 +6413,19 @@
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
+      "path": "knowledge/ui/icon_templates/冰封的宝藏.png",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/ui/icon_templates/商店.png",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
       "path": "knowledge/ui/icon_templates/天数__super_activity_tab.png",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/ui/icon_templates/宝石大师礼包.png",
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
@@ -6201,11 +6433,31 @@
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
+      "path": "knowledge/ui/icon_templates/探险.png",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
       "path": "knowledge/ui/icon_templates/登录好礼.png",
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
+      "path": "knowledge/ui/icon_templates/联盟.png",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/ui/icon_templates/背包.png",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/ui/icon_templates/英雄.png",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
       "path": "knowledge/ui/icon_templates/超值活动.png",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/ui/icon_templates/野外.png",
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
@@ -6214,6 +6466,10 @@
     },
     {
       "path": "knowledge/ui/navigation_matrix.json",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
+      "path": "knowledge/ui/operator_ui_requests.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
@@ -6229,6 +6485,10 @@
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
+      "path": "knowledge/ui/role_switch/avatar_templates/paid_offer_close_store.png",
+      "category": "VERSIONED_KNOWLEDGE"
+    },
+    {
       "path": "knowledge/ui/semantic_dictionary.json",
       "category": "VERSIONED_KNOWLEDGE"
     },
@@ -6241,499 +6501,15 @@
       "category": "VERSIONED_KNOWLEDGE"
     },
     {
-      "path": "learning/_ab_screen_key_plugin.py",
+      "path": "learning/.episodes.jsonl.index.json",
       "category": "VERSIONED_EVIDENCE"
     },
     {
-      "path": "learning/_action_bar_gate.txt",
+      "path": "learning/CONTROL_PLANE_RELOAD_REQUIRED.json",
       "category": "VERSIONED_EVIDENCE"
     },
     {
-      "path": "learning/_arrow_rule_check.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_arrow_rule_check2.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_bar_tokens.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_callout_clusters.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_callout_corpus.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_callout_corpus.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_callout_merge_check.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_callout_pair.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_callout_rule_check.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_callout_shapes.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_callout_sheet.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_callout_tight.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/163315_after_er_20260922T163312273596.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/163315_befor_re_20260922T163255139249.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/164230_after__2_20260922T164221037950.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/164230_befor_re_20260922T164149851055.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/170950_after_er_20260922T170938329603.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/170950_befor_re_20260922T170922160894.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/185427_after_half.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/185427_before_vs_after.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/185427_zone_4x.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/action_bar_gate_sheet.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/bars_grid_3x.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/bubble_zone_sheet.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/callout_bands_tight.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/callout_clusters.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/callout_locator_check.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/door_roi_failed_vs_ok.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/door_roi_two_failing_cases.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/live_02_after_row_half.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/live_body_marker_grid_3x.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/map_202556_half.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/panel_buttons_grid_3x.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/probe_163315_before_band2x.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/probe_164230_before_band2x.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/probe_170950_before_band2x.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/research_row_after_bar_2x.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/scroll_top_row_check_2x.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/training_page_AVAILABLE_half.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_camp_menu/training_page_half.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_chevron_fix_check.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_chevron_probe.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_chevron_validation.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_gate_candidates.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_handle_absent.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_live_arrow.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_live_body.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_live_callout.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_live_facts.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_live_rows.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_mail_acceptance.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_map_nohome.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_marker_was_already_there.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_menu_reread.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_open_home_other_cause.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_open_home_popup_case.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_panel_button_x.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_panel_rows_check.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_preflight.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_preflight3.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_probe_existence.py",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_probe_panel_entries.py",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_reddot_blob.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_reddot_probe/entries_3x.png",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_register_gate.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_research_row_failure.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_ring_path_count.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_row_column_e2e.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_row_column_fix.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_rowbody_probe.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_scroll_row_identity.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_scroll_tokens.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_search_panel_controls.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_search_panel_discriminator.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_t_home.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_t_home_files.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_train_acceptance2.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/_which_building.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/account_baseline_1063040265.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/autojoin_boundary_20260927.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/autorepair_l4_first_success.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/bear_roleB_autojoin.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/bear_roleB_complete.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/bear_roleB_final.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_acceptance_seed.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_beast_tab.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_brain_stale_tests.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_cell_truth_and_soak.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_closure_hidden.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_completion_timing.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_contract_change.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_control_plane_reload.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_current_trace.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_gateway_cli_discovery.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_job_vs_health.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_march_formation.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_nav.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_no_progress_deferral.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_no_shortcut.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_observation_frame_pointer.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_panel_crash.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_restart_gateway.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_soak_auto_signal.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_soak_diagnosis.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_soak_log.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_spend_stamina_route.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_startup_fence.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_state_conflicts.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_suite_status.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_test_truth_repair.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_validation_context.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_validation_driver.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_validation_settlement.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_validation_wiring.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_version_active.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_version_content_identity.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/commit_msg_version_identity.txt",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/current_truth.json",
-      "category": "GENERATED_ARTIFACT"
-    },
-    {
-      "path": "learning/device_dispatch_l4_20260927.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/device_l4_power_building_20260926.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/device_l4_research_20260926.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/device_l4_session_20260926_v2.json",
+      "path": "learning/control_experience.json",
       "category": "VERSIONED_EVIDENCE"
     },
     {
@@ -6745,51 +6521,7 @@
       "category": "GENERATED_ARTIFACT"
     },
     {
-      "path": "learning/maa_action_ab_20260914T131048.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/maa_capture_ab_20260914T125857.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/maa_capture_ab_20260914T125953.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/ocr_batch1_validation_20260926.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/ocr_batch2_validation_20260927.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/ocr_regression_20260926.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/phase_e_snapshot.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/phase_e_v3_snapshot.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/phase_e_wood_snapshot.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/probe_beast_target_visibility.py",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/probe_slot_reclaim.py",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/red_dot_audit_20260923.json",
+      "path": "learning/goal_fairness.json",
       "category": "VERSIONED_EVIDENCE"
     },
     {
@@ -6805,11 +6537,7 @@
       "category": "VERSIONED_EVIDENCE"
     },
     {
-      "path": "learning/template_roi_stats.json",
-      "category": "VERSIONED_EVIDENCE"
-    },
-    {
-      "path": "learning/tests_batched_r2_20260918.json",
+      "path": "learning/task_completion_matrix.json",
       "category": "VERSIONED_EVIDENCE"
     },
     {
@@ -6817,11 +6545,11 @@
       "category": "GENERATED_ARTIFACT"
     },
     {
-      "path": "learning/unattended_closure.json",
+      "path": "learning/unknown_requests/unknown__control__bc905ae7.json",
       "category": "VERSIONED_EVIDENCE"
     },
     {
-      "path": "learning/verify_vision_candidates.json",
+      "path": "learning/venus_screen_attempts.json",
       "category": "VERSIONED_EVIDENCE"
     }
   ]
