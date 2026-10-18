@@ -40,6 +40,32 @@
 > 分支提取。首版简报用"技能名包含 popup 名"猜覆盖，把 8 个其实有分支的 popup 报成未覆盖；
 > 名字匹配对 `EXIT_CONFIRM → CLOSE_POPUP` 永远不会成立。
 
+## 二·补、失败 → 修复队列（第 3→4 步的另一半）
+
+生成新技能只处理"没有技能"的情况；"技能卡住了"是另一半，入口是：
+
+```bash
+python tools/skill_loop.py repairs            # 默认阈值 3、最多 10 条
+python tools/skill_loop.py repairs --threshold 5 --limit 5
+```
+
+判定规则不在这里重写，用的是 `skill_repair.should_escalate` 的两条：
+
+- **只算最后一段连续失败**：上个月连败五次、之后通过二十次的技能不算坏。
+- **只认可被截图解释的失败**（`REPAIRABLE_FAILURES`）：`QUEUE_FULL` 是游戏状态答案，
+  给模型看十张图也看不出队列满。
+
+产物 `learning/skill_loop/repair_queue.json`：技能、连续失败次数、失败类型、goal、
+首末失败时间、最近三帧。按卡住程度排序。
+
+**排除 `NON_SKILL_LEDGER_VALUES`**：`SAFE_STOP` / `PRINTED_TAP` / `OBSERVE_ONLY` 是账本值
+不是技能，第一版没排除，队列里出现了"修复 SAFE_STOP 技能"。
+
+**首跑实测（2026-10-18）**：2 条——`OPEN_BEAST_SEARCH_TAB` 连续 28 次、
+`SCROLL_QUICK_PANEL_BACK` 5 次。前者看帧后**没有改**：那帧选中的 tab 是「冰原巨兽」，
+技能要的是「野兽」，验证器证据 `resource_selected_tab == "BEAST"` 是对的（两者不可混，
+见 `verifier.py` 的 docstring）；这是定位/目标错误，盲改验证器会制造假通过。
+
 ## 三、首个真实案例：`GET_MORE_STAMINA`
 
 **来源（不是构造的）**：`episodes.jsonl` 中 53 行 `state_before.popup == GET_MORE_STAMINA`。
