@@ -13693,3 +13693,22 @@ template_lifecycle_precedence 2=WIP 不动、余为长尾单红）。
 `config/v2.json` 的 10-08 模型切换未入库）· 设备帧（READ_ALLIANCE_EVENT_TIMER / CLAIM_EVENT_TIER）·
 覆盖率 NEVER_TRIED 5 个（需真机：KEEP_RESEARCH、ALLIANCE_TIMED_EVENTS、MOBILIZATION_ICEFIELD_BEAST、
 OBSERVE_FISHING_STATE、USE_NORMAL_FISHING_BAIT）· BLOCKED 3 个（arena/labyrinth/travel——需新实现）。
+
+## 2026-10-18 · 生产链收口（pin 唯一化 / 模型现状 / 截图库唯一副本）
+
+- **生产 pin 只有一个位置**：`E:/WinterAgent/.worktrees/prod/PRODUCTION_PIN.json`，定义处是
+  `config/paths.py` 的 `PRODUCTION_PIN`（派生自 `MAIN_REPO`，无第二处字面量）。
+  `launch_pinned_production` / `check_mainline` / `repin_production` 全部消费它。
+  详细链路与验收命令见 `docs/PRODUCTION_PIN_AUTHORITY.md`。
+  **别再在盘根或主仓根放第二份 pin**——2026-10-18 之前 launcher 用 `CODE_ROOT.parent` 推导，
+  从主仓启动就找 `E:/PRODUCTION_PIN.json`，失败日志还会重建在盘根。
+- **`E:/winter_models` 不是"旧模型 19G"**：里面没有 UI-Venus 权重了，GGUF 只有
+  `qwen3.6-35b-a3b`（15.94G + mmproj 0.84G）和 `llama.cpp`（1.76G，server.exe/dll）。
+  19G 就是**正在用的 Qwen**。按目录名整删 = 删掉生产模型。UI-Venus 只剩 61K 日志残留。
+- **沙箱会回收后台子进程**：用后台 Bash 起 `llama-server`，命令一结束进程就没了
+  （脚本内 `poll()` 仍报 alive，下一次调用就 ConnectionRefused）。模型验收必须
+  **同一条命令**内完成 启动→/health→/v1/chat/completions，或由常驻的面板进程通过
+  `gui_model_service.ensure()` 拉起。生产 profile：Qwen3.6-35B-A3B-Q3_K_M、n_ctx 32768、vision=true。
+- **玩法截图库只有一份**：`materials/screenshots/无尽冬日_玩法截图核对_V1`（15751 文件 /
+  5,357,843,084 B）。桌面副本已于 2026-10-18 全量哈希对拍后删除；库内 19 个文件的绝对路径
+  已迁到新根。它是 gitignore 的归档，改动不进仓库，审计用 `_live/audit_evidence.py`。
