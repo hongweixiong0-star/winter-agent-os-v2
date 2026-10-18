@@ -3,11 +3,11 @@
   "generated_by": "tools/ui_navigation_matrix.py",
   "contract_file": "skill_factory.py",
   "counts": {
-    "skills": 153,
-    "schedulable": 141,
-    "navigation_like_entries": 73,
-    "schedulable_navigation_entries": 71,
-    "distinct_targets": 125,
+    "skills": 156,
+    "schedulable": 144,
+    "navigation_like_entries": 74,
+    "schedulable_navigation_entries": 72,
+    "distinct_targets": 127,
     "semantics_with_templates": 293,
     "semantics_with_templates_and_no_skill": 217
   },
@@ -338,34 +338,40 @@
     {
       "function": "活动/限时提醒",
       "registered_entry_skills": [
+        "CHECK_ALLIANCE_EVENT",
         "DAILY_CLAIM_REWARDS",
         "DAILY_HERO_RECRUIT",
         "DISMISS_DAILY_REWARD",
         "FOLLOW_DAILY_TASK",
         "OPEN_DAILY",
+        "OPEN_EVENT",
         "OPEN_EVENT_CALENDAR_DETAIL",
         "OPEN_EVENT_CALENDAR_FROM_HOME",
         "OPEN_EVENT_CALENDAR_FROM_MAP",
         "OPEN_EVENT_CALENDAR_TAB",
         "READ_EVENT_CALENDAR",
+        "READ_REGULAR_EVENT_CARD",
         "SCROLL_REGULAR_EVENT_TABS",
         "SELECT_DAILY_TAB"
       ],
       "schedulable_entry_skills": [
+        "CHECK_ALLIANCE_EVENT",
         "DAILY_CLAIM_REWARDS",
         "DAILY_HERO_RECRUIT",
         "DISMISS_DAILY_REWARD",
         "FOLLOW_DAILY_TASK",
         "OPEN_DAILY",
+        "OPEN_EVENT",
         "OPEN_EVENT_CALENDAR_DETAIL",
         "OPEN_EVENT_CALENDAR_FROM_HOME",
         "OPEN_EVENT_CALENDAR_FROM_MAP",
         "OPEN_EVENT_CALENDAR_TAB",
         "READ_EVENT_CALENDAR",
+        "READ_REGULAR_EVENT_CARD",
         "SCROLL_REGULAR_EVENT_TABS",
         "SELECT_DAILY_TAB"
       ],
-      "path_count": 12,
+      "path_count": 15,
       "semantics_with_templates": 32,
       "semantics_with_templates_and_no_skill": [
         "ALLIANCE_GIFTS_DAILY_COUNTER",
@@ -533,6 +539,17 @@
       "schedulable": true,
       "verifier": "verify_duplicate_target_cancelled",
       "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "CHECK_ALLIANCE_EVENT",
+      "source_page": "ALLIANCE",
+      "action": "OBSERVE:ALLIANCE_EVENT_DAY",
+      "target": "ALLIANCE_EVENT_DAY",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_alliance_day_read",
+      "visual_evidence": "OBSERVE",
       "navigation_like": false
     },
     {
@@ -1185,6 +1202,17 @@
       "navigation_like": true
     },
     {
+      "skill": "OPEN_EVENT",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:REGULAR_EVENT_ENTRY",
+      "target": "REGULAR_EVENT_ENTRY",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_event_page_open",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
       "skill": "OPEN_EVENT_CALENDAR_DETAIL",
       "source_page": "EVENT",
       "action": "TAP_SEMANTIC:EVENT_CALENDAR_NEXT_DETAIL",
@@ -1581,6 +1609,17 @@
       "navigation_like": false
     },
     {
+      "skill": "READ_REGULAR_EVENT_CARD",
+      "source_page": "EVENT",
+      "action": "OBSERVE:REGULAR_EVENT_CARD",
+      "target": "REGULAR_EVENT_CARD",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_regular_event_card_read",
+      "visual_evidence": "OBSERVE",
+      "navigation_like": false
+    },
+    {
       "skill": "READ_TIMER",
       "source_page": "UNKNOWN",
       "action": "READ_TIMER",
@@ -1764,7 +1803,7 @@
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "verify_daily_tab_selected",
-      "visual_evidence": 1,
+      "visual_evidence": 2,
       "navigation_like": true
     },
     {
@@ -1983,7 +2022,7 @@
       "target": "BTN_RESOURCE_SEARCH_SUBMIT",
       "destination_page": "UNKNOWN",
       "schedulable": true,
-      "verifier": "<lambda>",
+      "verifier": "verify_giant_beast_search",
       "visual_evidence": 6,
       "navigation_like": true
     },
@@ -3003,7 +3042,7 @@
     },
     {
       "semantic": "TAB_DAILY_TASKS_SELECTED",
-      "templates": 1
+      "templates": 2
     },
     {
       "semantic": "TAB_EVENT_CALENDAR",

@@ -81,9 +81,14 @@
    但仍是审计证据，留在磁盘上按需清理，不在本轮删除。
 5. **`tools/` 里 24 处盘符字面量（20 个开发脚本）**：生产代码一个都不 import 它们；迁移属独立批次，
    且必须用 `MAIN_REPO`（不是 `parents[1]`）以免审计脚本改读别处。
-6. **`tools/check_wiring.py` 的 navigation matrix 过期投影**（committed 153 技能 / fresh 156）：
-   重跑生成器会把可调度面从 141 扩到 144，等于把 3 个未核对的技能推入可调度集合——
-   与「不把未验证的技能提升为生产」冲突，留给操作者决定。
+6. ~~**`tools/check_wiring.py` 的 navigation matrix 过期投影**（committed 153 技能 / fresh 156）~~ **已解决（2026-10-18）**：
+   差异只有 3 条，且都是注册表里本来就有的技能——`CHECK_ALLIANCE_EVENT`（ALLIANCE →
+   OBSERVE:ALLIANCE_EVENT_DAY，`verify_alliance_day_read`）、`OPEN_EVENT`（HOME →
+   TAP_SEMANTIC:REGULAR_EVENT_ENTRY，`verify_event_page_open`）、`READ_REGULAR_EVENT_CARD`（EVENT →
+   OBSERVE:REGULAR_EVENT_CARD，`verify_regular_event_card_read`）。矩阵是**派生文件**
+   （`winter_agent_v2/page_knowledge.py` 明确它不是知识存储，运行时也不读它），所以重跑
+   `tools/ui_navigation_matrix.py` 只是让派生结果回归注册表：`159 → 156 行`、可调度 `141 → 144`，
+   `check_wiring` 的 problems 由 **4 条降到 3 条**（其余 3 条是既有的设计说明，不是缺陷）。
 7. **两个旧名空壳目录**：`E:\无尽冬日智能体` 与 `E:\无尽冬日智能体_worktrees` 现在都含 **0 个文件、0 字节**
    （子项已逐个搬走，只剩 `winter-prod-pinned\无尽冬日智能体` 两层空壳）。删除报
    `Device or resource busy`——有 GUI 进程（编辑器/资源管理器）仍持有该路径的句柄，
