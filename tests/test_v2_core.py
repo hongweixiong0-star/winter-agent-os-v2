@@ -81,8 +81,13 @@ class V2CoreTests(unittest.TestCase):
         state = vision.observe(ROOT / "dataset" / "raw" / "live_current.png")
         result = Scheduler(RuleBrain(), self.registry, Executor()).tick(state)
         self.assertEqual(state.popup, "PURCHASE_POPUP")
-        self.assertEqual(result.decision.skill, "CLOSE_POPUP")
-        self.assertEqual(result.execution.action.target, "BTN_CLOSE")
+        # 2026-10-18: the named skill replaced CLOSE_POPUP here.  The intent is unchanged -- the
+        # only plan is to close -- but the action no longer resolves BTN_CLOSE.  Measured on three
+        # real offers, that lookup never resolved (SEMANTIC_TARGET_NOT_VERIFIED, no after frame),
+        # so no action was issued at all.  Back has no target, which is the point on a purchase
+        # surface: there is no coordinate that could land on 购买.
+        self.assertEqual(result.decision.skill, "DISMISS_PURCHASE_POPUP")
+        self.assertIsNone(result.execution.action.target)
         self.assertFalse(result.execution.executed)
         self.assertEqual(result.execution.error, "DRY_RUN_BLOCKED_DEVICE_ACTION")
 

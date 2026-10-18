@@ -47,10 +47,16 @@ def _config(path: Path) -> dict:
 
 
 def _adb(config: dict, *args: str, timeout: float = 10.0) -> tuple[int, str]:
+    """One hidden adb call.  Through ``winproc`` because this tree has exactly one policy about
+    consoles: a tool started from the panel must never flash a window over the game, and
+    ``tests/test_winproc.py`` refuses a bare ``subprocess.run`` here.  The pipes in the shell
+    arguments are interpreted by the *device's* shell, not by cmd.exe, so no local shell is needed.
+    """
+    from winter_agent_v2 import winproc
+
     binary = str((config.get("device") or {}).get("adb_path") or "adb")
     try:
-        proc = subprocess.run([binary, *args], capture_output=True, text=True,
-                              encoding="utf-8", errors="replace", timeout=timeout, check=False)
+        proc = winproc.run([binary, *args], timeout=timeout)
     except (OSError, subprocess.TimeoutExpired) as exc:
         return 1, f"{type(exc).__name__}: {exc}"
     return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
