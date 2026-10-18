@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-10-18T04:25:58+00:00`
+- generated_at: `2026-10-18T16:38:37+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `7dd7bb9c` on `main`
+- commit: `444c18fe` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,24 +10,14 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 1541
-- HEAD: `7dd7bb9c` — docs(memory): navigation matrix 待办收口 -- 派生文件 vs 能力提升的判据 (2026-10-18T11:55:44+08:00)
-- working tree: 15 dirty file(s)
-  - `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-  - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-  - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-  - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-  - ` M docs/CAPABILITY_COVERAGE.md`
-  - ` M evidence/INDEX.json`
-  - ` M knowledge/goals/capability_skill_map.json`
-  - ` M tests/test_evidence_integrity.py`
-  - ` M tools/update_workbuddy_handoff.py`
-  - ` M winter_agent_v2/retention.py`
-  - `?? tests/test_the_handoff_agrees_with_the_evidence_ledger.py`
+- commits: 1567
+- HEAD: `444c18fe` — docs(skill-loop): the last candidate, and the end of what offline evidence can settle (2026-10-19T00:37:51+08:00)
+- working tree: 5 dirty file(s)
+  - `M .workbuddy/memory/2026-10-18.md`
+  - ` M evidence/gui_workbuddy_loop/latest.json`
+  - ` M learning/goal_coverage.json`
+  - `?? .workbuddy/memory/2026-10-19.md`
+  - `?? learning/skill_loop/`
 
 ### A2. Public mirror
 
@@ -36,28 +26,28 @@ reports, not a side note. `remote_head` is the local remote-tracking ref: it is 
 fresh as the last fetch, and `tools/git_sync.py status` is what refreshes it.
 
 ```
-SYNC STATE at 2026-10-18T04:25:58+00:00
+SYNC STATE at 2026-10-18T16:38:37+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : 7dd7bb9ca90e1054b4d6530cb890439f770fdcf5
+local_head        : 444c18fe6a85f6446a67ec6fd2724973ddee72a5
 remote_head       : 3805b7e4faf4cbfeaef8a80d82e69a347a1fa2f0   (local remote-tracking ref; run tools/git_sync.py status to refresh)
-unpushed_commits  : 12   (behind: 0)
-git_dirty         : True (15 path(s))
+unpushed_commits  : 38   (behind: 0)
+git_dirty         : True (5 path(s))
 last_push_at      : 2026-10-15T10:29:32.618849+00:00
 last_push_status  : PUSHED
-verdict           : LOCAL IS AHEAD by 12 commit(s) -- run `python tools/git_sync.py push`
+verdict           : LOCAL IS AHEAD by 38 commit(s) -- run `python tools/git_sync.py push`
 ```
 
 ## B. Runtime
 
-- agent_state: `AUTO_RUNNING`
-- runtime_thread_alive: True / scheduler_loop_alive: True
+- agent_state: `RECOVERING`
+- runtime_thread_alive: True / scheduler_loop_alive: False
 - unexpected_worker_exits: 66
 - watchdog_restart_count: 69
 - last_fatal_error: None
 - stop_reason: None
 - page: HOME  march: None/None
-- updated_at: 2026-10-17T01:37:18.634185+00:00
+- updated_at: 2026-10-18T12:15:14.136979+00:00
 
 ## C. Episode stream
 
@@ -69,10 +59,10 @@ verdict           : LOCAL IS AHEAD by 12 commit(s) -- run `python tools/git_sync
 
 ## D. Registry and lifecycle
 
-- registry total: 156  by_state: {'CANDIDATE': 105, 'VERIFIED': 47, 'BLOCKED': 4}
-- live dispatchable (verifier-backed): 144
+- registry total: 158  by_state: {'CANDIDATE': 107, 'VERIFIED': 47, 'BLOCKED': 4}
+- live dispatchable (verifier-backed): 146
 - BLOCKED skills: ['ALLIANCE_HELP', 'COLLECT_FINISHED_TRAINING_LANCER', 'COLLECT_FINISHED_TRAINING_MARKSMAN', 'COLLECT_FINISHED_TRAINING_SHIELD']
-- live_verified: **7**  stable: 56  degraded: 19  only_failed: 7  never_executed: 70
+- live_verified: **7**  stable: 56  degraded: 19  only_failed: 7  never_executed: 72
 
 ### Never executed
 
@@ -101,9 +91,11 @@ verdict           : LOCAL IS AHEAD by 12 commit(s) -- run `python tools/git_sync
 - `DISMISS_BATTLE_VICTORY` (CANDIDATE)
 - `DISMISS_DAILY_REWARD` (CANDIDATE)
 - `DISMISS_EXPLORATION_REWARD` (VERIFIED)
+- `DISMISS_GET_MORE_STAMINA` (CANDIDATE)
 - `DISMISS_INTEL_REWARD` (VERIFIED)
 - `DISMISS_MAIL_GENERIC_REWARD` (CANDIDATE)
 - `DISMISS_MAIL_REWARD` (VERIFIED)
+- `DISMISS_PURCHASE_POPUP` (CANDIDATE)
 - `GATHER_RESOURCE` (VERIFIED)
 - `JOIN_RALLY` (CANDIDATE)
 - `NAVIGATE_INFANTRY_CAMP` (CANDIDATE)

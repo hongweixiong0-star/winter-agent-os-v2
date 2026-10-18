@@ -6,35 +6,25 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
-- `7dd7bb9c 2026-10-18T11:55:44+08:00 docs(memory): navigation matrix 待办收口 -- 派生文件 vs 能力提升的判据`
-- `952b3159 2026-10-18T11:53:21+08:00 chore(ui): 重生成 navigation matrix——派生文件落后注册表 3 条技能`
-- `4ec76536 2026-10-18T07:44:02+08:00 docs(memory): C 盘瘦身 60.5GB->118.5GB -- Cursor 库与桌面迁 E 盘留 junction、关休眠、清回收站`
-- `7bab57db 2026-10-18T01:40:54+08:00 docs(tidy): 记录两个旧名空壳目录 -- 0 字节但仍被 GUI 进程持句柄`
-- `1bc7ce20 2026-10-18T01:40:02+08:00 docs(memory): 整理轮终盘 -- 全量 5577 passed / 0 failed，mainline 3/3 OK，pin 到 aa267b5c`
-- `aa267b5c 2026-10-18T01:38:47+08:00 chore(tests,docs): 隔离测试继承的生产状态；删除 158 个被跟踪的 pytest 临时文件`
-- `075f791b 2026-10-18T00:57:29+08:00 chore(knowledge): 删除 2026-09-15 的 routing 备份，重建运行时状态清单`
-- `09722840 2026-10-18T00:54:24+08:00 chore(paths): 项目根统一为 E:/WinterAgent，旧根字面量全量改写`
-- `98a667b3 2026-10-18T00:01:45+08:00 chore(repo): 清理临时残留、过期状态与自相矛盾的识别节点`
-- `d2a100f7 2026-10-17T08:02:38+08:00 docs(memory): switching reaches steady state -- +4 successes, zero failures in six minutes; the rollback decision confirmed right`
-- `1bc98ad2 2026-10-17T08:01:49+08:00 docs(memory): the optional re-close optimisation was tried and shelved -- recorded so the next attempt starts from the notes`
-- `af0ccb2e 2026-10-17T07:56:23+08:00 docs(memory): the second successful switch confirms the retry-settles pattern -- switching is usable and stabilising`
+- `444c18fe 2026-10-19T00:37:51+08:00 docs(skill-loop): the last candidate, and the end of what offline evidence can settle`
+- `f736e904 2026-10-19T00:36:05+08:00 feat(skill-loop): the repair queue remembers what was already decided`
+- `82e1c132 2026-10-19T00:34:45+08:00 docs(skill-loop): the third candidate, analysed and deliberately not changed`
+- `f742d1f5 2026-10-19T00:10:00+08:00 fix(skill-loop): route adb through winproc, and update the purchase-popup spec`
+- `d05fee29 2026-10-18T23:46:03+08:00 feat(skill-loop): a read-only probe that answers 'can the live half run right now'`
+- `0d409e0d 2026-10-18T23:44:31+08:00 feat(skill-loop): say which failures can be re-read, and label the window`
+- `3134a4a1 2026-10-18T23:42:56+08:00 docs(skill-loop): the stamina close recomputed over all 22 production frame pairs`
+- `0528c1aa 2026-10-18T23:39:48+08:00 fix(skill-loop): write the ledger through EpisodeStore, not a second raw append`
+- `11ce7002 2026-10-18T23:37:34+08:00 docs(skill-loop): record generation at the moment it happens, and mark the coverage boundary`
+- `2f845656 2026-10-18T23:36:58+08:00 docs(skill-loop): record generation at the moment it happens, and mark the coverage boundary`
+- `f04b2e5e 2026-10-18T23:35:21+08:00 docs(skill-loop): the two cases, and the judgement that separates them`
+- `32a582ae 2026-10-18T23:34:58+08:00 feat(skills): DISMISS_PURCHASE_POPUP -- Back instead of a lookup that never resolved`
 
-Uncommitted changes: 15
-- `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M docs/CAPABILITY_COVERAGE.md`
-- ` M evidence/INDEX.json`
-- ` M knowledge/goals/capability_skill_map.json`
-- ` M tests/test_evidence_integrity.py`
-- ` M tools/update_workbuddy_handoff.py`
-- ` M winter_agent_v2/retention.py`
-- `?? tests/test_the_handoff_agrees_with_the_evidence_ledger.py`
+Uncommitted changes: 5
+- `M .workbuddy/memory/2026-10-18.md`
+- ` M evidence/gui_workbuddy_loop/latest.json`
+- ` M learning/goal_coverage.json`
+- `?? .workbuddy/memory/2026-10-19.md`
+- `?? learning/skill_loop/`
 <!-- /AUTO:recent_commits -->
 
 ---

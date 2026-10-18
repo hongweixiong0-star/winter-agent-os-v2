@@ -19,7 +19,7 @@ Machine-detected issues (recomputed every run):
 - `READ_FISHING_STATE` never succeeded (attempts=1, failure=1)
 - `SAFE_STOP` never succeeded (attempts=6, failure=6)
 - `START_RALLY` never succeeded (attempts=1, failure=1)
-- 15 uncommitted file(s): ['M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md']
+- 5 uncommitted file(s): ['M .workbuddy/memory/2026-10-18.md', ' M evidence/gui_workbuddy_loop/latest.json', ' M learning/goal_coverage.json', '?? .workbuddy/memory/2026-10-19.md', '?? learning/skill_loop/']
 <!-- /AUTO:open_issues -->
 
 ---

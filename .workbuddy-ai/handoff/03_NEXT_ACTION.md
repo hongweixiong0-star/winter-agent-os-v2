@@ -1519,7 +1519,7 @@ WHY: 3 goal(s) BLOCKED, 9 PARTIAL, mean implementation coverage 0.7708. The bloc
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 100 in the last 2 day(s), 376 all-time, last seen 2026-10-16T23:52:16.285932+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 15
+CURRENT DIRTY FILES: 5
 LAST PRODUCTION EPISODE: {"skill": "TRY_ORDINARY_CONTROL", "result": "FAILURE", "recorded_at": "2026-10-16T23:57:43.134368+00:00", "episode_id": "20261017_075609_006189", "before_screenshot": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_075609_006189\\20261017_075609_006189_step_008_before_20261016T235738888141.png", "after_screenshot": ""}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 376, "recent": 100, "last_seen": "2026-10-16T23:52:16.285932+00:00", "dates": {"2026-10-05": 13, "2026-10-06": 4, "2026-10-07": 3, "2026-10-08": 179, "2026-10-10": 63, "2026-10-11": 14, "2026-10-16": 100}, "undated": 0, "top_skills": [["TRY_ORDINARY_CONTROL", 245], ["OPEN_HOME", 34], ["OPEN_EVENT_CALENDAR_DETAIL", 23]]}
 TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-10-14T23:57:43.134368+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.

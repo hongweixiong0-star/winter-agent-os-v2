@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-10-18T04:25:58+00:00",
+  "generated_at": "2026-10-18T16:38:37+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "7dd7bb9c",
+  "commit": "444c18fe",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
-    "agent_state": "AUTO_RUNNING",
+    "agent_state": "RECOVERING",
     "runtime_thread_alive": true,
-    "scheduler_loop_alive": true,
+    "scheduler_loop_alive": false,
     "last_tick_time": "2026-10-17T01:37:16.013514+00:00",
     "last_action_time": "2026-10-16T23:57:43.090000+00:00",
     "last_success_time": "2026-10-16T23:57:38.885041+00:00",
@@ -381,7 +381,7 @@
     "loop_acted": {},
     "loop_skipped_rungs": [],
     "loop_broken": 0,
-    "updated_at": "2026-10-17T01:37:18.634185+00:00"
+    "updated_at": "2026-10-18T12:15:14.136979+00:00"
   },
   "latest_log": {
     "path": "E:\\WinterAgent\\learning\\control_panel\\latest.log",
