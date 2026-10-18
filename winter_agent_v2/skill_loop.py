@@ -83,6 +83,18 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _timestamp(text: str) -> datetime | None:
+    """An ISO instant from either writer (``+00:00`` or ``Z``), or ``None``.
+
+    The episode ledger and this loop's own outcomes do not format offsets identically, and
+    comparing the strings would silently order them wrong.
+    """
+    try:
+        return datetime.fromisoformat(str(text).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+
+
 def _read_json(path: Path, default: Any) -> Any:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -411,7 +423,8 @@ def promotion_verdict(skill: str, rows: Iterable[Mapping[str, Any]],
 
 def repair_candidates(rows: Iterable[Mapping[str, Any]], *,
                       threshold: int | None = None,
-                      limit: int = 10) -> list[dict[str, Any]]:
+                      limit: int = 10,
+                      decided: Iterable[Mapping[str, Any]] | None = None) -> list[dict[str, Any]]:
     """Skills that have failed enough times in a row for a screenshot to explain it.
 
     The judgement is ``skill_repair.should_escalate``'s, not this module's: it already owns the
@@ -422,9 +435,21 @@ def repair_candidates(rows: Iterable[Mapping[str, Any]], *,
 
     ``page_key`` is left to the trigger's own reading of the failing rows, so a skill that broke
     on one screen and is fine on another is not repaired as if it were one thing.
+
+    ``decided`` is this loop's own outcomes, and it is what stops the queue from re-asking the
+    same question every pass: a candidate whose last decision is newer than its last failure has
+    already been looked at and has not failed since.  It stays in the list -- the evidence is
+    still there -- but ``needs_attention`` is false, so the caller can tell "new" from "known".
     """
     from .skill_repair import REPAIR_TRIGGER_FAILURES, should_escalate
     from .skills import NON_SKILL_LEDGER_VALUES
+
+    decisions = list(decided if decided is not None else read_outcomes(500))
+    last_decision: dict[str, Mapping[str, Any]] = {}
+    for row in decisions:  # oldest first, so the last write wins
+        skill = str(row.get("skill") or "")
+        if skill and str(row.get("verdict") or "") in {"ANALYSED", "FIXED", "GENERATED"}:
+            last_decision[skill] = row
 
     grouped: dict[str, list[Mapping[str, Any]]] = {}
     for row in rows:
@@ -445,7 +470,8 @@ def repair_candidates(rows: Iterable[Mapping[str, Any]], *,
                                   threshold=threshold or REPAIR_TRIGGER_FAILURES)
         if trigger is None:
             continue
-        found.append({
+        decision = last_decision.get(trigger.skill_id)
+        entry = {
             "skill": trigger.skill_id,
             "consecutive_failures": trigger.consecutive_failures,
             "failure_kinds": list(trigger.failure_kinds),
@@ -454,8 +480,20 @@ def repair_candidates(rows: Iterable[Mapping[str, Any]], *,
             "first_failure_at": trigger.first_failure_at,
             "last_failure_at": trigger.last_failure_at,
             "frames": list(trigger.failure_frames[-3:]),
-        })
-    found.sort(key=lambda item: (-item["consecutive_failures"], item["skill"]))
+        }
+        if decision:
+            entry["last_decision"] = {"verdict": decision.get("verdict"),
+                                      "at": decision.get("at")}
+            decided_at = _timestamp(str(decision.get("at") or ""))
+            failed_at = _timestamp(trigger.last_failure_at)
+            # Unparseable timestamps stay "needs attention": a queue that silences itself on a
+            # format change is worse than one that repeats a question.
+            entry["needs_attention"] = not (decided_at and failed_at and decided_at >= failed_at)
+        else:
+            entry["needs_attention"] = True
+        found.append(entry)
+    found.sort(key=lambda item: (not item["needs_attention"],
+                                 -item["consecutive_failures"], item["skill"]))
     return found[:limit]
 
 

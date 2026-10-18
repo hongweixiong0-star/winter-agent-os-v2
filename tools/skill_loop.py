@@ -74,6 +74,7 @@ def _cmd_repairs(args: argparse.Namespace) -> int:
                                               limit=args.limit)
     path = skill_loop.write_repair_queue(candidates)
     print(json.dumps({"queue": str(path), "count": len(candidates),
+                      "needs_attention": sum(1 for c in candidates if c["needs_attention"]),
                       "candidates": candidates}, ensure_ascii=False, indent=2))
     return 0 if candidates else 1
 

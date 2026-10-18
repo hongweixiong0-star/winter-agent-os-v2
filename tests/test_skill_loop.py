@@ -239,6 +239,28 @@ def test_the_runner_writes_the_ledger_through_the_project_store():
     assert "from winter_agent_v2.learning import Episode, EpisodeStore" in source
 
 
+def test_a_candidate_already_looked_at_is_not_raised_again():
+    """The queue must remember its own answers, or every pass re-asks the same question."""
+    failing = [_row("A", "FAILURE", verified=False, failure="UNKNOWN_PAGE")] * 3
+    failing[0]["recorded_at"] = "2026-10-01T00:00:00+00:00"
+    failing[-1]["recorded_at"] = "2026-10-02T00:00:00+00:00"
+
+    fresh = skill_loop.repair_candidates(failing, decided=[])
+    assert fresh[0]["needs_attention"] is True
+    assert "last_decision" not in fresh[0]
+
+    looked = [{"skill": "A", "verdict": "ANALYSED", "at": "2026-10-03T00:00:00+00:00"}]
+    settled = skill_loop.repair_candidates(failing, decided=looked)
+    assert settled[0]["needs_attention"] is False
+    assert settled[0]["last_decision"]["verdict"] == "ANALYSED"
+
+    # A failure *after* the decision reopens it: the answer no longer covers the evidence.
+    failing.append(_row("A", "FAILURE", verified=False, failure="UNKNOWN_PAGE"))
+    failing[-1]["recorded_at"] = "2026-10-04T00:00:00+00:00"
+    reopened = skill_loop.repair_candidates(failing, decided=looked)
+    assert reopened[0]["needs_attention"] is True
+
+
 def test_outcome_ledger_appends_one_line_per_decision(tmp_path, monkeypatch):
     ledger = tmp_path / "outcomes.jsonl"
     monkeypatch.setattr(skill_loop, "OUTCOME_PATH", ledger)
