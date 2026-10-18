@@ -97,10 +97,15 @@ NO_PROGRESS_STREAK = 3
 # ``KEEP_MARCHES_PRODUCTIVE`` was not in the window at all.
 #
 # 24 h is not a round number, it is where the answer stops changing.  Replayed over the
-# same ledger (``E:/experiments/gate_window_replay.py``): 6 h reaches 15 goals and defers
-# 5; 24 h reaches 24 goals and defers 9; 72 h reaches the same 24 and defers the same 9.
-# So past a day the projection is already saturated, and a longer window buys nothing but
-# parse time.  Cost at 24 h: 2,586 rows and 0.56-0.72 s for the read, once per run.
+# same ledger: 6 h reaches 15 goals and defers 5; 24 h reaches 24 goals and defers 9;
+# 72 h reaches the same 24 and defers the same 9.  So past a day the projection is already
+# saturated, and a longer window buys nothing but parse time.  Cost at 24 h: 2,586 rows and
+# 0.56-0.72 s for the read, once per run.
+#
+# (The replay script that produced this -- ``gate_window_replay.py``, then under
+# ``E:/experiments`` -- was a one-off and is no longer on this machine; the measurement
+# stands on its own, but do not go looking for the script.  2026-10-18: the loose
+# ``E:/experiments`` tree moved to ``materials/experiments`` inside the project.)
 EPISODE_WINDOW_HOURS = 24
 
 # The most episode rows one read keeps.
