@@ -85,6 +85,35 @@ python tools/skill_loop.py promotions
 一个能自己把自己提升为 VERIFIED 的技能库，等于没有状态。`promotions` 只回答"该不该提"，
 提出动作由人（或本闭环的代码提交）完成。
 
+## 三·补、第二个案例：修一个"动作根本没发出"的失败
+
+`PURCHASE_POPUP` 在账本里只有 3 行，但**三行全失败**：
+
+```
+skill=CLOSE_POPUP  failure=SEMANTIC_TARGET_NOT_VERIFIED  after_screenshot=""  (×3)
+```
+
+空的 `after_screenshot` 是关键：不是"点了没关掉"，是**没点**。brain 走的是
+`blocking_popup → CLOSE_POPUP → BTN_CLOSE`，而真实帧是 ¥328 礼包页，`BTN_CLOSE` 在那上面
+解析不到。修正不是换模板，是换动作：
+
+- `DISMISS_PURCHASE_POPUP`：`Page.POPUP` / `PRESS_BACK` / `LOW` / `POPUP_CLOSED` /
+  recovery `CLOSE_POPUP`
+- brain 在 `blocking_popup` 兜底之前点名该 popup，模板查找不再花在购买面上
+
+**为什么 Back 更安全**：购买面上"没有坐标"本身就是安全属性——没有哪个点会落到「购买」。
+这比"更准的 X 模板"可靠，因为后者永远有瞄错的可能。
+
+## 三·补二、两个案例的差别（这是判据）
+
+| 案例 | 原状态 | 修正的性质 |
+|---|---|---|
+| `GET_MORE_STAMINA` | 通用 BACK 已能关掉（21 次成功），但没有验证器 | 补验证，不改动作 |
+| `PURCHASE_POPUP` | 通用 CLOSE_POPUP 三次都没发出动作 | 改动作，从"要定位"变成"不需要定位" |
+
+闭环的价值不在"生成了几个技能"，而在于**能分清这两种情况**：前者的正确动作是补证据，
+后者才是改实现。把前者当后者改，会把一个能用的技能改坏。
+
 ## 三、首个真实案例：`GET_MORE_STAMINA`
 
 **来源（不是构造的）**：`episodes.jsonl` 中 53 行 `state_before.popup == GET_MORE_STAMINA`。
