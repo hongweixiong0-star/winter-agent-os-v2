@@ -85,6 +85,16 @@ python tools/skill_loop.py promotions
 一个能自己把自己提升为 VERIFIED 的技能库，等于没有状态。`promotions` 只回答"该不该提"，
 提出动作由人（或本闭环的代码提交）完成。
 
+**生成那一刻也要留痕**。`skill_loop_run` 只在实机跑过之后写 outcome，所以"我生成过什么"
+一度只存在于提交信息里。现在用 `tools/skill_loop.py record --verdict GENERATED` 回填，
+两个首批技能各有一条，evidence 里写明依据的行数、修正类型、以及**实机未跑的原因**。
+`promotions` 随后的回答是诚实的：两条都是 `NO_PRODUCTION_ROWS`——**没跑过就是没跑过**。
+
+**一个容易误判的边界**：`docs/SKILL_COVERAGE.md` / `goal_skill_graph.json` 按
+goal→capability 组织，而这两个 popup 技能是"任何 goal 都可能撞上的兜底"，不属于任何
+capability，所以重生成这些文档时它们**不会出现**。这是口径，不是遗漏——它们由
+`brain.py` 的 popup 分支在 goal 路由之前选中，而不是由某个 goal 的能力表选中。
+
 ## 三·补、第二个案例：修一个"动作根本没发出"的失败
 
 `PURCHASE_POPUP` 在账本里只有 3 行，但**三行全失败**：
