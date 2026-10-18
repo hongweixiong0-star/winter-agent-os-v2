@@ -210,7 +210,7 @@ class TheRefusedFightIsRecoverableTests(unittest.TestCase):
                 **kwargs,
             ).run(
                 max_actions=3,
-                allowed_skills={"INTEL_HERO_START_MARCH", "BACK", "OPEN_STAMINA_SOURCES"},
+                allowed_skills={"INTEL_HERO_START_MARCH", "DISMISS_GET_MORE_STAMINA", "OPEN_STAMINA_SOURCES"},
             )
         return run, device, brain
 
@@ -242,7 +242,7 @@ class TheRefusedFightIsRecoverableTests(unittest.TestCase):
         # The counterfactual: without this route the run returns at step 1 and
         # never opens the panel that holds the +150 gift.
         run, _device, _brain = self._run(self._refusal_then_free_stamina_check())
-        self.assertEqual(run.steps[1].decision.skill, "BACK")
+        self.assertEqual(run.steps[1].decision.skill, "DISMISS_GET_MORE_STAMINA")
         self.assertTrue(run.steps[1].verification.ok)
         self.assertEqual(run.steps[2].decision.skill, "OPEN_STAMINA_SOURCES")
         self.assertEqual(run.steps[2].decision.reason, "free_stamina_gift_not_yet_checked_this_run")
@@ -279,7 +279,7 @@ class TheRefusedFightIsRecoverableTests(unittest.TestCase):
         # The recovery must not press anything itself: the refusal leaves
         # POPUP/GET_MORE_STAMINA on screen and RuleBrain owns that popup.
         run, device, _brain = self._run(self._refusal_then_free_stamina_check())
-        self.assertEqual(run.steps[1].decision.skill, "BACK")
+        self.assertEqual(run.steps[1].decision.skill, "DISMISS_GET_MORE_STAMINA")
         self.assertEqual(run.steps[1].decision.reason, "stamina_panel_without_a_free_gift")
         self.assertEqual(len(device.backs), 1, "exactly one Back, and it was the brain's")
 

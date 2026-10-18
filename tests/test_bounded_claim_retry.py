@@ -50,7 +50,7 @@ def test_the_second_sighting_leaves_instead_of_tapping_again():
     brain = RuleBrain()
     brain.decide(popup(True), v2_registry())
     second = brain.decide(popup(True), v2_registry())
-    assert second.skill == "BACK", "a tap that did not change the panel cannot fix it by repeating"
+    assert second.skill == "DISMISS_GET_MORE_STAMINA", "a tap that did not change the panel cannot fix it by repeating"
     assert "still_unclaimed" in second.reason
     assert second.expected_result == "map_restored"
 
@@ -60,12 +60,12 @@ def test_it_leaves_every_time_after_that_rather_than_alternating():
     brain = RuleBrain()
     brain.decide(popup(True), v2_registry())
     for _ in range(4):
-        assert brain.decide(popup(True), v2_registry()).skill == "BACK"
+        assert brain.decide(popup(True), v2_registry()).skill == "DISMISS_GET_MORE_STAMINA"
 
 
 def test_a_panel_without_a_free_gift_is_unchanged():
     decision = RuleBrain().decide(popup(False), v2_registry())
-    assert decision.skill == "BACK"
+    assert decision.skill == "DISMISS_GET_MORE_STAMINA"
     assert decision.reason == "stamina_panel_without_a_free_gift"
 
 
@@ -73,5 +73,5 @@ def test_the_counter_is_per_run_not_per_goal():
     """A new run starts fresh: the panel may genuinely be claimable again next cycle."""
     first = RuleBrain()
     first.decide(popup(True), v2_registry())
-    assert first.decide(popup(True), v2_registry()).skill == "BACK"
+    assert first.decide(popup(True), v2_registry()).skill == "DISMISS_GET_MORE_STAMINA"
     assert RuleBrain().decide(popup(True), v2_registry()).skill == "CLAIM_FREE_STAMINA"
