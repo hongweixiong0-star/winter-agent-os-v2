@@ -202,6 +202,20 @@ def test_promotions_only_fire_for_skills_with_verified_evidence():
     assert "D" not in {r["skill"] for r in verdict["ready"] + verdict["waiting"]}
 
 
+def test_the_runner_writes_the_ledger_through_the_project_store():
+    """One file, one writer. A raw append would skip the newline repair and the line index.
+
+    The ledger already had a writer (``learning.EpisodeStore``) that fixes a half-written last
+    line and keeps the count retention compacts against. A second writer opening the file with
+    ``"a"`` is the "two implementations, one file" defect this codebase keeps paying for, so it
+    is asserted statically rather than trusted.
+    """
+    source = (ROOT / "tools" / "skill_loop_run.py").read_text(encoding="utf-8")
+    assert "EpisodeStore(" in source
+    assert 'EPISODE_LEDGER.open("a"' not in source
+    assert "from winter_agent_v2.learning import Episode, EpisodeStore" in source
+
+
 def test_outcome_ledger_appends_one_line_per_decision(tmp_path, monkeypatch):
     ledger = tmp_path / "outcomes.jsonl"
     monkeypatch.setattr(skill_loop, "OUTCOME_PATH", ledger)

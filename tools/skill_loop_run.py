@@ -48,11 +48,28 @@ if str(ROOT / "tools") not in sys.path:
     sys.path.insert(0, str(ROOT / "tools"))
 
 from winter_agent_v2 import skill_loop  # noqa: E402
+from winter_agent_v2.learning import Episode, EpisodeStore  # noqa: E402
 from winter_agent_v2.models import WorldState  # noqa: E402
 from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
 from winter_agent_v2.skills import p0_registry, v2_registry  # noqa: E402
 
 EPISODE_LEDGER = ROOT / "learning" / "episodes.jsonl"
+
+
+def _episode_limit(config_path: Path) -> int:
+    """The retention bound the runtime itself uses, so this writer cannot outlive it.
+
+    Appending with a *different* limit would not corrupt a row, but it would make the store's
+    own line counter disagree with the file and therefore compact at the wrong moment -- and the
+    thing compaction deletes is historical evidence.  Read from the same config key
+    ``tools/run_live.py`` reads.
+    """
+    payload = skill_loop._read_json(config_path, {})  # noqa: SLF001 - one reader, one file
+    retention = payload.get("retention") if isinstance(payload, dict) else None
+    try:
+        return int((retention or {}).get("episode_limit") or 10000)
+    except (TypeError, ValueError):
+        return 10000
 
 
 def _registry_skill(skill_id: str):
@@ -143,30 +160,32 @@ def main(argv: list[str] | None = None) -> int:
         except Exception:  # noqa: BLE001 - a failed release must not hide the verdict
             pass
 
-    episode = {
-        "skill": skill.id,
-        "state_before": {"page": before.page.value, "popup": before.popup},
-        "action": {"kind": skill.action.kind, "target": skill.action.target},
-        "state_after": {"page": after.page.value, "popup": after.popup},
-        "result": "SUCCESS" if verification.ok else "FAILURE",
-        "failure_type": None if verification.ok else verification.reason,
-        "duration": duration,
-        "mode": "PRODUCTION",
-        "episode_id": episode_id,
-        "goal_id": "",
-        "step_id": "",
-        "before_screenshot": str(before_path),
-        "after_screenshot": str(after_path),
-        "verifier_ok": bool(verification.ok),
-        "verifier_evidence": verification.evidence,
-        "executor_backend": result.backend,
-        "execution_mode": "PRODUCTION",
-        "decision_reason": "skill_loop_run",
-        "recorded_at": datetime.now(timezone.utc).isoformat(),
-    }
-    EPISODE_LEDGER.parent.mkdir(parents=True, exist_ok=True)
-    with EPISODE_LEDGER.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(episode, ensure_ascii=False) + "\n")
+    episode = Episode(
+        skill=skill.id,
+        state_before={"page": before.page.value, "popup": before.popup},
+        action={"kind": skill.action.kind, "target": skill.action.target},
+        state_after={"page": after.page.value, "popup": after.popup},
+        result="SUCCESS" if verification.ok else "FAILURE",
+        failure_type=None if verification.ok else verification.reason,
+        duration=duration,
+        mode="PRODUCTION",
+        episode_id=episode_id,
+        goal_id="",
+        step_id=0,
+        before_screenshot=str(before_path),
+        after_screenshot=str(after_path),
+        verifier_ok=bool(verification.ok),
+        verifier_evidence=dict(verification.evidence),
+        executor_backend=result.backend,
+        execution_mode="PRODUCTION",
+        decision_reason="skill_loop_run",
+    )
+    # Through the project's own writer, never a raw append: ``EpisodeStore`` repairs a missing
+    # trailing newline before writing (a raw append would glue this row onto a half-written one)
+    # and keeps the line-count index the retention compaction depends on.  A second writer that
+    # bypassed it is exactly the "two implementations, one file" defect this codebase keeps
+    # paying for.
+    EpisodeStore(EPISODE_LEDGER, limit=_episode_limit(Path(args.config))).append(episode)
     skill_loop.record_outcome(
         skill.id,
         verdict="VERIFIED" if verification.ok else "FAILED",
@@ -174,10 +193,16 @@ def main(argv: list[str] | None = None) -> int:
                   "evidence": verification.evidence, "frames": [str(before_path), str(after_path)]},
         note=args.purpose,
     )
-    print(json.dumps({k: episode[k] for k in
-                      ("skill", "result", "failure_type", "verifier_ok",
-                       "verifier_evidence", "executor_backend", "duration", "episode_id")},
-                     ensure_ascii=False, indent=2))
+    print(json.dumps({
+        "skill": episode.skill,
+        "result": episode.result,
+        "failure_type": episode.failure_type,
+        "verifier_ok": episode.verifier_ok,
+        "verifier_evidence": episode.verifier_evidence,
+        "executor_backend": episode.executor_backend,
+        "duration": episode.duration,
+        "episode_id": episode.episode_id,
+    }, ensure_ascii=False, indent=2))
     verdict = skill_loop.promotion_verdict(skill.id, skill_loop.read_new_episodes(
         {"episodes_offset": 0})[0])
     print(json.dumps({"promotion": verdict}, ensure_ascii=False, indent=2))
