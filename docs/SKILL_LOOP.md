@@ -152,6 +152,32 @@ scroll_back_swipe_norm = None   ✗ 派生失败
 它与 `OPEN_BEAST_SEARCH_TAB` 一起，说明闭环的否决权是有内容的：能分清"该改验证器"和"该改
 读取器"，也能分清"现在改"和"等证据"。**一个只会生成技能的闭环，迟早会把对的改成错的。**
 
+## 三·补四、最后一个候选：28 次失败，两段原因
+
+`OPEN_BEAST_SEARCH_TAB`，连续 28 次失败，分布非常干净：
+
+```
+12  SEMANTIC_TARGET_NOT_VERIFIED    after 帧为空  -> 动作根本没发出
+16  BEAST_SEARCH_TAB_NOT_PROVEN     after 帧在    -> after_selected_tab = "GIANT_BEAST"
+```
+
+后 16 次的证据说明一切：技能要的是**野兽**页签，点完之后被选中的是**冰原巨兽**。
+
+`runtime.py` 的 `BEAST_SEARCH_TAB` 分支优先用条带几何
+（`resource_cell_center_norm("BEAST")`），几何读不到才退回 OCR 标签框
+（`_tab_label_centre`）。条带偏移一变，几何给出的点就落到邻格上——**这个风险该分支自己的
+docstring 就写着**（"a tap on its visible sliver at x=42 left 冰原巨兽 anchored -- the client
+selects the neighbour"）。也就是说：已知风险，仍然复发。
+
+**修法方向很明确**：几何分支必须与本帧 OCR 读到的标签交叉校验，而不是只信"第几格"。
+**但这轮不改**：它改的是所有条带类语义的共用定位路径，而手头的 16 张帧只覆盖少数几种条带
+偏移；没有跨偏移的对照，改了可能把"偶尔点到邻居"换成"经常什么都不点"。
+
+记为 `ANALYSED`。
+
+**离线侧到此为止。** 四个候选的处置已经完整（两生成、两分析不改），继续在没有新证据的情况下
+改核心定位/读取路径，只会把可解释的失败换成不可解释的失败。剩下的唯一变量是实机。
+
 ## 三、首个真实案例：`GET_MORE_STAMINA`
 
 **来源（不是构造的）**：`episodes.jsonl` 中 53 行 `state_before.popup == GET_MORE_STAMINA`。
