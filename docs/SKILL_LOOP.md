@@ -151,6 +151,21 @@ after : MAP    popup=None
 verify_popup_closed -> True (OK)
 ```
 
+**全量复算 22 组帧对**（`materials/experiments/retired_20261018/acceptance_20261018/skill_loop/offline_recompute_GET_MORE_STAMINA.json`）：
+账本里 `popup=GET_MORE_STAMINA` 且 `skill=BACK`、前后帧都在盘上的 22 组——
+
+```
+precondition ready   22 / 22
+verify_popup_closed  21 / 22 OK
+1 failure            20261008_213639_061389 step_004
+                     before POPUP/GET_MORE_STAMINA -> after POPUP/GET_MORE_STAMINA
+```
+
+那 1 组不是复算的误差：账本里 step_004 本来就记着
+`BACK / FAILURE / SAFE_BACK_NOT_PROVEN / popup_closed=False`，step_005 重试才成功。
+**新验证器与旧记录在这 22 组上逐组一致**，并且它会把 step_004 判为失败而不是"按了就完事"。
+这正是"补验证"想要的效果：同一个 Back，失败的那次不再被记成通过。
+
 这证明技能契约与验证器在真实帧上成立；**它不证明一次真实点击**——那是下一步。
 
 ## 四、实机执行为什么必须由用户触发
