@@ -390,6 +390,69 @@ def promotion_verdict(skill: str, rows: Iterable[Mapping[str, Any]],
             "recent": recent}
 
 
+def repair_candidates(rows: Iterable[Mapping[str, Any]], *,
+                      threshold: int | None = None,
+                      limit: int = 10) -> list[dict[str, Any]]:
+    """Skills that have failed enough times in a row for a screenshot to explain it.
+
+    The judgement is ``skill_repair.should_escalate``'s, not this module's: it already owns the
+    two rules that matter -- *only the last run of consecutive failures counts*, and *only a
+    perception failure is worth a picture* -- and re-deriving them here would be the drift this
+    project keeps paying for.  What this function adds is the aggregation a brief needs: group
+    the window's rows by skill, ask once per skill, and sort by how stuck it is.
+
+    ``page_key`` is left to the trigger's own reading of the failing rows, so a skill that broke
+    on one screen and is fine on another is not repaired as if it were one thing.
+    """
+    from .skill_repair import REPAIR_TRIGGER_FAILURES, should_escalate
+    from .skills import NON_SKILL_LEDGER_VALUES
+
+    grouped: dict[str, list[Mapping[str, Any]]] = {}
+    for row in rows:
+        skill = str(row.get("skill") or "")
+        if not skill:
+            continue
+        # ``SAFE_STOP`` / ``PRINTED_TAP`` / ``OBSERVE_ONLY`` are ledger values, not skills: the
+        # project already declares that distinction, and a repair queue that asks a model about
+        # "the SAFE_STOP skill" is asking about something that does not exist.
+        if skill in NON_SKILL_LEDGER_VALUES:
+            continue
+        if str(row.get("mode") or "") in SIMULATION_MODES:
+            continue
+        grouped.setdefault(skill, []).append(row)
+    found: list[dict[str, Any]] = []
+    for skill, skill_rows in grouped.items():
+        trigger = should_escalate(skill, skill_rows,
+                                  threshold=threshold or REPAIR_TRIGGER_FAILURES)
+        if trigger is None:
+            continue
+        found.append({
+            "skill": trigger.skill_id,
+            "consecutive_failures": trigger.consecutive_failures,
+            "failure_kinds": list(trigger.failure_kinds),
+            "page_key": trigger.page_key,
+            "goal_id": trigger.goal_id,
+            "first_failure_at": trigger.first_failure_at,
+            "last_failure_at": trigger.last_failure_at,
+            "frames": list(trigger.failure_frames[-3:]),
+        })
+    found.sort(key=lambda item: (-item["consecutive_failures"], item["skill"]))
+    return found[:limit]
+
+
+def write_repair_queue(candidates: Iterable[Mapping[str, Any]]) -> Path:
+    """Where the analysing half looks for "what is broken and on which screen"."""
+    from .skill_repair import REPAIR_TRIGGER_FAILURES
+
+    path = STATE_DIR / "repair_queue.json"
+    _write_json(path, {
+        "generated_at": _now(),
+        "threshold": REPAIR_TRIGGER_FAILURES,
+        "candidates": list(candidates),
+    })
+    return path
+
+
 def state() -> dict[str, Any]:
     """One screenful for a human: what the cursor holds and what is waiting behind it."""
     cursor = load_cursor()

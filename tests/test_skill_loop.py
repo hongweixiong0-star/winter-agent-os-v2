@@ -144,6 +144,35 @@ def test_brief_names_every_popup_it_cannot_cover(tmp_path):
     assert brief["counts"]["episode_rows"] == 3
 
 
+def test_repair_candidates_only_surface_a_real_perception_streak():
+    def streak(n: int, kind: str = "SEMANTIC_TARGET_NOT_VERIFIED") -> list[dict]:
+        return [_row("OPEN_HOME", "FAILURE", verified=False, failure=kind) for _ in range(n)]
+
+    assert skill_loop.repair_candidates(streak(2)) == []
+
+    found = skill_loop.repair_candidates(streak(3))
+    assert len(found) == 1
+    assert found[0]["skill"] == "OPEN_HOME"
+    assert found[0]["consecutive_failures"] == 3
+    assert found[0]["failure_kinds"] == ["SEMANTIC_TARGET_NOT_VERIFIED"]
+
+    # A passing row ends the streak: a skill that failed three times last month and works now
+    # is not broken, and repairing it would be the "every screenshot asks a model" failure.
+    recovered = streak(3) + [_row("OPEN_HOME", "SUCCESS")]
+    assert skill_loop.repair_candidates(recovered) == []
+
+    # A queue-full is a world-state answer; a picture cannot explain it.
+    assert skill_loop.repair_candidates(streak(5, "QUEUE_FULL")) == []
+
+
+def test_repair_candidates_rank_the_most_stuck_first():
+    rows = ([_row("A", "FAILURE", verified=False, failure="UNKNOWN_PAGE")] * 5
+            + [_row("B", "FAILURE", verified=False, failure="TARGET_NOT_FOUND")] * 3)
+    found = skill_loop.repair_candidates(rows)
+    assert [c["skill"] for c in found] == ["A", "B"]
+    assert [c["consecutive_failures"] for c in found] == [5, 3]
+
+
 def test_outcome_ledger_appends_one_line_per_decision(tmp_path, monkeypatch):
     ledger = tmp_path / "outcomes.jsonl"
     monkeypatch.setattr(skill_loop, "OUTCOME_PATH", ledger)
