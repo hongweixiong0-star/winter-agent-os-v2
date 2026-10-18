@@ -20,7 +20,13 @@ from pathlib import Path
 
 import pytest
 
-from winter_agent_v2.retention import _is_protected, referenced_evidence, select_prunable_screenshots
+from winter_agent_v2.retention import (
+    _is_protected,
+    comparable_path,
+    pruned_evidence_paths,
+    referenced_evidence,
+    select_prunable_screenshots,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = ROOT / "tests"
@@ -289,17 +295,15 @@ def test_runtime_captures_are_still_prunable() -> None:
 
 
 def _normalized(path: str) -> str:
-    """A path compared by meaning, not spelling: separators, ``//`` runs and case are noise.
+    """A path compared by meaning, not spelling — one implementation, in ``retention``.
 
     The 2026-10-17 migration rewrote the ledger's paths, and the pin worktree reaches the same
     frame through a junction, so ``E:\\WinterAgent\\dataset\\x.png``,
     ``E://WinterAgent\\\\dataset\\\\x.png`` and ``E:/WinterAgent/.worktrees/prod/repo/dataset/x.png``
-    are one file.  Comparing raw strings would report that as a new loss.
+    are one file.  This used to be a fourth copy of that rule; ``retention.comparable_path``
+    is now the only one, because the handoff's ``evidence_state`` needs the same answer.
     """
-    text = str(path).replace("\\", "/")
-    while "//" in text:
-        text = text.replace("//", "/")
-    return os.path.normcase(os.path.normpath(text))
+    return comparable_path(path)
 
 
 def _documented_pruned_evidence() -> set[str]:
@@ -310,13 +314,12 @@ def _documented_pruned_evidence() -> set[str]:
     帧不可恢复（rm 绕过回收站、全盘按名搜索无果），但 **episode 行不改写**——
     改写生产证据比丢失更糟。损失登记在 ``knowledge/provenance/pruned_evidence_20261017.json``，
     只有该清单里逐字相同的路径才被放过；任何新的缺失仍然让这个测试失败。
+
+    读取走 ``retention.pruned_evidence_paths``：同一件事在交接里还有一处消费者
+    （``tools/update_workbuddy_handoff.py::evidence_state``），两份实现曾经在清理的第二天
+    就打架（交接报 ``evidence=FAIL``，而套件已经接受这 109 条）。**一份实现，两处引用。**
     """
-    record = ROOT / "knowledge/provenance/pruned_evidence_20261017.json"
-    try:
-        payload = json.loads(record.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return set()
-    return {_normalized(path) for path in payload.get("paths") or ()}
+    return pruned_evidence_paths(ROOT)
 
 
 def test_every_referenced_production_screenshot_exists() -> None:

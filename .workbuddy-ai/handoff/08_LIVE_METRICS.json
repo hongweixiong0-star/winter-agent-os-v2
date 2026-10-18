@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-10-16T16:14:57+00:00",
+  "generated_at": "2026-10-18T04:25:58+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "d5cd458b",
+  "commit": "7dd7bb9c",
   "last_good_commit": "e4fd245",
-  "dirty_count": 1177,
+  "dirty_count": 15,
   "episodes": {
-    "total": 10446,
-    "production": 10446,
-    "success": 9492,
-    "failure": 949,
-    "success_rate_over_decided": 0.9091,
+    "total": 10223,
+    "production": 10223,
+    "success": 9122,
+    "failure": 1096,
+    "success_rate_over_decided": 0.8927,
     "modes": {
-      "PRODUCTION": 10446
+      "PRODUCTION": 10223
     },
     "mixed_case_rows": 0
   },
@@ -24,9 +24,9 @@
     },
     "dispatchable": 144,
     "counts": {
-      "live_verified": 8,
-      "stable": 58,
-      "degraded": 16,
+      "live_verified": 7,
+      "stable": 56,
+      "degraded": 19,
       "only_failed": 7,
       "never_executed": 70
     }
@@ -34,27 +34,27 @@
   "top_failures": [
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 295,
-      "recent": 3,
-      "last_seen": "2026-10-16T16:13:44.038238+00:00",
+      "count": 376,
+      "recent": 100,
+      "last_seen": "2026-10-16T23:52:16.285932+00:00",
       "dates": {
-        "2026-10-05": 29,
+        "2026-10-05": 13,
         "2026-10-06": 4,
         "2026-10-07": 3,
         "2026-10-08": 179,
         "2026-10-10": 63,
         "2026-10-11": 14,
-        "2026-10-16": 3
+        "2026-10-16": 100
       },
       "undated": 0,
       "top_skills": [
         [
           "TRY_ORDINARY_CONTROL",
-          161
+          245
         ],
         [
           "OPEN_HOME",
-          36
+          34
         ],
         [
           "OPEN_EVENT_CALENDAR_DETAIL",
@@ -64,48 +64,64 @@
     },
     {
       "failure_type": "EVENT_CALENDAR_NOT_OPEN",
-      "count": 12,
-      "recent": 2,
-      "last_seen": "2026-10-16T16:08:29.687048+00:00",
+      "count": 76,
+      "recent": 66,
+      "last_seen": "2026-10-16T23:32:32.140940+00:00",
       "dates": {
         "2026-10-08": 10,
-        "2026-10-16": 2
+        "2026-10-16": 66
       },
       "undated": 0,
       "top_skills": [
         [
-          "OPEN_EVENT_CALENDAR_FROM_MAP",
-          8
+          "OPEN_EVENT_CALENDAR_FROM_HOME",
+          68
         ],
         [
-          "OPEN_EVENT_CALENDAR_FROM_HOME",
-          4
+          "OPEN_EVENT_CALENDAR_FROM_MAP",
+          8
         ]
       ]
     },
     {
       "failure_type": "REGULAR_EVENT_TABS_SCROLL_NOT_PROVEN",
+      "count": 22,
+      "recent": 22,
+      "last_seen": "2026-10-16T23:56:57.628767+00:00",
+      "dates": {
+        "2026-10-16": 22
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "SCROLL_REGULAR_EVENT_TABS",
+          22
+        ]
+      ]
+    },
+    {
+      "failure_type": "ORDINARY_CONTROL_ALREADY_USED_THIS_RUN",
       "count": 1,
       "recent": 1,
-      "last_seen": "2026-10-16T16:13:21.871917+00:00",
+      "last_seen": "2026-10-16T23:57:43.134368+00:00",
       "dates": {
         "2026-10-16": 1
       },
       "undated": 0,
       "top_skills": [
         [
-          "SCROLL_REGULAR_EVENT_TABS",
+          "TRY_ORDINARY_CONTROL",
           1
         ]
       ]
     },
     {
       "failure_type": "GIANT_BEAST_SEARCH_NOT_PROVEN",
-      "count": 164,
+      "count": 161,
       "recent": 0,
       "last_seen": "2026-10-11T09:24:02.519152+00:00",
       "dates": {
-        "2026-10-05": 4,
+        "2026-10-05": 1,
         "2026-10-06": 2,
         "2026-10-07": 2,
         "2026-10-08": 6,
@@ -116,17 +132,16 @@
       "top_skills": [
         [
           "SUBMIT_GIANT_BEAST_SEARCH",
-          164
+          161
         ]
       ]
     },
     {
       "failure_type": "BEAST_TARGET_SELECTION_NOT_PROVEN",
-      "count": 146,
+      "count": 145,
       "recent": 0,
       "last_seen": "2026-10-11T09:24:46.029368+00:00",
       "dates": {
-        "2026-10-05": 1,
         "2026-10-06": 1,
         "2026-10-07": 2,
         "2026-10-08": 7,
@@ -137,7 +152,7 @@
       "top_skills": [
         [
           "SELECT_BEAST_TARGET_MAMMOTH",
-          143
+          142
         ],
         [
           "SELECT_BEAST_TARGET_LABELLED",
@@ -147,11 +162,10 @@
     },
     {
       "failure_type": "SAFE_BACK_NOT_PROVEN",
-      "count": 37,
+      "count": 35,
       "recent": 0,
       "last_seen": "2026-10-11T00:58:55.631257+00:00",
       "dates": {
-        "2026-10-05": 2,
         "2026-10-08": 5,
         "2026-10-10": 29,
         "2026-10-11": 1
@@ -160,7 +174,7 @@
       "top_skills": [
         [
           "BACK",
-          37
+          35
         ]
       ]
     },
@@ -193,11 +207,10 @@
     },
     {
       "failure_type": "OPEN_HOME_NOT_PROVEN",
-      "count": 30,
+      "count": 29,
       "recent": 0,
       "last_seen": "2026-10-10T00:59:26.607087+00:00",
       "dates": {
-        "2026-10-05": 1,
         "2026-10-06": 1,
         "2026-10-08": 27,
         "2026-10-10": 1
@@ -206,7 +219,7 @@
       "top_skills": [
         [
           "OPEN_HOME",
-          30
+          29
         ]
       ]
     },
@@ -225,46 +238,17 @@
           23
         ]
       ]
-    },
-    {
-      "failure_type": "NO_EXECUTION",
-      "count": 22,
-      "recent": 0,
-      "last_seen": "2026-10-11T07:20:13.566902+00:00",
-      "dates": {
-        "2026-10-05": 3,
-        "2026-10-06": 1,
-        "2026-10-07": 1,
-        "2026-10-08": 9,
-        "2026-10-10": 7,
-        "2026-10-11": 1
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "PRINTED_TAP",
-          11
-        ],
-        [
-          "SAFE_STOP",
-          6
-        ],
-        [
-          "SEARCH_RESOURCE",
-          5
-        ]
-      ]
     }
   ],
   "goals": {
     "total": 20,
-    "fully_live_verified": 2,
+    "fully_live_verified": 3,
     "partial": 9,
     "never_tried": 5,
     "blocked": 3,
-    "degraded": 1,
+    "degraded": 0,
     "missing": 0,
-    "fully_live_verified_percent": 10.0,
+    "fully_live_verified_percent": 15.0,
     "never_tried_percent": 25.0,
     "automation_coverage_mean": 0.7708,
     "live_coverage_mean": 0.4012
@@ -278,7 +262,7 @@
     "KEEP_TRAINING_PRODUCTIVE": "FULLY_LIVE_VERIFIED",
     "MAIL_ROUTINE": "PARTIAL",
     "DAILY_ACTIVITY_TARGET": "PARTIAL",
-    "CLAIM_FREE_REWARDS": "DEGRADED",
+    "CLAIM_FREE_REWARDS": "FULLY_LIVE_VERIFIED",
     "CLAIM_EXPLORATION_IDLE": "FULLY_LIVE_VERIFIED",
     "ALLIANCE_ROUTINE": "PARTIAL",
     "EVENT_MINIMUM_GUARANTEE": "PARTIAL",
@@ -293,10 +277,11 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 20566,
-    "present_on_disk": 20566,
-    "traceable_episodes": 10442,
-    "note": "Live Verified requires production episode + verifier + screenshot evidence",
+    "referenced_screenshots": 20039,
+    "present_on_disk": 19930,
+    "documented_pruned": 109,
+    "traceable_episodes": 10219,
+    "note": "Live Verified requires production episode + verifier + screenshot evidence; documented_pruned counts frames deleted on purpose with the reason recorded in knowledge/provenance/*.json, and does not excuse any loss that is not listed there",
     "missing_count": 0
   },
   "commercial_parity": {
@@ -306,20 +291,20 @@
   },
   "git_sync": {
     "branch": "main",
-    "local_head": "d5cd458b0946cdae2471a681665dafe3d6acceea",
-    "remote_head": "d5cd458b0946cdae2471a681665dafe3d6acceea",
-    "unpushed_commits": 0,
+    "local_head": "7dd7bb9ca90e1054b4d6530cb890439f770fdcf5",
+    "remote_head": "3805b7e4faf4cbfeaef8a80d82e69a347a1fa2f0",
+    "unpushed_commits": 12,
     "behind": 0,
-    "in_sync": true,
+    "in_sync": false,
     "remote_url": "https://github.com/hongweixiong0-star/winter-agent-os-v2.git",
     "last_push_at": "2026-10-15T10:29:32.618849+00:00",
     "last_push_status": "PUSHED"
   },
   "runtime": {
-    "agent_state": "IDLE",
-    "unexpected_worker_exits": 65,
-    "watchdog_restart_count": 68,
+    "agent_state": "AUTO_RUNNING",
+    "unexpected_worker_exits": 66,
+    "watchdog_restart_count": 69,
     "last_fatal_error": null,
-    "stop_reason": "ROLE_SWITCH_FAILED:1061663148:TARGET_ROLE_HOME_NOT_OBSERVED"
+    "stop_reason": null
   }
 }

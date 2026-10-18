@@ -410,23 +410,49 @@ def runtime_state() -> dict:
 
 # ------------------------------------------------------------------- evidence
 def evidence_state(episodes: dict) -> dict:
+    """Referenced frames missing from disk -- and whether the loss was written down.
+
+    The count alone cannot tell "we lost evidence" from "we deleted it on purpose and recorded
+    why".  That distinction lives in ``knowledge/provenance/*.json`` and used to be read by the
+    suite only, so the handoff printed ``evidence=FAIL`` on 109 frames the evidence-integrity
+    test had already accepted (measured 2026-10-18, the morning after the prune).  Both sides
+    now call ``retention.pruned_evidence_paths``: **an undocumented loss is still FAIL**, a
+    documented one is reported by count and never hides a new one.
+    """
     try:
-        from winter_agent_v2.retention import referenced_evidence
+        from winter_agent_v2.retention import (
+            comparable_path,
+            pruned_evidence_paths,
+            referenced_evidence,
+        )
 
         referenced = referenced_evidence(ROOT)
+        pruned = pruned_evidence_paths(ROOT)
     except Exception as exc:  # noqa: BLE001
         return {"status": "UNKNOWN", "error": f"{type(exc).__name__}: {exc}"}
-    existing = [path for path in referenced if path.is_file()]
-    missing = [str(path) for path in referenced if not path.is_file()]
+    existing, missing, documented = 0, [], 0
+    for path in referenced:
+        if path.is_file():
+            existing += 1
+            continue
+        if comparable_path(str(path)) in pruned:
+            documented += 1
+            continue
+        missing.append(str(path))
     return {
         "status": "PASS" if not missing else "FAIL",
         "referenced_screenshots": len(referenced),
-        "present_on_disk": len(existing),
+        "present_on_disk": existing,
+        "documented_pruned": documented,
         "missing": missing[:10],
         "traceable_episodes": episodes.get("total", 0) and sum(
             1 for row in _raw_episodes() if row.get("before_screenshot") or row.get("after_screenshot")
         ),
-        "note": "Live Verified requires production episode + verifier + screenshot evidence",
+        "note": (
+            "Live Verified requires production episode + verifier + screenshot evidence; "
+            "documented_pruned counts frames deleted on purpose with the reason recorded in "
+            "knowledge/provenance/*.json, and does not excuse any loss that is not listed there"
+        ),
     }
 
 

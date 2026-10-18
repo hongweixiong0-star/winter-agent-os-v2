@@ -6,40 +6,35 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
-- `d5cd458b 2026-10-17T00:13:01+08:00 docs(memory): the production release -- repin to today's code, mainline reconciled, MAINLINE_OK`
-- `710fb988 2026-10-17T00:09:59+08:00 docs(memory): the midnight watch -- AUTO is running (GOAL_RUNNING, snapshot 11s, episodes growing), and the device window is open`
-- `3301eb8e 2026-10-17T00:07:53+08:00 docs(memory): 10-17 opens with the mirror sync -- 138 commits pushed after the two tail-append conflicts merged in chronological order`
-- `26aeb349 2026-10-17T00:05:47+08:00 Merge origin/main: the codex line's seven commits (bootstrap frame-naming fix, the continuous-touch exit test, round-244 memory, handoff notes)`
-- `ee2a1da0 2026-10-17T00:03:39+08:00 docs(memory): the 10-15 log's tail, which had been left uncommitted -- the automation's first watch and the bear takeover`
-- `ac8e46c3 2026-10-17T00:00:36+08:00 docs(handoff): P1-6 closes -- both of the window's largest live clusters are now handled (143 fixed, 150 cooled)`
-- `842364a1 2026-10-17T00:00:12+08:00 fix(stamina): the empty polar search cools down across runs -- 150 repetitions of one honest failure`
-- `1098064f 2026-10-16T22:57:59+08:00 docs(handoff): the largest live cluster is adjudicated -- honest failure, retry design item; the second-largest is fixed`
-- `3101830c 2026-10-16T22:55:37+08:00 fix(beast): the search panel is left before the map beast is tapped -- 143 failures, one cause`
-- `fb67ba3d 2026-10-16T22:43:30+08:00 feat(review): SAFETY_AND_LIVENESS_BOTH_HOLD lands as a composite -- counts 16/0/0, and PRINCIPLES' stale note is corrected`
-- `6d49b4db 2026-10-16T22:38:41+08:00 feat(review): the last three UNMEASURED checks are measured -- counts move to 15/0/0`
-- `b22ed8d3 2026-10-16T22:29:13+08:00 feat(review): the section-16 check measures the two screen ledgers -- UNMEASURED becomes a real answer`
+- `7dd7bb9c 2026-10-18T11:55:44+08:00 docs(memory): navigation matrix 待办收口 -- 派生文件 vs 能力提升的判据`
+- `952b3159 2026-10-18T11:53:21+08:00 chore(ui): 重生成 navigation matrix——派生文件落后注册表 3 条技能`
+- `4ec76536 2026-10-18T07:44:02+08:00 docs(memory): C 盘瘦身 60.5GB->118.5GB -- Cursor 库与桌面迁 E 盘留 junction、关休眠、清回收站`
+- `7bab57db 2026-10-18T01:40:54+08:00 docs(tidy): 记录两个旧名空壳目录 -- 0 字节但仍被 GUI 进程持句柄`
+- `1bc7ce20 2026-10-18T01:40:02+08:00 docs(memory): 整理轮终盘 -- 全量 5577 passed / 0 failed，mainline 3/3 OK，pin 到 aa267b5c`
+- `aa267b5c 2026-10-18T01:38:47+08:00 chore(tests,docs): 隔离测试继承的生产状态；删除 158 个被跟踪的 pytest 临时文件`
+- `075f791b 2026-10-18T00:57:29+08:00 chore(knowledge): 删除 2026-09-15 的 routing 备份，重建运行时状态清单`
+- `09722840 2026-10-18T00:54:24+08:00 chore(paths): 项目根统一为 E:/WinterAgent，旧根字面量全量改写`
+- `98a667b3 2026-10-18T00:01:45+08:00 chore(repo): 清理临时残留、过期状态与自相矛盾的识别节点`
+- `d2a100f7 2026-10-17T08:02:38+08:00 docs(memory): switching reaches steady state -- +4 successes, zero failures in six minutes; the rollback decision confirmed right`
+- `1bc98ad2 2026-10-17T08:01:49+08:00 docs(memory): the optional re-close optimisation was tried and shelved -- recorded so the next attempt starts from the notes`
+- `af0ccb2e 2026-10-17T07:56:23+08:00 docs(memory): the second successful switch confirms the retry-settles pattern -- switching is usable and stabilising`
 
-Uncommitted changes: 1177
-- `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
-- ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
-- ` M .workbuddy-ai/commander/README.md`
-- ` M .workbuddy/memory/2026-10-17.md`
-- ` M START_HERE.md`
-- ` M _capture_panel_window.py`
-- ` D backups/dataset_cleanup_20261006/template_manifest.json.bak`
-- ` D backups/dataset_cleanup_20261006/tmp_confirm.png`
-- ` D backups/dataset_cleanup_20261006/tmp_dispatch.png`
-- ` D backups/dataset_cleanup_20261006/tmp_research_row.png`
-- ` D backups/dataset_cleanup_20261006/tmp_research_row2.png`
-- ` D backups/dataset_cleanup_20261006/tmp_role.png`
-- ` D backups/dataset_cleanup_20261006/tmp_speedup.png`
-- ` M dataset/truth_audit/local_planner_live/live.json`
-- ` M docs/DEVELOPMENT_FLOW.md`
-- ` M docs/LOCAL_PLANNER_ACCEPTANCE.md`
-- ` M docs/MODE_SYSTEM.md`
-- ` M docs/TOP_FAILURES.md`
+Uncommitted changes: 15
+- `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
+- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
+- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
+- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+- ` M docs/CAPABILITY_COVERAGE.md`
 - ` M evidence/INDEX.json`
-- ` M knowledge/analysis/top_failures.json`
+- ` M knowledge/goals/capability_skill_map.json`
+- ` M tests/test_evidence_integrity.py`
+- ` M tools/update_workbuddy_handoff.py`
+- ` M winter_agent_v2/retention.py`
+- `?? tests/test_the_handoff_agrees_with_the_evidence_ledger.py`
 <!-- /AUTO:recent_commits -->
 
 ---

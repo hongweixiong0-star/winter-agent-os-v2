@@ -4,6 +4,24 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
+## 手写：**2026-10-18 —— 最新，先读这一节**
+
+- **项目根只剩一个**：`E:\WinterAgent`（旧名 `E:\无尽冬日智能体` 已无内容、无引用；两个 **0 字节**空壳目录
+  因宿主进程持句柄未删，重启宿主后一条 `Remove-Item` 即可收尾）。生产 pin 在根内
+  `.worktrees\prod\repo`，`main` == pin == `7dd7bb9c`，`check_mainline` **3/3 OK**。
+- **全量测试绿**：`5577 passed / 268 skipped / 0 failed`（10-18 凌晨，21 分钟）。此后只动过
+  派生文件与文档，受影响面（`-k "navigation or matrix or wiring"` 244 项、证据族 16 项、矩阵守卫 8 项）已单独复跑。
+- **`check_wiring` problems 4 → 3**：第 4 条是 navigation matrix 落后注册表 3 条技能，已重生成
+  （派生文件，运行时**不读**它）。剩下 3 条是既有设计说明（training OCR / proof / preload）。
+- **证据完整性只剩一套口径**：`retention.pruned_evidence_paths` 是唯一读者，交接的 `evidence_state`
+  与套件现在给出同一个答案（此前交接把已登记的 109 条读成 `FAIL`）；守卫
+  `tests/test_the_handoff_agrees_with_the_evidence_ledger.py`。指标：引用 20,039 / 在盘 19,930 /
+  登记损失 109 / 未登记缺失 **0**。
+- **C 盘已从 60.5 GB 恢复到 117 GB 可用**（Desktop 15.7 GB 与 Cursor `state.vscdb` 16.5 GB 搬到 E 盘并留
+  junction；`hiberfil.sys` 12.5 GB 关闭；回收站 11.7 GB 清空）。见 `04_OPEN_ISSUES.md` P1-3。
+- **下一步只剩真机项**（本机无法推进）：`NEVER_TRIED` 5 个目标与 `BLOCKED` 3 个目标需要设备在场，
+  照 `docs/NEVER_TRIED_DEVICE_CHECKLIST_20261016.md` 直跑；发 AUTO 前先按 10-14 快照的配方切 AUTO + 重启面板。
+
 ## 手写：**2026-10-17 晨间 —— 最新，先读这一节**
 
 - **两轮 live 修复已发布并逐个通过生产验证**（详见 `04_OPEN_ISSUES.md` P1-7）：
@@ -1499,12 +1517,12 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 
 WHY: 3 goal(s) BLOCKED, 9 PARTIAL, mean implementation coverage 0.7708. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 3 in the last 2 day(s), 295 all-time, last seen 2026-10-16T16:13:44.038238+00:00
+CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 100 in the last 2 day(s), 376 all-time, last seen 2026-10-16T23:52:16.285932+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 1177
-LAST PRODUCTION EPISODE: {"skill": "TRY_ORDINARY_CONTROL", "result": "FAILURE", "recorded_at": "2026-10-16T16:13:44.038238+00:00", "episode_id": "20261017_001233_193195", "before_screenshot": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_001233_193195\\20261017_001233_193195_step_003_before_20261016T161321931049.png", "after_screenshot": ""}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 295, "recent": 3, "last_seen": "2026-10-16T16:13:44.038238+00:00", "dates": {"2026-10-05": 29, "2026-10-06": 4, "2026-10-07": 3, "2026-10-08": 179, "2026-10-10": 63, "2026-10-11": 14, "2026-10-16": 3}, "undated": 0, "top_skills": [["TRY_ORDINARY_CONTROL", 161], ["OPEN_HOME", 36], ["OPEN_EVENT_CALENDAR_DETAIL", 23]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-10-14T16:13:44.038238+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+CURRENT DIRTY FILES: 15
+LAST PRODUCTION EPISODE: {"skill": "TRY_ORDINARY_CONTROL", "result": "FAILURE", "recorded_at": "2026-10-16T23:57:43.134368+00:00", "episode_id": "20261017_075609_006189", "before_screenshot": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_075609_006189\\20261017_075609_006189_step_008_before_20261016T235738888141.png", "after_screenshot": ""}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 376, "recent": 100, "last_seen": "2026-10-16T23:52:16.285932+00:00", "dates": {"2026-10-05": 13, "2026-10-06": 4, "2026-10-07": 3, "2026-10-08": 179, "2026-10-10": 63, "2026-10-11": 14, "2026-10-16": 100}, "undated": 0, "top_skills": [["TRY_ORDINARY_CONTROL", 245], ["OPEN_HOME", 34], ["OPEN_EVENT_CALENDAR_DETAIL", 23]]}
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-10-14T23:57:43.134368+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY', 'TRAVEL_SUPPLY']
 MISSING SKILLS BY LEVERAGE: [('CLAIM_EVENT_TIER', 2), ('READ_COUNTER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('READ_ALLIANCE_EVENT_TIMER', 1), ('READ_BEAR_TIMER', 1), ('READ_TIMER', 1), ('ALLIANCE_HELP', 1), ('CLAIM_TRAVEL_SUPPLY_FREE', 1), ('OPEN_ARENA', 1), ('OPEN_LABYRINTH', 1)]

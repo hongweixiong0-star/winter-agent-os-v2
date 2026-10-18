@@ -6,20 +6,20 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x295 all-time; recent=3 (last 2d), last seen 2026-10-16T16:13:44.038238+00:00 — TRY_ORDINARY_CONTROL(161), OPEN_HOME(36), OPEN_EVENT_CALENDAR_DETAIL(23)
-- **EVENT_CALENDAR_NOT_OPEN** x12 all-time; recent=2 (last 2d), last seen 2026-10-16T16:08:29.687048+00:00 — OPEN_EVENT_CALENDAR_FROM_MAP(8), OPEN_EVENT_CALENDAR_FROM_HOME(4)
-- **REGULAR_EVENT_TABS_SCROLL_NOT_PROVEN** x1 all-time; recent=1 (last 2d), last seen 2026-10-16T16:13:21.871917+00:00 — SCROLL_REGULAR_EVENT_TABS(1)
-- **GIANT_BEAST_SEARCH_NOT_PROVEN** x164 all-time; recent=0 (last 2d), last seen 2026-10-11T09:24:02.519152+00:00 — SUBMIT_GIANT_BEAST_SEARCH(164)
-- **BEAST_TARGET_SELECTION_NOT_PROVEN** x146 all-time; recent=0 (last 2d), last seen 2026-10-11T09:24:46.029368+00:00 — SELECT_BEAST_TARGET_MAMMOTH(143), SELECT_BEAST_TARGET_LABELLED(3)
-- **SAFE_BACK_NOT_PROVEN** x37 all-time; recent=0 (last 2d), last seen 2026-10-11T00:58:55.631257+00:00 — BACK(37)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x376 all-time; recent=100 (last 2d), last seen 2026-10-16T23:52:16.285932+00:00 — TRY_ORDINARY_CONTROL(245), OPEN_HOME(34), OPEN_EVENT_CALENDAR_DETAIL(23)
+- **EVENT_CALENDAR_NOT_OPEN** x76 all-time; recent=66 (last 2d), last seen 2026-10-16T23:32:32.140940+00:00 — OPEN_EVENT_CALENDAR_FROM_HOME(68), OPEN_EVENT_CALENDAR_FROM_MAP(8)
+- **REGULAR_EVENT_TABS_SCROLL_NOT_PROVEN** x22 all-time; recent=22 (last 2d), last seen 2026-10-16T23:56:57.628767+00:00 — SCROLL_REGULAR_EVENT_TABS(22)
+- **ORDINARY_CONTROL_ALREADY_USED_THIS_RUN** x1 all-time; recent=1 (last 2d), last seen 2026-10-16T23:57:43.134368+00:00 — TRY_ORDINARY_CONTROL(1)
+- **GIANT_BEAST_SEARCH_NOT_PROVEN** x161 all-time; recent=0 (last 2d), last seen 2026-10-11T09:24:02.519152+00:00 — SUBMIT_GIANT_BEAST_SEARCH(161)
+- **BEAST_TARGET_SELECTION_NOT_PROVEN** x145 all-time; recent=0 (last 2d), last seen 2026-10-11T09:24:46.029368+00:00 — SELECT_BEAST_TARGET_MAMMOTH(142), SELECT_BEAST_TARGET_LABELLED(3)
 - `ALLIANCE_ALLY_GIFT_CLAIM` never succeeded (attempts=1, failure=1)
 - `OBSERVE_ONLY` never succeeded (attempts=4, failure=0)
 - `OPEN_ALLIANCE_RECOMMENDED_TECH_NODE` never succeeded (attempts=1, failure=1)
-- `OPEN_BEAST_SEARCH_TAB` never succeeded (attempts=30, failure=30)
+- `OPEN_BEAST_SEARCH_TAB` never succeeded (attempts=28, failure=28)
 - `READ_FISHING_STATE` never succeeded (attempts=1, failure=1)
 - `SAFE_STOP` never succeeded (attempts=6, failure=6)
 - `START_RALLY` never succeeded (attempts=1, failure=1)
-- 1177 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md', ' M .workbuddy/memory/2026-10-17.md', ' M START_HERE.md']
+- 15 uncommitted file(s): ['M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md']
 <!-- /AUTO:open_issues -->
 
 ---
@@ -30,8 +30,10 @@ Machine-detected issues (recomputed every run):
 
 | # | 问题 | 状态 | 备注 |
 |---|---|---|---|
-| P1-3 | **C 盘 200G 满**（工具链一度 ENOSPC 死锁：bash 起不来、编辑报 checkpoint 失败） | **已缓解，未根治** | 本轮以"截断通道"自救释放 ~5.9GB（陈旧 sandbox/trace 日志、pip/npm 缓存——**用户文档/代码/配置/会话数据未动**）；根因项**待用户决策**：Desktop 15GB、hiberfil.sys 13.4GB（可 `powercfg /h off`）、AppData 52.8GB（MathWorks/Programs 等）、.codex sessions 2.8GB |
-| P1-4 | **待批堆**：1094 untracked / 119 modified / 57 deleted | **清单已产出，待批** | 见 `UNTRACKED_AND_PENDING_INVENTORY_20261016.md`（分类+逐组建议）。**首要项**：`config/v2.json` 的 10-08 模型切换（Qwen3.6-35B-A3B @ llama.cpp:18080）已执行 8 天、未入库——旧 config 指向已删除的 UI-Venus。本轮已按"引用完整性/全绿活规格"先例纳入：4 个被引用工具、6 个草稿测试、tier 规格 |
+| ~~P1-3~~ | **C 盘 200G 满**（工具链一度 ENOSPC 死锁：bash 起不来、编辑报 checkpoint 失败） | **✅ 已根治 2026-10-18（60.5 GB → 117 GB 可用）** | 四项，全部无损或有授权：① Cursor `globalStorage`（`state.vscdb` 16.5 GB）复制到 `E:\HostData\Cursor\globalStorage` 后删源 + **目录 junction 回原位**（逐字节与 2,057 文件双向核对）；② **Desktop 15.7 GB** 迁 `E:\Desktop` + junction（15,689,280,545 B / 60,146 文件两侧全等）；③ `powercfg /h off` 关休眠（12.5 GB，UAC 提权）；④ 回收站 11.7 GB（2,097 项，操作者授权）。另删可再生成残留 ~2.7 GB（Ollama 更新包 / `C:\NVIDIA` / `$SysReset` / codex 旧运行时 / 7 天前 trace）。**未动任何用户文档、代码、配置与会话数据**；`C:\Windows` 34 GB 仍属正常占用（DISM 组件清理需管理员，本轮未做） |
+| ~~P1-4~~ | **待批堆**：1094 untracked / 119 modified / 57 deleted | **✅ 已入库 2026-10-18（`dirty=0`）** | 分四批提交：`98a667b3` 清理临时残留与冲突识别节点 → `09722840` 根改名 + 690+ 文件路径改写 + `.gitignore` 12 条 → `075f791b` 删 09-15 备份 + 重建运行时清单 → `aa267b5c` 测试隔离 + 整理记录。**首要项 `config/v2.json` 的 10-08 模型切换（Qwen3.6-35B-A3B @ llama.cpp:18080）已随第一/二批入库**；`tools/update_workbuddy_handoff.py` 现在读到的 `dirty` 是 0 |
+| P2-1 | **两个旧名空壳目录**：`E:\无尽冬日智能体`、`E:\无尽冬日智能体_worktrees\winter-prod-pinned\无尽冬日智能体` | **0 字节，删不掉（无数据风险）** | 两者都只剩空目录。删除报 `Device or resource busy`；已确认**不是 cwd**（扫全部进程 PEB 命中 0），是宿主进程（编辑器/WorkBuddy）持有的目录句柄——它当初就打开在旧路径上，目录改名失败也是同一个原因。**宿主改用 `E:\WinterAgent` 作工作区并重启后**，一条 `Remove-Item -LiteralPath 'E:\无尽冬日智能体','E:\无尽冬日智能体_worktrees' -Recurse -Force` 收尾 |
+| P2-2 | **`persist_cursor_ollama.py` 当前未运行** | **功能无影响，登录自恢复** | 为搬 `state.vscdb` 必须先停它（它每 2 秒写库、一直开着该文件）。搬完后 `Start-Process` / `cmd start` / `wscript` / `Register-ScheduledTask` 全被宿主沙箱挡下（Job Object 连坐 + 程序黑名单），起不来。它的开机自启 `Startup\cursor-ollama-persist.vbs` **完好**，登录即恢复；Cursor 当前未启动，因此无实际影响 |
 | ~~P1-5~~ | 测试套件"隔离绿、套件红"（模块级 `_METER_KINDS` 跨测试残留） | **✅ 已修 2026-10-16** | conftest 新增 autouse `_reset_module_state`（`8bdd49b2`）；毒探针成对验证后移除 |
 | ~~P1-6~~ | **GIANT 搜索无结果的跨-run 重试**（10-09~10-11 窗口 150 次 episode，第一大 live 簇） | **✅ 已实现 2026-10-16（`842364a1`）** | `_giant_stamina_failed` 改为读**持久冷却**（`learning/giant_search_cooldown.json`，TTL=1h——"找不到"≠"不可用"）：150 次/2 天 → 每小时最多 1 次；"无记忆=再试"（缺失/损坏→False，杜绝永久 DEFER）。3 守卫 + 四态探针 + runtime 回归 132 passed。帧证：客户端确实没找到（`20261010_085450_380404` step_014 前后帧无卡无动物，冰原巨兽 tab 高亮）。同窗口的 `SELECT_BEAST_TARGET_MAMMOTH` ×143 失败**已于 10-16 修复**（`3101830c`：面板吞地图点击——156 次尝试 100% 分离：12 成功全裸地图 / 143 失败全面板开） |
 | ~~P1-7~~ | **10-17 夜巡发现的三层连坐**：活动 hub 识别阈值 0.9x（旧布局拟合）→ ①日历 66 连败 ②scroll 17/18 败 ③两角色为日历 HARD_EVENT_PREEMPT 抖动、**43h 零成功切换**（failure +165/7h） | **✅ 两轮修复均已发布并验证 2026-10-17** | ①`a224af14`：hub 标题阈值 0.65x（实测 38px 大标题 vs 29px 标题 = 0.76 比值）→ **生产验证 2/2 成功**；②`93076d69`：切换弹窗"万象杂货铺"✕ 换季样式（无描边、y 0.026）+ band 0.04→0.0 → **首成功 commit（07:50:59，43h 纪录打破）**，成功率恢复中。守卫：`test_a_hub_whose_titles_are_smaller_than_its_heading_is_still_recognised`、`test_the_store_season_close_glyph_is_found_at_the_top_of_the_header` |

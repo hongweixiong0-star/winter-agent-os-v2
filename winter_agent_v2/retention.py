@@ -102,6 +102,57 @@ def referenced_evidence(root: Path, stream: Path | None = None) -> set[Path]:
     return referenced
 
 
+# ------------------------------------------------------------------ 已登记的损失
+#: Where a *deliberate* loss is written down, next to the ledger it explains.
+PROVENANCE_DIR = Path("knowledge/provenance")
+
+
+def comparable_path(text: str) -> str:
+    """One spelling per path, for "is this the same file" questions.
+
+    The same frame is written ``E:\\\\...`` in the episode ledger, ``E:/...`` in a tool and
+    ``E:\\\\WinterAgent\\\\.worktrees\\\\prod\\\\repo\\\\...`` when it came back through the pin
+    worktree's junctions.  Windows does not care about any of that, so a string comparison
+    does not either -- on 2026-10-17 it reported 109 *existing-but-differently-spelled*
+    frames as missing.  Lower-cased, slash-normalised, ``..``-collapsed, case-folded.
+    """
+    value = str(text).replace("\\", "/")
+    while "//" in value:
+        value = value.replace("//", "/")
+    return os.path.normcase(os.path.normpath(value))
+
+
+def pruned_evidence_paths(root: Path | None = None) -> set[str]:
+    """Frames deleted on purpose, each with the reason recorded beside them.
+
+    An episode row is never rewritten when its frame is gone -- rewriting production evidence
+    is worse than losing it -- so "missing" has to stay distinguishable from "missing and
+    accounted for".  That distinction was implemented **twice** (the evidence-integrity test
+    and the handoff's ``evidence_state``), and the two disagreed the day after the first
+    prune: the handoff printed ``evidence=FAIL`` over the same 109 frames the suite had
+    already accepted.  This is the one implementation both now read.
+
+    Every ``knowledge/provenance/*.json`` is consulted, so a second prune writes its own
+    file instead of editing the first one's numbers.
+    """
+    base = (root or find_repo_root(Path(__file__).resolve().parent)) / PROVENANCE_DIR
+    out: set[str] = set()
+    if not base.is_dir():
+        return out
+    for record in sorted(base.glob("*.json")):
+        try:
+            payload = json.loads(record.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        paths = payload.get("paths") if isinstance(payload, dict) else None
+        if not isinstance(paths, (list, tuple)):
+            continue
+        for item in paths:
+            if isinstance(item, str) and item.strip():
+                out.add(comparable_path(item))
+    return out
+
+
 def corpus_evidence(root: Path, corpus: Path | None = None) -> set[Path]:
     """Absolute paths of every screenshot the calibration corpus cites.
 

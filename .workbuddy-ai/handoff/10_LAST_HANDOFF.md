@@ -110,35 +110,35 @@ job 锁被拒 → `POST /api/v1/jobs` HTTP 500。修复：`service_environment()
 <!-- /HANDWRITTEN:2026-09-24 -->
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-10-16T16:14:57+00:00
+HANDOFF TIME: 2026-10-18T04:25:58+00:00
 LAST GOOD COMMIT: e4fd245
-WORKING TREE: 1177 dirty file(s)
-  ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/README.md', ' M .workbuddy/memory/2026-10-17.md', ' M START_HERE.md', ' M _capture_panel_window.py', ' D backups/dataset_cleanup_20261006/template_manifest.json.bak', ' D backups/dataset_cleanup_20261006/tmp_confirm.png', ' D backups/dataset_cleanup_20261006/tmp_dispatch.png', ' D backups/dataset_cleanup_20261006/tmp_research_row.png']
+WORKING TREE: 15 dirty file(s)
+  ['M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M .workbuddy-ai/handoff/08_LIVE_METRICS.json', ' M .workbuddy-ai/handoff/09_RUNTIME_STATE.json', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md', ' M docs/CAPABILITY_COVERAGE.md', ' M evidence/INDEX.json']
 
-WHAT FINISHED (machine-visible): 8 skills live verified, 58 stable, 1520 commit(s) in history
+WHAT FINISHED (machine-visible): 7 skills live verified, 56 stable, 1541 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 70 skills never executed, 7 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
-STOPPED AT: agent_state=IDLE stop_reason=ROLE_SWITCH_FAILED:1061663148:TARGET_ROLE_HOME_NOT_OBSERVED
-LAST PRODUCTION EPISODE: {"skill": "TRY_ORDINARY_CONTROL", "result": "FAILURE", "recorded_at": "2026-10-16T16:13:44.038238+00:00", "episode_id": "20261017_001233_193195", "before_screenshot": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_001233_193195\\20261017_001233_193195_step_003_before_20261016T161321931049.png", "after_screenshot": ""}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 295, "recent": 3, "last_seen": "2026-10-16T16:13:44.038238+00:00", "dates": {"2026-10-05": 29, "2026-10-06": 4, "2026-10-07": 3, "2026-10-08": 179, "2026-10-10": 63, "2026-10-11": 14, "2026-10-16": 3}, "undated": 0, "top_skills": [["TRY_ORDINARY_CONTROL", 161], ["OPEN_HOME", 36], ["OPEN_EVENT_CALENDAR_DETAIL", 23]]}
+STOPPED AT: agent_state=AUTO_RUNNING stop_reason=None
+LAST PRODUCTION EPISODE: {"skill": "TRY_ORDINARY_CONTROL", "result": "FAILURE", "recorded_at": "2026-10-16T23:57:43.134368+00:00", "episode_id": "20261017_075609_006189", "before_screenshot": "E:\\WinterAgent\\dataset\\raw\\control_panel\\runtime_auto\\20261017_075609_006189\\20261017_075609_006189_step_008_before_20261016T235738888141.png", "after_screenshot": ""}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 376, "recent": 100, "last_seen": "2026-10-16T23:52:16.285932+00:00", "dates": {"2026-10-05": 13, "2026-10-06": 4, "2026-10-07": 3, "2026-10-08": 179, "2026-10-10": 63, "2026-10-11": 14, "2026-10-16": 100}, "undated": 0, "top_skills": [["TRY_ORDINARY_CONTROL", 245], ["OPEN_HOME", 34], ["OPEN_EVENT_CALENDAR_DETAIL", 23]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 1177
+DIRTY FILES: 15
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
-LIVE STATUS: PASS (unexpected_worker_exits=65)
+LIVE STATUS: PASS (unexpected_worker_exits=66)
 
 GIT SYNC (is the public mirror current?):
-SYNC STATE at 2026-10-16T16:14:57+00:00
+SYNC STATE at 2026-10-18T04:25:58+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : d5cd458b0946cdae2471a681665dafe3d6acceea
-remote_head       : d5cd458b0946cdae2471a681665dafe3d6acceea   (local remote-tracking ref; run tools/git_sync.py status to refresh)
-unpushed_commits  : 0   (behind: 0)
-git_dirty         : True (1177 path(s))
+local_head        : 7dd7bb9ca90e1054b4d6530cb890439f770fdcf5
+remote_head       : 3805b7e4faf4cbfeaef8a80d82e69a347a1fa2f0   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+unpushed_commits  : 12   (behind: 0)
+git_dirty         : True (15 path(s))
 last_push_at      : 2026-10-15T10:29:32.618849+00:00
 last_push_status  : PUSHED
-verdict           : GitHub mirrors the local tree
+verdict           : LOCAL IS AHEAD by 12 commit(s) -- run `python tools/git_sync.py push`
 
 KNOWN RISKS:
 - Live Verified depends on screenshots that are NOT in git (see .gitignore); they are machine-local.
