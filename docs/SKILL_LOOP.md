@@ -66,6 +66,25 @@ python tools/skill_loop.py repairs --threshold 5 --limit 5
 技能要的是「野兽」，验证器证据 `resource_selected_tab == "BEAST"` 是对的（两者不可混，
 见 `verifier.py` 的 docstring）；这是定位/目标错误，盲改验证器会制造假通过。
 
+## 二·补二、反馈与固化（第 8→9 步）
+
+```bash
+python tools/skill_loop.py promotions
+```
+
+`outcomes.jsonl` 是**闭环自己的账**（它生成/执行过什么、判定如何），与 `episodes.jsonl`
+（运行时的一步）分开：episode 不该长出只有分析半边读的字段。
+
+- `skill_loop.read_outcomes()`：尾部读，坏行跳过；`brief` 会带最近 20 条，这样下一轮
+  分析不会把已经试过的技能再提一遍。
+- `skill_loop.pending_promotions()`：只看**本闭环碰过的技能**，逐个问
+  `promotion_verdict`，分成 `ready`（够条件固化）与 `waiting`（附拒绝原因：
+  `NO_PRODUCTION_ROWS` / `NOT_ENOUGH_VERIFIED_PASSES` / `RECENT_FAILURE`）。
+
+固化的动作仍然是**改代码里的 `SkillState`**，不是运行时写文件：技能状态是代码的一部分，
+一个能自己把自己提升为 VERIFIED 的技能库，等于没有状态。`promotions` 只回答"该不该提"，
+提出动作由人（或本闭环的代码提交）完成。
+
 ## 三、首个真实案例：`GET_MORE_STAMINA`
 
 **来源（不是构造的）**：`episodes.jsonl` 中 53 行 `state_before.popup == GET_MORE_STAMINA`。

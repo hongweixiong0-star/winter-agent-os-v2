@@ -76,6 +76,13 @@ def _cmd_repairs(args: argparse.Namespace) -> int:
     return 0 if candidates else 1
 
 
+def _cmd_promotions(_args: argparse.Namespace) -> int:
+    rows, _ = skill_loop.read_new_episodes({"episodes_offset": 0})
+    verdict = skill_loop.pending_promotions(rows)
+    print(json.dumps(verdict, ensure_ascii=False, indent=2))
+    return 0 if verdict["ready"] else 1
+
+
 def _cmd_record(args: argparse.Namespace) -> int:
     row = skill_loop.record_outcome(
         args.skill, verdict=args.verdict,
@@ -109,6 +116,9 @@ def main(argv: list[str] | None = None) -> int:
                          help="consecutive failures required (default: skill_repair's own)")
     repairs.add_argument("--limit", type=int, default=10)
     repairs.set_defaults(func=_cmd_repairs)
+
+    promo = sub.add_parser("promotions", help="loop-touched skills the episodes justify promoting")
+    promo.set_defaults(func=_cmd_promotions)
 
     record = sub.add_parser("record", help="append one loop decision to outcomes.jsonl")
     record.add_argument("--skill", required=True)

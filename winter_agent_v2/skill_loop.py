@@ -328,6 +328,9 @@ def build_brief(rows: Iterable[Mapping[str, Any]] | None = None,
         "popups_without_named_skill": unnamed,
         "popups_generic_fallback_only": generic_only,
         "skills_without_verifier": [sid for sid in ids if sid not in bindings],
+        # What this loop already tried, so the next pass does not re-propose it.  Bounded: the
+        # brief is read by a person (or a model) and twenty rows is a session's worth.
+        "recent_outcomes": read_outcomes(20),
     }
     return brief
 
@@ -451,6 +454,52 @@ def write_repair_queue(candidates: Iterable[Mapping[str, Any]]) -> Path:
         "candidates": list(candidates),
     })
     return path
+
+
+def read_outcomes(limit: int = 200) -> list[dict[str, Any]]:
+    """The loop's own decisions, newest last -- what it generated and how that turned out.
+
+    Without this the analysing half starts every session blind: it can see the runtime's ledger
+    but not *what it already tried*, so the same skill gets proposed twice and a failure gets
+    "fixed" the way that already failed once.  The file is small and append-only, so a tail read
+    is enough; a malformed line is skipped rather than fatal.
+    """
+    try:
+        lines = OUTCOME_PATH.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    rows: list[dict[str, Any]] = []
+    for line in lines[-max(1, limit):]:
+        if not line.strip():
+            continue
+        try:
+            payload = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(payload, dict):
+            rows.append(payload)
+    return rows
+
+
+def pending_promotions(episode_rows: Iterable[Mapping[str, Any]],
+                       outcomes: Iterable[Mapping[str, Any]] | None = None) -> dict[str, Any]:
+    """Which loop-touched skills the measured episodes now justify promoting.
+
+    ``promotion_verdict`` answers for one skill; this answers "of the skills this loop has
+    actually generated or run, which ones have earned VERIFIED".  A skill that was only
+    *proposed* (never run) cannot be promoted, and is reported separately with the reason,
+    because "no evidence yet" and "it failed" need different next actions.
+    """
+    rows = list(episode_rows)
+    touched = {str(o.get("skill")) for o in (outcomes if outcomes is not None
+                                             else read_outcomes()) if o.get("skill")}
+    ready: list[dict[str, Any]] = []
+    waiting: list[dict[str, Any]] = []
+    for skill in sorted(touched):
+        verdict = promotion_verdict(skill, rows)
+        entry = {"skill": skill, **{k: v for k, v in verdict.items() if k != "recent"}}
+        (ready if verdict.get("promote") else waiting).append(entry)
+    return {"ready": ready, "waiting": waiting}
 
 
 def state() -> dict[str, Any]:

@@ -173,6 +173,35 @@ def test_repair_candidates_rank_the_most_stuck_first():
     assert [c["consecutive_failures"] for c in found] == [5, 3]
 
 
+def test_outcomes_are_read_back_so_the_loop_remembers_what_it_tried(tmp_path, monkeypatch):
+    ledger = tmp_path / "outcomes.jsonl"
+    monkeypatch.setattr(skill_loop, "OUTCOME_PATH", ledger)
+    assert skill_loop.read_outcomes() == []
+
+    skill_loop.record_outcome("A", verdict="GENERATED", evidence={}, note="first")
+    skill_loop.record_outcome("A", verdict="FAILED", evidence={}, note="verifier said no")
+    rows = skill_loop.read_outcomes()
+    assert [r["verdict"] for r in rows] == ["GENERATED", "FAILED"]
+    assert len(skill_loop.read_outcomes(limit=1)) == 1
+
+
+def test_promotions_only_fire_for_skills_with_verified_evidence():
+    outcomes = [{"skill": "A", "verdict": "VERIFIED"},
+                {"skill": "B", "verdict": "GENERATED"},
+                {"skill": "C", "verdict": "VERIFIED"}]
+    episodes = [_row("A", "SUCCESS")] * 3 + [_row("B", "SUCCESS")] + [_row("C", "SUCCESS")] * 2
+
+    verdict = skill_loop.pending_promotions(episodes, outcomes)
+    assert [r["skill"] for r in verdict["ready"]] == ["A"]
+    assert {r["skill"]: r["reason"] for r in verdict["waiting"]} == {
+        "B": "NOT_ENOUGH_VERIFIED_PASSES",
+        "C": "NOT_ENOUGH_VERIFIED_PASSES",
+    }
+
+    # A skill the loop never touched is not this function's business.
+    assert "D" not in {r["skill"] for r in verdict["ready"] + verdict["waiting"]}
+
+
 def test_outcome_ledger_appends_one_line_per_decision(tmp_path, monkeypatch):
     ledger = tmp_path / "outcomes.jsonl"
     monkeypatch.setattr(skill_loop, "OUTCOME_PATH", ledger)
