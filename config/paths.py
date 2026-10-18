@@ -52,6 +52,10 @@ __all__ = [
     "VENV",
     "VENV_PYTHON",
     "VENV_PYTHONW",
+    "PRODUCTION_TREE",
+    "PRODUCTION_WORKTREE",
+    "PRODUCTION_PIN",
+    "PRODUCTION_LAUNCH_LOG",
     "describe",
     "as_dict",
 ]
@@ -142,6 +146,27 @@ VENV: Path = MAIN_REPO / ".venv"
 VENV_PYTHON: Path = VENV / "Scripts" / "python.exe"
 VENV_PYTHONW: Path = VENV / "Scripts" / "pythonw.exe"
 
+# -- the production pin ------------------------------------------------------------------
+#: The one pinned production tree: a linked worktree that mounts the canonical checkout's
+#: ``config`` / ``knowledge`` / ``learning`` / ``dataset`` as junctions.  It is deliberately a
+#: *worktree* rather than the main checkout so a repin can move code without moving data.
+PRODUCTION_TREE: Path = MAIN_REPO / ".worktrees" / "prod"
+PRODUCTION_WORKTREE: Path = PRODUCTION_TREE / "repo"
+#: The single authoritative manifest.  It sits **beside** the worktree, not inside it, because
+#: ``git reset --mixed`` during a repin would rewrite anything inside the checkout.
+#:
+#: 2026-10-18: this constant exists because three consumers had each spelled the location
+#: differently.  ``tools/launch_pinned_production.py`` derived it from ``__file__.parents[1]``,
+#: which is ``E:`` when the launcher is started from the main checkout and
+#: ``E:\WinterAgent\.worktrees\prod`` when it is started from the pinned tree -- so the same
+#: command looked for two different files depending on who ran it, and the main-checkout run
+#: failed with ``E:\PRODUCTION_PIN.json: No such file or directory``.  Derived once here, from
+#: ``config/`` -- which is a junction into the canonical checkout even inside the worktree --
+#: so every consumer resolves the same path.  See ``docs/PRODUCTION_PIN_AUTHORITY.md``.
+PRODUCTION_PIN: Path = PRODUCTION_TREE / "PRODUCTION_PIN.json"
+#: Startup failures are appended here, never to the drive root and never inside the checkout.
+PRODUCTION_LAUNCH_LOG: Path = PRODUCTION_TREE / "PRODUCTION_LAUNCH.log"
+
 
 def as_dict() -> dict[str, str]:
     """Every resolved root, for logging and for the migration's own verification."""
@@ -154,6 +179,8 @@ def as_dict() -> dict[str, str]:
         "KNOWLEDGE_ROOT": str(KNOWLEDGE_ROOT),
         "CONFIG_ROOT": str(CONFIG_ROOT),
         "VENV": str(VENV),
+        "PRODUCTION_TREE": str(PRODUCTION_TREE),
+        "PRODUCTION_PIN": str(PRODUCTION_PIN),
     }
 
 

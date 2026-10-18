@@ -52,10 +52,14 @@ MIRROR_BRANCH = "main"
 #: ``E:\WinterAgent\.worktrees\prod`` -- derived, never a drive literal, per §26.3.  The pin
 #: lives inside the project root since the 2026-10-17 consolidation; ``repo`` is the checkout
 #: and ``PRODUCTION_PIN.json`` sits beside it so a repin's ``reset --mixed`` cannot touch it.
-WORKTREE_ROOT = paths.MAIN_REPO / ".worktrees"
-PIN_HOME = WORKTREE_ROOT / "prod"
-PIN_WORKTREE = PIN_HOME / "repo"
-MANIFEST_NAME = "PRODUCTION_PIN.json"
+#: All four locations come from :mod:`config.paths` -- the same constants
+#: ``tools/launch_pinned_production.py`` and ``tools/repin_production.py`` use.  They were
+#: derived here and in two other files before 2026-10-18, and the three spellings only agreed
+#: by accident while the project root was still ``E:\无尽冬日智能体``.
+WORKTREE_ROOT = paths.PRODUCTION_TREE.parent
+PIN_HOME = paths.PRODUCTION_TREE
+PIN_WORKTREE = paths.PRODUCTION_WORKTREE
+MANIFEST_NAME = paths.PRODUCTION_PIN.name
 MIRROR_WORKTREE = paths.MAIN_REPO
 
 

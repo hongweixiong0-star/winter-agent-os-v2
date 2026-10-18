@@ -38,10 +38,10 @@ from config import paths  # noqa: E402
 #: directory audit would read as a duplicate copy of the repository).  The manifest stays
 #: outside the checkout -- a repin resets the worktree, and a file inside it would be a
 #: casualty of that reset.
-WORKTREE_ROOT = paths.MAIN_REPO / ".worktrees"
-WORKTREE_HOME = WORKTREE_ROOT / "prod"
-WT = WORKTREE_HOME / "repo"
-MANIFEST = WORKTREE_HOME / "PRODUCTION_PIN.json"
+WORKTREE_ROOT = paths.PRODUCTION_TREE.parent
+WORKTREE_HOME = paths.PRODUCTION_TREE
+WT = paths.PRODUCTION_WORKTREE
+MANIFEST = paths.PRODUCTION_PIN
 DATA = ("config", "knowledge", "learning", "dataset")
 # Untracked evidence dirs are pre-existing and not part of the code sync.
 IGNORE_PREFIXES = ("evidence/gui_workbuddy_loop",)

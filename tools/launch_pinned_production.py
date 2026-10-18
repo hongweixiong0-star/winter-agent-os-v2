@@ -20,14 +20,73 @@ from datetime import datetime
 from pathlib import Path
 
 CODE_ROOT = Path(__file__).resolve().parents[1]
-WORKTREE_HOME = CODE_ROOT.parent
-DEFAULT_MANIFEST = WORKTREE_HOME / "PRODUCTION_PIN.json"
 DATA_DIR_NAMES = ("config", "knowledge", "learning", "dataset")
+#: Paths the runtime or its host writes during ordinary use.  Dirty rows under these are not
+#: "unreviewed changes" to production code: the four data directories are the mounted corpus,
+#: and ``.workbuddy/`` is the agent host's own session memory, which it appends to every day.
+#: Excluding only the four data directories meant a main-checkout launch could never pass --
+#: ``M .workbuddy/memory/<date>.md`` was always present and has nothing to do with the product.
+MUTABLE_WRITE_DIRS = (*DATA_DIR_NAMES, ".workbuddy")
 LEGACY_RUNTIME_OUTPUT_DIRS = {"evidence/gui_workbuddy_loop"}
+
+#: Environment override for the manifest.  Exists for the test suite and for an operator who
+#: has moved the tree; the normal launch reads no environment at all.
+ENV_PRODUCTION_PIN = "WINTER_PRODUCTION_PIN"
+
+#: Where the pin lives, expressed as two names rather than a path, so the search below stays
+#: derived (`.worktrees/prod/PRODUCTION_PIN.json` under whichever ancestor is the repository).
+_PIN_HOME_PARTS = (".worktrees", "prod")
+_PIN_FILE_NAME = "PRODUCTION_PIN.json"
 
 
 class PinError(RuntimeError):
     pass
+
+
+def _pin_home() -> Path:
+    """The ``.worktrees/prod`` directory that owns the pin, found by walking up.
+
+    ``CODE_ROOT`` is ``E:\\WinterAgent`` when this file runs from the main checkout and
+    ``E:\\WinterAgent\\.worktrees\\prod\\repo`` when it runs from the pinned worktree -- both
+    are legitimate launch paths, and before 2026-10-18 they resolved the manifest differently
+    (``parent/PRODUCTION_PIN.json``), which made the main-checkout launch fail on
+    ``E:\\PRODUCTION_PIN.json``.  Walking up to the first ``.worktrees/prod`` makes the answer
+    independent of which copy started the process and independent of ``Path.cwd()``.
+    """
+    for parent in (CODE_ROOT, *CODE_ROOT.parents):
+        candidate = parent.joinpath(*_PIN_HOME_PARTS)
+        if candidate.is_dir():
+            return candidate
+    # Nothing exists yet: name the location the repository would use, so the failure message
+    # and the failure log still point at one place instead of at the drive root.
+    return CODE_ROOT.joinpath(*_PIN_HOME_PARTS)
+
+
+def resolve_manifest(explicit: Path | None = None) -> Path:
+    """The one manifest this launch will verify, or a :class:`PinError` naming every candidate.
+
+    Precedence: ``--manifest`` > ``WINTER_PRODUCTION_PIN`` > the repository's
+    ``.worktrees/prod/PRODUCTION_PIN.json`` > a legacy ``<ancestor>/PRODUCTION_PIN.json``.
+    The last entry is compatibility only; it is never preferred over the canonical home.
+    """
+    if explicit is not None:
+        return Path(explicit).expanduser()
+    override = os.environ.get(ENV_PRODUCTION_PIN, "").strip()
+    if override:
+        return Path(override).expanduser()
+    canonical = _pin_home() / _PIN_FILE_NAME
+    if canonical.is_file():
+        return canonical
+    # Legacy fallback: a manifest sitting at a checkout root (the pre-2026-10-17 layout).
+    for parent in (CODE_ROOT, *CODE_ROOT.parents):
+        candidate = parent / _PIN_FILE_NAME
+        if candidate.is_file():
+            return candidate
+    looked = "\n  ".join(str(p) for p in (canonical, *(p / _PIN_FILE_NAME for p in CODE_ROOT.parents)))
+    raise PinError(
+        "production pin manifest not found. Pass --manifest, set "
+        f"{ENV_PRODUCTION_PIN}, or restore the canonical file. Looked at:\n  {looked}"
+    )
 
 
 #: ``CREATE_NO_WINDOW``.  This file runs under ``pythonw`` from the Task Scheduler action, so
@@ -81,7 +140,8 @@ def _is_legacy_runtime_output(path: str, *, code_root: Path = CODE_ROOT) -> bool
     return isinstance(payload, dict) and payload.get("kind") == "GatewaySoakAcceptance"
 
 
-def verify_pin(manifest_path: Path = DEFAULT_MANIFEST) -> tuple[str, Path]:
+def verify_pin(manifest_path: Path | None = None) -> tuple[str, Path]:
+    manifest_path = resolve_manifest(manifest_path)
     manifest = _manifest(manifest_path)
     expected_commit = str(manifest.get("expected_commit") or "").strip().lower()
     actual_commit = _git("rev-parse", "HEAD").lower()
@@ -121,7 +181,7 @@ def verify_pin(manifest_path: Path = DEFAULT_MANIFEST) -> tuple[str, Path]:
             unexpected.append(line)
             continue
         path = line[3:].strip().replace("\\", "/")
-        if not any(path == name or path.startswith(name + "/") for name in DATA_DIR_NAMES):
+        if not any(path == name or path.startswith(name + "/") for name in MUTABLE_WRITE_DIRS):
             if _is_legacy_runtime_output(path):
                 continue
             unexpected.append(line)
@@ -136,11 +196,14 @@ def _startup_log(data_root: Path) -> Path:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Launch only the pinned Winter Agent V2 production tree")
-    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument("--manifest", type=Path, default=None,
+                        help="manifest to verify (default: the repository's single production pin)")
     parser.add_argument("--check-only", action="store_true", help="verify pin and mounts without starting AUTO")
     args = parser.parse_args(argv)
+    manifest_path: Path | None = None
     try:
-        commit, data_root = verify_pin(args.manifest)
+        manifest_path = resolve_manifest(args.manifest)
+        commit, data_root = verify_pin(manifest_path)
         identity = f"CODE_COMMIT={commit} WORKTREE_CLEAN=true DATA_ROOT={data_root}"
         print(identity, flush=True)
         if args.check_only:
@@ -159,8 +222,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     except BaseException as exc:  # startup failures must remain diagnosable under pythonw
         failure = f"[{datetime.now().astimezone().isoformat()}] {type(exc).__name__}: {exc}\n"
+        # The log follows the pin, never the drive root: with the manifest resolved this is
+        # ``.worktrees/prod/``, and when resolution itself failed it is the same directory's
+        # would-be location.  Writing ``CODE_ROOT.parent`` here used to recreate
+        # ``E:\PRODUCTION_LAUNCH.log`` on every failed main-checkout launch.
+        log_root = manifest_path.parent if manifest_path is not None else _pin_home()
         try:
-            with (WORKTREE_HOME / "PRODUCTION_LAUNCH.log").open("a", encoding="utf-8") as stream:
+            log_root.mkdir(parents=True, exist_ok=True)
+            with (log_root / "PRODUCTION_LAUNCH.log").open("a", encoding="utf-8") as stream:
                 stream.write(failure)
         except OSError:
             pass
