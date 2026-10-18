@@ -1182,6 +1182,13 @@ class RuleBrain:
         # this at a control that quits the game.
         if world.page is Page.POPUP and world.popup == "EXIT_CONFIRM":
             return Decision("CLOSE_POPUP", "exit_confirm_closed_via_its_close_button", world.confidence, "popup_closed")
+        # Generated 2026-10-18 (skill loop): a paid bundle is a purchase surface, and the generic
+        # ``blocking_popup`` answer below spends a template lookup (BTN_CLOSE) on it.  Measured on
+        # three real offers, that lookup resolved nothing -- SEMANTIC_TARGET_NOT_VERIFIED with an
+        # empty ``after_screenshot`` -- so no action was ever issued and the offer stayed up.
+        # Naming the popup replaces the lookup with Back, which has no coordinate to aim at all.
+        if world.page is Page.POPUP and world.popup == "PURCHASE_POPUP":
+            return Decision("DISMISS_PURCHASE_POPUP", "purchase_offer_closed_without_buying", world.confidence, "popup_closed")
         if world.page is Page.POPUP and world.popup:
             return Decision("CLOSE_POPUP", "blocking_popup", world.confidence, "popup_closed")
         # A completed daily row can be claimable while a different actionable row is

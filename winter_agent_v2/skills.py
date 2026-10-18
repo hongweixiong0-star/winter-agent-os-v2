@@ -169,6 +169,29 @@ def p0_registry() -> SkillRegistry:
         Skill("DISMISS_BATTLEFIELD_REVIVAL", "Dismiss the battlefield-revival event without spending revival resources", Page.POPUP, Action("PRESS_BACK"), state=SkillState.CANDIDATE),
         Skill("DISMISS_BATTLE_VICTORY", "Dismiss a verified battle-result blocker and restore its underlying page", Page.POPUP, Action("PRESS_BACK"), state=SkillState.CANDIDATE),
         Skill("DISMISS_REAL_MONEY_OFFER", "Close a real-money offer without interacting with its purchase surface", Page.POPUP, Action("PRESS_BACK"), state=SkillState.CANDIDATE),
+        # Generated 2026-10-18 by the skill loop, from three production failures that never issued
+        # an action at all: on a real ¥328 bundle offer (frame 20261009_033338_250450 step_008) the
+        # brain answered the blocking popup with ``CLOSE_POPUP``, the BTN_CLOSE template did not
+        # resolve (SEMANTIC_TARGET_NOT_VERIFIED, ``after_screenshot`` empty), and the offer stayed
+        # on screen.
+        #
+        # The fix is the action, not the template: ``PRESS_BACK`` needs no locator, and on a
+        # purchase surface "no locator" is the safety property -- there is no coordinate that could
+        # land on 购买.  ``CLOSE_POPUP`` stays as the recovery for a dialog that ignores Back.
+        Skill(
+            "DISMISS_PURCHASE_POPUP",
+            "Close the paid-bundle offer without touching its purchase button",
+            Page.POPUP,
+            Action("PRESS_BACK"),
+            state=SkillState.CANDIDATE,
+            verifier="POPUP_CLOSED",
+            recovery=("CLOSE_POPUP",),
+            risk="LOW",
+            semantic_goal="Leave a real-money offer without buying anything",
+            semantic_requirements=("purchase_popup_open",),
+            unknown_policy="No tap is ever issued on a purchase surface; Back only",
+            ui_change_tolerance=("number", "position", "resolution"),
+        ),
         # Generated 2026-10-18 by the WorkBuddy skill loop from 53 production rows that met
         # ``popup == GET_MORE_STAMINA``.  Every one of them was closed by the *generic* ``BACK``
         # skill -- 21 SUCCESS and one SAFE_BACK_NOT_PROVEN -- which is why this is a repair of an
