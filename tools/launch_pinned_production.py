@@ -23,10 +23,11 @@ CODE_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR_NAMES = ("config", "knowledge", "learning", "dataset")
 #: Paths the runtime or its host writes during ordinary use.  Dirty rows under these are not
 #: "unreviewed changes" to production code: the four data directories are the mounted corpus,
-#: and ``.workbuddy/`` is the agent host's own session memory, which it appends to every day.
+#: ``.workbuddy/`` is the agent host's own session memory, which it appends to every day, and
+#: ``evidence/gui_workbuddy_loop/`` is the soak probe's output file, rewritten on every sample.
 #: Excluding only the four data directories meant a main-checkout launch could never pass --
 #: ``M .workbuddy/memory/<date>.md`` was always present and has nothing to do with the product.
-MUTABLE_WRITE_DIRS = (*DATA_DIR_NAMES, ".workbuddy")
+MUTABLE_WRITE_DIRS = (*DATA_DIR_NAMES, ".workbuddy", "evidence/gui_workbuddy_loop")
 LEGACY_RUNTIME_OUTPUT_DIRS = {"evidence/gui_workbuddy_loop"}
 
 #: Environment override for the manifest.  Exists for the test suite and for an operator who
