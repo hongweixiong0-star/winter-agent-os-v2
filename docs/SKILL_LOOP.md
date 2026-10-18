@@ -124,6 +124,34 @@ skill=CLOSE_POPUP  failure=SEMANTIC_TARGET_NOT_VERIFIED  after_screenshot=""  (�
 闭环的价值不在"生成了几个技能"，而在于**能分清这两种情况**：前者的正确动作是补证据，
 后者才是改实现。把前者当后者改，会把一个能用的技能改坏。
 
+## 三·补三、第三个候选：分析完了，不改
+
+`repairs` 队列的第二条是 `SCROLL_QUICK_PANEL_BACK`，连续 5 次失败、失败类型全是
+`SEMANTIC_TARGET_NOT_VERIFIED`、`after_screenshot` 全空（动作未发出）。
+
+拿两帧实测，链路逐段检查：
+
+```
+page            = HOME          ✓ 技能声明的页面
+quick_panel.open = true         ✓ 面板确实开着
+read_quick_panel = rows: 2 条    ✗ 屏幕上有 6 行
+scroll_back_swipe_norm = None   ✗ 派生失败
+```
+
+`ocr.read_quick_panel` 的手势派生有一道门槛：`len(visible_rows) >= 3` 且可见行的 y 跨度
+`>= 0.12`。只读到 2 行时它**正确地**返回 `None`——不猜一个手势。于是动作没发出、验证器报
+未验证。
+
+**结论：不是技能写错，是行读取器覆盖不足**（`rows` 只为已知 kind 的行构造记录，面板上的
+史诗歌 / 我的奖励 / 生命结晶收集 / 晨曦回礼 / 地心探险 都不在其中）。
+
+**为什么现在不改**：改的是 OCR 核心（所有面板消费者的共同输入），而手上的证据全是失败帧，
+没有一张"6 行都读到"的成功帧作对照。没有对照就动核心读取器，等于用两个样本改一条所有技能
+都走的路。这条记为 `ANALYSED`（不是 `FIXED`），等实机帧再定。
+
+它与 `OPEN_BEAST_SEARCH_TAB` 一起，说明闭环的否决权是有内容的：能分清"该改验证器"和"该改
+读取器"，也能分清"现在改"和"等证据"。**一个只会生成技能的闭环，迟早会把对的改成错的。**
+
 ## 三、首个真实案例：`GET_MORE_STAMINA`
 
 **来源（不是构造的）**：`episodes.jsonl` 中 53 行 `state_before.popup == GET_MORE_STAMINA`。
