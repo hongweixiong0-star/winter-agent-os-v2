@@ -1,0 +1,33 @@
+{
+ "schema_version": 1,
+ "purpose": "Which registry skill the brain answers a named popup with. Read by winter_agent_v2/skill_loop.py so a brief can say 'this popup has no skill' only when that is true.",
+ "source": "extracted 2026-10-18 from winter_agent_v2/brain.py's `world.popup == ...` branches (the Decision skill id in the same branch)",
+ "caveat": "Listing a popup here means the brain has a named branch for it. A branch that returns the generic BACK / CLOSE_POPUP is recorded as such -- that is the honest answer, not a covered capability.",
+ "popups": {
+  "WELCOME_BACK_OFFLINE": ["CLAIM_OFFLINE_REWARDS"],
+  "SESSION_DISCONNECTED": ["RECONNECT_SESSION"],
+  "BATTLEFIELD_REVIVAL": ["DISMISS_BATTLEFIELD_REVIVAL"],
+  "BATTLE_VICTORY_BANNER": ["DISMISS_BATTLE_VICTORY"],
+  "REAL_MONEY_OFFER": ["DISMISS_REAL_MONEY_OFFER"],
+  "PURCHASE_POPUP": ["CLOSE_POPUP"],
+  "GET_MORE_STAMINA": ["CLAIM_FREE_STAMINA", "DISMISS_GET_MORE_STAMINA"],
+  "NEW_TROOP_UNLOCK": ["DISMISS_SHARED_REWARD"],
+  "HERO_RECRUIT_REWARD": ["DISMISS_SHARED_REWARD"],
+  "DUPLICATE_TARGET": ["CANCEL_DUPLICATE_TARGET"],
+  "DAILY_REWARD": ["DISMISS_DAILY_REWARD"],
+  "GENERIC_REWARD": ["DISMISS_SHARED_REWARD"],
+  "INTEL_REWARD": ["DISMISS_INTEL_REWARD"],
+  "MAIL_REWARD": ["DISMISS_MAIL_REWARD"],
+  "EXPLORATION_REWARD": ["DISMISS_EXPLORATION_REWARD"],
+  "EXPLORATION_IDLE_DIALOG": ["CONFIRM_EXPLORATION_IDLE_CLAIM"],
+  "MARCH_RECALL": ["RECALL_MARCH", "CLOSE_POPUP"],
+  "EXIT_CONFIRM": ["CLOSE_POPUP"],
+  "HERO_BATTLE_VICTORY": ["BACK"],
+  "INTEL_MASTER_BOUNTY": ["BACK"],
+  "INTEL_BEAST_MISSION": ["OPEN_INTEL_BEAST_TARGET"],
+  "INTEL_RESCUE_SURVIVORS_MISSION": ["OPEN_INTEL_RESCUE_SURVIVORS_TARGET"],
+  "INTEL_HERO_JOURNEY": ["OPEN_INTEL_HERO_JOURNEY_TARGET"],
+  "POWER_OVERVIEW": ["OPEN_POWER_DETAILS"],
+  "POWER_DETAILS": ["NAVIGATE_INFANTRY_CAMP", "NAVIGATE_RESEARCH_LAB"]
+ }
+}

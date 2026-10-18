@@ -614,3 +614,6 @@ learning/MODE_STATE.json
 # 2026-10-18：E 盘根目录散落的项目资料（设计书/旧 OS/截图包/实验），不属代码，
 # 但按操作者要求收进项目这一个文件夹里；不进 git。
 materials/
+
+# scratch output (paths.OUT_ROOT): never source, never evidence
+out/

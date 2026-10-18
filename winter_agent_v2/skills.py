@@ -169,6 +169,30 @@ def p0_registry() -> SkillRegistry:
         Skill("DISMISS_BATTLEFIELD_REVIVAL", "Dismiss the battlefield-revival event without spending revival resources", Page.POPUP, Action("PRESS_BACK"), state=SkillState.CANDIDATE),
         Skill("DISMISS_BATTLE_VICTORY", "Dismiss a verified battle-result blocker and restore its underlying page", Page.POPUP, Action("PRESS_BACK"), state=SkillState.CANDIDATE),
         Skill("DISMISS_REAL_MONEY_OFFER", "Close a real-money offer without interacting with its purchase surface", Page.POPUP, Action("PRESS_BACK"), state=SkillState.CANDIDATE),
+        # Generated 2026-10-18 by the WorkBuddy skill loop from 53 production rows that met
+        # ``popup == GET_MORE_STAMINA``.  Every one of them was closed by the *generic* ``BACK``
+        # skill -- 21 SUCCESS and one SAFE_BACK_NOT_PROVEN -- which is why this is a repair of an
+        # already-working route rather than a new route: the action is the same Back, and what is
+        # new is that the close carries a verifier, so "the offer went away" becomes a claim the
+        # episode can prove instead of an action whose outcome nobody recorded.
+        #
+        # It must never touch the offer's paid row: the panel's whole purpose is to sell stamina,
+        # and ``PRESS_BACK`` is the only action here that cannot hit it.  ``CLOSE_POPUP`` is kept
+        # as the recovery because a panel that ignores Back still draws its own X.
+        Skill(
+            "DISMISS_GET_MORE_STAMINA",
+            "Close the stamina top-up offer without buying stamina",
+            Page.POPUP,
+            Action("PRESS_BACK"),
+            state=SkillState.CANDIDATE,
+            verifier="POPUP_CLOSED",
+            recovery=("CLOSE_POPUP",),
+            semantic_goal="Leave a stamina offer without spending anything",
+            semantic_requirements=("stamina_offer_open",),
+            unknown_policy="No Back if the offer is not the popup that was observed",
+            ui_change_tolerance=("number", "position", "resolution"),
+            risk="LOW",
+        ),
         Skill("DISMISS_INTEL_REWARD", "Dismiss the verified Intel reward overlay by tapping its continue surface", Page.POPUP, Action("TAP_SEMANTIC", "BTN_DISMISS_INTEL_REWARD"), state=SkillState.VERIFIED),
         Skill(
             "CANCEL_DUPLICATE_TARGET",

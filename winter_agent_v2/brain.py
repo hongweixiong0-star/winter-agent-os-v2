@@ -1161,8 +1161,8 @@ class RuleBrain:
                     if self.free_stamina_claim_cooling
                     else "stamina_panel_still_unclaimed_after_the_claim_attempt"
                 )
-                return Decision("BACK", reason, world.confidence, "map_restored")
-            return Decision("BACK", "stamina_panel_without_a_free_gift", world.confidence, "map_restored")
+                return Decision("DISMISS_GET_MORE_STAMINA", reason, world.confidence, "map_restored")
+            return Decision("DISMISS_GET_MORE_STAMINA", "stamina_panel_without_a_free_gift", world.confidence, "map_restored")
         # The recall confirmation must be answered before the generic
         # blocking-popup rule, otherwise a deliberately opened recall dialog
         # would be closed instead of confirmed.  It is only confirmed when this
