@@ -249,6 +249,17 @@ def summarise_episodes(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     return {
         "rows": len(rows),
         "simulation_rows_excluded": simulation,
+        # Which failures can even be re-read.  Measured 2026-10-18 over the whole ledger:
+        # 1096 failure rows, 0 missing the before frame, **399 (36%) missing the after frame** --
+        # because those are the steps where no action was issued (SEMANTIC_TARGET_NOT_VERIFIED,
+        # NO_EXECUTION).  That is not a defect, it is the distinction the analyser needs: a
+        # failure with an after frame is "the action did not change the page", one without is
+        # "the action never happened".  Different repairs, and a brief that hides it invites the
+        # wrong one.
+        "evidence_gaps": {
+            "missing_before": sum(1 for r in rows if not r.get("before_screenshot")),
+            "missing_after": sum(1 for r in rows if not r.get("after_screenshot")),
+        },
         "by_skill": by_skill,
         "verified_by_skill": verified,
         "failures": [
@@ -301,6 +312,11 @@ def build_brief(rows: Iterable[Mapping[str, Any]] | None = None,
     unnamed = [p for p in popups if not covered.get(p)]
     brief = {
         "generated_at": _now(),
+        # Honest label, because the counters below describe this increment and nothing older.
+        # A skill that failed three times across three passes looks like three separate ones here;
+        # the cross-pass question ("is it stuck?") belongs to ``repair_candidates``, which reads
+        # the whole ledger on purpose.
+        "scope": "INCREMENT_ONLY",
         "cursor_after": next_cursor,
         "counts": {
             "episode_rows": len(rows),

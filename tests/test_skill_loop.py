@@ -144,6 +144,29 @@ def test_brief_names_every_popup_it_cannot_cover(tmp_path):
     assert brief["counts"]["episode_rows"] == 3
 
 
+def test_summary_counts_the_frames_a_failure_can_be_reread_from():
+    """Missing after frame is not a defect, it is a different repair.
+
+    A failure with an after frame means "the action ran and the page did not move"; one without
+    means "no action was issued". Treating them the same sends the analyser looking for a broken
+    control on a step that never pressed anything.
+    """
+    rows = [
+        {"skill": "A", "result": "FAILURE", "before_screenshot": "b.png", "after_screenshot": "a.png"},
+        {"skill": "A", "result": "FAILURE", "before_screenshot": "b2.png", "after_screenshot": ""},
+        {"skill": "B", "result": "SUCCESS", "before_screenshot": "", "after_screenshot": "a3.png"},
+    ]
+    gaps = skill_loop.summarise_episodes(rows)["evidence_gaps"]
+    assert gaps == {"missing_before": 1, "missing_after": 1}
+
+
+def test_a_brief_says_its_counters_are_window_only():
+    brief = skill_loop.build_brief([_row("A", "FAILURE", verified=False, failure="UNKNOWN_PAGE")],
+                                   [], cursor={"episodes_offset": 0, "seen_requests": []})
+    assert brief["scope"] == "INCREMENT_ONLY"
+    assert brief["episodes"]["evidence_gaps"] == {"missing_before": 1, "missing_after": 1}
+
+
 def test_repair_candidates_only_surface_a_real_perception_streak():
     def streak(n: int, kind: str = "SEMANTIC_TARGET_NOT_VERIFIED") -> list[dict]:
         return [_row("OPEN_HOME", "FAILURE", verified=False, failure=kind) for _ in range(n)]

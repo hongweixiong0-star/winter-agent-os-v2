@@ -45,7 +45,9 @@ def _cmd_brief(args: argparse.Namespace) -> int:
     path = skill_loop.write_brief(brief)
     print(json.dumps({
         "brief": str(path),
+        "scope": brief["scope"],
         "counts": brief["counts"],
+        "evidence_gaps": brief["episodes"]["evidence_gaps"],
         "popups_without_named_skill": brief["popups_without_named_skill"],
         "skills_without_verifier_sample": brief["skills_without_verifier"][:10],
         "failures": brief["episodes"]["failures"][:10],
